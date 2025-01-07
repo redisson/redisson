@@ -741,7 +741,7 @@ public interface RedisCommands {
             Arrays.asList(HSCAN.getName(), SCAN.getName(), ZSCAN.getName(), SSCAN.getName()));
 
     RedisStrictCommand<List<ClusterNodeInfo>> REDIS_CLUSTER_NODES = new RedisStrictCommand<List<ClusterNodeInfo>>("CLUSTER", "NODES",
-            new ObjectDecoder(new ClusterNodesDecoder(RedisURI.REDIS_PROTOCOL)));
+            new ObjectDecoder(new ClusterNodesDecoder("redis")));
 
     RedisStrictCommand<Long> TIME_LONG = new RedisStrictCommand<Long>("TIME", new TimeLongObjectDecoder());
     RedisStrictCommand<Time> TIME = new RedisStrictCommand<Time>("TIME", new TimeObjectDecoder());
