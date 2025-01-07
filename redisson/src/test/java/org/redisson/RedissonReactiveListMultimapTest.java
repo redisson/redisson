@@ -301,9 +301,9 @@ public class RedissonReactiveListMultimapTest extends BaseReactiveTest {
 
     @Test
     public void testListener() {
-        testWithParamsReactive(redisson -> {
+        testWithParams(redisson -> {
             Queue<Integer> nfs = new ConcurrentLinkedQueue<>();
-            RListMultimapReactive<Object, Object> map = redisson.getListMultimap("test1");
+            RListMultimapReactive<Object, Object> map = redisson.reactive().getListMultimap("test1");
             sync(map.addListener((MapPutListener) name -> nfs.add(1)));
             sync(map.addListener((MapRemoveListener) name -> nfs.add(2)));
             sync(map.addListener((ListAddListener) name -> nfs.add(3)));

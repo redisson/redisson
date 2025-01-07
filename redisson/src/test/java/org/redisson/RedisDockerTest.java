@@ -106,9 +106,7 @@ public class RedisDockerTest {
         GenericContainer<?> redis = createRedis(params);
         redis.start();
 
-        Config config = new Config();
-        config.setProtocol(protocol);
-        config.useSingleServer().setAddress("redis://127.0.0.1:" + redis.getFirstMappedPort());
+        Config config = createConfig(redis);
         RedissonClient redisson = Redisson.create(config);
 
         try {
