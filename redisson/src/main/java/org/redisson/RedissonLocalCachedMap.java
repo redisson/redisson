@@ -673,7 +673,8 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
             }
 
             if (!missedKeys.isEmpty()) {
-                CompletionStage<Map<K, V>> f = loadAllMapAsync(missedKeys.spliterator(), false, 1);
+                CompletionStage<Map<K, V>> f = loadAllMapAsync(missedKeys.spliterator(),
+                                                    false, 1, Thread.currentThread().getId());
                 CompletionStage<Map<K, V>> ff = f.thenApply(map -> {
                     result.putAll(map);
                     return result;

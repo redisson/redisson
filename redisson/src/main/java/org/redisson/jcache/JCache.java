@@ -29,6 +29,7 @@ import org.redisson.client.protocol.decoder.MapValueDecoder;
 import org.redisson.codec.BaseEventCodec;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.MasterSlaveEntry;
+import org.redisson.connection.ServiceManager;
 import org.redisson.connection.decoder.MapGetAllDecoder;
 import org.redisson.iterator.RedissonBaseMapIterator;
 import org.redisson.jcache.JMutableEntry.Action;
@@ -49,9 +50,6 @@ import javax.cache.integration.*;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
 import java.net.URI;
 import java.util.*;
 import java.util.concurrent.*;
@@ -83,12 +81,6 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
     /*
      * No locking required in atomic execution mode.
      */
-    private static final RLock DUMMY_LOCK = (RLock) Proxy.newProxyInstance(JCache.class.getClassLoader(), new Class[] {RLock.class}, new InvocationHandler() {
-        @Override
-        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-            return null;
-        }
-    });
 
     public JCache(JCacheManager cacheManager, Redisson redisson, String name, JCacheConfiguration<K, V> config, boolean hasOwnRedisson) {
         super(redisson.getConfig().getCodec(), redisson.getCommandExecutor(), name);
@@ -1186,7 +1178,10 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
 
     RLock getLockedLock(K key) {
         if (atomicExecution) {
-            return DUMMY_LOCK;
+            /*
+             * No locking is required in atomic execution mode.
+             */
+            return ServiceManager.DUMMY_LOCK;
         }
 
         String lockName = getLockName(key);

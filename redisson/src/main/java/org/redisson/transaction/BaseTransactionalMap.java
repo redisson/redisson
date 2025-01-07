@@ -484,7 +484,7 @@ public class BaseTransactionalMap<K, V> extends BaseTransactionalObject {
             }
 
             // TODO optimize
-            return map.getAllAsync(new HashSet<>(keyList)).thenApply(res -> {
+            return ((RedissonMap<K, V>) map).getAllAsync(new HashSet<>(keyList), Long.MIN_VALUE).thenApply(res -> {
                 for (K key : res.keySet()) {
                     HashValue keyHash = toKeyHash(key);
                     operations.add(new MapFastRemoveOperation(map, key, transactionId, threadId));

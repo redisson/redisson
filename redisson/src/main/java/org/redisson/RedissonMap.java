@@ -33,6 +33,7 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.convertor.NumberConvertor;
 import org.redisson.client.protocol.decoder.*;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.connection.ServiceManager;
 import org.redisson.connection.decoder.MapGetAllDecoder;
 import org.redisson.iterator.RedissonMapIterator;
 import org.redisson.iterator.RedissonMapKeyIterator;
@@ -537,6 +538,10 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public RFuture<Map<K, V>> getAllAsync(Set<K> keys) {
+        return getAllAsync(keys, Thread.currentThread().getId());
+    }
+
+    public RFuture<Map<K, V>> getAllAsync(Set<K> keys, long threadId) {
         if (keys.isEmpty()) {
             return new CompletableFutureWrapper<>(Collections.emptyMap());
         }
@@ -551,7 +556,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
                 Set<K> newKeys = new HashSet<K>(keys);
                 newKeys.removeAll(res.keySet());
 
-                CompletionStage<Map<K, V>> ff = loadAllMapAsync(newKeys.spliterator(), false, 1);
+                CompletionStage<Map<K, V>> ff = loadAllMapAsync(newKeys.spliterator(), false, 1, threadId);
                 return ff.thenApply(map -> {
                     res.putAll(map);
                     return res;
@@ -1189,7 +1194,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         return new CompletableFutureWrapper<>(result);
     }
 
-    protected CompletionStage<Map<K, V>> loadAllMapAsync(Spliterator<K> spliterator, boolean replaceExistingValues, int parallelism) {
+    protected CompletionStage<Map<K, V>> loadAllMapAsync(Spliterator<K> spliterator, boolean replaceExistingValues, int parallelism, long threadId) {
         ForkJoinPool customThreadPool = new ForkJoinPool(parallelism);
         ConcurrentMap<K, V> map = new ConcurrentHashMap<>();
         CompletableFuture<Map<K, V>> result = new CompletableFuture<>();
@@ -1198,7 +1203,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
                 Stream<K> s = StreamSupport.stream(spliterator, true);
                 List<CompletableFuture<?>> r = s.filter(k -> k != null)
                         .map(k -> {
-                            return loadValue(k, replaceExistingValues)
+                            return loadValue(k, replaceExistingValues, threadId)
                                     .thenAccept(v -> {
                                         if (v != null) {
                                             map.put(k, v);
@@ -1617,6 +1622,13 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     protected CompletableFuture<V> loadValue(K key, boolean replaceValue, long threadId) {
         RLock lock = getLock(key);
+        if (threadId == Long.MIN_VALUE) {
+            lock = ServiceManager.DUMMY_LOCK;
+        }
+        return loadValue(lock, key, replaceValue, threadId);
+    }
+
+    private CompletableFuture<V> loadValue(RLock lock, K key, boolean replaceValue, long threadId) {
         return lock.lockAsync(threadId).thenCompose(res -> {
             if (replaceValue) {
                 return loadValue(key, lock, threadId);

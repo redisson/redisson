@@ -1724,12 +1724,13 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
             return future;
         }
 
+        long threadId = Thread.currentThread().getId();
         CompletionStage<Map<K, V>> f = future.thenCompose(res -> {
             if (!res.keySet().containsAll(keys)) {
                 Set<K> newKeys = new HashSet<K>(keys);
                 newKeys.removeAll(res.keySet());
 
-                CompletionStage<Map<K, V>> ff = loadAllMapAsync(newKeys.spliterator(), false, 1);
+                CompletionStage<Map<K, V>> ff = loadAllMapAsync(newKeys.spliterator(), false, 1, threadId);
                 return ff.thenApply(map -> {
                     res.putAll(map);
                     return res;

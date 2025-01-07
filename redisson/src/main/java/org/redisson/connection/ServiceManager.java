@@ -48,6 +48,7 @@ import org.redisson.RedissonShutdownException;
 import org.redisson.Version;
 import org.redisson.api.NatMapper;
 import org.redisson.api.RFuture;
+import org.redisson.api.RLock;
 import org.redisson.cache.LRUCacheMap;
 import org.redisson.client.RedisNodeNotFoundException;
 import org.redisson.client.codec.Codec;
@@ -65,6 +66,9 @@ import org.redisson.remote.ResponseEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
@@ -651,5 +655,15 @@ public final class ServiceManager {
     public MapResolver getLiveObjectMapResolver() {
         return mapResolver;
     }
+
+    public static final RLock DUMMY_LOCK = (RLock) Proxy.newProxyInstance(ServiceManager.class.getClassLoader(), new Class[] {RLock.class}, new InvocationHandler() {
+        @Override
+        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+            if (method.getName().endsWith("lockAsync")) {
+                return new CompletableFutureWrapper<>((Void) null);
+            }
+            return null;
+        }
+    });
 
 }

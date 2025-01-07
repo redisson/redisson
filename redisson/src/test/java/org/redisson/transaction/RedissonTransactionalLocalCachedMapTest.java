@@ -19,37 +19,31 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonTransactionalLocalCachedMapTest extends RedisDockerTest {
 
+    @Test
+    public void testRemoval() {
+        Map<String, String> externalStore = new HashMap<>();
+        externalStore.put("k1", "v1");
 
-    // reproducer for https://github.com/redisson/redisson/issues/5198
-    //@Test
-    public void test1() {
-        final LocalCachedMapOptions opts = LocalCachedMapOptions.defaults();
-        final Map<String, String> externalStore = new HashMap<>();
-        externalStore.put("hello", "world");
-        opts.loader(new MapLoader<String, String>() {
-            @Override
-            public String load(String key) {
-                return externalStore.get(key);
-            }
+        org.redisson.api.options.LocalCachedMapOptions<String, String> opts = org.redisson.api.options.LocalCachedMapOptions
+                .<String, String>name("test").loader(new MapLoader<>() {
+                    @Override
+                    public String load(String key) {
+                        return externalStore.get(key);
+                    }
 
-            @Override
-            public Iterable loadAllKeys() {
-                return externalStore.keySet();
-            }
-        });
+                    @Override
+                    public Iterable<String> loadAllKeys() {
+                        return externalStore.keySet();
+                    }
+                });
 
-        RLocalCachedMap lcMap = redisson.getLocalCachedMap("lcMap", opts);
-
-        // Uncomment the below line and hang will be avoided
-//         lcMap.get("hello");
+        RLocalCachedMap<String, String> lcMap = redisson.getLocalCachedMap(opts);
 
         RTransaction tx = redisson.createTransaction(TransactionOptions.defaults());
-        RLocalCachedMap txMap = tx.getLocalCachedMap(lcMap);
+        RLocalCachedMap<String, String> txMap = tx.getLocalCachedMap(lcMap);
 
-        // Below line will hang for tx timeout period
-        txMap.fastRemove("hello");
+        txMap.fastRemove("k1");
 
-        // Commit will fail because tx has timed out
         tx.commit();
     }
 
