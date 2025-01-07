@@ -3,6 +3,26 @@ Redisson Releases History
 
 Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
 
+Feature - listeners support in Spring's CacheConfig object (thanks to @seakider)  
+Feature - CLIENT LIST command support for Spring Data (thanks to @seakider)  
+Feature - cluster nodes state added in `node ... hasn't been discovered yet` error  
+Feature - `onConnectFailed()` and `onPingFailed()` methods with an error argument added to `FailedNodeDetector` object  
+Feature - support of "valkey" and "valkeys" schemes in urls  
+
+Fixed - `RScheduledExecutorService` tasks might not be canceled (thanks to @seakider)  
+Fixed - `MASTERDOWN` error handling  
+Fixed - `RBloomFilter.contains()` should return false if the filter doesn't exist (thanks to @seakider)  
+Fixed - `RRemoteService` calls do not throw RemoteServiceTimeoutException, leaving threads stuck (thanks to @seakider)  
+Fixed - `RMap.addAndGet()` method doesn't work with MapWriter  
+Fixed - `RScheduledExecutorService` tasks are not running on the next executor if the app was killed (thanks to @seakider)  
+Fixed - `RListMultimapReactive.get()` and `RSetMultimapReactive.get()` methods return object with methods which throw exceptions  
+Fixed - `RPriorityBlockingQueue.take()` method consumes an element even after the calling thread has been interrupted  
+Fixed - `RExecutorService` result futures might be never completed  
+Fixed - `RRemoteService` shouldn't allocate a new worker if requestQueue is empty  
+Fixed - `RListMultimapReactive.get()` method doesn't work (thanks to @kramer)  
+Fixed - `RListMultimapRx.get()` method doesn't work  
+Fixed - `destroy()` method doesn't work if called immediately after creation of `RDelayedQueue` object  
+
 ### 23-Dec-2024 - 3.41.0 released
 
 Feature - `RPermitExpirableSemaphore.getLeaseTime()` method added (thanks to @seakider)  
