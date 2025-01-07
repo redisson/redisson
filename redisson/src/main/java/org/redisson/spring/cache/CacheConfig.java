@@ -123,7 +123,7 @@ public class CacheConfig {
         listeners.add(listener);
     }
     
-    protected List<MapEntryListener> getListeners() {
+    public List<MapEntryListener> getListeners() {
         return listeners;
     }
     
