@@ -15,6 +15,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.Arrays;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 /**
  * 
  * @author Nikita Koksharov
@@ -47,6 +49,45 @@ public class ReadWriteTest extends BaseSessionFactoryFunctionalTest {
     public void before() {
         sessionFactory().getCache().evictAllRegions();
         sessionFactory().getStatistics().clear();
+    }
+
+    @Test
+    public void testTimeToLive() throws InterruptedException {
+        Statistics stats = sessionFactory().getStatistics();
+
+        Long id;
+        Session s = sessionFactory().openSession();
+        s.beginTransaction();
+        ItemReadWrite item = new ItemReadWrite( "data" );
+        id = (Long) s.save( item );
+        s.flush();
+        s.getTransaction().commit();
+        s.close();
+
+        Thread.sleep(900);
+
+        s = sessionFactory().openSession();
+        s.beginTransaction();
+        item = s.get(ItemReadWrite.class, id);
+        Assertions.assertEquals("data", item.getName());
+        s.getTransaction().commit();
+        s.close();
+
+        Assertions.assertEquals(1, stats.getDomainDataRegionStatistics("item").getHitCount());
+        Assertions.assertEquals(0, stats.getDomainDataRegionStatistics("item").getMissCount());
+
+        Thread.sleep(600);
+
+        s = sessionFactory().openSession();
+        s.beginTransaction();
+        item = s.get(ItemReadWrite.class, id);
+        Assertions.assertEquals("data", item.getName());
+        s.delete(item);
+        s.getTransaction().commit();
+        s.close();
+
+        Assertions.assertEquals(1, stats.getDomainDataRegionStatistics("item").getHitCount());
+        Assertions.assertEquals(1, stats.getDomainDataRegionStatistics("item").getMissCount());
     }
 
     @Test
@@ -87,6 +128,102 @@ public class ReadWriteTest extends BaseSessionFactoryFunctionalTest {
         Assertions.assertEquals(1, stats.getDomainDataRegionStatistics("myTestQuery").getHitCount());
         
         stats.logSummary();
+    }
+
+    @Test
+    public void testCollection() {
+        Long id = null;
+
+        Statistics stats = sessionFactory().getStatistics();
+        Session s = sessionFactory().openSession();
+        s.beginTransaction();
+        ItemReadWrite item = new ItemReadWrite("data");
+        item.getEntries().addAll(Arrays.asList("a", "b", "c"));
+        id = (Long) s.save(item);
+        s.flush();
+        s.getTransaction().commit();
+
+        s = sessionFactory().openSession();
+        s.beginTransaction();
+        item = s.get(ItemReadWrite.class, id);
+        assertThat(item.getEntries()).containsExactly("a", "b", "c");
+        s.getTransaction().commit();
+        s.close();
+
+        Assertions.assertEquals(1, stats.getDomainDataRegionStatistics("item_entries").getPutCount());
+
+        s = sessionFactory().openSession();
+        s.beginTransaction();
+        item = s.get(ItemReadWrite.class, id);
+        assertThat(item.getEntries()).containsExactly("a", "b", "c");
+        s.delete(item);
+        s.getTransaction().commit();
+        s.close();
+
+        Assertions.assertEquals(1, stats.getDomainDataRegionStatistics("item_entries").getHitCount());
+    }
+
+    @Test
+    public void testNaturalId() {
+        Statistics stats = sessionFactory().getStatistics();
+        Session s = sessionFactory().openSession();
+        s.beginTransaction();
+        ItemReadWrite item = new ItemReadWrite("data");
+        item.setNid("123");
+        s.save(item);
+        s.flush();
+        s.getTransaction().commit();
+
+        Assertions.assertEquals(1, stats.getDomainDataRegionStatistics("item").getPutCount());
+        Assertions.assertEquals(1, stats.getNaturalIdStatistics(ItemReadWrite.class.getName()).getCachePutCount());
+
+        s = sessionFactory().openSession();
+        s.beginTransaction();
+        item = (ItemReadWrite) s.bySimpleNaturalId(ItemReadWrite.class).load("123");
+        assertThat(item).isNotNull();
+        s.delete(item);
+        s.getTransaction().commit();
+        s.close();
+
+        Assertions.assertEquals(1, stats.getDomainDataRegionStatistics("item").getHitCount());
+        Assertions.assertEquals(1, stats.getNaturalIdStatistics(ItemReadWrite.class.getName()).getCacheHitCount());
+
+        sessionFactory().getStatistics().logSummary();
+    }
+
+    @Test
+    public void testUpdateWithRefreshThenRollback() {
+        Statistics stats = sessionFactory().getStatistics();
+        Long id = null;
+        Session s = sessionFactory().openSession();
+        s.beginTransaction();
+        ItemReadWrite item = new ItemReadWrite( "data" );
+        id = (Long) s.save( item );
+        s.flush();
+        s.getTransaction().commit();
+
+        Assertions.assertEquals(1, stats.getDomainDataRegionStatistics("item").getPutCount());
+
+        s = sessionFactory().openSession();
+        s.beginTransaction();
+        item = s.get(ItemReadWrite.class, id);
+        item.setName("newdata");
+        s.update(item);
+        s.flush();
+        s.refresh(item);
+        s.getTransaction().rollback();
+        s.clear();
+        s.close();
+
+        s = sessionFactory().openSession();
+        s.beginTransaction();
+        item = s.get(ItemReadWrite.class, id);
+        Assertions.assertEquals("data", item.getName());
+        s.delete(item);
+        s.getTransaction().commit();
+        s.close();
+
+        Assertions.assertEquals(1, stats.getDomainDataRegionStatistics("item").getHitCount());
     }
         
 }
