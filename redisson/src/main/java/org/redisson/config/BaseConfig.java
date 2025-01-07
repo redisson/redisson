@@ -135,7 +135,6 @@ public class BaseConfig<T extends BaseConfig<T>> {
         setClientName(config.getClientName());
         setConnectTimeout(config.getConnectTimeout());
         setIdleConnectionTimeout(config.getIdleConnectionTimeout());
-        setSslEnableEndpointIdentification(config.isSslEnableEndpointIdentification());
         setSslProvider(config.getSslProvider());
         setSslTruststore(config.getSslTruststore());
         setSslTruststorePassword(config.getSslTruststorePassword());
