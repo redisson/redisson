@@ -176,9 +176,6 @@ public class TasksRunnerService implements RemoteExecutorService {
     @Override
     public void scheduleWithFixedDelay(ScheduledWithFixedDelayParameters params) {
         executeRunnable(params, false);
-        if (!redisson.getMap(tasksName, StringCodec.INSTANCE).containsKey(params.getRequestId())) {
-            return;
-        }
         
         long newStartTime = System.currentTimeMillis() + params.getDelay();
         params.setStartTime(newStartTime);
