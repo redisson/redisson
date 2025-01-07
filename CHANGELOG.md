@@ -3,7 +3,7 @@ Redisson Releases History
 
 Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
 
-Feature - add MapEntryListener in RedissonSpringCacheManager (thanks to @seakider)  
+Feature - listeners support in Spring's CacheConfig object (thanks to @seakider)  
 Feature - CLIENT LIST command support for Spring Data (thanks to @seakider)  
 Feature - cluster nodes state added in "node ... hasn't been discovered yet" error  
 Feature - `onConnectFailed()` and `onPingFailed()` methods with an error argument added to `FailedNodeDetector` object  
