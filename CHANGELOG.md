@@ -17,9 +17,9 @@ Fixed - `RMap.addAndGet()` method doesn't work with MapWriter
 Fixed - `RScheduledExecutorService` tasks are not running on the next executor if the app was killed (thanks to @seakider)  
 Fixed - `RListMultimapReactive.get()` and `RSetMultimapReactive.get()` methods return object with methods which throw exceptions  
 Fixed - `RPriorityBlockingQueue.take()` method consumes an element even after the calling thread has been interrupted  
-Fixed - `RExecutorService's result futures might be never completed  
+Fixed - `RExecutorService` result futures might be never completed  
 Fixed - `RRemoteService` shouldn't allocate a new worker if requestQueue is empty  
-Fixed - `RListMultimapReactive.get()` method doesn't work (thanks to @Cihan Keser)  
+Fixed - `RListMultimapReactive.get()` method doesn't work (thanks to @kramer)  
 Fixed - `RListMultimapRx.get()` method doesn't work  
 Fixed - `destroy()` method doesn't work if called immediately after creation of `RDelayedQueue` object  
 
