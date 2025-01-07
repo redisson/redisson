@@ -20,7 +20,9 @@ import org.redisson.client.DefaultNettyHook;
 import org.redisson.client.NettyHook;
 import org.redisson.client.codec.Codec;
 import org.redisson.codec.Kryo5Codec;
-import org.redisson.connection.*;
+import org.redisson.connection.AddressResolverGroupFactory;
+import org.redisson.connection.ConnectionListener;
+import org.redisson.connection.SequentialDnsAddressResolverFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,8 +54,6 @@ public class Config {
     private ClusterServersConfig clusterServersConfig;
 
     private ReplicatedServersConfig replicatedServersConfig;
-
-    private ConnectionManager connectionManager;
 
     private int threads = 16;
 
