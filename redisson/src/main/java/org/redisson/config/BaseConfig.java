@@ -351,6 +351,7 @@ public class BaseConfig<T extends BaseConfig<T>> {
      */
     @Deprecated
     public T setSslEnableEndpointIdentification(boolean sslEnableEndpointIdentification) {
+        log.warn("sslEnableEndpointIdentification setting is deprecated. Use sslVerificationMode setting instead.");
         if (sslEnableEndpointIdentification) {
             this.sslVerificationMode = SslVerificationMode.STRICT;
         } else {
