@@ -34,11 +34,11 @@ import java.util.List;
  */
 public class ClusterNodesDecoder implements Decoder<List<ClusterNodeInfo>> {
 
-    private final String protocol;
+    private final String scheme;
     
-    public ClusterNodesDecoder(String protocol) {
+    public ClusterNodesDecoder(String scheme) {
         super();
-        this.protocol = protocol;
+        this.scheme = scheme;
     }
 
     @Override
@@ -109,7 +109,7 @@ public class ClusterNodesDecoder implements Decoder<List<ClusterNodeInfo>> {
             String port = addr.substring(name.length() + 1);
             addr = parts[1] + ":" + port;
         }
-        return protocol + addr;
+        return scheme + "://" + addr;
     }
 
 }

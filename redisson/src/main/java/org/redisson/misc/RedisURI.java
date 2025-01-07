@@ -34,8 +34,10 @@ public final class RedisURI {
 
     public static final String REDIS_PROTOCOL= "redis://";
     public static final String REDIS_SSL_PROTOCOL = "rediss://";
+    public static final String VALKEY_PROTOCOL= "valkey://";
+    public static final String VALKEY_SSL_PROTOCOL = "valkeys://";
 
-    private final boolean ssl;
+    private final String scheme;
     private final String host;
     private final int port;
     private String username;
@@ -43,14 +45,17 @@ public final class RedisURI {
     private int hashCode;
 
     public static boolean isValid(String url) {
-        return url.startsWith(REDIS_PROTOCOL) || url.startsWith(REDIS_SSL_PROTOCOL);
+        return url.startsWith(REDIS_PROTOCOL)
+                || url.startsWith(REDIS_SSL_PROTOCOL)
+                    || url.startsWith(VALKEY_PROTOCOL)
+                        || url.startsWith(VALKEY_SSL_PROTOCOL);
     }
 
     public RedisURI(String scheme, String host, int port) {
-        this.ssl = "rediss".equals(scheme);
+        this.scheme = scheme;
         this.host = host;
         this.port = port;
-        this.hashCode = Objects.hash(ssl, host, port);
+        this.hashCode = Objects.hash(isSsl(), host, port);
     }
 
     public RedisURI(String uri) {
@@ -81,7 +86,7 @@ public final class RedisURI {
 
             host = url.getHost();
             port = url.getPort();
-            ssl = uri.startsWith("rediss://");
+            scheme = uri.split("://")[0];
         } catch (MalformedURLException | UnsupportedEncodingException e) {
             throw new IllegalArgumentException(e);
         }
@@ -101,10 +106,7 @@ public final class RedisURI {
     }
 
     public String getScheme() {
-        if (ssl) {
-            return "rediss";
-        }
-        return "redis";
+        return scheme;
     }
 
     public String getUsername() {
@@ -116,7 +118,7 @@ public final class RedisURI {
     }
 
     public boolean isSsl() {
-        return ssl;
+        return "rediss".equals(scheme) || "valkeys".equals(scheme);
     }
 
     public String getHost() {
@@ -153,7 +155,7 @@ public final class RedisURI {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         RedisURI redisURI = (RedisURI) o;
-        return ssl == redisURI.ssl && port == redisURI.port && Objects.equals(host, redisURI.host);
+        return isSsl() == redisURI.isSsl() && port == redisURI.port && Objects.equals(host, redisURI.host);
     }
 
     @Override

@@ -740,10 +740,9 @@ public interface RedisCommands {
     Set<String> SCAN_COMMANDS = new HashSet<String>(
             Arrays.asList(HSCAN.getName(), SCAN.getName(), ZSCAN.getName(), SSCAN.getName()));
 
-    RedisStrictCommand<List<ClusterNodeInfo>> CLUSTER_NODES = new RedisStrictCommand<List<ClusterNodeInfo>>("CLUSTER", "NODES",
+    RedisStrictCommand<List<ClusterNodeInfo>> REDIS_CLUSTER_NODES = new RedisStrictCommand<List<ClusterNodeInfo>>("CLUSTER", "NODES",
             new ObjectDecoder(new ClusterNodesDecoder(RedisURI.REDIS_PROTOCOL)));
-    RedisStrictCommand<List<ClusterNodeInfo>> CLUSTER_NODES_SSL = new RedisStrictCommand<List<ClusterNodeInfo>>("CLUSTER", "NODES",
-            new ObjectDecoder(new ClusterNodesDecoder(RedisURI.REDIS_SSL_PROTOCOL)));
+
     RedisStrictCommand<Long> TIME_LONG = new RedisStrictCommand<Long>("TIME", new TimeLongObjectDecoder());
     RedisStrictCommand<Time> TIME = new RedisStrictCommand<Time>("TIME", new TimeObjectDecoder());
     RedisStrictCommand<Map<String, String>> CLUSTER_INFO = new RedisStrictCommand<Map<String, String>>("CLUSTER", "INFO", new StringMapDataDecoder());

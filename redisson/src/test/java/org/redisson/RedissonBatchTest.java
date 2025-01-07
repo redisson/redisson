@@ -91,7 +91,7 @@ public class RedissonBatchTest extends RedisDockerTest {
             cfg.setAddress(config.useClusterServers().getNodeAddresses().get(0));
             RedisClient c = RedisClient.create(cfg);
             RedisConnection cc = c.connect();
-            List<ClusterNodeInfo> mastersList = cc.sync(RedisCommands.CLUSTER_NODES);
+            List<ClusterNodeInfo> mastersList = cc.sync(RedisCommands.REDIS_CLUSTER_NODES);
             mastersList = mastersList.stream().filter(i -> i.containsFlag(ClusterNodeInfo.Flag.MASTER)).collect(Collectors.toList());
             c.shutdown();
 

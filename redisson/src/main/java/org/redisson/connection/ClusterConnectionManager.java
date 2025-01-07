@@ -23,6 +23,8 @@ import org.redisson.client.*;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
+import org.redisson.client.protocol.decoder.ClusterNodesDecoder;
+import org.redisson.client.protocol.decoder.ObjectDecoder;
 import org.redisson.cluster.ClusterNodeInfo;
 import org.redisson.cluster.ClusterNodeInfo.Flag;
 import org.redisson.cluster.ClusterPartition;
@@ -102,10 +104,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                     configEndpointHostName = addr.getHost();
                 }
 
-                clusterNodesCommand = RedisCommands.CLUSTER_NODES;
-                if (addr.isSsl()) {
-                    clusterNodesCommand = RedisCommands.CLUSTER_NODES_SSL;
-                }
+                clusterNodesCommand = new RedisStrictCommand<List<ClusterNodeInfo>>("CLUSTER", "NODES",
+                        new ObjectDecoder(new ClusterNodesDecoder(addr.getScheme())));
 
                 if (!skipShardingDetection) {
                     if (cfg.getShardedSubscriptionMode() == ShardedSubscriptionMode.AUTO) {
