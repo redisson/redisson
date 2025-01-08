@@ -17,13 +17,13 @@ package org.redisson.eviction;
 
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
-import org.redisson.api.RFuture;
 import org.redisson.command.CommandAsyncExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Deque;
 import java.util.LinkedList;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -63,7 +63,7 @@ abstract class EvictionTask implements TimerTask {
         timeout.cancel();
     }
 
-    abstract RFuture<Integer> execute();
+    abstract CompletionStage<Integer> execute();
     
     abstract String getName();
     
@@ -72,8 +72,8 @@ abstract class EvictionTask implements TimerTask {
         if (executor.getServiceManager().isShuttingDown()) {
             return;
         }
-        
-        RFuture<Integer> future = execute();
+
+        CompletionStage<Integer> future = execute();
         future.whenComplete((size, e) -> {
             if (e != null) {
                 log.error("Unable to evict elements for '{}'", getName(), e);

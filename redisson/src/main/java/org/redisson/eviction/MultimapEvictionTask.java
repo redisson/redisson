@@ -15,12 +15,12 @@
  */
 package org.redisson.eviction;
 
-import java.util.Arrays;
-
-import org.redisson.api.RFuture;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
+
+import java.util.Arrays;
+import java.util.concurrent.CompletionStage;
 
 /**
  * 
@@ -42,8 +42,8 @@ public class MultimapEvictionTask extends EvictionTask {
     String getName() {
         return name;
     }
-    
-    RFuture<Integer> execute() {
+
+    CompletionStage<Integer> execute() {
         return executor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
                 "local expiredKeys = redis.call('zrangebyscore', KEYS[2], 0, ARGV[1], 'limit', 0, ARGV[2]); "
               + "if #expiredKeys > 0 then "
