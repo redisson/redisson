@@ -403,7 +403,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
     @Override
     public RFuture<List<V>> containsEachAsync(Collection<V> c) {
         if (c.isEmpty()) {
-            return new CompletableFutureWrapper<>((List<V>) Collections.emptyList());
+            return new CompletableFutureWrapper<>(Collections.<V>emptyList());
         }
 
         List<Object> args = new ArrayList<>(c.size() + 1);
