@@ -2,12 +2,13 @@ package org.redisson;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.redisson.api.DeletedObjectListener;
+import org.redisson.api.ExpiredObjectListener;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.*;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.config.Config;
-import org.redisson.connection.balancer.RandomLoadBalancer;
 import org.testcontainers.containers.GenericContainer;
 
 import java.util.List;
@@ -534,4 +535,54 @@ public class RedissonLockTest extends BaseConcurrentTest {
         Assertions.assertEquals(iterations, lockedCounter.get());
     }
 
+    @Test
+    public void testLockListener() {
+        testWithParams(redisson -> {
+            RLock lock1 = redisson.getLock("lock1");
+            CountDownLatch latch = new CountDownLatch(4);
+            int listenerId1 = lock1.addListener(new ExpiredObjectListener() {
+                @Override
+                public void onExpired(String name) {
+                    latch.countDown();
+                }
+            });
+            int listenerId2 = lock1.addListener(new DeletedObjectListener() {
+                @Override
+                public void onDeleted(String name) {
+                    latch.countDown();
+                }
+            });
+
+            lock1.lock(5, TimeUnit.SECONDS);
+            lock1.unlock();
+            assertThat(lock1.isLocked()).isFalse();
+            assertThat(latch.getCount()).isEqualTo(3);
+
+            try {
+                lock1.lock(5, TimeUnit.SECONDS);
+                Thread.sleep(6000);
+                assertThat(latch.getCount()).isEqualTo(2);
+
+                lock1.removeListener(listenerId1);
+                lock1.lock(5, TimeUnit.SECONDS);
+                Thread.sleep(5100);
+                assertThat(latch.getCount()).isEqualTo(2);
+
+                lock1.lock(5, TimeUnit.SECONDS);
+                lock1.unlock();
+                assertThat(lock1.isLocked()).isFalse();
+                assertThat(latch.getCount()).isEqualTo(1);
+
+                lock1.removeListener(listenerId2);
+                lock1.lock(5, TimeUnit.SECONDS);
+                lock1.unlock();
+                assertThat(lock1.isLocked()).isFalse();
+                assertThat(latch.getCount()).isEqualTo(1);
+
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+
+        }, NOTIFY_KEYSPACE_EVENTS, "Egx");
+    }
 }

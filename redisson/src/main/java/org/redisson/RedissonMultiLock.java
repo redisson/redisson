@@ -15,6 +15,7 @@
  */
 package org.redisson;
 
+import org.redisson.api.ObjectListener;
 import org.redisson.api.RFuture;
 import org.redisson.api.RLock;
 import org.redisson.api.RLockAsync;
@@ -514,4 +515,23 @@ public class RedissonMultiLock implements RLock {
         throw new UnsupportedOperationException();
     }
 
+    @Override
+    public int addListener(ObjectListener listener) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void removeListener(int listenerId) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public RFuture<Integer> addListenerAsync(ObjectListener listener) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public RFuture<Void> removeListenerAsync(int listenerId) {
+        throw new UnsupportedOperationException();
+    }
 }

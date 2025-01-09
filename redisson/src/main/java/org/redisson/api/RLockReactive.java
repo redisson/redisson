@@ -25,7 +25,7 @@ import reactor.core.publisher.Mono;
  * @author Nikita Koksharov
  *
  */
-public interface RLockReactive {
+public interface RLockReactive extends RObservableReactive {
 
     /**
      * Returns name of object
