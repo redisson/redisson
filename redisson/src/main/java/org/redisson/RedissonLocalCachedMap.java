@@ -447,7 +447,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     @Override
     protected RFuture<List<Long>> fastRemoveOperationBatchAsync(@SuppressWarnings("unchecked") K... keys) {
         if (storeMode == LocalCachedMapOptions.StoreMode.LOCALCACHE) {
-            return new CompletableFutureWrapper<>(Collections.emptyList());
+            return new CompletableFutureWrapper<>(Collections.<Long>emptyList());
         }
 
             if (invalidateEntryOnChange == 1) {
