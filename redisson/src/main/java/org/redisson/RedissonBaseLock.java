@@ -111,7 +111,7 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
         return entryName;
     }
 
-    protected final String getLockName(long threadId) {
+    protected String getLockName(long threadId) {
         return id + ":" + threadId;
     }
 
@@ -158,7 +158,7 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
         ee.setTimeout(task);
     }
     
-    protected void scheduleExpirationRenewal(long threadId) {
+    protected final void scheduleExpirationRenewal(long threadId) {
         ExpirationEntry entry = new ExpirationEntry();
         entry.addThreadId(threadId);
         ExpirationEntry oldEntry = EXPIRATION_RENEWAL_MAP.putIfAbsent(getEntryName(), entry);
