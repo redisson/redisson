@@ -16,11 +16,16 @@
 package org.redisson;
 
 import org.redisson.api.*;
-import org.redisson.api.listener.*;
+import org.redisson.api.listener.SetAddListener;
+import org.redisson.api.listener.SetRemoveListener;
+import org.redisson.api.listener.SetRemoveRandomListener;
+import org.redisson.api.listener.TrackingListener;
 import org.redisson.api.mapreduce.RCollectionMapReduce;
 import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.decoder.ContainsDecoder;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.iterator.RedissonBaseIterator;
 import org.redisson.mapreduce.RedissonCollectionMapReduce;
@@ -28,7 +33,6 @@ import org.redisson.misc.CompletableFutureWrapper;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 import java.util.stream.Stream;
 
 /**
@@ -398,25 +402,15 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
     @Override
     public RFuture<List<V>> containsEachAsync(Collection<V> c) {
         if (c.isEmpty()) {
-            return new CompletableFutureWrapper<>(Collections.emptyList());
+            return new CompletableFutureWrapper<>((List<V>) Collections.emptyList());
         }
 
         List<Object> args = new ArrayList<>(c.size() + 1);
         args.add(getRawName());
         encode(args, c);
 
-        RFuture<List<Long>> future = commandExecutor.readAsync(getRawName(), codec, RedisCommands.SMISMEMBER, args.toArray());
-        List<V> keysToCheck = new ArrayList<>(c);
-        CompletionStage<List<V>> f = future.thenApply(res -> {
-            List<V> containedKeys = new ArrayList<>();
-            for (int i = 0; i < res.size(); i++) {
-                if (res.get(i) == 1) {
-                    containedKeys.add(keysToCheck.get(i));
-                }
-            }
-            return containedKeys;
-        });
-        return new CompletableFutureWrapper<>(f);
+        return commandExecutor.readAsync(getRawName(), codec,
+                new RedisCommand<>("SMISMEMBER", new ContainsDecoder<>(c)), args.toArray());
     }
 
     @Override
