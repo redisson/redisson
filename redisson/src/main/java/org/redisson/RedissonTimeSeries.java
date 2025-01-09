@@ -786,7 +786,7 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
     @Override
     public RFuture<Collection<V>> pollFirstAsync(int count) {
         if (count <= 0) {
-            return new CompletableFutureWrapper<>(Collections.emptyList());
+            return new CompletableFutureWrapper<>(Collections.<V>emptyList());
         }
 
         return pollAsync(0, count, RedisCommands.EVAL_LIST);
@@ -795,7 +795,7 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
     @Override
     public RFuture<Collection<V>> pollLastAsync(int count) {
         if (count <= 0) {
-            return new CompletableFutureWrapper<>(Collections.emptyList());
+            return new CompletableFutureWrapper<>(Collections.<V>emptyList());
         }
         return pollAsync(-1, count, RedisCommands.EVAL_LIST_REVERSE);
     }
@@ -808,7 +808,7 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
     @Override
     public RFuture<Collection<TimeSeriesEntry<V, L>>> pollFirstEntriesAsync(int count) {
         if (count <= 0) {
-            return new CompletableFutureWrapper<>(Collections.emptyList());
+            return new CompletableFutureWrapper<>(Collections.<TimeSeriesEntry<V, L>>emptyList());
         }
 
         return pollEntriesAsync(0, count, EVAL_ENTRIES);
@@ -822,7 +822,7 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
     @Override
     public RFuture<Collection<TimeSeriesEntry<V, L>>> pollLastEntriesAsync(int count) {
         if (count <= 0) {
-            return new CompletableFutureWrapper<>(Collections.emptyList());
+            return new CompletableFutureWrapper<>(Collections.<TimeSeriesEntry<V, L>>emptyList());
         }
         return pollEntriesAsync(-1, count, EVAL_ENTRIES_REVERSE);
     }

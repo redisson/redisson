@@ -100,7 +100,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     @Override
     public RFuture<Collection<V>> pollFirstAsync(int count) {
         if (count <= 0) {
-            return new CompletableFutureWrapper<>(Collections.emptyList());
+             return new CompletableFutureWrapper<>(Collections.<V>emptyList());
         }
 
         return poll(0, count-1, RedisCommands.EVAL_LIST);
@@ -109,7 +109,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     @Override
     public RFuture<Collection<V>> pollLastAsync(int count) {
         if (count <= 0) {
-            return new CompletableFutureWrapper<>(Collections.emptyList());
+            return new CompletableFutureWrapper<>(Collections.<V>emptyList());
         }
         return poll(-count, -1, RedisCommands.EVAL_LIST);
     }
@@ -180,7 +180,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     @Override
     public RFuture<List<ScoredEntry<V>>> pollFirstEntriesAsync(int count) {
         if (count <= 0) {
-            return new CompletableFutureWrapper<>(Collections.emptyList());
+            return new CompletableFutureWrapper<>(Collections.<ScoredEntry<V>>emptyList());
         }
 
         return pollEntries(0, count-1, RedisCommands.EVAL_LIST_ENTRY);
@@ -189,7 +189,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     @Override
     public RFuture<List<ScoredEntry<V>>> pollLastEntriesAsync(int count) {
         if (count <= 0) {
-            return new CompletableFutureWrapper<>(Collections.emptyList());
+            return new CompletableFutureWrapper<>(Collections.<ScoredEntry<V>>emptyList());
         }
         return pollEntries(-count, -1, RedisCommands.EVAL_LIST_ENTRY);
     }
