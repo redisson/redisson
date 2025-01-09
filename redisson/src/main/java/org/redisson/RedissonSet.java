@@ -23,6 +23,7 @@ import org.redisson.api.listener.TrackingListener;
 import org.redisson.api.mapreduce.RCollectionMapReduce;
 import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.ContainsDecoder;
@@ -409,7 +410,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
         args.add(getRawName());
         encode(args, c);
 
-        return commandExecutor.readAsync(getRawName(), codec,
+        return commandExecutor.readAsync(getRawName(), LongCodec.INSTANCE,
                 new RedisCommand<>("SMISMEMBER", new ContainsDecoder<>(c)), args.toArray());
     }
 
