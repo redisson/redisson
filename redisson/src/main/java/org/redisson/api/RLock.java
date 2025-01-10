@@ -25,7 +25,7 @@ import java.util.concurrent.locks.Lock;
  * @author Nikita Koksharov
  *
  */
-public interface RLock extends Lock, RLockAsync {
+public interface RLock extends Lock, RLockAsync, RObservable {
 
     /**
      * Returns name of object
