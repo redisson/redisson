@@ -694,4 +694,21 @@ public class RedissonExecutorServiceTest extends RedisDockerTest {
         assertThat(counter.get()).isGreaterThan(0);
     }
 
+    @Test
+    public void testSubmitAfterPause() throws InterruptedException {
+
+        RExecutorService redissonES = redisson.getExecutorService("test-worker");
+        redissonES.registerWorkers(WorkerOptions.defaults().workers(2));
+
+        redissonES.submit(new RunnableTask());
+        Thread.sleep(Duration.ofSeconds(1));
+        assertThat(redissonES.getTaskCount()).isEqualTo(0);
+
+        Thread.sleep(Duration.ofMinutes(1));
+
+        redissonES.submit(new RunnableTask());
+        Thread.sleep(Duration.ofSeconds(1));
+        assertThat(redissonES.getTaskCount()).isEqualTo(0);
+    }
+
 }
