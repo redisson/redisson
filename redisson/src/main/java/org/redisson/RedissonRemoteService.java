@@ -264,7 +264,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
                 }
 
                 int freeWorkers = entry.getFreeWorkers().decrementAndGet();
-                if (freeWorkers > 0 && requestId != null) {
+                if (freeWorkers > 0) {
                     subscribe(remoteInterface, requestQueue, executor, bean);
                 }
 
