@@ -3,6 +3,18 @@ Redisson Releases History
 
 Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
 
+### 13-Jan-2025 - 3.43.0 released
+
+Feature - `RObservable` interface for listeners added for RLock objects (thanks to @seakider)  
+
+Fixed - `RExecutorService` workers stop working (thanks to @seakider)  
+Fixed - `RLocalCacheMap.remove()` method hangs if called inside a transaction  
+Fixed - poll methods of `RTimeSeries` and `RScoredSortedSet` objects return null instead of empty lists  
+Fixed - `RSet.containsEach()` method returns null instead of empty list  
+Fixed - `RLocalCachedMap.fastRemove()` method may throw NPE if `storeMode = LOCALCACHE`  
+
+### 7-Jan-2025 - 3.42.0 released
+
 Feature - listeners support in Spring's CacheConfig object (thanks to @seakider)  
 Feature - CLIENT LIST command support for Spring Data (thanks to @seakider)  
 Feature - cluster nodes state added in `node ... hasn't been discovered yet` error  
