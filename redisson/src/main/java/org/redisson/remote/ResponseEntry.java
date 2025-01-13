@@ -33,18 +33,21 @@ public class ResponseEntry {
     public static class Result {
 
         private final CompletableFuture<? extends RRemoteServiceResponse> promise;
-        private final Timeout responseTimeoutFuture;
+        private Timeout responseTimeoutFuture;
         
-        public Result(CompletableFuture<? extends RRemoteServiceResponse> promise, Timeout responseTimeoutFuture) {
+        public Result(CompletableFuture<? extends RRemoteServiceResponse> promise) {
             super();
             this.promise = promise;
-            this.responseTimeoutFuture = responseTimeoutFuture;
         }
         
         public <T extends RRemoteServiceResponse> CompletableFuture<T> getPromise() {
             return (CompletableFuture<T>) promise;
         }
-        
+
+        public void setResponseTimeoutFuture(Timeout responseTimeoutFuture) {
+            this.responseTimeoutFuture = responseTimeoutFuture;
+        }
+
         public void cancelResponseTimeout() {
             responseTimeoutFuture.cancel();
         }

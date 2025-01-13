@@ -100,12 +100,14 @@ public abstract class BaseRemoteProxy {
 
             addCancelHandling(requestId, responseFuture);
 
-            Timeout responseTimeoutFuture = createResponseTimeout(timeout, requestId, responseFuture);
+            Result res = new Result(responseFuture);
+
+            Timeout responseTimeoutFuture = createResponseTimeout(timeout, requestId, responseFuture, res);
+            res.setResponseTimeoutFuture(responseTimeoutFuture);
 
             Map<String, List<Result>> entryResponses = entry.getResponses();
             List<Result> list = entryResponses.computeIfAbsent(requestId, k -> new ArrayList<>(3));
 
-            Result res = new Result(responseFuture, responseTimeoutFuture);
             if (insertFirst) {
                 list.add(0, res);
             } else {
@@ -121,7 +123,8 @@ public abstract class BaseRemoteProxy {
         return responseFuture;
     }
 
-    private <T extends RRemoteServiceResponse> Timeout createResponseTimeout(long timeout, String requestId, CompletableFuture<T> responseFuture) {
+    private <T extends RRemoteServiceResponse> Timeout createResponseTimeout(long timeout, String requestId,
+                                                                             CompletableFuture<T> responseFuture, Result res) {
         return commandExecutor.getServiceManager().newTimeout(t -> {
                     responses.computeIfPresent(responseQueueName, (k, entry) -> {
                         RemoteServiceTimeoutException ex = new RemoteServiceTimeoutException("No response after " + timeout + "ms");
@@ -130,7 +133,7 @@ public abstract class BaseRemoteProxy {
                         }
 
                         List<Result> list = entry.getResponses().get(requestId);
-                        list.remove(0);
+                        list.remove(res);
                         if (list.isEmpty()) {
                             entry.getResponses().remove(requestId);
                         }
