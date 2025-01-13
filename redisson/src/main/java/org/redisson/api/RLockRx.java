@@ -26,7 +26,7 @@ import io.reactivex.rxjava3.core.Single;
  * @author Nikita Koksharov
  *
  */
-public interface RLockRx {
+public interface RLockRx extends RObservableRx {
 
     /**
      * Returns name of object

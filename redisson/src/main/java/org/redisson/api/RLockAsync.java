@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
  * @author Nikita Koksharov
  *
  */
-public interface RLockAsync {
+public interface RLockAsync extends RObservableAsync {
 
     /**
      * Unlocks the lock independently of its state
