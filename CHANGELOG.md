@@ -7,7 +7,7 @@ Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
 
 Feature - `RObservable` interface for listeners added for RLock objects (thanks to @seakider)  
 
-Fixed - `RExecutorService` workers stop working (thanks to @seakider)  
+Fixed - `RExecutorService` workers stop working (regression since 3.42.0) (thanks to @seakider)  
 Fixed - `RLocalCacheMap.remove()` method hangs if called inside a transaction  
 Fixed - poll methods of `RTimeSeries` and `RScoredSortedSet` objects return null instead of empty lists  
 Fixed - `RSet.containsEach()` method returns null instead of empty list  
