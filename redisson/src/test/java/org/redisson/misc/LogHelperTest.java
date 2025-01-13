@@ -213,10 +213,10 @@ public class LogHelperTest {
 
     @Test
     public void toStringWithBigString() {
-        char[] charsForStr = new char[150];
+        char[] charsForStr = new char[1500];
         Arrays.fill(charsForStr, '7');
         String string = new String(charsForStr);
 
-        assertThat(LogHelper.toString(string)).isEqualTo(string.substring(0, 100) + "...");
+        assertThat(LogHelper.toString(string)).isEqualTo(string.substring(0, 1000) + "...");
     }
 }
