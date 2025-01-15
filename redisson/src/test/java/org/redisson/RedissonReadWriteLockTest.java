@@ -16,8 +16,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.*;
 import static org.awaitility.Awaitility.await;
 
 public class RedissonReadWriteLockTest extends BaseConcurrentTest {
@@ -439,6 +438,7 @@ public class RedissonReadWriteLockTest extends BaseConcurrentTest {
 
         for (int i = 0; i < 5; i++) {
             assertThat(rwlock.readLock().remainTimeToLive()).isGreaterThan(19000);
+            assertThat(rwlock.writeLock().remainTimeToLive()).isGreaterThan(19000);
             TimeUnit.SECONDS.sleep(5);
         }
 
@@ -493,9 +493,10 @@ public class RedissonReadWriteLockTest extends BaseConcurrentTest {
         t.start();
         t.join();
 
-        lock.writeLock().unlock();
+        assertThatThrownBy(() -> {
+            lock.writeLock().unlock();
+        }).isInstanceOf(IllegalMonitorStateException.class);
     }
-
 
     @Test
     public void testAutoExpire() throws InterruptedException {

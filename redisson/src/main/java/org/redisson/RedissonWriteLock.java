@@ -87,7 +87,7 @@ public class RedissonWriteLock extends RedissonLock implements RLock {
                 "if (mode == false) then " +
                     "redis.call(ARGV[4], KEYS[2], ARGV[1]); " +
                     "redis.call('set', KEYS[3], 1, 'px', ARGV[5]); " +
-                    "return 1; " +
+                    "return nil; " +
                 "end;" +
                 "if (mode == 'write') then " +
                     "local lockExists = redis.call('hexists', KEYS[1], ARGV[3]); " +
