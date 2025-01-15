@@ -434,7 +434,7 @@ public class RedissonClusterConnection extends RedissonConnection implements Def
             throw new InvalidDataAccessResourceUsageException("Clustered rename is not supported in a pipeline");
         }
 
-        if (redisson.getConnectionManager().calcSlot(oldName) == redisson.getConnectionManager().calcSlot(newName)) {
+        if (executorService.getConnectionManager().calcSlot(oldName) == executorService.getConnectionManager().calcSlot(newName)) {
             super.rename(oldName, newName);
             return;
         }
@@ -463,7 +463,7 @@ public class RedissonClusterConnection extends RedissonConnection implements Def
             throw new InvalidDataAccessResourceUsageException("Clustered rename is not supported in a pipeline");
         }
 
-        if (redisson.getConnectionManager().calcSlot(oldName) == redisson.getConnectionManager().calcSlot(newName)) {
+        if (executorService.getConnectionManager().calcSlot(oldName) == executorService.getConnectionManager().calcSlot(newName)) {
             return super.renameNX(oldName, newName);
         }
 
