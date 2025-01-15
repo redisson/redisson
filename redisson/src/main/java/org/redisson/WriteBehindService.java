@@ -26,7 +26,7 @@ import org.redisson.command.CommandAsyncExecutor;
  * @author Nikita Koksharov
  *
  */
-public class WriteBehindService {
+public final class WriteBehindService {
 
     private final ConcurrentMap<String, MapWriteBehindTask> tasks = new ConcurrentHashMap<>();
     private final CommandAsyncExecutor executor;

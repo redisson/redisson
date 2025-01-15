@@ -31,7 +31,7 @@ import java.util.function.Supplier;
  * @author Nikita Koksharov
  *
  */
-public class EvictionScheduler {
+public final class EvictionScheduler {
 
     private final Map<String, EvictionTask> tasks = new ConcurrentHashMap<>();
     private final CommandAsyncExecutor executor;
