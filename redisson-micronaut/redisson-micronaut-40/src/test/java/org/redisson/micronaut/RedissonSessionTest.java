@@ -33,7 +33,7 @@ public class RedissonSessionTest {
 
     @Container
     public static final GenericContainer REDIS = new FixedHostPortGenericContainer("redis:latest")
-                                                        .withFixedExposedPort(6380, 6379)
+                                                        .withExposedPorts(6379)
                                                         .withCreateContainerCmdModifier((Consumer<CreateContainerCmd>) cmd -> {
                                                             cmd.withCmd("redis-server", "--notify-keyspace-events", "Egx");
                                                         });
@@ -80,7 +80,7 @@ public class RedissonSessionTest {
         map.put("micronaut.session.http.redisson.enabled", "true");
         map.put("micronaut.session.http.redisson.updateMode", "WRITE_BEHIND");
 
-        map.put("redisson.singleServerConfig.address", "redis://127.0.0.1:6380");
+        map.put("redisson.singleServerConfig.address", "redis://127.0.0.1:" + REDIS.getFirstMappedPort());
         ApplicationContext ac = ApplicationContext.run(map);
         RedissonClient rc = ac.getBean(RedissonClient.class);
 
@@ -97,7 +97,10 @@ public class RedissonSessionTest {
         saved.remove("key2");
         saved.put("key1", "alba");
 
+        Thread.sleep(50);
+
         RedissonSession s = sessionStore.findSession(saved.getId()).get().get();
+
         assertThat(s.get("key1").get()).isEqualTo("alba");
         assertThat(s.contains("key2")).isFalse();
 
@@ -109,7 +112,7 @@ public class RedissonSessionTest {
         Map<String, Object> map = new HashMap<>();
         map.put("redisson.threads", "10");
         map.put("micronaut.session.http.redisson.enabled", "true");
-        map.put("redisson.singleServerConfig.address", "redis://127.0.0.1:6380");
+        map.put("redisson.singleServerConfig.address", "redis://127.0.0.1:" + REDIS.getFirstMappedPort());
         ApplicationContext ac = ApplicationContext.run(map);
         RedissonClient rc = ac.getBean(RedissonClient.class);
 
@@ -141,7 +144,7 @@ public class RedissonSessionTest {
         Map<String, Object> map = new HashMap<>();
         map.put("redisson.threads", "10");
         map.put("micronaut.session.http.redisson.enabled", "true");
-        map.put("redisson.singleServerConfig.address", "redis://127.0.0.1:6380");
+        map.put("redisson.singleServerConfig.address", "redis://127.0.0.1:" + REDIS.getFirstMappedPort());
         ApplicationContext ac = ApplicationContext.run(map);
         RedissonClient rc = ac.getBean(RedissonClient.class);
         AppListener listener = ac.getBean(AppListener.class);
