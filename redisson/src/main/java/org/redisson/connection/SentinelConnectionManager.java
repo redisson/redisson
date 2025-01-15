@@ -364,13 +364,12 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     private void updateState(SentinelServersConfig cfg, RedisConnection connection, Iterator<RedisClient> iterator,
                              AtomicReference<Throwable> lastException) {
         List<CompletableFuture<?>> futures = new ArrayList<>();
-        CompletionStage<RedisClient> masterFuture = checkMasterChange(cfg, connection);
-        futures.add(masterFuture.toCompletableFuture());
+        CompletionStage<?> f = checkMasterChange(cfg, connection);
 
         if (!config.isSlaveNotUsed()) {
-            CompletionStage<Void> slavesFuture = checkSlavesChange(cfg, connection);
-            futures.add(slavesFuture.toCompletableFuture());
+            f = f.thenCompose(r -> checkSlavesChange(cfg, connection));
         }
+        futures.add(f.toCompletableFuture());
 
         CompletionStage<Void> sentinelsFuture = checkSentinelsChange(cfg, connection);
         futures.add(sentinelsFuture.toCompletableFuture());
