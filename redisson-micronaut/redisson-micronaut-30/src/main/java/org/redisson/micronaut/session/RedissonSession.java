@@ -181,7 +181,7 @@ public class RedissonSession extends InMemorySession implements Session {
     @Override
     public MutableConvertibleValues<Object> put(CharSequence key, Object value) {
         if (value == null) {
-            return super.put(key, value);
+            return remove(key);
         }
 
         if (updateMode == RedissonHttpSessionConfiguration.UpdateMode.WRITE_BEHIND && map != null) {
