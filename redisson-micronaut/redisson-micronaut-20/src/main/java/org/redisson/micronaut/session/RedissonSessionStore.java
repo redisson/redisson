@@ -245,7 +245,7 @@ public class RedissonSessionStore implements SessionStore<RedissonSession>, Patt
     }
 
     private RTopic getTopic(String name, Codec codec) {
-        PublishSubscribeService ss = ((Redisson) redisson).getConnectionManager().getSubscribeService();
+        PublishSubscribeService ss = ((Redisson) redisson).getCommandExecutor().getConnectionManager().getSubscribeService();
         if (ss.isShardingSupported()) {
             return redisson.getShardedTopic(name, codec);
         }

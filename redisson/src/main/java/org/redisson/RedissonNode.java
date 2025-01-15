@@ -183,7 +183,7 @@ public final class RedissonNode {
     }
 
     private void retrieveAddresses() {
-        ConnectionManager connectionManager = ((Redisson) redisson).getConnectionManager();
+        ConnectionManager connectionManager = ((Redisson) redisson).getCommandExecutor().getConnectionManager();
         for (MasterSlaveEntry entry : connectionManager.getEntrySet()) {
             CompletionStage<RedisConnection> readFuture = entry.connectionReadOp(null, false);
             RedisConnection readConnection = null;

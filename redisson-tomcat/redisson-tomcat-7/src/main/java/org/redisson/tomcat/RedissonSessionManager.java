@@ -159,7 +159,7 @@ public class RedissonSessionManager extends ManagerBase {
     public RTopic getTopic() {
         String separator = keyPrefix == null || keyPrefix.isEmpty() ? "" : ":";
         String name = keyPrefix + separator + "redisson:tomcat_session_updates:" + getContainer().getName();
-        PublishSubscribeService ss = ((Redisson) redisson).getConnectionManager().getSubscribeService();
+        PublishSubscribeService ss = ((Redisson) redisson).getCommandExecutor().getConnectionManager().getSubscribeService();
         if (ss.isShardingSupported()) {
             return redisson.getShardedTopic(name);
         }
