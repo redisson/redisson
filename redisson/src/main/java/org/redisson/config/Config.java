@@ -73,6 +73,8 @@ public class Config {
 
     private long lockWatchdogTimeout = 30 * 1000;
 
+    private int lockWatchdogBatchSize = 100;
+
     private boolean checkLockSyncedSlaves = true;
 
     private long slavesSyncTimeout = 1000;
@@ -122,6 +124,7 @@ public class Config {
         setUseScriptCache(oldConf.isUseScriptCache());
         setKeepPubSubOrder(oldConf.isKeepPubSubOrder());
         setLockWatchdogTimeout(oldConf.getLockWatchdogTimeout());
+        setLockWatchdogBatchSize(oldConf.getLockWatchdogBatchSize());
         setCheckLockSyncedSlaves(oldConf.isCheckLockSyncedSlaves());
         setSlavesSyncTimeout(oldConf.getSlavesSyncTimeout());
         setNettyThreads(oldConf.getNettyThreads());
@@ -537,6 +540,24 @@ public class Config {
 
     public long getLockWatchdogTimeout() {
         return lockWatchdogTimeout;
+    }
+
+
+    /**
+     * This parameter is only used if lock has been acquired without leaseTimeout parameter definition.
+     * Defines amount of locks utilized in a single lock watchdog execution.
+     * <p>
+     * Default is 100
+     *
+     * @param lockWatchdogBatchSize amount of locks used by a single lock watchdog execution
+     * @return config
+     */
+    public Config setLockWatchdogBatchSize(int lockWatchdogBatchSize) {
+        this.lockWatchdogBatchSize = lockWatchdogBatchSize;
+        return this;
+    }
+    public int getLockWatchdogBatchSize() {
+        return lockWatchdogBatchSize;
     }
 
     /**

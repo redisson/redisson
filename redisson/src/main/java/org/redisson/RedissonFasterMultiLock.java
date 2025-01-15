@@ -102,11 +102,6 @@ public class RedissonFasterMultiLock extends RedissonBaseLock {
     }
 
     @Override
-    public String getName() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public void lockInterruptibly(long leaseTime, TimeUnit unit) throws InterruptedException {
         lock(leaseTime, unit, true);
     }
@@ -321,39 +316,13 @@ public class RedissonFasterMultiLock extends RedissonBaseLock {
     }
 
     @Override
-    protected CompletionStage<Boolean> renewExpirationAsync(long threadId) {
-        List<Object> params = new ArrayList<>();
-        params.add(getLockName(threadId));
-        params.add(internalLockLeaseTime);
-        params.add(System.currentTimeMillis());
-        params.addAll(fields);
-        return commandExecutor.syncedEval(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
-                        "local leaseTime = tonumber(ARGV[2]);" +
-                        "local currentTime = tonumber(ARGV[3]);" +
-                        "local currentThread = ARGV[1];" +
-                        "if (redis.call('exists',KEYS[1]) > 0) then" +
-                        "   local newExpireTime = leaseTime + currentTime;" +
-                        "   for i=4, #ARGV, 1 do " +
-                        "       local lockThread = redis.call('hget', KEYS[1], ARGV[i]);" +
-                        "       if(lockThread ~= false and lockThread == currentThread) then " +
-                        "           local expireFieldName = ARGV[i]..':'..lockThread..':expire_time';" +
-                        "           local expireTime = redis.call('hget', KEYS[1], expireFieldName);" +
-                        "           if(tonumber(expireTime) < newExpireTime) then " +
-                        "               redis.call('hset', KEYS[1],expireFieldName, newExpireTime);" +
-                        "           end;" +
-                        "       else" +
-                        "           return 0;" +
-                        "       end;" +
-                        "   end; " +
-                        "   local expireTime = redis.call('pttl',KEYS[1]);" +
-                        "   if(tonumber(expireTime) < tonumber(leaseTime)) then " +
-                        "       redis.call('pexpire',KEYS[1], leaseTime);" +
-                        "   end;" +
-                        "   return 1;" +
-                        "end;" +
-                        "return 0;",
-                Collections.singletonList(getRawName()),
-                params.toArray());
+    protected void cancelExpirationRenewal(Long threadId, Boolean unlockResult) {
+        renewalScheduler.cancelFastMultilockRenewl(getRawName(), threadId);
+    }
+
+    @Override
+    protected void scheduleExpirationRenewal(long threadId) {
+        renewalScheduler.renewFastMultiLock(getRawName(), threadId, getLockName(threadId), fields);
     }
 
     private <T> RFuture<T> tryLockOnceInnerAsync(long leaseTime, TimeUnit unit, RedisStrictCommand<T> command, long threadId) {

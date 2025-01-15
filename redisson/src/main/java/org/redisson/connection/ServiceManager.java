@@ -63,6 +63,7 @@ import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.RandomXoshiro256PlusPlus;
 import org.redisson.misc.RedisURI;
 import org.redisson.remote.ResponseEntry;
+import org.redisson.renewal.LockRenewalScheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -150,6 +151,8 @@ public final class ServiceManager {
     private final Map<String, ResponseEntry> responses = new ConcurrentHashMap<>();
 
     private final QueueTransferService queueTransferService = new QueueTransferService();
+
+    private LockRenewalScheduler renewalScheduler;
 
     public ServiceManager(MasterSlaveServersConfig config, Config cfg) {
         Version.logVersion();
@@ -666,4 +669,11 @@ public final class ServiceManager {
         }
     });
 
+    public void register(LockRenewalScheduler renewalScheduler) {
+        this.renewalScheduler = renewalScheduler;
+    }
+
+    public LockRenewalScheduler getRenewalScheduler() {
+        return renewalScheduler;
+    }
 }

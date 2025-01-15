@@ -34,6 +34,7 @@ import org.redisson.redisnode.RedissonClusterNodes;
 import org.redisson.redisnode.RedissonMasterSlaveNodes;
 import org.redisson.redisnode.RedissonSentinelMasterSlaveNodes;
 import org.redisson.redisnode.RedissonSingleNode;
+import org.redisson.renewal.LockRenewalScheduler;
 import org.redisson.transaction.RedissonTransaction;
 
 import java.time.Duration;
@@ -71,6 +72,8 @@ public final class Redisson implements RedissonClient {
         commandExecutor = connectionManager.createCommandExecutor(objectBuilder, RedissonObjectBuilder.ReferenceType.DEFAULT);
         evictionScheduler = new EvictionScheduler(commandExecutor);
         writeBehindService = new WriteBehindService(commandExecutor);
+
+        connectionManager.getServiceManager().register(new LockRenewalScheduler(commandExecutor));
     }
 
     public EvictionScheduler getEvictionScheduler() {
