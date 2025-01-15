@@ -25,13 +25,13 @@ public class RedissonCacheTest {
 
     @Container
     public static final GenericContainer REDIS = new FixedHostPortGenericContainer("redis:latest")
-                                                        .withFixedExposedPort(6379, 6379);
+                                                        .withExposedPorts(6379);
 
     @Test
     public void testCache() throws InterruptedException {
         Map<String, Object> map = new HashMap<>();
         map.put("redisson.threads", "10");
-        map.put("redisson.single-server-config.address", "redis://127.0.0.1:6379");
+        map.put("redisson.single-server-config.address", "redis://127.0.0.1:" + REDIS.getFirstMappedPort());
 //        map.put("redisson.clusterServersConfig.scanInterval", "3333");
 //        map.put("redisson.clusterServersConfig.nodeAddresses", Arrays.asList("redis://127.0.0.2:6379","redis://127.0.0.3:6379"));
         map.put("redisson.caches.test.expire-after-write", "10s");
@@ -55,7 +55,7 @@ public class RedissonCacheTest {
     public void testCacheNative() throws InterruptedException {
         Map<String, Object> map = new HashMap<>();
         map.put("redisson.threads", "10");
-        map.put("redisson.single-server-config.address", "redis://127.0.0.1:6379");
+        map.put("redisson.single-server-config.address", "redis://127.0.0.1:" + REDIS.getFirstMappedPort());
 //        map.put("redisson.clusterServersConfig.scanInterval", "3333");
 //        map.put("redisson.clusterServersConfig.nodeAddresses", Arrays.asList("redis://127.0.0.2:6379","redis://127.0.0.3:6379"));
         map.put("redisson.caches-native.test.expire-after-write", "3s");
