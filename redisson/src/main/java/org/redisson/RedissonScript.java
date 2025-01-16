@@ -107,12 +107,14 @@ public class RedissonScript implements RScript {
 
     @Override
     public <R> R evalSha(Mode mode, String shaDigest, ReturnType returnType, List<Object> keys, Object... values) {
-        return evalSha(null, mode, shaDigest, returnType, keys, values);
+        String key = getKey(keys);
+        return evalSha(key, mode, shaDigest, returnType, keys, values);
     }
 
     @Override
     public <R> RFuture<R> evalShaAsync(Mode mode, String shaDigest, ReturnType returnType, List<Object> keys, Object... values) {
-        return evalShaAsync(null, mode, codec, shaDigest, returnType, keys, values);
+        String key = getKey(keys);
+        return evalShaAsync(key, mode, codec, shaDigest, returnType, keys, values);
     }
 
     public <R> RFuture<R> evalShaAsync(String key, Mode mode, Codec codec, String shaDigest, ReturnType returnType, List<Object> keys, Object... values) {
