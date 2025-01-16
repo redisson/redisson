@@ -347,7 +347,9 @@ public class RedissonExecutorServiceTest extends RedisDockerTest {
         RExecutorService executor = redisson.getExecutorService("test");
         RExecutorFuture<?> future = executor.submit("1234", new ScheduledRunnableTask("executed1"));
         assertThat(future.getTaskId()).isEqualTo("1234");
-        future.cancel(true);
+        future.toCompletableFuture().join();
+
+        assertThat(redisson.getAtomicLong("executed1").get()).isEqualTo(1);
     }
 
     @Test
@@ -513,6 +515,35 @@ public class RedissonExecutorServiceTest extends RedisDockerTest {
         assertThat(e.isShutdown()).isTrue();
         assertThat(e.awaitTermination(5, TimeUnit.SECONDS)).isTrue();
         assertThat(e.isTerminated()).isTrue();
+    }
+
+    @Test
+    public void testIdCheck() {
+        RExecutorService e = redisson.getExecutorService("test");
+
+        e.submit("1", new RunnableTask());
+
+        Assertions.assertThrowsExactly(IllegalArgumentException.class, () -> {
+            e.submit("1", new RunnableTask());
+        });
+
+        e.submit("2", new CallableTask());
+
+        Assertions.assertThrowsExactly(IllegalArgumentException.class, () -> {
+            e.submit("2", new CallableTask());
+        });
+
+        e.submit("3", new CallableTask(), Duration.ofSeconds(10));
+
+        Assertions.assertThrowsExactly(IllegalArgumentException.class, () -> {
+            e.submit("3", new CallableTask(), Duration.ofSeconds(10));
+        });
+
+        e.submit("4", new RunnableTask(), Duration.ofSeconds(10));
+
+        Assertions.assertThrowsExactly(IllegalArgumentException.class, () -> {
+            e.submit("4", new RunnableTask(), Duration.ofSeconds(10));
+        });
     }
     
     @Test
