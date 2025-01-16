@@ -380,7 +380,7 @@ public class RedissonScheduledExecutorServiceTest extends RedisDockerTest {
         RScheduledExecutorService executor = redisson.getExecutorService("test", ExecutorOptions.defaults().taskRetryInterval(2, TimeUnit.SECONDS));
         executor.schedule(new ScheduledRunnableTask("executed1"), CronSchedule.of("0/5 * * * * ?"));
         executor.schedule(new ScheduledRunnableTask("executed2"), CronSchedule.of("0/1 * * * * ?"));
-        Thread.sleep(30500);
+        Thread.sleep(30100);
         assertThat(redisson.getAtomicLong("executed1").get()).isEqualTo(6);
         assertThat(redisson.getAtomicLong("executed2").get()).isEqualTo(30);
     }
