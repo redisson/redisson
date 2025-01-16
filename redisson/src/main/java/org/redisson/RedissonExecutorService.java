@@ -700,6 +700,12 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         }
     }
 
+    private <T> RedissonScheduledFuture<T> syncExecute(RedissonScheduledFuture<T> future) {
+        RemotePromise<?> rp = future.getInnerPromise();
+        syncExecute(rp);
+        return future;
+    }
+
     private <T> void syncExecute(RemotePromise<T> promise) {
         CompletableFuture<Boolean> addFuture = promise.getAddFuture();
         try {
@@ -882,9 +888,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     public RScheduledFuture<?> schedule(Runnable command, long delay, TimeUnit unit, long ttl, TimeUnit ttlUnit) {
         RedissonScheduledFuture<?> future = (RedissonScheduledFuture<?>) scheduleWithoutCheckAsync(idGenerator.generateId(), command,
                                                 Duration.ofMillis(unit.toMillis(delay)), Duration.ofMillis(ttlUnit.toMillis(ttl)));
-        RemotePromise<?> rp = future.getInnerPromise();
-        syncExecute(rp);
-        return future;
+        return syncExecute(future);
     }
 
     @Override
@@ -896,9 +900,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     public <V> RScheduledFuture<V> schedule(Callable<V> callable, long delay, TimeUnit unit, long timeToLive, TimeUnit ttlUnit) {
         RedissonScheduledFuture<V> future = (RedissonScheduledFuture<V>) scheduleWithoutCheckAsync(idGenerator.generateId(), callable,
                 Duration.ofMillis(unit.toMillis(delay)), Duration.ofMillis(ttlUnit.toMillis(timeToLive)));
-        RemotePromise<?> rp = future.getInnerPromise();
-        syncExecute(rp);
-        return future;
+        return syncExecute(future);
     }
 
     @Override
@@ -918,9 +920,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     public RScheduledFuture<?> scheduleAtFixedRate(Runnable task, long initialDelay, long period, TimeUnit unit) {
         RedissonScheduledFuture<?> future = (RedissonScheduledFuture<?>) scheduleWithoutCheckAtFixedRateAsync(idGenerator.generateId(),
                 task, Duration.ofMillis(unit.toMillis(initialDelay)), Duration.ofMillis(unit.toMillis(period)));
-        RemotePromise<?> rp = future.getInnerPromise();
-        syncExecute(rp);
-        return future;
+        return syncExecute(future);
     }
     
     @Override
@@ -931,9 +931,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     @Override
     public RScheduledFuture<?> schedule(Runnable task, CronSchedule cronSchedule) {
         RedissonScheduledFuture<?> future = (RedissonScheduledFuture<?>) scheduleWithoutCheckAsync(idGenerator.generateId(), task, cronSchedule);
-        RemotePromise<?> rp = future.getInnerPromise();
-        syncExecute(rp);
-        return future;
+        return syncExecute(future);
     }
     
     @Override
@@ -944,9 +942,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     @Override
     public RScheduledFuture<?> scheduleWithFixedDelay(Runnable task, long initialDelay, long delay, TimeUnit unit) {
         RedissonScheduledFuture<?> future = (RedissonScheduledFuture<?>) scheduleWithoutCheckWithFixedDelayAsync(idGenerator.generateId(), task, Duration.ofMillis(unit.toMillis(initialDelay)), Duration.ofMillis(unit.toMillis(delay)));
-        RemotePromise<?> rp = future.getInnerPromise();
-        syncExecute(rp);
-        return future;
+        return syncExecute(future);
     }
     
     @Override
@@ -1184,9 +1180,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     @Override
     public RScheduledFuture<?> schedule(String id, Runnable command, Duration delay) {
         RedissonScheduledFuture<?> future = (RedissonScheduledFuture<?>) scheduleAsync(id, command, delay);
-        RemotePromise<?> rp = future.getInnerPromise();
-        syncExecute(rp);
-        return future;
+        return syncExecute(future);
     }
 
     @Override
@@ -1197,9 +1191,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     @Override
     public RScheduledFuture<?> schedule(String id, Runnable command, Duration delay, Duration timeToLive) {
         RedissonScheduledFuture<?> future = (RedissonScheduledFuture<?>) scheduleAsync(id, command, delay, timeToLive);
-        RemotePromise<?> rp = future.getInnerPromise();
-        syncExecute(rp);
-        return future;
+        return syncExecute(future);
     }
 
     @Override
@@ -1227,9 +1219,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     @Override
     public <V> RScheduledFuture<V> schedule(String id, Callable<V> callable, Duration delay) {
         RedissonScheduledFuture<V> future = (RedissonScheduledFuture<V>) scheduleAsync(id, callable, delay);
-        RemotePromise<?> rp = future.getInnerPromise();
-        syncExecute(rp);
-        return future;
+        return syncExecute(future);
     }
 
     @Override
@@ -1240,9 +1230,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     @Override
     public <V> RScheduledFuture<V> schedule(String id, Callable<V> callable, Duration delay, Duration timeToLive) {
         RedissonScheduledFuture<V> future = (RedissonScheduledFuture<V>) scheduleAsync(id, callable, delay, timeToLive);
-        RemotePromise<?> rp = future.getInnerPromise();
-        syncExecute(rp);
-        return future;
+        return syncExecute(future);
     }
 
     @Override
@@ -1270,9 +1258,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     @Override
     public RScheduledFuture<?> scheduleAtFixedRate(String id, Runnable command, Duration initialDelay, Duration period) {
         RedissonScheduledFuture<?> future = (RedissonScheduledFuture<?>) scheduleAtFixedRateAsync(id, command, initialDelay, period);
-        RemotePromise<?> rp = future.getInnerPromise();
-        syncExecute(rp);
-        return future;
+        return syncExecute(future);
     }
 
     @Override
@@ -1318,9 +1304,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     @Override
     public RScheduledFuture<?> scheduleWithFixedDelay(String id, Runnable command, Duration initialDelay, Duration delay) {
         RedissonScheduledFuture<?> future = (RedissonScheduledFuture<?>) scheduleWithFixedDelayAsync(id, command, initialDelay, delay);
-        RemotePromise<?> rp = future.getInnerPromise();
-        syncExecute(rp);
-        return future;
+        return syncExecute(future);
     }
 
     @Override
@@ -1365,9 +1349,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     @Override
     public RScheduledFuture<?> schedule(String id, Runnable task, CronSchedule cronSchedule) {
         RedissonScheduledFuture<?> future = (RedissonScheduledFuture<?>) scheduleAsync(id, task, cronSchedule);
-        RemotePromise<?> rp = future.getInnerPromise();
-        syncExecute(rp);
-        return future;
+        return syncExecute(future);
     }
 
     @Override
