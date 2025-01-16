@@ -123,10 +123,14 @@ public class RedissonSearch implements RSearch {
         if (options.isNoFreqs()) {
             args.add("NOFREQS");
         }
-        if (!options.getStopwords().isEmpty()) {
+        if (options.getStopwords() != null) {
             args.add("STOPWORDS");
-            args.add(options.getStopwords().size());
-            args.addAll(options.getStopwords());
+            if (options.getStopwords().isEmpty()) {
+                args.add(0);
+            } else {
+                args.add(options.getStopwords().size());
+                args.addAll(options.getStopwords());
+            }
         }
         if (options.isSkipInitialScan()) {
             args.add("SKIPINITIALSCAN");

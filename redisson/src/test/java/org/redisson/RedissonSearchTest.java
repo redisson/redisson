@@ -61,6 +61,7 @@ public class RedissonSearchTest extends DockerRedisStackTest {
         RSearch s = redisson.getSearch();
         s.createIndex("idx", IndexOptions.defaults()
                                     .on(IndexType.HASH)
+                                    .stopwords(Collections.emptyList())
                                     .prefix(Arrays.asList("doc:")),
                                     FieldIndex.text("t1"),
                                     FieldIndex.text("t2"));

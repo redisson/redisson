@@ -39,7 +39,7 @@ public final class IndexOptions {
     private String scoreField;
     private boolean noHL;
     private boolean noFreqs;
-    private List<String> stopwords = Collections.emptyList();
+    private List<String> stopwords;
     private boolean skipInitialScan;
     private IndexType on;
     private byte[] payloadField;
