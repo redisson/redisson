@@ -42,10 +42,10 @@ public class RedissonSubscription extends AbstractSubscription {
     private final CommandAsyncExecutor commandExecutor;
     private final PublishSubscribeService subscribeService;
     
-    public RedissonSubscription(CommandAsyncExecutor commandExecutor, PublishSubscribeService subscribeService, MessageListener listener) {
+    public RedissonSubscription(CommandAsyncExecutor commandExecutor, MessageListener listener) {
         super(listener, null, null);
         this.commandExecutor = commandExecutor;
-        this.subscribeService = subscribeService;
+        this.subscribeService = commandExecutor.getConnectionManager().getSubscribeService();
     }
 
     @Override
