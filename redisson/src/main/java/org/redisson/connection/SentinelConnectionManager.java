@@ -508,7 +508,8 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         RFuture<RedisURI> masterFuture = connection.async(1, cfg.getRetryInterval(), cfg.getTimeout(),
                                                             StringCodec.INSTANCE, masterHostCommand, cfg.getMasterName());
         return masterFuture
-                .thenCompose(u -> serviceManager.resolveIP(scheme, u))
+                .thenCompose(u -> resolveIP(u.getHost(), "" + u.getPort()))
+                .thenApply(this::toURI)
                 .thenCompose(newMaster -> {
                     RedisURI current = currentMaster.get();
                     if (!newMaster.equals(current)
