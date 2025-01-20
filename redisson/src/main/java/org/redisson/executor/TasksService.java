@@ -43,6 +43,7 @@ public class TasksService extends BaseRemoteService {
     protected String tasksCounterName;
     protected String statusName;
     protected String tasksName;
+    protected String tasksLatchName;
     protected String schedulerQueueName;
     protected String schedulerChannelName;
     protected String tasksRetryIntervalName;
@@ -51,6 +52,10 @@ public class TasksService extends BaseRemoteService {
     
     public TasksService(Codec codec, String name, CommandAsyncExecutor commandExecutor, String executorId) {
         super(codec, name, commandExecutor, executorId);
+    }
+
+    public void setTasksLatchName(String tasksLatchName) {
+        this.tasksLatchName = tasksLatchName;
     }
 
     public void setTasksExpirationTimeName(String tasksExpirationTimeName) {
@@ -111,6 +116,8 @@ public class TasksService extends BaseRemoteService {
     protected CompletableFuture<Boolean> addAsync(String requestQueueName, RemoteServiceRequest request) {
         TaskParameters params = (TaskParameters) request.getArgs()[0];
 
+        String taskName = tasksLatchName + ":" + request.getId();
+
         long retryStartTime = 0;
         if (tasksRetryInterval > 0) {
             retryStartTime = System.currentTimeMillis() + tasksRetryInterval;
@@ -124,6 +131,7 @@ public class TasksService extends BaseRemoteService {
                         // check if executor service not in shutdown state
                         "if redis.call('exists', KEYS[2]) == 0 then "
                             + "redis.call('hset', KEYS[5], ARGV[2], ARGV[3]);"
+                            + "redis.call('del', KEYS[9]);"
                             + "redis.call('rpush', KEYS[6], ARGV[2]); "
                             + "redis.call('incr', KEYS[1]);"
 
@@ -146,7 +154,7 @@ public class TasksService extends BaseRemoteService {
                         + "end;"
                         + "return 0;",
                         Arrays.asList(tasksCounterName, statusName, schedulerQueueName, schedulerChannelName,
-                                            tasksName, requestQueueName, tasksRetryIntervalName, tasksExpirationTimeName),
+                                            tasksName, requestQueueName, tasksRetryIntervalName, tasksExpirationTimeName, taskName),
                         retryStartTime, request.getId(), encode(request), tasksRetryInterval, expireTime);
         return f.toCompletableFuture();
     }

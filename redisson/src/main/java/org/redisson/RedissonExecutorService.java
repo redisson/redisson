@@ -23,6 +23,7 @@ import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.executor.*;
 import org.redisson.executor.params.*;
 import org.redisson.misc.CompletableFutureWrapper;
@@ -60,7 +61,8 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     private final CommandAsyncExecutor commandExecutor;
     private final Codec codec;
     private final Redisson redisson;
-    
+
+    private final String tasksLatchName;
     private final String tasksName;
     private final String schedulerQueueName;
     private final String schedulerChannelName;
@@ -122,6 +124,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         String objectName = requestQueueName;
         tasksCounterName = objectName + ":counter";
         tasksName = objectName + ":tasks";
+        tasksLatchName = objectName + ":task-latch";
         statusName = objectName + ":status";
         terminationTopic = RedissonTopic.createRaw(LongCodec.INSTANCE, commandExecutor, objectName + ":termination-topic");
 
@@ -148,6 +151,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         executorRemoteService.setTasksCounterName(tasksCounterName);
         executorRemoteService.setStatusName(statusName);
         executorRemoteService.setTasksName(tasksName);
+        executorRemoteService.setTasksLatchName(tasksLatchName);
         executorRemoteService.setSchedulerChannelName(schedulerChannelName);
         executorRemoteService.setSchedulerQueueName(schedulerQueueName);
         executorRemoteService.setTasksRetryIntervalName(tasksRetryIntervalName);
@@ -163,6 +167,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         scheduledRemoteService.setSchedulerQueueName(schedulerQueueName);
         scheduledRemoteService.setSchedulerChannelName(schedulerChannelName);
         scheduledRemoteService.setTasksName(tasksName);
+        scheduledRemoteService.setTasksLatchName(tasksLatchName);
         scheduledRemoteService.setTasksRetryIntervalName(tasksRetryIntervalName);
         scheduledRemoteService.setTasksExpirationTimeName(tasksExpirationTimeName);
         scheduledRemoteService.setTasksRetryInterval(options.getTaskRetryInterval());
@@ -1137,7 +1142,21 @@ public class RedissonExecutorService implements RScheduledExecutorService {
 
     private <T> RemotePromise<T> executeWithCheck(String id, Object task, Supplier<RFuture<T>> function) {
         check(task);
-        RFuture<Boolean> r = hasTaskAsync(id);
+
+        MasterSlaveServersConfig config = commandExecutor.getServiceManager().getConfig();
+        int timeout = (config.getTimeout() + config.getRetryInterval()) * config.getRetryAttempts();
+
+        String taskName = tasksLatchName + ":" + id;
+
+        RFuture<Boolean> r = commandExecutor.evalWriteNoRetryAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+            "if redis.call('hexists', KEYS[1], ARGV[2]) == 0 then "
+                     + "if redis.call('set', KEYS[2], 1, 'NX', 'PX', ARGV[1]) ~= nil then "
+                        + "return 0; "
+                     + "end;"
+                + "end;"
+                + "return 1; ",
+                Arrays.asList(tasksName, taskName),
+                timeout, id);
 
         AtomicReference<RemotePromise<T>> ref = new AtomicReference<>();
         RemotePromise<T> promise = new RemotePromise<T>(id) {
@@ -1153,7 +1172,13 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         CompletableFuture<Boolean> addFuture = new CompletableFuture<>();
         promise.setAddFuture(addFuture);
 
-        r.thenAccept(v -> {
+        r.whenComplete((v, e) -> {
+            if (e != null) {
+                addFuture.completeExceptionally(e);
+                promise.completeExceptionally(e);
+                return;
+            }
+
             if (v) {
                 addFuture.completeExceptionally(new IllegalArgumentException("Duplicated id: '" + id + "' is not allowed"));
                 return;

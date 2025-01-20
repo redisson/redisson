@@ -49,6 +49,8 @@ public class ScheduledTasksService extends TasksService {
     protected CompletableFuture<Boolean> addAsync(String requestQueueName, RemoteServiceRequest request) {
         ScheduledParameters params = (ScheduledParameters) request.getArgs()[0];
 
+        String taskName = tasksLatchName + ":" + request.getId();
+
         long expireTime = 0;
         if (params.getTtl() > 0) {
             expireTime = System.currentTimeMillis() + params.getTtl();
@@ -80,6 +82,7 @@ public class ScheduledTasksService extends TasksService {
 
                     + "redis.call('zadd', KEYS[3], ARGV[1], ARGV[2]);"
                     + "redis.call('hset', KEYS[5], ARGV[2], ARGV[3]);"
+                    + "redis.call('del', KEYS[8]);"
                     + "redis.call('incr', KEYS[1]);"
                     + "local v = redis.call('zrange', KEYS[3], 0, 0); "
                     // if new task added to queue head then publish its startTime
@@ -93,7 +96,7 @@ public class ScheduledTasksService extends TasksService {
         
         RFuture<Boolean> f = commandExecutor.evalWriteNoRetryAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN, script,
                 Arrays.asList(tasksCounterName, statusName, schedulerQueueName,
-                        schedulerChannelName, tasksName, tasksRetryIntervalName, tasksExpirationTimeName),
+                        schedulerChannelName, tasksName, tasksRetryIntervalName, tasksExpirationTimeName, taskName),
                 params.getStartTime(), request.getId(), encode(request), tasksRetryInterval, expireTime);
         return f.toCompletableFuture();
     }
