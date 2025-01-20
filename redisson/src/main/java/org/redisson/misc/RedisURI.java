@@ -34,8 +34,11 @@ public final class RedisURI {
 
     public static final String REDIS_PROTOCOL= "redis://";
     public static final String REDIS_SSL_PROTOCOL = "rediss://";
+    public static final String REDIS_UDS_PROTOCOL= "redis+uds://";
+
     public static final String VALKEY_PROTOCOL= "valkey://";
     public static final String VALKEY_SSL_PROTOCOL = "valkeys://";
+    public static final String VALKEY_UDS_PROTOCOL= "valkey+uds://";
 
     private final String scheme;
     private final String host;
@@ -48,7 +51,9 @@ public final class RedisURI {
         return url.startsWith(REDIS_PROTOCOL)
                 || url.startsWith(REDIS_SSL_PROTOCOL)
                     || url.startsWith(VALKEY_PROTOCOL)
-                        || url.startsWith(VALKEY_SSL_PROTOCOL);
+                        || url.startsWith(VALKEY_SSL_PROTOCOL)
+                            || url.startsWith(REDIS_UDS_PROTOCOL)
+                                || url.startsWith(VALKEY_UDS_PROTOCOL);
     }
 
     public RedisURI(String scheme, String host, int port) {
@@ -63,13 +68,21 @@ public final class RedisURI {
             throw new IllegalArgumentException("Redis url should start with redis:// or rediss:// (for SSL connection)");
         }
 
-        if (uri.split(":").length < 3) {
-            throw new IllegalArgumentException("Redis url doesn't contain a port");
-        }
-
-        String urlHost = parseUrl(uri);
+        scheme = uri.split("://")[0];
 
         try {
+            if (isUDS()) {
+                host = uri.split("://")[1];
+                port = 0;
+                return;
+            }
+
+            if (uri.split(":").length < 3) {
+                throw new IllegalArgumentException("Redis url doesn't contain a port");
+            }
+
+            String urlHost = parseUrl(uri);
+
             URL url = new URL(urlHost);
             if (url.getUserInfo() != null) {
                 String[] details = url.getUserInfo().split(":", 2);
@@ -86,7 +99,6 @@ public final class RedisURI {
 
             host = url.getHost();
             port = url.getPort();
-            scheme = uri.split("://")[0];
         } catch (MalformedURLException | UnsupportedEncodingException e) {
             throw new IllegalArgumentException(e);
         }
@@ -127,6 +139,10 @@ public final class RedisURI {
 
     public int getPort() {
         return port;
+    }
+
+    public boolean isUDS() {
+        return "redis+uds".equals(scheme) || "valkey+uds".equals(scheme);
     }
 
     public boolean isIP() {

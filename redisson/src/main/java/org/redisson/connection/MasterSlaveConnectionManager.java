@@ -402,6 +402,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     private NodeType getNodeType(NodeType type, InetSocketAddress address) {
+        if (getServiceManager().getCfg().isSingleConfig()) {
+            return NodeType.MASTER;
+        }
+
         if (type != NodeType.SENTINEL) {
             MasterSlaveEntry entry = getEntry(address);
             if (entry != null) {

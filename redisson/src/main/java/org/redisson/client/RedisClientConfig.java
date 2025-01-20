@@ -16,7 +16,7 @@
 package org.redisson.client;
 
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.DuplexChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.resolver.AddressResolverGroup;
 import io.netty.util.Timer;
@@ -44,7 +44,7 @@ public class RedisClientConfig {
     private ExecutorService executor;
     private EventLoopGroup group;
     private AddressResolverGroup<InetSocketAddress> resolverGroup;
-    private Class<? extends SocketChannel> socketChannelClass = NioSocketChannel.class;
+    private Class<? extends DuplexChannel> socketChannelClass = NioSocketChannel.class;
     private int connectTimeout = 10000;
     private int commandTimeout = 10000;
 
@@ -197,10 +197,10 @@ public class RedisClientConfig {
         return this;
     }
     
-    public Class<? extends SocketChannel> getSocketChannelClass() {
+    public Class<? extends DuplexChannel> getSocketChannelClass() {
         return socketChannelClass;
     }
-    public RedisClientConfig setSocketChannelClass(Class<? extends SocketChannel> socketChannelClass) {
+    public RedisClientConfig setSocketChannelClass(Class<? extends DuplexChannel> socketChannelClass) {
         this.socketChannelClass = socketChannelClass;
         return this;
     }
