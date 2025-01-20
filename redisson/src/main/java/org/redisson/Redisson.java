@@ -84,10 +84,6 @@ public final class Redisson implements RedissonClient {
         return commandExecutor;
     }
 
-    public ConnectionManager getConnectionManager() {
-        return connectionManager;
-    }
-
     public ServiceManager getServiceManager() {
         return connectionManager.getServiceManager();
     }
