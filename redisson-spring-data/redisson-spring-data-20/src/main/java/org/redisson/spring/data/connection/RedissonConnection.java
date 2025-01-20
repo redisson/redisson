@@ -243,7 +243,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         return new ScanCursor<byte[]>(0, options) {
 
             private RedisClient client;
-            private Iterator<MasterSlaveEntry> entries = redisson.getConnectionManager().getEntrySet().iterator();
+            private Iterator<MasterSlaveEntry> entries = executorService.getConnectionManager().getEntrySet().iterator();
             private MasterSlaveEntry entry = entries.next();
             
             @Override
@@ -1608,7 +1608,7 @@ public class RedissonConnection extends AbstractRedisConnection {
     public void subscribe(MessageListener listener, byte[]... channels) {
         checkSubscription();
         
-        subscription = new RedissonSubscription(executorService, redisson.getConnectionManager().getSubscribeService(), listener);
+        subscription = new RedissonSubscription(executorService, listener);
         subscription.subscribe(channels);
     }
 
@@ -1629,7 +1629,7 @@ public class RedissonConnection extends AbstractRedisConnection {
     public void pSubscribe(MessageListener listener, byte[]... patterns) {
         checkSubscription();
         
-        subscription = new RedissonSubscription(executorService, redisson.getConnectionManager().getSubscribeService(), listener);
+        subscription = new RedissonSubscription(executorService, listener);
         subscription.pSubscribe(patterns);
     }
 
