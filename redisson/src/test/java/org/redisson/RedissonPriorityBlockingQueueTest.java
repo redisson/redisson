@@ -5,12 +5,15 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RFuture;
+import org.redisson.api.RPriorityBlockingQueue;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
+import org.redisson.misc.RedisURI;
 import org.testcontainers.containers.GenericContainer;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -19,6 +22,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonPriorityBlockingQueueTest extends RedissonBlockingQueueTest {
+
+    @Test
+    public void testLambda() {
+        RPriorityBlockingQueue<RedisURI> priorityQueue = redisson.getPriorityBlockingQueue("anyQueue");
+        Assertions.assertThrowsExactly(IllegalArgumentException.class, () -> {
+            priorityQueue.trySetComparator(Comparator.comparing(RedisURI::getHost));
+        });
+    }
 
     @Test
     public void testTakeInterrupted() throws InterruptedException {

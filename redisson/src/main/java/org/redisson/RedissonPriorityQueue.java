@@ -340,6 +340,10 @@ public class RedissonPriorityQueue<V> extends BaseRedissonList<V> implements RPr
 
     @Override
     public boolean trySetComparator(Comparator<? super V> comparator) {
+        if (comparator.getClass().isSynthetic()) {
+            throw new IllegalArgumentException("Synthetic classes aren't allowed");
+        }
+
         String className = comparator.getClass().getName();
         String comparatorSign = className + ":" + calcClassSign(className);
 
