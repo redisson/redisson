@@ -18,13 +18,15 @@ package org.redisson.connection;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.epoll.EpollDatagramChannel;
+import io.netty.channel.epoll.EpollDomainSocketChannel;
 import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.epoll.EpollSocketChannel;
 import io.netty.channel.kqueue.KQueueDatagramChannel;
+import io.netty.channel.kqueue.KQueueDomainSocketChannel;
 import io.netty.channel.kqueue.KQueueEventLoopGroup;
 import io.netty.channel.kqueue.KQueueSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.DuplexChannel;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.incubator.channel.uring.IOUringDatagramChannel;
@@ -124,7 +126,7 @@ public final class ServiceManager {
 
     private final EventLoopGroup group;
 
-    private final Class<? extends SocketChannel> socketChannelClass;
+    private Class<? extends DuplexChannel> socketChannelClass;
 
     private final AddressResolverGroup<InetSocketAddress> resolverGroup;
 
@@ -157,6 +159,20 @@ public final class ServiceManager {
     public ServiceManager(MasterSlaveServersConfig config, Config cfg) {
         Version.logVersion();
 
+        RedisURI u = null;
+        if (config.getMasterAddress() != null) {
+            u = new RedisURI(config.getMasterAddress());
+            if (u.isUDS()) {
+                if (!cfg.isSingleConfig()) {
+                    throw new IllegalStateException("UDS is supported only in a single server mode");
+                }
+                if (cfg.getTransportMode() != TransportMode.EPOLL
+                        && cfg.getTransportMode() != TransportMode.KQUEUE) {
+                    throw new IllegalStateException("UDS is supported only if transportMode = EPOLL or KQUEUE");
+                }
+            }
+        }
+
         if (cfg.getTransportMode() == TransportMode.EPOLL) {
             if (cfg.getEventLoopGroup() == null) {
                 if (cfg.getNettyExecutor() != null) {
@@ -169,10 +185,15 @@ public final class ServiceManager {
             }
 
             this.socketChannelClass = EpollSocketChannel.class;
+
+            if (u != null && u.isUDS()) {
+                this.socketChannelClass = EpollDomainSocketChannel.class;
+            }
+
             if (PlatformDependent.isAndroid()) {
                 this.resolverGroup = DefaultAddressResolverGroup.INSTANCE;
             } else {
-                this.resolverGroup = cfg.getAddressResolverGroupFactory().create(EpollDatagramChannel.class, socketChannelClass, DnsServerAddressStreamProviders.platformDefault());
+                this.resolverGroup = cfg.getAddressResolverGroupFactory().create(EpollDatagramChannel.class, EpollSocketChannel.class, DnsServerAddressStreamProviders.platformDefault());
             }
         } else if (cfg.getTransportMode() == TransportMode.KQUEUE) {
             if (cfg.getEventLoopGroup() == null) {
@@ -186,7 +207,12 @@ public final class ServiceManager {
             }
 
             this.socketChannelClass = KQueueSocketChannel.class;
-            this.resolverGroup = cfg.getAddressResolverGroupFactory().create(KQueueDatagramChannel.class, socketChannelClass, DnsServerAddressStreamProviders.platformDefault());
+
+            if (u != null && u.isUDS()) {
+                this.socketChannelClass = KQueueDomainSocketChannel.class;
+            }
+
+            this.resolverGroup = cfg.getAddressResolverGroupFactory().create(KQueueDatagramChannel.class, KQueueSocketChannel.class, DnsServerAddressStreamProviders.platformDefault());
         } else if (cfg.getTransportMode() == TransportMode.IO_URING) {
             if (cfg.getEventLoopGroup() == null) {
                 this.group = createIOUringGroup(cfg);
@@ -195,7 +221,7 @@ public final class ServiceManager {
             }
 
             this.socketChannelClass = IOUringSocketChannel.class;
-            this.resolverGroup = cfg.getAddressResolverGroupFactory().create(IOUringDatagramChannel.class, socketChannelClass, DnsServerAddressStreamProviders.platformDefault());
+            this.resolverGroup = cfg.getAddressResolverGroupFactory().create(IOUringDatagramChannel.class, IOUringSocketChannel.class, DnsServerAddressStreamProviders.platformDefault());
         } else {
             if (cfg.getEventLoopGroup() == null) {
                 if (cfg.getNettyExecutor() != null) {
@@ -211,7 +237,7 @@ public final class ServiceManager {
             if (PlatformDependent.isAndroid()) {
                 this.resolverGroup = DefaultAddressResolverGroup.INSTANCE;
             } else {
-                this.resolverGroup = cfg.getAddressResolverGroupFactory().create(NioDatagramChannel.class, socketChannelClass, DnsServerAddressStreamProviders.platformDefault());
+                this.resolverGroup = cfg.getAddressResolverGroupFactory().create(NioDatagramChannel.class, NioSocketChannel.class, DnsServerAddressStreamProviders.platformDefault());
             }
         }
 
@@ -348,7 +374,7 @@ public final class ServiceManager {
         return connectionWatcher;
     }
 
-    public Class<? extends SocketChannel> getSocketChannelClass() {
+    public Class<? extends DuplexChannel> getSocketChannelClass() {
         return socketChannelClass;
     }
 

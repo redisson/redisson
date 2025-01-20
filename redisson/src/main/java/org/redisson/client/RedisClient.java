@@ -16,7 +16,10 @@
 package org.redisson.client;
 
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.*;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelOption;
 import io.netty.channel.epoll.EpollChannelOption;
 import io.netty.channel.epoll.EpollDatagramChannel;
 import io.netty.channel.epoll.EpollSocketChannel;
@@ -29,6 +32,8 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioChannelOption;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.channel.unix.DomainSocketAddress;
+import io.netty.channel.unix.DomainSocketChannel;
 import io.netty.incubator.channel.uring.IOUringChannelOption;
 import io.netty.incubator.channel.uring.IOUringSocketChannel;
 import io.netty.resolver.AddressResolver;
@@ -45,10 +50,7 @@ import org.redisson.client.handler.RedisChannelInitializer.Type;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.RedisURI;
 
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.SocketOption;
-import java.net.UnknownHostException;
+import java.net.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -64,7 +66,7 @@ public final class RedisClient {
     private final Bootstrap bootstrap;
     private final Bootstrap pubSubBootstrap;
     private final RedisURI uri;
-    private InetSocketAddress resolvedAddr;
+    private SocketAddress resolvedAddr;
     private final ChannelGroup channels;
 
     private final ExecutorService executor;
@@ -113,11 +115,14 @@ public final class RedisClient {
         
         uri = copy.getAddress();
         resolvedAddr = copy.getAddr();
-        
-        if (resolvedAddr != null) {
-            resolvedAddrFuture.set(CompletableFuture.completedFuture(resolvedAddr));
+
+        if (uri.isUDS()) {
+            resolvedAddr = new DomainSocketAddress(uri.getHost());
         }
-        
+        if (resolvedAddr != null) {
+            resolvedAddrFuture.set(CompletableFuture.completedFuture(getAddr()));
+        }
+
         channels = new DefaultChannelGroup(copy.getGroup().next());
         bootstrap = createBootstrap(copy, Type.PLAIN);
         pubSubBootstrap = createBootstrap(copy, Type.PUBSUB);
@@ -133,16 +138,19 @@ public final class RedisClient {
 
         bootstrap.handler(new RedisChannelInitializer(bootstrap, config, this, channels, type));
         bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, config.getConnectTimeout());
-        bootstrap.option(ChannelOption.SO_KEEPALIVE, config.isKeepAlive());
-        bootstrap.option(ChannelOption.TCP_NODELAY, config.isTcpNoDelay());
 
-        applyChannelOptions(config, bootstrap);
+        if (!DomainSocketChannel.class.isAssignableFrom(config.getSocketChannelClass())) {
+            applyTCPOptions(config, bootstrap);
+        }
 
         config.getNettyHook().afterBoostrapInitialization(bootstrap);
         return bootstrap;
     }
 
-    private void applyChannelOptions(RedisClientConfig config, Bootstrap bootstrap) {
+    private void applyTCPOptions(RedisClientConfig config, Bootstrap bootstrap) {
+        bootstrap.option(ChannelOption.SO_KEEPALIVE, config.isKeepAlive());
+        bootstrap.option(ChannelOption.TCP_NODELAY, config.isTcpNoDelay());
+
         if (config.getSocketChannelClass() == NioSocketChannel.class) {
             SocketOption<Integer> countOption = null;
             SocketOption<Integer> idleOption = null;
@@ -197,7 +205,20 @@ public final class RedisClient {
     }
 
     public InetSocketAddress getAddr() {
-        return resolvedAddr;
+        if (resolvedAddr instanceof DomainSocketAddress) {
+            try {
+                return new InetSocketAddress(InetAddress.getByAddress(((DomainSocketAddress) resolvedAddr).path(), new byte[]{127, 0, 0, 1}), uri.getPort()) {
+                    @Override
+                    public String toString() {
+                        return ((DomainSocketAddress) resolvedAddr).path();
+                    }
+                };
+            } catch (UnknownHostException e) {
+                throw new IllegalArgumentException(e);
+            }
+        }
+
+        return (InetSocketAddress) resolvedAddr;
     }
 
     public long getCommandTimeout() {
@@ -241,7 +262,7 @@ public final class RedisClient {
             } catch (UnknownHostException e) {
                 // skip
             }
-            promise.complete(resolvedAddr);
+            promise.complete((InetSocketAddress) resolvedAddr);
             return promise;
         }
         
@@ -256,14 +277,14 @@ public final class RedisClient {
             InetSocketAddress resolved = future.getNow();
             byte[] addr1 = resolved.getAddress().getAddress();
             resolvedAddr = new InetSocketAddress(InetAddress.getByAddress(uri.getHost(), addr1), resolved.getPort());
-            promise.complete(resolvedAddr);
+            promise.complete((InetSocketAddress) resolvedAddr);
         });
         return promise;
     }
 
     public RFuture<RedisConnection> connectAsync() {
-        CompletableFuture<InetSocketAddress> addrFuture = resolveAddr();
-        CompletableFuture<RedisConnection> f = addrFuture.thenCompose(res -> {
+        CompletionStage<SocketAddress> addrFuture = resolveSocket();
+        CompletionStage<RedisConnection> f = addrFuture.thenCompose(res -> {
             CompletableFuture<RedisConnection> r = new CompletableFuture<>();
             ChannelFuture channelFuture = bootstrap.connect(res);
             channelFuture.addListener(new ChannelFutureListener() {
@@ -287,7 +308,7 @@ public final class RedisClient {
                                         } else {
                                             executor.execute(() -> {
                                                 if (config.getConnectedListener() != null) {
-                                                    config.getConnectedListener().accept(getAddr());
+                                                    config.getConnectedListener().accept((InetSocketAddress) getAddr());
                                                 }
                                             });
                                         }
@@ -312,6 +333,13 @@ public final class RedisClient {
         return new CompletableFutureWrapper<>(f);
     }
 
+    private CompletionStage<SocketAddress> resolveSocket() {
+        if (uri.isUDS()) {
+            return CompletableFuture.completedFuture(resolvedAddr);
+        }
+        return resolveAddr().thenApply(s -> s);
+    }
+
     public RedisPubSubConnection connectPubSub() {
         try {
             return connectPubSubAsync().toCompletableFuture().join();
@@ -325,8 +353,8 @@ public final class RedisClient {
     }
 
     public RFuture<RedisPubSubConnection> connectPubSubAsync() {
-        CompletableFuture<InetSocketAddress> nameFuture = resolveAddr();
-        CompletableFuture<RedisPubSubConnection> f = nameFuture.thenCompose(res -> {
+        CompletionStage<SocketAddress> nameFuture = resolveSocket();
+        CompletionStage<RedisPubSubConnection> f = nameFuture.thenCompose(res -> {
             CompletableFuture<RedisPubSubConnection> r = new CompletableFuture<>();
             ChannelFuture channelFuture = pubSubBootstrap.connect(res);
             channelFuture.addListener(new ChannelFutureListener() {
