@@ -45,7 +45,7 @@ public class JCacheTest {
     private static final GenericContainer<?> REDIS =
             new GenericContainer<>("redis:latest")
                     .withCreateContainerCmdModifier(cmd -> {
-                        cmd.withCmd("redis-server", "--save", "''", "--notify-keyspace-events", "Eh");
+                        cmd.withCmd("redis-server", "--save", "''", "--notify-keyspace-events", "Ehx");
                     })
                     .withExposedPorts(6379);
 
