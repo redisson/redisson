@@ -24,18 +24,28 @@ libraryDependencies += "org.redisson" % "redisson" % "xVERSIONx"
 
 **2. Start development**
 
-1. Create config object
+1. Create config object.  
+Use one of supported modes: ([single mode](configuration.md/#single-mode),
+[replicated mode](configuration.md/#replicated-mode),
+[cluster mode](configuration.md/#cluster-mode),
+[sentinel mode](configuration.md/#sentinel-mode),
+[proxy mode](configuration.md/#proxy-mode),
+[multi cluster mode](configuration.md/#multi-cluster-mode), 
+[multi sentinel mode](configuration.md/#multi-sentinel-mode))
    ```java
    Config config = new Config();
    config.useClusterServers()
-          // use "rediss://" for SSL connection
+         // use "redis://" for Redis connection
+         // use "valkey://" for Valkey connection
+         // use "valkeys://" for Valkey SSL connection
+         // use "rediss://" for Redis SSL connection
          .addNodeAddress("redis://127.0.0.1:7181");
 
    // or read config from file
    config = Config.fromYAML(new File("config-file.yaml")); 
    ```
 
-2. Create Redisson instance
+2. Create Redisson instance.
    ```java
    // Sync and Async API
    RedissonClient redisson = Redisson.create(config);
@@ -47,7 +57,7 @@ libraryDependencies += "org.redisson" % "redisson" % "xVERSIONx"
    RedissonRxClient redissonRx = redisson.rxJava();
    ```
 
-3. Get Redis or Valkey based object or service
+3. Get Redis or Valkey based object or service.
    ```java
    // java.util.concurrent.ConcurrentMap
 

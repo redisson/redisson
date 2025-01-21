@@ -340,7 +340,15 @@ Below are examples of JCache API usage.
 
 **1.** Using default config located at `/redisson-jcache.yaml`:
 ```java
+// implementation with scripted eviction
 MutableConfiguration<String, String> config = new MutableConfiguration<>();
+
+// implementation with native eviction
+NativeConfiguration<String, String> config = new NativeConfiguration<>();
+
+// implementation with advanced eviction
+V2Configuration<String, String> config = new V2Configuration<>();
+
         
 CacheManager manager = Caching.getCachingProvider().getCacheManager();
 Cache<String, String> cache = manager.createCache("namedCache", config);
@@ -348,7 +356,15 @@ Cache<String, String> cache = manager.createCache("namedCache", config);
 
 **2.** Using config file with custom location:
 ```java
+// implementation with scripted eviction
 MutableConfiguration<String, String> config = new MutableConfiguration<>();
+
+// implementation with native eviction
+NativeConfiguration<String, String> config = new NativeConfiguration<>();
+
+// implementation with advanced eviction
+V2Configuration<String, String> config = new V2Configuration<>();
+
 
 // yaml config
 URI redissonConfigUri = getClass().getResource("redisson-jcache.yaml").toURI();
@@ -358,7 +374,15 @@ Cache<String, String> cache = manager.createCache("namedCache", config);
 
 **3.** Using Redisson's config object:
 ```java
+// implementation with scripted eviction
 MutableConfiguration<String, String> jcacheConfig = new MutableConfiguration<>();
+
+// implementation with native eviction
+NativeConfiguration<String, String> jcacheConfig = new NativeConfiguration<>();
+
+// implementation with advanced eviction
+V2Configuration<String, String> jcacheConfig = new V2Configuration<>();
+
 
 Config redissonCfg = ...
 Configuration<String, String> config = RedissonConfiguration.fromConfig(redissonCfg, jcacheConfig);
@@ -369,7 +393,15 @@ Cache<String, String> cache = manager.createCache("namedCache", config);
 
 **4.** Using Redisson instance object:
 ```java
+// implementation with scripted eviction
 MutableConfiguration<String, String> jcacheConfig = new MutableConfiguration<>();
+
+// implementation with native eviction
+NativeConfiguration<String, String> jcacheConfig = new NativeConfiguration<>();
+
+// implementation with advanced eviction
+V2Configuration<String, String> jcacheConfig = new V2Configuration<>();
+
 
 RedissonClient redisson = ...
 Configuration<String, String> config = RedissonConfiguration.fromInstance(redisson, jcacheConfig);
@@ -390,7 +422,15 @@ Along with usual JCache API, Redisson provides Asynchronous, Reactive and RxJava
 Example:
 
 ```java
+// implementation with scripted eviction
 MutableConfiguration<String, String> config = new MutableConfiguration<>();
+
+// implementation with native eviction
+NativeConfiguration<String, String> config = new NativeConfiguration<>();
+
+// implementation with advanced eviction
+V2Configuration<String, String> config = new V2Configuration<>();
+
         
 CacheManager manager = Caching.getCachingProvider().getCacheManager();
 Cache<String, String> cache = manager.createCache("myCache", config);
@@ -404,7 +444,15 @@ RFuture<String> getFuture = asyncCache.getAsync("1");
 Example:
 
 ```java
+// implementation with scripted eviction
 MutableConfiguration<String, String> config = new MutableConfiguration<>();
+
+// implementation with native eviction
+NativeConfiguration<String, String> config = new NativeConfiguration<>();
+
+// implementation with advanced eviction
+V2Configuration<String, String> config = new V2Configuration<>();
+
         
 CacheManager manager = Caching.getCachingProvider().getCacheManager();
 Cache<String, String> cache = manager.createCache("myCache", config);
@@ -418,7 +466,15 @@ Mono<String> getFuture = reactiveCache.get("1");
 Example:
 
 ```java
+// implementation with scripted eviction
 MutableConfiguration<String, String> config = new MutableConfiguration<>();
+
+// implementation with native eviction
+NativeConfiguration<String, String> config = new NativeConfiguration<>();
+
+// implementation with advanced eviction
+V2Configuration<String, String> config = new V2Configuration<>();
+
         
 CacheManager manager = Caching.getCachingProvider().getCacheManager();
 Cache<String, String> cache = manager.createCache("myCache", config);
@@ -437,7 +493,13 @@ Redisson provides JCache implementations with two important features:
 
 **fallback mode** - if set to `true` and Redis or Valkey is down the errors won't be thrown allowing application continue to operate without Redis.
 
-Below is the complete list of available managers:  
+**1. Scripted eviction**
+
+Eviction is done on Redisson side through a custom scheduled task which removes expired entries using Lua script. Eviction task is started once per unique cache name at the moment of getting JCache instance. If instance isn't used and has expired entries it should be get again to start the eviction process. This leads to extra Redis or Valkey calls and eviction task per unique cache name. 
+
+Entries are cleaned time to time by `org.redisson.eviction.EvictionScheduler`. By default, it removes 100 expired entries at a time. This can be changed through [cleanUpKeysAmount](configuration.md) setting. Task launch time tuned automatically and depends on expired entries amount deleted in previous time and varies between 5 second to 30 minutes by default. This time interval can be changed through [minCleanUpDelay](configuration.md) and [maxCleanUpDelay](configuration.md). For example, if clean task deletes 100 entries each time it will be executed every 5 seconds (minimum execution delay). But if current expired entries amount is lower than previous one then execution delay will be increased by 1.5 times and decreased otherwise.
+
+Available implementations:
 
 | | Local<br/>cache | Data<br/>partitioning | Ultra-fast<br/>read/write | Fallback<br/>mode |
 | ------------- | :-----------: | :----------:| :----------:| :----------:|
@@ -446,6 +508,28 @@ Below is the complete list of available managers:
 |JCache with local cache<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub>  | ✔️ | ❌ | ✔️ | ✔️ |
 |JCache with data partitioning<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ | ✔️ |
 |JCache with local cache and data partitioning<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ✔️ | ✔️ | ✔️ | ✔️ |
+
+**2. Advanced eviction**
+
+Doesn't use an entry eviction task, entries are cleaned on Redis or Valkey side.
+
+Available implementations:
+
+| | Local<br/>cache | Data<br/>partitioning | Ultra-fast<br/>read/write | Fallback<br/>mode |
+| ------------- | :-----------: | :----------:| :----------:| :----------:|
+|JCache V2<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub>  | ❌ | ✔️ | ✔️ | ✔️ |
+
+**3. Native eviction**
+
+Doesn't use an entry eviction task, entries are cleaned on Redis side.  
+Requires **Redis 7.4+**.
+
+Available implementations:
+
+| | Local<br/>cache | Data<br/>partitioning | Ultra-fast<br/>read/write | Fallback<br/>mode |
+| ------------- | :-----------: | :----------:| :----------:| :----------:|
+|JCache native <br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub>  | ❌ | ❌ | ✔️ | ✔️ |
+|JCache native with data partitioning<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ | ✔️ |
 
 **Local cache configuration**
 
@@ -546,8 +630,19 @@ Cache<String, String> cache = manager.createCache("namedCache", rConfig);
 Usage examples:
 
 ```java
-
+// data partitioning configuration with scripted eviction
 ClusteredConfiguration<String, String> config = new ClusteredConfiguration<>();
+
+// data partitioning and local cache configuration with scripted eviction
+ClusteredLocalCacheConfiguration<String, String> config = new ClusteredLocalCacheConfiguration<>();
+config.cacheSize(1000);
+config.timeToLive(Duration.ofSeconds(10));
+
+// data partitioning configuration with native eviction
+ClusteredNativeConfiguration<String, String> config = new ClusteredNativeConfiguration<>();
+
+// data partitioning configuration with advanced eviction
+V2Configuration<String, String> config = new V2Configuration<>();
         
 CacheManager manager = Caching.getCachingProvider().getCacheManager();
 Cache<String, String> cache = manager.createCache("myCache", config);
@@ -711,8 +806,15 @@ Follow settings are available per JCache instance:
 | | |
 |-|-|
 |Parameter| **`implementation`** |
-|Description| Cache implementation.<br/>`cache` - standard implementation<br/>`clustered-local-cache` - data partitioning and local cache support <br/>`local-cache` - local cache support<br/>`clustered-cache` - data partitioning support<br/>|
+|Description| Cache implementation. |
 |Default value| `cache` |
+|<br/>`cache` - implementation with scripted eviction
+<br/>`cache-v2` - implementation with advanced eviction
+<br/>`native-cache` - implementation with native eviction
+<br/>`clustered-native-cache` - implementation with data partitioning and native eviction
+<br/>`local-cache` - implementation with local cache support and scripted eviction
+<br/>`clustered-local-cache` - implementation with data partitioning, local cache support and scripted eviction
+<br/>`clustered-cache` - implementation with data partitioning and scripted eviction|
 
 | | |
 |-|-|

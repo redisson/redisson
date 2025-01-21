@@ -4,7 +4,10 @@ Programmatic configuration is performed by the `Config` object instance. For exa
 Config config = new Config();
 config.setTransportMode(TransportMode.EPOLL);
 config.useClusterServers()
-       // use "rediss://" for SSL connection
+      // use "redis://" for Redis connection
+      // use "valkey://" for Valkey connection
+      // use "valkeys://" for Valkey SSL connection
+      // use "rediss://" for Redis SSL connection
       .addNodeAddress("redis://127.0.0.1:7181");
 
 RedissonClient redisson = Redisson.create(config);
@@ -150,6 +153,12 @@ Default value: `30000`
 
 RLock object watchdog timeout in milliseconds. This parameter is only used if an RLock object is acquired without the `leaseTimeout` parameter. The lock expires after `lockWatchdogTimeout` if the watchdog didn’t extend it to the next `lockWatchdogTimeout` time interval. This prevents infinity-locked locks due to a Redisson client crash, or any other reason why a lock can’t be released properly.
 
+**lockWatchdogBatchSize**  
+
+Default value: `100`
+
+Amount of locks used by a single lock watchdog execution. This parameter is only used if lock has been acquired without leaseTimeout parameter definition. 
+
 **checkLockSyncedSlaves**
 Default value: `true`
 
@@ -267,7 +276,10 @@ Programmatic config example:
 Config config = new Config();
 config.useClusterServers()
     .setScanInterval(2000) // cluster state scan interval in milliseconds
-    // use "rediss://" for SSL connection
+    // use "redis://" for Redis connection
+    // use "valkey://" for Valkey connection
+    // use "valkeys://" for Valkey SSL connection
+    // use "rediss://" for Redis SSL connection
     .addNodeAddress("redis://127.0.0.1:7000", "redis://127.0.0.1:7001")
     .addNodeAddress("redis://127.0.0.1:7002");
 
@@ -615,7 +627,10 @@ Programmatic config example:
 Config config = new Config();
 config.useReplicatedServers()
     .setScanInterval(2000) // master node change scan interval
-    // use "rediss://" for SSL connection
+    // use "redis://" for Redis connection
+    // use "valkey://" for Valkey connection
+    // use "valkeys://" for Valkey SSL connection
+    // use "rediss://" for Redis SSL connection
     .addNodeAddress("redis://127.0.0.1:7000", "redis://127.0.0.1:7001")
     .addNodeAddress("redis://127.0.0.1:7002");
 
@@ -909,6 +924,12 @@ Programmatic config example:
 RedissonClient redisson = Redisson.create();
 
 Config config = new Config();
+// use "valkey+uds://" for Valkey Unix Domain Socket (UDS) connection
+// use "valkey://" for Valkey connection
+// use "valkeys://" for Valkey SSL connection
+// use "redis+uds://" for Redis Unix Domain Socket (UDS) connection
+// use "redis://" for Redis connection
+// use "rediss://" for Redis SSL connection
 config.useSingleServer().setAddress("redis://myredisserver:6379");
 RedissonClient redisson = Redisson.create(config);
 ```
@@ -1131,7 +1152,10 @@ Programmatic config example:
 Config config = new Config();
 config.useSentinelServers()
     .setMasterName("mymaster")
-    // use "rediss://" for SSL connection
+    // use "redis://" for Redis connection
+    // use "valkey://" for Valkey connection
+    // use "valkeys://" for Valkey SSL connection
+    // use "rediss://" for Redis SSL connection
     .addSentinelAddress("redis://127.0.0.1:26389", "redis://127.0.0.1:26379")
     .addSentinelAddress("redis://127.0.0.1:26319");
 
@@ -1456,7 +1480,10 @@ Programmatic config example:
 ```java
 Config config = new Config();
 config.useMasterSlaveServers()
-    // use "rediss://" for SSL connection
+    // use "redis://" for Redis connection
+    // use "valkey://" for Valkey connection
+    // use "valkeys://" for Valkey SSL connection
+    // use "rediss://" for Redis SSL connection
     .setMasterAddress("redis://127.0.0.1:6379")
     .addSlaveAddress("redis://127.0.0.1:6389", "redis://127.0.0.1:6332", "redis://127.0.0.1:6419")
     .addSlaveAddress("redis://127.0.0.1:6399");
@@ -1762,7 +1789,10 @@ Compatible with:
 Programmatic config example:  
 ```java
 Config config = new Config();
-// use "rediss://" for SSL connection
+// use "redis://" for Redis connection
+// use "valkey://" for Valkey connection
+// use "valkeys://" for Valkey SSL connection
+// use "rediss://" for Redis SSL connection
 config.useProxyServers().addAddress("redis://myredisserver1:6379", "redis://myredisserver2:6379");
 
 RedissonClient redisson = Redisson.create(config);
@@ -2043,7 +2073,10 @@ Programmatic config example:
 Config config = new Config();
 config.useMultiClusterServers()
     .setScanInterval(2000) // cluster state scan interval in milliseconds
-    // use "rediss://" for SSL connection
+    // use "redis://" for Redis connection
+    // use "valkey://" for Valkey connection
+    // use "valkeys://" for Valkey SSL connection
+    // use "rediss://" for Redis SSL connection
     .addAddress("redis://cluster1:7000", "redis://cluster2:70002");
 
 RedissonClient redisson = Redisson.create(config);
@@ -2383,7 +2416,10 @@ Config config = new Config();
 config.useMultiSentinelServers()
     .setReplicationMode(ReplicationMode.ASYNC)
     .setMasterName("mymaster")
-    // use "rediss://" for SSL connection
+    // use "redis://" for Redis connection
+    // use "valkey://" for Valkey connection
+    // use "valkeys://" for Valkey SSL connection
+    // use "rediss://" for Redis SSL connection
     .addSentinelAddress("redis://sentinel_primary_cluster:26389", 
                         "redis://sentinel_secondary_cluster1:26379", 
                         "redis://sentinel_secondary_cluster2:26379")
