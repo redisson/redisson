@@ -1025,7 +1025,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                                       + "redis.call('hdel', KEYS[1], key); "
                                       + "redis.call('zrem', KEYS[2], key); "
                                       + "local msg = struct.pack('Lc0Lc0', string.len(key), key, string.len(value), value); "
-                                      + "redis.call('publish', KEYS[3], {key, value}); "
+                                      + "redis.call('publish', KEYS[3], msg); "
                                   + "elseif accessTimeout ~= '-1' then "
                                       + "redis.call('zadd', KEYS[2], accessTimeout, key); "
                                   + "end; "
