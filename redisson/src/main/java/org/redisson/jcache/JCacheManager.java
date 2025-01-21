@@ -60,7 +60,7 @@ public class JCacheManager implements CacheManager {
     
     private final Redisson redisson;
     
-    public JCacheManager(Redisson redisson, ClassLoader classLoader, CachingProvider cacheProvider, Properties properties, URI uri) {
+    JCacheManager(Redisson redisson, ClassLoader classLoader, CachingProvider cacheProvider, Properties properties, URI uri) {
         super();
         this.classLoader = classLoader;
         this.cacheProvider = cacheProvider;

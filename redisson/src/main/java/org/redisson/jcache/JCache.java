@@ -82,7 +82,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
      * No locking required in atomic execution mode.
      */
 
-    public JCache(JCacheManager cacheManager, Redisson redisson, String name, JCacheConfiguration<K, V> config, boolean hasOwnRedisson) {
+    JCache(JCacheManager cacheManager, Redisson redisson, String name, JCacheConfiguration<K, V> config, boolean hasOwnRedisson) {
         super(redisson.getConfig().getCodec(), redisson.getCommandExecutor(), name);
 
         this.hasOwnRedisson = hasOwnRedisson;
@@ -350,7 +350,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                   + "end; "
 
                   + "return value; ",
-                 Arrays.<Object>asList(name, getTimeoutSetName(name), getRemovedChannelName(name)),
+                 Arrays.<Object>asList(name, getTimeoutSetName(name)),
                  accessTimeout, System.currentTimeMillis(), encodeMapKey(key));
         }
 
@@ -437,7 +437,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         return value;
     }
 
-    private <T, R> R write(String key, RedisCommand<T> command, Object... params) {
+    <T, R> R write(String key, RedisCommand<T> command, Object... params) {
         RFuture<R> future = commandExecutor.writeAsync(key, command, params);
         try {
             return get(future);
@@ -3336,7 +3336,8 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                 if (accessTimeout == 0) {
                     remove();
                 } else if (accessTimeout != -1) {
-                    write(getRawName(), RedisCommands.ZADD_BOOL, getTimeoutSetName(), accessTimeout, encodeMapKey(entry.getKey()));
+                    String name = getRawName(entry.getKey());
+                    write(name, RedisCommands.ZADD_BOOL, getTimeoutSetName(name), accessTimeout, encodeMapKey(entry.getKey()));
                 }
                 return je;
             }
