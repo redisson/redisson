@@ -506,6 +506,17 @@ public interface RedisCommands {
     RedisStrictCommand<Void> MSET = new RedisStrictCommand<Void>("MSET", new VoidReplayConvertor());
     RedisStrictCommand<Boolean> MSETNX = new RedisStrictCommand<Boolean>("MSETNX", new BooleanReplayConvertor());
 
+    RedisCommand<Boolean> HPEXPIRE = new RedisCommand("HPEXPIRE", new ListFirstObjectDecoder(), new Convertor<Boolean>() {
+        @Override
+        public Boolean convert(Object obj) {
+            Long val = (Long) obj;
+            if (val == -2) {
+                return null;
+            }
+
+            return val == 1;
+        }
+    });
     RedisCommand<Boolean> HPERSIST = new RedisCommand("HPERSIST", new ListFirstObjectDecoder(), new Convertor<Boolean>() {
         @Override
         public Boolean convert(Object obj) {
