@@ -483,6 +483,17 @@ public abstract class RedissonObject implements RObject {
         }
     }
 
+    protected final void encode(Collection<Object> params, Consumer<Collection<Object>> func) {
+        try {
+            func.accept(params);
+        } catch (Exception e) {
+            params.forEach(v -> {
+                ReferenceCountUtil.safeRelease(v);
+            });
+            throw e;
+        }
+    }
+
     protected final void encodeMapValues(Collection<Object> params, Collection<?> values) {
         try {
             for (Object object : values) {
