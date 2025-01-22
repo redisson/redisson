@@ -592,6 +592,22 @@ public class RedissonExecutorServiceTest extends RedisDockerTest {
         redisson.getKeys().delete("runnableCounter", "counter");
         assertThat(redisson.getKeys().count()).isZero();
     }
+
+    @Test
+    public void testCustomTasksInjector() throws InterruptedException, ExecutionException {
+        RExecutorService executor = redisson.getExecutorService("testCustom");
+        CountDownLatch l = new CountDownLatch(1);
+        executor.registerWorkers(WorkerOptions.defaults().taskInjector(task -> {
+            assertThat(task).isNotNull();
+            l.countDown();
+        }));
+
+        executor.submit(new RunnableTask()).get();
+
+        l.await();
+
+        executor.shutdown();
+    }
     
     @Test
     public void testParameterizedTask() throws InterruptedException, ExecutionException {
