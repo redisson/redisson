@@ -44,7 +44,7 @@ public abstract class BaseLoadBalancer implements LoadBalancer {
             return entries;
         }
         return entries.stream().filter(e ->
-                        pattern.matcher(e.getClient().getAddr().getHostName()).matches())
+                        pattern.matcher(e.getClient().getAddr().getHostName() + ":" + e.getClient().getAddr().getPort()).matches())
                 .collect(Collectors.toList());
     }
 
