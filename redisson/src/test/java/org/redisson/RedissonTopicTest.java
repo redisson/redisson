@@ -876,12 +876,9 @@ public class RedissonTopicTest extends RedisDockerTest {
 
     @Test
     public void testHostnameChange() throws Exception {
-        GenericContainer<?> redis = createRedis();
-        redis.start();
-
         SimpleDnsServer s = new SimpleDnsServer();
 
-        Config config = new Config();
+        Config config = createConfig();
         config.setAddressResolverGroupFactory(new SequentialDnsAddressResolverFactory() {
             @Override
             public AddressResolverGroup<InetSocketAddress> create(Class<? extends DatagramChannel> channelType, Class<? extends SocketChannel> socketChannelType, DnsServerAddressStreamProvider nameServerProvider) {
@@ -891,7 +888,7 @@ public class RedissonTopicTest extends RedisDockerTest {
         });
         config.useSingleServer()
                 .setDnsMonitoringInterval(1000)
-                .setAddress("redis://simplehost:" + redis.getFirstMappedPort());
+                .setAddress("redis://simplehost:" + REDIS.getFirstMappedPort());
         RedissonClient redisson = Redisson.create(config);
 
         RTopic topic = redisson.getTopic("topic");
@@ -926,7 +923,6 @@ public class RedissonTopicTest extends RedisDockerTest {
 
         redisson.shutdown();
         s.stop();
-        redis.stop();
     }
 
 
