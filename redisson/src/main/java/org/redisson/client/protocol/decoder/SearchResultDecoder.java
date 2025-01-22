@@ -40,10 +40,14 @@ public class SearchResultDecoder implements MultiDecoder<Object> {
         Long total = (Long) parts.get(0);
         List<Document> docs = new ArrayList<>();
         if (total > 0) {
-            for (int i = 1; i < parts.size(); i += 2) {
+            for (int i = 1; i < parts.size(); i++) {
                 String id = (String) parts.get(i);
-                Map<String, Object> attrs = (Map<String, Object>) parts.get(i + 1);
-                docs.add(new Document(id, attrs));
+                if ((i + 1) < parts.size() && parts.get(i + 1) instanceof Map) {
+                    Map<String, Object> attrs = (Map<String, Object>) parts.get(++i);
+                    docs.add(new Document(id, attrs));
+                } else {
+                    docs.add(new Document(id));
+                }
             }
         }
 
