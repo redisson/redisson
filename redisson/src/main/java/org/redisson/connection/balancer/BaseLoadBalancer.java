@@ -18,26 +18,34 @@ package org.redisson.connection.balancer;
 import org.redisson.connection.ClientConnectionsEntry;
 
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
- * 
+ *
  * @author Nikita Koksharov
  *
  */
-public class RoundRobinLoadBalancer extends BaseLoadBalancer {
+public abstract class BaseLoadBalancer implements LoadBalancer {
 
-    private final AtomicInteger index = new AtomicInteger(-1);
+    private Pattern pattern;
 
-    @Override
-    public ClientConnectionsEntry getEntry(List<ClientConnectionsEntry> clientsCopy) {
-        clientsCopy = filter(clientsCopy);
-        if (clientsCopy.isEmpty()) {
-            return null;
+    /**
+     * Defines a regular expression pattern to filter hostnames
+     *
+     * @param value regular expression
+     */
+    public void setRegex(String value) {
+        this.pattern = Pattern.compile(value);
+    }
+
+    protected List<ClientConnectionsEntry> filter(List<ClientConnectionsEntry> entries) {
+        if (pattern == null) {
+            return entries;
         }
-
-        int ind = Math.abs(index.incrementAndGet() % clientsCopy.size());
-        return clientsCopy.get(ind);
+        return entries.stream().filter(e ->
+                        pattern.matcher(e.getClient().getAddr().getHostName()).matches())
+                .collect(Collectors.toList());
     }
 
 }

@@ -15,20 +15,25 @@
  */
 package org.redisson.connection.balancer;
 
+import org.redisson.connection.ClientConnectionsEntry;
+
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
-
-import org.redisson.connection.ClientConnectionsEntry;
 
 /**
  * 
  * @author Nikita Koksharov
  *
  */
-public class RandomLoadBalancer implements LoadBalancer {
+public class RandomLoadBalancer extends BaseLoadBalancer {
 
     @Override
     public ClientConnectionsEntry getEntry(List<ClientConnectionsEntry> clientsCopy) {
+        clientsCopy = filter(clientsCopy);
+        if (clientsCopy.isEmpty()) {
+            return null;
+        }
+
         int ind = ThreadLocalRandom.current().nextInt(clientsCopy.size());
         return clientsCopy.get(ind);
     }
