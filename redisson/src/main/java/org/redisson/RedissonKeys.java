@@ -48,6 +48,7 @@ import org.redisson.rx.CommandRxBatchService;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -140,9 +141,30 @@ public final class RedissonKeys implements RKeys {
     }
 
     @Override
+    public AsyncIterator<String> getKeysAsync() {
+        return getKeysAsync(KeysScanOptions.defaults());
+    }
+
+    @Override
     public Iterable<String> getKeys(KeysScanOptions options) {
         KeysScanParams params = (KeysScanParams) options;
         return getKeysByPattern(scan, params.getPattern(), params.getLimit(), params.getChunkSize(), params.getType());
+    }
+
+    @Override
+    public AsyncIterator<String> getKeysAsync(KeysScanOptions options) {
+        Iterator<String> iter = getKeys(options).iterator();
+        return new AsyncIterator<String>() {
+            @Override
+            public CompletionStage<Boolean> hasNext() {
+                return CompletableFuture.completedFuture(iter.hasNext());
+            }
+
+            @Override
+            public CompletionStage<String> next() {
+                return CompletableFuture.completedFuture(iter.next());
+            }
+        };
     }
 
     @Override

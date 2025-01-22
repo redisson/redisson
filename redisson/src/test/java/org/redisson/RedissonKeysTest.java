@@ -16,6 +16,8 @@ import org.redisson.config.Protocol;
 
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -281,6 +283,35 @@ public class RedissonKeysTest extends RedisDockerTest {
     }
 
     @Test
+    public void testKeysAsyncIterable() {
+        Set<String> keys = new HashSet<String>();
+        for (int i = 0; i < 115; i++) {
+            String key = "key" + Math.random();
+            RBucket<String> bucket = redisson.getBucket(key);
+            keys.add(key);
+            bucket.set("someValue");
+        }
+
+        AsyncIterator<String> iterator = redisson.getKeys().getKeysAsync();
+        CompletionStage<Void> f = iterateAll(iterator, keys);
+        f.whenComplete((r, e) -> {
+            Assertions.assertEquals(0, keys.size());
+        });
+    }
+
+    public CompletionStage<Void> iterateAll(AsyncIterator<String> iterator, Set<String> keys) {
+        return iterator.hasNext().thenCompose(r -> {
+            if (r) {
+                iterator.next().thenCompose(k -> {
+                    keys.remove(redisson.getConfig().useSingleServer().getNameMapper().map(k));
+                    return iterateAll(iterator, keys);
+                });
+            }
+            return CompletableFuture.completedFuture(null);
+        });
+    }
+
+    @Test
     public void testRandomKey() {
         RBucket<String> bucket = redisson.getBucket("test1");
         bucket.set("someValue1");
@@ -371,7 +402,6 @@ public class RedissonKeysTest extends RedisDockerTest {
         Assertions.assertEquals(4L, r.getResponses().get(0));
     }
 
-
     @Test
     public void testFindKeys() {
         RBucket<String> bucket = redisson.getBucket("test1");
@@ -418,5 +448,4 @@ public class RedissonKeysTest extends RedisDockerTest {
         s = redisson.getKeys().count();
         assertThat(s).isEqualTo(1);
     }
-
 }

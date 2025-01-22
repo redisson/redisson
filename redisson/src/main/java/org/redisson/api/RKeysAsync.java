@@ -15,6 +15,8 @@
  */
 package org.redisson.api;
 
+import org.redisson.api.options.KeysScanOptions;
+
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -132,7 +134,23 @@ public interface RKeysAsync {
      * @return amount of existing keys
      */
     RFuture<Long> countExistsAsync(String... names);
-    
+
+    /**
+     * Get all keys using iterable. Keys traversing with SCAN operation.
+     * Each SCAN operation loads up to <code>10</code> keys per request.
+     *
+     * @return Asynchronous Iterable object
+     */
+    AsyncIterator<String> getKeysAsync();
+
+    /**
+     * Get all keys using iterable. Keys traversing with SCAN operation.
+     *
+     * @param options scan options
+     * @return Asynchronous Iterable object
+     */
+    AsyncIterator<String> getKeysAsync(KeysScanOptions options);
+
     /**
      * Get Redis object type by key
      * 
