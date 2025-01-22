@@ -2,6 +2,11 @@ package org.redisson;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
+import io.netty.channel.socket.DatagramChannel;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.resolver.AddressResolverGroup;
+import io.netty.resolver.dns.DnsServerAddressStreamProvider;
+import io.netty.resolver.dns.DnsServerAddresses;
 import io.netty.util.CharsetUtil;
 import net.bytebuddy.utility.RandomString;
 import nl.altindag.log.LogCaptor;
@@ -27,6 +32,7 @@ import org.redisson.config.*;
 import org.redisson.connection.CRC16;
 import org.redisson.connection.ConnectionListener;
 import org.redisson.connection.MasterSlaveConnectionManager;
+import org.redisson.connection.SequentialDnsAddressResolverFactory;
 import org.redisson.connection.pool.SlaveConnectionPool;
 import org.redisson.misc.RedisURI;
 import org.testcontainers.containers.ContainerState;
@@ -700,6 +706,32 @@ public class RedissonTest extends RedisDockerTest {
         System.out.println(t);
         Config c = Config.fromYAML(t);
         assertThat(c.toYAML()).isEqualTo(t);
+    }
+
+    @Test
+    public void testMasterSlave() throws InterruptedException {
+        SimpleDnsServer s = new SimpleDnsServer();
+
+        Config c2 = new Config();
+        c2.setAddressResolverGroupFactory(new SequentialDnsAddressResolverFactory() {
+            @Override
+            public AddressResolverGroup<InetSocketAddress> create(Class<? extends DatagramChannel> channelType, Class<? extends SocketChannel> socketChannelType, DnsServerAddressStreamProvider nameServerProvider) {
+                return super.create(channelType, socketChannelType, hostname ->
+                        DnsServerAddresses.singleton(s.getAddr()).stream());
+            }
+        });
+        c2.useMasterSlaveServers()
+                .setMasterAddress("redis://masterhost:" + REDIS.getFirstMappedPort())
+                .addSlaveAddress("redis://slavehost1:" + REDIS.getFirstMappedPort(),
+                                            "redis://slavehost2:" + REDIS.getFirstMappedPort());
+
+        RedissonClient cc = Redisson.create(c2);
+        RBucket<String> b = cc.getBucket("test");
+        b.set("1");
+        assertThat(b.get()).isEqualTo("1");
+
+        cc.shutdown();
+        s.stop();
     }
 
     @Test

@@ -8,12 +8,14 @@ import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.handler.codec.dns.*;
 
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 
 public class SimpleDnsServer {
 
     private final EventLoopGroup group = new NioEventLoopGroup();
     private final Channel channel;
     private String ip = "127.0.0.1";
+    private final int port = 55;
 
     public SimpleDnsServer() throws InterruptedException {
             Bootstrap bootstrap = new Bootstrap();
@@ -28,8 +30,12 @@ public class SimpleDnsServer {
                         }
                     });
 
-            ChannelFuture future = bootstrap.bind(55).sync();
+            ChannelFuture future = bootstrap.bind(port).sync();
             channel = future.channel();
+    }
+
+    public InetSocketAddress getAddr() {
+        return new InetSocketAddress(ip, port);
     }
 
     public void stop() {
