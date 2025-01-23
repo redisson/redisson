@@ -288,26 +288,40 @@ public class RedissonKeysTest extends RedisDockerTest {
         for (int i = 0; i < 115; i++) {
             String key = "key" + Math.random();
             RBucket<String> bucket = redisson.getBucket(key);
-            keys.add(key);
             bucket.set("someValue");
         }
-
+        
         AsyncIterator<String> iterator = redisson.getKeys().getKeysAsync();
         CompletionStage<Void> f = iterateAll(iterator, keys);
-        f.whenComplete((r, e) -> {
-            Assertions.assertEquals(0, keys.size());
-        });
+        f.toCompletableFuture().join();
+        assertThat(redisson.getKeys().count()).isEqualTo(keys.size());
     }
-
+    
+    @Test
+    public void testKeysAsyncIterablePattern() {
+        Set<String> keys = new HashSet<String>();
+        for (int i = 0; i < 115; i++) {
+            String key = "key" + Math.random();
+            RBucket<String> bucket = redisson.getBucket(key);
+            bucket.set("someValue");
+        }
+        int limit = 23;
+        AsyncIterator<String> iterator = redisson.getKeys().getKeysAsync(KeysScanOptions.defaults().limit(limit));
+        CompletionStage<Void> f = iterateAll(iterator, keys);
+        f.toCompletableFuture().join();
+        assertThat(limit).isEqualTo(keys.size());
+    }
+    
     public CompletionStage<Void> iterateAll(AsyncIterator<String> iterator, Set<String> keys) {
         return iterator.hasNext().thenCompose(r -> {
             if (r) {
-                iterator.next().thenCompose(k -> {
-                    keys.remove(redisson.getConfig().useSingleServer().getNameMapper().map(k));
+                return iterator.next().thenCompose(k -> {
+                    keys.add(k);
                     return iterateAll(iterator, keys);
                 });
+            } else {
+                return CompletableFuture.completedFuture(null);
             }
-            return CompletableFuture.completedFuture(null);
         });
     }
 
