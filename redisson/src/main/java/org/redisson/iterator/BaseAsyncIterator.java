@@ -52,7 +52,7 @@ public abstract class BaseAsyncIterator<V, E> implements AsyncIterator<V> {
                     client = v.getRedisClient();
                     nextItPos = v.getPos();
                     lastIt = v.getValues().iterator();
-                    if (nextItPos.equals("0")) {
+                    if ("0".equals(nextItPos)) {
                         nextItPos = null;
                     }
                     result.complete(lastIt.hasNext());
