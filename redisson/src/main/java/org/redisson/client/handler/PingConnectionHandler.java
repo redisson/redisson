@@ -110,6 +110,7 @@ public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
 
     private static boolean isClosed(ChannelHandlerContext ctx, RedisConnection connection) {
         return connection.isClosed()
+                    || !ctx.channel().equals(connection.getChannel())
                             || ctx.isRemoved()
                                 || connection.getRedisClient().isShutdown();
     }
