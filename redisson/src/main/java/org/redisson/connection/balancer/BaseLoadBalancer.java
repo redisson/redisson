@@ -40,6 +40,10 @@ public abstract class BaseLoadBalancer implements LoadBalancer {
     }
 
     protected List<ClientConnectionsEntry> filter(List<ClientConnectionsEntry> entries) {
+        return filter(entries, pattern);
+    }
+
+    protected final List<ClientConnectionsEntry> filter(List<ClientConnectionsEntry> entries, Pattern pattern) {
         if (pattern == null) {
             return entries;
         }
