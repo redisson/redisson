@@ -38,8 +38,10 @@ import org.redisson.command.CommandBatchService;
 import org.redisson.config.Protocol;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
+import org.redisson.iterator.BaseAsyncIterator;
 import org.redisson.iterator.RedissonBaseIterator;
 import org.redisson.misc.CompletableFutureWrapper;
+import org.redisson.misc.CompositeAsyncIterator;
 import org.redisson.misc.CompositeIterable;
 import org.redisson.pubsub.PublishSubscribeService;
 import org.redisson.reactive.CommandReactiveBatchService;
@@ -140,9 +142,31 @@ public final class RedissonKeys implements RKeys {
     }
 
     @Override
+    public AsyncIterator<String> getKeysAsync() {
+        return getKeysAsync(KeysScanOptions.defaults());
+    }
+
+    @Override
     public Iterable<String> getKeys(KeysScanOptions options) {
         KeysScanParams params = (KeysScanParams) options;
         return getKeysByPattern(scan, params.getPattern(), params.getLimit(), params.getChunkSize(), params.getType());
+    }
+
+    @Override
+    public AsyncIterator<String> getKeysAsync(KeysScanOptions options) {
+        KeysScanParams params = (KeysScanParams) options;
+        List<AsyncIterator<String>> asyncIterators = new ArrayList<>();
+        for (MasterSlaveEntry entry : commandExecutor.getConnectionManager().getEntrySet()) {
+            AsyncIterator<String> asyncIterator = new BaseAsyncIterator<String, Object>() {
+                @Override
+                protected RFuture<ScanResult<Object>> iterator(RedisClient client, String nextItPos) {
+                    return scanIteratorAsync(client, entry, scan, nextItPos, params.getPattern(), params.getChunkSize(), params.getType());
+                }
+            };
+            asyncIterators.add(asyncIterator);
+            
+        }
+        return new CompositeAsyncIterator<>(asyncIterators, params.getLimit());
     }
 
     @Override
