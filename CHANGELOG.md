@@ -11,6 +11,7 @@ Feature - `RKeyAsync.getKeysAsync()` method added (thanks to @seakider)
 Feature - added `commandsMap` setting to `CommandsLoadBalancer` object  
 Feature - added `regex` setting to `RandomLoadBalancer` and `RoundRobinLoadBalancer` objects to filter nodes  
 Feature - Unix Domain Socket (UDS) support for a single mode through "redis+uds://" or "valkey+uds://" scheme  
+Feature - `lockWatchdogBatchSize` setting added  
 
 Fixed - `RBuckets.get()` method doesn't use nameMapper in single mode  
 Fixed - `valkeys` scheme can't be used in Sentinel mode  
@@ -24,7 +25,6 @@ Fixed - `RScript.evalSha()` method doesn't work in cluster mode
 Fixed - task id duplication check added to `RScheduledExecutorService` methods
 Fixed - failover handling in Sentinel mode  
 Fixed - Micronaut `Session.put()` method doesn't remove an entry if value = null  
-Feature - `lockWatchdogBatchSize` setting added  
 Fixed - `RReadWriteLock.unlock()` method doesn't respect the lock owner  
 
 ### 13-Jan-2025 - 3.43.0 released
