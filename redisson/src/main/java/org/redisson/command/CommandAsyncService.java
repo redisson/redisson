@@ -776,10 +776,16 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     private <T, R> RFuture<R> executeBatchedAsync(boolean readOnly, Codec codec, RedisCommand<T> command, SlotCallback<T, R> callback, Object[] keys) {
         if (!getServiceManager().getCfg().isClusterConfig()) {
             Object[] params = callback.createParams(Arrays.asList(keys));
+            CompletionStage<R> f;
             if (readOnly) {
-                return readAsync((String) null, codec, command, params);
+                f = readAsync((String) null, codec, command, params);
+            } else {
+                f = writeAsync((String) null, codec, command, params);
             }
-            return writeAsync((String) null, codec, command, params);
+            f = f.thenApply(r -> {
+                return callback.onResult(Collections.singletonList((T) r));
+            });
+            return new CompletableFutureWrapper<>(f);
         }
 
         Map<MasterSlaveEntry, Map<Integer, List<Object>>> entry2keys = Arrays.stream(keys).collect(

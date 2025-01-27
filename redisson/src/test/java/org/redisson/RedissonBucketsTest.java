@@ -19,6 +19,34 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class RedissonBucketsTest extends RedisDockerTest {
 
     @Test
+    public void testNameMapper() {
+        Config config = redisson.getConfig();
+        config.useSingleServer()
+                .setNameMapper(new NameMapper() {
+                    @Override
+                    public String map(String name) {
+                        return "test::" + name;
+                    }
+
+                    @Override
+                    public String unmap(String name) {
+                        return name.replace("test::", "");
+                    }
+                });
+
+        RedissonClient redisson = Redisson.create(config);
+        RBuckets buckets = redisson.getBuckets();
+        Map<String, String> kvMap = new HashMap<>();
+        kvMap.put("k1", "v1");
+        kvMap.put("k2", "v2");
+        buckets.set(kvMap);
+
+        Map<String, Object> res = buckets.get("k1", "k2");
+        assertThat(res.get("k1")).isEqualTo("v1");
+        assertThat(res.get("k2")).isEqualTo("v2");
+    }
+
+    @Test
     public void testGetInClusterNameMapper() {
         testInCluster(client -> {
             Config config = client.getConfig();
