@@ -9,29 +9,35 @@ import io.netty.handler.codec.dns.*;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class SimpleDnsServer {
 
     private final EventLoopGroup group = new NioEventLoopGroup();
     private final Channel channel;
     private String ip = "127.0.0.1";
-    private final int port = 55;
+    private final int port;
 
     public SimpleDnsServer() throws InterruptedException {
-            Bootstrap bootstrap = new Bootstrap();
-            bootstrap.group(group)
-                    .channel(NioDatagramChannel.class)
-                    .handler(new ChannelInitializer<>() {
-                        @Override
-                        protected void initChannel(Channel ch) throws Exception {
-                            ch.pipeline().addLast(new DatagramDnsQueryDecoder());
-                            ch.pipeline().addLast(new DatagramDnsResponseEncoder());
-                            ch.pipeline().addLast(new DnsMessageHandler());
-                        }
-                    });
+        this(ThreadLocalRandom.current().nextInt(50, 1000));
+    }
 
-            ChannelFuture future = bootstrap.bind(port).sync();
-            channel = future.channel();
+    public SimpleDnsServer(int port) throws InterruptedException {
+        Bootstrap bootstrap = new Bootstrap();
+        bootstrap.group(group)
+                .channel(NioDatagramChannel.class)
+                .handler(new ChannelInitializer<>() {
+                    @Override
+                    protected void initChannel(Channel ch) throws Exception {
+                        ch.pipeline().addLast(new DatagramDnsQueryDecoder());
+                        ch.pipeline().addLast(new DatagramDnsResponseEncoder());
+                        ch.pipeline().addLast(new DnsMessageHandler());
+                    }
+                });
+
+        this.port = port;
+        ChannelFuture future = bootstrap.bind(port).sync();
+        channel = future.channel();
     }
 
     public InetSocketAddress getAddr() {
