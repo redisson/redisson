@@ -26,6 +26,7 @@ Fixed - task id duplication check added to `RScheduledExecutorService` methods
 Fixed - failover handling in Sentinel mode  
 Fixed - Micronaut `Session.put()` method doesn't remove an entry if value = null  
 Fixed - `RReadWriteLock.unlock()` method doesn't respect the lock owner  
+Fixed - lock watchdog doesn't renew RLock if an expection has been thrown  
 
 ### 13-Jan-2025 - 3.43.0 released
 
