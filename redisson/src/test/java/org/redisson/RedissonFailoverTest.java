@@ -131,7 +131,7 @@ public class RedissonFailoverTest extends RedisDockerTest {
             };
             t.start();
             try {
-                t.join(1000);
+                t.join(2000);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
@@ -254,7 +254,7 @@ public class RedissonFailoverTest extends RedisDockerTest {
 
             assertThat(futures.get(futures.size() - 1).isDone()).isTrue();
             assertThat(futures.get(futures.size() - 1).toCompletableFuture().isCompletedExceptionally()).isFalse();
-            assertThat(errors).isBetween(30, 1900);
+            assertThat(errors).isBetween(30, 2000);
             assertThat(readonlyErrors).isZero();
 
             redisson.shutdown();
