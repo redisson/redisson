@@ -5,11 +5,17 @@ import com.github.dockerjava.api.model.ContainerNetwork;
 import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.PortBinding;
 import com.github.dockerjava.api.model.Ports;
+import io.netty.channel.socket.DatagramChannel;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.resolver.AddressResolverGroup;
+import io.netty.resolver.dns.DnsServerAddressStreamProvider;
+import io.netty.resolver.dns.DnsServerAddresses;
 import org.junit.jupiter.api.BeforeEach;
 import org.redisson.api.NatMapper;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
 import org.redisson.config.Protocol;
+import org.redisson.connection.SequentialDnsAddressResolverFactory;
 import org.redisson.misc.RedisURI;
 import org.testcontainers.containers.*;
 import org.testcontainers.containers.startupcheck.MinimumDurationRunningStartupCheckStrategy;
@@ -17,6 +23,7 @@ import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.*;
 import java.util.function.BiConsumer;
@@ -154,6 +161,8 @@ public class RedisDockerTest {
     protected void withSentinel(BiConsumer<List<GenericContainer<?>>, Config> callback, int slaves) throws InterruptedException {
         Network network = Network.newNetwork();
 
+        SimpleDnsServer dnsServer = new SimpleDnsServer();
+
         List<GenericContainer<? extends GenericContainer<?>>> nodes = new ArrayList<>();
 
         GenericContainer<?> master =
@@ -245,6 +254,16 @@ public class RedisDockerTest {
 
         Config config = new Config();
         config.setProtocol(protocol);
+
+        config.setAddressResolverGroupFactory(new SequentialDnsAddressResolverFactory() {
+            @Override
+            public AddressResolverGroup<InetSocketAddress> create(Class<? extends DatagramChannel> channelType, Class<? extends SocketChannel> socketChannelType, DnsServerAddressStreamProvider nameServerProvider) {
+                return super.create(channelType, socketChannelType, hostname -> {
+                    return DnsServerAddresses.singleton(dnsServer.getAddr()).stream();
+                });
+            }
+        });
+
         config.useSentinelServers()
                 .setPingConnectionInterval(0)
                 .setNatMapper(new NatMapper() {
@@ -284,10 +303,13 @@ public class RedisDockerTest {
 
         nodes.forEach(n -> n.stop());
         network.close();
+        dnsServer.stop();
     }
 
     protected void withSentinel(BiConsumer<List<GenericContainer<?>>, Config> callback, int slaves, String password) throws InterruptedException {
         Network network = Network.newNetwork();
+
+        SimpleDnsServer dnsServer = new SimpleDnsServer();
 
         List<GenericContainer<? extends GenericContainer<?>>> nodes = new ArrayList<>();
 
@@ -387,12 +409,23 @@ public class RedisDockerTest {
 
         Config config = new Config();
         config.setProtocol(protocol);
+
+        config.setAddressResolverGroupFactory(new SequentialDnsAddressResolverFactory() {
+            @Override
+            public AddressResolverGroup<InetSocketAddress> create(Class<? extends DatagramChannel> channelType, Class<? extends SocketChannel> socketChannelType, DnsServerAddressStreamProvider nameServerProvider) {
+                return super.create(channelType, socketChannelType, hostname -> {
+                    return DnsServerAddresses.singleton(dnsServer.getAddr()).stream();
+                });
+            }
+        });
+
         config.useSentinelServers()
                 .setPassword(password)
                 .setNatMapper(new NatMapper() {
 
                     @Override
                     public RedisURI map(RedisURI uri) {
+
                         for (GenericContainer<? extends GenericContainer<?>> node : nodes) {
                             if (node.getContainerInfo() == null) {
                                 continue;
@@ -426,6 +459,7 @@ public class RedisDockerTest {
 
         nodes.forEach(n -> n.stop());
         network.close();
+        dnsServer.stop();
     }
 
     protected void withNewCluster(BiConsumer<List<ContainerState>, RedissonClient> callback) {

@@ -25,7 +25,9 @@ import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.client.protocol.Time;
+import org.redisson.client.protocol.decoder.RedisURIDecoder;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.RedisURI;
@@ -223,7 +225,10 @@ public class SentinelRedisNode implements RedisSentinel, RedisSentinelAsync {
 
     @Override
     public RFuture<RedisURI> getMasterAddrAsync(String masterName) {
-        return executeAsync(null, StringCodec.INSTANCE, -1, RedisCommands.SENTINEL_GET_MASTER_ADDR_BY_NAME, masterName);
+        RedisStrictCommand<RedisURI> masterHostCommand = new RedisStrictCommand<>("SENTINEL", "GET-MASTER-ADDR-BY-NAME",
+                new RedisURIDecoder(client.getConfig().getAddress().getScheme()));
+
+        return executeAsync(null, StringCodec.INSTANCE, -1, masterHostCommand, masterName);
     }
 
     @Override

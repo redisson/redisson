@@ -24,6 +24,7 @@ import org.redisson.client.*;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
+import org.redisson.client.protocol.decoder.RedisURIDecoder;
 import org.redisson.config.*;
 import org.redisson.misc.RedisURI;
 import org.slf4j.Logger;
@@ -72,17 +73,14 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 sentinelHosts.add(addr);
             }
         }
+
+        masterHostCommand = new RedisStrictCommand<>("SENTINEL", "GET-MASTER-ADDR-BY-NAME",
+                new RedisURIDecoder(scheme));
     }
 
     @Override
     public void doConnect(Function<RedisURI, String> hostnameMapper) {
         checkAuth(cfg);
-
-        if ("redis".equals(scheme)) {
-            masterHostCommand = RedisCommands.SENTINEL_GET_MASTER_ADDR_BY_NAME;
-        } else {
-            masterHostCommand = RedisCommands.SENTINEL_GET_MASTER_ADDR_BY_NAME_SSL;
-        }
 
         Map<RedisURI, String> uri2hostname = new HashMap<>();
         Throwable lastException = null;

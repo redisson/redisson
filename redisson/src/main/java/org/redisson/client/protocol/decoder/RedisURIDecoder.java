@@ -32,13 +32,8 @@ public class RedisURIDecoder implements MultiDecoder<RedisURI> {
 
     private final String scheme;
 
-    public RedisURIDecoder(boolean ssl) {
-        super();
-        if (ssl) {
-            scheme = "rediss";
-        } else {
-            scheme = "redis";
-        }
+    public RedisURIDecoder(String scheme) {
+        this.scheme = scheme;
     }
 
     @Override
