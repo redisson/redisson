@@ -3,6 +3,31 @@ Redisson Releases History
 
 Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
 
+### 27-Jan-2025 - 3.44.0 released
+
+Feature - native eviction implemented for [JCache](https://redisson.org/docs/cache-api-implementations/#local-cache-and-data-partitioning) API  
+Feature - advanced eviction implemented for [JCache](https://redisson.org/docs/cache-api-implementations/#local-cache-and-data-partitioning) API  
+Feature - `RKeyAsync.getKeysAsync()` method added (thanks to @seakider)  
+Feature - added `commandsMap` setting to `CommandsLoadBalancer` object  
+Feature - added `regex` setting to `RandomLoadBalancer` and `RoundRobinLoadBalancer` objects to filter nodes  
+Feature - Unix Domain Socket (UDS) support for a single mode through "redis+uds://" or "valkey+uds://" scheme  
+Feature - `lockWatchdogBatchSize` setting added  
+
+Fixed - `RBuckets.get()` method doesn't use nameMapper in single mode  
+Fixed - `valkeys` scheme can't be used in Sentinel mode  
+Fixed - closed channel detection during connection ping process  
+Fixed - RSearch throws an error if nocontent param defined (thanks to @seakider)  
+Fixed - `RemovedListener` is invoked incorrectly by `JCache.getAll()` method  
+Fixed - synthetic class shouldn't be allowed to be used as a comparator for `RPriorityQueue` objects  
+Fixed - master node address isn't resolved through NatMapper object in Sentinel mode (tnanks @aramperes)  
+Fixed - STOPWORDS 0 can't be defined during RSearch index creation  
+Fixed - `RScript.evalSha()` method doesn't work in cluster mode  
+Fixed - task id duplication check added to `RScheduledExecutorService` methods
+Fixed - failover handling in Sentinel mode  
+Fixed - Micronaut `Session.put()` method doesn't remove an entry if value = null  
+Fixed - `RReadWriteLock.unlock()` method doesn't respect the lock owner  
+Fixed - lock watchdog doesn't renew RLock if an expection has been thrown  
+
 ### 13-Jan-2025 - 3.43.0 released
 
 Feature - `RObservable` interface for listeners added for RLock objects (thanks to @seakider)  
