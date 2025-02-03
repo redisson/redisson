@@ -96,7 +96,7 @@ Gradle
 
 **2. Specify hibernate cache settings**
 
-Define Redisson Region Cache Factory:
+Define Redisson Region Cache Factory in `hibernate.cfg.xml` file:
 
 ```xml
 <!-- Redisson Region Cache factory -->
@@ -758,7 +758,7 @@ Distributed Cache configuration example:
 
 ```xml
 <library id="jCacheVendorLib">
-    <file name="${shared.resource.dir}/redisson-all-3.35.0.jar"/>
+    <file name="${shared.resource.dir}/redisson-all-3.43.0.jar"/>
 </library>
 
 <cache id="io.openliberty.cache.authentication" name="io.openliberty.cache.authentication"
@@ -782,7 +782,7 @@ Distributed Session persistence configuration example:
         id="defaultHttpEndpoint" host="*" />
 
 <library id="jCacheVendorLib">
-    <file name="${shared.resource.dir}/redisson-all-3.35.0.jar"/>
+    <file name="${shared.resource.dir}/redisson-all-3.43.0.jar"/>
 </library>
 
 <httpSessionCache cacheManagerRef="CacheManager"/>
@@ -797,78 +797,78 @@ _Settings below are available only in [Redisson PRO](https://redisson.pro) editi
 
 Follow settings are available per JCache instance:
 
-| | |
-|-|-|
-|Parameter| **`fallback`** |
-|Description| Skip errors if Redis or Valkey cache is unavailable |
-|Default value| `false` |
 
-| | |
-|-|-|
-|Parameter| **`implementation`** |
-|Description| Cache implementation. |
-|Default value| `cache` |
-|<br/>`cache` - implementation with scripted eviction
-<br/>`cache-v2` - implementation with advanced eviction
-<br/>`native-cache` - implementation with native eviction
-<br/>`clustered-native-cache` - implementation with data partitioning and native eviction
-<br/>`local-cache` - implementation with local cache support and scripted eviction
-<br/>`clustered-local-cache` - implementation with data partitioning, local cache support and scripted eviction
-<br/>`clustered-cache` - implementation with data partitioning and scripted eviction|
+Parameter name: **fallback**  
+Default value: `false`  
+Description: Skip errors if Redis or Valkey cache is unavailable.  
 
-| | |
-|-|-|
-|Parameter| **`localcache.store_cache_miss`** |
-|Description| Defines whether to store a cache miss into the local cache.  |
-|Default value| `false` |
+Parameter name: **implementation**  
+Default value: `cache`  
+Description: Cache implementation. Available values:
 
-| | |
-|-|-|
-|Parameter| **`localcache.cache_provider`** |
-|Description| Cache provider used as local cache store.<br/>`REDISSON` and `CAFFEINE` providers are available.  |
-|Default value| `REDISSON` |
+* `cache` - implementation with scripted eviction
+* `cache-v2` - implementation with advanced eviction
+* `native-cache` - implementation with native eviction
+* `clustered-native-cache` - implementation with data partitioning and native eviction
+* `local-cache` - implementation with local cache support and scripted eviction
+* `clustered-local-cache` - implementation with data partitioning, local cache support and scripted eviction
+* `clustered-cache` - implementation with data partitioning and scripted eviction
 
-| | |
-|-|-|
-|Parameter| **`localcache.store_mode`** |
-|Description| Store mode of cache data.<br/>`LOCALCACHE` - store data in local cache only and use Redis or Valkey only for data update/invalidation<br/>`LOCALCACHE_REDIS` - store data in both Redis or Valkey and local cache |
-|Default value| `LOCALCACHE` |
+Parameter name: **localcache.store_cache_miss**  
+Default value: `false`  
+Description: Defines whether to store a cache miss into the local cache.  
 
-| | |
-|-|-|
-|Parameter| **`localcache.max_idle_time`** |
-|Description| Max idle time per entry in local cache. Defined in milliseconds.<br/>`0` value means this setting doesn't affect expiration |
-|Default value| `0` |
+Parameter name: **localcache.cache_provider**  
+Default value: `REDISSON`  
+Description: Defines a cache provider used as local cache store. Available values:
 
-| | |
-|-|-|
-|Parameter| **`localcache.time_to_live`** |
-|Description| Time to live per entry in local cache. Defined in milliseconds.<br/>`0` value means this setting doesn't affect expiration |
-|Default value| `0` |
+* `REDISSON`
+* `CAFFEINE` 
 
-| | |
-|-|-|
-|Parameter| **`localcache.eviction_policy`** |
-|Description| Eviction policy applied to local cache entries when cache size limit reached.<br/>`LFU`, `LRU`, `SOFT`, `WEAK` and `NONE` policies are available. |
-|Default value| `NONE` |
+Parameter name: **localcache.store_mode**  
+Default value: `LOCALCACHE`  
+Description: Store mode of cache data. Available values:
 
-| | |
-|-|-|
-|Parameter| **`localcache.sync_strategy`** |
-|Description| Sync strategy used to synchronize local cache changes across all instances.<br/>`INVALIDATE` - Invalidate cache entry across all LocalCachedMap instances on map entry change<br/>`UPDATE` - Update cache entry across all LocalCachedMap instances on map entry change<br/>`NONE` - No synchronizations on map changes |
-|Default value| `INVALIDATE` |
+* `LOCALCACHE` - store data in local cache only and use Redis or Valkey only for data update/invalidation
+* `LOCALCACHE_REDIS` - store data in both Redis or Valkey and local cache
 
-| | |
-|-|-|
-|Parameter| **`localcache.reconnection_strategy`** |
-|Description| Reconnection strategy used to load missed local cache updates through Hibernate during any connection failures to Redis.<br/>`CLEAR` - Clear local cache if map instance has been disconnected for a while<br/>`LOAD` - Store invalidated entry hash in invalidation log for 10 minutes. Cache keys for stored invalidated entry hashes will be removed if LocalCachedMap instance has been disconnected less than 10 minutes or whole cache will be cleaned otherwise<br/>`NONE` - No reconnection handling |
-|Default value| `NONE` |
+Parameter name: **localcache.max_idle_time**  
+Default value: `0`  
+Description: Max idle time per entry in local cache. Defined in milliseconds. `0` value means this setting doesn't affect expiration.
 
-| | |
-|-|-|
-|Parameter| **`localcache.size`** |
-|Description| Max size of local cache. Superfluous entries in Redis or Valkey are evicted using defined eviction policy.<br/>`0` value means unbounded cache. |
-|Default value| `0` |
+Parameter name: **localcache.time_to_live**  
+Default value: `0`  
+Description: Time to live per entry in local cache. Defined in milliseconds.<br/>`0` value means this setting doesn't affect expiration.
+
+Parameter name: **localcache.eviction_policy**  
+Default value: `NONE`  
+Description: Eviction policy applied to local cache entries when cache size limit reached. Available values:
+
+* `LFU` - Counts how often an item was requested. Those that are used least often are discarded first.
+* `LRU` - Discards the least recently used items first
+* `SOFT` - Uses weak references, entries are removed by GC
+* `WEAK` - Uses soft references, entries are removed by GC
+* `NONE` - No eviction
+
+Parameter name: **localcache.sync_strategy**  
+Default value: `INVALIDATE`  
+Description: Sync strategy used to synchronize local cache changes across all instances. Available values:
+
+* `INVALIDATE` - Invalidate cache entry across all LocalCachedMap instances on map entry change
+* `UPDATE` - Update cache entry across all LocalCachedMap instances on map entry change
+* `NONE` - No synchronizations on map changes |
+
+Parameter name: **localcache.reconnection_strategy**  
+Default value: `NONE`  
+Description: Reconnection strategy used to load missed local cache updates through Hibernate during any connection failures to Redis.
+
+* `CLEAR` - Clear local cache if map instance has been disconnected for a while
+* `LOAD` - Store invalidated entry hash in invalidation log for 10 minutes. Cache keys for stored invalidated entry hashes will be removed if LocalCachedMap instance has been disconnected less than 10 minutes or whole cache will be cleaned otherwise
+* `NONE` - No reconnection handling
+
+Parameter name: **localcache.size**  
+Default value: `0`  
+Description: Max size of local cache. Superfluous entries in Redis or Valkey are evicted using defined eviction policy. `0` value means unbounded cache.
 
 ## MyBatis Cache
 
