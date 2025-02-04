@@ -67,8 +67,8 @@ public class RedissonCacheBuildRecorder {
                             for (RedissonCacheInfo cacheInfo : cacheInfos) {
                                 if (LOGGER.isDebugEnabled()) {
                                     LOGGER.debugf(
-                                            "Building Redis cache [%s] with [expireAfterAccess=%s], [expireAfterWrite=%s]",
-                                            cacheInfo.name, cacheInfo.expireAfterAccess, cacheInfo.expireAfterWrite);
+                                            "Building Redis cache [%s] with [expireAfterAccess=%s], [expireAfterWrite=%s], [maxSize=%s]",
+                                            cacheInfo.name, cacheInfo.expireAfterAccess, cacheInfo.expireAfterWrite, cacheInfo.maxSize);
                                 }
 
                                 RedissonCacheImpl cache = new RedissonCacheImpl(cacheInfo);

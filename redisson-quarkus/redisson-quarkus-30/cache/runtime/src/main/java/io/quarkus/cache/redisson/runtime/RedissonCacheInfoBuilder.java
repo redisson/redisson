@@ -61,6 +61,12 @@ public class RedissonCacheInfoBuilder {
                 cacheInfo.expireAfterWrite = defaultRuntimeConfig.expireAfterWrite;
             }
 
+            if (namedRuntimeConfig != null && namedRuntimeConfig.maxSize.isPresent()) {
+                cacheInfo.maxSize = namedRuntimeConfig.maxSize;
+            } else if (defaultRuntimeConfig.maxSize.isPresent()) {
+                cacheInfo.maxSize = defaultRuntimeConfig.maxSize;
+            }
+
             result.add(cacheInfo);
         }
         return result;

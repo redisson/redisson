@@ -26,6 +26,12 @@ import java.util.Optional;
 public class RedissonCacheInfo {
 
     /**
+     * The maximum size of this cache.
+     * Superfluous elements are evicted using LRU algorithm.
+     */
+    public Optional<Integer> maxSize = Optional.empty();
+
+    /**
      * The cache name
      */
     public String name;

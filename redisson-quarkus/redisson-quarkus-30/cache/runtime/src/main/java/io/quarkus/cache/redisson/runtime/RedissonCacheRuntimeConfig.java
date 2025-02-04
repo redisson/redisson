@@ -30,6 +30,14 @@ import java.util.Optional;
 public class RedissonCacheRuntimeConfig {
 
     /**
+     * Specifies maximum size of this cache.
+     * Superfluous elements are evicted using LRU algorithm.
+     * If <code>0</code> the cache is unbounded (default).
+     */
+    @ConfigItem
+    Optional<Integer> maxSize;
+
+    /**
      * Specifies that each entry should be automatically removed from the cache once a fixed duration has elapsed after
      * the entry's creation, or the most recent replacement of its value.
      */

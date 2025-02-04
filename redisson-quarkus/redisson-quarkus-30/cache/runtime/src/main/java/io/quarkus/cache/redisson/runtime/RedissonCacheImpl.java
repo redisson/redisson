@@ -51,13 +51,21 @@ public class RedissonCacheImpl extends AbstractCache implements RedissonCache {
         CacheImplementation impl = cacheInfo.implementation.orElse(CacheImplementation.STANDARD);
         this.cacheInfo = cacheInfo;
         if (cacheInfo.expireAfterAccess.isPresent()
-                || cacheInfo.expireAfterWrite.isPresent()) {
+                || cacheInfo.expireAfterWrite.isPresent()
+                    || cacheInfo.maxSize.isPresent()) {
             if (impl == CacheImplementation.STANDARD) {
                 this.mapCache = redisson.getMapCache(cacheInfo.name);
                 this.map = this.mapCache;
+
+                if (cacheInfo.maxSize.isPresent()) {
+                    mapCache.setMaxSizeAsync(cacheInfo.maxSize.orElse(0));
+                }
             } else if (impl == CacheImplementation.NATIVE) {
                 if (cacheInfo.expireAfterAccess.isPresent()) {
                     throw new IllegalArgumentException("expireAfterAccess isn't supported by NATIVE implementation");
+                }
+                if (cacheInfo.maxSize.isPresent()) {
+                    throw new IllegalArgumentException("maxSize isn't supported by NATIVE implementation");
                 }
                 this.mapCacheNative = redisson.getMapCacheNative(cacheInfo.name);
                 this.map = this.mapCacheNative;
