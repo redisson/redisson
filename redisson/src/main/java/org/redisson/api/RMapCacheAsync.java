@@ -52,7 +52,7 @@ public interface RMapCacheAsync<K, V> extends RMapAsync<K, V> {
      * @param maxSize - max size
      * @return void
      */
-    RFuture<Void> setMaxSizeAsync(int maxSize);
+    RFuture<Void> setMaxSizeAsync(long maxSize);
 
     /**
      * Sets max size of the map and overrides current value.
@@ -62,7 +62,7 @@ public interface RMapCacheAsync<K, V> extends RMapAsync<K, V> {
      * @param mode - eviction mode
      * @return void
      */
-    RFuture<Void> setMaxSizeAsync(int maxSize, EvictionMode mode);
+    RFuture<Void> setMaxSizeAsync(long maxSize, EvictionMode mode);
 
     /**
      * Tries to set max size of the map. 
@@ -71,7 +71,7 @@ public interface RMapCacheAsync<K, V> extends RMapAsync<K, V> {
      * @param maxSize - max size
      * @return <code>true</code> if max size has been successfully set, otherwise <code>false</code>.
      */
-    RFuture<Boolean> trySetMaxSizeAsync(int maxSize);
+    RFuture<Boolean> trySetMaxSizeAsync(long maxSize);
 
     /**
      * Tries to set max size of the map.
@@ -81,7 +81,7 @@ public interface RMapCacheAsync<K, V> extends RMapAsync<K, V> {
      * @param mode - eviction mode
      * @return <code>true</code> if max size has been successfully set, otherwise <code>false</code>.
      */
-    RFuture<Boolean> trySetMaxSizeAsync(int maxSize, EvictionMode mode);
+    RFuture<Boolean> trySetMaxSizeAsync(long maxSize, EvictionMode mode);
 
     /**
      * If the specified key is not already associated

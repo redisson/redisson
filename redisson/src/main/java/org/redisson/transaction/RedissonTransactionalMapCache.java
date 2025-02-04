@@ -132,12 +132,12 @@ public class RedissonTransactionalMapCache<K, V> extends RedissonMapCache<K, V> 
     }
     
     @Override
-    public RFuture<Void> setMaxSizeAsync(int maxSize) {
+    public RFuture<Void> setMaxSizeAsync(long maxSize) {
         throw new UnsupportedOperationException("setMaxSize method is not supported in transaction");
     }
     
     @Override
-    public RFuture<Boolean> trySetMaxSizeAsync(int maxSize) {
+    public RFuture<Boolean> trySetMaxSizeAsync(long maxSize) {
         throw new UnsupportedOperationException("trySetMaxSize method is not supported in transaction");
     }
 

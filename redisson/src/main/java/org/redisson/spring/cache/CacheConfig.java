@@ -38,7 +38,7 @@ public class CacheConfig {
 
     private long maxIdleTime;
     
-    private int maxSize;
+    private long maxSize;
     
     private final List<MapEntryListener> listeners = new ArrayList<>();
 
@@ -81,7 +81,7 @@ public class CacheConfig {
     }
 
     
-    public int getMaxSize() {
+    public long getMaxSize() {
         return maxSize;
     }
 
@@ -91,7 +91,7 @@ public class CacheConfig {
      * @param maxSize - max size
      *                  If <code>0</code> the cache is unbounded (default).
      */
-    public void setMaxSize(int maxSize) {
+    public void setMaxSize(long maxSize) {
         this.maxSize = maxSize;
     }
 

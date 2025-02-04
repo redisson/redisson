@@ -104,20 +104,20 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     }
 
     @Override
-    public boolean trySetMaxSize(int maxSize) {
+    public boolean trySetMaxSize(long maxSize) {
         return get(trySetMaxSizeAsync(maxSize));
     }
 
-    public boolean trySetMaxSize(int maxSize, EvictionMode mode) {
+    public boolean trySetMaxSize(long maxSize, EvictionMode mode) {
         return get(trySetMaxSizeAsync(maxSize, mode));
     }
 
     @Override
-    public RFuture<Boolean> trySetMaxSizeAsync(int maxSize) {
+    public RFuture<Boolean> trySetMaxSizeAsync(long maxSize) {
         return trySetMaxSizeAsync(maxSize, EvictionMode.LRU);
     }
 
-    public RFuture<Boolean> trySetMaxSizeAsync(int maxSize, EvictionMode mode) {
+    public RFuture<Boolean> trySetMaxSizeAsync(long maxSize, EvictionMode mode) {
         if (maxSize < 0) {
             throw new IllegalArgumentException("maxSize should be greater than zero");
         }
@@ -198,20 +198,20 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     }
 
     @Override
-    public void setMaxSize(int maxSize) {
+    public void setMaxSize(long maxSize) {
         get(setMaxSizeAsync(maxSize));
     }
 
-    public void setMaxSize(int maxSize, EvictionMode mode) {
+    public void setMaxSize(long maxSize, EvictionMode mode) {
         get(setMaxSizeAsync(maxSize, mode));
     }
 
     @Override
-    public RFuture<Void> setMaxSizeAsync(int maxSize) {
+    public RFuture<Void> setMaxSizeAsync(long maxSize) {
         return setMaxSizeAsync(maxSize, EvictionMode.LRU);
     }
 
-    public RFuture<Void> setMaxSizeAsync(int maxSize, EvictionMode mode) {
+    public RFuture<Void> setMaxSizeAsync(long maxSize, EvictionMode mode) {
         if (maxSize < 0) {
             throw new IllegalArgumentException("maxSize should be greater than zero");
         }
