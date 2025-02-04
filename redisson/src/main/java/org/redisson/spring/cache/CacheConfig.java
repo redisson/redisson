@@ -15,6 +15,7 @@
  */
 package org.redisson.spring.cache;
 
+import org.redisson.api.EvictionMode;
 import org.redisson.api.map.event.MapEntryListener;
 
 import java.io.File;
@@ -39,7 +40,9 @@ public class CacheConfig {
     private long maxIdleTime;
     
     private int maxSize;
-    
+
+    private EvictionMode evictionMode = EvictionMode.LRU;
+
     private final List<MapEntryListener> listeners = new ArrayList<>();
 
     /**
@@ -79,20 +82,34 @@ public class CacheConfig {
     public void setTTL(long ttl) {
         this.ttl = ttl;
     }
-
     
     public int getMaxSize() {
         return maxSize;
     }
 
     /**
-     * Set max size of map. Superfluous elements are evicted using LRU algorithm.
+     * Set max size of map.
      *
      * @param maxSize - max size
      *                  If <code>0</code> the cache is unbounded (default).
      */
     public void setMaxSize(int maxSize) {
         this.maxSize = maxSize;
+    }
+
+    public EvictionMode getEvictionMode() {
+        return evictionMode;
+    }
+
+    /**
+     * Set the eviction mode of the map. Superfluous elements are evicted using LRU or LFU algorithm.
+     *
+     * @param evictionMode - eviction mode (LRU, LFU)
+     * @return
+     */
+    public CacheConfig setEvictionMode(EvictionMode evictionMode) {
+        this.evictionMode = evictionMode;
+        return this;
     }
 
     public long getMaxIdleTime() {

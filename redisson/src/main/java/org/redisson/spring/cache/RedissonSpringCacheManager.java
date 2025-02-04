@@ -269,7 +269,7 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
         if (oldCache != null) {
             cache = oldCache;
         } else {
-            map.setMaxSize(config.getMaxSize());
+            map.setMaxSize(config.getMaxSize(), config.getEvictionMode());
             for (MapEntryListener listener : config.getListeners()) {
                 map.addListener(listener);
             }
