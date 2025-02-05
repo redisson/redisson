@@ -26,6 +26,20 @@ import static org.awaitility.Awaitility.await;
 
 public class RedissonMapCacheTest extends BaseMapTest {
 
+    public static class SimpleEntryCreatedListener implements EntryCreatedListener {
+
+        private Map<Object, Object> map = new HashMap<>();
+
+        @Override
+        public void onCreated(EntryEvent event) {
+            map.put(event.getKey(), event.getValue());
+        }
+
+        public Map<Object, Object> getCreatedEntries() {
+            return new HashMap<>(map);
+        }
+    }
+
     @Test
     public void testExpireEntry() {
         RMapCache<String, String> testMap = redisson.getMapCache("map");
@@ -1031,7 +1045,30 @@ public class RedissonMapCacheTest extends BaseMapTest {
         Assertions.assertNull(map.get(new SimpleKey("55")));
         map.destroy();
     }
-    
+
+    @Test
+    public void testPutAllWithListener() throws InterruptedException {
+        RMapCache<SimpleKey, SimpleValue> map = redisson.getMapCache("simple");
+        SimpleEntryCreatedListener listener = new SimpleEntryCreatedListener();
+        map.addListener(listener);
+
+        Assertions.assertNull(map.get(new SimpleKey("33")));
+        Assertions.assertNull(map.get(new SimpleKey("55")));
+
+        Map<SimpleKey, SimpleValue> entries = new HashMap<>();
+        entries.put(new SimpleKey("33"), new SimpleValue("44"));
+        entries.put(new SimpleKey("55"), new SimpleValue("66"));
+        map.putAll(entries);
+
+        SimpleValue val1 = map.get(new SimpleKey("33"));
+        Assertions.assertEquals("44", val1.getValue());
+        SimpleValue val2 = map.get(new SimpleKey("55"));
+        Assertions.assertEquals("66", val2.getValue());
+        Assertions.assertEquals(entries, listener.getCreatedEntries());
+
+        map.destroy();
+    }
+
     @Test
     public void testPutIfAbsentTTL() throws Exception {
         RMapCache<SimpleKey, SimpleValue> map = redisson.getMapCache("simple");
