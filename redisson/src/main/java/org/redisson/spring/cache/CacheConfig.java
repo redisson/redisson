@@ -88,7 +88,7 @@ public class CacheConfig {
     }
 
     /**
-     * Set max size of map.
+     * Set max size of map. Superfluous elements are evicted using LRU algorithm.
      *
      * @param maxSize - max size
      *                  If <code>0</code> the cache is unbounded (default).
