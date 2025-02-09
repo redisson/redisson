@@ -275,6 +275,14 @@ public interface RBitSet extends RExpirable, RBitSetAsync {
      * @return <code>true</code> if bit set to one and <code>false</code> overwise.
      */
     boolean get(long bitIndex);
+    
+    /**
+     * Returns a boolean array where each element of the array corresponds to the query result of the input parameters.
+     *
+     * @param bitIndexes indexes of bit
+     * @return Returns a boolean array where each element of the array corresponds to the query result of the input parameters.
+     */
+    boolean[] get(long... bitIndexes);
 
     /**
      * Set bit to one at specified bitIndex

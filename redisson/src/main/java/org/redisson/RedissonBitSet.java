@@ -279,6 +279,24 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
     }
 
     @Override
+    public boolean[] get(long... bitIndexes) {
+        return get(getAsync(bitIndexes));
+    }
+
+    @Override
+    public RFuture<boolean[]> getAsync(long... bitIndexes) {
+        Object[] indexes = new Object[bitIndexes.length * 3 + 1];
+        int j = 0;
+        indexes[j++] = getRawName();
+        for (long l : bitIndexes) {
+            indexes[j++] = "get";
+            indexes[j++] = "u1";
+            indexes[j++] = l;
+        }
+        return commandExecutor.readAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_BOOLEANS, indexes);
+    }
+
+    @Override
     public boolean set(long bitIndex) {
         return get(setAsync(bitIndex, true));
     }
