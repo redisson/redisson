@@ -13,7 +13,9 @@ import org.redisson.api.RedissonClient;
 import org.redisson.codec.TypedJsonJacksonCodec;
 import org.redisson.config.Config;
 import org.redisson.jcache.configuration.RedissonConfiguration;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -47,7 +49,8 @@ public class JCacheTest {
                     .withCreateContainerCmdModifier(cmd -> {
                         cmd.withCmd("redis-server", "--save", "''", "--notify-keyspace-events", "Ehx");
                     })
-                    .withExposedPorts(6379);
+                    .withExposedPorts(6379)
+                    .withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger("redis")));
 
     static {
         REDIS.setPortBindings(Arrays.asList("6311:6379"));
