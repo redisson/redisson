@@ -211,12 +211,12 @@ public final class Proto2AllTypes {
    * Protobuf type {@code AllTypes2}
    */
   public static final class AllTypes2 extends
-      com.google.protobuf.GeneratedMessageV3 implements
+      com.google.protobuf.GeneratedMessage implements
       // @@protoc_insertion_point(message_implements:AllTypes2)
       AllTypes2OrBuilder {
   private static final long serialVersionUID = 0L;
     // Use AllTypes2.newBuilder() to construct.
-    private AllTypes2(com.google.protobuf.GeneratedMessageV3.Builder<?> builder) {
+    private AllTypes2(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
     }
     private AllTypes2() {
@@ -238,7 +238,7 @@ public final class Proto2AllTypes {
     }
 
     @Override
-    protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return Proto2AllTypes.internal_static_org_redisson_codec_protobuf_raw_AllTypes2_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
@@ -641,7 +641,7 @@ public final class Proto2AllTypes {
         output.writeBool(13, boolType_);
       }
       if (((bitField0_ & 0x00001000) != 0)) {
-        com.google.protobuf.GeneratedMessageV3.writeString(output, 14, stringType_);
+        com.google.protobuf.GeneratedMessage.writeString(output, 14, stringType_);
       }
       if (((bitField0_ & 0x00002000) != 0)) {
         output.writeBytes(15, bytesType_);
@@ -710,7 +710,7 @@ public final class Proto2AllTypes {
           .computeBoolSize(13, boolType_);
       }
       if (((bitField0_ & 0x00001000) != 0)) {
-        size += com.google.protobuf.GeneratedMessageV3.computeStringSize(14, stringType_);
+        size += com.google.protobuf.GeneratedMessage.computeStringSize(14, stringType_);
       }
       if (((bitField0_ & 0x00002000) != 0)) {
         size += com.google.protobuf.CodedOutputStream
@@ -921,20 +921,20 @@ public final class Proto2AllTypes {
     }
     public static Proto2AllTypes.AllTypes2 parseFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return com.google.protobuf.GeneratedMessageV3
+      return com.google.protobuf.GeneratedMessage
           .parseWithIOException(PARSER, input);
     }
     public static Proto2AllTypes.AllTypes2 parseFrom(
         java.io.InputStream input,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return com.google.protobuf.GeneratedMessageV3
+      return com.google.protobuf.GeneratedMessage
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
 
     public static Proto2AllTypes.AllTypes2 parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
-      return com.google.protobuf.GeneratedMessageV3
+      return com.google.protobuf.GeneratedMessage
           .parseDelimitedWithIOException(PARSER, input);
     }
 
@@ -942,20 +942,20 @@ public final class Proto2AllTypes {
         java.io.InputStream input,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return com.google.protobuf.GeneratedMessageV3
+      return com.google.protobuf.GeneratedMessage
           .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
     }
     public static Proto2AllTypes.AllTypes2 parseFrom(
         com.google.protobuf.CodedInputStream input)
         throws java.io.IOException {
-      return com.google.protobuf.GeneratedMessageV3
+      return com.google.protobuf.GeneratedMessage
           .parseWithIOException(PARSER, input);
     }
     public static Proto2AllTypes.AllTypes2 parseFrom(
         com.google.protobuf.CodedInputStream input,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
-      return com.google.protobuf.GeneratedMessageV3
+      return com.google.protobuf.GeneratedMessage
           .parseWithIOException(PARSER, input, extensionRegistry);
     }
 
@@ -975,7 +975,7 @@ public final class Proto2AllTypes {
 
     @Override
     protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
+        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -983,7 +983,7 @@ public final class Proto2AllTypes {
      * Protobuf type {@code AllTypes2}
      */
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements
+        com.google.protobuf.GeneratedMessage.Builder<Builder> implements
         // @@protoc_insertion_point(builder_implements:AllTypes2)
         Proto2AllTypes.AllTypes2OrBuilder {
       public static final com.google.protobuf.Descriptors.Descriptor
@@ -992,7 +992,7 @@ public final class Proto2AllTypes {
       }
 
       @Override
-      protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return Proto2AllTypes.internal_static_org_redisson_codec_protobuf_raw_AllTypes2_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -1005,7 +1005,7 @@ public final class Proto2AllTypes {
       }
 
       private Builder(
-          com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
+          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
 
       }
@@ -2141,7 +2141,7 @@ public final class Proto2AllTypes {
   private static final com.google.protobuf.Descriptors.Descriptor
     internal_static_org_redisson_codec_protobuf_raw_AllTypes2_descriptor;
   private static final 
-    com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+    com.google.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_org_redisson_codec_protobuf_raw_AllTypes2_fieldAccessorTable;
 
   public static com.google.protobuf.Descriptors.FileDescriptor
@@ -2171,7 +2171,7 @@ public final class Proto2AllTypes {
     internal_static_org_redisson_codec_protobuf_raw_AllTypes2_descriptor =
       getDescriptor().getMessageTypes().get(0);
     internal_static_org_redisson_codec_protobuf_raw_AllTypes2_fieldAccessorTable = new
-      com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
+      com.google.protobuf.GeneratedMessage.FieldAccessorTable(
         internal_static_org_redisson_codec_protobuf_raw_AllTypes2_descriptor,
         new String[] { "DoubleType", "FloatType", "Int32Type", "Int64Type", "Uint32Type", "Uint64Type", "Sint32Type", "Sint64Type", "Fixed32Type", "Fixed64Type", "Sfixed32Type", "Sfixed64Type", "BoolType", "StringType", "BytesType", });
   }
