@@ -152,6 +152,11 @@ public class RedissonBlockingDeque<V> extends RedissonDeque<V> implements RBlock
     }
 
     @Override
+    public Entry<String, V> pollLastFromAnyWithName(Duration duration, String... queueNames) throws InterruptedException {
+        return blockingQueue.pollLastFromAnyWithName(duration, queueNames);
+    }
+
+    @Override
     public RFuture<Map<String, List<V>>> pollFirstFromAnyAsync(Duration duration, int count, String... queueNames) {
         return blockingQueue.pollFirstFromAnyAsync(duration, count, queueNames);
     }
@@ -159,6 +164,11 @@ public class RedissonBlockingDeque<V> extends RedissonDeque<V> implements RBlock
     @Override
     public RFuture<Map<String, List<V>>> pollLastFromAnyAsync(Duration duration, int count, String... queueNames) {
         return blockingQueue.pollLastFromAnyAsync(duration, count, queueNames);
+    }
+
+    @Override
+    public RFuture<Entry<String, V>> pollLastFromAnyWithNameAsync(Duration duration, String... queueNames) {
+        return blockingQueue.pollLastFromAnyWithNameAsync(duration, queueNames);
     }
 
     @Override

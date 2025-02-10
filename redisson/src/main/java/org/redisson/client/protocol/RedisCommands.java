@@ -309,6 +309,17 @@ public interface RedisCommands {
                         }
                     });
 
+    RedisCommand<Map<String, List<Object>>> BRPOP_NAME = new RedisCommand<>("BRPOP",
+            new ListObjectDecoder(0) {
+                @Override
+                public Object decode(List parts, State state) {
+                    if (parts.isEmpty()) {
+                        return null;
+                    }
+                    return new org.redisson.api.Entry<>(parts.get(0), parts.get(1));
+                }
+            });
+
     RedisCommand<Map<String, List<Object>>> BLMPOP = new RedisCommand<>("BLMPOP",
             new ListMultiDecoder2(
                     new ObjectDecoder(StringCodec.INSTANCE.getValueDecoder()) {

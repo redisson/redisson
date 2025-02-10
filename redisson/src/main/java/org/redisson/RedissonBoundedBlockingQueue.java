@@ -236,6 +236,17 @@ public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements
     }
 
     @Override
+    public Entry<String, V> pollLastFromAnyWithName(Duration timeout, String... queueNames) throws InterruptedException {
+        return commandExecutor.getInterrupted(pollLastFromAnyWithNameAsync(timeout, queueNames));
+    }
+
+    @Override
+    public RFuture<Entry<String, V>> pollLastFromAnyWithNameAsync(Duration timeout, String... queueNames) {
+        RFuture<Entry<String, V>> takeFuture = blockingQueue.pollLastFromAnyWithNameAsync(timeout, queueNames);
+        return wrapTakeFuture(takeFuture);
+    }
+
+    @Override
     public Map<String, List<V>> pollFirstFromAny(Duration duration, int count, String... queueNames) {
         return get(pollFirstFromAnyAsync(duration, count, queueNames));
     }
