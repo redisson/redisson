@@ -81,14 +81,14 @@ public class JCacheTest {
         URL configUrl = getClass().getResource("redisson-jcache.yaml");
         Config cfg = Config.fromYAML(configUrl);
 
-        MutableConfiguration c = createConfig();
+        MutableConfiguration<String, String> c = createConfig();
         c.setExpiryPolicyFactory(CreatedExpiryPolicy.factoryOf(new Duration(MILLISECONDS, 500)));
         Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg, c);
         Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
                 .createCache("test", config);
 
         cache.put("1", "2");
-        Thread.sleep(500);
+        Thread.sleep(1000);
         assertThat(cache.get("1")).isNull();
         cache.put("1", "3");
         assertThat(cache.get("1")).isEqualTo("3");
@@ -109,13 +109,18 @@ public class JCacheTest {
         URL configUrl = getClass().getResource("redisson-jcache.yaml");
         Config cfg = Config.fromYAML(configUrl);
 
-        Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg);
-        Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
+        Configuration<Integer, Integer> c = createConfig();
+        Configuration<Integer, Integer> config = RedissonConfiguration.fromConfig(cfg, c);
+        Cache<Integer, Integer> cache = Caching.getCachingProvider().getCacheManager()
                 .createCache("test", config);
 
-        cache.put("1", "2");
+        for (int i = 0; i < 100; i++) {
+            cache.put(i, i);
+        }
         cache.clear();
-        assertThat(cache.get("1")).isNull();
+        for (int i = 0; i < 100; i++) {
+            assertThat(cache.get(i)).isNull();
+        }
 
         cache.close();
     }
@@ -125,7 +130,8 @@ public class JCacheTest {
         URL configUrl = getClass().getResource("redisson-jcache.yaml");
         Config cfg = Config.fromYAML(configUrl);
 
-        Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg);
+        Configuration<String, String> c = createConfig();
+        Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg, c);
         Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
                 .createCache("test", config);
 
@@ -141,7 +147,8 @@ public class JCacheTest {
         URL configUrl = getClass().getResource("redisson-jcache.yaml");
         Config cfg = Config.fromYAML(configUrl);
 
-        Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg);
+        Configuration<String, String> c = createConfig();
+        Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg, c);
         Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
                 .createCache("test", config);
 
@@ -157,7 +164,8 @@ public class JCacheTest {
         URL configUrl = getClass().getResource("redisson-jcache.yaml");
         Config cfg = Config.fromYAML(configUrl);
 
-        Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg);
+        Configuration<String, String> c = createConfig();
+        Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg, c);
         Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
                 .createCache("test", config);
 
@@ -173,7 +181,8 @@ public class JCacheTest {
         URL configUrl = getClass().getResource("redisson-jcache.yaml");
         Config cfg = Config.fromYAML(configUrl);
 
-        Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg);
+        Configuration<String, String> c = createConfig();
+        Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg, c);
         Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
                 .createCache("test", config);
 
@@ -198,7 +207,8 @@ public class JCacheTest {
         URL configUrl = getClass().getResource("redisson-jcache.yaml");
         Config cfg = Config.fromYAML(configUrl);
 
-        Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg);
+        Configuration<String, String> c = createConfig();
+        Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg, c);
         Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
                 .createCache("test", config);
 
@@ -222,7 +232,8 @@ public class JCacheTest {
         URL configUrl = getClass().getResource("redisson-jcache.yaml");
         Config cfg = Config.fromYAML(configUrl);
 
-        Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg);
+        Configuration<String, String> c = createConfig();
+        Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg, c);
         Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
                 .createCache("test", config);
 
@@ -243,7 +254,8 @@ public class JCacheTest {
         URL configUrl = getClass().getResource("redisson-jcache.yaml");
         Config cfg = Config.fromYAML(configUrl);
 
-        Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg);
+        Configuration<String, String> c = createConfig();
+        Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg, c);
         Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
                 .createCache("test", config);
 
@@ -312,7 +324,8 @@ public class JCacheTest {
         objectMapper.registerModule(new JavaTimeModule());
         cfg.setCodec(new TypedJsonJacksonCodec(String.class, LocalDateTime.class, objectMapper));
 
-        Configuration<String, LocalDateTime> config = RedissonConfiguration.fromConfig(cfg);
+        Configuration<String, LocalDateTime> c = createConfig();
+        Configuration<String, LocalDateTime> config = RedissonConfiguration.fromConfig(cfg, c);
         Cache<String, LocalDateTime> cache = Caching.getCachingProvider().getCacheManager()
                 .createCache("test", config);
 
@@ -328,7 +341,8 @@ public class JCacheTest {
         URL configUrl = getClass().getResource("redisson-jcache.yaml");
         Config cfg = Config.fromYAML(configUrl);
 
-        Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg);
+        Configuration<String, String> c = createConfig();
+        Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg, c);
         Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
                 .createCache("test", config);
 
@@ -354,7 +368,8 @@ public class JCacheTest {
         Config cfg = Config.fromYAML(configUrl);
         cfg.setUseScriptCache(true);
 
-        Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg);
+        Configuration<String, String> c = createConfig();
+        Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg, c);
         Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
                 .createCache("test", config);
 
