@@ -3,21 +3,14 @@ package org.redisson.jcache;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.redisson.Redisson;
+import org.redisson.RedisDockerTest;
 import org.redisson.api.CacheAsync;
 import org.redisson.api.CacheReactive;
 import org.redisson.api.CacheRx;
-import org.redisson.api.RedissonClient;
 import org.redisson.codec.TypedJsonJacksonCodec;
 import org.redisson.config.Config;
 import org.redisson.jcache.configuration.RedissonConfiguration;
-import org.slf4j.LoggerFactory;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.output.Slf4jLogConsumer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import javax.cache.Cache;
 import javax.cache.Caching;
@@ -27,11 +20,13 @@ import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
 import javax.cache.integration.CacheLoader;
 import javax.cache.integration.CacheLoaderException;
+import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
@@ -40,40 +35,64 @@ import java.util.concurrent.TimeUnit;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Testcontainers
-public class JCacheTest {
+public class JCacheTest extends RedisDockerTest {
 
-    @Container
-    private static final GenericContainer<?> REDIS =
-            new GenericContainer<>("redis:latest")
-                    .withCreateContainerCmdModifier(cmd -> {
-                        cmd.withCmd("redis-server", "--save", "''", "--notify-keyspace-events", "Ehx");
-                    })
-                    .withExposedPorts(6379)
-                    .withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger("redis")));
+//    @BeforeEach
+//    public void beforeEach() throws IOException, InterruptedException {
+//        org.testcontainers.containers.Container.ExecResult r = REDIS.execInContainer("redis-cli", "flushall");
+//        assertThat(r.getExitCode()).isEqualTo(0);
+//    }
 
-    static {
-        REDIS.setPortBindings(Arrays.asList("6311:6379"));
-    }
-
-    @BeforeEach
-    public void beforeEach() throws IOException, InterruptedException {
-        org.testcontainers.containers.Container.ExecResult r = REDIS.execInContainer("redis-cli", "flushall");
-        assertThat(r.getExitCode()).isEqualTo(0);
-    }
-
-    <K, V> MutableConfiguration<K, V> createConfig() {
+    <K, V> MutableConfiguration<K, V> createJCacheConfig() {
         return new MutableConfiguration<>();
     }
 
     @Test
-    public void testClose() throws IOException {
-        URL configUrl = getClass().getResource("redisson-jcache.yaml");
-        Config cfg = Config.fromYAML(configUrl);
+    public void testYAML() throws IOException {
+        URI configUrl = resolve("redisson-jcache.yaml", REDIS.getFirstMappedPort());
+        Config cfg = Config.fromYAML(configUrl.toURL());
 
-        MutableConfiguration<String, String> c = createConfig();
+        MutableConfiguration<String, String> c = createJCacheConfig();
         c.setStatisticsEnabled(true);
         Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg, c);
+
+        Cache<String, String> cache1 = Caching.getCachingProvider()
+                .getCacheManager().createCache("test1", config);
+        cache1.put("1", "2");
+        assertThat(cache1.get("1")).isEqualTo("2");
+        cache1.close();
+
+        Cache<String, String> cache2 = Caching.getCachingProvider().getCacheManager(configUrl, null)
+                .createCache("test2", config);
+        cache2.put("3", "4");
+        assertThat(cache2.get("3")).isEqualTo("4");
+        cache2.close();
+    }
+
+    public URI resolve(String filename, int serverPort) throws IOException {
+        File inputFile = new File(getClass().getResource(filename).getFile());
+        String content = new String(Files.readAllBytes(inputFile.toPath()));
+
+        content = content.replace("${port}", String.valueOf(serverPort));
+
+        Path tempFile = Files.createTempFile("modified_", "_" + filename);
+        Files.write(tempFile, content.getBytes());
+
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                Files.deleteIfExists(tempFile);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }));
+
+        return tempFile.toUri();
+    }
+    @Test
+    public void testClose() {
+        MutableConfiguration<String, String> c = createJCacheConfig();
+        c.setStatisticsEnabled(true);
+        Configuration<String, String> config = RedissonConfiguration.fromInstance(redisson, c);
         Cache<String, String> cache = Caching.getCachingProvider()
                                                 .getCacheManager().createCache("test", config);
         cache.close();
@@ -81,12 +100,9 @@ public class JCacheTest {
 
     @Test
     public void testCreatedExpiryPolicy() throws Exception {
-        URL configUrl = getClass().getResource("redisson-jcache.yaml");
-        Config cfg = Config.fromYAML(configUrl);
-
-        MutableConfiguration<String, String> c = createConfig();
+        MutableConfiguration<String, String> c = createJCacheConfig();
         c.setExpiryPolicyFactory(CreatedExpiryPolicy.factoryOf(new Duration(MILLISECONDS, 500)));
-        Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg, c);
+        Configuration<String, String> config = RedissonConfiguration.fromInstance(redisson, c);
         Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
                 .createCache("test", config);
 
@@ -108,12 +124,9 @@ public class JCacheTest {
     }
 
     @Test
-    public void testClear() throws Exception {
-        URL configUrl = getClass().getResource("redisson-jcache.yaml");
-        Config cfg = Config.fromYAML(configUrl);
-
-        Configuration<Integer, Integer> c = createConfig();
-        Configuration<Integer, Integer> config = RedissonConfiguration.fromConfig(cfg, c);
+    public void testClear() {
+        Configuration<Integer, Integer> c = createJCacheConfig();
+        Configuration<Integer, Integer> config = RedissonConfiguration.fromInstance(redisson, c);
         Cache<Integer, Integer> cache = Caching.getCachingProvider().getCacheManager()
                 .createCache("test", config);
 
@@ -130,11 +143,8 @@ public class JCacheTest {
 
     @Test
     public void testAsync() throws Exception {
-        URL configUrl = getClass().getResource("redisson-jcache.yaml");
-        Config cfg = Config.fromYAML(configUrl);
-
-        Configuration<String, String> c = createConfig();
-        Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg, c);
+        Configuration<String, String> c = createJCacheConfig();
+        Configuration<String, String> config = RedissonConfiguration.fromInstance(redisson, c);
         Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
                 .createCache("test", config);
 
@@ -146,12 +156,9 @@ public class JCacheTest {
     }
 
     @Test
-    public void testReactive() throws Exception {
-        URL configUrl = getClass().getResource("redisson-jcache.yaml");
-        Config cfg = Config.fromYAML(configUrl);
-
-        Configuration<String, String> c = createConfig();
-        Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg, c);
+    public void testReactive() {
+        Configuration<String, String> c = createJCacheConfig();
+        Configuration<String, String> config = RedissonConfiguration.fromInstance(redisson, c);
         Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
                 .createCache("test", config);
 
@@ -163,12 +170,9 @@ public class JCacheTest {
     }
 
     @Test
-    public void testRx() throws Exception {
-        URL configUrl = getClass().getResource("redisson-jcache.yaml");
-        Config cfg = Config.fromYAML(configUrl);
-
-        Configuration<String, String> c = createConfig();
-        Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg, c);
+    public void testRx() {
+        Configuration<String, String> c = createJCacheConfig();
+        Configuration<String, String> config = RedissonConfiguration.fromInstance(redisson, c);
         Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
                 .createCache("test", config);
 
@@ -181,11 +185,8 @@ public class JCacheTest {
 
     @Test
     public void testPutAll() throws Exception {
-        URL configUrl = getClass().getResource("redisson-jcache.yaml");
-        Config cfg = Config.fromYAML(configUrl);
-
-        Configuration<String, String> c = createConfig();
-        Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg, c);
+        Configuration<String, String> c = createJCacheConfig();
+        Configuration<String, String> config = RedissonConfiguration.fromInstance(redisson, c);
         Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
                 .createCache("test", config);
 
@@ -207,11 +208,8 @@ public class JCacheTest {
 
     @Test
     public void testRemoveAll() throws Exception {
-        URL configUrl = getClass().getResource("redisson-jcache.yaml");
-        Config cfg = Config.fromYAML(configUrl);
-
-        Configuration<String, String> c = createConfig();
-        Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg, c);
+        Configuration<String, String> c = createJCacheConfig();
+        Configuration<String, String> config = RedissonConfiguration.fromInstance(redisson, c);
         Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
                 .createCache("test", config);
 
@@ -220,7 +218,7 @@ public class JCacheTest {
         cache.put("4", "4");
         cache.put("5", "5");
 
-        Set<? extends String> keys = new HashSet<String>(Arrays.asList("1", "3", "4", "5"));
+        Set<? extends String> keys = new HashSet<>(Arrays.asList("1", "3", "4", "5"));
         cache.removeAll(keys);
         assertThat(cache.containsKey("1")).isFalse();
         assertThat(cache.containsKey("3")).isFalse();
@@ -231,12 +229,9 @@ public class JCacheTest {
     }
 
     @Test
-    public void testGetAllHighVolume() throws Exception {
-        URL configUrl = getClass().getResource("redisson-jcache.yaml");
-        Config cfg = Config.fromYAML(configUrl);
-
-        Configuration<String, String> c = createConfig();
-        Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg, c);
+    public void testGetAllHighVolume() {
+        Configuration<String, String> c = createJCacheConfig();
+        Configuration<String, String> config = RedissonConfiguration.fromInstance(redisson, c);
         Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
                 .createCache("test", config);
 
@@ -253,20 +248,17 @@ public class JCacheTest {
     }
 
     @Test
-    public void testGetAll() throws Exception {
-        URL configUrl = getClass().getResource("redisson-jcache.yaml");
-        Config cfg = Config.fromYAML(configUrl);
-
-        Configuration<String, String> c = createConfig();
-        Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg, c);
+    public void testGetAll() {
+        Configuration<String, String> c = createJCacheConfig();
+        Configuration<String, String> config = RedissonConfiguration.fromInstance(redisson, c);
         Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
                 .createCache("test", config);
 
         cache.put("1", "2");
         cache.put("3", "4");
 
-        Map<String, String> entries = cache.getAll(new HashSet<String>(Arrays.asList("1", "3", "7")));
-        Map<String, String> expected = new HashMap<String, String>();
+        Map<String, String> entries = cache.getAll(new HashSet<>(Arrays.asList("1", "3", "7")));
+        Map<String, String> expected = new HashMap<>();
         expected.put("1", "2");
         expected.put("3", "4");
         assertThat(entries).isEqualTo(expected);
@@ -276,10 +268,7 @@ public class JCacheTest {
 
     @Test
     public void testGetAllCacheLoader() throws Exception {
-        URL configUrl = getClass().getResource("redisson-jcache.yaml");
-        Config cfg = Config.fromYAML(configUrl);
-
-        MutableConfiguration<String, String> jcacheConfig = createConfig();
+        MutableConfiguration<String, String> jcacheConfig = createJCacheConfig();
         jcacheConfig.setReadThrough(true);
         jcacheConfig.setCacheLoaderFactory(new Factory<CacheLoader<String, String>>() {
             @Override
@@ -301,7 +290,7 @@ public class JCacheTest {
                 };
             }
         });
-        Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg, jcacheConfig);
+        Configuration<String, String> config = RedissonConfiguration.fromInstance(redisson, jcacheConfig);
         Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
                 .createCache("test", config);
 
@@ -309,7 +298,7 @@ public class JCacheTest {
         cache.put("3", "4");
 
         Map<String, String> entries = cache.getAll(new HashSet<>(Arrays.asList("1", "3", "7", "10")));
-        Map<String, String> expected = new HashMap<String, String>();
+        Map<String, String> expected = new HashMap<>();
         expected.put("1", "2");
         expected.put("3", "4");
         expected.put("7", "7_loaded");
@@ -321,13 +310,13 @@ public class JCacheTest {
 
     @Test
     public void testJson() throws IllegalArgumentException, IOException {
-        URL configUrl = getClass().getResource("redisson-jcache.yaml");
+        URL configUrl = resolve("redisson-jcache.yaml", REDIS.getFirstMappedPort()).toURL();
         Config cfg = Config.fromYAML(configUrl);
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
         cfg.setCodec(new TypedJsonJacksonCodec(String.class, LocalDateTime.class, objectMapper));
 
-        Configuration<String, LocalDateTime> c = createConfig();
+        Configuration<String, LocalDateTime> c = createJCacheConfig();
         Configuration<String, LocalDateTime> config = RedissonConfiguration.fromConfig(cfg, c);
         Cache<String, LocalDateTime> cache = Caching.getCachingProvider().getCacheManager()
                 .createCache("test", config);
@@ -340,12 +329,9 @@ public class JCacheTest {
     }
 
     @Test
-    public void testRedissonConfig() throws IllegalArgumentException, IOException {
-        URL configUrl = getClass().getResource("redisson-jcache.yaml");
-        Config cfg = Config.fromYAML(configUrl);
-
-        Configuration<String, String> c = createConfig();
-        Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg, c);
+    public void testRedissonConfig() throws IllegalArgumentException {
+        Configuration<String, String> c = createJCacheConfig();
+        Configuration<String, String> config = RedissonConfiguration.fromInstance(redisson, c);
         Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
                 .createCache("test", config);
 
@@ -367,11 +353,11 @@ public class JCacheTest {
 
     @Test
     public void testScriptCache() throws IOException {
-        URL configUrl = getClass().getResource("redisson-jcache.yaml");
+        URL configUrl = resolve("redisson-jcache.yaml", REDIS.getFirstMappedPort()).toURL();
         Config cfg = Config.fromYAML(configUrl);
         cfg.setUseScriptCache(true);
 
-        Configuration<String, String> c = createConfig();
+        Configuration<String, String> c = createJCacheConfig();
         Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg, c);
         Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
                 .createCache("test", config);
@@ -384,9 +370,6 @@ public class JCacheTest {
 
     @Test
     public void testRedissonInstance() throws IllegalArgumentException {
-        Config cfg = new Config();
-        cfg.useSingleServer().setAddress("redis://127.0.0.1:6311");
-        RedissonClient redisson = Redisson.create(cfg);
         Configuration<String, String> config = RedissonConfiguration.fromInstance(redisson);
         Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
                 .createCache("test", config);
@@ -395,17 +378,16 @@ public class JCacheTest {
         Assertions.assertEquals("2", cache.get("1"));
 
         cache.close();
-        redisson.shutdown();
     }
 
     @Test
-    public void testExpiration() throws InterruptedException, IllegalArgumentException, URISyntaxException {
-        MutableConfiguration<String, String> config = createConfig();
-        config.setExpiryPolicyFactory(CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.SECONDS, 1)));
-        config.setStoreByValue(true);
+    public void testExpiration() throws InterruptedException, IllegalArgumentException {
+        MutableConfiguration<String, String> cfg = createJCacheConfig();
+        cfg.setExpiryPolicyFactory(CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.SECONDS, 1)));
+        cfg.setStoreByValue(true);
 
-        URI configUri = getClass().getResource("redisson-jcache.yaml").toURI();
-        Cache<String, String> cache = Caching.getCachingProvider().getCacheManager(configUri, null)
+        Configuration<String, String> config = RedissonConfiguration.fromInstance(redisson, cfg);
+        Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
                 .createCache("test", config);
 
         CountDownLatch latch = new CountDownLatch(1);
@@ -427,12 +409,12 @@ public class JCacheTest {
     }
 
     @Test
-    public void testUpdate() throws InterruptedException, URISyntaxException {
-        MutableConfiguration<String, String> config = createConfig();
-        config.setStoreByValue(true);
+    public void testUpdate() throws InterruptedException {
+        MutableConfiguration<String, String> cfg = createJCacheConfig();
+        cfg.setStoreByValue(true);
 
-        URI configUri = getClass().getResource("redisson-jcache.yaml").toURI();
-        Cache<String, String> cache = Caching.getCachingProvider().getCacheManager(configUri, null)
+        Configuration<String, String> config = RedissonConfiguration.fromInstance(redisson, cfg);
+        Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
                 .createCache("test", config);
 
         CountDownLatch latch = new CountDownLatch(1);
@@ -457,12 +439,12 @@ public class JCacheTest {
     }
 
     @Test
-    public void testUpdateAsync() throws InterruptedException, URISyntaxException {
-        MutableConfiguration<String, String> config = createConfig();
-        config.setStoreByValue(true);
+    public void testUpdateAsync() throws InterruptedException {
+        MutableConfiguration<String, String> cfg = createJCacheConfig();
+        cfg.setStoreByValue(true);
 
-        URI configUri = getClass().getResource("redisson-jcache.yaml").toURI();
-        Cache<String, String> cache = Caching.getCachingProvider().getCacheManager(configUri, null)
+        Configuration<String, String> config = RedissonConfiguration.fromInstance(redisson, cfg);
+        Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
                 .createCache("test", config);
 
         CountDownLatch latch = new CountDownLatch(2);
@@ -492,12 +474,12 @@ public class JCacheTest {
     }
 
     @Test
-    public void testUpdateWithoutOldValue() throws InterruptedException, URISyntaxException {
-        MutableConfiguration<String, String> config = createConfig();
-        config.setStoreByValue(true);
+    public void testUpdateWithoutOldValue() throws InterruptedException {
+        MutableConfiguration<String, String> cfg = createJCacheConfig();
+        cfg.setStoreByValue(true);
 
-        URI configUri = getClass().getResource("redisson-jcache.yaml").toURI();
-        Cache<String, String> cache = Caching.getCachingProvider().getCacheManager(configUri, null)
+        Configuration<String, String> config = RedissonConfiguration.fromInstance(redisson, cfg);
+        Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
                 .createCache("test", config);
 
         CountDownLatch latch = new CountDownLatch(1);
@@ -522,12 +504,12 @@ public class JCacheTest {
     }
 
     @Test
-    public void testRemoveListener() throws InterruptedException, URISyntaxException {
-        MutableConfiguration<String, String> config = createConfig();
-        config.setStoreByValue(true);
+    public void testRemoveListener() throws InterruptedException {
+        MutableConfiguration<String, String> cfg = createJCacheConfig();
+        cfg.setStoreByValue(true);
 
-        URI configUri = getClass().getResource("redisson-jcache.yaml").toURI();
-        Cache<String, String> cache = Caching.getCachingProvider().getCacheManager(configUri, null)
+        Configuration<String, String> config = RedissonConfiguration.fromInstance(redisson, cfg);
+        Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
                 .createCache("test", config);
 
         CountDownLatch latch = new CountDownLatch(1);
