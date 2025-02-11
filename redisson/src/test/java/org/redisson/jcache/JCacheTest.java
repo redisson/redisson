@@ -143,10 +143,7 @@ public class JCacheTest extends RedisDockerTest {
 
     @Test
     public void testAsync() throws Exception {
-        Configuration<String, String> c = createJCacheConfig();
-        Configuration<String, String> config = RedissonConfiguration.fromInstance(redisson, c);
-        Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
-                .createCache("test", config);
+        Cache<String, String> cache = createCache();
 
         CacheAsync<String, String> async = cache.unwrap(CacheAsync.class);
         async.putAsync("1", "2").get();
@@ -157,10 +154,7 @@ public class JCacheTest extends RedisDockerTest {
 
     @Test
     public void testReactive() {
-        Configuration<String, String> c = createJCacheConfig();
-        Configuration<String, String> config = RedissonConfiguration.fromInstance(redisson, c);
-        Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
-                .createCache("test", config);
+        Cache<String, String> cache = createCache();
 
         CacheReactive<String, String> reactive = cache.unwrap(CacheReactive.class);
         reactive.put("1", "2").block();
@@ -171,10 +165,7 @@ public class JCacheTest extends RedisDockerTest {
 
     @Test
     public void testRx() {
-        Configuration<String, String> c = createJCacheConfig();
-        Configuration<String, String> config = RedissonConfiguration.fromInstance(redisson, c);
-        Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
-                .createCache("test", config);
+        Cache<String, String> cache = createCache();
 
         CacheRx<String, String> rx = cache.unwrap(CacheRx.class);
         rx.put("1", "2").blockingAwait();
@@ -185,10 +176,7 @@ public class JCacheTest extends RedisDockerTest {
 
     @Test
     public void testPutAll() throws Exception {
-        Configuration<String, String> c = createJCacheConfig();
-        Configuration<String, String> config = RedissonConfiguration.fromInstance(redisson, c);
-        Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
-                .createCache("test", config);
+        Cache<String, String> cache = createCache();
 
         Map<String, String> map = new HashMap<>();
         for (int i = 0; i < 10000; i++) {
@@ -208,10 +196,7 @@ public class JCacheTest extends RedisDockerTest {
 
     @Test
     public void testRemoveAll() throws Exception {
-        Configuration<String, String> c = createJCacheConfig();
-        Configuration<String, String> config = RedissonConfiguration.fromInstance(redisson, c);
-        Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
-                .createCache("test", config);
+        Cache<String, String> cache = createCache();
 
         cache.put("1", "2");
         cache.put("3", "4");
@@ -230,10 +215,7 @@ public class JCacheTest extends RedisDockerTest {
 
     @Test
     public void testGetAllHighVolume() {
-        Configuration<String, String> c = createJCacheConfig();
-        Configuration<String, String> config = RedissonConfiguration.fromInstance(redisson, c);
-        Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
-                .createCache("test", config);
+        Cache<String, String> cache = createCache();
 
         Map<String, String> m = new HashMap<>();
         for (int i = 0; i < 10000; i++) {
@@ -249,10 +231,7 @@ public class JCacheTest extends RedisDockerTest {
 
     @Test
     public void testGetAll() {
-        Configuration<String, String> c = createJCacheConfig();
-        Configuration<String, String> config = RedissonConfiguration.fromInstance(redisson, c);
-        Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
-                .createCache("test", config);
+        Cache<String, String> cache = createCache();
 
         cache.put("1", "2");
         cache.put("3", "4");
@@ -330,10 +309,7 @@ public class JCacheTest extends RedisDockerTest {
 
     @Test
     public void testGetAndPut() {
-        Configuration<String, String> c = createJCacheConfig();
-        Configuration<String, String> config = RedissonConfiguration.fromInstance(redisson, c);
-        Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
-                .createCache("test", config);
+        Cache<String, String> cache = createCache();
 
         cache.put("key", "value");
         assertThat(cache.getAndPut("key", "value1")).isEqualTo("value");
@@ -342,12 +318,81 @@ public class JCacheTest extends RedisDockerTest {
         cache.close();
     }
 
-    @Test
-    public void testGetAndReplace() {
+    private Cache<String, String> createCache() {
         Configuration<String, String> c = createJCacheConfig();
         Configuration<String, String> config = RedissonConfiguration.fromInstance(redisson, c);
         Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
                 .createCache("test", config);
+        return cache;
+    }
+
+    @Test
+    void testReplaceKeyOnly() {
+        Cache<String, String> cache = createCache();
+        cache.put("key1", "value1");
+
+        boolean result = cache.replace("key1", "newValue");
+        assertThat(result).isTrue();
+        assertThat(cache.get("key1")).isEqualTo("newValue");
+
+        result = cache.replace("key2", "newValue");
+        assertThat(result).isFalse();
+        assertThat(cache.get("key2")).isNull();
+
+        cache.close();
+    }
+
+    @Test
+    void testReplaceKeyValue() {
+        Cache<String, String> cache = createCache();
+        cache.put("key1", "value1");
+
+        boolean result = cache.replace("key1", "value1", "newValue");
+        assertThat(result).isTrue();
+        assertThat(cache.get("key1")).isEqualTo("newValue");
+
+        result = cache.replace("key2", "value1", "newValue");
+        assertThat(result).isFalse();
+        assertThat(cache.get("key2")).isNull();
+
+        cache.close();
+    }
+
+    @Test
+    void testRemoveKeyValue() {
+        Cache<String, String> cache = createCache();
+        cache.put("key1", "value1");
+
+        boolean result = cache.remove("key1", "value1");
+        assertThat(result).isTrue();
+        assertThat(cache.get("key1")).isNull();
+
+        result = cache.remove("key2", "value1");
+        assertThat(result).isFalse();
+
+        cache.close();
+    }
+
+    @Test
+    public void testPutIfAbsent() {
+        Cache<String, String> cache = createCache();
+
+        String key = "key1";
+        String value1 = "value1";
+        String value2 = "value2";
+
+        assertThat(cache.putIfAbsent(key, value1)).isTrue();
+        assertThat(cache.get(key)).isEqualTo(value1);
+
+        assertThat(cache.putIfAbsent(key, value2)).isFalse();
+        assertThat(cache.get(key)).isEqualTo(value1);
+
+        cache.close();
+    }
+
+    @Test
+    public void testGetAndReplace() {
+        Cache<String, String> cache = createCache();
 
         assertThat(cache.getAndReplace("key", "value1")).isNull();
         assertThat(cache.get("key")).isNull();
@@ -361,10 +406,7 @@ public class JCacheTest extends RedisDockerTest {
 
     @Test
     public void testRedissonConfig() throws IllegalArgumentException {
-        Configuration<String, String> c = createJCacheConfig();
-        Configuration<String, String> config = RedissonConfiguration.fromInstance(redisson, c);
-        Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
-                .createCache("test", config);
+        Cache<String, String> cache = createCache();
 
         cache.put("1", "2");
         Assertions.assertEquals("2", cache.get("1"));
