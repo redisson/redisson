@@ -426,6 +426,33 @@ public class RedissonBlockingQueueTest extends RedissonQueueTest {
     }
 
     @Test
+    public void testPollLastFromAnyWithName() throws InterruptedException {
+        RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue:polLast");
+        RBlockingQueue<Integer> queue2 = redisson.getBlockingQueue("queue:polLast1");
+        RBlockingQueue<Integer> queue3 = redisson.getBlockingQueue("queue:polLast2");
+        queue3.put(1);
+        queue3.put(2);
+        queue3.put(3);
+        queue1.put(4);
+        queue1.put(5);
+        queue1.put(6);
+        queue2.put(7);
+
+        Entry<String, Integer> r = queue1.pollLastFromAnyWithName(Duration.ofSeconds(4), "queue:polLast1", "queue:polpolLast2");
+        assertThat(r.getKey()).isEqualTo("queue:polLast");
+        assertThat(r.getValue()).isEqualTo(6);
+
+        Entry<String, Integer> r2 = queue2.pollLastFromAnyWithName(Duration.ofSeconds(4), "queue:polLast", "queue:polLast2");
+        assertThat(r2.getKey()).isEqualTo("queue:polLast1");
+        assertThat(r2.getValue()).isEqualTo(7);
+
+        Entry<String, Integer> r3 = queue2.pollLastFromAnyWithName(Duration.ofSeconds(4), "queue:polLast2", "queue:polLast");
+        assertThat(r3.getKey()).isEqualTo("queue:polLast2");
+        assertThat(r3.getValue()).isEqualTo(3);
+
+    }
+
+    @Test
     public void testPollFirstFromAny() throws InterruptedException {
         RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue:pollany");
         RBlockingQueue<Integer> queue2 = redisson.getBlockingQueue("queue:pollany1");

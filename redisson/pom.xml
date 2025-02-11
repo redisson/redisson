@@ -439,14 +439,14 @@
         <dependency>
             <groupId>com.google.protobuf</groupId>
             <artifactId>protobuf-java</artifactId>
-            <version>4.27.5</version>
+            <version>4.29.3</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>com.google.protobuf</groupId>
             <artifactId>protobuf-java-util</artifactId>
-            <version>4.28.3</version>
+            <version>4.29.3</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>

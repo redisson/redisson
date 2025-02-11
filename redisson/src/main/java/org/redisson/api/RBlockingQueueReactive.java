@@ -62,6 +62,21 @@ public interface RBlockingQueueReactive<V> extends RQueueReactive<V> {
     Mono<Entry<String, V>> pollFromAnyWithName(Duration timeout, String... queueNames);
 
     /**
+     * Retrieves and removes first available tail element of <b>any</b> queue,
+     * waiting up to the specified wait time if necessary for an element to become available
+     * in any of defined queues <b>including</b> queue itself.
+     *
+     * @param queueNames queue names. Queue name itself is always included
+     * @param timeout how long to wait before giving up, in units of
+     *        {@code unit}
+     * @return the tail of this queue, or {@code null} if the
+     *         specified waiting time elapses before an element is available
+     * @throws InterruptedException if interrupted while waiting
+     */
+    Mono<Entry<String, V>> pollLastFromAnyWithName(Duration timeout, String... queueNames);
+
+
+    /**
      * Retrieves and removes first available head elements of <b>any</b> queue,
      * waiting up to the specified wait time if necessary for an element to become available
      * in any of defined queues <b>including</b> queue itself.

@@ -184,6 +184,20 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
     }
 
     @Override
+    public Entry<String, V> pollLastFromAnyWithName(Duration duration, String... queueNames) throws InterruptedException {
+        return commandExecutor.getInterrupted(pollLastFromAnyWithNameAsync(duration, queueNames));
+    }
+
+    @Override
+    public RFuture<Entry<String, V>> pollLastFromAnyWithNameAsync(Duration timeout, String... queueNames) {
+        if (timeout.toMillis() < 0) {
+            return new CompletableFutureWrapper<>((Entry) null);
+        }
+        return commandExecutor.pollFromAnyAsync(getRawName(), codec, RedisCommands.BRPOP_NAME,
+                toSeconds(timeout.toMillis(), TimeUnit.MILLISECONDS), queueNames);
+    }
+
+    @Override
     public RFuture<V> pollLastAndOfferFirstToAsync(String queueName, long timeout, TimeUnit unit) {
         if (timeout < 0) {
             return new CompletableFutureWrapper<>((V) null);

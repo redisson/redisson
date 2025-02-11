@@ -64,6 +64,9 @@ public interface RedisCommands {
     RedisStrictCommand<Object> BITFIELD_SHORT = new RedisStrictCommand<>("BITFIELD", null,
                                                     new ListFirstObjectDecoder(), new ShortReplayConvertor());
     RedisStrictCommand<Void> BITFIELD_VOID = new RedisStrictCommand<>("BITFIELD", new VoidReplayConvertor());
+    
+    RedisStrictCommand<boolean[]> BITFIELD_BOOLEANS = new RedisStrictCommand<>("BITFIELD", null,
+                                                    new ArrayBooleanDecoder(), new BooleanReplayConvertor());
 
     RedisStrictCommand<Boolean> GETBIT = new RedisStrictCommand<Boolean>("GETBIT", new BooleanReplayConvertor());
     RedisStrictCommand<Long> BITS_SIZE = new RedisStrictCommand<Long>("STRLEN", new BitsSizeReplayConvertor());
@@ -298,7 +301,7 @@ public interface RedisCommands {
     RedisCommand<Object> BZPOPMIN_VALUE = new RedisCommand<Object>("BZPOPMIN", new ScoredSortedSetPolledObjectDecoder());
     RedisCommand<Object> BZPOPMAX_VALUE = new RedisCommand<Object>("BZPOPMAX", new ScoredSortedSetPolledObjectDecoder());
 
-    RedisCommand<Map<String, List<Object>>> BLPOP_NAME = new RedisCommand<>("BLPOP",
+    RedisCommand<org.redisson.api.Entry<String, Object>> BLPOP_NAME = new RedisCommand<>("BLPOP",
                     new ListObjectDecoder(0) {
                         @Override
                         public Object decode(List parts, State state) {
@@ -308,6 +311,17 @@ public interface RedisCommands {
                             return new org.redisson.api.Entry<>(parts.get(0), parts.get(1));
                         }
                     });
+
+    RedisCommand<org.redisson.api.Entry<String, Object>> BRPOP_NAME = new RedisCommand<>("BRPOP",
+            new ListObjectDecoder(0) {
+                @Override
+                public Object decode(List parts, State state) {
+                    if (parts.isEmpty()) {
+                        return null;
+                    }
+                    return new org.redisson.api.Entry<>(parts.get(0), parts.get(1));
+                }
+            });
 
     RedisCommand<Map<String, List<Object>>> BLMPOP = new RedisCommand<>("BLMPOP",
             new ListMultiDecoder2(

@@ -102,6 +102,16 @@ public class RedissonPriorityBlockingDeque<V> extends RedissonPriorityDeque<V> i
     }
 
     @Override
+    public Entry<String, V> pollLastFromAnyWithName(Duration timeout, String... queueNames) throws InterruptedException {
+        throw new UnsupportedOperationException("use poll method");
+    }
+
+    @Override
+    public RFuture<Entry<String, V>> pollLastFromAnyWithNameAsync(Duration timeout, String... queueNames) {
+        throw new UnsupportedOperationException("use poll method");
+    }
+
+    @Override
     public Map<String, List<V>> pollFirstFromAny(Duration duration, int count, String... queueNames) throws InterruptedException {
         throw new UnsupportedOperationException("use poll method");
     }

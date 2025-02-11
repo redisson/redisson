@@ -88,6 +88,18 @@ public interface RBlockingQueueAsync<V> extends RQueueAsync<V> {
     RFuture<Map<String, List<V>>> pollLastFromAnyAsync(Duration duration, int count, String... queueNames);
 
     /**
+     * Retrieves and removes first available tail element of <b>any</b> queue in async mode,
+     * waiting up to the specified wait time if necessary for an element to become available
+     * in any of defined queues <b>including</b> queue itself.
+     *
+     * @param queueNames - queue names. Queue name itself is always included
+     * @param timeout    how long to wait before giving up
+     * @return Future object with the tail of this queue, or {@code null} if the
+     * specified waiting time elapses before an element is available
+     */
+    RFuture<Entry<String, V>> pollLastFromAnyWithNameAsync(Duration timeout, String... queueNames);
+
+    /**
      * Removes at most the given number of available elements from
      * this queue and adds them to the given collection in async mode.  A failure
      * encountered while attempting to add elements to

@@ -210,5 +210,16 @@ public class RedissonBitSetTest extends RedisDockerTest {
         assertThat(bs1.size()).isEqualTo(16);
     }
 
+    @Test
+    public void testGetWithIndexes() {
+        RBitSet bitset = redisson.getBitSet("testbitset");
+        
+        bitset.set(4, 10);
+        boolean[] result = bitset.get(2, 4, 7, 8);
+        assertThat(result[0]).isFalse();
+        assertThat(result[1]).isTrue();
+        assertThat(result[2]).isTrue();
+        assertThat(result[3]).isTrue();
+    }
 
 }

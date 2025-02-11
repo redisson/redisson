@@ -278,6 +278,14 @@ public interface RBitSetRx extends RExpirableRx {
      * @return <code>true</code> if bit set to one and <code>false</code> overwise.
      */
     Single<Boolean> get(long bitIndex);
+    
+    /**
+     * Returns a boolean array where each element of the array corresponds to the query result of the input parameters.
+     *
+     * @param bitIndexes indexes of bit
+     * @return Returns a boolean array where each element of the array corresponds to the query result of the input parameters.
+     */
+    Single<boolean[]> get(long... bitIndexes);
 
     /**
      * Set bit to one at specified bitIndex

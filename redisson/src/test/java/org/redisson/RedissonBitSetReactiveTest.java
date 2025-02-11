@@ -6,6 +6,8 @@ import org.redisson.api.RBitSetReactive;
 
 import java.util.BitSet;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 public class RedissonBitSetReactiveTest extends BaseReactiveTest {
 
     @Test
@@ -112,6 +114,17 @@ public class RedissonBitSetReactiveTest extends BaseReactiveTest {
         Assertions.assertEquals(1, sync(bs1.cardinality()).intValue());
         Assertions.assertEquals(16, sync(bs1.size()).intValue());
     }
-
+    
+    @Test
+    public void testGetWithIndexes() {
+        RBitSetReactive bitset = redisson.getBitSet("testbitset");
+        
+        sync(bitset.set(4, 10));
+        boolean[] result = sync(bitset.get(2, 4, 7, 8));
+        assertThat(result[0]).isFalse();
+        assertThat(result[1]).isTrue();
+        assertThat(result[2]).isTrue();
+        assertThat(result[3]).isTrue();
+    }
 
 }
