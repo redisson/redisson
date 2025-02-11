@@ -2,7 +2,9 @@ package org.redisson.jcache;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.redisson.RedisDockerTest;
 import org.redisson.api.CacheAsync;
@@ -37,11 +39,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class JCacheTest extends RedisDockerTest {
 
-//    @BeforeEach
-//    public void beforeEach() throws IOException, InterruptedException {
-//        org.testcontainers.containers.Container.ExecResult r = REDIS.execInContainer("redis-cli", "flushall");
-//        assertThat(r.getExitCode()).isEqualTo(0);
-//    }
+    @BeforeAll
+    public static void before() throws IOException, InterruptedException {
+        org.testcontainers.containers.Container.ExecResult r = REDIS.execInContainer("redis-cli", "CONFIG", "SET", "notify-keyspace-events", "Ehx");
+        assertThat(r.getExitCode()).isEqualTo(0);
+    }
+
+    @AfterAll
+    public static void after() throws IOException, InterruptedException {
+        org.testcontainers.containers.Container.ExecResult r = REDIS.execInContainer("redis-cli", "CONFIG", "SET", "notify-keyspace-events", "");
+        assertThat(r.getExitCode()).isEqualTo(0);
+    }
 
     <K, V> MutableConfiguration<K, V> createJCacheConfig() {
         return new MutableConfiguration<>();

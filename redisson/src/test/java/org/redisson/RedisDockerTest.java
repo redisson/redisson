@@ -17,7 +17,9 @@ import org.redisson.config.Config;
 import org.redisson.config.Protocol;
 import org.redisson.connection.SequentialDnsAddressResolverFactory;
 import org.redisson.misc.RedisURI;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.*;
+import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.startupcheck.MinimumDurationRunningStartupCheckStrategy;
 import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
 
@@ -52,7 +54,8 @@ public class RedisDockerTest {
                     args.addAll(Arrays.asList(params));
                     cmd.withCmd(args);
                 })
-                .withExposedPorts(6379);
+                .withExposedPorts(6379)
+                .withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger("redis")));
     }
 
     protected static GenericContainer<?> createRedis(String... params) {
