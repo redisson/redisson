@@ -35,6 +35,26 @@ public interface RObject extends RObjectAsync {
     Long getIdleTime();
 
     /**
+     * Returns count of references over this object.
+     *
+     * @return count of reference
+     */
+    int getReferenceCount();
+
+    /**
+     * Returns the logarithmic access frequency counter over this object.
+     *
+     * @return frequency counter
+     */
+    int getAccessFrequency();
+
+    /**
+     * Returns the internal encoding for the Redis object
+     *
+     * @return internal encoding
+     */
+    RedisObjectEncoding getInternalEncoding();
+    /**
      * Returns bytes amount used by object in Redis memory.
      * 
      * @return size in bytes

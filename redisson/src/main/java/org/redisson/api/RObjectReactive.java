@@ -36,6 +36,27 @@ public interface RObjectReactive {
      */
     Mono<Long> getIdleTime();
 
+    /**
+     * Returns count of references over this object.
+     *
+     * @return count of reference
+     */
+    Mono<Integer> getReferenceCount();
+
+    /**
+     * Returns the logarithmic access frequency counter over this object.
+     *
+     * @return frequency counter
+     */
+    Mono<Integer> getAccessFrequency();
+
+    /**
+     * Returns the internal encoding for the Redis object
+     *
+     * @return internal encoding
+     */
+    Mono<RedisObjectEncoding> getInternalEncoding();
+
     String getName();
     
     Codec getCodec();

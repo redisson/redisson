@@ -26,6 +26,7 @@ import org.redisson.client.protocol.decoder.*;
 import org.redisson.client.protocol.pubsub.PubSubStatusDecoder;
 import org.redisson.cluster.ClusterNodeInfo;
 import org.redisson.codec.CompositeCodec;
+import org.redisson.api.RedisObjectEncoding;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -733,6 +734,15 @@ public interface RedisCommands {
     RedisStrictCommand<Boolean> NOT_EXISTS = new RedisStrictCommand<Boolean>("EXISTS", new BooleanNumberReplayConvertor(1L));
 
     RedisStrictCommand<Long> OBJECT_IDLETIME = new RedisStrictCommand<Long>("OBJECT", "IDLETIME", new LongReplayConvertor());
+    RedisStrictCommand<Integer> OBJECT_REFCOUNT = new RedisStrictCommand<Integer>("OBJECT", "REFCOUNT", new IntegerReplayConvertor(0));
+    RedisStrictCommand<Integer> OBJECT_FREQ = new RedisStrictCommand<Integer>("OBJECT", "FREQ", new IntegerReplayConvertor(0));
+    RedisStrictCommand<RedisObjectEncoding> OBJECT_ENCODING = new RedisStrictCommand<>("OBJECT", "ENCODING", new Convertor<RedisObjectEncoding>() {
+        @Override
+        public RedisObjectEncoding convert(Object obj) {
+            return RedisObjectEncoding.valueOfEncoding(obj);
+        }
+    });
+
     RedisStrictCommand<Long> MEMORY_USAGE = new RedisStrictCommand<Long>("MEMORY", "USAGE", new LongReplayConvertor());
     RedisStrictCommand<Map<String, String>> MEMORY_STATS = new RedisStrictCommand<>("MEMORY", "STATS", new StringMapReplayDecoder());
     RedisStrictCommand<Boolean> RENAMENX = new RedisStrictCommand<Boolean>("RENAMENX", new BooleanReplayConvertor());
