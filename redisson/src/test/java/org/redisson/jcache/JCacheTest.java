@@ -343,6 +343,23 @@ public class JCacheTest extends RedisDockerTest {
     }
 
     @Test
+    public void testGetAndReplace() {
+        Configuration<String, String> c = createJCacheConfig();
+        Configuration<String, String> config = RedissonConfiguration.fromInstance(redisson, c);
+        Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
+                .createCache("test", config);
+
+        assertThat(cache.getAndReplace("key", "value1")).isNull();
+        assertThat(cache.get("key")).isNull();
+
+        cache.put("key", "value");
+        assertThat(cache.getAndReplace("key", "value1")).isEqualTo("value");
+        assertThat(cache.get("key")).isEqualTo("value1");
+
+        cache.close();
+    }
+
+    @Test
     public void testRedissonConfig() throws IllegalArgumentException {
         Configuration<String, String> c = createJCacheConfig();
         Configuration<String, String> config = RedissonConfiguration.fromInstance(redisson, c);
