@@ -26,7 +26,7 @@ import org.redisson.client.protocol.decoder.*;
 import org.redisson.client.protocol.pubsub.PubSubStatusDecoder;
 import org.redisson.cluster.ClusterNodeInfo;
 import org.redisson.codec.CompositeCodec;
-import org.redisson.api.RedisObjectEncoding;
+import org.redisson.api.ObjectEncoding;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -736,10 +736,10 @@ public interface RedisCommands {
     RedisStrictCommand<Long> OBJECT_IDLETIME = new RedisStrictCommand<Long>("OBJECT", "IDLETIME", new LongReplayConvertor());
     RedisStrictCommand<Integer> OBJECT_REFCOUNT = new RedisStrictCommand<Integer>("OBJECT", "REFCOUNT", new IntegerReplayConvertor(0));
     RedisStrictCommand<Integer> OBJECT_FREQ = new RedisStrictCommand<Integer>("OBJECT", "FREQ", new IntegerReplayConvertor(0));
-    RedisStrictCommand<RedisObjectEncoding> OBJECT_ENCODING = new RedisStrictCommand<>("OBJECT", "ENCODING", new Convertor<RedisObjectEncoding>() {
+    RedisStrictCommand<ObjectEncoding> OBJECT_ENCODING = new RedisStrictCommand<>("OBJECT", "ENCODING", new Convertor<ObjectEncoding>() {
         @Override
-        public RedisObjectEncoding convert(Object obj) {
-            return RedisObjectEncoding.valueOfEncoding(obj);
+        public ObjectEncoding convert(Object obj) {
+            return ObjectEncoding.valueOfEncoding(obj);
         }
     });
 

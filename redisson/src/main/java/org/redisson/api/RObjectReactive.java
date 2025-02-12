@@ -55,7 +55,7 @@ public interface RObjectReactive {
      *
      * @return internal encoding
      */
-    Mono<RedisObjectEncoding> getInternalEncoding();
+    Mono<ObjectEncoding> getInternalEncoding();
 
     String getName();
     

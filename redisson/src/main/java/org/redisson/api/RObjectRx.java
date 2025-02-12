@@ -56,7 +56,7 @@ public interface RObjectRx {
      *
      * @return internal encoding
      */
-    Single<RedisObjectEncoding> getInternalEncoding();
+    Single<ObjectEncoding> getInternalEncoding();
 
     String getName();
     

@@ -320,32 +320,32 @@ public class RedissonBucketTest extends RedisDockerTest {
     @Test
     public void testInternalEncoding() {
         RBucket<Integer> al = redisson.getBucket("test");
-        assertThat(al.getInternalEncoding()).isEqualTo(RedisObjectEncoding.NULL);
+        assertThat(al.getInternalEncoding()).isEqualTo(ObjectEncoding.NULL);
         al.set(123);
-        assertThat(al.getInternalEncoding()).isEqualTo(RedisObjectEncoding.EMBSTR);
+        assertThat(al.getInternalEncoding()).isEqualTo(ObjectEncoding.EMBSTR);
 
         RList<String> list=redisson.getList("list");
         list.addAll(Arrays.asList("a","b","c"));
-        assertThat(list.getInternalEncoding()).isEqualTo(RedisObjectEncoding.LISTPACK);
+        assertThat(list.getInternalEncoding()).isEqualTo(ObjectEncoding.LISTPACK);
 
         RMap<Integer, String> map = redisson.getMap("map");
         map.put(1, "12");
         map.put(2, "33");
         map.put(3, "43");
-        assertThat(map.getInternalEncoding()).isEqualTo(RedisObjectEncoding.LISTPACK);
+        assertThat(map.getInternalEncoding()).isEqualTo(ObjectEncoding.LISTPACK);
 
         RSet<Integer> set = redisson.getSet("set", IntegerCodec.INSTANCE);
         set.add(1);
         set.add(2);
         set.add(3);
-        assertThat(set.getInternalEncoding()).isEqualTo(RedisObjectEncoding.INTSET);
+        assertThat(set.getInternalEncoding()).isEqualTo(ObjectEncoding.INTSET);
 
         RSortedSet<Long> sortedSet = redisson.getSortedSet("sortedSet", LongCodec.INSTANCE);
         sortedSet.add(2L);
         sortedSet.add(0L);
         sortedSet.add(1L);
         sortedSet.add(5L);
-        assertThat(sortedSet.getInternalEncoding()).isEqualTo(RedisObjectEncoding.LISTPACK);
+        assertThat(sortedSet.getInternalEncoding()).isEqualTo(ObjectEncoding.LISTPACK);
 
     }
 

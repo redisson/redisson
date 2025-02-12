@@ -27,7 +27,7 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.command.BatchService;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.api.RedisObjectEncoding;
+import org.redisson.api.ObjectEncoding;
 import org.redisson.connection.ServiceManager;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.Hash;
@@ -618,7 +618,7 @@ public abstract class RedissonObject implements RObject {
     }
 
     @Override
-    public RedisObjectEncoding getInternalEncoding() {
+    public ObjectEncoding getInternalEncoding() {
         return get(getInternalEncodingAsync());
     }
 
@@ -638,7 +638,7 @@ public abstract class RedissonObject implements RObject {
     }
 
     @Override
-    public RFuture<RedisObjectEncoding> getInternalEncodingAsync() {
+    public RFuture<ObjectEncoding> getInternalEncodingAsync() {
         return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.OBJECT_ENCODING, getRawName());
     }
 

@@ -20,7 +20,7 @@ package org.redisson.api;
  *
  * @author seakider
  */
-public enum RedisObjectEncoding {
+public enum ObjectEncoding {
     /**
      * Normal string encoding.
      */
@@ -97,7 +97,7 @@ public enum RedisObjectEncoding {
 
     private final String type;
 
-    RedisObjectEncoding(String type) {
+    ObjectEncoding(String type) {
         this.type = type;
     }
 
@@ -105,12 +105,12 @@ public enum RedisObjectEncoding {
         return type;
     }
 
-    public static RedisObjectEncoding valueOfEncoding(Object object) {
+    public static ObjectEncoding valueOfEncoding(Object object) {
         if (object == null) {
             return NULL;
         }
         String value = (String) object;
-        for (RedisObjectEncoding encoding : RedisObjectEncoding.values()) {
+        for (ObjectEncoding encoding : ObjectEncoding.values()) {
             if (value.equals(encoding.getType()))
                 return encoding;
         }

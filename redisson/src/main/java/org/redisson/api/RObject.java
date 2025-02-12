@@ -53,7 +53,7 @@ public interface RObject extends RObjectAsync {
      *
      * @return internal encoding
      */
-    RedisObjectEncoding getInternalEncoding();
+    ObjectEncoding getInternalEncoding();
     /**
      * Returns bytes amount used by object in Redis memory.
      * 

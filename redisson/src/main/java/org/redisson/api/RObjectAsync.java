@@ -51,7 +51,7 @@ public interface RObjectAsync {
      *
      * @return internal encoding
      */
-    RFuture<RedisObjectEncoding> getInternalEncodingAsync();
+    RFuture<ObjectEncoding> getInternalEncodingAsync();
 
     /**
      * Returns bytes amount used by object in Redis memory. 
