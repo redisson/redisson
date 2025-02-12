@@ -33,6 +33,27 @@ public interface RObjectAsync {
     RFuture<Long> getIdleTimeAsync();
 
     /**
+     * Returns count of references over this object.
+     *
+     * @return count of reference
+     */
+    RFuture<Integer> getReferenceCountAsync();
+
+    /**
+     * Returns the logarithmic access frequency counter over this object.
+     *
+     * @return frequency counter
+     */
+    RFuture<Integer> getAccessFrequencyAsync();
+
+    /**
+     * Returns the internal encoding for the Redis object
+     *
+     * @return internal encoding
+     */
+    RFuture<ObjectEncoding> getInternalEncodingAsync();
+
+    /**
      * Returns bytes amount used by object in Redis memory. 
      * 
      * @return size in bytes

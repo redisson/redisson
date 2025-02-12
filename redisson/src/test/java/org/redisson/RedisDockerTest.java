@@ -36,6 +36,8 @@ public class RedisDockerTest {
 
     protected static final String NOTIFY_KEYSPACE_EVENTS = "--notify-keyspace-events";
 
+    protected static final String MAXMEMORY_POLICY = "--maxmemory-policy";
+
     protected static final GenericContainer<?> REDIS = createRedis();
 
     protected static final Protocol protocol = Protocol.RESP2;

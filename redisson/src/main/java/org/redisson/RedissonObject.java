@@ -27,6 +27,7 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.command.BatchService;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.api.ObjectEncoding;
 import org.redisson.connection.ServiceManager;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.Hash;
@@ -607,8 +608,38 @@ public abstract class RedissonObject implements RObject {
     }
 
     @Override
+    public int getReferenceCount() {
+        return get(getReferenceCountAsync());
+    }
+
+    @Override
+    public int getAccessFrequency() {
+        return get(getAccessFrequencyAsync());
+    }
+
+    @Override
+    public ObjectEncoding getInternalEncoding() {
+        return get(getInternalEncodingAsync());
+    }
+
+    @Override
     public RFuture<Long> getIdleTimeAsync() {
         return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.OBJECT_IDLETIME, getRawName());
+    }
+
+    @Override
+    public RFuture<Integer> getReferenceCountAsync() {
+        return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.OBJECT_REFCOUNT, getRawName());
+    }
+
+    @Override
+    public RFuture<Integer> getAccessFrequencyAsync() {
+        return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.OBJECT_FREQ, getRawName());
+    }
+
+    @Override
+    public RFuture<ObjectEncoding> getInternalEncodingAsync() {
+        return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.OBJECT_ENCODING, getRawName());
     }
 
     protected final void removeListener(int listenerId, String... names) {
