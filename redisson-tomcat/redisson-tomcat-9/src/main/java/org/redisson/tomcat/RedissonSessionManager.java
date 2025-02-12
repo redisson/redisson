@@ -67,7 +67,9 @@ public class RedissonSessionManager extends ManagerBase {
     
     private Codec codecToUse;
 
-    public String getNodeId() { return nodeId; }
+    public String getNodeId() {
+        return nodeId;
+    }
 
     public String getUpdateMode() {
         return updateMode.toString();
@@ -236,7 +238,7 @@ public class RedissonSessionManager extends ManagerBase {
 
         if (session.getIdInternal() != null
                 && !redisson.isShuttingDown()) {
-            ((RedissonSession)session).delete();
+            ((RedissonSession) session).delete();
         }
     }
     
@@ -247,7 +249,7 @@ public class RedissonSessionManager extends ManagerBase {
     @Override
     public void add(Session session) {
         super.add(session);
-        ((RedissonSession)session).save();
+        ((RedissonSession) session).save();
     }
     
     public RedissonClient getRedisson() {
@@ -279,10 +281,13 @@ public class RedissonSessionManager extends ManagerBase {
         
         Pipeline pipeline = getContext().getPipeline();
         synchronized (pipeline) {
+            Arrays.stream(pipeline.getValves()).filter(v -> v instanceof IRedissonClientAware)
+                    .forEach(valve -> ((IRedissonClientAware) valve).setRedissonClient(redisson));
+
             if (readMode == ReadMode.REDIS) {
                 Optional<Valve> res = Arrays.stream(pipeline.getValves()).filter(v -> v.getClass() == UsageValve.class).findAny();
                 if (res.isPresent()) {
-                    ((UsageValve)res.get()).incUsage();
+                    ((UsageValve) res.get()).incUsage();
                 } else {
                     pipeline.addValve(new UsageValve());
                 }
@@ -290,7 +295,7 @@ public class RedissonSessionManager extends ManagerBase {
             if (updateMode == UpdateMode.AFTER_REQUEST) {
                 Optional<Valve> res = Arrays.stream(pipeline.getValves()).filter(v -> v.getClass() == UpdateValve.class).findAny();
                 if (res.isPresent()) {
-                    ((UpdateValve)res.get()).incUsage();
+                    ((UpdateValve) res.get()).incUsage();
                 } else {
                     pipeline.addValve(new UpdateValve());
                 }
@@ -315,7 +320,7 @@ public class RedissonSessionManager extends ManagerBase {
                             }
                             
                             if (msg instanceof AttributeRemoveMessage) {
-                                for (String name : ((AttributeRemoveMessage)msg).getNames()) {
+                                for (String name : ((AttributeRemoveMessage) msg).getNames()) {
                                     session.superRemoveAttributeInternal(name, true);
                                 }
                             }
@@ -331,7 +336,7 @@ public class RedissonSessionManager extends ManagerBase {
                             }
                             
                             if (msg instanceof AttributeUpdateMessage) {
-                                AttributeUpdateMessage m = (AttributeUpdateMessage)msg;
+                                AttributeUpdateMessage m = (AttributeUpdateMessage) msg;
                                 session.superSetAttribute(m.getName(), m.getValue(codecToUse.getMapValueDecoder()), true);
                             }
                         } else {
@@ -395,14 +400,14 @@ public class RedissonSessionManager extends ManagerBase {
         synchronized (pipeline) {
             if (readMode == ReadMode.REDIS) {
                 Arrays.stream(pipeline.getValves()).filter(v -> v.getClass() == UsageValve.class).forEach(v -> {
-                    if (((UsageValve)v).decUsage() == 0){
+                    if (((UsageValve) v).decUsage() == 0){
                         pipeline.removeValve(v);
                     }
                 });
             }
             if (updateMode == UpdateMode.AFTER_REQUEST) {
                 Arrays.stream(pipeline.getValves()).filter(v -> v.getClass() == UpdateValve.class).forEach(v -> {
-                    if (((UpdateValve)v).decUsage() == 0){
+                    if (((UpdateValve) v).decUsage() == 0){
                         pipeline.removeValve(v);
                     }
                 });
