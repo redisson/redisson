@@ -218,7 +218,7 @@ public class RedissonFairLock extends RedissonLock implements RLock {
                     // threadWaitTime
                     "local lastThreadId = redis.call('lindex', KEYS[2], -1);" +
                     "local ttl;" +
-                    "if lastThreadId ~= false and lastThreadId ~= ARGV[2] then " +
+                    "if lastThreadId ~= false and lastThreadId ~= ARGV[2] and redis.call('zscore', KEYS[3], lastThreadId) ~= false then " +
                         "ttl = tonumber(redis.call('zscore', KEYS[3], lastThreadId)) - tonumber(ARGV[4]);" +
                     "else " +
                         "ttl = redis.call('pttl', KEYS[1]);" +

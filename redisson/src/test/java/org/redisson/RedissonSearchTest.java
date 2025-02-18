@@ -1,6 +1,7 @@
 package org.redisson;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RJsonBucket;
 import org.redisson.api.RMap;
@@ -48,7 +49,20 @@ public class RedissonSearchTest extends DockerRedisStackTest {
             return Objects.hash(name);
         }
     }
-
+    
+    @Test
+    public void testSearchWithParam() {
+        RJsonBucket<String> b = redisson.getJsonBucket("doc:1", StringCodec.INSTANCE);
+        b.set("[{\"arr\": [1, 2, 3]}, {\"val\": \"hello\"}, {\"val\": \"world\"}]");
+        
+        RSearch s = redisson.getSearch(StringCodec.INSTANCE);
+        Assertions.assertThrows(IllegalArgumentException.class, () ->
+                s.search("idx", "*", QueryOptions.defaults()
+                        .returnAttributes(new ReturnAttribute("arr"),
+                                new ReturnAttribute("val"))
+                        .params(Collections.singletonMap("12", "323"))));
+    }
+    
     @Test
     public void testSearchNoContent() {
         RMap<String, SimpleObject> m = redisson.getMap("doc:1", new CompositeCodec(StringCodec.INSTANCE, redisson.getConfig().getCodec()));

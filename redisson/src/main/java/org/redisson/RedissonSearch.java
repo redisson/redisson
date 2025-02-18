@@ -495,6 +495,9 @@ public class RedissonSearch implements RSearch {
             args.add(options.getCount());
         }
         if (!options.getParams().isEmpty()) {
+            if (options.getDialect() == null || options.getDialect() < 2) {
+                throw new IllegalArgumentException("When use 'PARAMS', you should set DIALECT to 2 or greater than 2.");
+            }
             args.add("PARAMS");
             args.add(options.getParams().size()*2);
             for (Map.Entry<String, Object> entry : options.getParams().entrySet()) {
