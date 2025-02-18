@@ -612,6 +612,19 @@ public class RedissonExecutorServiceTest extends RedisDockerTest {
     }
 
     @Test
+    public void testExpiration() throws InterruptedException, ExecutionException {
+        RScheduledExecutorService executor = redisson.getExecutorService("test");
+        Future<?> future = executor.submit(new ScheduledRunnableTask("testparam"), 10, TimeUnit.SECONDS);
+
+        future.get();
+
+        assertThat(redisson.getKeys().countExists("testparam")).isEqualTo(1);
+        String tasksExpirationTimeName = Reflect.on(executor).get("tasksExpirationTimeName");
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet(tasksExpirationTimeName);
+        assertThat(set.size()).isEqualTo(0);
+    }
+
+    @Test
     public void testAnonymousRunnable() {
         Assertions.assertThrows(IllegalArgumentException.class, () -> {
             redisson.getExecutorService("test").submit(new Runnable() {

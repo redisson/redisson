@@ -392,6 +392,7 @@ public class TasksRunnerService implements RemoteExecutorService {
            script +=  "local scheduled = redis.call('zscore', KEYS[5], ARGV[3]);"
                     + "if scheduled == false then "
                         + "redis.call('hdel', KEYS[4], ARGV[3]); "
+                        + "redis.call('zrem', KEYS[7], ARGV[3]); "
                     + "end;";
         }
         script += "redis.call('zrem', KEYS[5], 'ff:' .. ARGV[3]);" +
@@ -406,7 +407,7 @@ public class TasksRunnerService implements RemoteExecutorService {
 
         RFuture<Object> f = commandExecutor.evalWriteNoRetryAsync(name, StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
                 script,
-                Arrays.asList(tasksCounterName, statusName, terminationTopicName, tasksName, schedulerQueueName, tasksRetryIntervalName),
+                Arrays.asList(tasksCounterName, statusName, terminationTopicName, tasksName, schedulerQueueName, tasksRetryIntervalName, tasksExpirationTimeName),
                 RedissonExecutorService.SHUTDOWN_STATE, RedissonExecutorService.TERMINATED_STATE, requestId);
         commandExecutor.get(f);
     }
