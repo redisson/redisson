@@ -20,6 +20,7 @@ import org.redisson.client.handler.State;
 import org.redisson.client.protocol.decoder.MultiDecoder;
 
 import java.util.List;
+import java.util.Locale;
 
 /**
  * 
@@ -30,7 +31,7 @@ public class PubSubStatusDecoder implements MultiDecoder<Object> {
 
     @Override
     public PubSubStatusMessage decode(List<Object> parts, State state) {
-        PubSubType type = PubSubType.valueOf(parts.get(0).toString().toUpperCase());
+        PubSubType type = PubSubType.valueOf(parts.get(0).toString().toUpperCase(Locale.ENGLISH));
         ChannelName name = new ChannelName((byte[]) parts.get(1));
         return new PubSubStatusMessage(type, name);
     }

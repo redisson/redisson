@@ -429,7 +429,7 @@ public interface RedisCommands {
                             String functionName = (String) parts.get(1);
                             String functionDescription = (String) parts.get(3);
                             List<FunctionLibrary.Flag> functionFlags = ((List<String>) parts.get(5)).stream()
-                                    .map(s -> FunctionLibrary.Flag.valueOf(s.toUpperCase().replace("-", "_")))
+                                    .map(s -> FunctionLibrary.Flag.valueOf(s.toUpperCase(Locale.ENGLISH).replace("-", "_")))
                                     .collect(Collectors.toList());
                             return new FunctionLibrary.Function(functionName, functionDescription, functionFlags);
                         }

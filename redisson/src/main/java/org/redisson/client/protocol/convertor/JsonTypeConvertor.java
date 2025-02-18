@@ -17,6 +17,8 @@ package org.redisson.client.protocol.convertor;
 
 import org.redisson.api.JsonType;
 
+import java.util.Locale;
+
 /**
  * Json data type convertor
  *
@@ -30,6 +32,6 @@ public class JsonTypeConvertor implements Convertor<JsonType> {
         if (obj == null) {
             return null;
         }
-        return JsonType.valueOf(obj.toString().toUpperCase());
+        return JsonType.valueOf(obj.toString().toUpperCase(Locale.ENGLISH));
     }
 }

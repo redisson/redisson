@@ -16,11 +16,7 @@
 package org.redisson.spring.data.connection;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
@@ -56,7 +52,7 @@ public class RedisClusterNodeDecoder implements Decoder<List<RedisClusterNode>> 
             Set<Flag> flags = EnumSet.noneOf(Flag.class);
             for (String flag : flagsStr.split(",")) {
                 String flagValue = flag.replace("slave", "replica")
-                                        .toUpperCase().replaceAll("\\?", "");
+                                        .toUpperCase(Locale.ENGLISH).replaceAll("\\?", "");
                 flags.add(Flag.valueOf(flagValue));
             }
             
@@ -74,7 +70,7 @@ public class RedisClusterNodeDecoder implements Decoder<List<RedisClusterNode>> 
             Set<Integer> slotsCollection = new HashSet<Integer>();
             LinkState linkState = null;
             if (params.length >= 8 && params[7] != null) {
-                linkState = LinkState.valueOf(params[7].toUpperCase());
+                linkState = LinkState.valueOf(params[7].toUpperCase(Locale.ENGLISH));
             }
             if (params.length > 8) {
                 for (int i = 0; i < params.length - 8; i++) {
