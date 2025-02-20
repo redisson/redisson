@@ -204,8 +204,10 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         if (isUseObjectAsCacheKey && v != null) {
             cacheKeyMap.remove(v.getKey());
         }
-        listener.notifyInvalidate(v);
-        listener.notifyUpdate(v);
+        if (v != null) {
+            listener.notifyInvalidate(v);
+            listener.notifyUpdate(v);
+        }
         return v;
     }
 
