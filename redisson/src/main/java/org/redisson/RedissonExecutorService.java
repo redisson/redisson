@@ -471,12 +471,17 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     }
 
     @Override
-    public void shutdown() {
+    public void deregisterWorkers() {
         queueTransferService.remove(getName());
         remoteService.deregister(RemoteExecutorService.class);
         if (workersGroupListenerId != 0) {
             workersTopic.removeListener(workersGroupListenerId);
         }
+    }
+
+    @Override
+    public void shutdown() {
+        deregisterWorkers();
 
         commandExecutor.get(commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_VOID,
                 "if redis.call('exists', KEYS[2]) == 0 then "

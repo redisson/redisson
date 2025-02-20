@@ -203,6 +203,12 @@ public interface RExecutorService extends ExecutorService, RExecutorServiceAsync
     void registerWorkers(WorkerOptions options);
 
     /**
+     * Deregister all workers
+     *
+     */
+    void deregisterWorkers();
+
+    /**
      * Returns amount of tasks awaiting execution or currently in execution.
      *
      * @return amount of tasks
