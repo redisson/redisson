@@ -79,6 +79,11 @@ public class CommandRxBatchService extends CommandRxService implements BatchServ
         return batchService.executeAsync();
     }
 
+    @Override
+    protected boolean isEvalCacheActive() {
+        return false;
+    }
+
     public RFuture<Void> discardAsync() {
         return batchService.discardAsync();
     }
