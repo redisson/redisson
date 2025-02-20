@@ -280,7 +280,7 @@ To start use it you should use one of methods below:
 
 `RLiveObjectService.attach()` - attaches object to Redis or Valkey. Discard all the field values already in the detached instance  
 `RLiveObjectService.merge()` - overrides current object state in Redis or Valkey with the given object state  
-`RLiveObjectService.persist()` - stores only new object  
+`RLiveObjectService.persist()` - stores only a new object, otherwise an exception is thrown  
 
 Code example:
 
@@ -317,7 +317,7 @@ MyObject myParentObject = service.get(MyObject.class, "2");
 myObject.setValue(myParentObject);
 ```
 
-Field types in the RLO can be almost anything, from Java util classes to collection/map types and of course your own custom objects, as long as it can be encoded and decoded by a supplied codec. More details about the codec can be found in the [Advanced Usage](#advanced-usage) section.
+Field types in the RLO can be almost anything, from Java util classes to collection/map types and of course your own custom objects, as long as it can be encoded and decoded by a supplied codec. The POJO class must be annotated with the `@REntity` annotation if you want to use it as a reference. Overwise, it's state is stored as a field value. More details about the codec can be found in the [Advanced Usage](#advanced-usage) section. 
 
 In order to keep RLOs behaving as closely to standard Java objects as possible, Redisson automatically converts the following standard Java field types to its counter types supported by Redisson `RObject`.
 
