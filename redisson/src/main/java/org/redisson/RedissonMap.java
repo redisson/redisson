@@ -35,10 +35,12 @@ import org.redisson.client.protocol.decoder.*;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.ServiceManager;
 import org.redisson.connection.decoder.MapGetAllDecoder;
+import org.redisson.iterator.BaseAsyncIterator;
 import org.redisson.iterator.RedissonMapIterator;
 import org.redisson.iterator.RedissonMapKeyIterator;
 import org.redisson.mapreduce.RedissonMapReduce;
 import org.redisson.misc.CompletableFutureWrapper;
+import org.redisson.misc.CompositeAsyncIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -747,7 +749,40 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     public Collection<V> values(int count) {
         return values(null, count);
     }
-    
+
+    @Override
+    public AsyncIterator<V> valuesAsync() {
+        return valuesAsync(null);
+    }
+
+    @Override
+    public AsyncIterator<V> valuesAsync(String keyPattern) {
+        return valuesAsync(keyPattern, 10);
+    }
+
+    @Override
+    public AsyncIterator<V> valuesAsync(String keyPattern, int count) {
+        AsyncIterator<V> asyncIterator = new BaseAsyncIterator<V, Map.Entry<Object, Object>>() {
+
+            @Override
+            protected RFuture<ScanResult<Map.Entry<Object, Object>>> iterator(RedisClient client, String nextItPos) {
+                return scanIteratorAsync(name, client, nextItPos, keyPattern, count);
+            }
+
+            @Override
+            protected V getValue(java.util.Map.Entry<Object, Object> entry) {
+                return (V) entry.getValue();
+            }
+
+        };
+        return new CompositeAsyncIterator<>(Arrays.asList(asyncIterator), count);
+    }
+
+    @Override
+    public AsyncIterator<V> valuesAsync(int count) {
+        return valuesAsync(null, count);
+    }
+
     @Override
     public Set<java.util.Map.Entry<K, V>> entrySet() {
         return entrySet(null);
@@ -766,6 +801,34 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     @Override
     public Set<java.util.Map.Entry<K, V>> entrySet(int count) {
         return entrySet(null, count);
+    }
+
+    @Override
+    public AsyncIterator<java.util.Map.Entry<K, V>> entrySetAsync() {
+        return entrySetAsync(null);
+    }
+
+    @Override
+    public AsyncIterator<java.util.Map.Entry<K, V>> entrySetAsync(String keyPattern) {
+        return entrySetAsync(keyPattern, 10);
+    }
+
+    @Override
+    public AsyncIterator<java.util.Map.Entry<K, V>> entrySetAsync(String keyPattern, int count) {
+        AsyncIterator<java.util.Map.Entry<K, V>> asyncIterator = new BaseAsyncIterator<java.util.Map.Entry<K, V>, Map.Entry<Object, Object>>() {
+
+            @Override
+            protected RFuture<ScanResult<Map.Entry<Object, Object>>> iterator(RedisClient client, String nextItPos) {
+                return scanIteratorAsync(name, client, nextItPos, keyPattern, count);
+            }
+
+        };
+        return new CompositeAsyncIterator<>(Arrays.asList(asyncIterator), count);
+    }
+
+    @Override
+    public AsyncIterator<java.util.Map.Entry<K, V>> entrySetAsync(int count) {
+        return entrySetAsync(null, count);
     }
     
     @Override
