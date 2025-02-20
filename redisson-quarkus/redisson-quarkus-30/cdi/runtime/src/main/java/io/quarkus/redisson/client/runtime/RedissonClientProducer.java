@@ -17,19 +17,19 @@ package io.quarkus.redisson.client.runtime;
 
 import com.fasterxml.jackson.databind.MapperFeature;
 import io.quarkus.arc.DefaultBean;
-import io.quarkus.runtime.shutdown.ShutdownConfig;
+import jakarta.annotation.PreDestroy;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import org.eclipse.microprofile.config.ConfigProvider;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
 import org.redisson.config.ConfigSupport;
 import org.redisson.config.PropertiesConvertor;
 
-import jakarta.annotation.PreDestroy;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.inject.Produces;
-import jakarta.inject.Singleton;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -51,7 +51,8 @@ public class RedissonClientProducer {
     private RedissonClient redisson;
 
     @Inject
-    public ShutdownConfig shutdownConfig;
+    @ConfigProperty(name = "quarkus.shutdown.timeout")
+    Optional<Duration> shutdownTimeout;
 
     @Produces
     @Singleton
@@ -90,8 +91,8 @@ public class RedissonClientProducer {
     @PreDestroy
     public void close() {
         if (redisson != null) {
-            if (shutdownConfig.isShutdownTimeoutSet()){
-                Duration grace = shutdownConfig.timeout.get();
+            if (shutdownTimeout.isPresent()){
+                Duration grace = shutdownTimeout.get();
                 redisson.shutdown(grace.toMillis(),grace.toMillis()*2, TimeUnit.MILLISECONDS);
             }else{
                 redisson.shutdown();
