@@ -47,7 +47,6 @@ import io.netty.util.internal.PlatformDependent;
 import org.redisson.ElementsSubscribeService;
 import org.redisson.QueueTransferService;
 import org.redisson.RedissonShutdownException;
-import org.redisson.Version;
 import org.redisson.api.NatMapper;
 import org.redisson.api.RFuture;
 import org.redisson.api.RLock;
@@ -157,8 +156,6 @@ public final class ServiceManager {
     private LockRenewalScheduler renewalScheduler;
 
     public ServiceManager(MasterSlaveServersConfig config, Config cfg) {
-        Version.logVersion();
-
         RedisURI u = null;
         if (config.getMasterAddress() != null) {
             u = new RedisURI(config.getMasterAddress());

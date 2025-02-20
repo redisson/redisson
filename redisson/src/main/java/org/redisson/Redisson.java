@@ -61,6 +61,8 @@ public final class Redisson implements RedissonClient {
     private final Config config;
 
     Redisson(Config config) {
+        Version.logVersion();
+
         this.config = config;
         Config configCopy = new Config(config);
 
