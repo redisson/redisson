@@ -2,7 +2,7 @@
 
 ## Hibernate Cache
 
-Redisson implements [Hibernate 2nd level Cache](https://docs.jboss.org/hibernate/orm/6.0/userguide/html_single/Hibernate_User_Guide.html#caching) provider based on Redis.  
+Redisson implements [Hibernate 2nd level Cache](https://docs.jboss.org/hibernate/orm/6.6/userguide/html_single/Hibernate_User_Guide.html#caching) provider based on Redis.  
 All Hibernate cache strategies are supported: `READ_ONLY`, `NONSTRICT_READ_WRITE`, `READ_WRITE` and `TRANSACTIONAL`.  
 
 Compatible with Hibernate 4.x, 5.1.x, 5.2.x, 5.3.3+ up to 5.6.x and 6.0.2+ up to 6.x.x
@@ -11,139 +11,199 @@ Compatible with Hibernate 4.x, 5.1.x, 5.2.x, 5.3.3+ up to 5.6.x and 6.0.2+ up to
 
 Redisson provides various Hibernate Cache factories including those with features below:
 
-**local cache** - so called `near cache`, which is useful for use cases when Hibernate Cache used mostly for read operations and/or network roundtrips are undesirable. It caches Map entries on Redisson side and executes read operations up to **5x faster** in comparison with common implementation. Local cache instances with the same name connected to the same pub/sub channel. This channel is used for exchanging of update/invalidate events between all instances. Cache store doesn't use `hashCode()`/`equals()` methods of key object, instead it uses hash of serialized state.
+1. **Local cache**
 
-**data partitioning** - although all implementations are cluster compatible thier content isn't scaled/partitioned across multiple Redis or Valkey master nodes in cluster. Data partitioning allows to scale available memory, read/write operations and entry eviction process for individual Hibernate Cache instance in Redis or Valkey cluster.  
+    So called `near cache`, which is useful for use cases when Hibernate Cache used mostly for read operations and/or network roundtrips are undesirable. It caches Map entries on Redisson side and executes read operations up to **5x faster** in comparison with common implementation. Local cache instances with the same name connected to the same pub/sub channel. This channel is used for exchanging of update/invalidate events between all instances. Cache store doesn't use `hashCode()`/`equals()` methods of key object, instead it uses hash of serialized state.
 
-**1. Scripted eviction**
+2. **Data partitioning**
 
-Allows to define `time to live` or `max idle time` parameters per map entry. Eviction is done on Redisson side through a custom scheduled task which removes expired entries using Lua script. Eviction task is started once per unique object name at the moment of getting Map instance. If instance isn't used and has expired entries it should be get again to start the eviction process. This leads to extra Redis or Valkey calls and eviction task per unique map object name. 
+    Although all implementations are cluster compatible thier content isn't scaled/partitioned across multiple Redis or Valkey master nodes in cluster. Data partitioning allows to scale available memory, read/write operations and entry eviction process for individual Hibernate Cache instance in Redis or Valkey cluster.  
 
-Entries are cleaned time to time by `org.redisson.eviction.EvictionScheduler`. By default, it removes 100 expired entries at a time. This can be changed through [cleanUpKeysAmount](configuration.md) setting. Task launch time tuned automatically and depends on expired entries amount deleted in previous time and varies between 5 second to 30 minutes by default. This time interval can be changed through [minCleanUpDelay](configuration.md) and [maxCleanUpDelay](configuration.md). For example, if clean task deletes 100 entries each time it will be executed every 5 seconds (minimum execution delay). But if current expired entries amount is lower than previous one then execution delay will be increased by 1.5 times and decreased otherwise.
+3. **Scripted eviction**
 
-Available implementations:
+    Allows to define `time to live` or `max idle time` parameters per map entry. Eviction is executed by Redisson through a custom scheduled task which removes expired entries using Lua script on Redis or Valkey side. Eviction task is started once per unique object name at the moment of getting Map instance. If instance isn't used and has expired entries it should be get again to start the eviction process. This leads to extra Redis or Valkey calls and eviction task per unique map object name. 
 
-|Class name | Local cache | Data<br/>partitioning | Ultra-fast<br/>read/write |
-| ------------- | :-----------: | :----------:| :----------:|
-|RedissonRegionFactory<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ❌ |
-|RedissonRegionFactory<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ❌ | ❌ | ✔️ |
-|RedissonLocalCachedRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub>  | ✔️ | ❌ | ✔️ |
-|RedissonClusteredRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ |
-|RedissonClusteredLocalCachedRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub> | ✔️ | ✔️ | ✔️ |
+    Entries are cleaned time to time by `org.redisson.eviction.EvictionScheduler`. By default, it removes 100 expired entries at a time. This can be changed through [cleanUpKeysAmount](configuration.md) setting. Task launch time tuned automatically and depends on expired entries amount deleted in previous time and varies between 5 second to 30 minutes by default. This time interval can be changed through [minCleanUpDelay](configuration.md) and [maxCleanUpDelay](configuration.md). For example, if clean task deletes 100 entries each time it will be executed every 5 seconds (minimum execution delay). But if current expired entries amount is lower than previous one then execution delay will be increased by 1.5 times and decreased otherwise.
 
-**2. Advanced eviction**
+    Available implementations:
 
-Allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task, entries are cleaned on Redis or Valkey side.
+    |Class name | Local cache | Data<br/>partitioning | Ultra-fast<br/>read/write |
+    | ------------- | :-----------: | :----------:| :----------:|
+    |RedissonRegionFactory<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ❌ |
+    |RedissonRegionFactory<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ❌ | ❌ | ✔️ |
+    |RedissonLocalCachedRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub>  | ✔️ | ❌ | ✔️ |
+    |RedissonClusteredRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ |
+    |RedissonClusteredLocalCachedRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub> | ✔️ | ✔️ | ✔️ |
 
-Available implementations:
+4. **Advanced eviction**
 
-|Class name | Local cache | Data<br/>partitioning | Ultra-fast<br/>read/write |
-| ------------- | :-----------: | :----------:| :----------:|
-|RedissonRegionV2Factory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub>  | ❌ | ✔️ | ✔️ |
-|RedissonLocalCachedV2RegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub>  | ✔️ | ✔️ | ✔️ |
+    Allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task, entries are cleaned on Redis or Valkey side.
 
-**3. Native eviction**
+    Available implementations:
 
-Allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task, entries are cleaned on Redis side.  
-Requires **Redis 7.4+**.
+    |Class name | Local cache | Data<br/>partitioning | Ultra-fast<br/>read/write |
+    | ------------- | :-----------: | :----------:| :----------:|
+    |RedissonRegionV2Factory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub>  | ❌ | ✔️ | ✔️ |
+    |RedissonLocalCachedV2RegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub>  | ✔️ | ✔️ | ✔️ |
 
-Available implementations:
+5. **Native eviction**
 
-|Class name | Local cache | Data<br/>partitioning | Ultra-fast<br/>read/write |
-| ------------- | :-----------: | :----------:| :----------:|
-|RedissonRegionNativeFactory<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ❌ |
-|RedissonRegionNativeFactory<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ❌ | ❌ | ✔️ |
-|RedissonLocalCachedNativeRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub>  | ✔️ | ❌ | ✔️ |
-|RedissonClusteredNativeRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ |
+    Allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task, entries are cleaned on Redis or Valkey side.  
+    Requires **Redis 7.4+**.
+
+    Available implementations:
+
+    |Class name | Local cache | Data<br/>partitioning | Ultra-fast<br/>read/write |
+    | ------------- | :-----------: | :----------:| :----------:|
+    |RedissonRegionNativeFactory<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ❌ |
+    |RedissonRegionNativeFactory<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ❌ | ❌ | ✔️ |
+    |RedissonLocalCachedNativeRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub>  | ✔️ | ❌ | ✔️ |
+    |RedissonClusteredNativeRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ |
+    |RedissonClusteredLocalCachedNativeRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub> | ✔️ | ✔️ | ✔️ |
 
 ### Usage
 
-**1. Add `redisson-hibernate` dependency into your project:**
+1. **Add `redisson-hibernate` dependency into your project:**
 
-Maven
+    Maven
 
-```xml
-     <dependency>
-         <groupId>org.redisson</groupId>
-         <!-- for Hibernate v4.x -->
-         <artifactId>redisson-hibernate-4</artifactId>
-         <!-- for Hibernate v5.0.x - v5.1.x -->
-         <artifactId>redisson-hibernate-5</artifactId>
-         <!-- for Hibernate v5.2.x -->
-         <artifactId>redisson-hibernate-52</artifactId>
-         <!-- for Hibernate v5.3.3+ - v5.6.x -->
-         <artifactId>redisson-hibernate-53</artifactId>
-         <!-- for Hibernate v6.0.2+ - v6.x.x -->
-         <artifactId>redisson-hibernate-6</artifactId>
-         <version>xVERSIONx</version>
-     </dependency>
-```
+    ```xml
+         <dependency>
+             <groupId>org.redisson</groupId>
+             <!-- for Hibernate v4.x -->
+             <artifactId>redisson-hibernate-4</artifactId>
+             <!-- for Hibernate v5.0.x - v5.1.x -->
+             <artifactId>redisson-hibernate-5</artifactId>
+             <!-- for Hibernate v5.2.x -->
+             <artifactId>redisson-hibernate-52</artifactId>
+             <!-- for Hibernate v5.3.3+ - v5.6.x -->
+             <artifactId>redisson-hibernate-53</artifactId>
+             <!-- for Hibernate v6.0.2+ - v6.x.x -->
+             <artifactId>redisson-hibernate-6</artifactId>
+             <version>xVERSIONx</version>
+         </dependency>
+    ```
 
-Gradle
+    Gradle
 
-```groovy
-     // for Hibernate v4.x
-     compile 'org.redisson:redisson-hibernate-4:xVERSIONx'
-     // for Hibernate v5.0.x - v5.1.x
-     compile 'org.redisson:redisson-hibernate-5:xVERSIONx'
-     // for Hibernate v5.2.x
-     compile 'org.redisson:redisson-hibernate-52:xVERSIONx'
-     // for Hibernate v5.3.3+ - v5.6.x
-     compile 'org.redisson:redisson-hibernate-53:xVERSIONx'
-     // for Hibernate v6.0.2+ - v6.x.x
-     compile 'org.redisson:redisson-hibernate-6:xVERSIONx'
-```
+    ```groovy
+         // for Hibernate v4.x
+         compile 'org.redisson:redisson-hibernate-4:xVERSIONx'
+         // for Hibernate v5.0.x - v5.1.x
+         compile 'org.redisson:redisson-hibernate-5:xVERSIONx'
+         // for Hibernate v5.2.x
+         compile 'org.redisson:redisson-hibernate-52:xVERSIONx'
+         // for Hibernate v5.3.3+ - v5.6.x
+         compile 'org.redisson:redisson-hibernate-53:xVERSIONx'
+         // for Hibernate v6.0.2+ - v6.x.x
+         compile 'org.redisson:redisson-hibernate-6:xVERSIONx'
+    ```
 
-**2. Specify hibernate cache settings**
+2. **Specify hibernate cache settings**
 
-Define Redisson Region Cache Factory in `hibernate.cfg.xml` file:
+    ```xml
+    <!-- 2nd level cache activation -->
+    <property name="hibernate.cache.use_second_level_cache" value="true" />
+    <property name="hibernate.cache.use_query_cache" value="true" />
 
-```xml
-<!-- Redisson Region Cache factory -->
-<property name="hibernate.cache.region.factory_class" value="org.redisson.hibernate.RedissonRegionFactory" />
-<!-- or -->
-<property name="hibernate.cache.region.factory_class" value="org.redisson.hibernate.RedissonRegionV2Factory" />
-<!-- or -->
-<property name="hibernate.cache.region.factory_class" value="org.redisson.hibernate.RedissonLocalCachedRegionFactory" />
-<!-- or -->
-<property name="hibernate.cache.region.factory_class" value="org.redisson.hibernate.RedissonLocalCachedV2RegionFactory" />
-<!-- or -->
-<property name="hibernate.cache.region.factory_class" value="org.redisson.hibernate.RedissonClusteredRegionFactory" />
-<!-- or -->
-<property name="hibernate.cache.region.factory_class" value="org.redisson.hibernate.RedissonClusteredLocalCachedRegionFactory" />
-```
+    <!-- Redisson can fallback on database if Redis or Valkey cache is unavailable -->
+    <property name="hibernate.cache.redisson.fallback" value="true" />
 
-By default each Region Factory creates own Redisson instance. For multiple applications, using the same Redis or Valkey setup and deployed in the same JVM, amount of Redisson instances could be reduced using JNDI registry:
+    <!-- Redisson YAML config (located in filesystem or classpath) -->
+    <property name="hibernate.cache.redisson.config" value="/redisson.yaml" />
+    ```
 
-```xml
-<!-- name of Redisson instance registered in JNDI -->
-<property name="hibernate.cache.redisson.jndi_name" value="redisson_instance" />
+    Define Redisson Region Cache Factory in `hibernate.cfg.xml` file:
 
-<!-- JNDI Redisson Region Cache factory -->
-<property name="hibernate.cache.region.factory_class" value="org.redisson.hibernate.JndiRedissonRegionFactory" />
-<!-- or -->
-<property name="hibernate.cache.region.factory_class" value="org.redisson.hibernate.JndiRedissonRegionV2Factory" />
-<!-- or -->
-<property name="hibernate.cache.region.factory_class" value="org.redisson.hibernate.JndiRedissonLocalCachedRegionFactory" />
-<!-- or -->
-<property name="hibernate.cache.region.factory_class" value="org.redisson.hibernate.JndiRedissonLocalCachedV2RegionFactory" />
-<!-- or -->
-<property name="hibernate.cache.region.factory_class" value="org.redisson.hibernate.JndiRedissonClusteredRegionFactory" />
-<!-- or -->
-<property name="hibernate.cache.region.factory_class" value="org.redisson.hibernate.JndiRedissonClusteredLocalCachedRegionFactory" />
-```
+    ```xml
+    <!-- Scripted Eviction -->
+    <property name="hibernate.cache.region.factory_class" 
+              value="org.redisson.hibernate.RedissonRegionFactory" />
 
-```xml
-<!-- 2nd level cache activation -->
-<property name="hibernate.cache.use_second_level_cache" value="true" />
-<property name="hibernate.cache.use_query_cache" value="true" />
+    <!-- Native Eviction -->
+    <property name="hibernate.cache.region.factory_class" 
+              value="org.redisson.hibernate.RedissonRegionNativeFactory" />
 
-<!-- Redisson can fallback on database if Redis or Valkey cache is unavailable -->
-<property name="hibernate.cache.redisson.fallback" value="true" />
+    <!-- Data partitioning + Advanced eviction -->
+    <property name="hibernate.cache.region.factory_class" 
+              value="org.redisson.hibernate.RedissonRegionV2Factory" />
 
-<!-- Redisson YAML config (located in filesystem or classpath) -->
-<property name="hibernate.cache.redisson.config" value="/redisson.yaml" />
-```
+    <!-- Local cache + Scripted eviction -->
+    <property name="hibernate.cache.region.factory_class"
+              value="org.redisson.hibernate.RedissonLocalCachedRegionFactory" />
+
+    <!-- Local cache + Data partitioning + Advanced eviction -->
+    <property name="hibernate.cache.region.factory_class" 
+              value="org.redisson.hibernate.RedissonLocalCachedV2RegionFactory" />
+
+    <!-- Local cache + Native Eviction -->
+    <property name="hibernate.cache.region.factory_class" 
+              value="org.redisson.hibernate.RedissonLocalCachedNativeRegionFactory" />
+
+    <!-- Data partitioning + Scripted eviction -->
+    <property name="hibernate.cache.region.factory_class" 
+              value="org.redisson.hibernate.RedissonClusteredRegionFactory" />
+
+    <!-- Data partitioning + Native eviction -->
+    <property name="hibernate.cache.region.factory_class"
+              value="org.redisson.hibernate.RedissonClusteredNativeRegionFactory" />
+
+    <!-- Local cache + Data partitioning + Scripted eviction -->
+    <property name="hibernate.cache.region.factory_class" 
+              value="org.redisson.hibernate.RedissonClusteredLocalCachedRegionFactory" />
+
+    <!-- Local cache + Data partitioning + Native eviction -->
+    <property name="hibernate.cache.region.factory_class" 
+              value="org.redisson.hibernate.RedissonClusteredLocalCachedNativeRegionFactory" />
+    ```
+
+    By default each Region Factory creates own Redisson instance. For multiple applications, using the same Redis or Valkey setup and deployed in the same JVM, amount of Redisson instances could be reduced using JNDI registry:
+
+    ```xml
+    <!-- name of Redisson instance registered in JNDI -->
+    <property name="hibernate.cache.redisson.jndi_name" value="redisson_instance" />
+
+
+    <!-- Scripted Eviction -->
+    <property name="hibernate.cache.region.factory_class" 
+              value="org.redisson.hibernate.JndiRedissonRegionFactory" />
+
+    <!-- Native Eviction -->
+    <property name="hibernate.cache.region.factory_class" 
+              value="org.redisson.hibernate.JndiRedissonRegionNativeFactory" />
+
+    <!-- Data partitioning + Advanced eviction -->
+    <property name="hibernate.cache.region.factory_class" 
+              value="org.redisson.hibernate.JndiRedissonRegionV2Factory" />
+
+    <!-- Local cache + Scripted eviction -->
+    <property name="hibernate.cache.region.factory_class" 
+              value="org.redisson.hibernate.JndiRedissonLocalCachedRegionFactory" />
+
+    <!-- Local cache + Data partitioning + Advanced eviction -->
+    <property name="hibernate.cache.region.factory_class" 
+              value="org.redisson.hibernate.JndiRedissonLocalCachedV2RegionFactory" />
+
+    <!-- Local cache + Native Eviction -->
+    <property name="hibernate.cache.region.factory_class" 
+              value="org.redisson.hibernate.JndiRedissonLocalCachedNativeRegionFactory" />
+
+    <!-- Data partitioning + Scripted eviction -->
+    <property name="hibernate.cache.region.factory_class" 
+              value="org.redisson.hibernate.JndiRedissonClusteredRegionFactory" />
+
+    <!-- Data partitioning + Native eviction -->
+    <property name="hibernate.cache.region.factory_class" 
+              value="org.redisson.hibernate.JndiRedissonClusteredNativeRegionFactory" />
+
+    <!-- Local cache + Data partitioning + Scripted eviction -->
+    <property name="hibernate.cache.region.factory_class" 
+              value="org.redisson.hibernate.JndiRedissonClusteredLocalCachedRegionFactory" />
+
+    <!-- Local cache + Data partitioning + Native eviction -->
+    <property name="hibernate.cache.region.factory_class" 
+              value="org.redisson.hibernate.JndiRedissonClusteredLocalCachedNativeRegionFactory" />
+    ```
 
 **Cache settings**
 
@@ -336,200 +396,144 @@ Configuration per entity/collection/naturalid/query region overrides default con
 ## JCache API (JSR-107)
 Redisson provides an implementation of JCache API ([JSR-107](https://www.jcp.org/en/jsr/detail?id=107)) for Redis.
 
-Below are examples of JCache API usage.
-
-**1.** Using default config located at `/redisson-jcache.yaml`:
-```java
-// implementation with scripted eviction
-MutableConfiguration<String, String> config = new MutableConfiguration<>();
-
-// implementation with native eviction
-NativeConfiguration<String, String> config = new NativeConfiguration<>();
-
-// implementation with advanced eviction
-V2Configuration<String, String> config = new V2Configuration<>();
-
-        
-CacheManager manager = Caching.getCachingProvider().getCacheManager();
-Cache<String, String> cache = manager.createCache("namedCache", config);
-```
-
-**2.** Using config file with custom location:
-```java
-// implementation with scripted eviction
-MutableConfiguration<String, String> config = new MutableConfiguration<>();
-
-// implementation with native eviction
-NativeConfiguration<String, String> config = new NativeConfiguration<>();
-
-// implementation with advanced eviction
-V2Configuration<String, String> config = new V2Configuration<>();
-
-
-// yaml config
-URI redissonConfigUri = getClass().getResource("redisson-jcache.yaml").toURI();
-CacheManager manager = Caching.getCachingProvider().getCacheManager(redissonConfigUri, null);
-Cache<String, String> cache = manager.createCache("namedCache", config);
-```
-
-**3.** Using Redisson's config object:
-```java
-// implementation with scripted eviction
-MutableConfiguration<String, String> jcacheConfig = new MutableConfiguration<>();
-
-// implementation with native eviction
-NativeConfiguration<String, String> jcacheConfig = new NativeConfiguration<>();
-
-// implementation with advanced eviction
-V2Configuration<String, String> jcacheConfig = new V2Configuration<>();
-
-
-Config redissonCfg = ...
-Configuration<String, String> config = RedissonConfiguration.fromConfig(redissonCfg, jcacheConfig);
-
-CacheManager manager = Caching.getCachingProvider().getCacheManager();
-Cache<String, String> cache = manager.createCache("namedCache", config);
-```
-
-**4.** Using Redisson instance object:
-```java
-// implementation with scripted eviction
-MutableConfiguration<String, String> jcacheConfig = new MutableConfiguration<>();
-
-// implementation with native eviction
-NativeConfiguration<String, String> jcacheConfig = new NativeConfiguration<>();
-
-// implementation with advanced eviction
-V2Configuration<String, String> jcacheConfig = new V2Configuration<>();
-
-
-RedissonClient redisson = ...
-Configuration<String, String> config = RedissonConfiguration.fromInstance(redisson, jcacheConfig);
-
-CacheManager manager = Caching.getCachingProvider().getCacheManager();
-Cache<String, String> cache = manager.createCache("namedCache", config);
-```
-
-Read more [here](configuration.md) about Redisson configuration.
-
 Provided implementation fully passes TCK tests. Here is the [test](https://github.com/cruftex/jsr107-test-zoo/tree/master/redisson-V2-test) module.
 
-### Asynchronous, Reactive and RxJava3 interfaces
+### Eviction, local cache and data partitioning
 
-Along with usual JCache API, Redisson provides Asynchronous, Reactive and RxJava3 API.
+Redisson provides JCache implementations with many important features:  
 
-**[Asynchronous interface](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/CacheAsync.html)**. Each method returns `org.redisson.api.RFuture` object.  
-Example:
+1. **Local cache**
+ 
+    So called near cache used to speed up read operations and avoid network roundtrips. It caches JCache entries on Redisson side and executes read operations up to 45x faster in comparison with common implementation. Local cache instances with the same name connected to the same pub/sub channel. This channel is used for exchanging of update/invalidate events between all instances. Local cache store doesn't use hashCode()/equals() methods of key object, instead it uses hash of serialized state.  
 
-```java
-// implementation with scripted eviction
-MutableConfiguration<String, String> config = new MutableConfiguration<>();
+2. **Data partitioning**
+ 
+    Although JCache instance is cluster compatible its content isn't scaled/partitioned across multiple Redis or Valkey master nodes in cluster. Data partitioning allows to scale available memory, read/write operations and entry eviction process for individual JCache instance in Redis or Valkey cluster.
 
-// implementation with native eviction
-NativeConfiguration<String, String> config = new NativeConfiguration<>();
+3. **Fallback mode**
 
-// implementation with advanced eviction
-V2Configuration<String, String> config = new V2Configuration<>();
+    If set to `true` and Redis or Valkey is down the errors won't be thrown allowing application continue to operate without Redis.
 
-        
-CacheManager manager = Caching.getCachingProvider().getCacheManager();
-Cache<String, String> cache = manager.createCache("myCache", config);
+4. **Scripted eviction**
 
-CacheAsync<String, String> asyncCache = cache.unwrap(CacheAsync.class);
-RFuture<Void> putFuture = asyncCache.putAsync("1", "2");
-RFuture<String> getFuture = asyncCache.getAsync("1");
-```
+    Eviction is executed by Redisson through a custom scheduled task which removes expired entries using Lua script on Redis or Valkey side. Eviction task is started once per unique cache name at the moment of getting JCache instance. If instance isn't used and has expired entries it should be get again to start the eviction process. This leads to extra Redis or Valkey calls and eviction task per unique cache name. 
 
-**[Reactive interface](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/CacheReactive.html)**. Each method returns `reactor.core.publisher.Mono` object.  
-Example:
+    Entries are cleaned time to time by `org.redisson.eviction.EvictionScheduler`. By default, it removes 100 expired entries at a time. This can be changed through [cleanUpKeysAmount](configuration.md) setting. Task launch time tuned automatically and depends on expired entries amount deleted in previous time and varies between 5 second to 30 minutes by default. This time interval can be changed through [minCleanUpDelay](configuration.md) and [maxCleanUpDelay](configuration.md). For example, if clean task deletes 100 entries each time it will be executed every 5 seconds (minimum execution delay). But if current expired entries amount is lower than previous one then execution delay will be increased by 1.5 times and decreased otherwise.
 
-```java
-// implementation with scripted eviction
-MutableConfiguration<String, String> config = new MutableConfiguration<>();
+    Available implementations:
 
-// implementation with native eviction
-NativeConfiguration<String, String> config = new NativeConfiguration<>();
+    |   | Local<br/>cache | Data<br/>partitioning | Ultra-fast<br/>read/write | Fallback<br/>mode |
+    | -- | :-------------------: | :----------:| :----------:| :----------:|
+    |JCache<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ❌ | ❌ |
+    |JCache<br/><sub><i>[Redisson PRO](https://redisson.pro) version</i></sub> | ❌ | ❌ | ✔️ | ✔️ |
+    |JCache with local cache<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub>  | ✔️ | ❌ | ✔️ | ✔️ |
+    |JCache with data partitioning<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ | ✔️ |
+    |JCache with local cache and data partitioning<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ✔️ | ✔️ | ✔️ | ✔️ |
 
-// implementation with advanced eviction
-V2Configuration<String, String> config = new V2Configuration<>();
+5. **Advanced eviction**
 
-        
-CacheManager manager = Caching.getCachingProvider().getCacheManager();
-Cache<String, String> cache = manager.createCache("myCache", config);
+    Doesn't use an entry eviction task, entries are cleaned on Redis or Valkey side.
 
-CacheReactive<String, String> reactiveCache = cache.unwrap(CacheReactive.class);
-Mono<Void> putFuture = reactiveCache.put("1", "2");
-Mono<String> getFuture = reactiveCache.get("1");
-```
+    Available implementations:
 
-**[RxJava3 interface](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/CacheRx.html)**. Each method returns one of the following object: `io.reactivex.Completable`, `io.reactivex.Single`, `io.reactivex.Maybe`.  
-Example:
+    | | Local<br/>cache | Data<br/>partitioning | Ultra-fast<br/>read/write | Fallback<br/>mode |
+    | ------------- | :-----------: | :----------:| :----------:| :----------:|
+    |JCache V2<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub>  | ❌ | ✔️ | ✔️ | ✔️ |
+    |JCache V2 with local cache<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub>  | ✔️ | ✔️ | ✔️ | ✔️ |
 
-```java
-// implementation with scripted eviction
-MutableConfiguration<String, String> config = new MutableConfiguration<>();
+6. **Native eviction**
 
-// implementation with native eviction
-NativeConfiguration<String, String> config = new NativeConfiguration<>();
+    Doesn't use an entry eviction task, entries are cleaned on Redis side.  
+    Requires **Redis 7.4+**.
 
-// implementation with advanced eviction
-V2Configuration<String, String> config = new V2Configuration<>();
+    Available implementations:
 
-        
-CacheManager manager = Caching.getCachingProvider().getCacheManager();
-Cache<String, String> cache = manager.createCache("myCache", config);
+    | | Local<br/>cache | Data<br/>partitioning | Ultra-fast<br/>read/write | Fallback<br/>mode |
+    | ------------- | :-----------: | :----------:| :----------:| :----------:|
+    |JCache native <br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub>  | ❌ | ❌ | ✔️ | ✔️ |
+    |JCache native with data partitioning<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ | ✔️ |
+    |JCache native with local cache and data partitioning<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub>  | ✔️ | ✔️ | ✔️ | ✔️ |
 
-CacheRx<String, String> rxCache = cache.unwrap(CacheRx.class);
-Completable putFuture = rxCache.put("1", "2");
-Maybe<String> getFuture = rxCache.get("1");
-```
-### Local cache and data partitioning
+### Usage
 
-Redisson provides JCache implementations with two important features:  
+Below are the examples of JCache API usage.
 
-**local cache** - so called near cache used to speed up read operations and avoid network roundtrips. It caches JCache entries on Redisson side and executes read operations up to 45x faster in comparison with common implementation. Local cache instances with the same name connected to the same pub/sub channel. This channel is used for exchanging of update/invalidate events between all instances. Local cache store doesn't use hashCode()/equals() methods of key object, instead it uses hash of serialized state.  
+1. Using default config located at `/redisson-jcache.yaml`:
 
-**data partitioning** - although JCache instance is cluster compatible its content isn't scaled/partitioned across multiple Redis or Valkey master nodes in cluster. Data partitioning allows to scale available memory, read/write operations and entry eviction process for individual JCache instance in Redis or Valkey cluster.
+    ```java
+    // implementation with scripted eviction
+    MutableConfiguration<String, String> config = new MutableConfiguration<>();
 
-**fallback mode** - if set to `true` and Redis or Valkey is down the errors won't be thrown allowing application continue to operate without Redis.
+    // implementation with native eviction
+    NativeConfiguration<String, String> config = new NativeConfiguration<>();
 
-**1. Scripted eviction**
+    // implementation with advanced eviction
+    V2Configuration<String, String> config = new V2Configuration<>();
 
-Eviction is done on Redisson side through a custom scheduled task which removes expired entries using Lua script. Eviction task is started once per unique cache name at the moment of getting JCache instance. If instance isn't used and has expired entries it should be get again to start the eviction process. This leads to extra Redis or Valkey calls and eviction task per unique cache name. 
+            
+    CacheManager manager = Caching.getCachingProvider().getCacheManager();
+    Cache<String, String> cache = manager.createCache("namedCache", config);
+    ```
 
-Entries are cleaned time to time by `org.redisson.eviction.EvictionScheduler`. By default, it removes 100 expired entries at a time. This can be changed through [cleanUpKeysAmount](configuration.md) setting. Task launch time tuned automatically and depends on expired entries amount deleted in previous time and varies between 5 second to 30 minutes by default. This time interval can be changed through [minCleanUpDelay](configuration.md) and [maxCleanUpDelay](configuration.md). For example, if clean task deletes 100 entries each time it will be executed every 5 seconds (minimum execution delay). But if current expired entries amount is lower than previous one then execution delay will be increased by 1.5 times and decreased otherwise.
+2. Using config file with custom location:
 
-Available implementations:
+    ```java
+    // implementation with scripted eviction
+    MutableConfiguration<String, String> config = new MutableConfiguration<>();
 
-| | Local<br/>cache | Data<br/>partitioning | Ultra-fast<br/>read/write | Fallback<br/>mode |
-| ------------- | :-----------: | :----------:| :----------:| :----------:|
-|JCache<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ❌ | ❌ |
-|JCache<br/><sub><i>[Redisson PRO](https://redisson.pro) version</i></sub> | ❌ | ❌ | ✔️ | ✔️ |
-|JCache with local cache<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub>  | ✔️ | ❌ | ✔️ | ✔️ |
-|JCache with data partitioning<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ | ✔️ |
-|JCache with local cache and data partitioning<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ✔️ | ✔️ | ✔️ | ✔️ |
+    // implementation with native eviction
+    NativeConfiguration<String, String> config = new NativeConfiguration<>();
 
-**2. Advanced eviction**
+    // implementation with advanced eviction
+    V2Configuration<String, String> config = new V2Configuration<>();
 
-Doesn't use an entry eviction task, entries are cleaned on Redis or Valkey side.
 
-Available implementations:
+    // yaml config
+    URI redissonConfigUri = getClass().getResource("redisson-jcache.yaml").toURI();
+    CacheManager manager = Caching.getCachingProvider().getCacheManager(redissonConfigUri, null);
+    Cache<String, String> cache = manager.createCache("namedCache", config);
+    ```
 
-| | Local<br/>cache | Data<br/>partitioning | Ultra-fast<br/>read/write | Fallback<br/>mode |
-| ------------- | :-----------: | :----------:| :----------:| :----------:|
-|JCache V2<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub>  | ❌ | ✔️ | ✔️ | ✔️ |
+3. Using Redisson's config object:
 
-**3. Native eviction**
+    ```java
+    // implementation with scripted eviction
+    MutableConfiguration<String, String> jcacheConfig = new MutableConfiguration<>();
 
-Doesn't use an entry eviction task, entries are cleaned on Redis side.  
-Requires **Redis 7.4+**.
+    // implementation with native eviction
+    NativeConfiguration<String, String> jcacheConfig = new NativeConfiguration<>();
 
-Available implementations:
+    // implementation with advanced eviction
+    V2Configuration<String, String> jcacheConfig = new V2Configuration<>();
 
-| | Local<br/>cache | Data<br/>partitioning | Ultra-fast<br/>read/write | Fallback<br/>mode |
-| ------------- | :-----------: | :----------:| :----------:| :----------:|
-|JCache native <br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub>  | ❌ | ❌ | ✔️ | ✔️ |
-|JCache native with data partitioning<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ | ✔️ |
+
+    Config redissonCfg = ...
+    Configuration<String, String> config = RedissonConfiguration.fromConfig(redissonCfg, jcacheConfig);
+
+    CacheManager manager = Caching.getCachingProvider().getCacheManager();
+    Cache<String, String> cache = manager.createCache("namedCache", config);
+    ```
+
+4. Using Redisson instance object:
+    ```java
+    // implementation with scripted eviction
+    MutableConfiguration<String, String> jcacheConfig = new MutableConfiguration<>();
+
+    // implementation with native eviction
+    NativeConfiguration<String, String> jcacheConfig = new NativeConfiguration<>();
+
+    // implementation with advanced eviction
+    V2Configuration<String, String> jcacheConfig = new V2Configuration<>();
+
+
+    RedissonClient redisson = ...
+    Configuration<String, String> config = RedissonConfiguration.fromInstance(redisson, jcacheConfig);
+
+    CacheManager manager = Caching.getCachingProvider().getCacheManager();
+    Cache<String, String> cache = manager.createCache("namedCache", config);
+    ```
+
+    Read more [here](configuration.md) about Redisson configuration.
 
 **Local cache configuration**
 
@@ -601,10 +605,25 @@ Usage example:
 
 ```java
 
+// implementation with local cache + scripted eviction
 LocalCacheConfiguration<String, String> config = new LocalCacheConfiguration<>();
                 .setEvictionPolicy(EvictionPolicy.LFU)
                 .setTimeToLive(48, TimeUnit.MINUTES)
-                .setMaxIdle(24, TimeUnit.MINUTES);
+                .setMaxIdle(24, TimeUnit.MINUTES)
+                .setCacheSize(1000);
+
+// implementation with local cache + native eviction
+LocalCacheNativeConfiguration<String, String> config = new LocalCacheNativeConfiguration<>();
+                .setEvictionPolicy(EvictionPolicy.LFU)
+                .setTimeToLive(48, TimeUnit.MINUTES)
+                .setMaxIdle(24, TimeUnit.MINUTES)
+                .setCacheSize(1000);
+
+// implementation with local cache + advanced eviction        
+LocalCacheV2Configuration<String, String> config = new LocalCacheV2Configuration<>();
+                .setEvictionPolicy(EvictionPolicy.LFU)
+                .setTimeToLive(48, TimeUnit.MINUTES)
+                .setMaxIdle(24, TimeUnit.MINUTES)
                 .setCacheSize(1000);
         
 CacheManager manager = Caching.getCachingProvider().getCacheManager();
@@ -630,18 +649,13 @@ Cache<String, String> cache = manager.createCache("namedCache", rConfig);
 Usage examples:
 
 ```java
-// data partitioning configuration with scripted eviction
+// implementation with data partitioning + scripted eviction
 ClusteredConfiguration<String, String> config = new ClusteredConfiguration<>();
 
-// data partitioning and local cache configuration with scripted eviction
-ClusteredLocalCacheConfiguration<String, String> config = new ClusteredLocalCacheConfiguration<>();
-config.cacheSize(1000);
-config.timeToLive(Duration.ofSeconds(10));
-
-// data partitioning configuration with native eviction
+// implementation with data partitioning + native eviction
 ClusteredNativeConfiguration<String, String> config = new ClusteredNativeConfiguration<>();
 
-// data partitioning configuration with advanced eviction
+// implementation with data partitioning + advanced eviction
 V2Configuration<String, String> config = new V2Configuration<>();
         
 CacheManager manager = Caching.getCachingProvider().getCacheManager();
@@ -732,7 +746,20 @@ Usage examples:
 
 ```java
 
+// implementation with data partitioning + local cache + scripted eviction
 ClusteredLocalCacheConfiguration<String, String> config = new ClusteredLocalCacheConfiguration<>();
+config.cacheSize(1000);
+config.timeToLive(Duration.ofSeconds(10));
+
+// implementation with data partitioning + local cache + native eviction
+ClusteredLocalCacheNativeConfiguration<String, String> config = new ClusteredLocalCacheNativeConfiguration<>();
+config.cacheSize(1000);
+config.timeToLive(Duration.ofSeconds(10));
+
+// implementation with data partitioning + local cache + advanced eviction
+LocalCacheV2Configuration<String, String> config = new LocalCacheV2Configuration<>();
+config.cacheSize(1000);
+config.timeToLive(Duration.ofSeconds(10));
         
 CacheManager manager = Caching.getCachingProvider().getCacheManager();
 Cache<String, String> cache = manager.createCache("myCache", config);
@@ -750,6 +777,76 @@ Configuration<String, String> rConfig = RedissonConfiguration.fromConfig(redisso
 
 CacheManager manager = Caching.getCachingProvider().getCacheManager();
 Cache<String, String> cache = manager.createCache("namedCache", rConfig);
+```
+
+### Asynchronous, Reactive and RxJava3 interfaces
+
+Along with usual JCache API, Redisson provides Asynchronous, Reactive and RxJava3 API.
+
+**[Asynchronous interface](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/CacheAsync.html)**. Each method returns `org.redisson.api.RFuture` object.  
+Example:
+
+```java
+// implementation with scripted eviction
+MutableConfiguration<String, String> config = new MutableConfiguration<>();
+
+// implementation with native eviction
+NativeConfiguration<String, String> config = new NativeConfiguration<>();
+
+// implementation with advanced eviction
+V2Configuration<String, String> config = new V2Configuration<>();
+
+        
+CacheManager manager = Caching.getCachingProvider().getCacheManager();
+Cache<String, String> cache = manager.createCache("myCache", config);
+
+CacheAsync<String, String> asyncCache = cache.unwrap(CacheAsync.class);
+RFuture<Void> putFuture = asyncCache.putAsync("1", "2");
+RFuture<String> getFuture = asyncCache.getAsync("1");
+```
+
+**[Reactive interface](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/CacheReactive.html)**. Each method returns `reactor.core.publisher.Mono` object.  
+Example:
+
+```java
+// implementation with scripted eviction
+MutableConfiguration<String, String> config = new MutableConfiguration<>();
+
+// implementation with native eviction
+NativeConfiguration<String, String> config = new NativeConfiguration<>();
+
+// implementation with advanced eviction
+V2Configuration<String, String> config = new V2Configuration<>();
+
+        
+CacheManager manager = Caching.getCachingProvider().getCacheManager();
+Cache<String, String> cache = manager.createCache("myCache", config);
+
+CacheReactive<String, String> reactiveCache = cache.unwrap(CacheReactive.class);
+Mono<Void> putFuture = reactiveCache.put("1", "2");
+Mono<String> getFuture = reactiveCache.get("1");
+```
+
+**[RxJava3 interface](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/CacheRx.html)**. Each method returns one of the following object: `io.reactivex.Completable`, `io.reactivex.Single`, `io.reactivex.Maybe`.  
+Example:
+
+```java
+// implementation with scripted eviction
+MutableConfiguration<String, String> config = new MutableConfiguration<>();
+
+// implementation with native eviction
+NativeConfiguration<String, String> config = new NativeConfiguration<>();
+
+// implementation with advanced eviction
+V2Configuration<String, String> config = new V2Configuration<>();
+
+        
+CacheManager manager = Caching.getCachingProvider().getCacheManager();
+Cache<String, String> cache = manager.createCache("myCache", config);
+
+CacheRx<String, String> rxCache = cache.unwrap(CacheRx.class);
+Completable putFuture = rxCache.put("1", "2");
+Maybe<String> getFuture = rxCache.get("1");
 ```
 
 ### Open Liberty or WebSphere Liberty integration
@@ -793,82 +890,99 @@ Distributed Session persistence configuration example:
 </cacheManager>
 ```
 
-_Settings below are available only in [Redisson PRO](https://redisson.pro) edition._
+**JCache settings**
 
-Follow settings are available per JCache instance:
+_Settings are available only in [Redisson PRO](https://redisson.pro) edition._
+
+* **fallback**
+
+    Default value: `false`  
+    Description: Skip errors if Redis or Valkey cache is unavailable.  
 
 
-Parameter name: **fallback**  
-Default value: `false`  
-Description: Skip errors if Redis or Valkey cache is unavailable.  
+* **implementation**
 
-Parameter name: **implementation**  
-Default value: `cache`  
-Description: Cache implementation. Available values:
+    Default value: `cache`  
+    Description: Cache implementation. Available values:
 
-* `cache` - implementation with scripted eviction
-* `cache-v2` - implementation with advanced eviction
-* `native-cache` - implementation with native eviction
-* `clustered-native-cache` - implementation with data partitioning and native eviction
-* `local-cache` - implementation with local cache support and scripted eviction
-* `clustered-local-cache` - implementation with data partitioning, local cache support and scripted eviction
-* `clustered-cache` - implementation with data partitioning and scripted eviction
+    * `cache` - implementation with scripted eviction
+    * `local-cache` - implementation with local cache and scripted eviction
+    * `clustered-cache` - implementation with data partitioning and scripted eviction
+    * `clustered-local-cache` - implementation with data partitioning, local cache support and scripted eviction
 
-Parameter name: **localcache.store_cache_miss**  
-Default value: `false`  
-Description: Defines whether to store a cache miss into the local cache.  
+    * `cache-v2` - implementation with data partitioning and advanced eviction
+    * `local-cache-v2` - implementation with local cache, data partitioning and advanced eviction
 
-Parameter name: **localcache.cache_provider**  
-Default value: `REDISSON`  
-Description: Defines a cache provider used as local cache store. Available values:
+    * `native-cache` - implementation with native eviction
+    * `local-cache-native` - implementation with local cache and native eviction
+    * `clustered-native-cache` - implementation with data partitioning and native eviction
+    * `clustered-local-cache-native` - implementation with data partitioning, local cache support and native eviction
 
-* `REDISSON`
-* `CAFFEINE` 
 
-Parameter name: **localcache.store_mode**  
-Default value: `LOCALCACHE`  
-Description: Store mode of cache data. Available values:
+* **localcache.store_cache_miss**
 
-* `LOCALCACHE` - store data in local cache only and use Redis or Valkey only for data update/invalidation
-* `LOCALCACHE_REDIS` - store data in both Redis or Valkey and local cache
+    Default value: `false`  
+    Description: Defines whether to store a cache miss into the local cache.  
 
-Parameter name: **localcache.max_idle_time**  
-Default value: `0`  
-Description: Max idle time per entry in local cache. Defined in milliseconds. `0` value means this setting doesn't affect expiration.
+* **localcache.cache_provider**
 
-Parameter name: **localcache.time_to_live**  
-Default value: `0`  
-Description: Time to live per entry in local cache. Defined in milliseconds.<br/>`0` value means this setting doesn't affect expiration.
+    Default value: `REDISSON`  
+    Description: Defines a cache provider used as local cache store. Available values:
 
-Parameter name: **localcache.eviction_policy**  
-Default value: `NONE`  
-Description: Eviction policy applied to local cache entries when cache size limit reached. Available values:
+    * `REDISSON`
+    * `CAFFEINE` 
 
-* `LFU` - Counts how often an item was requested. Those that are used least often are discarded first.
-* `LRU` - Discards the least recently used items first
-* `SOFT` - Uses weak references, entries are removed by GC
-* `WEAK` - Uses soft references, entries are removed by GC
-* `NONE` - No eviction
+* **localcache.store_mode**
 
-Parameter name: **localcache.sync_strategy**  
-Default value: `INVALIDATE`  
-Description: Sync strategy used to synchronize local cache changes across all instances. Available values:
+    Default value: `LOCALCACHE`  
+    Description: Store mode of cache data. Available values:
 
-* `INVALIDATE` - Invalidate cache entry across all LocalCachedMap instances on map entry change
-* `UPDATE` - Update cache entry across all LocalCachedMap instances on map entry change
-* `NONE` - No synchronizations on map changes |
+    * `LOCALCACHE` - store data in local cache only and use Redis or Valkey only for data update/invalidation
+    * `LOCALCACHE_REDIS` - store data in both Redis or Valkey and local cache
 
-Parameter name: **localcache.reconnection_strategy**  
-Default value: `NONE`  
-Description: Reconnection strategy used to load missed local cache updates through Hibernate during any connection failures to Redis.
+* **localcache.max_idle_time**
 
-* `CLEAR` - Clear local cache if map instance has been disconnected for a while
-* `LOAD` - Store invalidated entry hash in invalidation log for 10 minutes. Cache keys for stored invalidated entry hashes will be removed if LocalCachedMap instance has been disconnected less than 10 minutes or whole cache will be cleaned otherwise
-* `NONE` - No reconnection handling
+    Default value: `0`  
+    Description: Max idle time per entry in local cache. Defined in milliseconds. `0` value means this setting doesn't affect expiration.
 
-Parameter name: **localcache.size**  
-Default value: `0`  
-Description: Max size of local cache. Superfluous entries in Redis or Valkey are evicted using defined eviction policy. `0` value means unbounded cache.
+* **localcache.time_to_live**
+
+    Default value: `0`  
+    Description: Time to live per entry in local cache. Defined in milliseconds. `0` value means this setting doesn't affect expiration.
+
+* **localcache.eviction_policy**
+
+    Default value: `NONE`  
+    Description: Eviction policy applied to local cache entries when cache size limit reached. Available values:
+
+    * `LFU` - Counts how often an item was requested. Those that are used least often are discarded first.
+    * `LRU` - Discards the least recently used items first
+    * `SOFT` - Uses weak references, entries are removed by GC
+    * `WEAK` - Uses soft references, entries are removed by GC
+    * `NONE` - No eviction
+
+* **localcache.sync_strategy**
+
+    Default value: `INVALIDATE`  
+    Description: Sync strategy used to synchronize local cache changes across all instances. Available values:
+
+    * `INVALIDATE` - Invalidate cache entry across all LocalCachedMap instances on map entry change
+    * `UPDATE` - Update cache entry across all LocalCachedMap instances on map entry change
+    * `NONE` - No synchronizations on map changes |
+
+* **localcache.reconnection_strategy**
+
+    Default value: `NONE`  
+    Description: Reconnection strategy used to load missed local cache updates through Hibernate during any connection failures to Redis.
+
+    * `CLEAR` - Clear local cache if map instance has been disconnected for a while
+    * `LOAD` - Store invalidated entry hash in invalidation log for 10 minutes. Cache keys for stored invalidated entry hashes will be removed if LocalCachedMap instance has been disconnected less than 10 minutes or whole cache will be cleaned otherwise
+    * `NONE` - No reconnection handling
+
+* **localcache.size**
+
+    Default value: `0`  
+    Description: Max size of local cache. Superfluous entries in Redis or Valkey are evicted using defined eviction policy. `0` value means unbounded cache.
 
 ## MyBatis Cache
 
@@ -880,94 +994,119 @@ Compatible with MyBatis 3.0.0+
 
 Redisson provides multiple MyBatis Cache implementations which support features below:
 
-**local cache** - so called `near cache` used to speed up read operations and avoid network roundtrips. It caches Map entries on Redisson side and executes read operations up to **45x faster** in comparison with common implementation. Local cache instances with the same name connected to the same pub/sub channel. This channel is used for exchanging of update/invalidate events between all instances. Local cache store doesn't use `hashCode()`/`equals()` methods of key object, instead it uses hash of serialized state.
+1. **Local cache**
 
-**data partitioning** - although Map object is cluster compatible its content isn't scaled/partitioned across multiple Redis or Valkey master nodes in cluster. Data partitioning allows to scale available memory, read/write operations and entry eviction process for individual Map instance in Redis or Valkey cluster.  
+    So called `near cache` used to speed up read operations and avoid network roundtrips. It caches Map entries on Redisson side and executes read operations up to **45x faster** in comparison with common implementation. Local cache instances with the same name connected to the same pub/sub channel. This channel is used for exchanging of update/invalidate events between all instances. Local cache store doesn't use `hashCode()`/`equals()` methods of key object, instead it uses hash of serialized state.
 
-**1. Scripted eviction**
+2. **Data partitioning**
+    
+    Although Map object is cluster compatible its content isn't scaled/partitioned across multiple Redis or Valkey master nodes in cluster. Data partitioning allows to scale available memory, read/write operations and entry eviction process for individual Map instance in Redis or Valkey cluster.  
 
-Allows to define `time to live` or `max idle time` parameters per entry. Eviction is done on Redisson side through a custom scheduled task which removes expired entries using Lua script. Eviction task is started once per unique object name at the moment of getting Map instance. If instance isn't used and has expired entries it should be get again to start the eviction process. This leads to extra Redis or Valkey calls and eviction task per unique map object name. 
+3. **Scripted eviction**
 
-Entries are cleaned time to time by `org.redisson.eviction.EvictionScheduler`. By default, it removes 100 expired entries at a time. This can be changed through [cleanUpKeysAmount](configuration.md) setting. Task launch time tuned automatically and depends on expired entries amount deleted in previous time and varies between 5 second to 30 minutes by default. This time interval can be changed through [minCleanUpDelay](configuration.md) and [maxCleanUpDelay](configuration.md). For example, if clean task deletes 100 entries each time it will be executed every 5 seconds (minimum execution delay). But if current expired entries amount is lower than previous one then execution delay will be increased by 1.5 times and decreased otherwise.
+    Allows to define `time to live` or `max idle time` parameters per entry. Eviction is executed by Redisson through a custom scheduled task which removes expired entries using Lua script on Redis or Valkey side. Eviction task is started once per unique object name at the moment of getting Map instance. If instance isn't used and has expired entries it should be get again to start the eviction process. This leads to extra Redis or Valkey calls and eviction task per unique map object name. 
 
-Available implementations:
+    Entries are cleaned time to time by `org.redisson.eviction.EvictionScheduler`. By default, it removes 100 expired entries at a time. This can be changed through [cleanUpKeysAmount](configuration.md) setting. Task launch time tuned automatically and depends on expired entries amount deleted in previous time and varies between 5 second to 30 minutes by default. This time interval can be changed through [minCleanUpDelay](configuration.md) and [maxCleanUpDelay](configuration.md). For example, if clean task deletes 100 entries each time it will be executed every 5 seconds (minimum execution delay). But if current expired entries amount is lower than previous one then execution delay will be increased by 1.5 times and decreased otherwise.
 
-|Class name | Local<br/>cache | Data<br/>partitioning | Ultra-fast<br/>read/write |
-| ------------- | :-----------: | :----------:| :----------:|
-|RedissonCache<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ❌ |
-|RedissonCache<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ❌ | ❌ | ✔️ |
-|RedissonLocalCachedCache<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub>  | ✔️ | ❌ |  ✔️ |
-|RedissonClusteredCache<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub> | ❌ | ✔️ |  ✔️ |
-|RedissonClusteredLocalCachedCache<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub> | ✔️ | ✔️ | ✔️ |
+    Available implementations:
 
-**2. Advanced eviction**
+    |Class name | Local<br/>cache | Data<br/>partitioning | Ultra-fast<br/>read/write |
+    | ------------- | :-----------: | :----------:| :----------:|
+    |RedissonCache<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ❌ |
+    |RedissonCache<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ❌ | ❌ | ✔️ |
+    |RedissonLocalCachedCache<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub>  | ✔️ | ❌ |  ✔️ |
+    |RedissonClusteredCache<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub> | ❌ | ✔️ |  ✔️ |
+    |RedissonClusteredLocalCachedCache<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub> | ✔️ | ✔️ | ✔️ |
 
-Allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task, entries are cleaned on Redis or Valkey side.
+3. **Advanced eviction**
 
-Available implementations:
+    Allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task, entries are cleaned on Redis or Valkey side.
 
-|Class name | Local<br/>cache | Data<br/>partitioning | Ultra-fast<br/>read/write |
-| ------------- | :-----------: | :----------:| :----------:|
-|RedissonCacheV2<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ |
-|RedissonLocalCachedCacheV2<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub>  | ✔️ | ✔️ | ✔️ |
+    Available implementations:
 
-**3. Native eviction**
+    |Class name | Local<br/>cache | Data<br/>partitioning | Ultra-fast<br/>read/write |
+    | ------------- | :-----------: | :----------:| :----------:|
+    |RedissonCacheV2<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ |
+    |RedissonLocalCachedCacheV2<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub>  | ✔️ | ✔️ | ✔️ |
 
-Allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task, entries are cleaned on Redis side.  
-Requires **Redis 7.4+**.
+4. **Native eviction**
 
-Available implementations:
+    Allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task, entries are cleaned on Redis side.  
+    Requires **Redis 7.4+**.
 
-|Class name | Local<br/>cache | Data<br/>partitioning | Ultra-fast<br/>read/write |
-| ------------- | :-----------: | :----------:| :----------:|
-|RedissonCacheNative<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ❌ |
-|RedissonCacheNative<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ❌ | ❌ |  ✔️ |
-|RedissonLocalCachedCacheNative<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub>  | ✔️ | ❌ | ✔️ |
-|RedissonClusteredCacheNative<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub> | ❌ | ✔️ |  ✔️ |
+    Available implementations:
+
+    |Class name | Local<br/>cache | Data<br/>partitioning | Ultra-fast<br/>read/write |
+    | ------------- | :-----------: | :----------:| :----------:|
+    |RedissonCacheNative<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ❌ |
+    |RedissonCacheNative<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ❌ | ❌ |  ✔️ |
+    |RedissonLocalCachedCacheNative<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub>  | ✔️ | ❌ | ✔️ |
+    |RedissonClusteredCacheNative<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub> | ❌ | ✔️ |  ✔️ |
+    |RedissonClusteredLocalCachedCacheNative<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub> | ✔️ | ✔️ |  ✔️ |
 
 ### Usage
 
-**1. Add `redisson-mybatis` dependency into your project**
+1. **Add `redisson-mybatis` dependency into your project**
 
-Maven
+    Maven
 
-```xml
-<dependency>
-     <groupId>org.redisson</groupId>
-     <artifactId>redisson-mybatis</artifactId>
-     <version>xVERSIONx</version>
-</dependency>
-```
+    ```xml
+    <dependency>
+         <groupId>org.redisson</groupId>
+         <artifactId>redisson-mybatis</artifactId>
+         <version>xVERSIONx</version>
+    </dependency>
+    ```
 
-Gradle
+    Gradle
 
-```groovy
-compile 'org.redisson:redisson-mybatis:xVERSIONx'
-```
+    ```groovy
+    compile 'org.redisson:redisson-mybatis:xVERSIONx'
+    ```
 
-**2. Specify MyBatis cache settings**
+2. **Specify MyBatis cache settings**
 
-Redisson allows to define follow settings per Cache instance:
+    Redisson allows to define follow settings per Cache instance:
 
-`timeToLive` - defines time to live per cache entry
+    * `timeToLive`
 
-`maxIdleTime` - defines max idle time per cache entry
+        Defines time to live per cache entry
 
-`maxSize` - defines max size of entries amount stored in Redis
+    * `maxIdleTime`
 
-`localCacheProvider` - cache provider used as local cache store. `REDISSON` and `CAFFEINE` providers are available. Default value: `REDISSON`
+        Defines max idle time per cache entry
 
-`localCacheEvictionPolicy` - local cache eviction policy. `LFU`, `LRU`, `SOFT`, `WEAK` and `NONE` eviction policies are available.
+    * `maxSize`
 
-`localCacheSize` - local cache size. If size is `0` then local cache is unbounded.
+        Defines max size of entries amount stored in Redis or Valkey
 
-`localCacheTimeToLive` - time to live in milliseconds for each map entry in local cache. If value equals to `0` then timeout is not applied.
+    * `localCacheProvider`
 
-`localCacheMaxIdleTime` - max idle time in milliseconds for each map entry in local cache. If value equals to `0` then timeout is not applied.
+        Cache provider used as local cache store. `REDISSON` and `CAFFEINE` providers are available. Default value: `REDISSON`
 
-`localCacheSyncStrategy` - local cache sync strategy. `INVALIDATE`, `UPDATE` and `NONE` eviction policies are available.
+    * `localCacheEvictionPolicy`
 
-`redissonConfig` - defines path to redisson config in YAML format
+        Local cache eviction policy. `LFU`, `LRU`, `SOFT`, `WEAK` and `NONE` eviction policies are available.
+
+    * `localCacheSize`
+
+        Local cache size. If size is `0` then local cache is unbounded.
+
+    * `localCacheTimeToLive`
+ 
+        Time to live in milliseconds for each map entry in local cache. If value equals to `0` then timeout is not applied.
+
+    * `localCacheMaxIdleTime`
+
+        Max idle time in milliseconds for each map entry in local cache. If value equals to `0` then timeout is not applied.
+
+    * `localCacheSyncStrategy`
+        
+        Local cache sync strategy. `INVALIDATE`, `UPDATE` and `NONE` eviction policies are available.
+
+    * `redissonConfig`
+        
+        Defines path to redisson config in YAML format
 
 Cache definition examples:
 
@@ -1041,140 +1180,190 @@ Cache definition examples:
 
 ### Eviction, local cache and data partitioning
 
-Redisson provides various Quarkus Cache implementations with features below:  
+Redisson provides various [Quarkus Cache](https://quarkus.io/guides/cache) implementations with features below:  
 
-**local cache** - so called `near cache` used to speed up read operations and avoid network roundtrips. It caches Map entries on Redisson side and executes read operations up to **45x faster** in comparison with common implementation. Local cache instances with the same name connected to the same pub/sub channel. This channel is used for exchanging of update/invalidate events between all instances. Local cache store doesn't use `hashCode()`/`equals()` methods of key object, instead it uses hash of serialized state.
+1. **Local cache**
 
-**data partitioning** - although Map object is cluster compatible its content isn't scaled/partitioned across multiple Redis or Valkey master nodes in cluster. Data partitioning allows to scale available memory, read/write operations and entry eviction process for individual Map instance in cluster.  
+    So called `near cache` used to speed up read operations and avoid network roundtrips. It caches Map entries on Redisson side and executes read operations up to **45x faster** in comparison with common implementation. Local cache instances with the same name connected to the same pub/sub channel. This channel is used for exchanging of update/invalidate events between all instances. Local cache store doesn't use `hashCode()`/`equals()` methods of key object, instead it uses hash of serialized state.
 
-**1. Scripted eviction**
+2. **Data partitioning**
 
-Allows to define `time to live` or `max idle time` parameters per map entry. Eviction is done on Redisson side through a custom scheduled task which removes expired entries using Lua script. Eviction task is started once per unique object name at the moment of getting Map instance. If instance isn't used and has expired entries it should be get again to start the eviction process. This leads to extra Redis or Valkey calls and eviction task per unique map object name. 
+    Although Map object is cluster compatible its content isn't scaled/partitioned across multiple Redis or Valkey master nodes in cluster. Data partitioning allows to scale available memory, read/write operations and entry eviction process for individual Map instance in cluster.  
 
-Entries are cleaned time to time by `org.redisson.eviction.EvictionScheduler`. By default, it removes 100 expired entries at a time. This can be changed through [cleanUpKeysAmount](../configuration.md) setting. Task launch time tuned automatically and depends on expired entries amount deleted in previous time and varies between 5 second to 30 minutes by default. This time interval can be changed through [minCleanUpDelay](../configuration.md) and [maxCleanUpDelay](../configuration.md). For example, if clean task deletes 100 entries each time it will be executed every 5 seconds (minimum execution delay). But if current expired entries amount is lower than previous one then execution delay will be increased by 1.5 times and decreased otherwise.
+3. **Scripted eviction**
 
-Available implementations:
+    Allows to define `time to live` or `max idle time` parameters per map entry. Eviction is executed by Redisson through a custom scheduled task which removes expired entries using Lua script on Redis or Valkey side. Eviction task is started once per unique object name at the moment of getting Map instance. If instance isn't used and has expired entries it should be get again to start the eviction process. This leads to extra Redis or Valkey calls and eviction task per unique map object name. 
 
-|`impementation`<br/>setting value | Local<br/>cache | Data<br/>partitioning | Ultra-fast<br/>read/write |
-| ------------- | :-----------: | :-----------:| :----------:|
-|`standard`<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ❌ |
-|`standard`<br/><sub><i>[Redisson PRO](https://redisson.pro) version</i></sub> | ❌ | ❌ | ✔️ |
-|`localcache`<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ✔️ | ❌ | ✔️ |
-|`clustered`<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ |
-|`clustered_localcache`<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ✔️ | ✔️ | ✔️ |
+    Entries are cleaned time to time by `org.redisson.eviction.EvictionScheduler`. By default, it removes 100 expired entries at a time. This can be changed through [cleanUpKeysAmount](../configuration.md) setting. Task launch time tuned automatically and depends on expired entries amount deleted in previous time and varies between 5 second to 30 minutes by default. This time interval can be changed through [minCleanUpDelay](../configuration.md) and [maxCleanUpDelay](../configuration.md). For example, if clean task deletes 100 entries each time it will be executed every 5 seconds (minimum execution delay). But if current expired entries amount is lower than previous one then execution delay will be increased by 1.5 times and decreased otherwise.
 
-**2. Advanced eviction**
+    Available implementations:
 
-Allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task, entries are cleaned on Redis or Valkey side.
+    |`impementation`<br/>setting value | Local<br/>cache | Data<br/>partitioning | Ultra-fast<br/>read/write |
+    | ------------- | :-----------: | :-----------:| :----------:|
+    |`standard`<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ❌ |
+    |`standard`<br/><sub><i>[Redisson PRO](https://redisson.pro) version</i></sub> | ❌ | ❌ | ✔️ |
+    |`localcache`<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ✔️ | ❌ | ✔️ |
+    |`clustered`<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ |
+    |`clustered_localcache`<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ✔️ | ✔️ | ✔️ |
 
-Available implementations:
+4. **Advanced eviction**
 
-|`impementation`<br/>setting value | Local<br/>cache | Data<br/>partitioning | Ultra-fast<br/>read/write |
-| ------------- | :-----------: | :-----------:| :----------:|
-|`v2`<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ |
-|`localcache_v2`<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ✔️ | ✔️ | ✔️ |
+    Allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task, entries are cleaned on Redis or Valkey side.
 
-**3. Native eviction**
+    Available implementations:
 
-Allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task, entries are cleaned on Redis side.  
-Requires **Redis 7.4+**.
+    |`impementation`<br/>setting value | Local<br/>cache | Data<br/>partitioning | Ultra-fast<br/>read/write |
+    | ------------- | :-----------: | :-----------:| :----------:|
+    |`v2`<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ |
+    |`localcache_v2`<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ✔️ | ✔️ | ✔️ |
 
-Available implementations:
+5. **Native eviction**
 
-|`impementation`<br/>setting value | Local<br/>cache | Data<br/>partitioning | Ultra-fast<br/>read/write |
-| ------------- | :-----------: | :-----------:| :----------:|
-|`native`<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ❌ |
-|`native`<br/><sub><i>[Redisson PRO](https://redisson.pro) version</i></sub> | ❌ | ❌ | ✔️ |
-|`localcache_native`<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ✔️ | ❌ | ✔️ |
-|`clustered_native`<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ |
+    Allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task, entries are cleaned on Redis side.  
+    Requires **Redis 7.4+**.
+
+    Available implementations:
+
+    |`impementation`<br/>setting value | Local<br/>cache | Data<br/>partitioning | Ultra-fast<br/>read/write |
+    | ------------- | :-----------: | :-----------:| :----------:|
+    |`native`<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ❌ |
+    |`native`<br/><sub><i>[Redisson PRO](https://redisson.pro) version</i></sub> | ❌ | ❌ | ✔️ |
+    |`localcache_native`<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ✔️ | ❌ | ✔️ |
+    |`clustered_native`<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ |
+    |`clustered_localcache_native`<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ✔️ | ✔️ | ✔️ |
 
 
 ### Usage
 
-**1. Add `redisson-quarkus-cache` dependency into your project**
+1. **Add `redisson-quarkus-cache` dependency into your project**
 
-Maven  
+    Maven  
 
-```xml  
-<dependency>
-    <groupId>org.redisson</groupId>
-    <!-- for Quarkus v3.x.x -->
-    <artifactId>redisson-quarkus-30-cache</artifactId>
-    <version>xVERSIONx</version>
-</dependency>
-```
+    ```xml  
+    <dependency>
+        <groupId>org.redisson</groupId>
+        <!-- for Quarkus v3.x.x -->
+        <artifactId>redisson-quarkus-30-cache</artifactId>
+        <version>xVERSIONx</version>
+    </dependency>
+    ```
 
-Gradle
+    Gradle
 
-```groovy
-// for Quarkus v3.x.x
-compile 'org.redisson:redisson-quarkus-30-cache:xVERSIONx'
-```
+    ```groovy
+    // for Quarkus v3.x.x
+    compile 'org.redisson:redisson-quarkus-30-cache:xVERSIONx'
+    ```
 
-**2. Add settings into `application.properties` file**
+2. **Add settings into `application.properties` file**
 
-* Basic settings
+    1. Basic settings
 
-     `expire-after-write` - setting defines time to live of the item stored in the cache. Default value is `0`.  
-     `expire-after-access` - setting defines time to live added to the item after read operation. Default value is `0`.  
-     `implementation` - setting defines the type of cache used. Default value is `standard`. 
+        * `max-size` 
 
-     Below is the cache configuration example.
+            Setting defines maximum size of this cache. Superfluous elements are evicted using LRU algorithm. If <code>0</code> the cache is unbounded. Default value is `0`.  
 
-     ```
-     quarkus.cache.type=redisson
-     quarkus.cache.redisson.implementation=standard
+        * `expire-after-write` 
 
-     # Default configuration for all caches
-     quarkus.cache.redisson.expire-after-write=5s
-     quarkus.cache.redisson.expire-after-access=1s
+            Setting defines time to live of the item stored in the cache. Default value is `0`.  
 
-     # Configuration for `sampleCache` cache
-     quarkus.cache.redisson.sampleCache.expire-after-write=100s
-     quarkus.cache.redisson.sampleCache.expire-after-access=10s
-     ```
+        * `expire-after-access`
 
-* Local cache settings
+            Setting defines time to live added to the item after read operation. Default value is `0`.  
 
-    `quarkus.cache.redisson.[CACHE_NAME].max-size` - max size of this cache. Superfluous elements are evicted using LRU algorithm. If 0 the cache is unbounded. Default value is `0`. 
+        * `implementation` 
 
-    `quarkus.cache.redisson.[CACHE_NAME].cache-size` - local cache size. If size is 0 then local cache is unbounded. Default value is `0`. 
+            Setting defines the type of cache used. Default value is `standard`. Availabile values:  
+           
+            * `standard` - implementation with scripted eviction
+            * `v2` - implementation with data partitioning and advanced eviction
+            * `native` - implementation with native eviction
+            * `clustered_native` - implementation with data partitioning and native eviction
+            * `localcache` - implementation with local cache and scripted eviction
+            * `localcache_v2` - implementation with local cache, data partitioning and advanced eviction
+            * `localcache_native` - implementation with local cache and native eviction
+            * `clustered_localcache` - implementation with data partitioning, local cache and scripted eviction
+            * `clustered` - implementation with data partitioning and scripted eviction
+            * `clustered_localcache_native` - implementation with data partitioning, local cache and native eviction
 
-    `quarkus.cache.redisson.[CACHE_NAME].reconnection-strategy` - used to load missed updates during any connection failures to Redis. Default value is`CLEAR`. Since, local cache updates can't be executed in absence of connection to Redis. Available values: 
-	
-     * `CLEAR` - Clear local cache if map instance has been disconnected for a while.
-     * `LOAD` - Store invalidated entry hash in invalidation log for 10 minutes. Cache keys for stored invalidated entry hashes will be removed if LocalCachedMap instance has been disconnected less than 10 minutes or whole cache will be cleaned otherwise.
-     * `NONE` - No reconnection handling
+        Below is the cache configuration example.
 
-    `redisson.cache.redisson.[CACHE_NAME].sync-strategy` - used to synchronize local cache changes. Default value is`INVALIDATE`. Available values: 
-	
-    * `INVALIDATE` - Invalidate cache entry across all LocalCachedMap instances on map entry change.
-    * `UPDATE` - Insert/update cache entry across all LocalCachedMap instances on map entry change.
-    * `NONE` - No synchronizations on map changes.
+        ```
+        quarkus.cache.type=redisson
+        quarkus.cache.redisson.implementation=standard
 
-    `redisson.cache.redisson.[CACHE_NAME].eviction-policy` - defines local cache eviction policy. Default value is`NONE`. Available values:
-	
-    * `LRU` - uses local cache with LRU (least recently used) eviction policy.
-    * `LFU` - uses local cache with LFU (least frequently used) eviction policy.
-    * `SOFT` - uses local cache with soft references. The garbage collector will evict items from the local cache when the JVM is running out of memory.
-    * `WEAK` - uses local cache with weak references. The garbage collector will evict items from the local cache when it became weakly reachable.
-    * `NONE` - doesn't use eviction policy, but timeToLive and maxIdleTime params are still working.
+        # Default configuration for all caches
+        quarkus.cache.redisson.max-size=10000
+        quarkus.cache.redisson.expire-after-write=5s
+        quarkus.cache.redisson.expire-after-access=1s
 
-    `redisson.cache.redisson.[CACHE_NAME].time-to-live` - time to live duration of each map entry in local cache. If value equals to 0 then timeout is not applied. Default value is `0`. 
+        # Configuration for `sampleCache` cache
+        quarkus.cache.redisson.sampleCache.max-size=1000
+        quarkus.cache.redisson.sampleCache.expire-after-write=100s
+        quarkus.cache.redisson.sampleCache.expire-after-access=10s
+        ```
 
-    `redisson.cache.redisson.[CACHE_NAME].max-idle` - defines max idle time duration of each map entry in local cache. If value equals to 0 then timeout is not applied. Default value is `0`. 
+    2. Local cache settings
 
-    `redisson.cache.redisson.[CACHE_NAME].store-mode` - defines store mode of cache data. Default value is `LOCALCACHE_REDIS`. Available values:
-	
-    * `LOCALCACHE` - store data in local cache only and use Redis or Valkey only for data update/invalidation  
-    * `LOCALCACHE_REDIS` - store data in both Redis or Valkey and local cache  
+        * `quarkus.cache.redisson.[CACHE_NAME].max-size`
 
-    `redisson.cache.redisson.[CACHE_NAME].cache-provider` - defines Cache provider used as local cache store. Default value is `REDISSON`. Available values:
-	
-    * `REDISSON` - uses Redisson own implementation
-    * `CAFFEINE` - uses Caffeine implementation
+            Max size of this cache. Superfluous elements are evicted using LRU algorithm. If 0 the cache is unbounded. Default value is `0`. 
 
-    `redisson.cache.redisson.[CACHE_NAME].store-cache-miss` - defines whether to store a cache miss into the local cache. Default value is `false`.
+        * `quarkus.cache.redisson.[CACHE_NAME].cache-size` 
+
+            Local cache size. If size is 0 then local cache is unbounded. Default value is `0`. 
+
+        * `quarkus.cache.redisson.[CACHE_NAME].reconnection-strategy` 
+
+            Used to load missed updates during any connection failures to Redis. Default value is`CLEAR`. Since, local cache updates can't be executed in absence of connection to Redis. Available values: 
+    	
+            * `CLEAR` - Clear local cache if map instance has been disconnected for a while.
+            * `LOAD` - Store invalidated entry hash in invalidation log for 10 minutes. Cache keys for stored invalidated entry hashes will be removed if LocalCachedMap instance has been disconnected less than 10 minutes or whole cache will be cleaned otherwise.
+            * `NONE` - No reconnection handling
+
+        * `quarkus.cache.redisson.[CACHE_NAME].sync-strategy` 
+
+            Used to synchronize local cache changes. Default value is`INVALIDATE`. Available values: 
+    	
+            * `INVALIDATE` - Invalidate cache entry across all LocalCachedMap instances on map entry change.
+            * `UPDATE` - Insert/update cache entry across all LocalCachedMap instances on map entry change.
+            * `NONE` - No synchronizations on map changes.
+
+        * `quarkus.cache.redisson.[CACHE_NAME].eviction-policy`
+
+            Defines local cache eviction policy. Default value is`NONE`. Available values:
+    	
+            * `LRU` - uses local cache with LRU (least recently used) eviction policy.
+            * `LFU` - uses local cache with LFU (least frequently used) eviction policy.
+            * `SOFT` - uses local cache with soft references. The garbage collector will evict items from the local cache when the JVM is running out of memory.
+            * `WEAK` - uses local cache with weak references. The garbage collector will evict items from the local cache when it became weakly reachable.
+            * `NONE` - doesn't use eviction policy, but timeToLive and maxIdleTime params are still working.
+
+        * `quarkus.cache.redisson.[CACHE_NAME].time-to-live` 
+
+            Time to live duration of each map entry in local cache. If value equals to 0 then timeout is not applied. Default value is `0`. 
+
+        * `redisson.cache.redisson.[CACHE_NAME].max-idle` 
+            
+            Defines max idle time duration of each map entry in local cache. If value equals to 0 then timeout is not applied. Default value is `0`. 
+
+        * `quarkus.cache.redisson.[CACHE_NAME].store-mode` 
+
+            Defines store mode of cache data. Default value is `LOCALCACHE_REDIS`. Available values:
+    	
+            * `LOCALCACHE` - store data in local cache only and use Redis or Valkey only for data update/invalidation  
+            * `LOCALCACHE_REDIS` - store data in both Redis or Valkey and local cache  
+
+        * `quarkus.cache.redisson.[CACHE_NAME].cache-provider` 
+
+            Defines Cache provider used as local cache store. Default value is `REDISSON`. Available values:
+    	
+            * `REDISSON` - uses Redisson own implementation
+            * `CAFFEINE` - uses Caffeine implementation
+
+        * `quarkus.cache.redisson.[CACHE_NAME].store-cache-miss` 
+           
+            Defines whether to store a cache miss into the local cache. Default value is `false`.
 
 Local cache configuration example:
 
@@ -1184,6 +1373,7 @@ quarkus.cache.type=redisson
 quarkus.cache.redisson.implementation=localcache
 
 # Default configuration for all caches
+quarkus.cache.redisson.max-size=1000
 quarkus.cache.redisson.expire-after-write=5s
 quarkus.cache.redisson.expire-after-access=1s
 quarkus.cache.redisson.cache-size=100

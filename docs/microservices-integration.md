@@ -4,7 +4,7 @@ For Spring Boot usage please refer to [Spring Boot](integration-with-spring.md/#
 
 ## Micronaut
 
-Redisson integrates with [Micronaut](https://micronaut.io/) framework.  
+Redisson integrates with [Micronaut](https://micronaut.io/) framework. It implements [Micronaut Cache](cache-api-implementations.md/#micronaut-cache) and [Micronaut Session](#session).  
 
 Supports Micronaut 2.0.x - 4.x.x
 
@@ -94,7 +94,7 @@ micronaut:
 
 ## Quarkus
 
-Redisson integrates with [Quarkus](https://quarkus.io/) framework and implements [Quarkus Cache](https://quarkus.io/guides/cache).  
+Redisson integrates with [Quarkus](https://quarkus.io/) framework and implements [Quarkus Cache](cache-api-implementations.md/#quarkus-cache).  
 
 Supports Quarkus 1.6.x - 3.x.x
 

@@ -1,105 +1,61 @@
 ## Spring Cache
 
-Redisson provides various Spring Cache implementations. Each Cache instance has two important parameters: `ttl` and `maxIdleTime`. Data is stored infinitely if these settings are not defined or equal to `0`.  
-
-Config example:
-```java
-    @Configuration
-    @ComponentScan
-    @EnableCaching
-    public static class Application {
-
-        @Bean(destroyMethod="shutdown")
-        RedissonClient redisson() throws IOException {
-            Config config = new Config();
-            config.useClusterServers()
-                  .addNodeAddress("redis://127.0.0.1:7004", "redis://127.0.0.1:7001");
-            return Redisson.create(config);
-        }
-
-        @Bean
-        CacheManager cacheManager(RedissonClient redissonClient) {
-            Map<String, CacheConfig> config = new HashMap<String, CacheConfig>();
-
-            // create "testMap" cache with ttl = 24 minutes and maxIdleTime = 12 minutes
-            config.put("testMap", new CacheConfig(24*60*1000, 12*60*1000));
-            return new RedissonSpringCacheManager(redissonClient, config);
-        }
-
-    }
-```
-
-Cache configuration can be read from YAML configuration files:
-
-```java
-    @Configuration
-    @ComponentScan
-    @EnableCaching
-    public static class Application {
-
-        @Bean(destroyMethod="shutdown")
-        RedissonClient redisson(@Value("classpath:/redisson.yaml") Resource configFile) throws IOException {
-            Config config = Config.fromYAML(configFile.getInputStream());
-            return Redisson.create(config);
-        }
-
-        @Bean
-        CacheManager cacheManager(RedissonClient redissonClient) throws IOException {
-            return new RedissonSpringCacheManager(redissonClient, "classpath:/cache-config.yaml");
-        }
-
-    }
-```
+Redisson provides various [Spring Cache](https://docs.spring.io/spring-boot/reference/io/caching.html) implementations.
 
 ### Eviction, local cache and data partitioning
-Redisson provides various Spring Cache managers with two important features:  
+Redisson provides various Spring Cache managers with multiple important features:  
 
-**local cache** - so called `near cache` used to speed up read operations and avoid network roundtrips. It caches Map entries on Redisson side and executes read operations up to **45x faster** in comparison with common implementation. Local cache instances with the same name connected to the same pub/sub channel. This channel is used for exchanging of update/invalidate events between all instances. Local cache store doesn't use `hashCode()`/`equals()` methods of key object, instead it uses hash of serialized state.
+1. **Local cache**  
 
-**data partitioning** - although Map object is cluster compatible its content isn't scaled/partitioned across multiple Redis or Valkey master nodes in cluster. Data partitioning allows to scale available memory, read/write operations and entry eviction process for individual Map instance in cluster.  
+    So called `near cache` used to speed up read operations and avoid network roundtrips. It caches Map entries on Redisson side and executes read operations up to **45x faster** in comparison with common implementation. Local cache instances with the same name connected to the same pub/sub channel. This channel is used for exchanging of update/invalidate events between all instances. Local cache store doesn't use `hashCode()`/`equals()` methods of key object, instead it uses hash of serialized state.
 
-**Scripted eviction**
+2. **Data partitioning**  
 
-Allows to define `time to live` or `max idle time` parameters per map entry. Eviction is done on Redisson side through a custom scheduled task which removes expired entries using Lua script. Eviction task is started once per unique object name at the moment of getting Map instance. If instance isn't used and has expired entries it should be get again to start the eviction process. This leads to extra Redis or Valkey calls and eviction task per unique map object name. 
+    Although Map object is cluster compatible its content isn't scaled/partitioned across multiple Redis or Valkey master nodes in cluster. Data partitioning allows to scale available memory, read/write operations and entry eviction process for individual Map instance in cluster.  
 
-Entries are cleaned time to time by `org.redisson.eviction.EvictionScheduler`. By default, it removes 100 expired entries at a time. This can be changed through [cleanUpKeysAmount](../configuration.md) setting. Task launch time tuned automatically and depends on expired entries amount deleted in previous time and varies between 5 second to 30 minutes by default. This time interval can be changed through [minCleanUpDelay](../configuration.md) and [maxCleanUpDelay](../configuration.md). For example, if clean task deletes 100 entries each time it will be executed every 5 seconds (minimum execution delay). But if current expired entries amount is lower than previous one then execution delay will be increased by 1.5 times and decreased otherwise.
+3. **Scripted eviction**  
 
-Available implementations:
+    Allows to define `time to live` or `max idle time` parameters per map entry. Eviction is done on Redisson side through a custom scheduled task which removes expired entries using Lua script. Eviction task is started once per unique object name at the moment of getting Map instance. If instance isn't used and has expired entries it should be get again to start the eviction process. This leads to extra Redis or Valkey calls and eviction task per unique map object name.  
 
-|Class name | Local<br/>cache | Data<br/>partitioning | Ultra-fast<br/>read/write |
-| ------------- | :-----------: | :----------:| :----------:|
-|RedissonSpringCacheManager<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ❌ |
-|RedissonSpringCacheManager<br/><sub><i>[Redisson PRO](https://redisson.pro) version</i></sub> | ❌ | ❌ | ✔️ |
-|RedissonSpringLocalCachedCacheManager<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub>  | ✔️ | ❌ | ✔️ |
-|RedissonClusteredSpringCacheManager<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ |
-|RedissonClusteredSpringLocalCachedCacheManager<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ✔️ | ✔️ | ✔️ |
+    Entries are cleaned time to time by `org.redisson.eviction.EvictionScheduler`. By default, it removes 100 expired entries at a time. This can be changed through [cleanUpKeysAmount](../configuration.md) setting. Task launch time tuned automatically and depends on expired entries amount deleted in previous time and varies between 5 second to 30 minutes by default. This time interval can be changed through [minCleanUpDelay](../configuration.md) and [maxCleanUpDelay](../configuration.md). For example, if clean task deletes 100 entries each time it will be executed every 5 seconds (minimum execution delay). But if current expired entries amount is lower than previous one then execution delay will be increased by 1.5 times and decreased otherwise.  
 
-**Advanced eviction**
+    Available implementations:  
 
-Allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task, entries are cleaned on Redis or Valkey side.
+    |Class name | Local<br/>cache | Data<br/>partitioning | Ultra-fast<br/>read/write |
+    | ------------- | :-----------: | :----------:| :----------:|
+    |RedissonSpringCacheManager<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ❌ |
+    |RedissonSpringCacheManager<br/><sub><i>[Redisson PRO](https://redisson.pro) version</i></sub> | ❌ | ❌ | ✔️ |
+    |RedissonSpringLocalCachedCacheManager<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub>  | ✔️ | ❌ | ✔️ |
+    |RedissonClusteredSpringCacheManager<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ |
+    |RedissonClusteredSpringLocalCachedCacheManager<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ✔️ | ✔️ | ✔️ |
 
-Available implementations:
+4. **Advanced eviction**  
 
-|Class name | Local<br/>cache | Data<br/>partitioning | Ultra-fast<br/>read/write |
-| ------------- | :-----------: | :----------:| :----------:|
-|RedissonSpringCacheV2Manager<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ |
-|RedissonSpringLocalCachedCacheV2Manager<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub>  | ✔️ | ✔️ | ✔️ |
+    Allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task, entries are cleaned on Redis or Valkey side.  
 
-**Native eviction**
+    Available implementations:
 
-Allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task, entries are cleaned on Redis side.  
-Requires **Redis 7.4+**.
+    |Class name | Local<br/>cache | Data<br/>partitioning | Ultra-fast<br/>read/write |
+    | ------------- | :-----------: | :----------:| :----------:|
+    |RedissonSpringCacheV2Manager<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ |
+    |RedissonSpringLocalCachedCacheV2Manager<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub>  | ✔️ | ✔️ | ✔️ |
 
-Available implementations:
+5. **Native eviction**
 
-|Class name | Local<br/>cache | Data<br/>partitioning | Ultra-fast<br/>read/write |
-| ------------- | :-----------: | :----------:| :----------:|
-|RedissonSpringCacheNativeManager<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ❌ |
-|RedissonSpringCacheNativeManager<br/><sub><i>[Redisson PRO](https://redisson.pro) version</i></sub> | ❌ | ❌ | ✔️ |
-|RedissonSpringLocalCachedCacheNativeManager<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub>  | ✔️ | ❌ | ✔️ |
-|RedissonClusteredSpringCacheNativeManager<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ |
+    Allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task, entries are cleaned on Redis side.  
+    Requires **Redis 7.4+**.
+    
+	Available implementations:
 
-**Local cache**
+    |Class name | Local<br/>cache | Data<br/>partitioning | Ultra-fast<br/>read/write |
+    | ------------- | :-----------: | :----------:| :----------:|
+    |RedissonSpringCacheNativeManager<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ❌ |
+    |RedissonSpringCacheNativeManager<br/><sub><i>[Redisson PRO](https://redisson.pro) version</i></sub> | ❌ | ❌ | ✔️ |
+    |RedissonSpringLocalCachedCacheNativeManager<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub>  | ✔️ | ❌ | ✔️ |
+    |RedissonClusteredSpringCacheNativeManager<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ |
+    |RedissonClusteredSpringLocalCachedCacheNativeManager<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ✔️ | ✔️ | ✔️ |
+
+**Local cache options**
 
 Follow options object can be supplied during local cached managers initialization:
 ```java
@@ -164,10 +120,11 @@ LocalCachedMapOptions options = LocalCachedMapOptions.defaults()
 // SUBSCRIBE_WITH_KEYEVENT_PATTERN - Subscribe on expire event using `__keyevent@*:expired` pattern
 // SUBSCRIBE_WITH_KEYSPACE_CHANNEL - Subscribe on expire event using `__keyspace@N__:name` channel
 .expirationEventPolicy(ExpirationEventPolicy.SUBSCRIBE_WITH_KEYEVENT_PATTERN)
-
 ```
 
-Each Spring Cache instance has two important parameters: `ttl` and `maxIdleTime` and stores data infinitely if they are not defined or equal to `0`.
+### Usage
+
+Each Spring Cache Manager instance has two important parameters: `ttl` and `maxIdleTime` and stores data infinitely if they are not defined or equal to `0`.
 
 Complete config example:
 ```java
@@ -202,12 +159,34 @@ public static class Application {
         cfg.setMaxSize(2000);
         config.put("testMap", cfg);
 
+        // scripted eviction
+        return new RedissonSpringCacheManager(redissonClient, config);
+
+        // native eviction
+        return new RedissonSpringCacheManager(redissonClient, config);
+
+        // data partitioning + scripted eviction
+        return new RedissonClusteredSpringCacheManager(redissonClient, config);
+
+        // data partitioning + advanced eviction
+        return new RedissonSpringCacheV2Manager(redissonClient, config);
+
+        // data partitioning + native eviction
+        return new RedissonClusteredSpringCacheNativeManager(redissonClient, config);
+
+        // local cache + scripted eviction
         return new RedissonSpringLocalCachedCacheManager(redissonClient, config);
-        // or 
+
+        // local cache + native eviction
         return new RedissonSpringLocalCachedCacheNativeManager(redissonClient, config);
-        // or 
+
+        // local cache + data partitioning + native eviction
+        return new RedissonClusteredSpringLocalCachedCacheNativeManager(redissonClient, config);
+
+        // local cache + data partitioning + advanced eviction
         return new RedissonSpringLocalCachedCacheV2Manager(redissonClient, config);
-        // or 
+
+        // local cache + data partitioning + scripted eviction
         return new RedissonClusteredSpringLocalCachedCacheManager(redissonClient, config);
     }
 
@@ -230,7 +209,35 @@ Cache configuration could be read from YAML configuration files:
 
         @Bean
         CacheManager cacheManager(RedissonClient redissonClient) throws IOException {
-            return new RedissonSpringLocalCachedCacheManager(redissonClient, "classpath:/cache-config.yaml");
+			// scripted eviction
+			return new RedissonSpringCacheManager(redissonClient, "classpath:/cache-config.yaml");
+
+			// native eviction
+			return new RedissonSpringCacheManager(redissonClient, "classpath:/cache-config.yaml");
+
+			// data partitioning + scripted eviction
+			return new RedissonClusteredSpringCacheManager(redissonClient, "classpath:/cache-config.yaml");
+
+			// data partitioning + advanced eviction
+			return new RedissonSpringCacheV2Manager(redissonClient, "classpath:/cache-config.yaml");
+
+			// data partitioning + native eviction
+			return new RedissonClusteredSpringCacheNativeManager(redissonClient, "classpath:/cache-config.yaml");
+
+			// local cache + scripted eviction
+			return new RedissonSpringLocalCachedCacheManager(redissonClient, "classpath:/cache-config.yaml");
+
+			// local cache + native eviction
+			return new RedissonSpringLocalCachedCacheNativeManager(redissonClient, "classpath:/cache-config.yaml");
+
+			// local cache + data partitioning + native eviction
+			return new RedissonClusteredSpringLocalCachedCacheNativeManager(redissonClient, "classpath:/cache-config.yaml");
+
+			// local cache + data partitioning + advanced eviction
+			return new RedissonSpringLocalCachedCacheV2Manager(redissonClient, "classpath:/cache-config.yaml");
+
+			// local cache + data partitioning + scripted eviction
+			return new RedissonClusteredSpringLocalCachedCacheManager(redissonClient, "classpath:/cache-config.yaml");
         }
 
     }
@@ -253,4 +260,4 @@ testMap:
 ```
 
 !!! note
-    `localCacheOptions` settings are available for `RedissonSpringLocalCachedCacheManager`, `RedissonClusteredSpringLocalCachedCacheManager`, `RedissonSpringLocalCachedCacheV2Manager` and `RedissonSpringLocalCachedCacheNativeManager` classes only.
+    `localCacheOptions` settings are available for `RedissonSpringLocalCachedCacheManager`, `RedissonClusteredSpringLocalCachedCacheManager`, `RedissonSpringLocalCachedCacheV2Manager`, `RedissonSpringLocalCachedCacheNativeManager`, `RedissonClusteredSpringLocalCachedCacheNativeManager` classes only.
