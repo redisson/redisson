@@ -4,6 +4,7 @@ import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.awaitility.Durations;
 import org.junit.jupiter.api.Test;
+import org.redisson.api.AsyncIterator;
 import org.redisson.api.MapOptions;
 import org.redisson.api.MapOptions.WriteMode;
 import org.redisson.api.RMap;
@@ -11,11 +12,11 @@ import org.redisson.api.map.MapLoader;
 import org.redisson.api.map.MapWriter;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
+import org.redisson.client.codec.StringCodec;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -129,6 +130,139 @@ public class RedissonMapTest extends BaseMapTest {
         assertThat(map.entrySet().size()).isEqualTo(3);
         Map<Integer, String> testMap = new HashMap<Integer, String>(map);
         assertThat(map.entrySet()).containsExactlyElementsOf(testMap.entrySet());
+    }
+
+    @Test
+    public void testValuesAsync() {
+        RMap<Integer, String> map = redisson.getMap("simple12");
+        map.put(1, "12");
+        map.put(2, "33");
+        map.put(3, "43");
+
+        List<String> list = new ArrayList<>();
+        AsyncIterator<String> iterator = map.valuesAsync();
+        CompletionStage<Void> f = iterateAll(iterator, list);
+        f.toCompletableFuture().join();
+
+        assertThat(map.size()).isEqualTo(list.size());
+
+    }
+
+    @Test
+    public void testValuesByCountAsync() {
+        RMap<Integer, String> map = redisson.getMap("simple12");
+        map.put(1, "12");
+        map.put(2, "33");
+        map.put(3, "43");
+
+        List<String> list = new ArrayList<>();
+        AsyncIterator<String> iterator = map.valuesAsync(2);
+        CompletionStage<Void> f = iterateAll(iterator, list);
+        f.toCompletableFuture().join();
+
+        assertThat(list.size()).isEqualTo(2);
+
+    }
+
+    @Test
+    public void testValuesByPatternAsync() {
+        RMap<String, String> map = getMap("simple", StringCodec.INSTANCE);
+        map.put("10", "100");
+        map.put("20", "200");
+        map.put("30", "300");
+
+        List<String> list = new ArrayList<>();
+
+        AsyncIterator<String> iterator = map.valuesAsync("?0");
+        CompletionStage<Void> f = iterateAll(iterator, list);
+        f.toCompletableFuture().join();
+        assertThat(list).containsExactlyInAnyOrder("100", "200", "300");
+
+        list.clear();
+        AsyncIterator<String> iterator2 = map.valuesAsync("1");
+        CompletionStage<Void> f2 = iterateAll(iterator2, list);
+        f2.toCompletableFuture().join();
+        assertThat(list.isEmpty()).isTrue();
+
+        list.clear();
+        AsyncIterator<String> iterator3 = map.valuesAsync("10");
+        CompletionStage<Void> f3 = iterateAll(iterator3, list);
+        f3.toCompletableFuture().join();
+        assertThat(list).containsExactlyInAnyOrder("100");
+
+    }
+
+    @Test
+    public void testEntrySetByCountAsync() {
+        RMap<Integer, String> map = redisson.getMap("simple12");
+        map.put(1, "12");
+        map.put(2, "33");
+        map.put(3, "43");
+
+        List<java.util.Map.Entry<Integer, String>> list = new ArrayList<>();
+        AsyncIterator<java.util.Map.Entry<Integer, String>> iterator = map.entrySetAsync(2);
+        CompletionStage<Void> f = iterateAll(iterator, list);
+        f.toCompletableFuture().join();
+
+        assertThat(list.size()).isEqualTo(2);
+
+    }
+
+    @Test
+    public void testEntrySetAsync() {
+        RMap<Integer, String> map = redisson.getMap("simple12");
+        map.put(1, "12");
+        map.put(2, "33");
+        map.put(3, "43");
+
+        List<java.util.Map.Entry<Integer, String>> list = new ArrayList<>();
+        AsyncIterator<java.util.Map.Entry<Integer, String>> iterator = map.entrySetAsync();
+        CompletionStage<Void> f = iterateAll(iterator, list);
+        f.toCompletableFuture().join();
+
+        assertThat(map.size()).isEqualTo(list.size());
+
+    }
+
+    @Test
+    public void testVEntrySetByPatternAsync() {
+        RMap<String, String> map = getMap("simple", StringCodec.INSTANCE);
+        map.put("10", "100");
+        map.put("20", "200");
+        map.put("30", "300");
+
+        List<java.util.Map.Entry<String, String>> list = new ArrayList<>();
+
+        AsyncIterator<java.util.Map.Entry<String, String>> iterator = map.entrySetAsync("?0");
+        CompletionStage<Void> f = iterateAll(iterator, list);
+        f.toCompletableFuture().join();
+        assertThat(list.size()).isEqualTo(3);
+
+        list.clear();
+        AsyncIterator<java.util.Map.Entry<String, String>> iterator2 = map.entrySetAsync("1");
+        CompletionStage<Void> f2 = iterateAll(iterator2, list);
+        f2.toCompletableFuture().join();
+        assertThat(list.isEmpty()).isTrue();
+
+        list.clear();
+        AsyncIterator<java.util.Map.Entry<String, String>> iterator3 = map.entrySetAsync("10");
+        CompletionStage<Void> f3 = iterateAll(iterator3, list);
+        f3.toCompletableFuture().join();
+        assertThat(list.size()).isEqualTo(1);
+
+    }
+
+    public CompletionStage<Void> iterateAll(AsyncIterator<?> iterator, List list) {
+        return iterator.hasNext().thenCompose(r -> {
+            if (r) {
+                return iterator.next().thenCompose(k -> {
+                    list.add(k);
+                    return iterateAll(iterator, list);
+                });
+            } else {
+                return CompletableFuture.completedFuture(null);
+            }
+        });
     }
 
     @Test
