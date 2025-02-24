@@ -3,27 +3,27 @@ Redisson Releases History
 
 Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
 
-### 21-Feb-2025
+### 21-Feb-2025 - 3.45.0 released
 
-Feature - added `max-size` setting for Quarkus Cache
-Feature - `RedissonSpringCacheV2Manager` and `RedissonSpringLocalCachedCacheV2Manager` support maxSize setting
-Feature - `RedissonRegionV2Factory` and `RedissonLocalCachedV2RegionFactory` in Hibernate support eviction.max_entries setting
-Feature - `RedissonCacheV2` and `RedissonLocalCachedCacheV2` in MyBatis support `maxSize` settings
-Feature - `maxSize` setting support by `redisson.caches-v2.*` and `redisson.local-caches-v2.*` cache configurations in Micronaut
-Feature - `RMapCacheV2.setMaxSize()` method added
-Feature - `RClusteredLocalCachedMapCacheNative` object added with data partitioning, local cache and native eviction
-Feature - `RedissonClusteredSpringLocalCachedCacheNativeManager` object added with data partitioning, local cache and native eviction
-Feature - added Micronaut `redisson.clustered-local-caches-native.*` cache with data partitioning, local cache and native eviction
-Feature - added Hibernate `RedissonClusteredLocalCachedNativeRegionFactory` cache with data partitioning, local cache and native eviction
-Feature - added Quarkus `CLUSTERED_LOCALCACHE_NATIVE` cache with data partitioning, local cache and native eviction
-Feature - added MyBatis `RedissonClusteredLocalCachedCacheNative` cache with data partitioning, local cache and native eviction
-Feature - added JCache implementation with local cache and advanced eviction
-Feature - added JCache implementation with local cache and native eviction
-Feature - added JCache implementation with data partitioning, local cache and native eviction
-Feature - ability to set eviction mode via Spring `CacheConfig` object (thanks to @JKord)
-Feature - RBitSet.get(long...) method added (thanks to @seakider)
-Feature - RBlockingQueue.pollLastFromAnyWithName() method added (thanks to @seakider)
-Feature - getReferenceCount(), getAccessFrequency(), getInternalEncoding() methods added to RObject interface (thanks to @seakider)
+Feature - added `max-size` setting for Quarkus Cache  
+Feature - `RedissonSpringCacheV2Manager` and `RedissonSpringLocalCachedCacheV2Manager` support maxSize setting  
+Feature - `RedissonRegionV2Factory` and `RedissonLocalCachedV2RegionFactory` in Hibernate support eviction.max_entries setting  
+Feature - `RedissonCacheV2` and `RedissonLocalCachedCacheV2` in MyBatis support `maxSize` settings  
+Feature - `maxSize` setting support by `redisson.caches-v2.*` and `redisson.local-caches-v2.*` cache configurations in Micronaut  
+Feature - `RMapCacheV2.setMaxSize()` method added  
+Feature - `RClusteredLocalCachedMapCacheNative` object added with data partitioning, local cache and native eviction  
+Feature - `RedissonClusteredSpringLocalCachedCacheNativeManager` object added with data partitioning, local cache and native eviction  
+Feature - added Micronaut `redisson.clustered-local-caches-native.*` cache with data partitioning, local cache and native eviction  
+Feature - added Hibernate `RedissonClusteredLocalCachedNativeRegionFactory` cache with data partitioning, local cache and native eviction  
+Feature - added Quarkus `CLUSTERED_LOCALCACHE_NATIVE` cache with data partitioning, local cache and native eviction  
+Feature - added MyBatis `RedissonClusteredLocalCachedCacheNative` cache with data partitioning, local cache and native eviction  
+Feature - added JCache implementation with local cache and advanced eviction  
+Feature - added JCache implementation with local cache and native eviction  
+Feature - added JCache implementation with data partitioning, local cache and native eviction  
+Feature - ability to set eviction mode via Spring `CacheConfig` object (thanks to @JKord)  
+Feature - RBitSet.get(long...) method added (thanks to @seakider)  
+Feature - RBlockingQueue.pollLastFromAnyWithName() method added (thanks to @seakider)  
+Feature - getReferenceCount(), getAccessFrequency(), getInternalEncoding() methods added to RObject interface (thanks to @seakider)  
 Feature - RExecutorService.deregisterWorkers() method added  
 Feature - `valuesAsync()` and `entrySetAsync` methods added to `RMap` interface (thanks to @seakider)
 
