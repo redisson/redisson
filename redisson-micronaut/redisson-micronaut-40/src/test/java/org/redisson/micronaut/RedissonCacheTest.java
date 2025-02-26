@@ -1,5 +1,6 @@
 package org.redisson.micronaut;
 
+import io.micronaut.cache.AsyncCache;
 import io.micronaut.context.ApplicationContext;
 import io.micronaut.inject.qualifiers.Qualifiers;
 import org.junit.jupiter.api.Test;
@@ -12,6 +13,9 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -49,6 +53,30 @@ public class RedissonCacheTest {
         cache.get(3, Integer.class);
         Thread.sleep(2000);
         assertThat(cache.get(3, Integer.class).isPresent()).isTrue();
+
+    }
+
+    @Test
+    public void testAsyncCache() throws ExecutionException, InterruptedException {
+        Map<String, Object> map = new HashMap<>();
+        map.put("redisson.threads", "10");
+        map.put("redisson.single-server-config.address", "redis://127.0.0.1:" + REDIS.getFirstMappedPort());
+        map.put("redisson.caches.test.expire-after-write", "10s");
+        map.put("redisson.caches.test.expire-after-access", "10s");
+        ApplicationContext ac = ApplicationContext.run(map);
+
+        RedissonClient client = ac.getBean(RedissonClient.class);
+        assertThat(client).isNotNull();
+
+        RedissonSyncCache cache = ac.getBean(RedissonSyncCache.class, Qualifiers.byName("test"));
+        AsyncCache asyncCache = cache.async();
+        assertThat(asyncCache.get(3, Integer.class).get()).isEqualTo(Optional.empty());
+
+        CompletableFuture f = asyncCache.put(3, 4).toCompletableFuture();
+        f.join();
+
+        assertThat(asyncCache.get(3, Integer.class).get()).isEqualTo(Optional.of(4));
+
     }
 
     @Test
