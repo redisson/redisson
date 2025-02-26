@@ -1150,6 +1150,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
 
         MasterSlaveServersConfig config = commandExecutor.getServiceManager().getConfig();
         int timeout = (config.getTimeout() + config.getRetryInterval()) * config.getRetryAttempts();
+        timeout = Math.max(timeout, 1);
 
         String taskName = tasksLatchName + ":" + id;
 
