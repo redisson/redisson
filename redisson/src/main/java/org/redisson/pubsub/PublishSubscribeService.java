@@ -29,6 +29,7 @@ import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.config.ReadMode;
+import org.redisson.config.ShardedSubscriptionMode;
 import org.redisson.connection.ClientConnectionsEntry;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
@@ -123,6 +124,7 @@ public class PublishSubscribeService {
     private final Set<PubSubConnectionEntry> trackedEntries = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     private boolean shardingSupported = false;
+    private boolean patternSupported = true;
 
     public PublishSubscribeService(ConnectionManager connectionManager) {
         super();
@@ -1039,13 +1041,41 @@ public class PublishSubscribeService {
         return f;
     }
 
+    public void checkPatternSupport(RedisConnection connection) {
+        try {
+            connection.sync(RedisCommands.PUBSUB_NUMPAT);
+        } catch (Exception e) {
+            setPatternSupported(false);
+        }
+    }
+
+    public void checkShardingSupport(ShardedSubscriptionMode mode, RedisConnection connection) {
+        if (mode == ShardedSubscriptionMode.AUTO) {
+            try {
+                connection.sync(RedisCommands.PUBSUB_SHARDNUMSUB);
+                setShardingSupported(true);
+            } catch (Exception e) {
+                // skip
+            }
+        } else if (mode == ShardedSubscriptionMode.ON) {
+            setShardingSupported(true);
+        }
+    }
+
+    public boolean isPatternSupported() {
+        return patternSupported;
+    }
+    public void setPatternSupported(boolean patternSupported) {
+        this.patternSupported = patternSupported;
+    }
+
     public void setShardingSupported(boolean shardingSupported) {
         this.shardingSupported = shardingSupported;
     }
-
     public boolean isShardingSupported() {
         return shardingSupported;
     }
+
     public String getPublishCommand() {
         if (shardingSupported) {
             return RedisCommands.SPUBLISH.getName();

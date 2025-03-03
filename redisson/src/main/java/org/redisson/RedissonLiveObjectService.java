@@ -53,6 +53,7 @@ import org.redisson.liveobject.misc.Introspectior;
 import org.redisson.liveobject.resolver.MapResolver;
 import org.redisson.liveobject.resolver.NamingScheme;
 import org.redisson.liveobject.resolver.RIdResolver;
+import org.redisson.pubsub.PublishSubscribeService;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -80,7 +81,12 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     }
 
     private void addExpireListener(CommandAsyncExecutor commandExecutor) {
-        if (commandExecutor.getServiceManager().getLiveObjectLatch().compareAndSet(false, true)) {
+        if (!commandExecutor.getServiceManager().getLiveObjectLatch().compareAndSet(false, true)) {
+            return;
+        }
+
+        PublishSubscribeService ss = commandExecutor.getConnectionManager().getSubscribeService();
+        if (ss.isPatternSupported()) {
             String pp = "__keyspace@" + commandExecutor.getServiceManager().getConfig().getDatabase() + "__:redisson_live_object:*";
             String prefix = pp.replace(":redisson_live_object:*", "");
             RPatternTopic topic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, pp);
@@ -88,18 +94,31 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                 if (!msg.equals("expired")) {
                     return;
                 }
-
-                String name = channel.toString().replace(prefix, "");
-                Class<?> entity = resolveEntity(name);
-                if (entity == null) {
+                onExpired(commandExecutor, channel, prefix);
+            });
+        } else {
+            String pp = "__keyevent@" + commandExecutor.getServiceManager().getConfig().getDatabase() + "__:expired";
+            RedissonTopic topic = RedissonTopic.createRaw(StringCodec.INSTANCE, commandExecutor, pp);
+            topic.addListenerAsync(String.class, (channel, msg) -> {
+                if (!msg.startsWith("redisson_live_object:")) {
                     return;
                 }
 
-                NamingScheme scheme = commandExecutor.getObjectBuilder().getNamingScheme(entity);
-                Object id = scheme.resolveId(name);
-                deleteExpired(id, entity);
+                onExpired(commandExecutor, msg, "");
             });
         }
+    }
+
+    private void onExpired(CommandAsyncExecutor commandExecutor, CharSequence channel, String prefix) {
+        String name = channel.toString().replace(prefix, "");
+        Class<?> entity = resolveEntity(name);
+        if (entity == null) {
+            return;
+        }
+
+        NamingScheme scheme = commandExecutor.getObjectBuilder().getNamingScheme(entity);
+        Object id = scheme.resolveId(name);
+        deleteExpired(id, entity);
     }
 
     private Class<?> resolveEntity(String name) {

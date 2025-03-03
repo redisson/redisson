@@ -21,7 +21,6 @@ import org.redisson.api.NodeType;
 import org.redisson.api.RFuture;
 import org.redisson.client.*;
 import org.redisson.client.codec.StringCodec;
-import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.client.protocol.decoder.ClusterNodesDecoder;
 import org.redisson.client.protocol.decoder.ObjectDecoder;
@@ -92,7 +91,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
         Throwable lastException = null;
         List<String> failedMasters = new ArrayList<>();
-        boolean skipShardingDetection = false;
+        boolean skipCommandsDetection = false;
         for (String address : cfg.getNodeAddresses()) {
             RedisURI addr = new RedisURI(address);
             CompletionStage<RedisConnection> connectionFuture = connectToNode(cfg, addr, addr.getHost());
@@ -107,18 +106,10 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 clusterNodesCommand = new RedisStrictCommand<List<ClusterNodeInfo>>("CLUSTER", "NODES",
                         new ObjectDecoder(new ClusterNodesDecoder(addr.getScheme())));
 
-                if (!skipShardingDetection) {
-                    if (cfg.getShardedSubscriptionMode() == ShardedSubscriptionMode.AUTO) {
-                        try {
-                            connection.sync(RedisCommands.PUBSUB_SHARDNUMSUB);
-                            subscribeService.setShardingSupported(true);
-                        } catch (Exception e) {
-                            // skip
-                        }
-                    } else if (cfg.getShardedSubscriptionMode() == ShardedSubscriptionMode.ON) {
-                        subscribeService.setShardingSupported(true);
-                    }
-                    skipShardingDetection = true;
+                if (!skipCommandsDetection) {
+                    subscribeService.checkShardingSupport(cfg.getShardedSubscriptionMode(), connection);
+                    subscribeService.checkPatternSupport(connection);
+                    skipCommandsDetection = true;
                 }
 
                 List<ClusterNodeInfo> nodes = connection.sync(clusterNodesCommand);

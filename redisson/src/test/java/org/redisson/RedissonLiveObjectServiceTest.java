@@ -1795,7 +1795,7 @@ public class RedissonLiveObjectServiceTest extends RedisDockerTest {
                 throw new RuntimeException(e);
             }
             assertThat(redisson.getKeys().count()).isZero();
-        }, NOTIFY_KEYSPACE_EVENTS, "Kx");
+        }, NOTIFY_KEYSPACE_EVENTS, "KEA");
     }
 
     @Test
