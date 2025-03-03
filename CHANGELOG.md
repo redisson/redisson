@@ -25,39 +25,39 @@ Feature - RBitSet.get(long...) method added (thanks to @seakider)
 Feature - RBlockingQueue.pollLastFromAnyWithName() method added (thanks to @seakider)  
 Feature - getReferenceCount(), getAccessFrequency(), getInternalEncoding() methods added to RObject interface (thanks to @seakider)  
 Feature - RExecutorService.deregisterWorkers() method added  
-Feature - `valuesAsync()` and `entrySetAsync` methods added to `RMap` interface (thanks to @seakider)
+Feature - `valuesAsync()` and `entrySetAsync` methods added to `RMap` interface (thanks to @seakider)  
 
 Improvement - validate PARAMS in `RSearch.search()` method (thanks to @seakider)
 
-Fixed - delete() method doesn't work in non-clustered mode for `RLocalCachedJsonStore`, `RLocalCachedMapCacheV2` objects
+Fixed - delete() method doesn't work in non-clustered mode for `RLocalCachedJsonStore`, `RLocalCachedMapCacheV2` objects  
 Fixed - clustered local cached JCache doesn't use `storeCacheMiss` setting  
-Fixed - JCache with native and advanced eviction don't work in cluster mode
+Fixed - JCache with native and advanced eviction don't work in cluster mode  
 Fixed - clustered local cached `JCache.put()` method may throw a CROSSLOT error  
 Fixed - `put()` method of local cached JCache instance may not update local cache  
-Fixed - `remove()` and `removeAll()` methods of local cached JCache instance don't update the local cache of other instances
-Fixed - `putAll()` and `clear()` methods of JCacheV2 may not work
+Fixed - `remove()` and `removeAll()` methods of local cached JCache instance don't update the local cache of other instances  
+Fixed - `putAll()` and `clear()` methods of JCacheV2 may not work  
 Fixed - `RedissonClusteredSpringCacheNativeManager` properties validation  
 Fixed - `RedissonSpringLocalCachedCacheV2Manager` properties validation  
 Fixed - `RedissonSpringLocalCachedCacheNativeManager` can't be created using a yaml configuration file  
 Fixed - `RedissonSpringLocalCachedCacheNativeManager` throws an `ClassCastException` if cache wasn't defined in the configuration  
 Fixed - `RLocalCachedMapCache.getAll()` method may return an incorrect result  
 Fixed - `RLocalCachedMapCacheNative.getAll()` method may return an incorrect result  
-Fixed - missed implementation of `expireEntriesIfNotSet()`, `expireEntriesIfLess()` and `expireEntriesIfGreater()` methods of RClusteredMapCacheNative
-Fixed - missed implementation of `expireEntriesIfLess()` and `expireEntriesIfGreater()` methods of RLocalCachedMapCacheNative
-Fixed - `RJsonStore.isExists()` method doesn't work
-Fixed - JCacheV2 entry name generation fixed
-Fixed - `RMapCacheV2.isExists()` method optimization
-Fixed - `RedissonSpringLocalCachedCacheV2Manager` throws an ClassCastException if cache wasn't defined in the configuration
-Fixed - `RedissonSpringLocalCachedCacheV2Manager` can't be created using a yaml configuration file
-Fixed - `RLocalCachedMapCacheV2`, `RLocalCachedJsonStore`, `RSetV2`, `RSetCacheV2`, `JCacheV2`, `RMapCacheV2` don't work if `useScriptCache = true`
+Fixed - missed implementation of `expireEntriesIfNotSet()`, `expireEntriesIfLess()` and `expireEntriesIfGreater()` methods of RClusteredMapCacheNative  
+Fixed - missed implementation of `expireEntriesIfLess()` and `expireEntriesIfGreater()` methods of RLocalCachedMapCacheNative  
+Fixed - `RJsonStore.isExists()` method doesn't work  
+Fixed - JCacheV2 entry name generation fixed  
+Fixed - `RMapCacheV2.isExists()` method optimization  
+Fixed - `RedissonSpringLocalCachedCacheV2Manager` throws an ClassCastException if cache wasn't defined in the configuration  
+Fixed - `RedissonSpringLocalCachedCacheV2Manager` can't be created using a yaml configuration file  
+Fixed - `RLocalCachedMapCacheV2`, `RLocalCachedJsonStore`, `RSetV2`, `RSetCacheV2`, `JCacheV2`, `RMapCacheV2` don't work if `useScriptCache = true`  
 Fixed - LUA error when `RedissonMapCache.putAll(Map)` is invoked with listeners (thanks to @max.huang)  
 Fixed - `ProtobufCodec` compatibility with the latest protobuf version (thanks to @zzhlhc)  
-Fixed - `RFairLock` attempt to compare nil with number (thanks to @seakider)
+Fixed - `RFairLock` attempt to compare nil with number (thanks to @seakider)  
 Fixed - incorrect parsing of `PubSubType.UNSUBSCRIBE` command with non-English locale  
-Fixed - `RRemoteExecutorService` `expiration` sorted set is growing indefinitely (thanks to @seakider)
+Fixed - `RRemoteExecutorService` `expiration` sorted set is growing indefinitely (thanks to @seakider)  
 Fixed - Quarkus shutdown process fails if version 3.18 or higher  
 Fixed - `notifyUpdate()` and `notifyInvalidate()` methods of `LocalCacheListener` might throw NPE  
-Fixed - `RBatchRx` may work incorrectly if `useScriptCache = true`
+Fixed - `RBatchRx` may work incorrectly if `useScriptCache = true`  
 
 ### 27-Jan-2025 - 3.44.0 released
 
