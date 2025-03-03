@@ -849,24 +849,34 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     }
 
     @Override
-    public RFuture<Boolean> fastPutIfExistsAsync(K key, V value) {
+    protected RFuture<Boolean> fastPutIfExistsOperationAsync(K key, V value) {
+        ByteBuf encodedKey = encodeMapKey(key);
+        CacheKey cacheKey = localCacheView.toCacheKey(encodedKey);
         if (storeMode == LocalCachedMapOptions.StoreMode.LOCALCACHE) {
-            ByteBuf mapKey = encodeMapKey(key);
-            CacheKey cacheKey = localCacheView.toCacheKey(mapKey);
             CacheValue prevValue = cachePutIfExists(cacheKey, key, value);
             if (prevValue != null) {
-                broadcastLocalCacheStore(value, mapKey, cacheKey);
+                broadcastLocalCacheStore(value, encodedKey, cacheKey);
                 return new CompletableFutureWrapper<>(true);
             } else {
-                mapKey.release();
+                encodedKey.release();
                 return new CompletableFutureWrapper<>(false);
             }
         }
-
-        RFuture<Boolean> future = super.fastPutIfExistsAsync(key, value);
+        
+        ByteBuf encodedValue = encodeMapValue(value);
+        ByteBuf msg = createSyncMessage(encodedKey, encodedValue, cacheKey);
+        RFuture<Boolean> future = commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
+                "local value = redis.call('hget', KEYS[1], ARGV[1]); "
+                        + "if value ~= false then "
+                            + "redis.call('hset', KEYS[1], ARGV[1], ARGV[2]); "
+                            + "redis.call(ARGV[4], KEYS[2], ARGV[3]); "
+                            + "return 1; "
+                        + "end; "
+                        + "return 0; ",
+                Arrays.asList(getRawName(), listener.getInvalidationTopicName()),
+                encodedKey, encodedValue, msg, publishCommand);
         CompletionStage<Boolean> f = future.thenApply(res -> {
             if (res) {
-                CacheKey cacheKey = localCacheView.toCacheKey(key);
                 cachePut(cacheKey, key, value);
             }
             return res;
