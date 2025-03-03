@@ -3,6 +3,62 @@ Redisson Releases History
 
 Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
 
+### 21-Feb-2025 - 3.45.0 released
+
+Feature - added `max-size` setting for Quarkus Cache  
+Feature - `RedissonSpringCacheV2Manager` and `RedissonSpringLocalCachedCacheV2Manager` support maxSize setting  
+Feature - `RedissonRegionV2Factory` and `RedissonLocalCachedV2RegionFactory` in Hibernate support eviction.max_entries setting  
+Feature - `RedissonCacheV2` and `RedissonLocalCachedCacheV2` in MyBatis support `maxSize` settings  
+Feature - `maxSize` setting support by `redisson.caches-v2.*` and `redisson.local-caches-v2.*` cache configurations in Micronaut  
+Feature - `RMapCacheV2.setMaxSize()` method added  
+Feature - `RClusteredLocalCachedMapCacheNative` object added with data partitioning, local cache and native eviction  
+Feature - `RedissonClusteredSpringLocalCachedCacheNativeManager` object added with data partitioning, local cache and native eviction  
+Feature - added Micronaut `redisson.clustered-local-caches-native.*` cache with data partitioning, local cache and native eviction  
+Feature - added Hibernate `RedissonClusteredLocalCachedNativeRegionFactory` cache with data partitioning, local cache and native eviction  
+Feature - added Quarkus `CLUSTERED_LOCALCACHE_NATIVE` cache with data partitioning, local cache and native eviction  
+Feature - added MyBatis `RedissonClusteredLocalCachedCacheNative` cache with data partitioning, local cache and native eviction  
+Feature - added JCache implementation with local cache and advanced eviction  
+Feature - added JCache implementation with local cache and native eviction  
+Feature - added JCache implementation with data partitioning, local cache and native eviction  
+Feature - ability to set eviction mode via Spring `CacheConfig` object (thanks to @JKord)  
+Feature - RBitSet.get(long...) method added (thanks to @seakider)  
+Feature - RBlockingQueue.pollLastFromAnyWithName() method added (thanks to @seakider)  
+Feature - getReferenceCount(), getAccessFrequency(), getInternalEncoding() methods added to RObject interface (thanks to @seakider)  
+Feature - RExecutorService.deregisterWorkers() method added  
+Feature - `valuesAsync()` and `entrySetAsync` methods added to `RMap` interface (thanks to @seakider)
+
+Improvement - validate PARAMS in `RSearch.search()` method (thanks to @seakider)
+
+Fixed - delete() method doesn't work in non-clustered mode for `RLocalCachedJsonStore`, `RLocalCachedMapCacheV2` objects
+Fixed - clustered local cached JCache doesn't use `storeCacheMiss` setting  
+Fixed - JCache with native and advanced eviction don't work in cluster mode
+Fixed - clustered local cached `JCache.put()` method may throw a CROSSLOT error  
+Fixed - `put()` method of local cached JCache instance may not update local cache  
+Fixed - `remove()` and `removeAll()` methods of local cached JCache instance don't update the local cache of other instances
+Fixed - `putAll()` and `clear()` methods of JCacheV2 may not work
+Fixed - `RedissonClusteredSpringCacheNativeManager` properties validation  
+Fixed - `RedissonSpringLocalCachedCacheV2Manager` properties validation  
+Fixed - `RedissonSpringLocalCachedCacheNativeManager` can't be created using a yaml configuration file  
+Fixed - `RedissonSpringLocalCachedCacheNativeManager` throws an `ClassCastException` if cache wasn't defined in the configuration  
+Fixed - `RLocalCachedMapCache.getAll()` method may return an incorrect result  
+Fixed - `RLocalCachedMapCacheNative.getAll()` method may return an incorrect result  
+Fixed - missed implementation of `expireEntriesIfNotSet()`, `expireEntriesIfLess()` and `expireEntriesIfGreater()` methods of RClusteredMapCacheNative
+Fixed - missed implementation of `expireEntriesIfLess()` and `expireEntriesIfGreater()` methods of RLocalCachedMapCacheNative
+Fixed - `RJsonStore.isExists()` method doesn't work
+Fixed - JCacheV2 entry name generation fixed
+Fixed - `RMapCacheV2.isExists()` method optimization
+Fixed - `RedissonSpringLocalCachedCacheV2Manager` throws an ClassCastException if cache wasn't defined in the configuration
+Fixed - `RedissonSpringLocalCachedCacheV2Manager` can't be created using a yaml configuration file
+Fixed - `RLocalCachedMapCacheV2`, `RLocalCachedJsonStore`, `RSetV2`, `RSetCacheV2`, `JCacheV2`, `RMapCacheV2` don't work if `useScriptCache = true`
+Fixed - LUA error when `RedissonMapCache.putAll(Map)` is invoked with listeners (thanks to @max.huang)  
+Fixed - `ProtobufCodec` compatibility with the latest protobuf version (thanks to @zzhlhc)  
+Fixed - `RFairLock` attempt to compare nil with number (thanks to @seakider)
+Fixed - incorrect parsing of `PubSubType.UNSUBSCRIBE` command with non-English locale  
+Fixed - `RRemoteExecutorService` `expiration` sorted set is growing indefinitely (thanks to @seakider)
+Fixed - Quarkus shutdown process fails if version 3.18 or higher  
+Fixed - `notifyUpdate()` and `notifyInvalidate()` methods of `LocalCacheListener` might throw NPE  
+Fixed - `RBatchRx` may work incorrectly if `useScriptCache = true`
+
 ### 27-Jan-2025 - 3.44.0 released
 
 Feature - native eviction implemented for [JCache](https://redisson.org/docs/cache-api-implementations/#local-cache-and-data-partitioning) API  

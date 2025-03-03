@@ -632,6 +632,10 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 futures.add(slaveUpFuture);
                 continue;
             }
+            
+            if (config.isSlaveNotUsed()) {
+                continue;
+            }
 
             CompletableFuture<Void> slaveUpFuture = entry.addSlave(uri, configEndpointHostName);
             CompletableFuture<Void> f = slaveUpFuture.thenAccept(res -> {
