@@ -133,9 +133,8 @@ public abstract class QueueTransferTask {
                     }
                 }
             }, delay, TimeUnit.MILLISECONDS);
-            if (!lastTimeout.compareAndSet(oldTimeout, new TimeoutTask(startTime, timeout))) {
-                timeout.cancel();
-            }
+            
+            lastTimeout.compareAndSet(oldTimeout, new TimeoutTask(startTime, timeout));
         } else {
             pushTask();
         }
