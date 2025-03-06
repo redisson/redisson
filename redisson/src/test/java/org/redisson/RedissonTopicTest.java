@@ -883,7 +883,7 @@ public class RedissonTopicTest extends RedisDockerTest {
             @Override
             public AddressResolverGroup<InetSocketAddress> create(Class<? extends DatagramChannel> channelType, Class<? extends SocketChannel> socketChannelType, DnsServerAddressStreamProvider nameServerProvider) {
                 return super.create(channelType, socketChannelType, hostname ->
-                                            DnsServerAddresses.singleton(SocketUtils.socketAddress("127.0.0.1", 55)).stream());
+                                            DnsServerAddresses.singleton(s.getAddr()).stream());
             }
         });
         config.useSingleServer()
