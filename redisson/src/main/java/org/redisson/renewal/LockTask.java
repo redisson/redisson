@@ -51,6 +51,9 @@ public class LockTask extends RenewalTask {
             String key = iter.next();
 
             LockEntry entry = name2entry.get(key);
+            if (entry == null) {
+                continue;
+            }
             Long threadId = entry.getFirstThreadId();
             if (threadId == null) {
                 continue;
