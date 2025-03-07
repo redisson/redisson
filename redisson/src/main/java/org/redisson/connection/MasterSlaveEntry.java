@@ -180,9 +180,6 @@ public class MasterSlaveEntry {
                         if (!config.isSlaveNotUsed()) {
                             addSlaveEntry(masterEntry);
                         }
-
-                        masterConnectionPool.addEntry(masterEntry);
-                        masterPubSubConnectionPool.addEntry(masterEntry);
                         return client;
                     });
         }).whenComplete((r, e) -> {
@@ -537,8 +534,6 @@ public class MasterSlaveEntry {
     }
 
     private void removeMaster(ClientConnectionsEntry masterEntry) {
-        masterConnectionPool.removeEntry(masterEntry);
-        masterPubSubConnectionPool.removeEntry(masterEntry);
         removeSlaveEntry(masterEntry);
         masterEntry.nodeDown();
         masterEntry.shutdownAsync();

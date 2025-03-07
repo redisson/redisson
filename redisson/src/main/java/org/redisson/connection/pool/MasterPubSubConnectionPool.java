@@ -38,7 +38,7 @@ public class MasterPubSubConnectionPool extends PubSubConnectionPool {
 
     @Override
     public CompletableFuture<RedisPubSubConnection> get(RedisCommand<?> command, boolean trackChanges) {
-        return acquireConnection(command, entries.peek(), trackChanges);
+        return acquireConnection(command, masterSlaveEntry.getEntry(), trackChanges);
     }
 
 }

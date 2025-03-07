@@ -33,6 +33,7 @@ import java.util.concurrent.CompletableFuture;
  *
  */
 public class MasterConnectionPool extends ConnectionPool<RedisConnection> {
+
     public MasterConnectionPool(MasterSlaveServersConfig config,
             ConnectionManager connectionManager, MasterSlaveEntry masterSlaveEntry) {
         super(config, connectionManager, masterSlaveEntry);
@@ -48,7 +49,7 @@ public class MasterConnectionPool extends ConnectionPool<RedisConnection> {
 
     @Override
     public CompletableFuture<RedisConnection> get(RedisCommand<?> command, boolean trackChanges) {
-        return acquireConnection(command, entries.peek(), trackChanges);
+        return acquireConnection(command, masterSlaveEntry.getEntry(), trackChanges);
     }
 
 }
