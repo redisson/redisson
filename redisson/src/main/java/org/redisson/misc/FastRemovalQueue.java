@@ -15,7 +15,9 @@
  */
 package org.redisson.misc;
 
+import java.util.Iterator;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -25,7 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @param <E> element type
  */
-public final class FastRemovalQueue<E> {
+public final class FastRemovalQueue<E> implements Iterable<E> {
 
     private final Map<E, Node<E>> index = new ConcurrentHashMap<>();
     private final DoublyLinkedList<E> list = new DoublyLinkedList<>();
@@ -54,6 +56,10 @@ public final class FastRemovalQueue<E> {
         return false;
     }
 
+    public boolean isEmpty() {
+        return index.isEmpty();
+    }
+
     public int size() {
         return index.size();
     }
@@ -72,11 +78,16 @@ public final class FastRemovalQueue<E> {
         list.clear();
     }
 
+    @Override
+    public Iterator<E> iterator() {
+        return list.iterator();
+    }
+
     static class Node<E> {
         private final E value;
         private Node<E> prev;
-        private Node<E> next;
-        private boolean deleted;
+        private volatile Node<E> next;
+        private volatile boolean deleted;
 
         Node(E value) {
             this.value = value;
@@ -89,9 +100,13 @@ public final class FastRemovalQueue<E> {
         public boolean isDeleted() {
             return deleted;
         }
+
+        public E getValue() {
+            return value;
+        }
     }
 
-    static class DoublyLinkedList<E> {
+    static class DoublyLinkedList<E> implements Iterable<E> {
         private final WrappedLock lock = new WrappedLock();
         private Node<E> head;
         private Node<E> tail;
@@ -184,5 +199,29 @@ public final class FastRemovalQueue<E> {
             });
         }
 
+        @Override
+        public Iterator<E> iterator() {
+            return new Iterator<E>() {
+                private Node<E> current = head;
+
+                @Override
+                public boolean hasNext() {
+                    while (current != null && current.isDeleted()) {
+                        current = current.next;
+                    }
+                    return current != null;
+                }
+
+                @Override
+                public E next() {
+                    if (current == null) {
+                        throw new NoSuchElementException();
+                    }
+                    E value = current.getValue();
+                    current = current.next;
+                    return value;
+                }
+            };
+        }
     }
 }
