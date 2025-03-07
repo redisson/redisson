@@ -22,7 +22,6 @@ import org.hibernate.cache.spi.*;
 import org.hibernate.cache.spi.access.AccessType;
 import org.hibernate.cfg.Environment;
 import org.hibernate.cfg.Settings;
-import org.hibernate.internal.util.StringHelper;
 import org.hibernate.internal.util.config.ConfigurationHelper;
 import org.jboss.logging.Logger;
 import org.redisson.Redisson;
@@ -177,7 +176,7 @@ public class RedissonRegionFactory implements RegionFactory {
                             + "local nextValue = math.max(tonumber(ARGV[1]), tonumber(currentTime) + 1); "
                             + "redis.call('set', KEYS[1], nextValue); "
                             + "return nextValue;",
-                            RScript.ReturnType.INTEGER, Collections.singletonList(qualifyName("redisson-hibernate-timestamp")), time);
+                            RScript.ReturnType.INTEGER, Collections.singletonList("redisson-hibernate-timestamp"), time);
         } catch (Exception e) {
             if (fallback) {
                 while (true) {
@@ -196,14 +195,6 @@ public class RedissonRegionFactory implements RegionFactory {
             }
             throw e;
         }
-    }
-
-    private String qualifyName(String name) {
-        String prefix = settings.getCacheRegionPrefix();
-        if (StringHelper.isEmpty(prefix)) {
-            return name;
-        }
-        return prefix + "." + name;
     }
 
     @Override
