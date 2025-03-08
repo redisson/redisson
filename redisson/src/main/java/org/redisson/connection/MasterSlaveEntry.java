@@ -115,8 +115,6 @@ public class MasterSlaveEntry {
     }
 
     private void removeSlaveEntry(ClientConnectionsEntry entry) {
-        slaveConnectionPool.removeEntry(entry);
-        slavePubSubConnectionPool.removeEntry(entry);
         client2Entry.remove(entry.getClient());
 
         if (config.getSubscriptionMode() == SubscriptionMode.SLAVE) {
@@ -125,12 +123,7 @@ public class MasterSlaveEntry {
     }
 
     private void addSlaveEntry(ClientConnectionsEntry entry) {
-        if (client2Entry.get(entry.getClient()) != null) {
-            return;
-        }
-        slaveConnectionPool.addEntry(entry);
-        slavePubSubConnectionPool.addEntry(entry);
-        client2Entry.put(entry.getClient(), entry);
+        client2Entry.putIfAbsent(entry.getClient(), entry);
     }
 
     private boolean hasNoSlaves() {
