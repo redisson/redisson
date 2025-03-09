@@ -332,7 +332,9 @@ public class RedissonSessionManager extends ManagerBase {
                             
                             if (msg instanceof AttributeUpdateMessage) {
                                 AttributeUpdateMessage m = (AttributeUpdateMessage)msg;
-                                session.superSetAttribute(m.getName(), m.getValue(codecToUse.getMapValueDecoder()), true);
+                                Map<String, Object> attrs = new HashMap<>();
+                                attrs.put(m.getName(), m.getValue(codecToUse.getMapValueDecoder()));
+                                session.load(attrs);
                             }
                         } else {
                             if (msg instanceof SessionCreatedMessage) {
