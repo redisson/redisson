@@ -1,26 +1,31 @@
 **1. Add dependency**
+<div style="display: flex; flex-wrap: wrap; gap: 20px;">
+  <div style="flex: 1; min-width: 250px;">
+    <h3 style="margin-top: 0.75em">Redisson PRO</h3>
+    <h5>Maven</h5>
+    <pre><code>&lt;dependency&gt;
+   &lt;groupId&gt;pro.redisson&lt;/groupId&gt;
+   &lt;artifactId&gt;redisson&lt;/artifactId&gt;
+   &lt;version&gt;xVERSIONx&lt;/version&gt;
+&lt;/dependency&gt;</code></pre>
+    <h5>Gradle</h5>
+    <pre><code>compile 'pro.redisson:redisson:xVERSIONx'</code></pre>
+  </div>
 
-Maven  
+  <div style="flex: 1; min-width: 250px;">
+    <h3 style="margin-top: 0.75em">Community Edition</h3>
+    <h5>Maven</h5>
+    <pre><code>&lt;dependency&gt;
+   &lt;groupId&gt;org.redisson&lt;/groupId&gt;
+   &lt;artifactId&gt;redisson&lt;/artifactId&gt;
+   &lt;version&gt;xVERSIONx&lt;/version&gt;
+&lt;/dependency&gt;</code></pre>
+    <h5>Gradle</h5>
+    <pre><code>compile 'org.redisson:redisson:xVERSIONx'</code></pre>
+  </div>
+</div>
 
-```xml
-<dependency>
-   <groupId>org.redisson</groupId>
-   <artifactId>redisson</artifactId>
-   <version>xVERSIONx</version>
-</dependency>  
-```
-
-Gradle  
-
-```java
-compile 'org.redisson:redisson:xVERSIONx'  
-```
-
-SBT  
-
-```java
-libraryDependencies += "org.redisson" % "redisson" % "xVERSIONx"
-```
+[Redisson PRO vs. Community Edition ➜](https://redisson.pro/feature-comparison.html)
 
 **2. Start development**
 
@@ -90,5 +95,3 @@ Use one of supported modes: ([single mode](configuration.md/#single-mode),
    ```
 
 More code examples can be found [here](https://github.com/redisson/redisson-examples).
-
-Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
