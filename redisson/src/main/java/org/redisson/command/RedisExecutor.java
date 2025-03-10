@@ -233,7 +233,7 @@ public class RedisExecutor<V, R> {
                         "Increase connection pool size or timeout. "
                         + "Node source: " + source
                         + ", " + LogHelper.toString(command, params)
-                        + " after " + attempt + "of " + attempts + " retry attempts");
+                        + " after " + attempt + " of " + attempts + " retry attempts");
 
                 attemptPromise.completeExceptionally(exception);
             }
@@ -258,7 +258,7 @@ public class RedisExecutor<V, R> {
                         + " Netty pending tasks: " + pendingTasks + ","
                         + " Node source: " + source + ", connection: " + connectionFuture.join()
                         + ", " + LogHelper.toString(command, params)
-                        + " after " + attempt + "of " + attempts + " retry attempts");
+                        + " after " + attempt + " of " + attempts + " retry attempts");
                 attemptPromise.completeExceptionally(exception);
             }
         };
@@ -284,7 +284,7 @@ public class RedisExecutor<V, R> {
                                 "Increase connection pool size. "
                                 + "Node source: " + source
                                 + ", " + LogHelper.toString(command, params)
-                                + " after " + attempt + "of " + attempts + " retry attempts");
+                                + " after " + attempt + " of " + attempts + " retry attempts");
                 } else {
                     if (connectionFuture.isDone() && !connectionFuture.isCompletedExceptionally()) {
                         if (writeFuture == null || !writeFuture.isDone()) {
@@ -298,7 +298,7 @@ public class RedisExecutor<V, R> {
                                                 " Netty pending tasks: " + pendingTasks + ","
                                               + " Node source: " + source + ", connection: " + getNow(connectionFuture)
                                                 + ", " + LogHelper.toString(command, params)
-                                                + " after " + attempt + "of " + attempts + " retry attempts");
+                                                + " after " + attempt + " of " + attempts + " retry attempts");
                                     }
                                     attemptPromise.completeExceptionally(exception);
                                 }
@@ -376,7 +376,7 @@ public class RedisExecutor<V, R> {
                             "Node source: "
                     + source + ", connection: " + connection +
                     ", " + LogHelper.toString(command, params)
-                    + " after " + attempt + "of " + attempts + " retry attempts",
+                    + " after " + attempt + " of " + attempts + " retry attempts",
                     future.cause());
             tryComplete(attemptPromise, exception);
             return;
@@ -465,7 +465,7 @@ public class RedisExecutor<V, R> {
             int pendingTasks = countPendingTasks();
             attemptPromise.completeExceptionally(
                     new RedisResponseTimeoutException("Redis server response timeout (" + timeoutAmount + " ms) occured"
-                            + " after " + attempt + "of " + attempts + " retry attempts,"
+                            + " after " + attempt + " of " + attempts + " retry attempts,"
                             + " is non-idempotent command: " + (command != null && command.isNoRetry())
                             + " Check connection with Redis node: " + connection.getRedisClient().getAddr() + " for TCP packet drops or bandwidth limits. "
                             + " Try to increase nettyThreads and/or timeout settings."
