@@ -944,6 +944,11 @@ public class RedissonTest extends RedisDockerTest {
         long quietPeriod = TimeUnit.MILLISECONDS.toMillis(50);
         long timeOut = quietPeriod + TimeUnit.SECONDS.toMillis(2);
         RedissonClient r = createInstance();
+        RBucket<Integer> b = r.getBucket("test1");
+        for (int i = 0; i < 10; i++) {
+            b.get();
+        }
+
         long startTime = System.currentTimeMillis();
         r.shutdown(quietPeriod, timeOut, TimeUnit.MILLISECONDS);
         long shutdownTime = System.currentTimeMillis() - startTime;

@@ -61,6 +61,7 @@ import org.redisson.config.Protocol;
 import org.redisson.config.TransportMode;
 import org.redisson.liveobject.resolver.MapResolver;
 import org.redisson.misc.CompletableFutureWrapper;
+import org.redisson.misc.FastRemovalQueue;
 import org.redisson.misc.RandomXoshiro256PlusPlus;
 import org.redisson.misc.RedisURI;
 import org.redisson.remote.ResponseEntry;
@@ -82,6 +83,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  *
@@ -375,19 +378,22 @@ public final class ServiceManager {
         return socketChannelClass;
     }
 
-    private final AtomicInteger lastFuturesCounter = new AtomicInteger();
-    private final Deque<CompletableFuture<?>> lastFutures = new ConcurrentLinkedDeque<>();
+    private final FastRemovalQueue<CompletableFuture<?>> lastFutures = new FastRemovalQueue<>();
 
     public void addFuture(CompletableFuture<?> future) {
-        lastFutures.addLast(future);
-        if (lastFuturesCounter.incrementAndGet() > 100) {
-            lastFutures.pollFirst();
-            lastFuturesCounter.decrementAndGet();
+        lastFutures.add(future);
+        future.whenComplete((r, e) -> {
+            lastFutures.remove(future);
+        });
+
+        if (lastFutures.size() > 100) {
+            lastFutures.poll();
         }
     }
 
     public void shutdownFutures(long timeout, TimeUnit unit) {
-        CompletableFuture<Void> future = CompletableFuture.allOf(lastFutures.toArray(new CompletableFuture[0]));
+        Stream<CompletableFuture<?>> stream = StreamSupport.stream(lastFutures.spliterator(), false);
+        CompletableFuture<Void> future = CompletableFuture.allOf(stream.toArray(CompletableFuture[]::new));
         try {
             future.get(timeout, unit);
         } catch (Exception e) {
