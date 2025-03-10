@@ -2,6 +2,8 @@ package org.redisson.misc;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -11,6 +13,21 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class FastRmovalQueueTest {
+
+    @Test
+    public void testIterator() {
+        FastRemovalQueue<Integer> queue = new FastRemovalQueue<>();
+        queue.add(1);
+        queue.add(2);
+        queue.add(3);
+
+        List<Integer> list = new ArrayList<>();
+        for (Integer i : queue) {
+            list.add(i);
+        }
+
+        assertThat(queue).containsExactly(list.toArray(new Integer[0]));
+    }
 
     @Test
     public void testMoveToTail() {
