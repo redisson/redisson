@@ -73,7 +73,27 @@ public class TestServlet extends HttpServlet {
             
             Object attr = session.getAttribute(key);
             resp.getWriter().print(attr);
-        } else if (req.getPathInfo().equals("/remove")) {
+        } else if (req.getPathInfo().equals("/writeInternal")) {
+            String[] params = req.getQueryString().split("&");
+            String value = null;
+            for (String param : params) {
+                String[] paramLine = param.split("=");
+                String keyParam = paramLine[0];
+                String valueParam = paramLine[1];
+                if ("value".equals(keyParam)) {
+                    value = valueParam;
+                }
+            }
+            
+            if (value == null) {
+                resp.getWriter().print("ERROR");
+            } else {
+                session.setMaxInactiveInterval(Integer.parseInt(value));
+                resp.getWriter().print("OK");
+            }
+        } else if (req.getPathInfo().equals("/readInternal")) {
+            resp.getWriter().print(session.getMaxInactiveInterval());
+        }  else if (req.getPathInfo().equals("/remove")) {
             String[] params = req.getQueryString().split("&");
             String key = null;
             for (String param : params) {

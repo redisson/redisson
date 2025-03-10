@@ -40,7 +40,34 @@ public class RedissonSessionManagerTest {
         Files.deleteIfExists(Paths.get(basePath + "context.xml"));
         Files.copy(Paths.get(basePath + contextName), Paths.get(basePath + "context.xml"));
     }
-
+    
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testUpdateMaxInactiveInterval(String contextName) throws Exception {
+        prepare(contextName);
+        TomcatServer server1 = new TomcatServer("myapp", 8080, "src/test/");
+        TomcatServer server2 = new TomcatServer("myapp", 8081, "src/test/");
+        try {
+            server1.start();
+            server2.start();
+            
+            Executor executor = Executor.newInstance();
+            BasicCookieStore cookieStore = new BasicCookieStore();
+            executor.use(cookieStore);
+            
+            write(8080, executor, "test", "from_server1");
+            write(8081, executor, "test", "from_server2");
+            
+            writeInternal(8080, executor, 3000);
+            readInternal(8081, executor, 3000);
+            
+        } finally {
+            Executor.closeIdleConnections();
+            server1.stop();
+            server2.stop();
+        }
+    }
+    
     @ParameterizedTest
     @MethodSource("data")
     public void testUpdateTwoServers_readValue(String contextName) throws Exception {
@@ -374,6 +401,18 @@ public class RedissonSessionManagerTest {
         String url = "http://localhost:" + port + "/myapp/read?key=" + key;
         String response = executor.execute(Request.Get(url)).returnContent().asString();
         Assertions.assertEquals(value, response);
+    }
+    
+    private void writeInternal(int port, Executor executor, Object value) throws IOException {
+        String url = "http://localhost:" + port + "/myapp/writeInternal?value=" + value;
+        String response = executor.execute(Request.Get(url)).returnContent().asString();
+        Assertions.assertEquals("OK", response);
+    }
+    
+    private void readInternal(int port, Executor executor, Object value) throws IOException {
+        String url = "http://localhost:" + port + "/myapp/readInternal";
+        String response = executor.execute(Request.Get(url)).returnContent().asString();
+        Assertions.assertEquals(value.toString(), response);
     }
     
     private void remove(Executor executor, String key, String value) throws IOException {
