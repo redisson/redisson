@@ -949,11 +949,23 @@ public class RedissonTest extends RedisDockerTest {
             b.get();
         }
 
+        List<RFuture<Integer>> futures = new ArrayList<>();
+        RBlockingQueue<Integer> bb = r.getBlockingQueue("test2");
+        for (int i = 0; i < 10; i++) {
+            RFuture<Integer> s = bb.takeAsync();
+            futures.add(s);
+        }
+
         long startTime = System.currentTimeMillis();
         r.shutdown(quietPeriod, timeOut, TimeUnit.MILLISECONDS);
         long shutdownTime = System.currentTimeMillis() - startTime;
 
         Assertions.assertTrue(shutdownTime > quietPeriod);
+
+        assertThat(futures).hasSize(10);
+        for (RFuture<Integer> future : futures) {
+            assertThat(future.exceptionNow().getMessage()).isEqualTo("Redisson is shutdown");
+        }
     }
 
 }
