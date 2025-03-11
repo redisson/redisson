@@ -42,8 +42,10 @@ High-performance async and lock-free Java client for Redis and Valkey based on [
      * [Redis Enterprise Multiple Active Proxy](https://docs.redis.com/latest/rs/databases/configure/proxy-policy/#about-multiple-active-proxy-support)
 * IBM Cloud compatible
      * [IBM Cloud Databases for Redis](https://www.ibm.com/cloud/databases-for-redis)
+* Redis on SAP BTP compatible
+     * [Redis on SAP BTP](https://www.sap.com/products/technology-platform/redis-on-sap-btp-hyperscaler-option.html#plans)
 * Aiven compatible
-     * [Aiven for Redis](https://aiven.io/redis)
+     * [Aiven for Caching](https://aiven.io/caching)
 * Supports auto-reconnection  
 * Supports failed to send command auto-retry  
 * Supports OSGi  
