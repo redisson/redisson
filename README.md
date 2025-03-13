@@ -98,5 +98,3 @@ High-performance async and lock-free Java client for Redis and Valkey based on [
 - [Migrating from Hazelcast to Redis  /  Halodoc](https://blogs.halodoc.io/why-and-how-we-move-from-hazelcast-to-redis-2/)
 - [Distributed Locking with Redis (Migration from Hazelcast)  /  ContaAzul](https://carlosbecker.com/posts/distributed-locks-redis/)  
 - [Migrating from Coherence to Redis](https://www.youtube.com/watch?v=JF5R2ucKTEg)  
-
-Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
