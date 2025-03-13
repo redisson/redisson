@@ -82,6 +82,8 @@ High-performance async and lock-free Java client for Redis and Valkey based on [
 * Supports many popular codecs ([Kryo](https://github.com/EsotericSoftware/kryo), [Jackson JSON](https://github.com/FasterXML/jackson), [Avro](http://avro.apache.org/), [Smile](http://wiki.fasterxml.com/SmileFormatSpec), [CBOR](http://cbor.io/), [MsgPack](http://msgpack.org/), [Amazon Ion](https://amzn.github.io/ion-docs/), [LZ4](https://github.com/jpountz/lz4-java), [Snappy](https://github.com/xerial/snappy-java), [Protobuf](https://github.com/protocolbuffers/protobuf) and JDK Serialization)
 * 2000+ unit tests  
 
+## [Redisson PRO vs. Community Edition ➜](https://redisson.pro/feature-comparison.html)
+
 ## Comparing solutions
 - [Redisson vs Spring Data Redis](https://redisson.org/articles/feature-comparison-redisson-vs-spring-data-redis.html)
 - [Redisson vs Jedis](https://redisson.org/feature-comparison-redisson-vs-jedis.html)
