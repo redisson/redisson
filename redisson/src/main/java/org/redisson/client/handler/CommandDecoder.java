@@ -411,7 +411,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             } else if (error.startsWith("BUSY")) {
                 data.tryFailure(new RedisBusyException(error
                         + ". channel: " + channel + " data: " + data));
-            } else if (error.startsWith("WAIT")) {
+            } else if (error.startsWith("WAIT") || error.startsWith("ERR WAIT")) {
                 data.tryFailure(new RedisWaitException(error
                         + ". channel: " + channel + " data: " + data));
             } else if (error.startsWith("READONLY")) {
