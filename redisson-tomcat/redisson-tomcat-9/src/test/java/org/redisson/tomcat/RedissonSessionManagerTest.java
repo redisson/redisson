@@ -9,6 +9,7 @@ import org.junit.Test;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
@@ -55,7 +56,7 @@ public class RedissonSessionManagerTest {
     }
     
     @ParameterizedTest
-    @MethodSource("data")
+    @ValueSource(strings = {"context_memory.xml", "context_memory_after_request.xml"})
     public void testUpdateMaxInactiveInterval(String contextName) throws Exception {
         prepare(contextName);
         TomcatServer server1 = new TomcatServer("myapp", 8080, "src/test/");

@@ -263,7 +263,7 @@ public class RedissonSession extends StandardSession {
             return;
         }
         m.fastPut(name, value);
-        if (readMode == ReadMode.MEMORY && this.broadcastSessionUpdates || this.broadcastSessionEvents) {
+        if (readMode == ReadMode.MEMORY && this.broadcastSessionUpdates) {
             try {
                 Encoder encoder = m.getCodec().getMapValueEncoder();
                 topic.publish(new AttributeUpdateMessage(redissonManager.getNodeId(), getId(), name, value, encoder));
