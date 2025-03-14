@@ -330,11 +330,6 @@ public class RedissonSession extends StandardSession {
             expireSession();
         }
     }
-
-    
-    public void superSetAttribute(String name, Object value, boolean notify) {
-        super.setAttribute(name, value, notify);
-    }
     
     @Override
     public void setAttribute(String name, Object value, boolean notify) {
