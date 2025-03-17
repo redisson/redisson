@@ -235,6 +235,8 @@ public class RedissonLockTest extends BaseConcurrentTest {
         thread_2.interrupt(); // interrupte the thread-2
         boolean res = latch.await(2, TimeUnit.SECONDS);
         assertThat(res).isFalse();
+
+        latch.await();
     }
     
     @Test
