@@ -86,72 +86,55 @@ public class RedissonTopicTest extends RedisDockerTest {
     }
 
     @Test
-    public void testCluster() throws InterruptedException {
-        GenericContainer redisCluster = new GenericContainer<>("vishnunair/docker-redis-cluster")
-                .withExposedPorts(6379, 6380, 6381, 6382, 6383, 6384)
-                .withStartupCheckStrategy(new MinimumDurationRunningStartupCheckStrategy(Duration.ofSeconds(10)));
-        redisCluster.start();
-
-        Config config = new Config();
-        config.setProtocol(protocol);
-        config.useClusterServers()
-                .setNatMapper(new NatMapper() {
-                    @Override
-                    public RedisURI map(RedisURI uri) {
-                        if (redisCluster.getMappedPort(uri.getPort()) == null) {
-                            return uri;
-                        }
-                        return new RedisURI(uri.getScheme(), redisCluster.getHost(), redisCluster.getMappedPort(uri.getPort()));
-                    }
-                })
-                .addNodeAddress("redis://127.0.0.1:" + redisCluster.getFirstMappedPort());
-        RedissonClient redisson = Redisson.create(config);
-
-        RedisCluster nodes = redisson.getRedisNodes(RedisNodes.CLUSTER);
-        for (RedisClusterSlave slave : nodes.getSlaves()) {
-            slave.setConfig("notify-keyspace-events", "Eg");
-        }
-        for (RedisClusterMaster master : nodes.getMasters()) {
-            master.setConfig("notify-keyspace-events", "Eg");
-        }
-
-        AtomicInteger subscribedCounter = new AtomicInteger();
-        AtomicInteger unsubscribedCounter = new AtomicInteger();
-        RTopic topic = redisson.getTopic("__keyevent@0__:del", StringCodec.INSTANCE);
-        int id1 = topic.addListener(new StatusListener() {
-            @Override
-            public void onSubscribe(String channel) {
-                subscribedCounter.incrementAndGet();
+    public void testCluster() {
+        withNewCluster((ns, redisson) -> {
+            RedisCluster nodes = redisson.getRedisNodes(RedisNodes.CLUSTER);
+            for (RedisClusterSlave slave : nodes.getSlaves()) {
+                slave.setConfig("notify-keyspace-events", "Eg");
+            }
+            for (RedisClusterMaster master : nodes.getMasters()) {
+                master.setConfig("notify-keyspace-events", "Eg");
             }
 
-            @Override
-            public void onUnsubscribe(String channel) {
-                unsubscribedCounter.incrementAndGet();
+            AtomicInteger subscribedCounter = new AtomicInteger();
+            AtomicInteger unsubscribedCounter = new AtomicInteger();
+            RTopic topic = redisson.getTopic("__keyevent@0__:del", StringCodec.INSTANCE);
+            int id1 = topic.addListener(new StatusListener() {
+                @Override
+                public void onSubscribe(String channel) {
+                    subscribedCounter.incrementAndGet();
+                }
+
+                @Override
+                public void onUnsubscribe(String channel) {
+                    unsubscribedCounter.incrementAndGet();
+                }
+            });
+
+            AtomicInteger counter = new AtomicInteger();
+
+            MessageListener<String> listener = (channel, msg) -> {
+                System.out.println("mes " + channel + " counter " + counter.get());
+                counter.incrementAndGet();
+            };
+            int id2 = topic.addListener(String.class, listener);
+
+            for (int i = 0; i < 10; i++) {
+                redisson.getBucket("" + i).set(i);
+                redisson.getBucket("" + i).delete();
+                try {
+                    Thread.sleep(7);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
             }
+
+            Awaitility.await().atMost(Duration.ofSeconds(2)).until(() -> counter.get() > 9);
+            assertThat(subscribedCounter.get()).isEqualTo(1);
+            assertThat(unsubscribedCounter.get()).isZero();
+
+            topic.removeListener(id1, id2);
         });
-
-        AtomicInteger counter = new AtomicInteger();
-
-        MessageListener<String> listener = (channel, msg) -> {
-            System.out.println("mes " + channel + " counter " + counter.get());
-            counter.incrementAndGet();
-        };
-        int id2 = topic.addListener(String.class, listener);
-
-        for (int i = 0; i < 10; i++) {
-            redisson.getBucket("" + i).set(i);
-            redisson.getBucket("" + i).delete();
-            Thread.sleep(7);
-        }
-
-        Awaitility.await().atMost(Duration.ofSeconds(2)).until(() -> counter.get() > 9);
-        assertThat(subscribedCounter.get()).isEqualTo(1);
-        assertThat(unsubscribedCounter.get()).isZero();
-
-        topic.removeListener(id1, id2);
-
-        redisson.shutdown();
-        redisCluster.stop();
     }
 
     @Test
