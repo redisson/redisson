@@ -3,6 +3,21 @@ Redisson Releases History
 
 Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
 
+### 18-Mar-2025 - 3.45.1 released
+
+Fixed - Issue with asynchronous Micronaut @Cacheable methods (thanks to @seakider)  
+Fixed - `RExecutorService.submitAsync()` throws a script error (thanks to @seakider)  
+Fixed - `isSlaveNotUsed()` method isn't called if a new slave node added to Redis Cluster (thanks to @seakider)  
+Fixed - error thrown by RLiveObject running with AWS ElastiCache Serverless Valkey  
+Fixed - `RLocalCachedMap` SYNC strategy doesn't work with `fastPutIfExists()`, `fastPutIfAbsent()` methods (thanks to @seakider)  
+Fixed - `RDelayedQueue` object cannot get anything when server run a long time (thanks to @seakider)  
+Fixed - LockEntry throws NPE  
+Fixed - Hibernate `region_prefix` configuration doesn't apply to key `redisson-hibernate-timestamp` (thanks to @seakider)  
+Fixed - `MasterConnectionPool` might throw an NPE  
+Fixed - Inconsistent MaxInactiveInterval Setting in Sessions in multi-node (thanks to @seakider)  
+Fixed - Out of Memory error  
+Fixed - a new attempt should be made on `ERR WAIT` error during failover (thanks to @seakider)  
+
 ### 21-Feb-2025 - 3.45.0 released
 
 Feature - added `max-size` setting for Quarkus Cache  
