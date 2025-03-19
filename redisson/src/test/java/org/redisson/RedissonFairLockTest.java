@@ -785,6 +785,52 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
     }
 
     @Test
+    public void testHighConcurrency() {
+        final int threads = 500;
+        final int iterations = 2;
+        final int timeout = 10_000;
+        CountDownLatch countDownLatch = new CountDownLatch(threads);
+        final Runnable runnable = () -> {
+            for (int i = 0; i < iterations; i++) {
+                String key = "key" + i;
+                RLock fairLock = null;
+                try {
+                    fairLock = redisson.getFairLock(key); // getLock works ok
+                    fairLock.lock();
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                } finally {
+                    if(fairLock != null) {
+                        fairLock.unlock();
+                    }
+                }
+            }
+            countDownLatch.countDown();
+        };
+        // Do not use an ExecutorService to force high concurrency
+        for (int i = 0; i < threads; i++) {
+            new Thread(runnable).start();
+        }
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Future<String> future = executor.submit(() -> {
+            try {
+                countDownLatch.await();
+                return "ok";
+            } catch (InterruptedException e) {
+                throw new UnsupportedOperationException(e);
+            }
+        });
+        try {
+            String result = future.get(timeout, TimeUnit.MILLISECONDS);
+            Assertions.assertEquals("ok", result);
+        } catch (Exception e) {
+            Assertions.fail("Test should be completed in " + timeout + " milliseconds");
+        } finally {
+            executor.shutdown();
+        }
+    }
+
+    @Test
     public void testIsLockedOtherThread() throws InterruptedException {
         RLock lock = redisson.getFairLock("lock");
         lock.lock();
