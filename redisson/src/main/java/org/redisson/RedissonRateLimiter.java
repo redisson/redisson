@@ -342,6 +342,69 @@ public final class RedissonRateLimiter extends RedissonExpirable implements RRat
     }
 
     @Override
+    public void updateRate(RateType mode, long rate, Duration rateInterval) {
+        get(updateRateAsync(mode, rate, rateInterval));
+    }
+
+    @Override
+    public RFuture<Void> updateRateAsync(RateType type, long rate, Duration rateInterval) {
+        String valueName = RateType.OVERALL.equals(type) ? getValueName() : getClientValueName();
+        String permitsName = RateType.OVERALL.equals(type) ? getPermitsName() : getClientPermitsName();
+        return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                "redis.call('hset', KEYS[1], 'rate', ARGV[1]); "
+                        + "redis.call('hset', KEYS[1], 'interval', ARGV[2]); "
+                        + "redis.call('hset', KEYS[1], 'type', ARGV[3]); "
+                        + "local expiredValues = redis.call('zrangebyscore', KEYS[3], 0, -1); "
+                        + "local released = 0; "
+                        + "for i, v in ipairs(expiredValues) do "
+                        + "local random, permits = struct.unpack('Bc0I', v); "
+                        + "released = released + permits; "
+                        + "end; "
+                        + "local currentValue = ARGV[1] - released; "
+                        + "if currentValue >= 0 then"
+                        + "    redis.call('set', KEYS[2], currentValue); "
+                        + "else"
+                        + "    local removeLastIndex = math.abs(currentValue) - 1; "
+                        + "    redis.call('zremrangebyrank', KEYS[3], 0, removeLastIndex); "
+                        + "end; ",
+                Arrays.asList(getRawName(), valueName, permitsName),
+                rate, rateInterval.toMillis(), type.ordinal()
+        );
+    }
+
+    @Override
+    public void updateRate(RateType mode, long rate, Duration rateInterval, Duration keepAliveTime) {
+        get(updateRateAsync(mode, rate, rateInterval, keepAliveTime));
+    }
+
+    @Override
+    public RFuture<Void> updateRateAsync(RateType type, long rate, Duration rateInterval, Duration keepAliveTime) {
+        String valueName = RateType.OVERALL.equals(type) ? getValueName() : getClientValueName();
+        String permitsName = RateType.OVERALL.equals(type) ? getPermitsName() : getClientPermitsName();
+        return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                "redis.call('hset', KEYS[1], 'rate', ARGV[1]); "
+                        + "redis.call('hset', KEYS[1], 'interval', ARGV[2]); "
+                        + "redis.call('hset', KEYS[1], 'type', ARGV[3]); "
+                        + "redis.call('hset', KEYS[1], 'keepAliveTime', ARGV[4]);"
+                        + "local expiredValues = redis.call('zrangebyscore', KEYS[3], 0, -1); "
+                        + "local released = 0; "
+                        + "for i, v in ipairs(expiredValues) do "
+                        + "local random, permits = struct.unpack('Bc0I', v); "
+                        + "released = released + permits; "
+                        + "end; "
+                        + "local currentValue = ARGV[1] - released; "
+                        + "if currentValue >= 0 then"
+                        + "    redis.call('set', KEYS[2], currentValue); "
+                        + "else"
+                        + "    local removeLastIndex = math.abs(currentValue) - 1; "
+                        + "    redis.call('zremrangebyrank', KEYS[3], 0, removeLastIndex); "
+                        + "end; ",
+                Arrays.asList(getRawName(), valueName, permitsName),
+                rate, rateInterval.toMillis(), type.ordinal(), keepAliveTime.toMillis()
+        );
+    }
+
+    @Override
     public void setRate(RateType mode, long rate, Duration rateInterval) {
         get(setRateAsync(mode, rate, rateInterval));
     }

@@ -366,5 +366,45 @@ public class RedissonRateLimiterTest extends RedisDockerTest {
         //clean all keys in test
         redisson.getKeys().deleteByPattern("*test_change_rate*");
     }
-    
+
+    @Test
+    public void testUpdateRate() {
+        RRateLimiter rr = redisson.getRateLimiter("test_update_rate");
+        rr.setRate(RateType.PER_CLIENT, 1, Duration.ofSeconds(1));
+        assertThat(rr.getConfig().getRate()).isEqualTo(1);
+        long start = System.currentTimeMillis();
+        for (int i = 0; i < 10; i++) {
+            rr.acquire();
+            assertThat(System.currentTimeMillis() - start / 1000).isEqualTo(i);
+        }
+        rr.updateRate(RateType.PER_CLIENT, 2, Duration.ofSeconds(1));
+        assertThat(rr.getConfig().getRate()).isEqualTo(2);
+        start = System.currentTimeMillis();
+        for (int i = 0; i < 10; i++) {
+            rr.acquire();
+            assertThat(System.currentTimeMillis() - start / 1000).isEqualTo(i/2);
+        }
+        rr.updateRate(RateType.PER_CLIENT, 4, Duration.ofSeconds(1));
+        assertThat(rr.getConfig().getRate()).isEqualTo(4);
+        start = System.currentTimeMillis();
+        for (int i = 0; i < 10; i++) {
+            rr.acquire();
+            assertThat(System.currentTimeMillis() - start / 1000).isEqualTo(i/4);
+        }
+        rr.updateRate(RateType.PER_CLIENT, 8, Duration.ofSeconds(1));
+        assertThat(rr.getConfig().getRate()).isEqualTo(8);
+        start = System.currentTimeMillis();
+        for (int i = 0; i < 10; i++) {
+            rr.acquire();
+            assertThat(System.currentTimeMillis() - start / 1000).isEqualTo(i/8);
+        }
+        rr.updateRate(RateType.PER_CLIENT, 1, Duration.ofSeconds(1));
+        assertThat(rr.getConfig().getRate()).isEqualTo(1);
+        start = System.currentTimeMillis();
+        for (int i = 0; i < 10; i++) {
+            rr.acquire();
+            assertThat(System.currentTimeMillis() - start / 1000).isEqualTo(i);
+        }
+    }
+
 }

@@ -96,6 +96,27 @@ public interface RRateLimiter extends RRateLimiterAsync, RExpirable {
     void setRate(RateType mode, long rate, Duration rateInterval, Duration keepAliveTime);
 
     /**
+     * Updates the rate limit.
+     * Keeps state
+     *
+     * @param mode rate mode
+     * @param rate rate
+     * @param rateInterval rate time interval
+     */
+    void updateRate(RateType mode, long rate, Duration rateInterval);
+
+    /**
+     * Updates time to live, the rate limit
+     * Keeps state
+     *
+     * @param mode rate mode
+     * @param rate rate
+     * @param rateInterval rate time interval
+     * @param keepAliveTime this is the maximum time that key will wait for new acquire before delete
+     */
+    void updateRate(RateType mode, long rate, Duration rateInterval, Duration keepAliveTime);
+
+    /**
      * Acquires a permit only if one is available at the
      * time of invocation.
      *
