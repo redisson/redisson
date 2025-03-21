@@ -809,6 +809,8 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                         slot = connectionManager.calcSlot((String) k);
                     } else if (k instanceof ByteBuf) {
                         slot = connectionManager.calcSlot((ByteBuf) k);
+                    } else if (k instanceof byte[]) {
+                        slot = connectionManager.calcSlot((byte[]) k);
                     } else {
                         throw new IllegalArgumentException();
                     }
@@ -818,6 +820,8 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                         return connectionManager.calcSlot((String) k);
                     } else if (k instanceof ByteBuf) {
                         return connectionManager.calcSlot((ByteBuf) k);
+                    } else if (k instanceof byte[]) {
+                        return connectionManager.calcSlot((byte[]) k);
                     } else {
                         throw new IllegalArgumentException();
                     }
