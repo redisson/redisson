@@ -68,6 +68,10 @@ public class LockTask extends RenewalTask {
             }
         }
 
+        if (keys.isEmpty()) {
+            return CompletableFuture.completedFuture(null);
+        }
+
         String firstName = keys.get(0);
 
         CompletionStage<List<String>> f = executor.syncedEval(firstName, LongCodec.INSTANCE,
