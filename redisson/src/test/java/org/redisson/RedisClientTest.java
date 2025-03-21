@@ -25,7 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class RedisClientTest  {
 
     private static RedisClient redisClient;
-    
+
     @BeforeAll
     public static void beforeAll() {
         RedisClientConfig config = new RedisClientConfig();
@@ -60,24 +60,25 @@ public class RedisClientTest  {
         RedisPubSubConnection c = redisClient.connectPubSub();
         c.sync((RedisCommands.CLIENT_TRACKING), "ON", "BCAST");
         AtomicInteger counter = new AtomicInteger();
-        c.addListener(new RedisPubSubListener<String>() {
+        ChannelName cn = new ChannelName("__redis__:invalidate");
+        c.addListener(cn, new RedisPubSubListener<String>() {
             @Override
             public void onMessage(CharSequence channel, String msg) {
                 counter.incrementAndGet();
             }
         });
-        c.subscribe(StringCodec.INSTANCE, new ChannelName("__redis__:invalidate")).get();
+        c.subscribe(StringCodec.INSTANCE, cn).get();
         c.sync(RedisCommands.GET, "test");
 
         RedisPubSubConnection c4 = redisClient.connectPubSub();
         c4.sync((RedisCommands.CLIENT_TRACKING), "ON", "BCAST");
-        c4.addListener(new RedisPubSubListener<String>() {
+        c4.addListener(cn, new RedisPubSubListener<String>() {
             @Override
             public void onMessage(CharSequence channel, String msg) {
                 counter.incrementAndGet();
             }
         });
-        c4.subscribe(StringCodec.INSTANCE, new ChannelName("__redis__:invalidate")).get();
+        c4.subscribe(StringCodec.INSTANCE, cn).get();
         c4.sync(RedisCommands.GET, "test");
 
         RedisConnection c3 = redisClient.connect();
@@ -96,29 +97,30 @@ public class RedisClientTest  {
         assertThat(counter.get()).isEqualTo(2);
     }
 
-        @Test
+    @Test
     public void testClientTracking() throws InterruptedException, ExecutionException {
         RedisPubSubConnection c = redisClient.connectPubSub();
         c.sync((RedisCommands.CLIENT_TRACKING), "ON");
         AtomicInteger counter = new AtomicInteger();
-        c.addListener(new RedisPubSubListener<String>() {
+        ChannelName cn = new ChannelName("__redis__:invalidate");
+        c.addListener(cn, new RedisPubSubListener<String>() {
             @Override
             public void onMessage(CharSequence channel, String msg) {
                 counter.incrementAndGet();
             }
         });
-        c.subscribe(StringCodec.INSTANCE, new ChannelName("__redis__:invalidate")).get();
+        c.subscribe(StringCodec.INSTANCE, cn).get();
         c.sync(RedisCommands.GET, "test");
 
         RedisPubSubConnection c4 = redisClient.connectPubSub();
         c4.sync((RedisCommands.CLIENT_TRACKING), "ON");
-        c4.addListener(new RedisPubSubListener<String>() {
+        c4.addListener(cn, new RedisPubSubListener<String>() {
             @Override
             public void onMessage(CharSequence channel, String msg) {
                 counter.incrementAndGet();
             }
         });
-        c4.subscribe(StringCodec.INSTANCE, new ChannelName("__redis__:invalidate")).get();
+        c4.subscribe(StringCodec.INSTANCE, cn).get();
         c4.sync(RedisCommands.GET, "test");
 
         RedisConnection c3 = redisClient.connect();
@@ -150,7 +152,7 @@ public class RedisClientTest  {
         f.handle((conn, ex) -> {
             assertThat(conn.sync(RedisCommands.PING)).isEqualTo("PONG");
             l.countDown();
-            return null; 
+            return null;
         });
         assertThat(l.await(10, TimeUnit.SECONDS)).isTrue();
     }
@@ -159,7 +161,24 @@ public class RedisClientTest  {
     public void testSubscribe() throws InterruptedException {
         RedisPubSubConnection pubSubConnection = redisClient.connectPubSub();
         final CountDownLatch latch = new CountDownLatch(2);
-        pubSubConnection.addListener(new RedisPubSubListener<Object>() {
+        pubSubConnection.addListener(new ChannelName("test1"), new RedisPubSubListener<Object>() {
+
+            @Override
+            public void onStatus(PubSubType type, CharSequence channel) {
+                assertThat(type).isEqualTo(PubSubType.SUBSCRIBE);
+                assertThat(Arrays.asList("test1", "test2").contains(channel.toString())).isTrue();
+                latch.countDown();
+            }
+
+            @Override
+            public void onMessage(CharSequence channel, Object message) {
+            }
+
+            @Override
+            public void onPatternMessage(CharSequence pattern, CharSequence channel, Object message) {
+            }
+        });
+        pubSubConnection.addListener(new ChannelName("test2"), new RedisPubSubListener<Object>() {
 
             @Override
             public void onStatus(PubSubType type, CharSequence channel) {
@@ -178,7 +197,7 @@ public class RedisClientTest  {
         });
         pubSubConnection.subscribe(StringCodec.INSTANCE, new ChannelName("test1"), new ChannelName("test2"));
 
-        latch.await(10, TimeUnit.SECONDS);
+        assertThat(latch.await(2, TimeUnit.SECONDS)).isTrue();
     }
 
     @Test

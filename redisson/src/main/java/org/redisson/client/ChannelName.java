@@ -15,18 +15,32 @@
  */
 package org.redisson.client;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import io.netty.util.CharsetUtil;
 
 /**
- * 
+ *
  * @author Nikita Koksharov
  *
  */
 public class ChannelName implements CharSequence {
 
     public static final ChannelName TRACKING = new ChannelName("__redis__:invalidate");
+
+    public static List<ChannelName> newList(ChannelName name) {
+        List<ChannelName> result = new ArrayList<>(1);
+        result.add(name);
+        return result;
+    }
+
+    public static List<ChannelName> newList(String name) {
+        List<ChannelName> result = new ArrayList<>(1);
+        result.add(new ChannelName(name));
+        return result;
+    }
 
     private final byte[] name;
     private final String str;
@@ -36,7 +50,7 @@ public class ChannelName implements CharSequence {
         this.name = name;
         this.str = new String(name, CharsetUtil.UTF_8);
     }
-    
+
     public ChannelName(String name) {
         this(name.getBytes(CharsetUtil.UTF_8));
     }
@@ -45,11 +59,11 @@ public class ChannelName implements CharSequence {
     public String toString() {
         return str;
     }
-    
+
     public byte[] getName() {
         return name;
     }
-    
+
     @Override
     public int hashCode() {
         final int prime = 31;
@@ -57,7 +71,7 @@ public class ChannelName implements CharSequence {
         result = prime * result + Arrays.hashCode(name);
         return result;
     }
-    
+
     @Override
     public boolean equals(Object obj) {
         if (this == obj) {
@@ -96,3 +110,4 @@ public class ChannelName implements CharSequence {
     }
 
 }
+

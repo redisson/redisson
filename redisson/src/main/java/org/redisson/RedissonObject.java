@@ -803,7 +803,7 @@ public abstract class RedissonObject implements RObject {
             return new CompletableFutureWrapper<>((Void) null);
         }
 
-        CompletableFuture<Void> f = subscribeService.removeListenerAsync(PubSubType.UNSUBSCRIBE, ChannelName.TRACKING, listenerId);
+        CompletableFuture<Void> f = subscribeService.removeListenerAsync(PubSubType.UNSUBSCRIBE, ChannelName.newList(ChannelName.TRACKING), listenerId);
         f = f.whenComplete((r, e) -> {
             if (!commandExecutor.isTrackChanges()) {
                 commandExecutor = commandExecutor.copy(false);
