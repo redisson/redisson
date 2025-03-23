@@ -19,4 +19,4 @@ RedissonClient redisson3 = ...;
 RedissonClient redisson = ShardedRedisson.create(redisson1, redisson2, redisson3);
 ```
 
-_This feature available only in [Redisson PRO](https://redisson.pro) edition._
+_This feature available only in [Redisson PRO](https://redisson.pro/feature-comparison.html) edition._

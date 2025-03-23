@@ -63,10 +63,10 @@ Available implementations:
 | ------------- | :-----------: | :-----------:| :---------:|
 |getMap()<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ❌ |
 |getLocalCachedMap()<br/><sub><i>open-source version</i></sub> | ✔️ | ❌ | ❌ |
-|getMap()<br/><sub><i>[Redisson PRO](https://redisson.pro) version</i></sub> | ❌ | ❌ | ✔️ |
-|getLocalCachedMap()<br/><sub><i>[Redisson PRO](https://redisson.pro) version</i></sub> | ✔️ | ❌ | ✔️ |
-|getClusteredMap()<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ |
-|getClusteredLocalCachedMap()<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ✔️ | ✔️ | ✔️ |
+|getMap()<br/><sub><i>[Redisson PRO](https://redisson.pro/feature-comparison.html) version</i></sub> | ❌ | ❌ | ✔️ |
+|getLocalCachedMap()<br/><sub><i>[Redisson PRO](https://redisson.pro/feature-comparison.html) version</i></sub> | ✔️ | ❌ | ✔️ |
+|getClusteredMap()<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ❌ | ✔️ | ✔️ |
+|getClusteredLocalCachedMap()<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ✔️ | ✔️ | ✔️ |
 <br/>
 
 **2. Scripted eviction** 
@@ -82,10 +82,10 @@ Available implementations:
 |RedissonClient<br/>method name | Local<br/>cache | Data<br/>partitioning | Ultra-fast<br/>read/write |
 | ------------- | :-----------: | :-----------:| :---------:|
 |getMapCache()<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ❌ |
-|getMapCache()<br/><sub><i>[Redisson PRO](https://redisson.pro) version</i></sub> | ❌ | ❌ | ✔️ |
-|getLocalCachedMapCache()<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ✔️ | ❌ | ✔️ |
-|getClusteredMapCache()<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ |
-|getClusteredLocalCachedMapCache()<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ✔️ | ✔️ | ✔️ |
+|getMapCache()<br/><sub><i>[Redisson PRO](https://redisson.pro/feature-comparison.html) version</i></sub> | ❌ | ❌ | ✔️ |
+|getLocalCachedMapCache()<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ✔️ | ❌ | ✔️ |
+|getClusteredMapCache()<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ❌ | ✔️ | ✔️ |
+|getClusteredLocalCachedMapCache()<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ✔️ | ✔️ | ✔️ |
 <br/>
 
 **3. Advanced eviction**
@@ -98,8 +98,8 @@ Available implementations:
 
 |RedissonClient<br/>method name | Local<br/>cache | Data<br/>partitioning | Ultra-fast<br/>read/write |
 | ------------- | :-----------: | :-----------:| :---------:|
-|getMapCacheV2()<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ |
-|getLocalCachedMapCacheV2()<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ✔️ | ✔️ | ✔️ |
+|getMapCacheV2()<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ❌ | ✔️ | ✔️ |
+|getLocalCachedMapCacheV2()<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ✔️ | ✔️ | ✔️ |
 <br/>
 
 **4. Native eviction**
@@ -113,14 +113,12 @@ Available implementations:
 |RedissonClient<br/>method name | Local<br/>cache | Data<br/>partitioning | Ultra-fast<br/>read/write |
 | ------------- | :-----------: | :-----------:| :---------:|
 |getMapCacheNative()<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ❌ |
-|getMapCacheNative()<br/><sub><i>[Redisson PRO](https://redisson.pro) version</i></sub> | ❌ | ❌ | ✔️ |
-|getLocalCachedMapCacheNative()<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ✔️ | ❌ | ✔️ |
-|getClusteredMapCacheNative()<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ |
+|getMapCacheNative()<br/><sub><i>[Redisson PRO](https://redisson.pro/feature-comparison.html) version</i></sub> | ❌ | ❌ | ✔️ |
+|getLocalCachedMapCacheNative()<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ✔️ | ❌ | ✔️ |
+|getClusteredMapCacheNative()<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ❌ | ✔️ | ✔️ |
 <br/>
 
 Redisson also provides various [Cache API](../cache-API-implementations.md) implementations.
-
-It's recommended to use single instance of Map instance with the same name for each Redisson client instance.
 
 Code example:
 ```java
@@ -131,10 +129,6 @@ RMapCache<String, SomeObject> map = redisson.getMapCache("anyMap", MapCacheOptio
 RMapCacheV2<String, SomeObject> map = redisson.getMapCacheV2("anyMap");
 // or
 RMapCacheV2<String, SomeObject> map = redisson.getMapCacheV2("anyMap", MapOptions.defaults());
-// or
-RMapCache<String, SomeObject> map = redisson.getLocalCachedMapCache("anyMap", LocalCachedMapOptions.defaults());
-// or
-RMapCache<String, SomeObject> map = redisson.getClusteredLocalCachedMapCache("anyMap", LocalCachedMapOptions.defaults());
 // or
 RMapCache<String, SomeObject> map = redisson.getClusteredMapCache("anyMap");
 // or
@@ -157,9 +151,7 @@ map.destroy();
 
 **Local cache**  
 
-Map object with local cache support implements [RLocalCachedMap](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RLocalCachedMap.html) which extends [ConcurrentMap](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/ConcurrentMap.html) interface. This object is thread-safe.
-
-It's recommended to use single instance of `LocalCachedMap` instance per name for each Redisson client instance. Same `LocalCachedMapOptions` object should be used across all instances with the same name.
+Map object with local cache support implements [RLocalCachedMap](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RLocalCachedMap.html) or [RLocalCachedMapCache](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RLocalCachedMapCache.html) which extends [ConcurrentMap](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/ConcurrentMap.html) interface. This object is thread-safe.
 
 Follow options can be supplied during object creation:
 ```java
@@ -226,6 +218,10 @@ Follow options can be supplied during object creation:
      // SUBSCRIBE_WITH_KEYSPACE_CHANNEL - Subscribe on expire event using `__keyspace@N__:name` channel
      .expirationEventPolicy(ExpirationEventPolicy.SUBSCRIBE_WITH_KEYEVENT_PATTERN);
 ```
+
+!!! warning
+
+    It's recommended to use a single instance of local cached Map instance per unique name for each Redisson instance. Same `LocalCachedMapOptions` object should be used across all instances with the same name.
 
 Code example:
 
@@ -710,7 +706,7 @@ lmap.removeListener(listenerId);
 
 ## JSON Store
 
-_This feature is available only in [Redisson PRO](https://redisson.pro) edition._
+_This feature is available only in [Redisson PRO](https://redisson.pro/feature-comparison.html) edition._
 
 [RJsonStore](https://www.javadoc.io/doc/org.redisson/redisson/latest/org/redisson/api/RJsonStore.html) is a distributed Key Value store for JSON objects. Compatible with Redis or Valkey. This object is thread-safe. Allows to store JSON value mapped by key. Operations can be executed per key or group of keys. Value is stored/retrieved using `JSON.*` commands. Both key and value are POJO objects. 
 
@@ -841,7 +837,9 @@ Redisson provides [JSON Store](#json-store) implementation with local cache.
 
 **local cache** - so called near cache used to speed up read operations and avoid network roundtrips. It caches JSON Store entries on Redisson side and executes read operations up to **45x faster** in comparison with regular implementation. Local cached instances with the same name are connected to the same pub/sub channel. This channel is used for exchanging of update/invalidate events between all instances. Local cache store doesn't use `hashCode()`/`equals()` methods of key object, instead it uses hash of serialized state. It's recommended to use each local cached instance as a singleton per unique name since it has own state for local cache.
 
-It's recommended to use a single instance of `RLocalCachedJsonStore` instance per name for each Redisson client instance. Same `LocalCachedJsonStoreOptions` object should be used across all instances with the same name.
+!!! warning
+
+    It's recommended to use a single instance of local cached JsonStore instance per unique name for each Redisson instance. Same `LocalCachedJsonStoreOptions` object should be used across all instances with the same name.
 
 Follow options can be supplied during object creation:
 ```java
@@ -1050,11 +1048,11 @@ Below is the list of all available Set implementations:
 | ------------- | :----------:| :----------:| :----------:| :----------:|
 |getSet()<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ❌ | ❌ |
 |getSetCache()<br/><sub><i>open-source version</i></sub> | ❌ | ✔️ | ❌ | ❌ |
-|getSet()<br/><sub><i>[Redisson PRO](https://redisson.pro) version</i></sub> | ❌ | ❌ | ❌ | ✔️ |
-|getSetCache()<br/><sub><i>[Redisson PRO](https://redisson.pro) version</i></sub> | ❌ | ✔️ | ❌ | ✔️ |
-|getSetCacheV2()<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ✔️ | ❌ | ✔️ | ✔️ |
-|getClusteredSet()<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ✔️ | ❌ | ❌ | ✔️ |
-|getClusteredSetCache()<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ✔️ | ✔️ | ❌ | ✔️ |
+|getSet()<br/><sub><i>[Redisson PRO](https://redisson.pro/feature-comparison.html) version</i></sub> | ❌ | ❌ | ❌ | ✔️ |
+|getSetCache()<br/><sub><i>[Redisson PRO](https://redisson.pro/feature-comparison.html) version</i></sub> | ❌ | ✔️ | ❌ | ✔️ |
+|getSetCacheV2()<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ✔️ | ❌ | ✔️ | ✔️ |
+|getClusteredSet()<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ✔️ | ❌ | ❌ | ✔️ |
+|getClusteredSetCache()<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ✔️ | ✔️ | ❌ | ✔️ |
 
 ### Listeners
 
@@ -1125,8 +1123,8 @@ Below is the list of all available `RScoredSortedSet` implementations:
 |RedissonClient <br/> method name | Data partitioning <br/> support | Ultra-fast read/write |
 | ------------- | :----------:| :----------:|
 |getScoredSortedSet()<br/><sub><i>open-source version</i></sub> | ❌ | ❌ |
-|getScoredSortedSet()<br/><sub><i>[Redisson PRO](https://redisson.pro) version</i></sub> | ❌ | ✔️ |
-|getClusteredScoredSortedSet()<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ✔️ | ✔️ |
+|getScoredSortedSet()<br/><sub><i>[Redisson PRO](https://redisson.pro/feature-comparison.html) version</i></sub> | ❌ | ✔️ |
+|getClusteredScoredSortedSet()<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ✔️ | ✔️ |
 
 Code example:
 ```java

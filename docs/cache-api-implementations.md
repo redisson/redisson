@@ -30,10 +30,10 @@ Redisson provides various Hibernate Cache factories including those with feature
     |Class name | Local cache | Data<br/>partitioning | Ultra-fast<br/>read/write |
     | ------------- | :-----------: | :----------:| :----------:|
     |RedissonRegionFactory<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ❌ |
-    |RedissonRegionFactory<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ❌ | ❌ | ✔️ |
-    |RedissonLocalCachedRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub>  | ✔️ | ❌ | ✔️ |
-    |RedissonClusteredRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ |
-    |RedissonClusteredLocalCachedRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub> | ✔️ | ✔️ | ✔️ |
+    |RedissonRegionFactory<br/><sub><i>[Redisson PRO](https://redisson.pro/feature-comparison.html) version</i></sub> | ❌ | ❌ | ✔️ |
+    |RedissonLocalCachedRegionFactory<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub>  | ✔️ | ❌ | ✔️ |
+    |RedissonClusteredRegionFactory<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ❌ | ✔️ | ✔️ |
+    |RedissonClusteredLocalCachedRegionFactory<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ✔️ | ✔️ | ✔️ |
 
 4. **Advanced eviction**
 
@@ -43,8 +43,8 @@ Redisson provides various Hibernate Cache factories including those with feature
 
     |Class name | Local cache | Data<br/>partitioning | Ultra-fast<br/>read/write |
     | ------------- | :-----------: | :----------:| :----------:|
-    |RedissonRegionV2Factory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub>  | ❌ | ✔️ | ✔️ |
-    |RedissonLocalCachedV2RegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub>  | ✔️ | ✔️ | ✔️ |
+    |RedissonRegionV2Factory<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub>  | ❌ | ✔️ | ✔️ |
+    |RedissonLocalCachedV2RegionFactory<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub>  | ✔️ | ✔️ | ✔️ |
 
 5. **Native eviction**
 
@@ -56,10 +56,10 @@ Redisson provides various Hibernate Cache factories including those with feature
     |Class name | Local cache | Data<br/>partitioning | Ultra-fast<br/>read/write |
     | ------------- | :-----------: | :----------:| :----------:|
     |RedissonRegionNativeFactory<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ❌ |
-    |RedissonRegionNativeFactory<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ❌ | ❌ | ✔️ |
-    |RedissonLocalCachedNativeRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub>  | ✔️ | ❌ | ✔️ |
-    |RedissonClusteredNativeRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ |
-    |RedissonClusteredLocalCachedNativeRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub> | ✔️ | ✔️ | ✔️ |
+    |RedissonRegionNativeFactory<br/><sub><i>[Redisson PRO](https://redisson.pro/feature-comparison.html) version</i></sub> | ❌ | ❌ | ✔️ |
+    |RedissonLocalCachedNativeRegionFactory<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub>  | ✔️ | ❌ | ✔️ |
+    |RedissonClusteredNativeRegionFactory<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ❌ | ✔️ | ✔️ |
+    |RedissonClusteredLocalCachedNativeRegionFactory<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ✔️ | ✔️ | ✔️ |
 
 ### Usage
 
@@ -425,10 +425,10 @@ Redisson provides JCache implementations with many important features:
     |   | Local<br/>cache | Data<br/>partitioning | Ultra-fast<br/>read/write | Fallback<br/>mode |
     | -- | :-------------------: | :----------:| :----------:| :----------:|
     |JCache<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ❌ | ❌ |
-    |JCache<br/><sub><i>[Redisson PRO](https://redisson.pro) version</i></sub> | ❌ | ❌ | ✔️ | ✔️ |
-    |JCache with local cache<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub>  | ✔️ | ❌ | ✔️ | ✔️ |
-    |JCache with data partitioning<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ | ✔️ |
-    |JCache with local cache and data partitioning<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ✔️ | ✔️ | ✔️ | ✔️ |
+    |JCache<br/><sub><i>[Redisson PRO](https://redisson.pro/feature-comparison.html) version</i></sub> | ❌ | ❌ | ✔️ | ✔️ |
+    |JCache with local cache<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub>  | ✔️ | ❌ | ✔️ | ✔️ |
+    |JCache with data partitioning<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ❌ | ✔️ | ✔️ | ✔️ |
+    |JCache with local cache and data partitioning<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ✔️ | ✔️ | ✔️ | ✔️ |
 
 5. **Advanced eviction**
 
@@ -438,8 +438,8 @@ Redisson provides JCache implementations with many important features:
 
     | | Local<br/>cache | Data<br/>partitioning | Ultra-fast<br/>read/write | Fallback<br/>mode |
     | ------------- | :-----------: | :----------:| :----------:| :----------:|
-    |JCache V2<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub>  | ❌ | ✔️ | ✔️ | ✔️ |
-    |JCache V2 with local cache<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub>  | ✔️ | ✔️ | ✔️ | ✔️ |
+    |JCache V2<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub>  | ❌ | ✔️ | ✔️ | ✔️ |
+    |JCache V2 with local cache<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub>  | ✔️ | ✔️ | ✔️ | ✔️ |
 
 6. **Native eviction**
 
@@ -450,9 +450,9 @@ Redisson provides JCache implementations with many important features:
 
     | | Local<br/>cache | Data<br/>partitioning | Ultra-fast<br/>read/write | Fallback<br/>mode |
     | ------------- | :-----------: | :----------:| :----------:| :----------:|
-    |JCache native <br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub>  | ❌ | ❌ | ✔️ | ✔️ |
-    |JCache native with data partitioning<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ | ✔️ |
-    |JCache native with local cache and data partitioning<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub>  | ✔️ | ✔️ | ✔️ | ✔️ |
+    |JCache native <br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub>  | ❌ | ❌ | ✔️ | ✔️ |
+    |JCache native with data partitioning<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ❌ | ✔️ | ✔️ | ✔️ |
+    |JCache native with local cache and data partitioning<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub>  | ✔️ | ✔️ | ✔️ | ✔️ |
 
 ### Usage
 
@@ -892,7 +892,7 @@ Distributed Session persistence configuration example:
 
 **JCache settings**
 
-_Settings are available only in [Redisson PRO](https://redisson.pro) edition._
+_Settings are available only in [Redisson PRO](https://redisson.pro/feature-comparison.html) edition._
 
 * **fallback**
 
@@ -1013,10 +1013,10 @@ Redisson provides multiple MyBatis Cache implementations which support features 
     |Class name | Local<br/>cache | Data<br/>partitioning | Ultra-fast<br/>read/write |
     | ------------- | :-----------: | :----------:| :----------:|
     |RedissonCache<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ❌ |
-    |RedissonCache<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ❌ | ❌ | ✔️ |
-    |RedissonLocalCachedCache<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub>  | ✔️ | ❌ |  ✔️ |
-    |RedissonClusteredCache<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub> | ❌ | ✔️ |  ✔️ |
-    |RedissonClusteredLocalCachedCache<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub> | ✔️ | ✔️ | ✔️ |
+    |RedissonCache<br/><sub><i>[Redisson PRO](https://redisson.pro/feature-comparison.html) version</i></sub> | ❌ | ❌ | ✔️ |
+    |RedissonLocalCachedCache<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub>  | ✔️ | ❌ |  ✔️ |
+    |RedissonClusteredCache<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ❌ | ✔️ |  ✔️ |
+    |RedissonClusteredLocalCachedCache<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ✔️ | ✔️ | ✔️ |
 
 3. **Advanced eviction**
 
@@ -1026,8 +1026,8 @@ Redisson provides multiple MyBatis Cache implementations which support features 
 
     |Class name | Local<br/>cache | Data<br/>partitioning | Ultra-fast<br/>read/write |
     | ------------- | :-----------: | :----------:| :----------:|
-    |RedissonCacheV2<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ |
-    |RedissonLocalCachedCacheV2<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub>  | ✔️ | ✔️ | ✔️ |
+    |RedissonCacheV2<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ❌ | ✔️ | ✔️ |
+    |RedissonLocalCachedCacheV2<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub>  | ✔️ | ✔️ | ✔️ |
 
 4. **Native eviction**
 
@@ -1039,10 +1039,10 @@ Redisson provides multiple MyBatis Cache implementations which support features 
     |Class name | Local<br/>cache | Data<br/>partitioning | Ultra-fast<br/>read/write |
     | ------------- | :-----------: | :----------:| :----------:|
     |RedissonCacheNative<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ❌ |
-    |RedissonCacheNative<br/><sub><i>[Redisson PRO](http://redisson.pro) version</i></sub> | ❌ | ❌ |  ✔️ |
-    |RedissonLocalCachedCacheNative<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub>  | ✔️ | ❌ | ✔️ |
-    |RedissonClusteredCacheNative<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub> | ❌ | ✔️ |  ✔️ |
-    |RedissonClusteredLocalCachedCacheNative<br/><sub><i>available only in [Redisson PRO](http://redisson.pro)</i></sub> | ✔️ | ✔️ |  ✔️ |
+    |RedissonCacheNative<br/><sub><i>[Redisson PRO](https://redisson.pro/feature-comparison.html) version</i></sub> | ❌ | ❌ |  ✔️ |
+    |RedissonLocalCachedCacheNative<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub>  | ✔️ | ❌ | ✔️ |
+    |RedissonClusteredCacheNative<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ❌ | ✔️ |  ✔️ |
+    |RedissonClusteredLocalCachedCacheNative<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ✔️ | ✔️ |  ✔️ |
 
 ### Usage
 
@@ -1201,10 +1201,10 @@ Redisson provides various [Quarkus Cache](https://quarkus.io/guides/cache) imple
     |`impementation`<br/>setting value | Local<br/>cache | Data<br/>partitioning | Ultra-fast<br/>read/write |
     | ------------- | :-----------: | :-----------:| :----------:|
     |`standard`<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ❌ |
-    |`standard`<br/><sub><i>[Redisson PRO](https://redisson.pro) version</i></sub> | ❌ | ❌ | ✔️ |
-    |`localcache`<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ✔️ | ❌ | ✔️ |
-    |`clustered`<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ |
-    |`clustered_localcache`<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ✔️ | ✔️ | ✔️ |
+    |`standard`<br/><sub><i>[Redisson PRO](https://redisson.pro/feature-comparison.html) version</i></sub> | ❌ | ❌ | ✔️ |
+    |`localcache`<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ✔️ | ❌ | ✔️ |
+    |`clustered`<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ❌ | ✔️ | ✔️ |
+    |`clustered_localcache`<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ✔️ | ✔️ | ✔️ |
 
 4. **Advanced eviction**
 
@@ -1214,8 +1214,8 @@ Redisson provides various [Quarkus Cache](https://quarkus.io/guides/cache) imple
 
     |`impementation`<br/>setting value | Local<br/>cache | Data<br/>partitioning | Ultra-fast<br/>read/write |
     | ------------- | :-----------: | :-----------:| :----------:|
-    |`v2`<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ |
-    |`localcache_v2`<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ✔️ | ✔️ | ✔️ |
+    |`v2`<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ❌ | ✔️ | ✔️ |
+    |`localcache_v2`<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ✔️ | ✔️ | ✔️ |
 
 5. **Native eviction**
 
@@ -1227,10 +1227,10 @@ Redisson provides various [Quarkus Cache](https://quarkus.io/guides/cache) imple
     |`impementation`<br/>setting value | Local<br/>cache | Data<br/>partitioning | Ultra-fast<br/>read/write |
     | ------------- | :-----------: | :-----------:| :----------:|
     |`native`<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ❌ |
-    |`native`<br/><sub><i>[Redisson PRO](https://redisson.pro) version</i></sub> | ❌ | ❌ | ✔️ |
-    |`localcache_native`<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ✔️ | ❌ | ✔️ |
-    |`clustered_native`<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ |
-    |`clustered_localcache_native`<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ✔️ | ✔️ | ✔️ |
+    |`native`<br/><sub><i>[Redisson PRO](https://redisson.pro/feature-comparison.html) version</i></sub> | ❌ | ❌ | ✔️ |
+    |`localcache_native`<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ✔️ | ❌ | ✔️ |
+    |`clustered_native`<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ❌ | ✔️ | ✔️ |
+    |`clustered_localcache_native`<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ✔️ | ✔️ | ✔️ |
 
 
 ### Usage

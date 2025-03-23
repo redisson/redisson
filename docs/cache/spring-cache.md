@@ -24,10 +24,10 @@ Redisson provides various Spring Cache managers with multiple important features
     |Class name | Local<br/>cache | Data<br/>partitioning | Ultra-fast<br/>read/write |
     | ------------- | :-----------: | :----------:| :----------:|
     |RedissonSpringCacheManager<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ❌ |
-    |RedissonSpringCacheManager<br/><sub><i>[Redisson PRO](https://redisson.pro) version</i></sub> | ❌ | ❌ | ✔️ |
-    |RedissonSpringLocalCachedCacheManager<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub>  | ✔️ | ❌ | ✔️ |
-    |RedissonClusteredSpringCacheManager<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ |
-    |RedissonClusteredSpringLocalCachedCacheManager<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ✔️ | ✔️ | ✔️ |
+    |RedissonSpringCacheManager<br/><sub><i>[Redisson PRO](https://redisson.pro/feature-comparison.html) version</i></sub> | ❌ | ❌ | ✔️ |
+    |RedissonSpringLocalCachedCacheManager<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub>  | ✔️ | ❌ | ✔️ |
+    |RedissonClusteredSpringCacheManager<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ❌ | ✔️ | ✔️ |
+    |RedissonClusteredSpringLocalCachedCacheManager<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ✔️ | ✔️ | ✔️ |
 
 4. **Advanced eviction**  
 
@@ -37,8 +37,8 @@ Redisson provides various Spring Cache managers with multiple important features
 
     |Class name | Local<br/>cache | Data<br/>partitioning | Ultra-fast<br/>read/write |
     | ------------- | :-----------: | :----------:| :----------:|
-    |RedissonSpringCacheV2Manager<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ |
-    |RedissonSpringLocalCachedCacheV2Manager<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub>  | ✔️ | ✔️ | ✔️ |
+    |RedissonSpringCacheV2Manager<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ❌ | ✔️ | ✔️ |
+    |RedissonSpringLocalCachedCacheV2Manager<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub>  | ✔️ | ✔️ | ✔️ |
 
 5. **Native eviction**
 
@@ -50,10 +50,10 @@ Redisson provides various Spring Cache managers with multiple important features
     |Class name | Local<br/>cache | Data<br/>partitioning | Ultra-fast<br/>read/write |
     | ------------- | :-----------: | :----------:| :----------:|
     |RedissonSpringCacheNativeManager<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ❌ |
-    |RedissonSpringCacheNativeManager<br/><sub><i>[Redisson PRO](https://redisson.pro) version</i></sub> | ❌ | ❌ | ✔️ |
-    |RedissonSpringLocalCachedCacheNativeManager<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub>  | ✔️ | ❌ | ✔️ |
-    |RedissonClusteredSpringCacheNativeManager<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ❌ | ✔️ | ✔️ |
-    |RedissonClusteredSpringLocalCachedCacheNativeManager<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ✔️ | ✔️ | ✔️ |
+    |RedissonSpringCacheNativeManager<br/><sub><i>[Redisson PRO](https://redisson.pro/feature-comparison.html) version</i></sub> | ❌ | ❌ | ✔️ |
+    |RedissonSpringLocalCachedCacheNativeManager<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub>  | ✔️ | ❌ | ✔️ |
+    |RedissonClusteredSpringCacheNativeManager<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ❌ | ✔️ | ✔️ |
+    |RedissonClusteredSpringLocalCachedCacheNativeManager<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ✔️ | ✔️ | ✔️ |
 
 **Local cache options**
 

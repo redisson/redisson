@@ -49,7 +49,7 @@ singleServerConfig:
 
 ### Passwords encryption
 
-_This feature is available only in [Redisson PRO](https://redisson.pro) edition._  
+_This feature is available only in [Redisson PRO](https://redisson.pro/feature-comparison.html) edition._  
 
 Redisson supports Advanced Encryption Standard (AES) encryption for passwords defined in the configuration file, with the secret key stored in the file.
 
@@ -217,7 +217,7 @@ Default value: `ALL`
 
 Defines the Micrometer statistics collection mode.
 
-_This setting is available only in [Redisson PRO](https://redisson.pro) edition._  
+_This setting is available only in [Redisson PRO](https://redisson.pro/feature-comparison.html) edition._  
 
 Available values:  
 
@@ -231,7 +231,7 @@ Default value: `null`
 
 Defines the Micrometer registry provider used to collect various statistics for Redisson objects. Please refer to the [statistics monitoring](observability.md) sections for list of all available providers.
 
-_This setting is available only in [Redisson PRO](https://redisson.pro) edition._  
+_This setting is available only in [Redisson PRO](https://redisson.pro/feature-comparison.html) edition._  
 
 **useThreadClassLoader**
 Default value: `true`  
@@ -245,7 +245,7 @@ Default value: `LOWER_LATENCY_MODE_2`
 
 Defines the command processing engine performance mode. Since all values are application-specific (except for the `NORMAL` value) it’s recommended to try all of them.
 
-_This setting is available only in [Redisson PRO](https://redisson.pro) edition._
+_This setting is available only in [Redisson PRO](https://redisson.pro/feature-comparison.html) edition._
 
 Available values:  
 
@@ -265,9 +265,11 @@ Compatible with:
 
 * [Redis Cluster](https://redis.io/docs/latest/operate/oss_and_stack/reference/cluster-spec/)
 * [Valkey Cluster](https://valkey.io/topics/cluster-spec/)
+* [AWS ElastiCache Serverless](https://aws.amazon.com/elasticache/features/#Serverless)  
 * [AWS ElastiCache Cluster](https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/designing-elasticache-cluster.html)  
 * [Amazon MemoryDB](https://aws.amazon.com/memorydb)  
 * [Azure Redis Cache](https://azure.microsoft.com/en-us/services/cache/)  
+* [Google Cloud Memorystore for Redis Cluster](https://cloud.google.com/memorystore/docs/cluster)
 
 For multiple Cluster deployments with data replication relationship use [Multi Cluster mode](#multi-cluster-mode).
 
@@ -310,14 +312,14 @@ Default value: `9`
 
 Partitions amount used for topic partitioning. Applied to `RClusteredTopic` and `RClusteredReliableTopic` objects.
 
-_This setting is available only in [Redisson PRO](https://redisson.pro) edition._
+_This setting is available only in [Redisson PRO](https://redisson.pro/feature-comparison.html) edition._
 
 **slots**
 Default value: `231`
 
 Partitions amount used for data partitioning. Data partitioning supported by [Set](data-and-services/collections.md/#eviction-and-data-partitioning), [Map](data-and-services/collections.md/#eviction-local-cache-and-data-partitioning), [BitSet](data-and-services/objects.md/#data-partitioning), [Bloom filter](data-and-services/objects.md/#data-partitioning_1), [Spring Cache](cache-api-implementations.md/#eviction-local-cache-and-data-partitioning), [JCache](cache-api-implementations.md/#local-cache-and-data-partitioning), [Micronaut Cache](cache-api-implementations.md/#eviction-local-cache-and-data-partitioning_4), [Quarkus Cache](cache-api-implementations.md/#eviction-local-cache-and-data-partitioning_3) and [Hibernate Cache](cache-api-implementations.md/#eviction-local-cache-and-data-partitioning_1) structures.
 
-_This setting is available only in [Redisson PRO](https://redisson.pro) edition._
+_This setting is available only in [Redisson PRO](https://redisson.pro/feature-comparison.html) edition._
 
 **readMode**
 Default value: `SLAVE`
@@ -620,7 +622,7 @@ Compatible with:
 * [Azure Redis Cache](https://azure.microsoft.com/en-us/services/cache/) (non-clustered)
 * [Google Cloud Memorystore for Redis High availability](https://cloud.google.com/memorystore/docs/redis/high-availability)
 
-_Use [Redisson PRO](https://redisson.pro) if a single host bounded to multiple slaves or master and slave nodes. Compatible with [Aiven Redis](https://aiven.io/redis) hosting._
+_Use [Redisson PRO](https://redisson.pro/feature-comparison.html) if a single host bounded to multiple slaves or master and slave nodes. Compatible with [Aiven for Caching](https://aiven.io/caching) and [Aiven for Vakey](https://aiven.io/valkey) hosting._
 
 Programmatic config example:
 ```java
@@ -917,6 +919,9 @@ Compatible with:
 
  * [Azure Redis Cache](https://azure.microsoft.com/en-us/services/cache/) 
  * [Google Cloud Memorystore for Redis](https://cloud.google.com/memorystore/docs/redis/).
+ * [Google Cloud Memorystore for Valkey](https://cloud.google.com/memorystore/docs/valkey/).
+ * [Redis on SAP BTP](https://www.sap.com/products/technology-platform/redis-on-sap-btp-hyperscaler-option.html) 
+ * [IBM Cloud Databases for Redis](https://cloud.ibm.com/docs/databases-for-redis)
 
 Programmatic config example:  
 ```java
@@ -1768,7 +1773,7 @@ transportMode: "NIO"
 
 ## Proxy mode
 
-_This feature is available only in [Redisson PRO](https://redisson.pro) edition._
+_This feature is available only in [Redisson PRO](https://redisson.pro/feature-comparison.html) edition._
 
 Proxy mode supports single or multiple Redis or Valkey databases (including synced with active-active replication) used for read/write operations. Each Redis or Valkey hostname might be resolved to more than one IP address. 
 
@@ -1781,10 +1786,11 @@ Failed nodes detection is managed by `scanMode` setting.
 
 Compatible with:  
 
-* [AWS Elasticache Serverless](https://aws.amazon.com/elasticache/features/#Serverless)  
+* [AWS ElastiCache Serverless](https://aws.amazon.com/elasticache/features/#Serverless)  
 * [Azure Redis Cache active-active replication](https://learn.microsoft.com/en-us/azure/azure-cache-for-redis/cache-how-to-active-geo-replication)  
 * [Redis Enterprise Multiple Active Proxy](https://docs.redis.com/latest/rs/databases/configure/proxy-policy/#about-multiple-active-proxy-support)  
 * [Redis Enterprise Active-Active databases](https://docs.redis.com/latest/rs/databases/active-active/get-started/)  
+* [IBM Cloud Databases for Redis High availability](https://cloud.ibm.com/docs/databases-for-redis?topic=databases-for-redis-high-availability)
 
 Programmatic config example:  
 ```java
@@ -2058,7 +2064,7 @@ transportMode: "NIO"
 
 ## Multi cluster mode
 
-_This feature is available only in [Redisson PRO](https://redisson.pro) edition._
+_This feature is available only in [Redisson PRO](https://redisson.pro/feature-comparison.html) edition._
 
 Supports multiple Redis or Valkey Cluster setups with active-passive data replication relationship. Replication of the primary Cluster with secondary Redis Cluster is managed by `replicationMode` setting.
 
@@ -2066,7 +2072,7 @@ Cluster with all available master nodes becomes the primary. Master nodes availa
 
 Compatible with:
 
-* [AWS Elasticache Global Datastore](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/Redis-Global-Datastore.html).
+* [AWS ElastiCache Global Datastore](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/Redis-Global-Datastore.html).
 
 Programmatic config example:  
 ```java
@@ -2404,7 +2410,7 @@ transportMode: "NIO"
 
 ## Multi Sentinel mode
 
-_This feature is available only in [Redisson PRO](https://redisson.pro) edition._
+_This feature is available only in [Redisson PRO](https://redisson.pro/feature-comparison.html) edition._
 
 Supports multiple Redis or Valkey Sentinel setups with active-passive data replication.  
 

@@ -481,8 +481,8 @@ Below is the list of all available BitSet implementations:
 |RedissonClient <br/> method name | Data partitioning <br/> support | Ultra-fast read/write |
 | ------------- | :----------:| :----------:|
 |getBitSet()<br/><sub><i>open-source version</i></sub> | ❌ | ❌ |
-|getBitSet()<br/><sub><i>[Redisson PRO](https://redisson.pro) version</i></sub> | ❌ | ✔️ |
-|getClusteredBitSet()<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ✔️ | ✔️ |
+|getBitSet()<br/><sub><i>[Redisson PRO](https://redisson.pro/feature-comparison.html) version</i></sub> | ❌ | ✔️ |
+|getClusteredBitSet()<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ✔️ | ✔️ |
 
 Code example:
 ```java
@@ -515,7 +515,7 @@ bloomFilter.count();
 
 ### Data partitioning
 
-_This feature available only in [Redisson PRO](https://redisson.pro) edition._
+_This feature available only in [Redisson PRO](https://redisson.pro/feature-comparison.html) edition._
 
 Although 'RBloomFilter' object is cluster compatible its content isn't scaled across multiple master nodes. Bloom Filter data partitioning support available only in cluster mode and implemented by separate `RClusteredBloomFilter` object. This implementation uses more efficient distributed memory allocation algorithm. It allows to "shrink" memory space consumed by unused bits across all Redis or Valkey nodes. State of each instance is partitioned across all nodes in Redis or Valkey cluster. Number of contained bits is limited to `2^63`. More details about partitioning [here](data-partitioning.md).
 
@@ -524,8 +524,8 @@ Below is the list of all available BloomFilter implementations:
 |RedissonClient <br/> method name | Data partitioning <br/> support | Ultra-fast read/write | Bits amount limit |
 | ------------- | :----------:| :----------:| :----------:|
 |getBloomFilter()<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | 2^32 |
-|getBloomFilter()<br/><sub><i>[Redisson PRO](https://redisson.pro) version</i></sub> | ❌ | ✔️ | 2^32 |
-|getClusteredBloomFilter()<br/><sub><i>available only in [Redisson PRO](https://redisson.pro)</i></sub> | ✔️ | ✔️ | **2^63** |
+|getBloomFilter()<br/><sub><i>[Redisson PRO](https://redisson.pro/feature-comparison.html) version</i></sub> | ❌ | ✔️ | 2^32 |
+|getClusteredBloomFilter()<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ✔️ | ✔️ | **2^63** |
 
 ```java
 RClusteredBloomFilter<SomeObject> bloomFilter = redisson.getClusteredBloomFilter("sample");

@@ -100,7 +100,7 @@ res.onErrorResumeNext(exception -> {
 
 ## XA Transactions
 
-_This feature is available only in [Redisson PRO](https://redisson.pro) edition._
+_This feature is available only in [Redisson PRO](https://redisson.pro/feature-comparison.html) edition._
 
 Redisson provides [XAResource](https://docs.oracle.com/javaee/7/api/javax/transaction/xa/XAResource.html) implementation to participate in JTA transactions. `RMap`, `RMapCache`, `RLocalCachedMap`, `RSet`, `RSetCache` and `RBucket` Redisson objects may participant in Transaction.
 

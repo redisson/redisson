@@ -21,7 +21,7 @@ High-performance async and lock-free Java client for Redis and Valkey based on [
     * [Master and Slaves](configuration.md/#master-slave-mode)
 * Amazon Web Services compatible
      * [AWS Elasticache Serverless](https://aws.amazon.com/elasticache/features/#Serverless)
-     * [AWS Redis Global Datastore](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/Redis-Global-Datastore.html)
+     * [AWS Elasticache Global Datastore](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/Redis-Global-Datastore.html)
      * [AWS ElastiCache](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/WhatIs.html)
      * [Amazon MemoryDB](https://aws.amazon.com/memorydb)
 * Microsoft Azure compatible
@@ -29,16 +29,22 @@ High-performance async and lock-free Java client for Redis and Valkey based on [
      * [Azure Redis Cache active-passive replication](https://learn.microsoft.com/en-us/azure/azure-cache-for-redis/cache-how-to-geo-replication)
      * [Azure Redis Cache active-active replication](https://learn.microsoft.com/en-us/azure/azure-cache-for-redis/cache-how-to-active-geo-replication)
 * Google Cloud Memorystore compatible
-     * [Google Cloud Redis](https://cloud.google.com/memorystore/docs/redis/)
-     * [Google Cloud Redis High availability](https://cloud.google.com/memorystore/docs/redis/high-availability)
+     * [Google Cloud Memorystore for Redis](https://cloud.google.com/memorystore/docs/redis/)
+     * [Google Cloud Memorystore for Valkey](https://cloud.google.com/memorystore/docs/valkey/)
+     * [Google Cloud Memorystore for Redis Cluster](https://cloud.google.com/memorystore/docs/cluster)
+     * [Google Cloud Memorystore for Redis High availability](https://cloud.google.com/memorystore/docs/redis/high-availability)
 * Redis Enterprise compatible
-     * [Redis Enterprise](https://redis.com/redis-enterprise/)
+     * [Redis Cloud](https://redis.io/cloud/)
+     * [Redis Software](https://redis.io/software/)
      * [Redis Enterprise Active-Active databases](https://docs.redis.com/latest/rs/databases/active-active/get-started/)
-     * [Redis Enterprise Multiple Active Proxy](https://docs.redis.com/latest/rs/databases/configure/proxy-policy/#about-multiple-active-proxy-support)
+     * [Redis Enterprise Multiple Active Proxy](https://redis.io/docs/latest/operate/rs/databases/configure/proxy-policy/#multiple-active-proxies)
+* Redis on SAP BTP compatible
+     * [Redis on SAP BTP](https://www.sap.com/products/technology-platform/redis-on-sap-btp-hyperscaler-option.html)
 * IBM Cloud compatible
      * [IBM Cloud Databases for Redis](https://www.ibm.com/cloud/databases-for-redis)
 * Aiven compatible
-     * [Aiven for Redis](https://aiven.io/redis)
+     * [Aiven for Caching](https://aiven.io/caching)
+     * [Aiven for Vakey](https://aiven.io/valkey)
 * Supports auto-reconnection  
 * Supports failed to send command auto-retry  
 * Supports OSGi  

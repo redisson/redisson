@@ -342,7 +342,7 @@ Instances of these Redisson classes retains their states/values/entries in Redis
 Redisson provides comprehensive search engine for RLO objects. To make a property participate in search it should be annotated with `@RIndex` annotation.  
 
 !!! note "The open-source version of the search engine is not optimized!" 
-    Use [Redisson PRO](https://redisson.pro) for **ultra-fast search engine**, **low JVM memory consumption during search process** and **search index partitiong in cluster**.
+    Use [Redisson PRO](https://redisson.pro/feature-comparison.html) for **ultra-fast search engine**, **low JVM memory consumption during search process** and **search index partitiong in cluster**.
 
 Usage example:
 
@@ -394,7 +394,7 @@ Search index expires after `expireXXX()` method call only if the Redis or Valkey
 
 ### Local Cache
 
-_This feature is available only in [Redisson PRO](https://redisson.pro) edition._
+_This feature is available only in [Redisson PRO](https://redisson.pro/feature-comparison.html) edition._
 
 RLO objects can be cached in local cache on the Redisson side.
 
@@ -432,6 +432,25 @@ myObject = service.persist(obj);
 String n = myObject.getName();
 ```
 
+#### Evicting cache entries
+
+Local cache eviction can be done through `org.redisson.api.LiveObjectCache` interface.
+
+Usage example:
+
+```java
+RLiveObjectService service = redisson.getLiveObjectService();
+LiveObjectCache cache = service.getLiveObjectCache();
+
+// evict an attached RLO instance
+cache.evictEntity(instance);
+
+// evict all cached data for the specified entity class
+cache.evictEntity(MyObject.class);
+
+// evict all cached data for all entities
+cache.clear();
+```
 
 ### Advanced Usage
 As described before, RLO classes are proxy classes which can be fabricated when needed and then get cached in a `RedissonClient` instance against its original class. This process can be a bit slow and it is recommended to pre-register all the Redisson Live Object classes via `RedissonLiveObjectService` for any kind of delay-sensitive applications. The service can also be used to unregister a class if it is no longer needed. And of course it can be used to check if the class has already been registered.

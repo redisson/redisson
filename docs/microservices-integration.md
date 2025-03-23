@@ -60,7 +60,7 @@ redisson:
   netty-threads: 32
 ```
 
-Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
+[Redisson PRO vs. Community Edition ➜](https://redisson.pro/feature-comparison.html)
 
 ### Cache 
 
@@ -183,7 +183,7 @@ Use `quarkus.redisson.file` setting to specify path to a config file.
 RedissonClient redisson;
 ```
 
-Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
+Upgrade to __[Redisson PRO](https://redisson.pro/feature-comparison.html)__ with **advanced features**.
 
 ### Cache 
 
@@ -254,4 +254,4 @@ private RedissonClient redisson;
 
 For injection without @Named annotation use instance name - `default`. 
 
-Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
+[Redisson PRO vs. Community Edition ➜](https://redisson.pro/feature-comparison.html)

@@ -6,163 +6,198 @@ Supports Spring Boot 1.3.x - 3.4.x
 
 ### Usage
 
-**1. Add `redisson-spring-boot-starter` dependency into your project:**
+1. **Add `redisson-spring-boot-starter` dependency into your project:**
 
-Maven
+     <div style="display: flex; flex-wrap: wrap; gap: 20px;">
+       <div style="flex: 1; min-width: 250px;">
+         <h3 style="margin-top: 0.75em">Redisson PRO</h3>
+         <h5>Maven</h5>
+         <pre><code>&lt;dependency&gt;
+        &lt;groupId&gt;pro.redisson&lt;/groupId&gt;
+        &lt;artifactId&gt;redisson-spring-boot-starter&lt;/artifactId&gt;
+        &lt;version&gt;xVERSIONx&lt;/version&gt;
+     &lt;/dependency&gt;</code></pre>
+         <h5>Gradle</h5>
+         <pre><code>compile 'pro.redisson:redisson-spring-boot-starter:xVERSIONx'</code></pre>
+       </div>
 
-```xml
-<dependency>
-     <groupId>org.redisson</groupId>
-     <artifactId>redisson-spring-boot-starter</artifactId>
-     <version>xVERSIONx</version>
-</dependency>
-```
+       <div style="flex: 1; min-width: 250px;">
+         <h3 style="margin-top: 0.75em">Community Edition</h3>
+         <h5>Maven</h5>
+         <pre><code>&lt;dependency&gt;
+        &lt;groupId&gt;org.redisson&lt;/groupId&gt;
+        &lt;artifactId&gt;redisson-spring-boot-starter&lt;/artifactId&gt;
+        &lt;version&gt;xVERSIONx&lt;/version&gt;
+     &lt;/dependency&gt;</code></pre>
+         <h5>Gradle</h5>
+         <pre><code>compile 'org.redisson:redisson-spring-boot-starter:xVERSIONx'</code></pre>
+       </div>
+     </div>
 
-Gradle
-
-```groovy
-compile 'org.redisson:redisson-spring-boot-starter:xVERSIONx'
-```
-
-`redisson-spring-boot-starter` depends on `redisson-spring-data` module compatible with the latest version of Spring Boot. Downgrade `redisson-spring-data` module if necessary to support previous Spring Boot versions:
-
-|redisson-spring-data<br/>module name|Spring Boot<br/>version|
-|----------------------------|-------------------|
-|redisson-spring-data-16     |1.3.y              |
-|redisson-spring-data-17     |1.4.y              |
-|redisson-spring-data-18     |1.5.y              |
-|redisson-spring-data-2x     |2.x.y              |
-|redisson-spring-data-3x     |3.x.y              |
-
-For Gradle, you can downgrade to `redisson-spring-data-27` this way:
-
-```groovy
-implementation ("org.redisson:redisson-spring-boot-starter:xVERSIONx") {
-   exclude group: 'org.redisson', module: 'redisson-spring-data-34'
-}
-implementation "org.redisson:redisson-spring-data-27:xVERSIONx"
-```
-
-**2. Add settings into `application.settings` file**
-
-Using common Spring Boot 3.x+ settings:
-
-```yaml
-spring:
-  data:
-    redis:
-      database: 
-      host:
-      port:
-      password:
-      ssl: 
-      timeout:
-      connectTimeout:
-      clientName:
-      cluster:
-        nodes:
-      sentinel:
-        master:
-        nodes:
-```
-
-Using common Spring Boot up to 2.7.x settings:
-
-```yaml
-spring:
-  redis:
-    database: 
-    host:
-    port:
-    password:
-    ssl: 
-    timeout:
-    connectTimeout:
-    clientName:
-    cluster:
-      nodes:
-    sentinel:
-      master:
-      nodes:
-```
+     [Redisson PRO vs. Community Edition ➜](https://redisson.pro/feature-comparison.html)
 
 
-Using Redisson config file: 
-([single mode](configuration.md/#single-yaml-config-format),
-[replicated mode](configuration.md/#replicated-yaml-config-format),
-[cluster mode](configuration.md/#cluster-yaml-config-format),
-[sentinel mode](configuration.md/#sentinel-yaml-config-format),
-[proxy mode](configuration.md/#proxy-mode-yaml-config-format),
-[multi cluster mode](configuration.md/#multi-cluster-yaml-config-format), 
-[multi sentinel mode](configuration.md/#multi-sentinel-yaml-config-format))
+     `redisson-spring-boot-starter` depends on `redisson-spring-data` module compatible with the latest version of Spring Boot. Downgrade `redisson-spring-data` module if necessary to support previous Spring Boot versions:
+
+     |redisson-spring-data<br/>module name|Spring Boot<br/>version|
+     |----------------------------|-------------------|
+     |redisson-spring-data-16     |1.3.y              |
+     |redisson-spring-data-17     |1.4.y              |
+     |redisson-spring-data-18     |1.5.y              |
+     |redisson-spring-data-2x     |2.x.y              |
+     |redisson-spring-data-3x     |3.x.y              |
+
+     For Gradle, you can downgrade to `redisson-spring-data-27` this way:
+
+     ```groovy
+     implementation ("org.redisson:redisson-spring-boot-starter:xVERSIONx") {
+        exclude group: 'org.redisson', module: 'redisson-spring-data-34'
+     }
+     implementation "org.redisson:redisson-spring-data-27:xVERSIONx"
+     ```
+
+     For Maven, you can downgrade to `redisson-spring-data-27` this way:
+
+     ```xml
+     <dependencies>
+         <dependency>
+             <groupId>org.redisson</groupId>
+             <artifactId>redisson-spring-boot-starter</artifactId>
+             <version>xVERSIONx</version>
+             <exclusions>
+                 <exclusion>
+                     <groupId>org.redisson</groupId>
+                     <artifactId>redisson-spring-data-34</artifactId>
+                 </exclusion>
+             </exclusions>
+         </dependency>
+
+         <dependency>
+             <groupId>org.redisson</groupId>
+             <artifactId>redisson-spring-data-27</artifactId>
+             <version>xVERSIONx</version>
+         </dependency>
+     </dependencies>
+     ```
+
+2. **Add settings into `application.settings` file:**
+
+     Using common Spring Boot 3.x+ settings:
+
+     ```yaml
+     spring:
+       data:
+         redis:
+           database: 
+           host:
+           port:
+           password:
+           ssl: 
+           timeout:
+           connectTimeout:
+           clientName:
+           cluster:
+             nodes:
+           sentinel:
+             master:
+             nodes:
+     ```
+
+    Using common Spring Boot up to 2.7.x settings:
+
+    ```yaml
+    spring:
+      redis:
+        database: 
+        host:
+        port:
+        password:
+        ssl: 
+        timeout:
+        connectTimeout:
+        clientName:
+        cluster:
+          nodes:
+        sentinel:
+          master:
+          nodes:
+    ```
 
 
-```yaml
-spring:
-  redis:
-   redisson: 
-      file: classpath:redisson.yaml
-```
+    Using Redisson config file: 
+    ([single mode](configuration.md/#single-yaml-config-format),
+    [replicated mode](configuration.md/#replicated-yaml-config-format),
+    [cluster mode](configuration.md/#cluster-yaml-config-format),
+    [sentinel mode](configuration.md/#sentinel-yaml-config-format),
+    [proxy mode](configuration.md/#proxy-mode-yaml-config-format),
+    [multi cluster mode](configuration.md/#multi-cluster-yaml-config-format), 
+    [multi sentinel mode](configuration.md/#multi-sentinel-yaml-config-format))
 
-Using Redisson settings: 
-([single mode](configuration.md/#single-settings),
-[replicated mode](configuration.md/#replicated-settings),
-[cluster mode](configuration.md/#cluster-settings),
-[sentinel mode](configuration.md/#sentinel-settings),
-[proxy mode](configuration.md/#proxy-mode-settings),
-[multi cluster mode](configuration.md/#multi-cluster-settings), 
-[multi sentinel mode](configuration.md/#multi-sentinel-settings))
 
-```yaml
-spring:
-  redis:
-   redisson: 
-      config: |
-        clusterServersConfig:
-          idleConnectionTimeout: 10000
-          connectTimeout: 10000
-          timeout: 3000
-          retryAttempts: 3
-          retryInterval: 1500
-          failedSlaveReconnectionInterval: 3000
-          failedSlaveCheckInterval: 60000
-          password: null
-          subscriptionsPerConnection: 5
-          clientName: null
-          loadBalancer: !<org.redisson.connection.balancer.RoundRobinLoadBalancer> {}
-          subscriptionConnectionMinimumIdleSize: 1
-          subscriptionConnectionPoolSize: 50
-          slaveConnectionMinimumIdleSize: 24
-          slaveConnectionPoolSize: 64
-          masterConnectionMinimumIdleSize: 24
-          masterConnectionPoolSize: 64
-          readMode: "SLAVE"
-          subscriptionMode: "SLAVE"
-          nodeAddresses:
-          - "redis://127.0.0.1:7004"
-          - "redis://127.0.0.1:7001"
-          - "redis://127.0.0.1:7000"
-          scanInterval: 1000
-          pingConnectionInterval: 0
-          keepAlive: false
-          tcpNoDelay: false
-        threads: 16
-        nettyThreads: 32
-        codec: !<org.redisson.codec.Kryo5Codec> {}
-        transportMode: "NIO"
+    ```yaml
+    spring:
+      redis:
+       redisson: 
+          file: classpath:redisson.yaml
+    ```
 
-```
+    Using Redisson settings: 
+    ([single mode](configuration.md/#single-settings),
+    [replicated mode](configuration.md/#replicated-settings),
+    [cluster mode](configuration.md/#cluster-settings),
+    [sentinel mode](configuration.md/#sentinel-settings),
+    [proxy mode](configuration.md/#proxy-mode-settings),
+    [multi cluster mode](configuration.md/#multi-cluster-settings), 
+    [multi sentinel mode](configuration.md/#multi-sentinel-settings))
 
-**3. Available Spring Beans:**
+    ```yaml
+    spring:
+      redis:
+       redisson: 
+          config: |
+            clusterServersConfig:
+              idleConnectionTimeout: 10000
+              connectTimeout: 10000
+              timeout: 3000
+              retryAttempts: 3
+              retryInterval: 1500
+              failedSlaveReconnectionInterval: 3000
+              failedSlaveCheckInterval: 60000
+              password: null
+              subscriptionsPerConnection: 5
+              clientName: null
+              loadBalancer: !<org.redisson.connection.balancer.RoundRobinLoadBalancer> {}
+              subscriptionConnectionMinimumIdleSize: 1
+              subscriptionConnectionPoolSize: 50
+              slaveConnectionMinimumIdleSize: 24
+              slaveConnectionPoolSize: 64
+              masterConnectionMinimumIdleSize: 24
+              masterConnectionPoolSize: 64
+              readMode: "SLAVE"
+              subscriptionMode: "SLAVE"
+              nodeAddresses:
+              - "redis://127.0.0.1:7004"
+              - "redis://127.0.0.1:7001"
+              - "redis://127.0.0.1:7000"
+              scanInterval: 1000
+              pingConnectionInterval: 0
+              keepAlive: false
+              tcpNoDelay: false
+            threads: 16
+            nettyThreads: 32
+            codec: !<org.redisson.codec.Kryo5Codec> {}
+            transportMode: "NIO"
 
-- `RedissonClient`  
-- `RedissonRxClient`  
-- `RedissonReactiveClient`  
-- `RedisTemplate`  
-- `ReactiveRedisTemplate`  
-- `ReactiveRedisOperations`  
+    ```
 
-Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
+3. **Available Spring Beans:**
+
+     - `RedissonClient`  
+     - `RedissonRxClient`  
+     - `RedissonReactiveClient`  
+     - `RedisTemplate`  
+     - `ReactiveRedisTemplate`  
+     - `ReactiveRedisOperations`  
 
 ### FAQ
 
@@ -330,7 +365,7 @@ spring.redis.redisson.file=classpath:redisson.yaml
 spring.session.timeout.seconds=900
 ```
 
-Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
+Upgrade to __[Redisson PRO](https://redisson.pro/feature-comparison.html)__ with **advanced features**.
 
 ## Spring Transaction Manager
  
@@ -421,7 +456,7 @@ public class TransactionalBean {
 
 ## Spring Cloud Stream
 
-_This feature is available only in [Redisson PRO](https://redisson.pro) edition._
+_This feature is available only in [Redisson PRO](https://redisson.pro/feature-comparison.html) edition._
 
 Redisson implements Spring Cloud Stream integration based on the reliable Stream structure for message delivery. To use Redis or Valkey binder with Redisson you need to add [Spring Cloud Stream](https://spring.io/projects/spring-cloud-stream) Binder library in classpath:  
 
@@ -587,4 +622,4 @@ public class RedissonSpringDataConfig {
 }
 ```
 
-Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
+[Redisson PRO vs. Community Edition ➜](https://redisson.pro/feature-comparison.html)

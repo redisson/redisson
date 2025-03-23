@@ -1,6 +1,6 @@
 ## Metrics
 
-_This feature is available only in [Redisson PRO](https://redisson.pro)_
+_This feature is available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)_
 
 ### Monitoring systems integration
 
@@ -697,7 +697,7 @@ Base name: `redisson.JCache.<name>`
 
 ## Tracing
 
-_This feature is available only in [Redisson PRO](https://redisson.pro)_
+_This feature is available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)_
 
 Redisson provides integration with the most popular tracer libraries through [Micrometer Observation API](https://docs.micrometer.io/micrometer/reference/observation.html) and [Micrometer Tracing](https://docs.micrometer.io/tracing/reference/) framework. This feature allows to gather extra statistics about invoked Redisson methods: name, arguments, invocation path, duration and frequency.
 
