@@ -83,6 +83,20 @@ public final class WorkerOptions {
         return this;
     }
 
+    /**
+     * Defines a custom TasksInjector to be used. This is mutually exclusive with the {@link WorkerOptions#beanFactory}
+     * which will create a {@link SpringTasksInjector(BeanFactory)}.
+     *
+     * @param tasksInjector - TasksInjector instance
+     * @return self instance
+     */
+    public WorkerOptions taskInjector(TasksInjector tasksInjector) {
+        if (tasksInjector != null) {
+            this.tasksInjector = tasksInjector;
+        }
+        return this;
+    }
+
     public TasksInjector getTasksInjector() {
         return tasksInjector;
     }
