@@ -75,6 +75,8 @@ public class Config {
 
     private int lockWatchdogBatchSize = 100;
 
+    private long fairLockWaitTimeout = 5 * 60000;
+
     private boolean checkLockSyncedSlaves = true;
 
     private long slavesSyncTimeout = 1000;
@@ -125,6 +127,7 @@ public class Config {
         setKeepPubSubOrder(oldConf.isKeepPubSubOrder());
         setLockWatchdogTimeout(oldConf.getLockWatchdogTimeout());
         setLockWatchdogBatchSize(oldConf.getLockWatchdogBatchSize());
+        setFairLockWaitTimeout(oldConf.getFairLockWaitTimeout());
         setCheckLockSyncedSlaves(oldConf.isCheckLockSyncedSlaves());
         setSlavesSyncTimeout(oldConf.getSlavesSyncTimeout());
         setNettyThreads(oldConf.getNettyThreads());
@@ -542,6 +545,23 @@ public class Config {
         return lockWatchdogTimeout;
     }
 
+
+    /**
+     * This parameter is only used if fair lock has been acquired without waitTimeout parameter definition
+     *
+     * Default is 5*60000 milliseconds
+     *
+     * @param fairLockWaitTimeout in milliseconds
+     * @return config
+     */
+    public Config setFairLockWaitTimeout(long fairLockWaitTimeout) {
+        this.fairLockWaitTimeout = fairLockWaitTimeout;
+        return this;
+    }
+
+    public long getFairLockWaitTimeout() {
+        return fairLockWaitTimeout;
+    }
 
     /**
      * This parameter is only used if lock has been acquired without leaseTimeout parameter definition.
