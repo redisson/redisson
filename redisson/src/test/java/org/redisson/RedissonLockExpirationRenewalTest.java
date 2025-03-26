@@ -4,11 +4,13 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RLock;
+import org.redisson.api.RMap;
 import org.redisson.api.RReadWriteLock;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
 import org.testcontainers.containers.GenericContainer;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class RedissonLockExpirationRenewalTest extends RedisDockerTest {
@@ -119,6 +121,33 @@ public class RedissonLockExpirationRenewalTest extends RedisDockerTest {
         } finally {
             lock2.unlock();
         }
+    }
+    
+    @Test
+    public void testLockReentrantRenew() throws InterruptedException {
+        RLock lock = redisson.getLock(LOCK_KEY);
+        lock.lock();
+        lock.lock();
+        lock.unlock();
+        lock.unlock();
+        
+        new Thread(() -> {
+            RedissonLock lock2 = (RedissonLock) redisson.getLock(LOCK_KEY);
+            lock2.lock();
+            while (true) {
+                // doSomething
+            }
+        }).start();
+        
+        try {
+            Thread.sleep(LOCK_WATCHDOG_TIMEOUT * 10);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        
+        // lock2 should hold the lock
+        RMap<Object, Object> map = redisson.getMap(LOCK_KEY);
+        assertThat(map.isExists()).isTrue();
     }
 
 }

@@ -62,7 +62,7 @@ public class LockEntry {
         threadId2counter.computeIfPresent(threadId, (t, counter) -> {
             counter--;
             if (counter == 0) {
-                threadsQueue.remove(threadId);
+                threadsQueue.removeIf(v-> v == threadId);
                 threadId2lockName.remove(threadId);
                 return null;
             }
