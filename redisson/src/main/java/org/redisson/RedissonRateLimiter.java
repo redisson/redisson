@@ -322,7 +322,7 @@ public final class RedissonRateLimiter extends RedissonExpirable implements RRat
 
     @Override
     public RFuture<Void> setRateAsync(RateType type, long rate, Duration rateInterval, Duration keepAliveTime) {
-        if (!keepAliveTime.equals(Duration.ZERO) && keepAliveTime.toMillis() < rateInterval.toMillis()) {
+        if (!keepAliveTime.isZero() && keepAliveTime.toMillis() < rateInterval.toMillis()) {
             throw new IllegalArgumentException("The parameter keepAliveTime should be greater than or equal to rateInterval");
         }
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
