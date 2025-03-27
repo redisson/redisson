@@ -10,6 +10,8 @@ import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
 import org.testcontainers.containers.GenericContainer;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -131,23 +133,27 @@ public class RedissonLockExpirationRenewalTest extends RedisDockerTest {
         lock.unlock();
         lock.unlock();
         
-        new Thread(() -> {
+        AtomicBoolean sign = new AtomicBoolean(true);
+        Thread thread = new Thread(() -> {
             RedissonLock lock2 = (RedissonLock) redisson.getLock(LOCK_KEY);
             lock2.lock();
-            while (true) {
+            while (sign.get()) {
                 // doSomething
             }
-        }).start();
+        });
+        thread.start();
         
         try {
             Thread.sleep(LOCK_WATCHDOG_TIMEOUT * 10);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+        } finally {
+            // lock2 should hold the lock
+            RMap<Object, Object> map = redisson.getMap(LOCK_KEY);
+            boolean exists = map.isExists();
+            
+            sign.compareAndSet(true, false);
+            thread.join();
+            assertThat(exists).isTrue();
         }
-        
-        // lock2 should hold the lock
-        RMap<Object, Object> map = redisson.getMap(LOCK_KEY);
-        assertThat(map.isExists()).isTrue();
     }
 
 }
