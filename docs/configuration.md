@@ -51,7 +51,7 @@ singleServerConfig:
 
 _This feature is available only in [Redisson PRO](https://redisson.pro/feature-comparison.html) edition._  
 
-Redisson supports Advanced Encryption Standard (AES) encryption for passwords defined in the configuration file, with the secret key stored in the file.
+Redisson supports Advanced Encryption Standard (AES) encryption for passwords defined in the configuration file, with the secret key stored in the file. The encryption key is derived from `PBKDF2WithHmacSHA512` and the scheme used is `AES/GCM/NoPadding`.
 
 The `org.redisson.config.PasswordCipher` class is used to encrypt passwords. The secret key file may contain any characters. The encrypted password has the `{aes}` prefix.
 
@@ -65,7 +65,7 @@ java -cp redisson-all.jar org.redisson.config.PasswordCipher encode pass123 secr
 ```
 Output:
 ```
-{aes}M+TfpT4T6psLCfS+RHKT7Fx0j6r5wOX535G3NMnaphY=
+{aes}AuWmZDUXBTHBSaBXjqgsL4rXF+c2XcCmXwBr/pyLy9K651I0syX7FFkLEkuq1/rJHvZAyeeEIw==
 ```
 
 The secret key file is defined through the `secretKey` setting in the Redisson configuration YAML file and applied to all encrypted passwords.
@@ -75,9 +75,9 @@ Configuration YAML file example:
 ```yaml
 singleServerConfig:
    address: "rediss://127.0.0.1:6379"
-   password: "{aes}M+TfpT4T6psLCfS+RHKT7Fx0j6r5wOX535G3NMnaphY="
+   password: "{aes}h8/9bGMTf809PxsBL4JlKAbFffaMtcr1/SFdXBcWySaxETKylJziUM23oWxGAmSZHkm+y/yTRg=="
    sslTruststore: file:truststore
-   sslTruststorePassword: "{aes}31paDOrhnyPfDxXPgqyLZF8QR5yJU3U1bZfhsuM4Ruo="
+   sslTruststorePassword: "{aes}djXKclV2zFMc/tZdnntaTx2bRD3eJ1vtJSJFcBfp/9ZPzsnUw5f7zZXzwbbg2jPCr24TiJb7bQ=="
    secretKey: file:secret_key
 ```
 ## Common settings

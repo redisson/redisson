@@ -80,7 +80,7 @@ Tomcat 10.x - [redisson-tomcat-10-3.41.0.jar](https://repo1.maven.org/maven2/org
 
 Tomcat 11.x - [redisson-tomcat-11-3.41.0.jar](https://repo1.maven.org/maven2/org/redisson/redisson-tomcat-11/3.41.0/redisson-tomcat-11-3.41.0.jar)  
 
-Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
+[Redisson PRO vs. Community Edition ➜](https://redisson.pro/feature-comparison.html)
 
 ## Spring Session
 

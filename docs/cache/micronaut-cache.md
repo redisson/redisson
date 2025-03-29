@@ -58,30 +58,68 @@ Redisson provides various [Micronaut Cache](https://guides.micronaut.io/latest/m
 ### Usage
 
 1. **Add `redisson-micronaut` dependency into your project:**  
-	Maven  
 
-	```xml  
-	<dependency>
-		<groupId>org.redisson</groupId>
-		<!-- for Micronaut v2.0.x - v2.5.x -->
-		<artifactId>redisson-micronaut-20</artifactId>
-		<!-- for Micronaut v3.x.x -->
-		<artifactId>redisson-micronaut-30</artifactId>
-		<!-- for Micronaut v4.x.x -->
-		<artifactId>redisson-micronaut-40</artifactId>
-		<version>xVERSIONx</version>
-	</dependency>
-	```
+    <div class="grid cards" markdown>
 
-	Gradle  
-	```groovy
-	// for Micronaut v2.0.x - v2.5.x
-	compile 'org.redisson:redisson-micronaut-20:xVERSIONx'
-	// for Micronaut v3.x.x
-	compile 'org.redisson:redisson-micronaut-30:xVERSIONx'
-	// for Micronaut v4.x.x
-	compile 'org.redisson:redisson-micronaut-40:xVERSIONx'
-	```
+    -   **Redisson PRO**
+
+        Maven
+
+        ```xml  
+        <dependency>
+        	<groupId>pro.redisson</groupId>
+        	<!-- for Micronaut v2.0.x - v2.5.x -->
+        	<artifactId>redisson-micronaut-20</artifactId>
+        	<!-- for Micronaut v3.x.x -->
+        	<artifactId>redisson-micronaut-30</artifactId>
+        	<!-- for Micronaut v4.x.x -->
+        	<artifactId>redisson-micronaut-40</artifactId>
+        	<version>xVERSIONx</version>
+        </dependency>
+        ```
+
+        Gradle
+
+        ```groovy
+        // for Micronaut v2.0.x - v2.5.x
+        compile 'pro.redisson:redisson-micronaut-20:xVERSIONx'
+        // for Micronaut v3.x.x
+        compile 'pro.redisson:redisson-micronaut-30:xVERSIONx'
+        // for Micronaut v4.x.x
+        compile 'pro.redisson:redisson-micronaut-40:xVERSIONx'
+        ```
+
+    -   **Community Edition**
+
+        Maven
+
+        ```xml  
+        <dependency>
+        	<groupId>org.redisson</groupId>
+        	<!-- for Micronaut v2.0.x - v2.5.x -->
+        	<artifactId>redisson-micronaut-20</artifactId>
+        	<!-- for Micronaut v3.x.x -->
+        	<artifactId>redisson-micronaut-30</artifactId>
+        	<!-- for Micronaut v4.x.x -->
+        	<artifactId>redisson-micronaut-40</artifactId>
+        	<version>xVERSIONx</version>
+        </dependency>
+        ```
+
+        Gradle
+
+        ```groovy
+        // for Micronaut v2.0.x - v2.5.x
+        compile 'org.redisson:redisson-micronaut-20:xVERSIONx'
+        // for Micronaut v3.x.x
+        compile 'org.redisson:redisson-micronaut-30:xVERSIONx'
+        // for Micronaut v4.x.x
+        compile 'org.redisson:redisson-micronaut-40:xVERSIONx'
+        ```
+
+    </div>
+
+    [Redisson PRO vs. Community Edition ➜](https://redisson.pro/feature-comparison.html)
 
 2. **Add settings into application.yml file**
 
