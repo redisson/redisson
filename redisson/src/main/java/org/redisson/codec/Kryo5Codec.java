@@ -41,6 +41,10 @@ import java.net.InetAddress;
 import java.net.SocketAddress;
 import java.net.URI;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 
 import static com.esotericsoftware.kryo.util.Util.className;
@@ -170,6 +174,10 @@ public class Kryo5Codec extends BaseCodec {
         kryo.addDefaultSerializer(Pattern.class, new DefaultSerializers.PatternSerializer());
         kryo.addDefaultSerializer(SocketAddress.class, new JavaSerializer());
         kryo.addDefaultSerializer(InetAddress.class, new JavaSerializer());
+        kryo.addDefaultSerializer(AtomicBoolean.class, new DefaultSerializers.AtomicBooleanSerializer());
+        kryo.addDefaultSerializer(AtomicInteger.class, new DefaultSerializers.AtomicIntegerSerializer());
+        kryo.addDefaultSerializer(AtomicLong.class, new DefaultSerializers.AtomicLongSerializer());
+        kryo.addDefaultSerializer(AtomicReference.class, new DefaultSerializers.AtomicReferenceSerializer());
         return kryo;
     }
 
