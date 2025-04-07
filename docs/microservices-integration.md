@@ -12,31 +12,68 @@ Supports Micronaut 2.0.x - 4.x.x
 
 1. **Add `redisson-micronaut` dependency into your project:**
 
-    Maven  
-    ```xml  
-    <dependency>
-        <groupId>org.redisson</groupId>
-        <!-- for Micronaut v2.0.x - v2.5.x -->
-        <artifactId>redisson-micronaut-20</artifactId>
-        <!-- for Micronaut v3.x.x -->
-        <artifactId>redisson-micronaut-30</artifactId>
-        <!-- for Micronaut v4.x.x -->
-        <artifactId>redisson-micronaut-40</artifactId>
-        <version>xVERSIONx</version>
-    </dependency>
-    ```
+    <div class="grid cards" markdown>
 
-    Gradle
-    ```groovy
-    // for Micronaut v2.0.x - v2.5.x
-    compile 'org.redisson:redisson-micronaut-20:xVERSIONx'
-    // for Micronaut v3.x.x
-    compile 'org.redisson:redisson-micronaut-30:xVERSIONx'
-    // for Micronaut v4.x.x
-    compile 'org.redisson:redisson-micronaut-40:xVERSIONx'
-    ```
+    -   **Redisson PRO**
 
+        Maven
+
+        ```xml
+        <dependency>
+            <groupId>pro.redisson</groupId>
+            <!-- for Micronaut v2.0.x - v2.5.x -->
+            <artifactId>redisson-micronaut-20</artifactId>
+            <!-- for Micronaut v3.x.x -->
+            <artifactId>redisson-micronaut-30</artifactId>
+            <!-- for Micronaut v4.x.x -->
+            <artifactId>redisson-micronaut-40</artifactId>
+            <version>xVERSIONx</version>
+        </dependency>
+        ```
+
+        Gradle
+
+        ```groovy
+        // for Micronaut v2.0.x - v2.5.x
+        compile 'pro.redisson:redisson-micronaut-20:xVERSIONx'
+        // for Micronaut v3.x.x
+        compile 'pro.redisson:redisson-micronaut-30:xVERSIONx'
+        // for Micronaut v4.x.x
+        compile 'pro.redisson:redisson-micronaut-40:xVERSIONx'
+        ```
+
+    -   **Community Edition**
+
+        Maven
+
+        ```xml
+        <dependency>
+            <groupId>org.redisson</groupId>
+            <!-- for Micronaut v2.0.x - v2.5.x -->
+            <artifactId>redisson-micronaut-20</artifactId>
+            <!-- for Micronaut v3.x.x -->
+            <artifactId>redisson-micronaut-30</artifactId>
+            <!-- for Micronaut v4.x.x -->
+            <artifactId>redisson-micronaut-40</artifactId>
+            <version>xVERSIONx</version>
+        </dependency>
+        ```
+
+        Gradle
+
+        ```groovy
+        // for Micronaut v2.0.x - v2.5.x
+        compile 'org.redisson:redisson-micronaut-20:xVERSIONx'
+        // for Micronaut v3.x.x
+        compile 'org.redisson:redisson-micronaut-30:xVERSIONx'
+        // for Micronaut v4.x.x
+        compile 'org.redisson:redisson-micronaut-40:xVERSIONx'
+        ```
+
+    </div>
     [Redisson PRO vs. Community Edition ➜](https://redisson.pro/feature-comparison.html)
+    <br>
+    <br>
 
 2. **Add settings into `application.yml` file**
 
@@ -104,14 +141,14 @@ Supports Quarkus 1.6.x - 3.x.x
     ```
     -H:DynamicProxyConfigurationResources=dynamic-proxy.json,-H:ReflectionConfigurationFiles=reflection-config.json
     ```
-
+    
     dynamic-proxy.json:
     ```
     [
         ["<Remote Service interface name>"]
     ]
     ```
-
+    
     reflection-config.json:
     ```
     [
@@ -127,34 +164,68 @@ Supports Quarkus 1.6.x - 3.x.x
 
 1. **Add `redisson-quarkus` dependency into your project:**  
 
-    Maven  
+    <div class="grid cards" markdown>
 
-    ```xml  
-    <dependency>
-        <groupId>org.redisson</groupId>
-        <!-- for Quarkus v1.6.x - v1.13.x -->
-        <artifactId>redisson-quarkus-16</artifactId>
-        <!-- for Quarkus v2.x.x -->
-        <artifactId>redisson-quarkus-20</artifactId>
-        <!-- for Quarkus v3.x.x -->
-        <artifactId>redisson-quarkus-30</artifactId>
-        <version>xVERSIONx</version>
-    </dependency>
-    ```
+    -   **Redisson PRO**
 
-    Gradle  
+        Maven
 
-    ```groovy
-    // for Quarkus v1.6.x - v1.13.x
-    compile 'org.redisson:redisson-quarkus-16:xVERSIONx'
-    // for Quarkus v2.x.x
-    compile 'org.redisson:redisson-quarkus-20:xVERSIONx'
-    // for Quarkus v3.x.x
-    compile 'org.redisson:redisson-quarkus-30:xVERSIONx'
-    ```
+        ```xml  
+        <dependency>
+            <groupId>pro.redisson</groupId>
+            <!-- for Quarkus v1.6.x - v1.13.x -->
+            <artifactId>redisson-quarkus-16</artifactId>
+            <!-- for Quarkus v2.x.x -->
+            <artifactId>redisson-quarkus-20</artifactId>
+            <!-- for Quarkus v3.x.x -->
+            <artifactId>redisson-quarkus-30</artifactId>
+            <version>xVERSIONx</version>
+        </dependency>
+        ```
 
+        Gradle
+
+        ```groovy
+        // for Quarkus v1.6.x - v1.13.x
+        compile 'pro.redisson:redisson-quarkus-16:xVERSIONx'
+        // for Quarkus v2.x.x
+        compile 'pro.redisson:redisson-quarkus-20:xVERSIONx'
+        // for Quarkus v3.x.x
+        compile 'pro.redisson:redisson-quarkus-30:xVERSIONx'
+        ```
+
+    -   **Community Edition**
+
+        Maven
+
+        ```xml  
+        <dependency>
+            <groupId>org.redisson</groupId>
+            <!-- for Quarkus v1.6.x - v1.13.x -->
+            <artifactId>redisson-quarkus-16</artifactId>
+            <!-- for Quarkus v2.x.x -->
+            <artifactId>redisson-quarkus-20</artifactId>
+            <!-- for Quarkus v3.x.x -->
+            <artifactId>redisson-quarkus-30</artifactId>
+            <version>xVERSIONx</version>
+        </dependency>
+        ```
+
+        Gradle
+
+        ```groovy
+        // for Quarkus v1.6.x - v1.13.x
+        compile 'org.redisson:redisson-quarkus-16:xVERSIONx'
+        // for Quarkus v2.x.x
+        compile 'org.redisson:redisson-quarkus-20:xVERSIONx'
+        // for Quarkus v3.x.x
+        compile 'org.redisson:redisson-quarkus-30:xVERSIONx'
+        ```
+
+    </div>
     [Redisson PRO vs. Community Edition ➜](https://redisson.pro/feature-comparison.html)
-
+    <br>
+    <br>
 
 2. **Add settings into `application.properties` file**  
   
@@ -200,34 +271,68 @@ Supports Helidon 1.4.x - 4.x.x
 
 1. **Add `redisson-helidon` dependency into your project:**  
 
-    Maven  
+    <div class="grid cards" markdown>
 
-    ```xml  
-    <dependency>
-        <groupId>org.redisson</groupId>
-        <!-- for Helidon v1.4.x - v2.5.x -->
-        <artifactId>redisson-helidon-20</artifactId>
-        <!-- for Helidon v3.x.x -->
-        <artifactId>redisson-helidon-30</artifactId>
-        <!-- for Helidon v4.x.x -->
-        <artifactId>redisson-helidon-40</artifactId>
-        <version>xVERSIONx</version>
-    </dependency>
-    ```
+    -   **Redisson PRO**
 
-    Gradle  
+        Maven
 
-    ```groovy
-    // for Helidon v1.4.x - v2.5.x
-    compile 'org.redisson:redisson-helidon-20:xVERSIONx'
-    // for Helidon v3.x.x
-    compile 'org.redisson:redisson-helidon-30:xVERSIONx'
-    // for Helidon v4.x.x
-    compile 'org.redisson:redisson-helidon-40:xVERSIONx'
-    ```
+        ```xml  
+        <dependency>
+            <groupId>pro.redisson</groupId>
+            <!-- for Helidon v1.4.x - v2.5.x -->
+            <artifactId>redisson-helidon-20</artifactId>
+            <!-- for Helidon v3.x.x -->
+            <artifactId>redisson-helidon-30</artifactId>
+            <!-- for Helidon v4.x.x -->
+            <artifactId>redisson-helidon-40</artifactId>
+            <version>xVERSIONx</version>
+        </dependency>
+        ```
 
+        Gradle
+
+        ```groovy
+        // for Helidon v1.4.x - v2.5.x
+        compile 'pro.redisson:redisson-helidon-20:xVERSIONx'
+        // for Helidon v3.x.x
+        compile 'pro.redisson:redisson-helidon-30:xVERSIONx'
+        // for Helidon v4.x.x
+        compile 'pro.redisson:redisson-helidon-40:xVERSIONx'
+        ```
+
+    -   **Community Edition**
+
+        Maven
+
+        ```xml  
+        <dependency>
+            <groupId>org.redisson</groupId>
+            <!-- for Quarkus v1.6.x - v1.13.x -->
+            <artifactId>redisson-quarkus-16</artifactId>
+            <!-- for Quarkus v2.x.x -->
+            <artifactId>redisson-quarkus-20</artifactId>
+            <!-- for Quarkus v3.x.x -->
+            <artifactId>redisson-quarkus-30</artifactId>
+            <version>xVERSIONx</version>
+        </dependency>
+        ```
+
+        Gradle
+
+        ```groovy
+        // for Helidon v1.4.x - v2.5.x
+        compile 'org.redisson:redisson-helidon-20:xVERSIONx'
+        // for Helidon v3.x.x
+        compile 'org.redisson:redisson-helidon-30:xVERSIONx'
+        // for Helidon v4.x.x
+        compile 'org.redisson:redisson-helidon-40:xVERSIONx'
+        ```
+
+    </div>
     [Redisson PRO vs. Community Edition ➜](https://redisson.pro/feature-comparison.html)
-
+    <br>
+    <br>
 
 2. **Add settings into `META-INF/microprofile-config.properties` file**  
 
@@ -256,4 +361,4 @@ Supports Helidon 1.4.x - 4.x.x
     private RedissonClient redisson;
     ```
 
-For injection without @Named annotation use instance name - `default`. 
+	For injection without @Named annotation use instance name - `default`. 

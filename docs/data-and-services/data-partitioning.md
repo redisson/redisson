@@ -1,15 +1,38 @@
-All Redisson Java objects are Redis or Valkey cluster compatible, but their state isn't scaled/partitioned to multiple master nodes in cluster. [Redisson PRO](https://redisson.pro/) offers data partitioning for some of them. This feature offers several advantages:  
+While all Redisson Java objects are fully compatible with Valkey and Redis cluster, it's important to note that the state of any single object instance remains confined to its assigned master node and cannot be distributed or partitioned across multiple master nodes within the cluster. This limitation is addressed by [Redisson PRO](https://redisson.pro/feature-comparison.html), which offers data partitioning capabilities for select object types, allowing their state to be spread across multiple master nodes in the cluster.
+
+This partitioning feature provides significant advantages:  
 
 1. State of single Redisson object evenly distributed across master nodes instead of single master node. This allows to avoid Redis or Valkey OutOfMemory problem.  
 2. Scaling read/write operations to all master nodes.  
 
-Redisson splits data to **231 partitions by default**. Minimal number of partition is **3**. Partitions are uniformly distributed across all cluster nodes. This means that each node contains nearly equal amount of partitions. For default partitions amount (231) and 4 master nodes in cluster, each node contains nearly 57 data partitions. 46 data partitions per node for 5 master nodes cluster and so on. This feature achieved thanks to special slot distribution algorithm used in Redisson.
+Redisson distributes data across **231 partitions by default**. Minimal number of partition is **3**. These partitions are evenly distributed across all nodes in cluster, ensuring each node manages approximately the same number of partitions.
 
-Data partitioning supported for [Set](collections.md/#set), [Map](collections.md/#map), [BitSet](objects.md/#bitset), [Bloom filter](objects.md/#bloom-filter), [Spring Cache](../integration-with-spring.md/#spring-cache), [Hibernate Cache](../cache-api-implementations.md/#hibernate-cache), [JCache](../cache-api-implementations.md/#jcache-api-jsr-107), [Quarkus Cache](../cache-api-implementations.md/#quarkus-cache) and [Micronaut Cache](../cache-api-implementations.md/#micronaut-cache) structures.
+For example:
 
-**Joined Redis deployments**
+- In a 4-master node cluster with the default 231 partitions, each node manages approximately 57 partitions
+- In a 5-master node cluster, each node manages approximately 46 partitions
 
-Multiple Redis deployments could be joined and used as a single partitioned (sharded) Redis deployment.
+This balanced distribution is achieved through Redisson's specialized slot distribution algorithm, which optimizes data placement across your cluster.
+
+Data partitioning is available for the following data structures and cache implementations:
+
+- [JSON Store](collections.md/#json-store)
+- [Set](collections.md/#set)
+- [Map](collections.md/#map)
+- [BitSet](objects.md/#bitset)
+- [Bloom filter](objects.md/#bloom-filter)
+- [JCache](../cache-api-implementations.md/#jcache-api-jsr-107)
+- [Spring Cache](../integration-with-spring.md/#spring-cache)
+- [Hibernate Cache](../cache-api-implementations.md/#hibernate-cache)
+- [MyBatis Cache](../cache-api-implementations.md/#mybatis-cache)
+- [Quarkus Cache](../cache-api-implementations.md/#quarkus-cache) 
+- [Micronaut Cache](../cache-api-implementations.md/#micronaut-cache)
+
+
+
+**Joined Valkey or Redis deployments**
+
+Multiple Valkey or Redis deployments can be combined and utilized as a single partitioned (sharded) deployment, allowing for horizontal scaling of your data across several nodes.
 
 ```java
 RedissonClient redisson1 = ...;
@@ -18,5 +41,3 @@ RedissonClient redisson3 = ...;
 
 RedissonClient redisson = ShardedRedisson.create(redisson1, redisson2, redisson3);
 ```
-
-_This feature available only in [Redisson PRO](https://redisson.pro/feature-comparison.html) edition._

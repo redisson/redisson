@@ -49,10 +49,11 @@ Supports Spring Boot 1.3.x - 3.4.x
     </div>
 
     [Redisson PRO vs. Community Edition ➜](https://redisson.pro/feature-comparison.html)
-
+    <br>
+    <br>    
 
      `redisson-spring-boot-starter` depends on `redisson-spring-data` module compatible with the latest version of Spring Boot. Downgrade `redisson-spring-data` module if necessary to support previous Spring Boot versions:
-
+    
      |redisson-spring-data<br/>module name|Spring Boot<br/>version|
      |----------------------------|-------------------|
      |redisson-spring-data-16     |1.3.y              |
@@ -60,18 +61,18 @@ Supports Spring Boot 1.3.x - 3.4.x
      |redisson-spring-data-18     |1.5.y              |
      |redisson-spring-data-2x     |2.x.y              |
      |redisson-spring-data-3x     |3.x.y              |
-
+    
      For Gradle, you can downgrade to `redisson-spring-data-27` this way:
-
+    
      ```groovy
      implementation ("org.redisson:redisson-spring-boot-starter:xVERSIONx") {
         exclude group: 'org.redisson', module: 'redisson-spring-data-34'
      }
      implementation "org.redisson:redisson-spring-data-27:xVERSIONx"
      ```
-
+    
      For Maven, you can downgrade to `redisson-spring-data-27` this way:
-
+    
      ```xml
      <dependencies>
          <dependency>
@@ -85,7 +86,7 @@ Supports Spring Boot 1.3.x - 3.4.x
                  </exclusion>
              </exclusions>
          </dependency>
-
+    
          <dependency>
              <groupId>org.redisson</groupId>
              <artifactId>redisson-spring-data-27</artifactId>
@@ -154,7 +155,7 @@ Supports Spring Boot 1.3.x - 3.4.x
        redisson: 
           file: classpath:redisson.yaml
     ```
-
+    
     Using Redisson settings: 
     ([single mode](configuration.md/#single-settings),
     [replicated mode](configuration.md/#replicated-settings),
@@ -163,7 +164,7 @@ Supports Spring Boot 1.3.x - 3.4.x
     [proxy mode](configuration.md/#proxy-mode-settings),
     [multi cluster mode](configuration.md/#multi-cluster-settings), 
     [multi sentinel mode](configuration.md/#multi-sentinel-settings))
-
+    
     ```yaml
     spring:
       redis:
@@ -201,7 +202,7 @@ Supports Spring Boot 1.3.x - 3.4.x
             nettyThreads: 32
             codec: !<org.redisson.codec.Kryo5Codec> {}
             transportMode: "NIO"
-
+    
     ```
 
 3. **Available Spring Beans:**
@@ -299,7 +300,7 @@ Ensure you have Spring Session library in your classpath, add it if necessary:
 compile 'org.springframework.session:spring-session-core:3.4.1'
 
 compile 'org.redisson:redisson-spring-data-34:xVERSIONx'
-```  
+```
 
 ### Spring Http Session configuration
 
@@ -402,6 +403,8 @@ Add configuration class which extends `AbstractReactiveWebInitializer` class:
     </div>
 
     [Redisson PRO vs. Community Edition ➜](https://redisson.pro/feature-comparison.html)
+    <br>
+    <br>    
 
 3. Define follow properties in spring-boot settings  
     ```
@@ -411,7 +414,7 @@ Add configuration class which extends `AbstractReactiveWebInitializer` class:
     ```
 
 ## Spring Transaction Manager
- 
+
 Redisson provides implementation of both `org.springframework.transaction.PlatformTransactionManager` and `org.springframework.transaction.ReactiveTransactionManager` interfaces to participant in Spring transactions. See also [Transactions](Transactions.md) section.
 
 ### Spring Transaction Management
@@ -514,7 +517,7 @@ Maven:
 Gradle:
 ```gradle
 compile 'pro.redisson:spring-cloud-stream-binder-redisson:xVERSIONx'  
-```  
+```
 
 Compatible with Spring versions below.
 
@@ -738,22 +741,25 @@ Integrates Redisson with Spring Data Redis library. Implements Spring Data's `Re
     </div>
 
     [Redisson PRO vs. Community Edition ➜](https://redisson.pro/feature-comparison.html)
+	<br>
+    <br>    
+
 
 2. Register `RedissonConnectionFactory` in Spring context:  
    ```java
    @Configuration
    public class RedissonSpringDataConfig {
-
+   
       @Bean
       public RedissonConnectionFactory redissonConnectionFactory(RedissonClient redisson) {
           return new RedissonConnectionFactory(redisson);
       }
-
+   
       @Bean(destroyMethod = "shutdown")
       public RedissonClient redisson(@Value("classpath:/redisson.yaml") Resource configFile) throws IOException {
           Config config = Config.fromYAML(configFile.getInputStream());
           return Redisson.create(config);
       }
-
+   
    }
    ```

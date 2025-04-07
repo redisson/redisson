@@ -41,6 +41,8 @@
     </div>
 
     [Redisson PRO vs. Community Edition ➜](https://redisson.pro/feature-comparison.html)
+    <br>
+    <br>    
 
 2. Start development
 
@@ -69,10 +71,10 @@
        ```java
        // Sync and Async API
        RedissonClient redisson = Redisson.create(config);
-
+       
        // Reactive API
        RedissonReactiveClient redissonReactive = redisson.reactive();
-
+       
        // RxJava3 API
        RedissonRxClient redissonRx = redisson.rxJava();
        ```
@@ -80,29 +82,29 @@
     * Get Redis or Valkey based object or service.
        ```java
        // java.util.concurrent.ConcurrentMap
-
+       
        RMap<MyKey, MyValue> map = redisson.getMap("myMap");
-
+       
        RMapReactive<MyKey, MyValue> mapReactive = redissonReactive.getMap("myMap");
-
+       
        RMapRx<MyKey, MyValue> mapRx = redissonRx.getMap("myMap");
-
+       
        // client side caching
-
+       
        RLocalCachedMap<MyKey, MyValue> map = redisson.getLocalCachedMap(LocalCachedMapOptions.<MyKey, MyValue>name("myMap"));
 
 
        // java.util.concurrent.locks.Lock
-
+    
        RLock lock = redisson.getLock("myLock");
-
+    
        RLockReactive lockReactive = redissonReactive.getLock("myLock");
-
+    
        RLockRx lockRx = redissonRx.getLock("myLock");
 
 
        // java.util.concurrent.ExecutorService
-
+    
        RExecutorService executor = redisson.getExecutorService("myExecutorService");
 
 
