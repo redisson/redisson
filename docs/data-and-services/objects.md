@@ -440,7 +440,7 @@ RFuture<Boolean> setFuture = set.setAsync(1812, false);
 
 RFuture<Void> clearFuture = set.clearAsync(0);
 
-RFuture<Void> andFuture = set.andAsync("anotherBitset);
+RFuture<Void> andFuture = set.andAsync("anotherBitset");
 RFuture<Void> xorFuture = set.xorAsync("anotherBitset");
 ```
 
@@ -454,7 +454,7 @@ Mono<Boolean> setMono = set.set(1812, false);
 
 Mono<Void> clearMono = set.clear(0);
 
-Mono<Void> andMono = set.and("anotherBitset);
+Mono<Void> andMono = set.and("anotherBitset");
 Mono<Void> xorMono = set.xor("anotherBitset");
 ```
 
@@ -468,7 +468,7 @@ Single<Boolean> setRx = set.set(1812, false);
 
 Completable clearRx = set.clear(0);
 
-Completable andRx = set.and("anotherBitset);
+Completable andRx = set.and("anotherBitset");
 Completable xorRx = set.xor("anotherBitset");
 ```
 
