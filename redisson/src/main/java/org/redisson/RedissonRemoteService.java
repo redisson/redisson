@@ -385,6 +385,12 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
                     log.error("Can't process the remote service request with id {}", requestId, exc);
                     return null;
                 });
+        }).exceptionally(exc -> {
+            if (commandExecutor.getServiceManager().isShuttingDown(exc)) {
+                return null;
+            }
+            log.error("Can't process the remote service request", exc);
+            return null;
         });
     }
 

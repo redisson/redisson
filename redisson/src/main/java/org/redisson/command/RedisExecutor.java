@@ -46,6 +46,8 @@ import org.redisson.misc.RedisURI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.BiConsumer;
@@ -790,8 +792,9 @@ public class RedisExecutor<V, R> {
             codecToUse = map.get(codec);
             if (codecToUse == null) {
                 try {
-                    codecToUse = codec.getClass().getConstructor(ClassLoader.class, codec.getClass()).newInstance(threadClassLoader, codec);
-                } catch (NoSuchMethodException e) {
+                    Constructor<? extends Codec> c = codec.getClass().getConstructor(ClassLoader.class, codec.getClass());
+                    codecToUse = c.newInstance(threadClassLoader, codec);
+                } catch (NoSuchMethodException | InvocationTargetException e) {
                     codecToUse = codec;
                     // skip
                 } catch (Exception e) {

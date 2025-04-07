@@ -9,6 +9,7 @@ import org.redisson.api.annotation.RRemoteAsync;
 import org.redisson.api.annotation.RRemoteReactive;
 import org.redisson.api.annotation.RRemoteRx;
 import org.redisson.codec.SerializationCodec;
+import org.redisson.config.Config;
 import org.redisson.remote.RemoteServiceAckTimeoutException;
 import org.redisson.remote.RemoteServiceTimeoutException;
 import reactor.core.Disposable;
@@ -17,7 +18,6 @@ import reactor.core.publisher.Mono;
 import java.io.IOException;
 import java.io.NotSerializableException;
 import java.io.Serializable;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -687,6 +687,18 @@ public class RedissonRemoteServiceTest extends RedisDockerTest {
         } finally {
             client.shutdown();
         }
+    }
+
+    @Test
+    public void testInnerCodec() {
+        Config config = createConfig();
+        config.setCodec(new SerializationCodec() {});
+
+        RedissonClient redisson = Redisson.create(config);
+        redisson.getRemoteService().register(RemoteInterface.class, new RemoteImpl());
+
+        RemoteInterface service = redisson.getRemoteService().get(RemoteInterface.class);
+        assertThat(service.resultMethod(21L)).isEqualTo(42L);
     }
 
     @Test
