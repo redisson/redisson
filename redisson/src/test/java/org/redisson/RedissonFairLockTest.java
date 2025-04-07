@@ -363,12 +363,14 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
         long leaseTime = 500;
 
         // we're testing interaction of various internal methods, so create a Redisson instance for protected access
-        RedissonClient redisson = Redisson.create(createConfig());
+        Config config = createConfig()
+                .setFairLockWaitTimeout(100);
+
+        RedissonClient redisson = Redisson.create(config);
 
         RedissonFairLock lock = new RedissonFairLock(
                 ((Redisson) redisson).getCommandExecutor(),
-            "testLockAcquiredTimeoutDrift_Descrete",
-            100);
+                "testLockAcquiredTimeoutDrift_Descrete");
 
         // clear out any prior state
         lock.delete();
@@ -476,12 +478,13 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
         long threadWaitTime = 100;
 
         // we're testing interaction of various internal methods, so create a Redisson instance for protected access
-        RedissonClient redisson = Redisson.create(createConfig());
+        Config config = createConfig()
+                .setFairLockWaitTimeout(threadWaitTime);
+        RedissonClient redisson = Redisson.create(config);
 
         RedissonFairLock lock = new RedissonFairLock(
                 ((Redisson) redisson).getCommandExecutor(),
-                "testAbandonedTimeoutDrift_Descrete",
-                threadWaitTime);
+                "testAbandonedTimeoutDrift_Descrete");
 
         // clear out any prior state
         lock.delete();

@@ -5,8 +5,9 @@
 
 [Quick start](https://redisson.org/docs/getting-started/) | [Documentation](https://redisson.org/docs/) | [Changelog](https://github.com/redisson/redisson/blob/master/CHANGELOG.md) | [Code examples](https://github.com/redisson/redisson-examples) | [Report an issue](https://github.com/redisson/redisson/issues/new)
 
-High-performance async and lock-free Java client for Redis and Valkey based on [Netty](http://netty.io) framework.  
+Redisson is the Java Client and Real-Time Data Platform for Valkey and Redis. Providing the most convenient and easiest way to work with Valkey or Redis. Redisson objects provide an abstraction layer between Valkey or Redis and your Java code, which allowing maintain focus on data modeling and application logic. 
 
+Redisson greatly extends the capabilities of Valkey and Redis by providing additional services and data structures not natively available in either platform. This enhancement includes distributed Java collections, objects, and service implementations, which significantly reduce the learning curve for Java developers working with key-value databases.
 
 ## Features
 
@@ -24,28 +25,6 @@ High-performance async and lock-free Java client for Redis and Valkey based on [
     * [Sentinel](https://redisson.org/docs/configuration/#sentinel-mode)
     * [Replicated](https://redisson.org/docs/configuration/#replicated-mode)
     * [Master and Slaves](https://redisson.org/docs/configuration/#master-slave-mode)
-* Amazon Web Services compatible
-     * [AWS Elasticache Serverless](https://aws.amazon.com/elasticache/features/#Serverless)
-     * [AWS Redis Global Datastore](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/Redis-Global-Datastore.html)
-     * [AWS ElastiCache](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/WhatIs.html)
-     * [Amazon MemoryDB](https://aws.amazon.com/memorydb)
-* Microsoft Azure compatible
-     * [Azure Redis Cache](https://azure.microsoft.com/en-us/services/cache/)
-     * [Azure Redis Cache active-passive replication](https://learn.microsoft.com/en-us/azure/azure-cache-for-redis/cache-how-to-geo-replication)
-     * [Azure Redis Cache active-active replication](https://learn.microsoft.com/en-us/azure/azure-cache-for-redis/cache-how-to-active-geo-replication)
-* Google Cloud Memorystore compatible
-     * [Google Cloud Redis](https://cloud.google.com/memorystore/docs/redis/)
-     * [Google Cloud Redis High availability](https://cloud.google.com/memorystore/docs/redis/high-availability)
-* Redis Enterprise compatible
-     * [Redis Enterprise](https://redis.com/redis-enterprise/)
-     * [Redis Enterprise Active-Active databases](https://docs.redis.com/latest/rs/databases/active-active/get-started/)
-     * [Redis Enterprise Multiple Active Proxy](https://docs.redis.com/latest/rs/databases/configure/proxy-policy/#about-multiple-active-proxy-support)
-* IBM Cloud compatible
-     * [IBM Cloud Databases for Redis](https://www.ibm.com/cloud/databases-for-redis)
-* Redis on SAP BTP compatible
-     * [Redis on SAP BTP](https://www.sap.com/products/technology-platform/redis-on-sap-btp-hyperscaler-option.html#plans)
-* Aiven compatible
-     * [Aiven for Caching](https://aiven.io/caching)
 * Supports auto-reconnection  
 * Supports failed to send command auto-retry  
 * Supports OSGi  
