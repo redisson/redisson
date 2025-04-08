@@ -22,7 +22,7 @@ import java.util.List;
  * @author Nikita Koksharov
  *
  */
-public class BatchResult<E> {
+public final class BatchResult<E> {
 
     private final List<E> responses;
     private final int syncedSlaves;
