@@ -368,40 +368,4 @@ public class PubSubConnectionEntry {
         return CompletableFuture.allOf(ffs.toArray(new CompletableFuture[0]));
     }
 
-    public CompletableFuture<Void> addListeners(ChannelName channelName,
-                                                CompletableFuture<PubSubConnectionEntry> promise,
-                                                PubSubType type, AsyncSemaphore lock,
-                                                RedisPubSubListener<?>... listeners) {
-        for (RedisPubSubListener<?> listener : listeners) {
-            addListener(channelName, listener);
-        }
-        SubscribeListener list = getSubscribeFuture(channelName, type);
-        CompletableFuture<Void> subscribeFuture = list.getSuccessFuture();
-
-        subscribeFuture.whenComplete((res, e) -> {
-            if (e != null) {
-                promise.completeExceptionally(e);
-                lock.release();
-                return;
-            }
-
-            if (!promise.complete(this)) {
-                for (RedisPubSubListener<?> listener : listeners) {
-                    removeListener(channelName, listener);
-                }
-                if (!hasListeners(channelName)) {
-                    subscribeService.unsubscribeLocked(type, channelName, this)
-                            .whenComplete((r, ex) -> {
-                                lock.release();
-                            });
-                } else {
-                    lock.release();
-                }
-            } else {
-                lock.release();
-            }
-        });
-        return subscribeFuture;
-    }
-
 }
