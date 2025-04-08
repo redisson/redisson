@@ -816,7 +816,7 @@ public class CommandBatchService extends CommandAsyncService implements BatchSer
     }
 
     @Override
-    protected CommandBatchService createCommandBatchService(int availableSlaves) {
+    protected CommandBatchService createCommandBatchService(int availableSlaves, boolean aofEnabled, long timeout) {
         return this;
     }
 

@@ -75,6 +75,7 @@ public class MasterSlaveEntry {
     final AtomicBoolean noPubSubSlaves = new AtomicBoolean();
 
     volatile int availableSlaves = -1;
+    volatile boolean aofEnabled;
 
     public MasterSlaveEntry(ConnectionManager connectionManager, MasterSlaveServersConfig config) {
         this.connectionManager = connectionManager;
@@ -778,4 +779,11 @@ public class MasterSlaveEntry {
         availableSlaves = slaves;
     }
 
+    public boolean isAofEnabled() {
+        return aofEnabled;
+    }
+
+    public void setAofEnabled(boolean aof) {
+        this.aofEnabled = aof;
+    }
 }

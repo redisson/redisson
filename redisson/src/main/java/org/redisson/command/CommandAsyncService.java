@@ -504,7 +504,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     private static final AtomicBoolean EVAL_SHA_RO_SUPPORTED = new AtomicBoolean(true);
 
-    private static final AtomicReference<Boolean> WAIT_SUPPORTED = new AtomicReference<>();
+    private List<String> waitSupportedCommands;
 
     public boolean isEvalShaROSupported() {
         return EVAL_SHA_RO_SUPPORTED.get();
@@ -1017,39 +1017,77 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     @Override
     public <T> RFuture<T> syncedEvalNoRetry(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
-        return syncedEval(false, key, codec, evalCommandType, script, keys, params);
+        return syncedEval(getServiceManager().getCfg().getSlavesSyncTimeout(),
+                            SyncMode.WAIT, false, key, codec, evalCommandType, script, keys, params);
     }
 
     @Override
     public <T> RFuture<T> syncedEval(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
-        return syncedEval(true, key, codec, evalCommandType, script, keys, params);
+        return syncedEval(getServiceManager().getCfg().getSlavesSyncTimeout(),
+                            SyncMode.WAIT, true, key, codec, evalCommandType, script, keys, params);
     }
 
-    private <T> RFuture<T> syncedEval(boolean retry, String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
+    @Override
+    public <T> RFuture<T> syncedEvalNoRetry(long timeout, SyncMode syncMode, String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
+        return syncedEval(timeout, syncMode, false, key, codec, evalCommandType, script, keys, params);
+    }
+
+    @Override
+    public <T> RFuture<T> syncedEvalWithRetry(long timeout, SyncMode syncMode, String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
+        return syncedEval(timeout, syncMode, true, key, codec, evalCommandType, script, keys, params);
+    }
+
+    private <T> RFuture<T> syncedEval(long timeout, SyncMode syncMode, boolean retry, String key, Codec codec, RedisCommand<T> evalCommandType,
+                                      String script, List<Object> keys, Object... params) {
         if (getServiceManager().getCfg().isSingleConfig()
                 || this instanceof CommandBatchService
-                    || (WAIT_SUPPORTED.get() != null && !WAIT_SUPPORTED.get())) {
+                   || (waitSupportedCommands != null && waitSupportedCommands.isEmpty() && syncMode == SyncMode.AUTO)
+                    || (waitSupportedCommands != null && !waitSupportedCommands.contains(RedisCommands.WAIT.getName()) && syncMode == SyncMode.WAIT)
+                        || (waitSupportedCommands != null && !waitSupportedCommands.contains(RedisCommands.WAITAOF.getName()) && syncMode == SyncMode.WAIT_AOF)
+                ) {
             if (retry) {
                 return evalWriteAsync(key, codec, evalCommandType, script, keys, params);
             }
             return evalWriteNoRetryAsync(key, codec, evalCommandType, script, keys, params);
         }
 
-        CompletionStage<Integer> waitFuture = CompletableFuture.completedFuture(0);
-        if (WAIT_SUPPORTED.get() == null) {
-            waitFuture = writeAsync(key, RedisCommands.WAIT, 0, 0);
+        CompletionStage<BatchResult<?>> waitFuture = CompletableFuture.completedFuture(null);
+        if (waitSupportedCommands == null) {
+            CommandBatchService ee = createCommandBatchService(BatchOptions.defaults());
+            ee.writeAsync(key, RedisCommands.WAIT, 0, 0);
+            ee.writeAsync(key, RedisCommands.WAITAOF, 0, 0, 0);
+            waitFuture = ee.executeAsync();
         }
         CompletionStage<T> resFuture = waitFuture.handle((r2, ex2) -> {
             if (ex2 != null) {
+                List<String> commands = new ArrayList<>(Arrays.asList(RedisCommands.WAIT.getName(), RedisCommands.WAITAOF.getName()));
+
+                List<String> msgs = new ArrayList<>(2);
+                msgs.add(ex2.getMessage());
+                for (Throwable throwable : ex2.getSuppressed()) {
+                    msgs.add(throwable.getMessage());
+                }
+
+                for (String msg : msgs) {
+                    for (String command : commands) {
+                        if (msg.contains("'" + command + "'")) {
+                            commands.remove(command);
+                            break;
+                        }
+                    }
+                }
+
                 if (ex2.getMessage().startsWith("ERR unknown command")) {
-                    WAIT_SUPPORTED.set(false);
+                    waitSupportedCommands = commands;
                     CompletionStage<T> f = evalWriteAsync(key, codec, evalCommandType, script, keys, params);
                     return f;
                 }
                 throw new CompletionException(ex2);
             }
 
-            WAIT_SUPPORTED.set(true);
+            if (waitSupportedCommands == null) {
+                waitSupportedCommands = Arrays.asList(RedisCommands.WAIT.getName(), RedisCommands.WAITAOF.getName());
+            }
 
             MasterSlaveEntry e = connectionManager.getEntry(key);
             if (e == null) {
@@ -1058,16 +1096,25 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             CompletionStage<Map<String, String>> replicationFuture;
             int slaves = e.getAvailableSlaves();
             if (slaves != -1) {
-                replicationFuture = CompletableFuture.completedFuture(Collections.singletonMap("connected_slaves", "" + slaves));
+                Map<String, String> map = new HashMap<>(2);
+                map.put("connected_slaves", "" + slaves);
+                if (e.isAofEnabled()) {
+                    map.put("aof_enabled", "1");
+                } else {
+                    map.put("aof_enabled", "0");
+                }
+                replicationFuture = CompletableFuture.completedFuture(map);
             } else {
-                replicationFuture = writeAsync(e, StringCodec.INSTANCE, RedisCommands.INFO_REPLICATION);
+                replicationFuture = writeAsync(e, StringCodec.INSTANCE, RedisCommands.INFO_ALL);
             }
 
             CompletionStage<T> resultFuture = replicationFuture.thenCompose(r -> {
                 int availableSlaves = Integer.parseInt(r.getOrDefault("connected_slaves", "0"));
+                boolean aofEnabled = "1".equals(r.getOrDefault("aof_enabled", "0"));
                 e.setAvailableSlaves(availableSlaves);
+                e.setAofEnabled(aofEnabled);
 
-                CommandBatchService executorService = createCommandBatchService(availableSlaves);
+                CommandBatchService executorService = createCommandBatchService(availableSlaves, aofEnabled, timeout);
                 RFuture<T> result = executorService.evalWriteAsync(key, codec, evalCommandType, script, keys, params);
                 if (executorService == this) {
                     return result;
@@ -1097,9 +1144,13 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         return new CompletableFutureWrapper<>(resFuture);
     }
 
-    protected CommandBatchService createCommandBatchService(int availableSlaves) {
-        BatchOptions options = BatchOptions.defaults()
-                                            .sync(availableSlaves, Duration.ofMillis(getServiceManager().getCfg().getSlavesSyncTimeout()));
+    protected CommandBatchService createCommandBatchService(int availableSlaves, boolean aofEnabled, long timeout) {
+        BatchOptions options = BatchOptions.defaults();
+        if (aofEnabled) {
+            options.syncAOF(1, availableSlaves, Duration.ofMillis(timeout));
+        } else {
+            options.sync(availableSlaves, Duration.ofMillis(timeout));
+        }
         return createCommandBatchService(options);
     }
 
