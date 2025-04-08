@@ -76,6 +76,7 @@ public class RedisClientConfig {
     private KeyManagerFactory sslKeyManagerFactory;
     private NettyHook nettyHook = new DefaultNettyHook();
     private CredentialsResolver credentialsResolver = new DefaultCredentialsResolver();
+    private int credentialsReapplyInterval;
     private Consumer<InetSocketAddress> connectedListener;
     private Consumer<InetSocketAddress> disconnectedListener;
 
@@ -118,6 +119,7 @@ public class RedisClientConfig {
         this.resolverGroup = config.resolverGroup;
         this.sslHostname = config.sslHostname;
         this.credentialsResolver = config.credentialsResolver;
+        this.credentialsReapplyInterval = config.credentialsReapplyInterval;
         this.connectedListener = config.connectedListener;
         this.disconnectedListener = config.disconnectedListener;
         this.sslKeyManagerFactory = config.sslKeyManagerFactory;
@@ -411,6 +413,15 @@ public class RedisClientConfig {
 
     public RedisClientConfig setCredentialsResolver(CredentialsResolver credentialsResolver) {
         this.credentialsResolver = credentialsResolver;
+        return this;
+    }
+
+    public int getCredentialsReapplyInterval() {
+        return credentialsReapplyInterval;
+    }
+
+    public RedisClientConfig setCredentialsReapplyInterval(int credentialsReapplyInterval) {
+        this.credentialsReapplyInterval = credentialsReapplyInterval;
         return this;
     }
 
