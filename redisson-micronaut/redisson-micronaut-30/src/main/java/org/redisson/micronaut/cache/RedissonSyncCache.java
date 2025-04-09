@@ -108,6 +108,6 @@ public class RedissonSyncCache extends AbstractMapBasedSyncCache<RMap<Object, Ob
     @NonNull
     @Override
     public AsyncCache<RMap<Object, Object>> async() {
-        return new RedissonAsyncCache(mapCache, map, executorService, conversionService);
+        return new RedissonAsyncCache(mapCache, map, executorService, conversionService, configuration);
     }
 }
