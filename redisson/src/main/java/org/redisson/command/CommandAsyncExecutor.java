@@ -42,6 +42,8 @@ import java.util.function.Supplier;
  */
 public interface CommandAsyncExecutor {
 
+    enum SyncMode {AUTO, WAIT, WAIT_AOF}
+
     CommandAsyncExecutor copy(ObjectParams objectParams);
 
     CommandAsyncExecutor copy(boolean trackChanges);
@@ -155,6 +157,10 @@ public interface CommandAsyncExecutor {
     <T> RFuture<T> syncedEvalWithRetry(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params);
 
     <T> RFuture<T> syncedEvalNoRetry(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params);
+
+    <T> RFuture<T> syncedEvalNoRetry(long timeout, SyncMode syncMode, String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params);
+
+    <T> RFuture<T> syncedEvalWithRetry(long timeout, SyncMode syncMode, String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params);
 
     <T> RFuture<T> syncedEval(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params);
 

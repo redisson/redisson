@@ -72,4 +72,14 @@ public class StreamConsumer {
     public long getInactive() {
         return inactive;
     }
+
+    @Override
+    public String toString() {
+        return "StreamConsumer{" +
+                "name='" + name + '\'' +
+                ", pending=" + pending +
+                ", idleTime=" + idleTime +
+                ", inactive=" + inactive +
+                '}';
+    }
 }

@@ -3,6 +3,7 @@ package org.redisson.micronaut;
 import io.micronaut.cache.AsyncCache;
 import io.micronaut.context.ApplicationContext;
 import io.micronaut.inject.qualifiers.Qualifiers;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RedissonClient;
 import org.redisson.micronaut.cache.RedissonSyncCache;
@@ -11,6 +12,7 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -98,6 +100,20 @@ public class RedissonCacheTest {
         cache.put(3, 4);
         Thread.sleep(2000);
         assertThat(cache.get(3, Integer.class).isPresent()).isTrue();
+    }
+
+    @Test
+    void testTtlNotAffected() throws InterruptedException {
+        Map<String, Object> map = new HashMap<>();
+        map.put("redisson.threads", "10");
+        map.put("redisson.single-server-config.address", "redis://127.0.0.1:" + REDIS.getFirstMappedPort());
+        map.put("redisson.caches.my-cache-async.expire-after-write", "1s");
+        ApplicationContext context = ApplicationContext.run(map);
+
+        TestCache testCache = context.createBean(TestCache.class);
+        Assertions.assertEquals("a1", testCache.getMyValueSync("a").block());
+        Thread.sleep(Duration.ofSeconds(3));
+        Assertions.assertEquals("a2", testCache.getMyValueSync("a").block());
     }
 
 }

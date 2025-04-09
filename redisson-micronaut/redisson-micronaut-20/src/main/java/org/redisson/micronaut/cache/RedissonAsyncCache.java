@@ -26,6 +26,7 @@ import org.redisson.api.RMapCache;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 /**
@@ -39,15 +40,18 @@ public class RedissonAsyncCache implements AsyncCache<RMap<Object, Object>> {
     private final RMapCache<Object, Object> mapCache;
     private final RMap<Object, Object> map;
     private final ExecutorService executorService;
+    private final BaseCacheConfiguration configuration;
 
     public RedissonAsyncCache(RMapCache<Object, Object> mapCache,
                               RMap<Object, Object> map,
                               ExecutorService executorService,
-                              ConversionService<?> conversionService) {
+                              ConversionService<?> conversionService,
+                              BaseCacheConfiguration configuration) {
         this.mapCache = mapCache;
         this.map = map;
         this.executorService = executorService;
         this.conversionService = conversionService;
+        this.configuration = configuration;
     }
 
     @Override
@@ -83,6 +87,14 @@ public class RedissonAsyncCache implements AsyncCache<RMap<Object, Object>> {
     public <T> CompletableFuture<Optional<T>> putIfAbsent(Object key, T value) {
         ArgumentUtils.requireNonNull("key", key);
         ArgumentUtils.requireNonNull("value", value);
+
+        if (mapCache != null) {
+            return mapCache.putIfAbsentAsync(key, value, configuration.getExpireAfterWrite().toMillis(), TimeUnit.MILLISECONDS,
+                            configuration.getExpireAfterAccess().toMillis(), TimeUnit.MILLISECONDS)
+                    .thenApply(v -> Optional.ofNullable((T) v))
+                    .toCompletableFuture();
+        }
+
         return map.putIfAbsentAsync(key, value)
                         .thenApply(v -> Optional.ofNullable((T) v))
                         .toCompletableFuture();
@@ -92,6 +104,14 @@ public class RedissonAsyncCache implements AsyncCache<RMap<Object, Object>> {
     public CompletableFuture<Boolean> put(Object key, Object value) {
         ArgumentUtils.requireNonNull("key", key);
         ArgumentUtils.requireNonNull("value", value);
+
+        if (mapCache != null) {
+            return mapCache.fastPutAsync(key, value, configuration.getExpireAfterWrite().toMillis(), TimeUnit.MILLISECONDS,
+                            configuration.getExpireAfterAccess().toMillis(), TimeUnit.MILLISECONDS)
+                    .thenApply(counter -> true)
+                    .toCompletableFuture();
+        }
+
         return map.fastPutAsync(key, value)
                         .thenApply(counter -> true)
                         .toCompletableFuture();
