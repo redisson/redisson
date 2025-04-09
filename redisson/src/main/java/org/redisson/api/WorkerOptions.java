@@ -83,6 +83,11 @@ public final class WorkerOptions {
         return this;
     }
 
+    public WorkerOptions tasksInjector(TasksInjector tasksInjector) {
+        this.tasksInjector = tasksInjector;
+        return this;
+    }
+
     public TasksInjector getTasksInjector() {
         return tasksInjector;
     }
