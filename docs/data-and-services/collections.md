@@ -1395,19 +1395,19 @@ Redis or Valkey based [DelayedQueue](https://static.javadoc.io/org.redisson/redi
 Could be useful for exponential backoff strategy used for message delivery to consumer. If application is restarted, an instance of delayed queue should created in order for the pending items to be added to the destination queue.
 
 ```java
-RBlockingQueue<String> distinationQueue = ...
-RDelayedQueue<String> delayedQueue = getDelayedQueue(distinationQueue);
-// move object to distinationQueue in 10 seconds
+RBlockingQueue<String> destinationQueue = ...
+RDelayedQueue<String> delayedQueue = getDelayedQueue(destinationQueue);
+// move object to destinationQueue in 10 seconds
 delayedQueue.offer("msg1", 10, TimeUnit.SECONDS);
-// move object to distinationQueue in 1 minutes
+// move object to destinationQueue in 1 minutes
 delayedQueue.offer("msg2", 1, TimeUnit.MINUTES);
 
 
 // msg1 will appear in 10 seconds
-distinationQueue.poll(15, TimeUnit.SECONDS);
+destinationQueue.poll(15, TimeUnit.SECONDS);
 
 // msg2 will appear in 2 seconds
-distinationQueue.poll(2, TimeUnit.SECONDS);
+destinationQueue.poll(2, TimeUnit.SECONDS);
 
 ```
 
