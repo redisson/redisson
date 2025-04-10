@@ -259,7 +259,7 @@ public class Config {
         checkSingleServerConfig();
 
         if (replicatedServersConfig == null) {
-            replicatedServersConfig = new ReplicatedServersConfig();
+            replicatedServersConfig = config;
         }
         return replicatedServersConfig;
     }
