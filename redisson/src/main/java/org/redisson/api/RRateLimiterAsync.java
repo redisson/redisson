@@ -225,6 +225,18 @@ public interface RRateLimiterAsync extends RExpirableAsync {
     RFuture<Void> setRateAsync(RateType mode, long rate, Duration rateInterval, Duration keepAliveTime);
 
     /**
+     * Updates the rate limit.
+     * Keeps both limit and state
+     *
+     * @param mode rate mode
+     * @param rate rate
+     * @param rateInterval rate time interval
+     */
+    RFuture<Void> updateRateAsync(RateType mode, long rate, Duration rateInterval);
+
+    RFuture<Void> updateRateAsync(RateType type, long rate, Duration rateInterval, Duration keepAliveTime);
+
+    /**
      * Returns current configuration of this RateLimiter object.
      * 
      * @return config object
