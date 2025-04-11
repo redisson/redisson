@@ -62,11 +62,12 @@ public abstract class BaseConnectionHandler<C extends RedisConnection> extends C
     public void channelActive(ChannelHandlerContext ctx) {
         List<CompletableFuture<Object>> futures = new ArrayList<>(5);
 
-        RedisClientConfig config = redisClient.getConfig();
-        CompletableFuture<Object> f = authWithCredential(config);
+        CompletableFuture<Object> f = authWithCredential();
         futures.add(f);
 
-        if (redisClient.getConfig().getProtocol() == Protocol.RESP3) {
+        RedisClientConfig config = redisClient.getConfig();
+
+        if (config.getProtocol() == Protocol.RESP3) {
             CompletionStage<Object> f1 = connection.async(RedisCommands.HELLO, "3");
             futures.add(f1.toCompletableFuture());
         }
@@ -111,7 +112,8 @@ public abstract class BaseConnectionHandler<C extends RedisConnection> extends C
         });
     }
 
-    private CompletableFuture<Object> authWithCredential(RedisClientConfig config){
+    private CompletableFuture<Object> authWithCredential() {
+        RedisClientConfig config = redisClient.getConfig();
         InetSocketAddress addr = redisClient.resolveAddr().getNow(null);
         CompletionStage<Object> f = config.getCredentialsResolver().resolve(addr)
                 .thenCompose(credentials -> {
@@ -139,15 +141,15 @@ public abstract class BaseConnectionHandler<C extends RedisConnection> extends C
             return;
         }
 
-        RedisClientConfig config = redisClient.getConfig();
-
         CompletableFuture<Object> future;
         QueueCommand currentCommand = connection.getCurrentCommandData();
         if (connection.getUsage() == 0 && (currentCommand == null || !currentCommand.isBlockingCommand())) {
-            future = authWithCredential(config);
+            future = authWithCredential();
         } else {
             future = null;
         }
+
+        RedisClientConfig config = redisClient.getConfig();
 
         config.getTimer().newTimeout(timeout -> {
             if (isClosed(ctx, connection)) {
