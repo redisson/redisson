@@ -1125,7 +1125,8 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                     if (ex != null) {
                         throw new CompletionException(ex);
                     }
-                    if (res.getSyncedSlaves() < availableSlaves) {
+                    if (res.getSyncedSlaves() < availableSlaves
+                            || res.getSyncedSlaves() > availableSlaves) {
                         e.setAvailableSlaves(-1);
                     }
                     if (getServiceManager().getCfg().isCheckLockSyncedSlaves()
