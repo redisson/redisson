@@ -491,6 +491,12 @@ Default value: empty
 Defines Credentials resolver, which is invoked during connection for Redis or Valkey server authentication. Returns Credentials object per Redis or Valkey node
 address, it contains `username` and `password` fields. Allows you to specify dynamically changing Redis or Valkey credentials.
 
+**credentialsReapplyInterval** 
+
+Default value: 0
+
+Defines Credentials resolver invoke interval in milliseconds for Valkey or Redis server authentication. `0` means disable.
+
 **subscriptionsPerConnection**
 
 Default value: `5`
@@ -878,6 +884,11 @@ Default value: empty
 
 Defines Credentials resolver, which is invoked during connection for Redis or Valkey server authentication. Returns Credentials object per Redis or Valkey node address, it contains `username` and `password` fields. Allows to specify dynamically changing Redis credentials.
 
+**credentialsReapplyInterval**
+Default value: 0
+
+Defines Credentials resolver invoke interval in milliseconds for Valkey or Redis server authentication. `0` means disable.
+
 **subscriptionsPerConnection**
 
 Default value: `5`
@@ -1138,6 +1149,11 @@ Username for Redis or Valkey server authentication. Requires Redis 6.0 and highe
 Default value: empty
 
 Defines Credentials resolver, which is invoked during connection for Redis or Valkey server authentication. Returns Credentials object per Redis or Valkey node address, it contains `username` and `password` fields. Allows you to specify dynamically changing Redis credentials.
+
+**credentialsReapplyInterval**
+Default value: 0
+
+Defines Credentials resolver invoke interval in milliseconds for Valkey or Redis server authentication. `0` means disable.
 
 **subscriptionsPerConnection**
 
@@ -1492,6 +1508,11 @@ Default value: empty
 
 Defines Credentials resolver, which is invoked during connection for Redis or Valkey server authentication. Returns Credentials object per node address, it contains `username` and `password` fields. Allows you to specify dynamically changing credentials.
 
+**credentialsReapplyInterval**
+Default value: 0
+
+Defines Credentials resolver invoke interval in milliseconds for Valkey or Redis server authentication. `0` means disable.
+
 **sentinelsDiscovery**
 
 Default value: `true`
@@ -1839,6 +1860,11 @@ Default value: empty
 
 Defines Credentials resolver, which is invoked during connection for Redis or Valkey server authentication. Returns Credentials object per address, it contains `username` and `password` fields. Allows you to specify dynamically changing credentials.
 
+**credentialsReapplyInterval**
+Default value: 0
+
+Defines Credentials resolver invoke interval in milliseconds for Valkey or Redis server authentication. `0` means disable.
+
 **subscriptionsPerConnection**
 
 Default value: `5`
@@ -2165,6 +2191,11 @@ Username for Redis or Valkey server authentication. Requires Redis 6.0 and highe
 Default value: empty
 
 Defines Credentials resolver, which is invoked during connection for Redis or Valkey server authentication. Returns Credentials object per address, it contains `username` and `password` fields. Allows you to specify dynamically changing credentials.
+
+**credentialsReapplyInterval**
+Default value: 0
+
+Defines Credentials resolver invoke interval in milliseconds for Valkey or Redis server authentication. `0` means disable.
 
 **subscriptionsPerConnection**
 
@@ -2543,6 +2574,11 @@ Username for Redis or Valkey server authentication. Requires Redis 6.0 and highe
 Default value: empty
 
 Defines Credentials resolver, which is invoked during connection for Redis or Valkey server authentication. Returns Credentials object per node address, it contains `username` and `password` fields. Allows you to specify dynamically changing credentials.
+
+**credentialsReapplyInterval**
+Default value: 0
+
+Defines Credentials resolver invoke interval in milliseconds for Valkey or Redis server authentication. `0` means disable.
 
 **subscriptionsPerConnection**
 
@@ -2926,6 +2962,11 @@ Username for Sentinel servers for authentication. Used only if Sentinel username
 Default value: empty
 
 Defines Credentials resolver, which is invoked during connection for Redis or Valkey server authentication. Returns Credentials object per node address, it contains `username` and `password` fields. Allows you to specify dynamically changing credentials.
+
+**credentialsReapplyInterval**
+Default value: 0
+
+Defines Credentials resolver invoke interval in milliseconds for Valkey or Redis server authentication. `0` means disable.
 
 **sentinelsDiscovery**
 
