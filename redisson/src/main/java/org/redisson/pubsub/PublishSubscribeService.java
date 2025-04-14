@@ -812,7 +812,9 @@ public class PublishSubscribeService {
         }
 
         PubSubEntry ee = entry2PubSubConnection.computeIfAbsent(entry.getEntry(), e -> new PubSubEntry());
-        if (!ee.getEntries().contains(entry)) {
+        if (entry.getConnection().isClosed()) {
+            ee.getEntries().remove(entry);
+        } else if (!ee.getEntries().contains(entry)) {
             ee.getEntries().add(entry);
         }
     }
