@@ -621,7 +621,7 @@ public class BaseConfig<T extends BaseConfig<T>> {
     }
 
     /**
-     * Defines Credentials resolver invoke interval for Redis server authentication..
+     * Defines Credentials resolver invoke interval for Valkey or Redis server authentication.
      * <code>0</code> means disable.
      * <p>
      * Default is <code>0</code>
