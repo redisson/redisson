@@ -18,16 +18,17 @@ package org.redisson.client.handler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.redisson.client.*;
+import org.redisson.client.protocol.QueueCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.config.Protocol;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * 
@@ -35,6 +36,8 @@ import java.util.concurrent.TimeUnit;
  *
  */
 public abstract class BaseConnectionHandler<C extends RedisConnection> extends ChannelInboundHandlerAdapter {
+
+    private static final Logger log = LoggerFactory.getLogger(BaseConnectionHandler.class);
 
     final RedisClient redisClient;
     final CompletableFuture<C> connectionPromise = new CompletableFuture<>();
@@ -59,28 +62,12 @@ public abstract class BaseConnectionHandler<C extends RedisConnection> extends C
     public void channelActive(ChannelHandlerContext ctx) {
         List<CompletableFuture<Object>> futures = new ArrayList<>(5);
 
-        InetSocketAddress addr = redisClient.resolveAddr().getNow(null);
-        RedisClientConfig config = redisClient.getConfig();
-        CompletionStage<Object> f = config.getCredentialsResolver().resolve(addr)
-                .thenCompose(credentials -> {
-                    String password = Objects.toString(config.getAddress().getPassword(),
-                            Objects.toString(credentials.getPassword(), config.getPassword()));
-                    if (password != null) {
-                        CompletionStage<Object> future;
-                        String username = Objects.toString(config.getAddress().getUsername(),
-                                Objects.toString(credentials.getUsername(), config.getUsername()));
-                        if (username != null) {
-                            future = connection.async(RedisCommands.AUTH, username, password);
-                        } else {
-                            future = connection.async(RedisCommands.AUTH, password);
-                        }
-                        return future;
-                    }
-                    return CompletableFuture.completedFuture(null);
-                });
-        futures.add(f.toCompletableFuture());
+        CompletableFuture<Object> f = authWithCredential();
+        futures.add(f);
 
-        if (redisClient.getConfig().getProtocol() == Protocol.RESP3) {
+        RedisClientConfig config = redisClient.getConfig();
+
+        if (config.getProtocol() == Protocol.RESP3) {
             CompletionStage<Object> f1 = connection.async(RedisCommands.HELLO, "3");
             futures.add(f1.toCompletableFuture());
         }
@@ -116,9 +103,100 @@ public abstract class BaseConnectionHandler<C extends RedisConnection> extends C
                 return;
             }
 
+            if (config.getCredentialsReapplyInterval() > 0) {
+                reapplyCredential(ctx);
+            }
+
             ctx.fireChannelActive();
             connectionPromise.complete(connection);
         });
+    }
+
+    private CompletableFuture<Object> authWithCredential() {
+        RedisClientConfig config = redisClient.getConfig();
+        InetSocketAddress addr = redisClient.resolveAddr().getNow(null);
+        CompletionStage<Object> f = config.getCredentialsResolver().resolve(addr)
+                .thenCompose(credentials -> {
+                    String password = Objects.toString(config.getAddress().getPassword(),
+                            Objects.toString(credentials.getPassword(), config.getPassword()));
+                    if (password != null) {
+                        CompletionStage<Object> future;
+                        String username = Objects.toString(config.getAddress().getUsername(),
+                                Objects.toString(credentials.getUsername(), config.getUsername()));
+                        if (username != null) {
+                            future = connection.async(RedisCommands.AUTH, username, password);
+                        } else {
+                            future = connection.async(RedisCommands.AUTH, password);
+                        }
+                        return future;
+                    }
+                    return CompletableFuture.completedFuture(null);
+                });
+
+        return f.toCompletableFuture();
+    }
+
+    private void reapplyCredential(ChannelHandlerContext ctx) {
+        if (isClosed(ctx, connection)) {
+            return;
+        }
+
+        CompletableFuture<Object> future;
+        QueueCommand currentCommand = connection.getCurrentCommandData();
+        if (connection.getUsage() == 0 && (currentCommand == null || !currentCommand.isBlockingCommand())) {
+            future = authWithCredential();
+        } else {
+            future = null;
+        }
+
+        RedisClientConfig config = redisClient.getConfig();
+
+        config.getTimer().newTimeout(timeout -> {
+            if (isClosed(ctx, connection)) {
+                return;
+            }
+
+            QueueCommand cd = connection.getCurrentCommandData();
+            if (cd != null && cd.isBlockingCommand()) {
+                reapplyCredential(ctx);
+                return;
+            }
+
+            if (connection.getUsage() == 0 && future != null && (future.cancel(false) || cause(future) != null)) {
+                Throwable cause = cause(future);
+                if (!(cause instanceof RedisRetryException)) {
+                    if (!future.isCancelled()) {
+                        log.error("Unable to send AUTH command over channel: {}", ctx.channel(), cause);
+                    }
+
+                    log.debug("channel: {} closed due to AUTH response timeout set in {} ms", ctx.channel(), config.getCredentialsReapplyInterval());
+                    ctx.channel().close();
+                } else {
+                    reapplyCredential(ctx);
+                }
+
+            } else {
+                reapplyCredential(ctx);
+            }
+        }, config.getCredentialsReapplyInterval(), TimeUnit.MILLISECONDS);
+    }
+
+    protected Throwable cause(CompletableFuture<?> future) {
+        try {
+            future.toCompletableFuture().getNow(null);
+            return null;
+        } catch (CompletionException ex2) {
+            return ex2.getCause();
+        } catch (CancellationException ex1) {
+            return ex1;
+        }
+    }
+
+    private static boolean isClosed(ChannelHandlerContext ctx, RedisConnection connection) {
+        return connection.isClosed()
+                || !ctx.channel().equals(connection.getChannel())
+                || ctx.isRemoved()
+                || connection.getRedisClient().isShutdown();
     }
     
 }

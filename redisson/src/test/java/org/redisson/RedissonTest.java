@@ -635,6 +635,36 @@ public class RedissonTest extends RedisDockerTest {
     }
 
     @Test
+    public void testCredentialsReapplyInterval() throws InterruptedException {
+        GenericContainer<?> redis = createRedis("--requirepass", "1234");
+        redis.start();
+
+        CountDownLatch latch = new CountDownLatch(8);
+
+        Config config = createConfig(redis);
+        config.useSingleServer()
+                .setConnectionMinimumIdleSize(1)
+                .setConnectionPoolSize(1)
+                .setCredentialsReapplyInterval(5000)
+                .setCredentialsResolver(new CredentialsResolver() {
+                    @Override
+                    public CompletionStage<Credentials> resolve(InetSocketAddress address) {
+                        latch.countDown();
+                        return CompletableFuture.completedFuture(new Credentials(null, "1234"));
+                    }
+                });
+
+        RedissonClient rc = Redisson.create(config);
+        RBucket<String> b = rc.getBucket("test");
+        b.set("123");
+
+        assertThat(latch.await(20, TimeUnit.SECONDS)).isTrue();
+
+        rc.shutdown();
+        redis.stop();
+    }
+
+    @Test
     public void testCommandMapper() {
         Config c = createConfig();
         c.useSingleServer().setCommandMapper(n -> {
