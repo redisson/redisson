@@ -231,6 +231,7 @@ public final class RedissonReliableTopic extends RedissonExpirable implements RR
                                 "local expired = redis.call('zrangebyscore', KEYS[2], 0, tonumber(ARGV[2]) - 1); "
                                 + "for i, v in ipairs(expired) do "
                                     + "redis.call('xgroup', 'destroy', KEYS[1], v); "
+                                    + "redis.call('zrem', KEYS[2], v); "                                                                       
                                 + "end; "
                                 + "local r = redis.call('zscore', KEYS[2], ARGV[1]); "
 
