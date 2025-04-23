@@ -375,6 +375,81 @@ public final class RedissonRateLimiter extends RedissonExpirable implements RRat
         }
         
     }));
+
+    @Override
+    public void updateRate(RateType mode, long rate, Duration rateInterval) {
+        get(updateRateAsync(mode, rate, rateInterval));
+    }
+
+    @Override
+    public RFuture<Void> updateRateAsync(RateType type, long rate, Duration rateInterval) {
+        String valueName, permitsName;
+        if (RateType.OVERALL.equals(type)) {
+            valueName = getValueName();
+            permitsName = getPermitsName();
+        } else {
+            valueName = getClientValueName();
+            permitsName = getClientPermitsName();
+        }
+        byte[] random = getServiceManager().generateIdArray();
+        return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                "local rate = ARGV[1]; "
+                        + "local value = redis.call('get', KEYS[2]); "
+                        + "if not value then "
+                        + "    value = 0; "
+                        + "elseif value >= rate then "
+                        + "    value = rate; "
+                        + "end; "
+                        + "local released = rate - value; "
+                        + "redis.call('set', KEYS[2], value); "
+                        + "redis.call('zremrangebyrank', KEYS[3], 0, -1); "
+                        + "redis.call('zadd', KEYS[3], 0, struct.pack('Bc0I', string.len(ARGV[4]), ARGV[4], released)); "
+                        + "redis.call('hset', KEYS[1], 'rate', rate); "
+                        + "redis.call('hset', KEYS[1], 'interval', ARGV[2]); "
+                        + "redis.call('hset', KEYS[1], 'type', ARGV[3]); "
+                        + "local currentValue = redis.call('get', KEYS[2]); "
+                ,
+                Arrays.asList(getRawName(), valueName, permitsName), rate, rateInterval.toMillis(), type.ordinal(), random
+        );
+    }
+
+    @Override
+    public void updateRate(RateType mode, long rate, Duration rateInterval, Duration keepAliveTime) {
+        get(updateRateAsync(mode, rate, rateInterval, keepAliveTime));
+    }
+
+    @Override
+    public RFuture<Void> updateRateAsync(RateType type, long rate, Duration rateInterval, Duration keepAliveTime) {
+        String valueName, permitsName;
+        if (RateType.OVERALL.equals(type)) {
+            valueName = getValueName();
+            permitsName = getPermitsName();
+        } else {
+            valueName = getClientValueName();
+            permitsName = getClientPermitsName();
+        }
+        byte[] random = getServiceManager().generateIdArray();
+        return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                "local rate = ARGV[1]; "
+                        + "local value = redis.call('get', KEYS[2]); "
+                        + "if not value then "
+                        + "    value = 0; "
+                        + "elseif value >= rate then "
+                        + "    value = rate; "
+                        + "end; "
+                        + "local released = rate - value; "
+                        + "redis.call('set', KEYS[2], value); "
+                        + "redis.call('zremrangebyrank', KEYS[3], 0, -1); "
+                        + "redis.call('zadd', KEYS[3], 0, struct.pack('Bc0I', string.len(ARGV[5]), ARGV[5], released)); "
+                        + "redis.call('hset', KEYS[1], 'rate', rate); "
+                        + "redis.call('hset', KEYS[1], 'interval', ARGV[2]); "
+                        + "redis.call('hset', KEYS[1], 'type', ARGV[3]); "
+                        + "redis.call('hset', KEYS[1], 'keepAliveTime', ARGV[4]);"
+                        + "local currentValue = redis.call('get', KEYS[2]); "
+                ,
+                Arrays.asList(getRawName(), valueName, permitsName), rate, rateInterval.toMillis(), type.ordinal(), keepAliveTime.toMillis(), random
+        );
+    }
     
     @Override
     public RateLimiterConfig getConfig() {

@@ -88,6 +88,27 @@ public interface RRateLimiterReactive extends RExpirableReactive {
     Mono<Void> setRate(RateType mode, long rate, Duration rateInterval);
 
     /**
+     * Updates the rate limit.
+     * Keeps state
+     *
+     * @param mode rate mode
+     * @param rate rate
+     * @param rateInterval rate time interval
+     * @param keepAliveTime this is the maximum time that the limiter will wait for a new acquisition before deletion
+     */
+    Mono<Void> updateRate(RateType mode, long rate, Duration rateInterval, Duration keepAliveTime);
+
+    /**
+     * Updates the rate limit.
+     * Keeps state
+     *
+     * @param mode rate mode
+     * @param rate rate
+     * @param rateInterval rate time interval
+     */
+    Mono<Void> updateRate(RateType mode, long rate, Duration rateInterval);
+
+    /**
      * Sets time to live, the rate limit, and clears the state.
      * Overrides both limit and state if they haven't been set before.
      *
