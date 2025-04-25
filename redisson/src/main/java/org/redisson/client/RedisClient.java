@@ -20,6 +20,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelOption;
+import io.netty.channel.MultiThreadIoEventLoopGroup;
 import io.netty.channel.epoll.EpollChannelOption;
 import io.netty.channel.epoll.EpollDatagramChannel;
 import io.netty.channel.epoll.EpollSocketChannel;
@@ -28,14 +29,14 @@ import io.netty.channel.group.ChannelGroupFuture;
 import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.channel.kqueue.KQueueDatagramChannel;
 import io.netty.channel.kqueue.KQueueSocketChannel;
-import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.nio.NioIoHandler;
 import io.netty.channel.socket.nio.NioChannelOption;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.channel.unix.DomainSocketAddress;
 import io.netty.channel.unix.DomainSocketChannel;
-import io.netty.incubator.channel.uring.IOUringChannelOption;
-import io.netty.incubator.channel.uring.IOUringSocketChannel;
+import io.netty.channel.uring.IoUringChannelOption;
+import io.netty.channel.uring.IoUringSocketChannel;
 import io.netty.resolver.AddressResolver;
 import io.netty.resolver.dns.DnsAddressResolverGroup;
 import io.netty.resolver.dns.DnsServerAddressStreamProviders;
@@ -91,7 +92,7 @@ public final class RedisClient {
             hasOwnTimer = true;
         }
         if (copy.getGroup() == null) {
-            copy.setGroup(new NioEventLoopGroup());
+            copy.setGroup(new MultiThreadIoEventLoopGroup(NioIoHandler.newFactory()));
             hasOwnGroup = true;
         }
         if (copy.getExecutor() == null) {
@@ -188,18 +189,18 @@ public final class RedisClient {
             if (config.getTcpUserTimeout() > 0) {
                 bootstrap.option(EpollChannelOption.TCP_USER_TIMEOUT, config.getTcpUserTimeout());
             }
-        } else if (config.getSocketChannelClass() == IOUringSocketChannel.class) {
+        } else if (config.getSocketChannelClass() == IoUringSocketChannel.class) {
             if (config.getTcpKeepAliveCount() > 0) {
-                bootstrap.option(IOUringChannelOption.TCP_KEEPCNT, config.getTcpKeepAliveCount());
+                bootstrap.option(IoUringChannelOption.TCP_KEEPCNT, config.getTcpKeepAliveCount());
             }
             if (config.getTcpKeepAliveIdle() > 0) {
-                bootstrap.option(IOUringChannelOption.TCP_KEEPIDLE, config.getTcpKeepAliveIdle());
+                bootstrap.option(IoUringChannelOption.TCP_KEEPIDLE, config.getTcpKeepAliveIdle());
             }
             if (config.getTcpKeepAliveInterval() > 0) {
-                bootstrap.option(IOUringChannelOption.TCP_KEEPINTVL, config.getTcpKeepAliveInterval());
+                bootstrap.option(IoUringChannelOption.TCP_KEEPINTVL, config.getTcpKeepAliveInterval());
             }
             if (config.getTcpUserTimeout() > 0) {
-                bootstrap.option(IOUringChannelOption.TCP_USER_TIMEOUT, config.getTcpUserTimeout());
+                bootstrap.option(IoUringChannelOption.TCP_USER_TIMEOUT, config.getTcpUserTimeout());
             }
         }
     }

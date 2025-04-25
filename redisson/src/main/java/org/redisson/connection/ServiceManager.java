@@ -17,21 +17,22 @@ package org.redisson.connection;
 
 import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.MultiThreadIoEventLoopGroup;
 import io.netty.channel.epoll.EpollDatagramChannel;
 import io.netty.channel.epoll.EpollDomainSocketChannel;
-import io.netty.channel.epoll.EpollEventLoopGroup;
+import io.netty.channel.epoll.EpollIoHandler;
 import io.netty.channel.epoll.EpollSocketChannel;
 import io.netty.channel.kqueue.KQueueDatagramChannel;
 import io.netty.channel.kqueue.KQueueDomainSocketChannel;
-import io.netty.channel.kqueue.KQueueEventLoopGroup;
+import io.netty.channel.kqueue.KQueueIoHandler;
 import io.netty.channel.kqueue.KQueueSocketChannel;
-import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.nio.NioIoHandler;
 import io.netty.channel.socket.DuplexChannel;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.incubator.channel.uring.IOUringDatagramChannel;
-import io.netty.incubator.channel.uring.IOUringEventLoopGroup;
-import io.netty.incubator.channel.uring.IOUringSocketChannel;
+import io.netty.channel.uring.IoUringDatagramChannel;
+import io.netty.channel.uring.IoUringIoHandler;
+import io.netty.channel.uring.IoUringSocketChannel;
 import io.netty.resolver.AddressResolver;
 import io.netty.resolver.AddressResolverGroup;
 import io.netty.resolver.DefaultAddressResolverGroup;
@@ -176,9 +177,9 @@ public final class ServiceManager {
         if (cfg.getTransportMode() == TransportMode.EPOLL) {
             if (cfg.getEventLoopGroup() == null) {
                 if (cfg.getNettyExecutor() != null) {
-                    this.group = new EpollEventLoopGroup(cfg.getNettyThreads(), cfg.getNettyExecutor());
+                    this.group = new MultiThreadIoEventLoopGroup(cfg.getNettyThreads(), cfg.getNettyExecutor(), EpollIoHandler.newFactory());
                 } else {
-                    this.group = new EpollEventLoopGroup(cfg.getNettyThreads(), new DefaultThreadFactory("redisson-netty"));
+                    this.group = new MultiThreadIoEventLoopGroup(cfg.getNettyThreads(), new DefaultThreadFactory("redisson-netty"), EpollIoHandler.newFactory());
                 }
             } else {
                 this.group = cfg.getEventLoopGroup();
@@ -198,9 +199,9 @@ public final class ServiceManager {
         } else if (cfg.getTransportMode() == TransportMode.KQUEUE) {
             if (cfg.getEventLoopGroup() == null) {
                 if (cfg.getNettyExecutor() != null) {
-                    this.group = new KQueueEventLoopGroup(cfg.getNettyThreads(), cfg.getNettyExecutor());
+                    this.group = new MultiThreadIoEventLoopGroup(cfg.getNettyThreads(), cfg.getNettyExecutor(), KQueueIoHandler.newFactory());
                 } else {
-                    this.group = new KQueueEventLoopGroup(cfg.getNettyThreads(), new DefaultThreadFactory("redisson-netty"));
+                    this.group = new MultiThreadIoEventLoopGroup(cfg.getNettyThreads(), new DefaultThreadFactory("redisson-netty"), KQueueIoHandler.newFactory());
                 }
             } else {
                 this.group = cfg.getEventLoopGroup();
@@ -215,19 +216,23 @@ public final class ServiceManager {
             this.resolverGroup = cfg.getAddressResolverGroupFactory().create(KQueueDatagramChannel.class, KQueueSocketChannel.class, DnsServerAddressStreamProviders.platformDefault());
         } else if (cfg.getTransportMode() == TransportMode.IO_URING) {
             if (cfg.getEventLoopGroup() == null) {
-                this.group = createIOUringGroup(cfg);
+                if (cfg.getNettyExecutor() != null) {
+                    this.group = new MultiThreadIoEventLoopGroup(cfg.getNettyThreads(), cfg.getNettyExecutor(), IoUringIoHandler.newFactory());
+                } else {
+                    this.group = new MultiThreadIoEventLoopGroup(cfg.getNettyThreads(), new DefaultThreadFactory("redisson-netty"), IoUringIoHandler.newFactory());
+                }
             } else {
                 this.group = cfg.getEventLoopGroup();
             }
 
-            this.socketChannelClass = IOUringSocketChannel.class;
-            this.resolverGroup = cfg.getAddressResolverGroupFactory().create(IOUringDatagramChannel.class, IOUringSocketChannel.class, DnsServerAddressStreamProviders.platformDefault());
+            this.socketChannelClass = IoUringSocketChannel.class;
+            this.resolverGroup = cfg.getAddressResolverGroupFactory().create(IoUringDatagramChannel.class, IoUringSocketChannel.class, DnsServerAddressStreamProviders.platformDefault());
         } else {
             if (cfg.getEventLoopGroup() == null) {
                 if (cfg.getNettyExecutor() != null) {
-                    this.group = new NioEventLoopGroup(cfg.getNettyThreads(), cfg.getNettyExecutor());
+                    this.group = new MultiThreadIoEventLoopGroup(cfg.getNettyThreads(), cfg.getNettyExecutor(), NioIoHandler.newFactory());
                 } else {
-                    this.group = new NioEventLoopGroup(cfg.getNettyThreads(), new DefaultThreadFactory("redisson-netty"));
+                    this.group = new MultiThreadIoEventLoopGroup(cfg.getNettyThreads(), new DefaultThreadFactory("redisson-netty"), NioIoHandler.newFactory());
                 }
             } else {
                 this.group = cfg.getEventLoopGroup();
@@ -271,11 +276,6 @@ public final class ServiceManager {
         });
 
         initTimer();
-    }
-
-    // for Quarkus substitution
-    private static EventLoopGroup createIOUringGroup(Config cfg) {
-        return new IOUringEventLoopGroup(cfg.getNettyThreads(), new DefaultThreadFactory("redisson-netty"));
     }
 
     private void initTimer() {
