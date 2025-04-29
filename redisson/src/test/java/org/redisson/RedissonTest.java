@@ -667,6 +667,7 @@ public class RedissonTest extends RedisDockerTest {
     @Test
     public void testCommandMapper() {
         Config c = createConfig();
+        c.setUseScriptCache(false);
         c.useSingleServer().setCommandMapper(n -> {
             if (n.equals("EVAL")) {
                 return "EVAL_111";
