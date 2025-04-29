@@ -16,7 +16,7 @@ long id = generator.nextId();
 
 Code example of **[Async](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RIdGeneratorAsync.html) interface** usage:
 ```java
-RIdGenerator generator = redisson.getIdGenerator("generator");
+RIdGeneratorAsync generator = redisson.getIdGenerator("generator");
 
 // Initialize with start value = 12 and allocation size = 20000
 RFuture<Boolean> initFuture = generator.tryInitAsync(12, 20000);
@@ -27,7 +27,7 @@ RFuture<Long> idFuture = generator.nextIdAsync();
 Code example of **[Reactive](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RIdGeneratorReactive.html) interface** usage:
 ```java
 RedissonReactiveClient redisson = redissonClient.reactive();
-RIdGenerator generator = redisson.getIdGenerator("generator");
+RIdGeneratorReactive generator = redisson.getIdGenerator("generator");
 
 // Initialize with start value = 12 and allocation size = 20000
 Mono<Boolean> initMono = generator.tryInit(12, 20000);
@@ -38,7 +38,7 @@ Mono<Long> idMono = generator.nextId();
 Code example of **[RxJava3](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RIdGeneratorRx.html) interface** usage:
 ```java
 RedissonRxClient redisson = redissonClient.rxJava();
-RIdGenerator generator = redisson.getIdGenerator("generator");
+RIdGeneratorRx generator = redisson.getIdGenerator("generator");
 
 // Initialize with start value = 12 and allocation size = 20000
 Single<Boolean> initRx = generator.tryInit(12, 20000);

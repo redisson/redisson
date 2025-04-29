@@ -550,17 +550,31 @@ spring.cloud.stream.bindings.receiveMessage-in-0.destination=my-channel
 
 ### Publishing messages
 
-Register the output binder (an event source) for publishing messages as follows:
+- Using an output binder
 
-```java
-@Bean
-public Supplier<MyObject> feedSupplier() {
-	return () -> {
-           // ...
-           return new MyObject();
-	};
-}
-```
+    Register the output binder (an event source) for publishing messages as follows:
+
+    ```java
+    @Bean
+    public Supplier<MyObject> feedSupplier() {
+        return () -> {
+               // ...
+               return new MyObject();
+        };
+    }
+    ```
+
+
+
+- Using org.springframework.cloud.stream.function.StreamBridge object
+
+   ```java
+   StreamBridge bridge;
+   
+   bridge.send("feedSupplier-out-0", new MyObject());
+   ```
+
+
 
 Define channel id in the configuration file `application.properties`. Example for `feedSupplier` bean defined above connected to `my-channel` channel:
 
