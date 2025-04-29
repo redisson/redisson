@@ -3,6 +3,30 @@ Redisson Releases History
 
 Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
 
+### 29-Apr-2025 - 3.46.0 released
+
+Feature - [Reliable Queue](https://redisson.pro/docs/data-and-services/queues/#reliable-queue) object added. `RDelayedQueue` and `RBoundedBlockingQueue` have been deprecated  
+Feature - `fairLockWaitTimeout` Redisson setting added (thanks to @seakider)  
+Feature - `credentialsReapplyInterval` Redisson setting added (thanks to @seakider)  
+Feature - support for JDK Atomic objects in Kryo5Codec (thanks to @bergander)  
+Feature - `WorkerOptions.tasksInjector` setting added (thanks to @zzhlhc)  
+
+Breaking change - Spring Cloud Stream Binder queue implementation replaced with `RReliableQueue` object  
+Breaking change - RedisPubSubConnection.removeListener() and RedisPubSubConnection.addListener() methods signature changed  
+
+Improvement - `useScriptCache` setting is true by default  
+Improvement - Add check for `keepAliveTime` and `rateInterval` in RRateLimiter (thanks to @shrink)  
+
+Fixed - data leak in RReliableTopic (thanks to @Chengzhi1803472613)  
+Fixed - PubSub stops working after Redis restart in sentinel mode (thanks to @seakider)  
+Fixed - `CommandAsyncService.syncedEval()` method doesn't update correctly available secondary nodes  
+Fixed - `expire-after-write` and `expire-after-access` settings aren't applied to async Micronaut Cache  
+Fixed - `RBatch` exception object doesn't contain suppressed exceptions  
+Fixed - `RRemoteService` fails to operate if codec defined as an anonymous inner class  
+Fixed - Watchdog fails to renew on reentry locks (thanks to @seakider)  
+Fixed - `RKeys.unlinkByPattern()` and `RKeys.deleteByPattern()` methods don't handle keys with non-ASCII characters  
+Fixed - `RenewalTask` throws `IndexOutOfBoundsException`  
+
 ### 18-Mar-2025 - 3.45.1 released
 
 Fixed - Issue with asynchronous Micronaut @Cacheable methods (thanks to @seakider)  
