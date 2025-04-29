@@ -15,8 +15,6 @@
  */
 package org.redisson.api;
 
-import java.util.concurrent.BlockingQueue;
-
 /**
  * Instead, use the {@link RReliableQueue} object with the queue size limit feature.
  *

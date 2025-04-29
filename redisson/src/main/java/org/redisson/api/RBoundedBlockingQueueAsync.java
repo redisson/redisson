@@ -15,7 +15,6 @@
  */
 package org.redisson.api;
 
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 /**
