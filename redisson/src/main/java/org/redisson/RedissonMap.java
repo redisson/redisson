@@ -1245,9 +1245,13 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
                         }).collect(Collectors.toList());
 
                 CompletableFuture<Void> ff = CompletableFuture.allOf(r.toArray(new CompletableFuture[0]));
-                ff.thenApply(v -> {
+                ff.whenComplete((v, e) -> {
                     customThreadPool.shutdown();
-                    return result.complete(v);
+                    if (e != null) {
+                        result.completeExceptionally(e);
+                        return;
+                    }
+                    result.complete(v);
                 });
             } catch (Exception e) {
                 result.completeExceptionally(e);
