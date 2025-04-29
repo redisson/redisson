@@ -1310,6 +1310,43 @@ public interface RedissonReactiveClient {
     <V> RQueueReactive<V> getQueue(PlainOptions options);
 
     /**
+     * Returns a reliable queue instance by name.
+     * <p>
+     * The reliable queue provides guaranteed message delivery through acknowledgment mechanisms
+     * and synchronous replication.
+     *
+     * @param name the name of the queue
+     * @param <V> the type of elements in this queue
+     * @return Reliable queue instance
+     */
+    <V> RReliableQueueReactive<V> getReliableQueue(String name);
+
+    /**
+     * Returns a reliable queue instance by name and provided codec.
+     * <p>
+     * The reliable queue provides guaranteed message delivery through acknowledgment mechanisms
+     * and synchronous replication.
+     *
+     * @param name the name of the queue
+     * @param codec the codec used for message serialization and deserialization
+     * @param <V> the type of elements in this queue
+     * @return Reliable queue instance
+     */
+    <V> RReliableQueueReactive<V> getReliableQueue(String name, Codec codec);
+
+    /**
+     * Returns a reliable queue instance with the specified configuration options.
+     * <p>
+     * The reliable queue provides guaranteed message delivery through acknowledgment mechanisms
+     * and synchronous replication.
+     *
+     * @param options configuration options for the reliable queue
+     * @param <V> the type of elements in this queue
+     * @return Reliable queue instance
+     */
+    <V> RReliableQueueReactive<V> getReliableQueue(PlainOptions options);
+
+    /**
      * Returns RingBuffer based queue.
      * 
      * @param <V> value type
