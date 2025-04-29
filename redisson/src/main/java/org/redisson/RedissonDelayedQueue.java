@@ -33,6 +33,7 @@ import java.util.concurrent.TimeUnit;
  *
  * @param <V> value type
  */
+@Deprecated
 public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelayedQueue<V> {
 
     private final String channelName;

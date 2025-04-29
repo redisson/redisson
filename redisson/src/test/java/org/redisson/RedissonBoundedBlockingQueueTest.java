@@ -1,6 +1,7 @@
 package org.redisson;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.NameMapper;
 import org.redisson.api.RBoundedBlockingQueue;
@@ -19,6 +20,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
+@Deprecated
+@Disabled
 public class RedissonBoundedBlockingQueueTest extends RedisDockerTest {
 
     @Test

@@ -41,6 +41,7 @@ import java.util.function.Function;
  *
  * @author Nikita Koksharov
  */
+@Deprecated
 public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements RBoundedBlockingQueue<V> {
 
     private final RedissonBlockingQueue<V> blockingQueue;

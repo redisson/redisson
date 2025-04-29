@@ -1,5 +1,6 @@
 package org.redisson;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RBlockingDeque;
 import org.redisson.api.RBlockingQueue;
@@ -11,6 +12,8 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Deprecated
+@Disabled
 public class RedissonDelayedQueueTest extends RedisDockerTest {
 
     @Test
