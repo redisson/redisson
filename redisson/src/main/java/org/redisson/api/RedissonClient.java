@@ -1318,16 +1318,50 @@ public interface RedissonClient {
     <V> RTransferQueue<V> getTransferQueue(PlainOptions options);
 
     /**
-     * Returns unbounded delayed queue instance by name.
-     * <p>
-     * Could be attached to destination queue only.
-     * All elements are inserted with transfer delay to destination queue.
+     * Instead, use the {@link RReliableQueue} object with delay feature.
      * 
      * @param <V> type of value
      * @param destinationQueue destination queue
      * @return Delayed queue object
      */
     <V> RDelayedQueue<V> getDelayedQueue(RQueue<V> destinationQueue);
+
+    /**
+     * Returns a reliable queue instance by name.
+     * <p>
+     * The reliable queue provides guaranteed message delivery through acknowledgment mechanisms
+     * and synchronous replication.
+     *
+     * @param name the name of the queue
+     * @param <V> the type of elements in this queue
+     * @return Reliable queue instance
+     */
+    <V> RReliableQueue<V> getReliableQueue(String name);
+
+    /**
+     * Returns a reliable queue instance by name and provided codec.
+     * <p>
+     * The reliable queue provides guaranteed message delivery through acknowledgment mechanisms
+     * and synchronous replication.
+     *
+     * @param name the name of the queue
+     * @param codec the codec used for message serialization and deserialization
+     * @param <V> the type of elements in this queue
+     * @return Reliable queue instance
+     */
+    <V> RReliableQueue<V> getReliableQueue(String name, Codec codec);
+
+    /**
+     * Returns a reliable queue instance with the specified configuration options.
+     * <p>
+     * The reliable queue provides guaranteed message delivery through acknowledgment mechanisms
+     * and synchronous replication.
+     *
+     * @param options configuration options for the reliable queue
+     * @param <V> the type of elements in this queue
+     * @return Reliable queue instance
+     */
+    <V> RReliableQueue<V> getReliableQueue(PlainOptions options);
 
     /**
      * Returns unbounded queue instance by name
@@ -1527,32 +1561,34 @@ public interface RedissonClient {
     <V> RBlockingQueue<V> getBlockingQueue(PlainOptions options);
 
     /**
-     * Returns bounded blocking queue instance by name.
+     * Instead, use the {@link RReliableQueue} object with the queue size limit feature.
      *
      * @param <V> type of value
      * @param name of queue
      * @return BoundedBlockingQueue object
      */
+    @Deprecated
     <V> RBoundedBlockingQueue<V> getBoundedBlockingQueue(String name);
 
     /**
-     * Returns bounded blocking queue instance by name
-     * using provided codec for queue objects.
+     * Instead, use the {@link RReliableQueue} object with the queue size limit feature.
      * 
      * @param <V> type of value
      * @param name name of queue
      * @param codec codec for values
      * @return BoundedBlockingQueue object
      */
+    @Deprecated
     <V> RBoundedBlockingQueue<V> getBoundedBlockingQueue(String name, Codec codec);
 
     /**
-     * Returns bounded blocking queue instance with specified <code>options</code>.
+     * Instead, use the {@link RReliableQueue} object with the queue size limit feature.
      *
      * @param <V> type of value
      * @param options instance options
      * @return BoundedBlockingQueue object
      */
+    @Deprecated
     <V> RBoundedBlockingQueue<V> getBoundedBlockingQueue(PlainOptions options);
 
     /**

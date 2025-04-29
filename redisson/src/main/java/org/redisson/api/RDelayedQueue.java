@@ -18,12 +18,13 @@ package org.redisson.api;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Distributed implementation of delayed queue.
- * 
+ * Instead, use the {@link RReliableQueue} object with delay feature.
+ *
  * @author Nikita Koksharov
  *
  * @param <V> value type
  */
+@Deprecated
 public interface RDelayedQueue<V> extends RQueue<V>, RDestroyable {
 
     /**

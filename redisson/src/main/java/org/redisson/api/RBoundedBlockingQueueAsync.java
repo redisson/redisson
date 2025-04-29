@@ -19,11 +19,12 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Distributed async implementation of bounded {@link BlockingQueue}
+ * Instead, use the {@link RReliableQueue} object with the queue size limit feature.
  *
  * @author Nikita Koksharov
  * @param <V> the type of elements held in this collection
  */
+@Deprecated
 public interface RBoundedBlockingQueueAsync<V> extends RBlockingQueueAsync<V> {
 
     /**
