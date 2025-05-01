@@ -980,14 +980,10 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     public <T> CompletionStage<T> handleNoSync(CompletionStage<T> stage, Supplier<CompletionStage<?>> supplier) {
         CompletionStage<T> s = stage.handle((r, ex) -> {
             if (ex != null) {
-                if (ex.getCause() != null
-                        && ex.getCause().getMessage() != null
-                            && ex.getCause().getMessage().equals("None of slaves were synced")) {
+                if (ex.getCause() instanceof NoSyncedSlavesException) {
                     return supplier.get().handle((r1, e) -> {
                         if (e != null) {
-                            if (e.getCause() != null
-                                    && e.getCause().getMessage() != null
-                                        && e.getCause().getMessage().equals("None of slaves were synced")) {
+                            if (e.getCause() instanceof NoSyncedSlavesException) {
                                 throw new CompletionException(ex.getCause());
                             }
                             if (e.getCause() != null) {
@@ -1132,7 +1128,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                     if (getServiceManager().getCfg().isCheckLockSyncedSlaves()
                             && res.getSyncedSlaves() == 0 && availableSlaves > 0) {
                         throw new CompletionException(
-                                new IllegalStateException("None of slaves were synced. Try to increase slavesSyncTimeout setting or set checkLockSyncedSlaves = false."));
+                                new NoSyncedSlavesException("None of slaves were synced. Try to increase slavesSyncTimeout setting or set checkLockSyncedSlaves = false."));
                     }
 
                     return getNow(result.toCompletableFuture());

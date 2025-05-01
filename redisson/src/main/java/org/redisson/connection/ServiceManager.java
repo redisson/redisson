@@ -55,6 +55,7 @@ import org.redisson.client.RedisNodeNotFoundException;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.command.NoSyncedSlavesException;
 import org.redisson.config.Config;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.config.Protocol;
@@ -572,9 +573,7 @@ public final class ServiceManager {
         CompletionStage<T> future = supplier.get();
         future.whenComplete((r, e) -> {
             if (e != null) {
-                if (e.getCause() != null
-                        && e.getCause().getMessage() != null
-                            && e.getCause().getMessage().equals("None of slaves were synced")) {
+                if (e.getCause() instanceof NoSyncedSlavesException) {
                     if (attempts.decrementAndGet() < 0) {
                         result.completeExceptionally(e);
                         return;
