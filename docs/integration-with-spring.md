@@ -274,33 +274,72 @@ spring:
 {% include 'cache/Spring-cache.md' %}
 
 ## Spring Session
-Please note that Redis or Valkey `notify-keyspace-events` setting should contain `Exg` letters to make Spring Session integration work.
+
+### Dependencies
+
+!!! note
+	Redis or Valkey `notify-keyspace-events` setting should contain `Exg` letters to make Spring Session integration work.
 
 Ensure you have Spring Session library in your classpath, add it if necessary:  
 
-**Maven**
+1. Add Spring Session Data Redis library in classpath:  
+    Maven:
+    ```xml
+    <dependency>
+      <groupId>org.springframework.session</groupId>
+      <artifactId>spring-session-data-redis</artifactId>
+      <version>3.4.3</version>
+    </dependency>
+    ```
+    Gradle:
+    ```gradle
+    compile 'org.springframework.session:spring-session-data-redis:3.4.3'  
+    ```
+2. Add [Redisson Spring Data Redis](#spring-data-redis) library in classpath:  
 
-```xml
-<dependency>
-    <groupId>org.springframework.session</groupId>
-    <artifactId>spring-session-core</artifactId>
-    <version>3.4.1</version>
-</dependency>
+    <div class="grid cards" markdown>
 
-<dependency>
-   <groupId>org.redisson</groupId>
-   <artifactId>redisson-spring-data-34</artifactId>
-   <version>xVERSIONx</version>
-</dependency>
-```
+    -   **Redisson PRO**
 
-**Gradle**
+        Maven
 
-```gradle
-compile 'org.springframework.session:spring-session-core:3.4.1'
+        ```xml  
+        <dependency>
+           <groupId>pro.redisson</groupId>
+           <artifactId>redisson-spring-data-34</artifactId>
+           <version>xVERSIONx</version>
+        </dependency>
+        ```
 
-compile 'org.redisson:redisson-spring-data-34:xVERSIONx'
-```
+        Gradle
+
+        ```groovy
+        compile 'pro.redisson:redisson-spring-data-34:xVERSIONx'
+        ```
+
+    -   **Community Edition**
+
+        Maven
+
+        ```xml  
+        <dependency>
+           <groupId>org.redisson</groupId>
+           <artifactId>redisson-spring-data-34</artifactId>
+           <version>xVERSIONx</version>
+        </dependency>
+        ```
+
+        Gradle
+
+        ```groovy
+        compile 'org.redisson:redisson-spring-data-34:xVERSIONx'
+        ```
+
+    </div>
+
+    [Redisson PRO vs. Community Edition ➜](https://redisson.pro/feature-comparison.html)
+    <br>
+    <br>    
 
 ### Spring Http Session configuration
 
@@ -347,66 +386,7 @@ Add configuration class which extends `AbstractReactiveWebInitializer` class:
 
 ### Spring Boot configuration
 
-1. Add Spring Session Data Redis library in classpath:  
-    Maven:
-    ```xml
-    <dependency>
-      <groupId>org.springframework.session</groupId>
-      <artifactId>spring-session-data-redis</artifactId>
-      <version>3.2.1</version>
-    </dependency>
-    ```
-    Gradle:
-    ```gradle
-    compile 'org.springframework.session:spring-session-data-redis:3.4.1'  
-    ```
-2. Add Redisson Spring Data Redis library in classpath:  
-
-    <div class="grid cards" markdown>
-
-    -   **Redisson PRO**
-
-        Maven
-
-        ```xml  
-        <dependency>
-           <groupId>pro.redisson</groupId>
-           <artifactId>redisson-spring-data-34</artifactId>
-           <version>xVERSIONx</version>
-        </dependency>
-        ```
-
-        Gradle
-
-        ```groovy
-        compile 'pro.redisson:redisson-spring-data-34:xVERSIONx'
-        ```
-
-    -   **Community Edition**
-
-        Maven
-
-        ```xml  
-        <dependency>
-           <groupId>org.redisson</groupId>
-           <artifactId>redisson-spring-data-34</artifactId>
-           <version>xVERSIONx</version>
-        </dependency>
-        ```
-
-        Gradle
-
-        ```groovy
-        compile 'org.redisson:redisson-spring-data-34:xVERSIONx'
-        ```
-
-    </div>
-
-    [Redisson PRO vs. Community Edition ➜](https://redisson.pro/feature-comparison.html)
-    <br>
-    <br>    
-
-3. Define follow properties in spring-boot settings  
+Define follow properties in spring-boot settings:  
     ```
     spring.session.store-type=redis
     spring.redis.redisson.file=classpath:redisson.yaml
