@@ -977,11 +977,12 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         return poll(codec, ref, names, counter, command);
     }
 
-    public <T> CompletionStage<T> handleNoSync(CompletionStage<T> stage, Supplier<CompletionStage<?>> supplier) {
+    @Override
+    public <T> CompletionStage<T> handleNoSync(CompletionStage<T> stage, Function<Throwable, CompletionStage<?>> supplier) {
         CompletionStage<T> s = stage.handle((r, ex) -> {
             if (ex != null) {
                 if (ex.getCause() instanceof NoSyncedSlavesException) {
-                    return supplier.get().handle((r1, e) -> {
+                    return supplier.apply(ex.getCause()).handle((r1, e) -> {
                         if (e != null) {
                             if (e.getCause() instanceof NoSyncedSlavesException) {
                                 throw new CompletionException(ex.getCause());

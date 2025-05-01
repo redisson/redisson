@@ -267,7 +267,7 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
     }
 
     protected final <T> CompletionStage<T> handleNoSync(long threadId, CompletionStage<T> ttlRemainingFuture) {
-        return commandExecutor.handleNoSync(ttlRemainingFuture, () -> unlockInnerAsync(threadId));
+        return commandExecutor.handleNoSync(ttlRemainingFuture, e -> unlockInnerAsync(threadId));
     }
 
     @Override
