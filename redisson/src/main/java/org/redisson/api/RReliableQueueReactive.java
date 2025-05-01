@@ -68,7 +68,7 @@ public interface RReliableQueueReactive<V> extends RExpirableRx {
 
     /**
      * Returns the total number of messages in the queue, including messages in all states
-     * (ready, delayed, and unacknowledged).
+     * (ready for polling, delayed, and unacknowledged).
      *
      * @return the total number of messages
      */
