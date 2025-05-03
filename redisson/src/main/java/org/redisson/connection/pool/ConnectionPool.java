@@ -105,8 +105,8 @@ abstract class ConnectionPool<T extends RedisConnection> {
         CompletableFuture<T> result = handler.acquireConnection(command);
         CompletableFuture<T> cancelableFuture = new CompletableFuture<>();
         cancelableFuture.whenComplete((r, e) -> {
-            if (cancelableFuture.isCancelled()) {
-                result.cancel(false);
+            if (e != null) {
+                result.completeExceptionally(e);
             }
         });
         result.whenComplete((r, e) -> {
