@@ -41,11 +41,9 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>io.netty.incubator</groupId>
-            <artifactId>netty-incubator-transport-native-io_uring</artifactId>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-transport-native-io_uring</artifactId>
             <scope>provided</scope>
-            <version>0.0.25.Final</version>
-            <classifier>linux-x86_64</classifier>
         </dependency>
 
         <dependency>
