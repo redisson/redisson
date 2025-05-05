@@ -547,9 +547,9 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             String sha1 = getServiceManager().calcSHA(mappedScript);
             RedisCommand cmd;
             if (readOnlyMode && EVAL_SHA_RO_SUPPORTED.get()) {
-                cmd = new RedisCommand(evalCommandType, "EVALSHA_RO");
+                cmd = new RedisCommand(evalCommandType, "EVALSHA_RO", mappedScript);
             } else {
-                cmd = new RedisCommand(evalCommandType, "EVALSHA");
+                cmd = new RedisCommand(evalCommandType, "EVALSHA", mappedScript);
             }
             List<Object> args = new ArrayList<Object>(2 + keys.size() + params.length);
             args.add(sha1);
