@@ -934,7 +934,7 @@ public final class Redisson implements RedissonClient {
     @Override
     public <V> RDelayedQueue<V> getDelayedQueue(RQueue<V> destinationQueue) {
         if (printed.add(2)) {
-            log.error("RDelayedQueue object is deprecated. Use RReliableQueue object instead.");
+            log.error("RDelayedQueue object is deprecated due to github issues #3020, #2998, #1057. Use RReliableQueue object instead.");
         }
 
         if (destinationQueue == null) {
@@ -1035,7 +1035,7 @@ public final class Redisson implements RedissonClient {
     @Override
     public <V> RBoundedBlockingQueue<V> getBoundedBlockingQueue(String name) {
         if (printed.add(5)) {
-            log.error("RBoundedBlockingQueue object is deprecated. Instead, use the RReliableQueue object with delay feature.");
+            log.error("RBoundedBlockingQueue object is deprecated due to github issues #3979, #3835, #4481, #5104, #5575, #5653. Instead, use the RReliableQueue object with delay feature.");
         }
 
         return new RedissonBoundedBlockingQueue<V>(commandExecutor, name, this);
@@ -1044,7 +1044,7 @@ public final class Redisson implements RedissonClient {
     @Override
     public <V> RBoundedBlockingQueue<V> getBoundedBlockingQueue(String name, Codec codec) {
         if (printed.add(4)) {
-            log.error("RBoundedBlockingQueue object is deprecated. Instead, use the RReliableQueue object with delay feature.");
+            log.error("RBoundedBlockingQueue object is deprecated due to github issues #3979, #3835, #4481, #5104, #5575, #5653. Instead, use the RReliableQueue object with delay feature.");
         }
 
         return new RedissonBoundedBlockingQueue<V>(codec, commandExecutor, name, this);
@@ -1053,7 +1053,7 @@ public final class Redisson implements RedissonClient {
     @Override
     public <V> RBoundedBlockingQueue<V> getBoundedBlockingQueue(PlainOptions options) {
         if (printed.add(3)) {
-            log.error("RBoundedBlockingQueue object is deprecated. Instead, use the RReliableQueue object with delay feature.");
+            log.error("RBoundedBlockingQueue object is deprecated due to github issues #3979, #3835, #4481, #5104, #5575, #5653. Instead, use the RReliableQueue object with delay feature.");
         }
 
         PlainParams params = (PlainParams) options;
