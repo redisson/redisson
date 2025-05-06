@@ -58,7 +58,7 @@ public class RedissonRegionNativeFactory extends RedissonRegionFactory {
     @Override
     protected RMapCache<Object, Object> getCache(String regionName, Properties properties, String defaultKey) {
         RMapCacheNative<Object, Object> cache = redisson.getMapCacheNative(regionName);
-        return new MapCacheNativeWrapper<>(cache, (Redisson) redisson);
+        return new MapCacheNativeWrapper<>(cache);
     }
     
 }

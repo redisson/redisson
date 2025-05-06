@@ -16,7 +16,6 @@
 package org.redisson.mybatis;
 
 import org.redisson.MapCacheNativeWrapper;
-import org.redisson.Redisson;
 import org.redisson.api.RMapCache;
 import org.redisson.api.RMapCacheNative;
 import org.redisson.api.RedissonClient;
@@ -45,7 +44,7 @@ public class RedissonCacheNative extends RedissonCache {
     @Override
     protected RMapCache<Object, Object> getMapCache(String id, RedissonClient redisson) {
         RMapCacheNative<Object, Object> cache = redisson.getMapCacheNative(id);
-        return new MapCacheNativeWrapper<>(cache, (Redisson) redisson);
+        return new MapCacheNativeWrapper<>(cache);
     }
 
 }

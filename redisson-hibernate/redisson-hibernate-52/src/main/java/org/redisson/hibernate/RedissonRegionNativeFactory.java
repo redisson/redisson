@@ -18,7 +18,6 @@ package org.redisson.hibernate;
 import org.hibernate.boot.spi.SessionFactoryOptions;
 import org.hibernate.cache.CacheException;
 import org.redisson.MapCacheNativeWrapper;
-import org.redisson.Redisson;
 import org.redisson.api.RMapCache;
 import org.redisson.api.RMapCacheNative;
 
@@ -58,7 +57,7 @@ public class RedissonRegionNativeFactory extends RedissonRegionFactory {
     @Override
     protected RMapCache<Object, Object> getCache(String regionName, Properties properties, String defaultKey) {
         RMapCacheNative<Object, Object> cache = redisson.getMapCacheNative(regionName);
-        return new MapCacheNativeWrapper<>(cache, (Redisson) redisson);
+        return new MapCacheNativeWrapper<>(cache);
     }
     
 }

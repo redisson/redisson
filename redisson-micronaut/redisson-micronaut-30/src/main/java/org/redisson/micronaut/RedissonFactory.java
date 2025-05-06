@@ -76,7 +76,7 @@ public class RedissonFactory {
         RMapCache<Object, Object> mapCache = null;
         RMapCacheNative<Object, Object> map = redisson.getMapCacheNative(configuration.getMapOptions());
         if (configuration.getExpireAfterWrite().toMillis() != 0) {
-            mapCache = new MapCacheNativeWrapper<>(map, (Redisson) redisson);
+            mapCache = new MapCacheNativeWrapper<>(map);
         }
 
         return new RedissonSyncCache(conversionService, mapCache, map, executorService, configuration);
