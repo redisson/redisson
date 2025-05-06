@@ -16,7 +16,6 @@
 package org.redisson.spring.cache;
 
 import org.redisson.MapCacheNativeWrapper;
-import org.redisson.Redisson;
 import org.redisson.api.RMap;
 import org.redisson.api.RMapCache;
 import org.redisson.api.RMapCacheNative;
@@ -133,7 +132,7 @@ public class RedissonSpringCacheNativeManager extends RedissonSpringCacheManager
     @Override
     protected RMapCache<Object, Object> getMapCache(String name, CacheConfig config) {
         RMapCacheNative<Object, Object> map = (RMapCacheNative<Object, Object>) getMap(name, config);
-        return new MapCacheNativeWrapper<>(map, (Redisson) redisson);
+        return new MapCacheNativeWrapper<>(map);
     }
 
     @Override
