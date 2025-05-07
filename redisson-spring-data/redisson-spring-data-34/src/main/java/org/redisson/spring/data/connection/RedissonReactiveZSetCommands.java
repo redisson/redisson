@@ -79,11 +79,12 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
             
             List<Object> params = new ArrayList<Object>(command.getTuples().size()*2+1);
             params.add(keyBuf);
-            if (command.isIncr() || command.isUpsert() || command.isReturnTotalChanged()) {
-                if (command.isUpsert()) {
-                    params.add("NX");
-                } else {
+            if (command.isIncr() || !command.isUpsert() || command.isReturnTotalChanged()) {
+                if (command.isIfExists()) {
                     params.add("XX");
+                }
+                if (command.isIfNotExists()) {
+                    params.add("NX");
                 }
                 if (command.isReturnTotalChanged()) {
                     params.add("CH");
