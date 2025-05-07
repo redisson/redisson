@@ -355,7 +355,7 @@
             <groupId>org.springframework</groupId>
             <artifactId>spring-beans</artifactId>
             <!-- 4.1+ -->
-            <version>6.1.14</version>
+            <version>6.2.6</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
