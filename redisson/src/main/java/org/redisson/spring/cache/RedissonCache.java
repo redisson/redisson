@@ -74,6 +74,9 @@ public class RedissonCache implements Cache {
 
     @Override
     public RMap<?, ?> getNativeCache() {
+        if (map instanceof Supplier) {
+            return (RMap<?, ?>) ((Supplier<?>) map).get();
+        }
         return map;
     }
 
