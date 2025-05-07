@@ -605,6 +605,10 @@ public final class ServiceManager {
 
     private final Random random = RandomXoshiro256PlusPlus.create();
 
+    public Random getRandom() {
+        return random;
+    }
+
     public Long generateValue() {
         return random.nextLong();
     }

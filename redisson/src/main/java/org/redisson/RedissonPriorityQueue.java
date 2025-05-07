@@ -280,7 +280,7 @@ public class RedissonPriorityQueue<V> extends BaseRedissonList<V> implements RPr
     }
 
     protected final <T, R> RFuture<R> wrapLockedAsync(Supplier<RFuture<R>> callable) {
-        long randomId = getServiceManager().generateValue();
+        long randomId = getServiceManager().getRandom().nextLong();
         CompletionStage<R> f = lock.lockAsync(randomId).thenCompose(r -> {
             RFuture<R> callback = callable.get();
             return callback.handle((value, ex) -> {
