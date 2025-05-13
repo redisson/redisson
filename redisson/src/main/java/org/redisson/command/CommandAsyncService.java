@@ -497,6 +497,20 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         return result;
     }
 
+    private static String trunc(String input) {
+        final int maxLength = 11;
+
+        if (input == null) {
+            return null;
+        }
+
+        if (input.length() <= maxLength) {
+            return input;
+        }
+
+        return input.substring(0, maxLength) + "...";
+    }
+
     protected final Object[] copy(Object[] params) {
         return copy(Arrays.asList(params)).toArray();
     }
@@ -547,9 +561,9 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             String sha1 = getServiceManager().calcSHA(mappedScript);
             RedisCommand cmd;
             if (readOnlyMode && EVAL_SHA_RO_SUPPORTED.get()) {
-                cmd = new RedisCommand(evalCommandType, "EVALSHA_RO", mappedScript.substring(0, 100) + "...");
+                cmd = new RedisCommand(evalCommandType, "EVALSHA_RO", trunc(mappedScript));
             } else {
-                cmd = new RedisCommand(evalCommandType, "EVALSHA", mappedScript.substring(0, 100) + "...");
+                cmd = new RedisCommand(evalCommandType, "EVALSHA", trunc(mappedScript));
             }
             List<Object> args = new ArrayList<Object>(2 + keys.size() + params.length);
             args.add(sha1);
