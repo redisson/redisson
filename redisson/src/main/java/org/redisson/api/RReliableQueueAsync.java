@@ -16,6 +16,7 @@
 package org.redisson.api;
 
 import org.redisson.api.queue.*;
+import org.redisson.api.queue.event.QueueEventListener;
 import org.redisson.client.codec.Codec;
 
 import java.util.List;
@@ -108,6 +109,7 @@ public interface RReliableQueueAsync<V> extends RExpirableAsync {
      * using the {@link #acknowledgeAsync(QueueAckArgs)} or {@link #negativeAcknowledgeAsync(QueueNegativeAckArgs)} method.
      *
      * @return the message in the head of this queue, or {@code null} if this queue is empty
+     * @throws OperationDisabledException if this operation is disabled
      */
     RFuture<Message<V>> pollAsync();
 
@@ -119,6 +121,7 @@ public interface RReliableQueueAsync<V> extends RExpirableAsync {
      *
      * @param args polling arguments
      * @return the message in the head of this queue, or {@code null} if this queue is empty
+     * @throws OperationDisabledException if this operation is disabled
      */
     RFuture<Message<V>> pollAsync(QueuePollArgs args);
 
@@ -132,6 +135,7 @@ public interface RReliableQueueAsync<V> extends RExpirableAsync {
      *
      * @param pargs polling arguments
      * @return a list of retrieved messages
+     * @throws OperationDisabledException if this operation is disabled
      */
     RFuture<List<Message<V>>> pollManyAsync(QueuePollArgs pargs);
 
@@ -197,6 +201,7 @@ public interface RReliableQueueAsync<V> extends RExpirableAsync {
      *
      * @param params parameters for the message to be added
      * @return the added message with its assigned ID and metadata
+     * @throws OperationDisabledException if this operation is disabled
      */
     RFuture<Message<V>> addAsync(QueueAddArgs<V> params);
 
@@ -213,6 +218,7 @@ public interface RReliableQueueAsync<V> extends RExpirableAsync {
      *
      * @param params parameters for the messages to be added
      * @return a list of added messages with their assigned IDs and metadata
+     * @throws OperationDisabledException if this operation is disabled
      */
     RFuture<List<Message<V>>> addManyAsync(QueueAddArgs<V> params);
 
@@ -232,7 +238,7 @@ public interface RReliableQueueAsync<V> extends RExpirableAsync {
      *
      * @return a list of all messages in the queue
      */
-    RFuture<List<Message<V>>> readAllAsync();
+    RFuture<List<Message<V>>> listAllAsync();
 
     /**
      * Returns all messages in the queue, ready to be retrieved by the poll() command,
@@ -241,7 +247,41 @@ public interface RReliableQueueAsync<V> extends RExpirableAsync {
      * @param headersCodec the codec to use for deserializing message header values
      * @return a list of all messages in the queue
      */
-    RFuture<List<Message<V>>> readAllAsync(Codec headersCodec);
+    RFuture<List<Message<V>>> listAllAsync(Codec headersCodec);
+
+    /**
+     * Returns message by id
+     *
+     * @param id message id
+     * @return message
+     */
+    RFuture<Message<V>> getAsync(String id);
+
+    /**
+     * Returns message by id applying specified codec to headers
+     *
+     * @param id message id
+     * @param headersCodec codec for headers
+     * @return message
+     */
+    RFuture<Message<V>> getAsync(Codec headersCodec, String id);
+
+    /**
+     * Returns messages by ids
+     *
+     * @param ids message ids
+     * @return message
+     */
+    RFuture<List<Message<V>>> getAllAsync(String... ids);
+
+    /**
+     * Returns messages by ids applying specified codec to headers
+     *
+     * @param ids message ids
+     * @param headersCodec codec for headers
+     * @return message
+     */
+    RFuture<List<Message<V>>> getAllAsync(Codec headersCodec, String... ids);
 
     /**
      * Explicitly marks a message as failed or rejected.
@@ -249,5 +289,46 @@ public interface RReliableQueueAsync<V> extends RExpirableAsync {
      * @param args arguments specifying the message to negatively acknowledge
      */
     RFuture<Void> negativeAcknowledgeAsync(QueueNegativeAckArgs args);
+
+    /**
+     * Adds queue listener
+     *
+     * @see org.redisson.api.queue.event.AddedEventListener
+     * @see org.redisson.api.queue.event.PolledEventListener
+     * @see org.redisson.api.queue.event.RemovedEventListener
+     * @see org.redisson.api.queue.event.AcknowledgedEventListener
+     * @see org.redisson.api.queue.event.NegativelyAcknowledgedEventListener
+     * @see org.redisson.api.queue.event.ConfigEventListener
+     * @see org.redisson.api.queue.event.DisabledOperationEventListener
+     * @see org.redisson.api.queue.event.EnabledOperationEventListener
+     * @see org.redisson.api.queue.event.FullEventListener
+     *
+     * @param listener entry listener
+     * @return listener id
+     */
+    RFuture<String> addListenerAsync(QueueEventListener listener);
+
+    /**
+     * Removes map entry listener
+     *
+     * @param id listener id
+     */
+    RFuture<Void> removeListenerAsync(String id);
+
+    /**
+     * Disables a queue operation
+     *
+     * @param operation queue operation
+     * @return void
+     */
+    RFuture<Void> disableOperationAsync(QueueOperation operation);
+
+    /**
+     * Enables a queue operation
+     *
+     * @param operation queue operation
+     * @return void
+     */
+    RFuture<Void> enableOperationAsync(QueueOperation operation);
 
 }

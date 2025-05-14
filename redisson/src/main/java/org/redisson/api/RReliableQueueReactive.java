@@ -16,6 +16,7 @@
 package org.redisson.api;
 
 import org.redisson.api.queue.*;
+import org.redisson.api.queue.event.QueueEventListener;
 import org.redisson.client.codec.Codec;
 import reactor.core.publisher.Mono;
 
@@ -67,8 +68,8 @@ public interface RReliableQueueReactive<V> extends RExpirableRx {
     Mono<Boolean> setConfigIfAbsent(QueueConfig config);
 
     /**
-     * Returns the total number of messages in the queue, including messages in all states
-     * (ready for polling, delayed, and unacknowledged).
+     * Returns the total number of messages in the queue ready for polling,
+     * excluding delayed and unacknowledged messages.
      *
      * @return the total number of messages
      */
@@ -109,6 +110,7 @@ public interface RReliableQueueReactive<V> extends RExpirableRx {
      * using the {@link #acknowledge(QueueAckArgs)} or {@link #negativeAcknowledge(QueueNegativeAckArgs)} method.
      *
      * @return the message in the head of this queue, or {@code null} if this queue is empty
+     * @throws OperationDisabledException if this operation is disabled
      */
     Mono<Message<V>> poll();
 
@@ -120,6 +122,7 @@ public interface RReliableQueueReactive<V> extends RExpirableRx {
      *
      * @param args polling arguments
      * @return the message in the head of this queue, or {@code null} if this queue is empty
+     * @throws OperationDisabledException if this operation is disabled
      */
     Mono<Message<V>> poll(QueuePollArgs args);
 
@@ -133,6 +136,7 @@ public interface RReliableQueueReactive<V> extends RExpirableRx {
      *
      * @param pargs polling arguments
      * @return a list of retrieved messages
+     * @throws OperationDisabledException if this operation is disabled
      */
     Mono<List<Message<V>>> pollMany(QueuePollArgs pargs);
 
@@ -198,6 +202,7 @@ public interface RReliableQueueReactive<V> extends RExpirableRx {
      *
      * @param params parameters for the message to be added
      * @return the added message with its assigned ID and metadata or {@code null} if nothing was added
+     * @throws OperationDisabledException if this operation is disabled
      */
     Mono<Message<V>> add(QueueAddArgs<V> params);
 
@@ -214,6 +219,7 @@ public interface RReliableQueueReactive<V> extends RExpirableRx {
      *
      * @param params parameters for the messages to be added
      * @return a list of added messages with their assigned IDs and metadata
+     * @throws OperationDisabledException if this operation is disabled
      */
     Mono<List<Message<V>>> addMany(QueueAddArgs<V> params);
 
@@ -233,7 +239,7 @@ public interface RReliableQueueReactive<V> extends RExpirableRx {
      *
      * @return a list of all messages in the queue
      */
-    Mono<List<Message<V>>> readAll();
+    Mono<List<Message<V>>> listAll();
 
     /**
      * Returns all messages in the queue, ready to be retrieved by the poll() command,
@@ -242,7 +248,41 @@ public interface RReliableQueueReactive<V> extends RExpirableRx {
      * @param headersCodec the codec to use for deserializing message header values
      * @return a list of all messages in the queue
      */
-    Mono<List<Message<V>>> readAll(Codec headersCodec);
+    Mono<List<Message<V>>> listAll(Codec headersCodec);
+
+    /**
+     * Returns message by id
+     *
+     * @param id message id
+     * @return message
+     */
+    Mono<Message<V>> get(String id);
+
+    /**
+     * Returns message by id applying specified codec to headers
+     *
+     * @param id message id
+     * @param headersCodec codec for headers
+     * @return message
+     */
+    Mono<Message<V>> get(Codec headersCodec, String id);
+
+    /**
+     * Returns messages by ids
+     *
+     * @param ids message ids
+     * @return message
+     */
+    Mono<List<Message<V>>> getAll(String... ids);
+
+    /**
+     * Returns messages by ids applying specified codec to headers
+     *
+     * @param ids message ids
+     * @param headersCodec codec for headers
+     * @return message
+     */
+    Mono<List<Message<V>>> getAll(Codec headersCodec, String... ids);
 
     /**
      * Explicitly marks a message as failed or rejected.
@@ -250,5 +290,44 @@ public interface RReliableQueueReactive<V> extends RExpirableRx {
      * @param args arguments specifying the message to negatively acknowledge
      */
     Mono<Void> negativeAcknowledge(QueueNegativeAckArgs args);
+
+    /**
+     * Adds queue listener
+     *
+     * @see org.redisson.api.queue.event.AddedEventListener
+     * @see org.redisson.api.queue.event.PolledEventListener
+     * @see org.redisson.api.queue.event.RemovedEventListener
+     * @see org.redisson.api.queue.event.AcknowledgedEventListener
+     * @see org.redisson.api.queue.event.NegativelyAcknowledgedEventListener
+     * @see org.redisson.api.queue.event.ConfigEventListener
+     * @see org.redisson.api.queue.event.DisabledOperationEventListener
+     * @see org.redisson.api.queue.event.EnabledOperationEventListener
+     * @see org.redisson.api.queue.event.FullEventListener
+     *
+     * @param listener entry listener
+     * @return listener id
+     */
+    Mono<String> addListener(QueueEventListener listener);
+
+    /**
+     * Removes map entry listener
+     *
+     * @param id listener id
+     */
+    Mono<Void> removeListener(String id);
+
+    /**
+     * Disables a queue operation
+     *
+     * @param operation queue operation
+     */
+    Mono<Void> disableOperation(QueueOperation operation);
+
+    /**
+     * Enables a queue operation
+     *
+     * @param operation queue operation
+     */
+    Mono<Void> enableOperation(QueueOperation operation);
 
 }
