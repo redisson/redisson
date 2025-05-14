@@ -1080,7 +1080,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
                 for (String msg : msgs) {
                     for (String command : commands) {
-                        if (msg.contains("'" + command + "'")) {
+                        if (msg.contains("`" + command + "`")) {
                             commands.remove(command);
                             break;
                         }
