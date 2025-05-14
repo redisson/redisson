@@ -115,40 +115,40 @@ More code examples can be found [here](https://github.com/redisson/redisson-exam
 
 **Spring Boot Starter**
 
-- [Spring Boot Starter](/integration-with-spring/#spring-boot-starter): Learn how to configure a Spring Boot Starter with Redisson.
+- [Spring Boot Starter](integration-with-spring.md/#spring-boot-starter): Learn how to configure a Spring Boot Starter with Redisson.
 
 **Spring Data Redis**
 
-- [Spring Data Redis](/integration-with-spring/#spring-data-redis): Learn how to configure a Spring Data Redis integration with Redisson.
+- [Spring Data Redis](integration-with-spring.md/#spring-data-redis): Learn how to configure a Spring Data Redis integration with Redisson.
 
 **Spring Cloud Stream**
 
-- [Spring Cloud Stream](/integration-with-spring/#spring-cloud-stream): Learn how to configure a Spring Cloud Stream Binder for using Valkey or Redis as a message broker.
+- [Spring Cloud Stream](integration-with-spring.md/#spring-cloud-stream): Learn how to configure a Spring Cloud Stream Binder for using Valkey or Redis as a message broker.
 
 **Quarkus Integration**
 
-- [Quarkus Integration](/microservices-integration/#quarkus): Learn how to configure a Quarkus and Quarkus cache.
+- [Quarkus Integration](microservices-integration.md/#quarkus): Learn how to configure a Quarkus and Quarkus cache.
 
 **Micronaut Integration**
 
-- [Micronaut Integration](/microservices-integration/#micronaut): Learn how to configure a Micronaut, Micronaut Session and Micronaut cache.
+- [Micronaut Integration](microservices-integration.md/#micronaut): Learn how to configure a Micronaut, Micronaut Session and Micronaut cache.
 
 **Helidon Integration**
 
-- [Helidon Integration](/microservices-integration/#helidon): Learn how to configure a Helidon.
+- [Helidon Integration](microservices-integration.md/#helidon): Learn how to configure a Helidon.
 
 **JCache API (JSR-107)**
 
-- [JCache API (JSR-107)](/cache-api-implementations/#jcache-api-jsr-107): Learn how to configure a Redisson as a JCache provider.
+- [JCache API (JSR-107)](cache-api-implementations.md/#jcache-api-jsr-107): Learn how to configure a Redisson as a JCache provider.
 
 **MyBatis Cache**
 
-- [MyBatis Cache](/cache-api-implementations/#mybatis-cache): Learn how to configure a Redisson as a second-level cache in MyBatis.
+- [MyBatis Cache](cache-api-implementations.md/#mybatis-cache): Learn how to configure a Redisson as a second-level cache in MyBatis.
 
 **Hibernate Cache**
 
-- [Hibernate Cache](/cache-api-implementations/#hibernate-cache): Learn how to configure a Redisson as a second-level cache in Hibernate.
+- [Hibernate Cache](cache-api-implementations.md/#hibernate-cache): Learn how to configure a Redisson as a second-level cache in Hibernate.
 
 **Tomcat Integration**
 
-- [Tomcat Session Management](/web-session-management/#tomcat-session): Learn how to configure Redisson as a session manager for Apache Tomcat, using Valkey or Redis based distributed session storage.
+- [Tomcat Session Management](web-session-management.md/#tomcat-session): Learn how to configure Redisson as a session manager for Apache Tomcat, using Valkey or Redis based distributed session storage.
