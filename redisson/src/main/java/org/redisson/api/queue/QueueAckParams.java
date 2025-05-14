@@ -15,6 +15,8 @@
  */
 package org.redisson.api.queue;
 
+import org.redisson.api.BaseSyncParams;
+
 public class QueueAckParams extends BaseSyncParams<QueueAckArgs> implements QueueAckArgs {
 
     private final String[] ids;

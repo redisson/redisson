@@ -15,6 +15,7 @@
  */
 package org.redisson.api.queue;
 
+import org.redisson.api.SyncArgs;
 import org.redisson.client.codec.Codec;
 
 import java.time.Duration;
@@ -35,7 +36,7 @@ import java.time.Duration;
  * @author Nikita Koksharov
  *
  */
-public interface QueuePollArgs extends QueueSyncArgs<QueuePollArgs> {
+public interface QueuePollArgs extends SyncArgs<QueuePollArgs> {
 
     /**
      * Creates a new instance of QueuePollArgs with default settings.

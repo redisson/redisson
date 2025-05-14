@@ -16,6 +16,7 @@
 package org.redisson.api.queue;
 
 import org.redisson.api.MessageArgs;
+import org.redisson.api.SyncArgs;
 import org.redisson.client.codec.Codec;
 
 import java.time.Duration;
@@ -28,7 +29,7 @@ import java.time.Duration;
  * @author Nikita Koksharov
  *
  */
-public interface QueueAddArgs<V> extends QueueSyncArgs<QueueAddArgs<V>> {
+public interface QueueAddArgs<V> extends SyncArgs<QueueAddArgs<V>> {
 
     /**
      * Sets the maximum time to wait when adding messages to a full queue with a limited size.

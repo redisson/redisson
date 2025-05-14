@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.api.queue;
+package org.redisson.api;
 
 import java.time.Duration;
 
@@ -24,7 +24,7 @@ import java.time.Duration;
  * @param <T> type
  * @author Nikita Koksharov
  */
-public interface QueueSyncArgs<T> {
+public interface SyncArgs<T> {
 
     /**
      * Sets the synchronization mode to be used for current operation.

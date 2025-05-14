@@ -15,6 +15,8 @@
  */
 package org.redisson.api.queue;
 
+import org.redisson.api.BaseSyncParams;
+
 public class QueueMoveParams extends BaseSyncParams<QueueMoveArgs> implements QueueMoveArgs, QueueMoveDestination {
 
     private String[] ids = new String[0];

@@ -15,13 +15,15 @@
  */
 package org.redisson.api.queue;
 
+import org.redisson.api.SyncArgs;
+
 /**
  * Interface defining parameters for queue acknowledgment operations.
  *
  * @author Nikita Koksharov
  *
  */
-public interface QueueAckArgs extends QueueSyncArgs<QueueAckArgs>  {
+public interface QueueAckArgs extends SyncArgs<QueueAckArgs> {
 
     /**
      * Defines message IDs for acknowledgment process.

@@ -15,13 +15,15 @@
  */
 package org.redisson.api.queue;
 
+import org.redisson.api.SyncArgs;
+
 /**
  * Interface defining parameters for negative acknowledgment of queue messages.
  *
  * @author Nikita Koksharov
  *
  */
-public interface QueueNegativeAckArgs extends QueueSyncArgs<QueueNegativeAckArgs> {
+public interface QueueNegativeAckArgs extends SyncArgs<QueueNegativeAckArgs> {
 
     /**
      * Defines status which indicates that the client application failed to process the message.

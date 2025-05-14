@@ -15,6 +15,8 @@
  */
 package org.redisson.api.queue;
 
+import org.redisson.api.BaseSyncParams;
+
 public class QueueRemoveParams extends BaseSyncParams<QueueRemoveArgs> implements QueueRemoveArgs {
 
     private final String[] ids;

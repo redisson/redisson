@@ -13,26 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.api.queue;
-
-import org.redisson.api.SyncArgs;
+package org.redisson.api.queue.event;
 
 /**
- * Interface that defines arguments for queue removal operations.
+ * Listener interface for queue full events.
+ * This interface is triggered when the queue is full.
  *
  * @author Nikita Koksharov
  *
  */
-public interface QueueRemoveArgs extends SyncArgs<QueueRemoveArgs> {
+public interface FullEventListener extends QueueEventListener {
 
     /**
-     * Defines messages by ids to remove from the queue.
+     * Called when the queue is full.
      *
-     * @param ids the message ids to be removed from the queue
-     * @return arguments object
+     * @param queueName name of queue
      */
-    static QueueRemoveArgs ids(String... ids) {
-        return new QueueRemoveParams(ids);
-    }
+    void onFull(String queueName);
 
 }

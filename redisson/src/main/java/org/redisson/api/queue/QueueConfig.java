@@ -118,4 +118,13 @@ public interface QueueConfig {
      */
     QueueConfig maxSize(int value);
 
+    /**
+     * Sets the processing mode for the queue which determines how messages
+     * are processed by consumers.
+     *
+     * @param mode the processing mode
+     * @return config object
+     */
+    QueueConfig processingMode(ProcessingMode mode);
+
 }

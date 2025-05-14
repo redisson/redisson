@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.api.queue;
+package org.redisson.api;
 
 /**
  * Defines the synchronization modes used for replication with Valkey or Redis replica instances.

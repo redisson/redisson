@@ -13,26 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.api.queue;
+package org.redisson.api.queue.event;
 
-import org.redisson.api.SyncArgs;
+import java.util.EventListener;
 
 /**
- * Interface that defines arguments for queue removal operations.
+ * Base interface for all queue event listeners.
  *
  * @author Nikita Koksharov
  *
  */
-public interface QueueRemoveArgs extends SyncArgs<QueueRemoveArgs> {
-
-    /**
-     * Defines messages by ids to remove from the queue.
-     *
-     * @param ids the message ids to be removed from the queue
-     * @return arguments object
-     */
-    static QueueRemoveArgs ids(String... ids) {
-        return new QueueRemoveParams(ids);
-    }
-
+public interface QueueEventListener extends EventListener {
 }

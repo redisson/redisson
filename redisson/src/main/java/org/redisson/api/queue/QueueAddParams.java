@@ -15,6 +15,7 @@
  */
 package org.redisson.api.queue;
 
+import org.redisson.api.BaseSyncParams;
 import org.redisson.api.MessageArgs;
 import org.redisson.client.codec.Codec;
 

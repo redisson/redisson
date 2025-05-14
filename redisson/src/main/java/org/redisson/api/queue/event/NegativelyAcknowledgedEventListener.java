@@ -13,26 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.api.queue;
+package org.redisson.api.queue.event;
 
-import org.redisson.api.SyncArgs;
+import java.util.List;
 
 /**
- * Interface that defines arguments for queue removal operations.
+ * Listener interface for negatively acknowledged queue events.
+ * This interface is triggered when messages
+ * in a queue are negatively acknowledged by consumers.
  *
  * @author Nikita Koksharov
  *
  */
-public interface QueueRemoveArgs extends SyncArgs<QueueRemoveArgs> {
+public interface NegativelyAcknowledgedEventListener extends QueueEventListener {
 
     /**
-     * Defines messages by ids to remove from the queue.
+     * Called when messages are negatively acknowledged by a consumer.
      *
-     * @param ids the message ids to be removed from the queue
-     * @return arguments object
+     * @param status The reason for the negative acknowledgment
+     * @param ids message ids
      */
-    static QueueRemoveArgs ids(String... ids) {
-        return new QueueRemoveParams(ids);
-    }
+    void onNegativelyAcknowledged(NAckStatus status, List<String> ids);
 
 }

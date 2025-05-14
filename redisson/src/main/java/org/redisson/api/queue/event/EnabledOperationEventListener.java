@@ -13,26 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.api.queue;
+package org.redisson.api.queue.event;
 
-import org.redisson.api.SyncArgs;
+import org.redisson.api.queue.QueueOperation;
 
 /**
- * Interface that defines arguments for queue removal operations.
+ * Listener interface for queue enabled operations events.
+ * This interface is triggered when queue operation switched to enabled state.
  *
  * @author Nikita Koksharov
  *
  */
-public interface QueueRemoveArgs extends SyncArgs<QueueRemoveArgs> {
+public interface EnabledOperationEventListener extends QueueEventListener {
 
     /**
-     * Defines messages by ids to remove from the queue.
+     * Called when queue operation switched to enabled state.
      *
-     * @param ids the message ids to be removed from the queue
-     * @return arguments object
+     * @param queueName name of queue
      */
-    static QueueRemoveArgs ids(String... ids) {
-        return new QueueRemoveParams(ids);
-    }
+    void onEnabled(String queueName, QueueOperation operation);
 
 }

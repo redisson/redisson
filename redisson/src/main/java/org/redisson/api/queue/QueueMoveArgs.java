@@ -15,13 +15,15 @@
  */
 package org.redisson.api.queue;
 
+import org.redisson.api.SyncArgs;
+
 /**
  * Interface defining parameters for transferring elements between queues.
  *
  * @author Nikita Koksharov
  *
  */
-public interface QueueMoveArgs extends QueueSyncArgs<QueueMoveArgs>  {
+public interface QueueMoveArgs extends SyncArgs<QueueMoveArgs> {
 
     /**
      * Defines messages by ids to move to the destination queue.

@@ -15,6 +15,8 @@
  */
 package org.redisson.api.queue;
 
+import org.redisson.api.BaseSyncParams;
+
 import java.time.Duration;
 import java.util.Objects;
 

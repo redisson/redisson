@@ -13,26 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.api.queue;
-
-import org.redisson.api.SyncArgs;
+package org.redisson.api.queue.event;
 
 /**
- * Interface that defines arguments for queue removal operations.
+ * Enumeration representing the possible statuses for negatively acknowledged messages.
+ * Used to indicate why a message was negatively acknowledged (NAcked).
  *
  * @author Nikita Koksharov
  *
  */
-public interface QueueRemoveArgs extends SyncArgs<QueueRemoveArgs> {
+public enum NAckStatus {
 
     /**
-     * Defines messages by ids to remove from the queue.
-     *
-     * @param ids the message ids to be removed from the queue
-     * @return arguments object
+     * Indicates that the client application could process the message,
+     * but it was not accepted.
+     * The message is removed and moved to the Dead Letter Queue (DLQ) if configured.
      */
-    static QueueRemoveArgs ids(String... ids) {
-        return new QueueRemoveParams(ids);
-    }
+    REJECTED,
+
+    /**
+     * Indicates that the client application failed to process the message.
+     * The message is redelivered. Allows to define the delay duration before
+     * the failed message is eligible for redelivery.
+     */
+    FAILED
 
 }

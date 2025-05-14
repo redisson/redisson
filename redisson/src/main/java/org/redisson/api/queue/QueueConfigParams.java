@@ -27,6 +27,7 @@ public final class QueueConfigParams implements QueueConfig {
     private int maxMessageSize;
     private int maxSize;
     private Duration delay = Duration.ZERO;
+    private ProcessingMode processingMode = ProcessingMode.PARALLEL;
 
     @Override
     public QueueConfig deliveryLimit(int value) {
@@ -85,6 +86,12 @@ public final class QueueConfigParams implements QueueConfig {
         return this;
     }
 
+    @Override
+    public QueueConfig processingMode(ProcessingMode mode) {
+        this.processingMode = mode;
+        return this;
+    }
+
     public int getDeliveryLimit() {
         return deliveryLimit;
     }
@@ -111,5 +118,9 @@ public final class QueueConfigParams implements QueueConfig {
 
     public int getMaxSize() {
         return maxSize;
+    }
+
+    public ProcessingMode getProcessingMode() {
+        return processingMode;
     }
 }
