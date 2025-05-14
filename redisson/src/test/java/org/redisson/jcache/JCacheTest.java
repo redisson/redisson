@@ -2,6 +2,7 @@ package org.redisson.jcache;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.joor.Reflect;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -10,6 +11,7 @@ import org.redisson.RedisDockerTest;
 import org.redisson.api.CacheAsync;
 import org.redisson.api.CacheReactive;
 import org.redisson.api.CacheRx;
+import org.redisson.api.NameMapper;
 import org.redisson.codec.TypedJsonJacksonCodec;
 import org.redisson.config.Config;
 import org.redisson.jcache.configuration.RedissonConfiguration;
@@ -31,6 +33,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -104,6 +107,39 @@ public class JCacheTest extends RedisDockerTest {
         Cache<String, String> cache = Caching.getCachingProvider()
                                                 .getCacheManager().createCache("test", config);
         cache.close();
+    }
+
+    @Test
+    public void testClose2() {
+        MutableConfiguration<String, String> c = createJCacheConfig();
+        c.setStatisticsEnabled(true);
+
+        Config cfg=createConfig();
+        cfg.useSingleServer().setNameMapper(new NameMapper() {
+            @Override
+            public String map(String name) {
+                return "test::" + name;
+            }
+
+            @Override
+            public String unmap(String name) {
+                return name.replace("test::", "");
+            }
+        });
+
+        Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg, c);
+        Cache<String, String> cache = Caching.getCachingProvider()
+                .getCacheManager().createCache("test", config);
+
+        assertThat(cache.getCacheManager().getCache("test")).isNotNull();
+
+        cache.close();
+
+        JCacheManager jCacheManager = Reflect.on(cache).get("cacheManager");
+        ConcurrentMap<?, ?> map = Reflect.on(jCacheManager).get("caches");
+
+        assertThat(map.containsKey("test")).isFalse();
+
     }
 
     @Test
