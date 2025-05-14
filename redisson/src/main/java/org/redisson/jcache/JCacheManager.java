@@ -200,7 +200,7 @@ public class JCacheManager implements CacheManager {
     }
     
     public void closeCache(JCache<?, ?> cache) {
-        caches.remove(cache.getRawName());
+        caches.remove(cache.getName());
         unregisterStatisticsBean(cache);
         unregisterManagementBean(cache);
     }
