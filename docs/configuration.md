@@ -286,13 +286,14 @@ processor engine to *lower latency* mode with predefined settings set #1
 
 Compatible with:  
 
-* [Redis Cluster](https://redis.io/docs/latest/operate/oss_and_stack/reference/cluster-spec/)
 * [Valkey Cluster](https://valkey.io/topics/cluster-spec/)
+* [Redis Cluster](https://redis.io/docs/latest/operate/oss_and_stack/reference/cluster-spec/)
 * [AWS ElastiCache Serverless](https://aws.amazon.com/elasticache/features/#Serverless)  
 * [AWS ElastiCache Cluster](https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/designing-elasticache-cluster.html)  
 * [Amazon MemoryDB](https://aws.amazon.com/memorydb)  
 * [Azure Redis Cache](https://azure.microsoft.com/en-us/services/cache/)  
 * [Google Cloud Memorystore for Redis Cluster](https://cloud.google.com/memorystore/docs/cluster)
+* [Oracle OCI Cache](https://docs.oracle.com/en-us/iaas/Content/ocicache/managingclusters.htm)
 
 For multiple Cluster deployments with data replication relationship use [Multi Cluster mode](#multi-cluster-mode).
 
@@ -1295,8 +1296,8 @@ transportMode: "NIO"
 
 Compatible with:  
 
-* [Redis Sentinel](https://redis.io/learn/operate/redis-at-scale/high-availability/understanding-sentinels)
 * [Valkey Sentinel](https://valkey.io/topics/sentinel/)
+* [Redis Sentinel](https://redis.io/learn/operate/redis-at-scale/high-availability/understanding-sentinels)
 
 For multiple Sentinel deployments with data replication relationship use [Multi Sentinel mode](#multi-sentinel-mode).
 
