@@ -15,7 +15,7 @@
  */
 package org.redisson.api;
 
-import org.redisson.api.fanout.FanoutFilter;
+import org.redisson.api.fanout.MessageFilter;
 import org.redisson.api.fanout.FanoutPublishArgs;
 
 import java.util.List;
@@ -69,7 +69,7 @@ public interface RReliableFanout<V> extends RExpirable, RReliableFanoutAsync<V>,
      * @param name the queue name
      * @param filter applied to messages
      */
-    void setFilter(String name, FanoutFilter<V> filter);
+    void setFilter(String name, MessageFilter<V> filter);
 
     /**
      * Checks if a queue with the specified name is subscribed to this fanout.
@@ -96,7 +96,7 @@ public interface RReliableFanout<V> extends RExpirable, RReliableFanoutAsync<V>,
      * @return <code>true</code> if the queue was subscribed,
      *          <code>false</code> if queue is already subscribed
      */
-    boolean subscribeQueue(String name, FanoutFilter<V> filter);
+    boolean subscribeQueue(String name, MessageFilter<V> filter);
 
     /**
      * Unsubscribes a queue with the specified name from this fanout.
@@ -113,5 +113,12 @@ public interface RReliableFanout<V> extends RExpirable, RReliableFanoutAsync<V>,
      * @return subscriber names
      */
     List<String> getSubscribers();
+
+    /**
+     * Returns amount of subscribers to this fanout.
+     *
+     * @return amount of subscribers
+     */
+    int countSubscribers();
 
 }

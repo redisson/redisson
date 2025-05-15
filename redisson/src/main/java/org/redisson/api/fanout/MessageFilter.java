@@ -37,5 +37,5 @@ import java.util.function.BiPredicate;
  * @author Nikita Koksharov
  *
  */
-public interface FanoutFilter<V> extends BiPredicate<V, Map<String, Object>>, Serializable {
+public interface MessageFilter<V> extends BiPredicate<V, Map<String, Object>>, Serializable {
 }

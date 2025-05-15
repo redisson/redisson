@@ -15,7 +15,7 @@
  */
 package org.redisson.api;
 
-import org.redisson.api.fanout.FanoutFilter;
+import org.redisson.api.fanout.MessageFilter;
 import org.redisson.api.fanout.FanoutPublishArgs;
 import reactor.core.publisher.Mono;
 
@@ -70,7 +70,7 @@ public interface RReliableFanoutReactive<V> extends RExpirableReactive, RDestroy
      * @param name the queue name
      * @param filter applied to messages
      */
-    Mono<Void> setFilter(String name, FanoutFilter<V> filter);
+    Mono<Void> setFilter(String name, MessageFilter<V> filter);
 
     /**
      * Checks if a queue with the specified name is subscribed to this fanout.
@@ -97,7 +97,7 @@ public interface RReliableFanoutReactive<V> extends RExpirableReactive, RDestroy
      * @return <code>true</code> if the queue was subscribed,
      *          <code>false</code> if queue is already subscribed
      */
-    Mono<Boolean> subscribeQueue(String name, FanoutFilter<V> filter);
+    Mono<Boolean> subscribeQueue(String name, MessageFilter<V> filter);
 
     /**
      * Unsubscribes a queue with the specified name from this fanout.
@@ -114,5 +114,12 @@ public interface RReliableFanoutReactive<V> extends RExpirableReactive, RDestroy
      * @return subscriber names
      */
     Mono<List<String>> getSubscribers();
+
+    /**
+     * Returns amount of subscribers to this fanout.
+     *
+     * @return amount of subscribers
+     */
+    Mono<Integer> countSubscribers();
 
 }

@@ -18,7 +18,7 @@ package org.redisson.api;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Single;
-import org.redisson.api.fanout.FanoutFilter;
+import org.redisson.api.fanout.MessageFilter;
 import org.redisson.api.fanout.FanoutPublishArgs;
 
 import java.util.List;
@@ -72,7 +72,7 @@ public interface RReliableFanoutRx<V> extends RExpirableRx, RDestroyable {
      * @param name the queue name
      * @param filter applied to messages
      */
-    Completable setFilter(String name, FanoutFilter<V> filter);
+    Completable setFilter(String name, MessageFilter<V> filter);
 
     /**
      * Checks if a queue with the specified name is subscribed to this fanout.
@@ -99,7 +99,7 @@ public interface RReliableFanoutRx<V> extends RExpirableRx, RDestroyable {
      * @return <code>true</code> if the queue was subscribed,
      *          <code>false</code> if queue is already subscribed
      */
-    Single<Boolean> subscribeQueue(String name, FanoutFilter<V> filter);
+    Single<Boolean> subscribeQueue(String name, MessageFilter<V> filter);
 
     /**
      * Unsubscribes a queue with the specified name from this fanout.
@@ -116,5 +116,12 @@ public interface RReliableFanoutRx<V> extends RExpirableRx, RDestroyable {
      * @return subscriber names
      */
     Single<List<String>> getSubscribers();
+
+    /**
+     * Returns amount of subscribers to this fanout.
+     *
+     * @return amount of subscribers
+     */
+    Single<Integer> countSubscribers();
 
 }
