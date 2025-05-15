@@ -2,7 +2,7 @@
 
 _This feature is available only in [Redisson PRO](https://redisson.pro/feature-comparison.html) edition._
 
-The Reliable Queue is a specialized distributed FIFO queue implementation built on top of  Valkey or Redis that provides robust message processing and advanced queue management features. The implementation doesn't use a standard Valkey or Redis queue, but a complex data structure that includes stream. This object is fully thread-safe.
+The Reliable Queue is a specialized FIFO queue implementation built on top of  Valkey or Redis that provides robust message processing and advanced queue management features. The implementation doesn't use a standard Valkey or Redis queue, but a complex data structure that includes stream. This object is fully thread-safe.
 
 Unlike standard Valkey and Redis queues, the Reliable Queue ensures message delivery even in failure scenarios, provides acknowledgment mechanisms, and offers fine-grained control over message handling. Moreover, Valkey and Redis [persistence with synchronized replication](#durability-and-synchronous-replication) significantly increases queue reliability by maintaining multiple consistent copies of data across nodes, ensuring that messages remain available even during node failures or network disruptions.
 
@@ -163,7 +163,7 @@ Code example of the reliable queue config definition:
 
 **Message-Level Settings**
 
-Message settings applied per `add()` or `addMany()` operation. All settings are optional except for `payload`. If optional settings are not set, defaults will be used.
+Message settings applied to `add()` and `addMany()` methods. All settings are optional except for `payload`. If optional settings are not set, defaults will be used.
 
 - `payload` - Defines the data to include in the message. The codec defined for the queue is used for data serialization and deserialization. **required setting**
 
@@ -197,7 +197,7 @@ The `add()` and `addMany()` methods each return a Message object for every added
 
 Below are the available settings per method call:
 
-- `timeout` - Sets the maximum time to wait when adding messages to a full queue with a limited size. If the queue is full, the add operation will block until either:
+- `timeout` - Sets the maximum time to wait when adding messages to a full queue with a limited size. If the queue is full, the add method will block until either:
 	- Space becomes available and the message(s) are successfully added.
 	- The specified timeout duration elapses.
 
@@ -791,7 +791,7 @@ Code examples of negative message acknowledgment:
     		                                        .rejected(mids));
     ```
 
-### Inspecting and Managing
+### Management and Monitoring
 
 Messages can be inspected, removed or moved to another queue if necessary. 
 
@@ -811,10 +811,10 @@ Messages can be inspected, removed or moved to another queue if necessary.
 
 - `getAll()` method returns messages by ids
 
-Queue operations can be disabled or enabled if necessary.
+Queue operations can be disabled or enabled if necessary:
 
-Disabling `add()` operation prevents new messages from being added while allowing processing of existing messages.  
-Disabling `poll()` operation allows adding new messages while preventing consumption, essentially creating a backlog.
+- Disabling `ADD` operation prevents new messages from being added while allowing processing of existing messages.  
+- Disabling `POLL` operation allows adding new messages while preventing consumption, essentially creating a backlog.
 
 Selectively enabling/disabling send or receive operations can help isolate and troubleshoot application issues with messages handling. Queue operations can be temporarily disabled during system maintenance. Disabling certain queue operations during periods of high system load can prevent system overload and ensure stability. All messages are maintained in Valkey or Redis, ensuring that no data is lost.
 
@@ -1088,7 +1088,6 @@ Code examples of listeners usage:
 	Completable vf = queue.removeListener(id);
 	```
 
-
 ### Dead-Letter Queue (DLQ)
 
 A Dead-Letter Queue (DLQ) is a specialized message queue used to store messages that cannot be processed or delivered due to errors or other issues. Instead of losing or endlessly retrying problematic messages, they are moved to the DLQ for later inspection and handling. This isolation mechanism significantly improves system reliability and prevents potential downtime, allowing applications to maintain continuous operations despite message processing failures.
@@ -1278,7 +1277,7 @@ Code examples of synchronization parameters usage:
 === "RxJava3"
     ```java
     RedissonRxClient redisson = redissonClient.rxJava();
-    RReliableQueue<MyObject> rq = redisson.getReliableQueue("test");
+    RReliableQueueRx<MyObject> rq = redisson.getReliableQueue("test");
 
     Maybe<Message<MyObject>> arf =     rq.add(QueueAddArgs.messages(MessageArgs.payload(data))
                                                 .syncMode(SyncMode.ACK_AOF)
@@ -1331,6 +1330,456 @@ Base name: `redisson.reliable-queue.<name>`
 <br><br>
 
 - `failed-synchronizations` - A Counter that counts the number of failed synchronization operations.
+
+## Reliable Fanout
+
+_This feature is available only in [Redisson PRO](https://redisson.pro/feature-comparison.html) edition._
+
+Reliable Fanout object is built on top of Valkey or Redis and ensures message delivery to multiple [ReliableQueue](#reliable-queue) objects in a publish-subscribe model. Every published message is sent to each queue subscribed to the same fanout object. All fanout operations are executed atomically to ensure data consistency and prevent race conditions. This object is fully thread-safe.
+
+The Reliable Fanout publish-subscribe model offers several advantages for distributed applications:
+
+- Creates strong decoupling between publishers and subscribers, allowing components to evolve independently without affecting each other.
+
+- Allows dynamic addition or removal of subscribers without disrupting publishers or other parts of the application.
+
+- Compatible with modular architecture where components can be replaced or modified with minimal impact.
+
+- Eliminates direct dependencies between message producers and consumers through name-based addressing.
+
+
+**Message flow**
+```mermaid
+flowchart LR
+    %% Define nodes
+    P1["Publisher 1"]:::publisherClass
+    P2["Publisher 2"]:::publisherClass
+    
+    subgraph SG1 ["Redisson"]
+        RF(("Reliable Fanout")):::fanoutClass
+        MF1("Message Filter 1"):::filterClass
+        MF2("Message Filter 2"):::filterClass
+		RQ1("Reliable Queue 1"):::queueClass
+        RQ2("Reliable Queue 2"):::queueClass
+    end
+    
+    C1["Consumer 1"]:::consumerClass
+    C2["Consumer 2"]:::consumerClass
+    C3["Consumer 3"]:::consumerClass
+    
+    %% Define connections with message labels
+    P1 -->|A| RF
+    P2 -->|B| RF
+    RF -->|A, B| MF1
+    RF -->|A, B| MF2
+    MF1 -->|A, B| RQ1
+    MF2 -->|A, B| RQ2
+    RQ1 -->|A| C1
+    RQ1 -->|B| C2
+    RQ2 -->|A, B| C3
+    
+    %% Define styles with different colors
+    classDef fanoutClass fill:#29B6F6,stroke:#333,stroke-width:2px
+    classDef filterClass fill:#29B6F6,stroke:#333,stroke-width:1px,stroke-dasharray:3
+    classDef queueClass fill:#FFFFFF,stroke:#333,stroke-width:2px
+    classDef publisherClass fill:#FFFFFF,stroke:#333,stroke-width:2px
+    classDef consumerClass fill:#FFFFFF,stroke:#333,stroke-width:2px
+    
+    classDef redissonApiStyle fill:#F5F5F5,stroke:#333,stroke-width:2px
+    class SG1 redissonApiStyle
+
+    linkStyle default stroke-width:2px
+```
+
+### Subscribing
+
+Subscribers can be added or removed dynamically. Each subscriber is a ReliableQueue object that can even be not existed prior to subscription. 
+
+Code examples of queue subscribing:
+
+=== "Sync"
+
+	```java
+	RReliableFanout<MyObject> fanout = redisson.getReliableFanout("myfanout");
+	
+	// returns true if subscriber wasn't already subscribed
+	fanout.subscribeQueue("beta-queue");
+	
+	// getting the subscribed queue
+	RReliableQueue<MyObject> rq = redisson.getReliableQueue("beta-queue");
+	```
+
+=== "Async"
+
+    ```java
+    RReliableFanoutAsync<MyObject> fanout = redisson.getReliableFanout("myfanout");
+    
+	// returns true if subscriber wasn't already subscribed
+	RFuture<Boolean> sfb = fanout.subscribeQueueAsync("beta-queue");
+
+	// getting the subscribed queue
+	RReliableQueueAsync<MyObject> rq = redisson.getReliableQueue("beta-queue");
+    ```
+
+=== "Reactive"
+
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RReliableFanoutReactive<MyObject> rf = redisson.getReliableFanout("myfanout");
+    
+	// returns true if subscriber wasn't already subscribed
+	Mono<Boolean> sfb = fanout.subscribeQueue("beta-queue");
+
+	// getting the subscribed queue
+	RReliableQueueReactive<MyObject> rq = redisson.getReliableQueue("beta-queue");
+    ```
+
+=== "RxJava3"
+
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RReliableFanoutRx<MyObject> rf = redisson.getReliableFanout("myfanout");
+    
+	// returns true if subscriber wasn't already subscribed
+	Single<Boolean> sfb = fanout.subscribeQueue("beta-queue");
+
+	// getting the subscribed queue
+	RReliableQueueRx<MyObject> rq = redisson.getReliableQueue("beta-queue");
+    ```
+
+### Message Filtering
+
+Every message published to the topic is sent to each subscriber by default. A message filter object should be set to receive only some of the messages. The message filter allows for both payload- and header-based filtering. If filter method returns true, the message is delivered to the subscribed queue. 
+
+Message filter is a plain Java object propagated to every Reliable Fanout object with the same name and applied before each message publishing.
+
+Filter can be set during subscription or after subscription through `setFilter()` method. It can be removed later using `removeFilter()` method.
+
+Code examples for setting up a message filter:
+
+=== "Sync"
+
+	```java
+	RReliableFanout<MyObject> fanout = redisson.getReliableFanout("myfanout");
+	
+	// returns true if subscriber wasn't already subscribed
+    fanout.subscribeQueue("alpha-queue", (payload, headers) -> {
+        return headers.containsKey("white-key") || payload.equals(someOjbect);
+    });
+	
+	// returns true if subscriber wasn't already subscribed
+	fanout.subscribeQueue("beta-queue");
+
+    fanout.setFilter("beta-queue", (payload, headers) -> {
+        return payload.equals(secondObject);
+    });
+	```
+
+=== "Async"
+
+    ```java
+    RReliableFanoutAsync<MyObject> fanout = redisson.getReliableFanout("myfanout");
+    
+	// returns true if subscriber wasn't already subscribed
+    RFuture<Boolean> sfa = fanout.subscribeQueueAsync("alpha-queue", (payload, headers) -> {
+        return headers.containsKey("white-key") || payload.equals(someOjbect);
+    });
+	
+	// returns true if subscriber wasn't already subscribed
+	RFuture<Boolean> sfb = fanout.subscribeQueueAsync("beta-queue");
+	
+	// returns true if subscriber exists and filter was set
+    RFuture<Boolean> fb =  fanout.setFilterAsync("beta-queue", (payload, headers) -> {
+        return payload.equals(secondObject);
+    });
+    ```
+
+=== "Reactive"
+
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RReliableFanoutReactive<MyObject> rf = redisson.getReliableFanout("myfanout");
+    
+	// returns true if subscriber wasn't already subscribed
+    Mono<Boolean> sfa = fanout.subscribeQueue("alpha-queue", (payload, headers) -> {
+        return headers.containsKey("white-key") || payload.equals(someOjbect);
+    });
+	
+	// returns true if subscriber wasn't already subscribed
+	Mono<Boolean> sfb = fanout.subscribeQueue("beta-queue");
+	
+	// returns true if subscriber exists and filter was set
+    Mono<Boolean> fb = fanout.setFilterAsync("beta-queue", (payload, headers) -> {
+        return payload.equals(secondObject);
+    });
+    ```
+
+=== "RxJava3"
+
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RReliableFanoutRx<MyObject> rf = redisson.getReliableFanout("myfanout");
+    
+	// returns true if subscriber wasn't already subscribed
+    Single<Boolean> sfa = fanout.subscribeQueue("alpha-queue", (payload, headers) -> {
+        return headers.containsKey("white-key") || payload.equals(someOjbect);
+    });
+	
+	// returns true if subscriber wasn't already subscribed
+	Single<Boolean> sfb = fanout.subscribeQueue("beta-queue");
+	
+	// returns true if subscriber exists and filter was set
+    Single<Boolean> fb = fanout.setFilterAsync("beta-queue", (payload, headers) -> {
+        return payload.equals(secondObject);
+    });
+    ```
+
+### Publishing Messages
+
+Messages are published through `publish()` or `publishMany()` methods. 
+
+All message settings are optional except for `payload`. If optional settings are not set, defaults will be used.
+
+- `payload` - Defines the data to include in the message. The codec defined for the Reliable Fanout object is used for data serialization and deserialization. **required setting**
+
+- `deliveryLimit` - Message Delivery Limit. Allows to specify the maximum number of delivery attempts for a message, after which it can be moved to Dead Letter Queue (DLQ) if configured. The delivery attempt count increases each time a message is redelivered after the visibility timeout is reached or when the message is negatively acknowledged with a failed status.
+<br>
+Minimal value is `1`. If not defined, the subscribed queue's deliveryLimit setting value is used. If subscribed queue's deliveryLimit setting is also not set, the default value is `10`.
+
+- `timeToLive` - Message Expiration Timeout. Allows you to set a time-to-live (TTL) for messages in the subscribed queue, after which they are automatically removed if not processed. 
+<br>
+`0` value means expiration is not applied. If not defined, the subscribed queue's timeToLive setting value is used. If subscribed queue's timeToLive setting is also not set, the default value is `0`.
+
+- `header` \ `headers` - Message headers. Allow to attach metadata to messages without modifying the payload, enabling richer communication patterns and more sophisticated routing. Separates metadata from core message content.
+
+- `delay` - Message Delay. Allows to schedule messages for future delivery, with precise timing control down to the millisecond.
+<br>
+`0` value means delay duration is not applied. If not defined, the subscribed queue's delay setting value is used. If subscribed queue's delay setting is also not set, the default value is `0`.
+
+- `priority` - Message Priorities. Allows to assign importance levels to messages, ensuring critical messages are processed before less important ones. Ensures critical operations take precedence. 
+<br>
+Priority defined as a number between 0 and 9. `0` - the lowest priority level. `9` - the highest priority level. Default value is `0`.
+
+- `deduplicationById` - Message Deduplication by ID. Enables deduplication based on a custom value used as ID for the specified interval. During the specified interval, messages with the same ID will be considered duplicates and won't be added to the subscribed queue.
+
+- `deduplicationByHash` - Message Deduplication by Hash. Enables deduplication based on the message payload hash for the specified interval. During the specified interval, messages with the same hash will be considered duplicates and won't be added to the subscribed queue.
+
+
+The `publish()` and `publishMany()` methods each return a Message object for every added message, containing the payload, headers (identical to those of the original message) and a generated unique ID.
+
+`publish()` method returns published message or `null` if the message hasn't been added to at least a single subscriber.
+`publishMany()` method returns a list containing only messages that were added to at least a single subscriber.
+
+The message may not be added to a particual subscribed queue if the queue has size limit and is full, if message size exceeds defined queue message size limit or message rejected due to deduplication.
+
+Publish operations are always non-blocking. Messages are published immediately, and the method returns as soon as the operation is complete.
+
+Code examples of messages publishing:
+
+=== "Sync"
+
+	```java
+	RReliableFanout<MyObject> rf = redisson.getReliableFanout("myfanout");
+	
+	MyObject data = new MyObject();
+	
+	Message<MyObject> msg = rf.publish(FanoutPublishArgs.messages(MessageArgs.payload(data)
+																  		     .deliveryLimit(10)
+																			 .timeToLive(Duration.ofDays(24))
+																			 .header("key1", new MyDataValue())
+																			 .header("key2", new MyDataValue())
+																			 .delay(Duration.ofSeconds(45))
+																			 .priority(3)
+																			 .deduplicationById("myid", Duration.ofHours(23))));
+	
+	String id = msg.getId();
+	MyObject data = msg.getPayload();
+	Map<String, MyDataValue> headers = msg.getHeaders();
+	
+	// publishing messages in a batch
+	List<Message<MyObject>> msgs =  rf.publishMany(FanoutPublishArgs.messages(MessageArgs.payload(data1), 
+  	       																      MessageArgs.payload(data2), 
+    																		  MessageArgs.payload(data3)));
+	
+	```
+
+=== "Async"
+
+    ```java
+    RReliableFanoutAsync<MyObject> rf = redisson.getReliableFanout("myfanout");
+    
+    MyObject data = new MyObject();
+    
+    RFuture<Message<MyObject>> msg = rf.publishAsync(FanoutPublishArgs.messages(MessageArgs.payload(data)
+                                                                      .deliveryLimit(10)
+                                                                      .timeToLive(Duration.ofDays(24))
+                                                                      .header("key1", new MyDataValue())
+                                                                      .header("key2", new MyDataValue())
+                                                                      .delay(Duration.ofSeconds(45))
+                                                                      .priority(3)
+                                                                      .deduplicationById("myid", Duration.ofHours(23))));
+    
+    String id = msg.getId();
+    MyObject data = msg.getPayload();
+    Map<String, MyDataValue> headers = msg.getHeaders();
+    
+    // adding messages in a batch
+    RFuture<List<Message<MyObject>>> msgs =  rf.publishManyAsync(FanoutPublishArgs.messages(MessageArgs.payload(data1), 
+                                                                                            MessageArgs.payload(data2), 
+                                                                                            MessageArgs.payload(data3)));
+    
+    ```
+
+=== "Reactive"
+
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RReliableFanoutReactive<MyObject> rf = redisson.getReliableFanout("myfanout");
+    
+    MyObject data = new MyObject();
+    
+    Mono<Message<MyObject>> msg = rf.publish(FanoutPublishArgs.messages(MessageArgs.payload(data)
+                                                                                   .deliveryLimit(10)
+                                                                                   .timeToLive(Duration.ofDays(24))
+                                                                                   .header("key1", new MyDataValue())
+                                                                                   .header("key2", new MyDataValue())
+                                                                                   .delay(Duration.ofSeconds(45))
+                                                                                   .priority(3)
+                                                                                   .deduplicationById("myid", Duration.ofHours(23))));
+    
+    String id = msg.getId();
+    MyObject data = msg.getPayload();
+    Map<String, MyDataValue> headers = msg.getHeaders();
+    
+    // adding messages in a batch
+    Mono<List<Message<MyObject>>> msgs =  rf.publishMany(FanoutPublishArgs.messages(MessageArgs.payload(data1), 
+                                                                                    MessageArgs.payload(data2), 
+                                                                                    MessageArgs.payload(data3)));
+    
+    ```
+
+=== "RxJava3"
+
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RReliableFanoutRx<MyObject> rf = redisson.getReliableFanout("myfanout");
+    
+    MyObject data = new MyObject();
+    
+    Maybe<Message<MyObject>> msg = rf.publish(FanoutPublishArgs.messages(MessageArgs.payload(data)
+                                                                                    .deliveryLimit(10)
+                                                                                    .timeToLive(Duration.ofDays(24))
+                                                                                    .header("key1", new MyDataValue())
+                                                                                    .header("key2", new MyDataValue())
+                                                                                    .delay(Duration.ofSeconds(45))
+                                                                                    .priority(3)
+                                                                                    .deduplicationById("myid", Duration.ofHours(23))));
+    
+    String id = msg.getId();
+    MyObject data = msg.getPayload();
+    Map<String, MyDataValue> headers = msg.getHeaders();
+    
+    // adding messages in a batch
+    Single<List<Message<MyObject>>> msgs =  rf.publishMany(FanoutPublishArgs.messages(MessageArgs.payload(data1), 
+                                                                                      MessageArgs.payload(data2), 
+                                                                                      MessageArgs.payload(data3)));
+    
+    ```
+
+### Durability and Synchronous Replication
+
+The synchronization mechanism allows message publishing operations to be propagated to replica nodes in a controlled manner, ensuring data consistency across Valkey or Redis cluster. Additionally, Valkey and Redis persistence options, such as append-only files (AOF), and RDB snapshots, significantly increase fanout reliability by preventing data loss during server restarts or failures, allowing for recovery of queued messages that would otherwise be lost when using only in-memory storage. 
+
+Valkey and Redis use asynchronous replication. Reliable Fanout introduces synchronous replication modes per operation to address the limitations of asynchronous replication. This capability with proper configuration of the persistence transforms Valkey and Redis from a purely volatile memory store into a more robust message broker suitable for applications where message delivery guarantees are critical. This is particularly important for mission-critical applications where data loss is unacceptable.
+
+Each message publishing operation can be configured with specific synchronization parameters:
+
+- `syncMode` - Sets the synchronization mode to be used for current operation. Default value is `AUTO`.
+
+	 Three synchronization strategies are available:
+	
+    - `AUTO` - Ensures data durability by blocking until write operations are confirmed as persisted to the memory  and the Append-Only File (AOF) on the primary Valkey or Redis node and replicas if the AOF persistence feature is enabled. If AOF persistence is unavailable, falls back to blocking until replica nodes acknowledge that write operations have been applied to memory. If neither durability mechanism is available, proceeds without synchronization guarantees.
+	- `ACK` - Ensures data durability by blocking until replica nodes acknowledge that write operations have been applied to memory.
+	- `ACK_AOF` - Ensures data durability by blocking until write operations are confirmed as persisted to the memory and the Append-Only File (AOF) on the primary Valkey or Redis node and replicas. Requires Redis 7.2.0+ or any Valkey version.
+	
+- `syncFailureMode` - Sets the behavior when synchronization with replica nodes fails. Default value is `LOG_WARNING`. 
+
+	Two failure handling modes are available: 
+	
+    - `THROW_EXCEPTION` - Throw an exception to the caller. This mode is useful in scenarios where synchronization failures should be immediately visible and handled by the application code.
+    - `LOG_WARNING` - Log a warning message but continue execution. This mode is suitable for non-critical synchronization operations where the application can continue functioning despite synchronization issues.
+
+- `syncTimeout` - Sets the timeout duration for synchronization of the current operation. Defines how long the caller will wait for acknowledgment from replica nodes. Default value is `1 second`.
+
+Code examples of synchronization parameters usage:
+=== "Sync"
+    ```java
+    RReliableFanout<MyObject> rf = redisson.getReliableFanout("myfanout");
+
+    Message<MyObject> msg = rq.publish(FanoutPublishArgs.messages(MessageArgs.payload(data))
+                                .syncMode(SyncMode.ACK_AOF)
+                                .syncTimeout(Duration.ofSeconds(15))
+                                .syncFailureMode(SyncFailureMode.LOG_WARNING));
+    
+    List<Message<MyObject>> msgs = rf.publishMany(FanoutPublishArgs.messages(MessageArgs.payload(data1), 
+  	       								      MessageArgs.payload(data2), 
+    										  MessageArgs.payload(data3))
+                                    .syncMode(SyncMode.AUTO)
+                                    .syncTimeout(Duration.ofSeconds(10))
+                                    .syncFailureMode(SyncFailureMode.THROW_EXCEPTION));
+    ```
+=== "Async"
+    ```java
+    RReliableFanout<MyObject> rf = redisson.getReliableFanout("myfanout");
+
+    RFuture<Message<MyObject>> mf = rq.publishAsync(FanoutPublishArgs.messages(MessageArgs.payload(data))
+                                                                     .syncMode(SyncMode.ACK_AOF)
+																	 .syncTimeout(Duration.ofSeconds(15))
+																	 .syncFailureMode(SyncFailureMode.LOG_WARNING));
+    
+    RFuture<List<Message<MyObject>>> msf = rf.publishManyAsync(FanoutPublishArgs.messages(MessageArgs.payload(data1), 
+																				 		  MessageArgs.payload(data2), 
+																						  MessageArgs.payload(data3))
+  														    				    .syncMode(SyncMode.AUTO)
+																				.syncTimeout(Duration.ofSeconds(10))
+																				.syncFailureMode(SyncFailureMode.THROW_EXCEPTION));
+    
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RReliableFanoutReactive<MyObject> rq = redisson.getReliableFanout("myfanout");
+
+    Mono<Message<MyObject>> mf = rq.publish(FanoutPublishArgs.messages(MessageArgs.payload(data))
+															 .syncMode(SyncMode.ACK_AOF)
+ 															 .syncTimeout(Duration.ofSeconds(15))
+															 .syncFailureMode(SyncFailureMode.LOG_WARNING));
+    
+    Mono<List<Message<MyObject>>> msf = rf.publishMany(FanoutPublishArgs.messages(MessageArgs.payload(data1), 
+  	       								                                          MessageArgs.payload(data2), 
+    										                                      MessageArgs.payload(data3))
+																		.syncMode(SyncMode.AUTO)
+																		.syncTimeout(Duration.ofSeconds(10))
+																		.syncFailureMode(SyncFailureMode.THROW_EXCEPTION));
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+	RReliableFanoutRx<MyObject> rq = redisson.getReliableFanout("myfanout");
+
+    Maybe<Message<MyObject>> mf = rq.publish(FanoutPublishArgs.messages(MessageArgs.payload(data))
+															  .syncMode(SyncMode.ACK_AOF)
+															  .syncTimeout(Duration.ofSeconds(15))
+															  .syncFailureMode(SyncFailureMode.LOG_WARNING));
+    
+    Single<List<Message<MyObject>>> msf = rf.publishMany(FanoutPublishArgs.messages(MessageArgs.payload(data1), 
+																					MessageArgs.payload(data2), 
+																					MessageArgs.payload(data3))
+																		  .syncMode(SyncMode.AUTO)
+																		  .syncTimeout(Duration.ofSeconds(10))
+																		  .syncFailureMode(SyncFailureMode.THROW_EXCEPTION));
+    ```
+
 
 ## Queue
 
