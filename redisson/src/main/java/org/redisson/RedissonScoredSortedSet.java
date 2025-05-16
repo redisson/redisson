@@ -1909,6 +1909,25 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
+    public Collection<ScoredEntry<V>> readDiffEntries(String... names) {
+        return get(readDiffEntriesAsync(names));
+    }
+
+    @Override
+    public RFuture<Collection<ScoredEntry<V>>> readDiffEntriesAsync(String... names) {
+        List<Object> args = new ArrayList<>(names.length + 3);
+        args.add(names.length + 1);
+        args.add(getRawName());
+        args.addAll(map(names));
+        args.add("WITHSCORES");
+        if (getServiceManager().isResp3()) {
+            return commandExecutor.readAsync(getRawName(), codec, RedisCommands.ZDIFF_ENTRY_V2, args.toArray());
+        }
+
+        return commandExecutor.readAsync(getRawName(), codec, RedisCommands.ZDIFF_ENTRY, args.toArray());
+    }
+
+    @Override
     public int diff(String... names) {
         return get(diffAsync(names));
     }
