@@ -14,7 +14,7 @@ Hazelcast is an open-source in-memory data grid platform written in the Java pro
 
   
 
-#### 3 Major Differences Between Redis and Hazelcast
+## 3 Major Differences Between Redis and Hazelcast
 
 #### Threading
 
@@ -45,7 +45,7 @@ Redis easily handles terabytes of RAM, thanks to the reliable [jemalloc](http://
 
 Meanwhile, the non-commercial version of Hazelcast stores all distributed data in on-heap memory served by the Java garbage collector. As the amount of data grows, therefore, garbage collection might cause pauses in the execution of the application. These pauses affect the application's performance and may also cause more serious problems and errors.
 
-#### Comparison
+## Comparison
 
 Redis does not include compatibility with the Java programming language right out of the box. Instead, many Redis users make use of Java clients like [Redisson](https://redisson.pro) in order to gain access to Java objects, collections, and services based on Redis.
 
