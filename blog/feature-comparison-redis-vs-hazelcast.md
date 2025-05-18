@@ -177,7 +177,6 @@ In this section, we'll discuss the differences between Redisson and Hazelcast in
 | CBOR codec | ✔ | ❌  |
 | MsgPack codec | ✔ | ❌  |
 | Kryo codec | ✔ | ❌  |
-| FST codec | ✔ | ❌  |
 | LZ4 compression codec | ✔ | ❌  |
 | Snappy compression codec | ✔ | ❌  |
 
