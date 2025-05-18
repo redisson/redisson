@@ -55,135 +55,135 @@ In this section, we'll discuss the differences between Redisson and Hazelcast in
 
 |     | Redis + Redisson | Hazelcast |
 | --- | --- | --- |
-| Map | Yes | Yes |
-| JSON Store | Yes | No  |
-| Multimap | Yes | Yes |
-| Set | Yes | Yes |
-| List | Yes | Yes |
-| Queue | Yes | Yes |
-| Deque | Yes | No  |
-| SortedSet | Yes | No  |
-| ScoredSortedSet | Yes | No  |
-| PriorityQueue | Yes | No  |
-| PriorityDeque | Yes | No  |
-| DelayedQueue | Yes | No  |
-| TransferQueue | Yes | No  |
-| RingBuffer | Yes | Yes |
-| TimeSeries | Yes | No  |
+| Map | ✔ | ✔ |
+| JSON Store | ✔ | ❌  |
+| Multimap | ✔ | ✔ |
+| Set | ✔ | ✔ |
+| List | ✔ | ✔ |
+| Queue | ✔ | ✔ |
+| Deque | ✔ | ❌  |
+| SortedSet | ✔ | ❌  |
+| ScoredSortedSet | ✔ | ❌  |
+| PriorityQueue | ✔ | ❌  |
+| PriorityDeque | ✔ | ❌  |
+| DelayedQueue | ✔ | ❌  |
+| TransferQueue | ✔ | ❌  |
+| RingBuffer | ✔ | ✔ |
+| TimeSeries | ✔ | ❌  |
 
 ##### Distributed locks and synchronizers
 
 |     | Redis + Redisson | Hazelcast |
 | --- | --- | --- |
-| Lock | Yes | Yes |
-| Semaphore | Yes | Yes |
-| CountDownLatch | Yes | Yes |
-| FairLock | Yes | No  |
-| Fenced Lock | Yes | No  |
-| Spin Lock | Yes | No  |
-| MultiLock | Yes | No  |
-| ReadWriteLock | Yes | No  |
-| PermitExpirableSemaphore | Yes | No  |
+| Lock | ✔ | ✔ |
+| Semaphore | ✔ | ✔ |
+| CountDownLatch | ✔ | ✔ |
+| FairLock | ✔ | ❌  |
+| Fenced Lock | ✔ | ❌  |
+| Spin Lock | ✔ | ❌  |
+| MultiLock | ✔ | ❌  |
+| ReadWriteLock | ✔ | ❌  |
+| PermitExpirableSemaphore | ✔ | ❌  |
 
 ##### Distributed objects
 
 |     | Redis + Redisson | Hazelcast |
 | --- | --- | --- |
-| Object holder | Yes | Yes |
-| JSON holder | Yes | No  |
-| AtomicLong | Yes | Yes |
-| LongAdder | Yes | No  |
-| DoubleAdder | Yes | No  |
-| Publish/Subscribe | Yes | Yes |
-| Reliable Publish/Subscribe | Yes | Yes |
-| Id Generator | Yes | Yes |
-| AtomicDouble | Yes | No  |
-| Geospatial | Yes | No  |
-| BitSet | Yes | No  |
-| BloomFilter | Yes | No  |
-| BinaryStream | Yes | No  |
-| HyperLogLog | Yes | Yes |
-| RateLimiter | Yes | No  |
+| Object holder | ✔ | ✔ |
+| JSON holder | ✔ | ❌  |
+| AtomicLong | ✔ | ✔ |
+| LongAdder | ✔ | ❌  |
+| DoubleAdder | ✔ | ❌  |
+| Publish/Subscribe | ✔ | ✔ |
+| Reliable Publish/Subscribe | ✔ | ✔ |
+| Id Generator | ✔ | ✔ |
+| AtomicDouble | ✔ | ❌  |
+| Geospatial | ✔ | ❌  |
+| BitSet | ✔ | ❌  |
+| BloomFilter | ✔ | ❌  |
+| BinaryStream | ✔ | ❌  |
+| HyperLogLog | ✔ | ✔ |
+| RateLimiter | ✔ | ❌  |
 
 ##### Advanced cache support
 
 |     | Redis + Redisson | Hazelcast |
 | --- | --- | --- |
-| JCache API | Yes | Yes |
-| JCache API with near cache (up to 45x faster) | Yes | Yes |
-| Near Cache | Yes | Yes |
+| JCache API | ✔ | ✔ |
+| JCache API with near cache (up to 45x faster) | ✔ | ✔ |
+| Near Cache | ✔ | ✔ |
 
 ##### API architecture
 
 |     | Redis + Redisson | Hazelcast |
 | --- | --- | --- |
-| Asynchronous API | Yes | partial support |
-| Reactive API | Yes | No  |
-| RxJava3 API | Yes | No  |
+| Asynchronous API | ✔ | partial support |
+| Reactive API | ✔ | ❌  |
+| RxJava3 API | ✔ | ❌  |
 
 ##### Transactions
 
 |     | Redis + Redisson | Hazelcast |
 | --- | --- | --- |
-| Transactions API | Yes | Yes |
-| XA Transactions | Yes | Yes |
+| Transactions API | ✔ | ✔ |
+| XA Transactions | ✔ | ✔ |
 
 ##### Distributed services
 
 |     | Redis + Redisson | Hazelcast |
 | --- | --- | --- |
-| ExecutorService | Yes | Yes |
-| MapReduce | Yes | Yes |
-| SchedulerService | Yes | Yes |
-| RemoteService | Yes | No  |
-| LiveObjectService | Yes | No  |
-| RediSearch | Yes | No  |
+| ExecutorService | ✔ | ✔ |
+| MapReduce | ✔ | ✔ |
+| SchedulerService | ✔ | ✔ |
+| RemoteService | ✔ | ❌  |
+| LiveObjectService | ✔ | ❌  |
+| RediSearch | ✔ | ❌  |
 
 ##### Integration with frameworks
 
 |     | Redis + Redisson | Hazelcast |
 | --- | --- | --- |
-| Spring Cache | Yes | Yes |
-| Spring Cache with near cache (up to 45x faster) | Yes | No  |
-| Hibernate Cache | Yes | Yes |
-| Hibernate Cache with near cache (up to 5x faster) | Yes | No  |
-| MyBatis Cache | Yes | Yes |
-| MyBatis Cache with near cache (up to 45x faster) | Yes | No  |
-| Quarkus Cache | Yes | No  |
-| Quarkus Cache with near cache  <br>(up to 45x faster) | Yes | No  |
-| Micronaut Cache | Yes | Yes |
-| Micronaut Cache with near cache  <br>(up to 45x faster) | Yes | No  |
-| Micronaut Session | Yes | No  |
-| Tomcat Session Manager | Yes | Yes |
-| Spring Session | Yes | Yes |
+| Spring Cache | ✔ | ✔ |
+| Spring Cache with near cache (up to 45x faster) | ✔ | ❌  |
+| Hibernate Cache | ✔ | ✔ |
+| Hibernate Cache with near cache (up to 5x faster) | ✔ | ❌  |
+| MyBatis Cache | ✔ | ✔ |
+| MyBatis Cache with near cache (up to 45x faster) | ✔ | ❌  |
+| Quarkus Cache | ✔ | ❌  |
+| Quarkus Cache with near cache  <br>(up to 45x faster) | ✔ | ❌  |
+| Micronaut Cache | ✔ | ✔ |
+| Micronaut Cache with near cache  <br>(up to 45x faster) | ✔ | ❌  |
+| Micronaut Session | ✔ | ❌  |
+| Tomcat Session Manager | ✔ | ✔ |
+| Spring Session | ✔ | ✔ |
 | Statistics monitoring | 20 different statistics monitoring systems including JMX | JMX, NewRelic, AppDynamics |
 
 ##### Security
 
 |     | Redis + Redisson | Hazelcast |
 | --- | --- | --- |
-| Authentication | Yes | Yes |
-| Authorization | Yes | Yes |
-| SSL support | Yes | Yes |
+| Authentication | ✔ | ✔ |
+| Authorization | ✔ | ✔ |
+| SSL support | ✔ | ✔ |
 
 ##### Custom data serialization
 
 |     | Redis + Redisson | Hazelcast |
 | --- | --- | --- |
-| JSON codec | Yes | No  |
-| JDK Serialization | Yes | No  |
-| Avro codec | Yes | No  |
-| Smile codec | Yes | No  |
-| CBOR codec | Yes | No  |
-| MsgPack codec | Yes | No  |
-| Kryo codec | Yes | No  |
-| FST codec | Yes | No  |
-| LZ4 compression codec | Yes | No  |
-| Snappy compression codec | Yes | No  |
+| JSON codec | ✔ | ❌  |
+| JDK Serialization | ✔ | ❌  |
+| Avro codec | ✔ | ❌  |
+| Smile codec | ✔ | ❌  |
+| CBOR codec | ✔ | ❌  |
+| MsgPack codec | ✔ | ❌  |
+| Kryo codec | ✔ | ❌  |
+| FST codec | ✔ | ❌  |
+| LZ4 compression codec | ✔ | ❌  |
+| Snappy compression codec | ✔ | ❌  |
 
 ##### Stability and ease of use
 
 |     | Redis + Redisson | Hazelcast |
 | --- | --- | --- |
-| Fully-managed services support  <br>(AWS Elasticache, Azure Cache, Redis Enterprise, Google Cloud...) | Yes | No  |
-| Large memory amount handling | Yes | Open-source version has limitations |
+| Fully-managed services support  <br>(AWS Elasticache, Azure Cache, Redis Enterprise, Google Cloud...) | ✔ | ❌  |
+| Large memory amount handling | ✔ | Open-source version has limitations |
