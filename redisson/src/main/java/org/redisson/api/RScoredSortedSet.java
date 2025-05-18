@@ -1267,6 +1267,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      * @param names - names of ScoredSortedSet
      * @return result of intersection
      */
+    @Deprecated
     Collection<V> readIntersection(String... names);
 
     /**
@@ -1279,6 +1280,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      * @param names - names of ScoredSortedSet
      * @return result of intersection
      */
+    @Deprecated
     Collection<V> readIntersection(Aggregate aggregate, String... names);
 
     /**
@@ -1290,6 +1292,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      * @param nameWithWeight - name of ScoredSortedSet mapped to weight multiplier
      * @return result of intersection
      */
+    @Deprecated
     Collection<V> readIntersection(Map<String, Double> nameWithWeight);
 
     /**
@@ -1324,7 +1327,19 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      * @param nameWithWeight - name of ScoredSortedSet mapped to weight multiplier
      * @return result of intersection
      */
+    @Deprecated
     Collection<V> readIntersection(Aggregate aggregate, Map<String, Double> nameWithWeight);
+
+    /**
+     * Intersect provided ScoredSortedSets
+     * with current ScoredSortedSet
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param args object
+     * @return result of intersection
+     */
+    Collection<V> readIntersection(SetIntersectionArgs args);
 
     /**
      * Union provided ScoredSortedSets 
