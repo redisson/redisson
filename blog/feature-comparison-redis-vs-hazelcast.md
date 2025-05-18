@@ -1,4 +1,4 @@
-## Feature Comparison: Redis vs Hazelcast
+# Feature Comparison: Redis vs Hazelcast
 
 #### Introduction
 
