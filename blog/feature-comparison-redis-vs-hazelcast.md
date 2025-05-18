@@ -14,7 +14,7 @@ Hazelcast is an open-source in-memory data grid platform written in the Java pro
 
   
 
-#### 3 Major Differences Between Redis and Hazelcast
+## 3 Major Differences Between Redis and Hazelcast
 
 #### Threading
 
