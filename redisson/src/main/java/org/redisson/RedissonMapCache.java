@@ -2924,7 +2924,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 return topic.addListenerAsync(List.class, new MessageListener<List<Object>>() {
                     @Override
                     public void onMessage(CharSequence channel, List<Object> msg) {
-                        EntryEvent<K, V> event = new EntryEvent<K, V>(RedissonMapCache.this, EntryEvent.Type.REMOVED, (K) msg.get(0), (V) msg.get(1), null);
+                        EntryEvent<K, V> event = new EntryEvent<K, V>(RedissonMapCache.this, EntryEvent.Type.REMOVED, (K) msg.get(0), null, (V) msg.get(1));
                         ((EntryRemovedListener<K, V>) listener).onRemoved(event);
                     }
                 });
