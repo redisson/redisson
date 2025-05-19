@@ -1035,6 +1035,8 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<Integer> intersectionAsync(Aggregate aggregate, Map<String, Double> nameWithWeight);
 
     /**
+     * Use {@link #readIntersectionAsync(SetIntersectionArgs)} instead.
+     * <p>
      * Intersect provided ScoredSortedSets
      * with current ScoredSortedSet without state change
      * <p>
@@ -1043,9 +1045,12 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      * @param names - names of ScoredSortedSet
      * @return result of intersection
      */
+    @Deprecated
     RFuture<Collection<V>> readIntersectionAsync(String... names);
 
     /**
+     * Use {@link #readIntersectionAsync(SetIntersectionArgs)} instead.
+     * <p>
      * Intersect provided ScoredSortedSets with current ScoredSortedSet using defined aggregation method
      * without state change
      * <p>
@@ -1055,9 +1060,12 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      * @param names - names of ScoredSortedSet
      * @return result of intersection
      */
+    @Deprecated
     RFuture<Collection<V>> readIntersectionAsync(Aggregate aggregate, String... names);
 
     /**
+     * Use {@link #readIntersectionAsync(SetIntersectionArgs)} instead.
+     * <p>
      * Intersect provided ScoredSortedSets mapped to weight multiplier
      * with current ScoredSortedSet without state change
      * <p>
@@ -1066,9 +1074,12 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      * @param nameWithWeight - name of ScoredSortedSet mapped to weight multiplier
      * @return result of intersection
      */
+    @Deprecated
     RFuture<Collection<V>> readIntersectionAsync(Map<String, Double> nameWithWeight);
 
     /**
+     * Use {@link #readIntersectionAsync(SetIntersectionArgs)} instead.
+     * <p>
      * Intersect provided ScoredSortedSets mapped to weight multiplier
      * with current ScoredSortedSet using defined aggregation method
      * without state change
@@ -1079,7 +1090,19 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      * @param nameWithWeight - name of ScoredSortedSet mapped to weight multiplier
      * @return result of intersection
      */
+    @Deprecated
     RFuture<Collection<V>> readIntersectionAsync(Aggregate aggregate, Map<String, Double> nameWithWeight);
+
+    /**
+     * Intersect provided ScoredSortedSets
+     * with current ScoredSortedSet
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param args object
+     * @return result of intersection
+     */
+    RFuture<Collection<V>> readIntersectionAsync(SetIntersectionArgs args);
 
     /**
      * Counts elements of set as a result of sets intersection with current set.

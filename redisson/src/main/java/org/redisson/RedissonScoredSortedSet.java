@@ -1516,6 +1516,27 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
+    public Collection<V> readIntersection(SetIntersectionArgs args) {
+        return get(readIntersectionAsync(args));
+    }
+
+    @Override
+    public RFuture<Collection<V>> readIntersectionAsync(SetIntersectionArgs args) {
+        SetIntersectionParams sip = (SetIntersectionParams) args;
+        List<Object> params = new LinkedList<>();
+        params.add(sip.getNames().length + 1);
+        params.add(getRawName());
+        params.addAll(map(sip.getNames()));
+        if (sip.getWeights() != null && sip.getWeights().length > 0) {
+            params.add("WEIGHTS");
+            params.addAll(Arrays.asList(sip.getWeights()));
+        }
+        params.add("AGGREGATE");
+        params.add(sip.getAggregate().name());
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.ZINTER, params.toArray());
+    }
+
+    @Override
     public Integer countIntersection(String... names) {
         return get(countIntersectionAsync(names));
     }
