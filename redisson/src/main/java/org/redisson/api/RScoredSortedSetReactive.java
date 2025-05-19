@@ -1100,6 +1100,8 @@ public interface RScoredSortedSetReactive<V> extends RExpirableReactive, RSortab
     Mono<Integer> intersection(Aggregate aggregate, Map<String, Double> nameWithWeight);
 
     /**
+     * Use {@link #readIntersection(SetIntersectionArgs)} instead.
+     * <p>
      * Intersect provided ScoredSortedSets
      * with current ScoredSortedSet without state change
      * <p>
@@ -1112,6 +1114,8 @@ public interface RScoredSortedSetReactive<V> extends RExpirableReactive, RSortab
     Mono<Collection<V>> readIntersection(String... names);
 
     /**
+     * Use {@link #readIntersection(SetIntersectionArgs)} instead.
+     * <p>
      * Intersect provided ScoredSortedSets with current ScoredSortedSet using defined aggregation method
      * without state change
      * <p>
@@ -1125,6 +1129,8 @@ public interface RScoredSortedSetReactive<V> extends RExpirableReactive, RSortab
     Mono<Collection<V>> readIntersection(Aggregate aggregate, String... names);
 
     /**
+     * Use {@link #readIntersection(SetIntersectionArgs)} instead.
+     * <p>
      * Intersect provided ScoredSortedSets mapped to weight multiplier
      * with current ScoredSortedSet without state change
      * <p>
@@ -1137,6 +1143,8 @@ public interface RScoredSortedSetReactive<V> extends RExpirableReactive, RSortab
     Mono<Collection<V>> readIntersection(Map<String, Double> nameWithWeight);
 
     /**
+     * Use {@link #readIntersection(SetIntersectionArgs)} instead.
+     * <p>
      * Intersect provided ScoredSortedSets mapped to weight multiplier
      * with current ScoredSortedSet using defined aggregation method
      * without state change

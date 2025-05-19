@@ -1529,7 +1529,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         params.addAll(map(sip.getNames()));
         if (sip.getWeights() != null && sip.getWeights().length > 0) {
             params.add("WEIGHTS");
-            params.addAll(Arrays.asList(args.weights()));
+            params.addAll(Arrays.asList(sip.getWeights()));
         }
         params.add("AGGREGATE");
         params.add(sip.getAggregate().name());
