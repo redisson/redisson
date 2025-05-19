@@ -32,20 +32,24 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.function.BiConsumer;
 
 /**
- * 
+ *
  * @author Nikita Koksharov
  *
  */
 public class RedissonSubscription extends AbstractSubscription {
 
+    private final Map<ChannelName, CompletableFuture<Void>> subscribed = new ConcurrentHashMap<>();
+    private final Map<ChannelName, CompletableFuture<Void>> psubscribed = new ConcurrentHashMap<>();
+
     private final CommandAsyncExecutor commandExecutor;
     private final PublishSubscribeService subscribeService;
-    
-    public RedissonSubscription(CommandAsyncExecutor commandExecutor,  MessageListener listener) {
+
+    public RedissonSubscription(CommandAsyncExecutor commandExecutor, MessageListener listener) {
         super(listener, null, null);
         this.commandExecutor = commandExecutor;
         this.subscribeService = commandExecutor.getConnectionManager().getSubscribeService();
@@ -53,18 +57,20 @@ public class RedissonSubscription extends AbstractSubscription {
 
     @Override
     protected void doSubscribe(byte[]... channels) {
-        List<CompletableFuture<?>> list = new ArrayList<>();
-        Queue<byte[]> subscribed = new ConcurrentLinkedQueue<>();
-        CountDownLatch latch = new CountDownLatch(1);
-        for (byte[] channel : channels) {
-            if (subscribeService.hasEntry(new ChannelName(channel))) {
-                continue;
-            }
+        Map<ChannelName, CompletableFuture<Void>> tosubscribe = getNonSubscribed(channels, subscribed, (l, ch) -> {
+            ((SubscriptionListener) getListener()).onChannelSubscribed(ch, 1);
+        });
+        if (tosubscribe.isEmpty()) {
+            return;
+        }
 
-            CompletableFuture<List<PubSubConnectionEntry>> f = subscribeService.subscribe(ByteArrayCodec.INSTANCE, new ChannelName(channel), new BaseRedisPubSubListener() {
+        List<CompletableFuture<?>> list = new ArrayList<>();
+        CountDownLatch latch = new CountDownLatch(1);
+        for (ChannelName channel : tosubscribe.keySet()) {
+            CompletableFuture<List<PubSubConnectionEntry>> f = subscribeService.subscribe(ByteArrayCodec.INSTANCE, channel, new BaseRedisPubSubListener() {
                 @Override
                 public void onMessage(CharSequence ch, Object message) {
-                    if (!Arrays.equals(((ChannelName) ch).getName(), channel)) {
+                    if (!Arrays.equals(((ChannelName) ch).getName(), channel.getName())) {
                         return;
                     }
 
@@ -75,16 +81,19 @@ public class RedissonSubscription extends AbstractSubscription {
 
                 @Override
                 public void onStatus(PubSubType type, CharSequence ch) {
-                    if (!Arrays.equals(((ChannelName) ch).getName(), channel)) {
+                    if (!Arrays.equals(((ChannelName) ch).getName(), channel.getName())) {
                         return;
                     }
 
-                    if (getListener() instanceof SubscriptionListener) {
-                        subscribed.add(channel);
+                    if (getListener() instanceof SubscriptionListener
+                            && type == PubSubType.SUBSCRIBE) {
+                        CompletableFuture<Void> callback = subscribed.get(channel);
+                        callback.complete(null);
                     }
                     super.onStatus(type, ch);
 
                     if (type == PubSubType.UNSUBSCRIBE) {
+                        subscribed.remove(channel);
                         latch.countDown();
                     }
                 }
@@ -95,8 +104,10 @@ public class RedissonSubscription extends AbstractSubscription {
         for (CompletableFuture<?> future : list) {
             commandExecutor.get(future);
         }
-        for (byte[] channel : subscribed) {
-            ((SubscriptionListener) getListener()).onChannelSubscribed(channel, 1);
+        if (getListener() instanceof SubscriptionListener) {
+            for (ChannelName channel : tosubscribe.keySet()) {
+                ((SubscriptionListener) getListener()).onChannelSubscribed(channel.getName(), 1);
+            }
         }
 
         // hack for RedisMessageListenerContainer
@@ -116,6 +127,34 @@ public class RedissonSubscription extends AbstractSubscription {
         }
     }
 
+    private Map<ChannelName, CompletableFuture<Void>> getNonSubscribed(byte[][] channels,
+                                                                       Map<ChannelName, CompletableFuture<Void>> subscribed,
+                                                                       BiConsumer<SubscriptionListener, byte[]> consumer) {
+        Map<ChannelName, CompletableFuture<Void>> tosubscribe = new HashMap<>();
+        for (byte[] ch : channels) {
+            CompletableFuture<Void> f = new CompletableFuture<>();
+            ChannelName n = new ChannelName(ch);
+            CompletableFuture<Void> cf = subscribed.putIfAbsent(n, f);
+            if (cf == null) {
+                tosubscribe.put(n, f);
+            } else {
+                if (getListener() instanceof SubscriptionListener) {
+                    if (cf.isDone()) {
+                        commandExecutor.getServiceManager().getExecutor().submit(() -> {
+                            consumer.accept((SubscriptionListener) getListener(), ch);
+                        });
+                    } else {
+                        cf.thenAccept(r -> {
+                            consumer.accept((SubscriptionListener) getListener(), ch);
+                        });
+                    }
+                }
+            }
+        }
+
+        return tosubscribe;
+    }
+
     @Override
     protected void doUnsubscribe(boolean all, byte[]... channels) {
         for (byte[] channel : channels) {
@@ -132,18 +171,21 @@ public class RedissonSubscription extends AbstractSubscription {
 
     @Override
     protected void doPsubscribe(byte[]... patterns) {
-        List<CompletableFuture<?>> list = new ArrayList<>();
-        Queue<byte[]> subscribed = new ConcurrentLinkedQueue<>();
-        CountDownLatch latch = new CountDownLatch(1);
-        for (byte[] channel : patterns) {
-            if (subscribeService.hasEntry(new ChannelName(channel))) {
-                continue;
-            }
+        Map<ChannelName, CompletableFuture<Void>> tosubscribe = getNonSubscribed(patterns, psubscribed, (l, ch) -> {
+            ((SubscriptionListener) getListener()).onPatternSubscribed(ch, 1);
+        });
 
-            CompletableFuture<Collection<PubSubConnectionEntry>> f = subscribeService.psubscribe(new ChannelName(channel), ByteArrayCodec.INSTANCE, new BaseRedisPubSubListener() {
+        if (tosubscribe.isEmpty()) {
+            return;
+        }
+
+        List<CompletableFuture<?>> list = new ArrayList<>();
+        CountDownLatch latch = new CountDownLatch(1);
+        for (ChannelName channel : tosubscribe.keySet()) {
+            CompletableFuture<Collection<PubSubConnectionEntry>> f = subscribeService.psubscribe(channel, ByteArrayCodec.INSTANCE, new BaseRedisPubSubListener() {
                 @Override
                 public void onPatternMessage(CharSequence pattern, CharSequence ch, Object message) {
-                    if (!Arrays.equals(((ChannelName) pattern).getName(), channel)) {
+                    if (!Arrays.equals(((ChannelName) pattern).getName(), channel.getName())) {
                         return;
                     }
 
@@ -154,15 +196,18 @@ public class RedissonSubscription extends AbstractSubscription {
 
                 @Override
                 public void onStatus(PubSubType type, CharSequence pattern) {
-                    if (!Arrays.equals(((ChannelName) pattern).getName(), channel)) {
+                    if (!Arrays.equals(((ChannelName) pattern).getName(), channel.getName())) {
                         return;
                     }
 
-                    if (getListener() instanceof SubscriptionListener) {
-                        subscribed.add(channel);
+                    if (getListener() instanceof SubscriptionListener
+                            && type == PubSubType.PSUBSCRIBE) {
+                        CompletableFuture<Void> callback = psubscribed.get(channel);
+                        callback.complete(null);
                     }
                     super.onStatus(type, pattern);
                     if (type == PubSubType.PUNSUBSCRIBE) {
+                        psubscribed.remove(channel);
                         latch.countDown();
                     }
                 }
@@ -172,8 +217,10 @@ public class RedissonSubscription extends AbstractSubscription {
         for (CompletableFuture<?> future : list) {
             commandExecutor.get(future);
         }
-        for (byte[] channel : subscribed) {
-            ((SubscriptionListener) getListener()).onPatternSubscribed(channel, 1);
+        if (getListener() instanceof SubscriptionListener) {
+            for (ChannelName channel : tosubscribe.keySet()) {
+                ((SubscriptionListener) getListener()).onPatternSubscribed(channel.getName(), 1);
+            }
         }
 
         // hack for RedisMessageListenerContainer

@@ -12,6 +12,7 @@ import org.redisson.connection.balancer.RandomLoadBalancer;
 import org.springframework.data.redis.connection.Message;
 import org.springframework.data.redis.connection.MessageListener;
 import org.springframework.data.redis.connection.RedisConnection;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.listener.ChannelTopic;
 import org.springframework.data.redis.listener.PatternTopic;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
@@ -26,6 +27,54 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonSubscribeTest extends BaseConnectionTest {
+
+    @Test
+    public void testContainersSameName() throws InterruptedException {
+        for (int i = 0; i < 10; i++) {
+            testContainerSameName();
+        }
+    }
+
+    @Test
+    public void testContainerSameName() throws InterruptedException {
+        RedissonConnectionFactory f = new RedissonConnectionFactory(redisson);
+        RedisMessageListenerContainer container = new RedisMessageListenerContainer();
+        container.setConnectionFactory(f);
+        container.afterPropertiesSet();
+        container.start();
+
+        Queue<String> msgs = new ConcurrentLinkedQueue<>();
+        for (int i = 0; i < 2; i++) {
+            container.addMessageListener(new MessageListener() {
+                @Override
+                public void onMessage(Message message, byte[] pattern) {
+                    msgs.add(new String(message.getBody()));
+                }
+            }, ChannelTopic.of("test"));
+        }
+
+        StringRedisTemplate rt = new StringRedisTemplate(f);
+        rt.convertAndSend("test", "1");
+
+        Thread.sleep(100);
+
+        assertThat(msgs).contains("1", "1").hasSize(2);
+
+        container.stop();
+
+        container = new RedisMessageListenerContainer();
+        container.setConnectionFactory(f);
+        container.afterPropertiesSet();
+        container.start();
+        for (int i = 0; i < 2; i++) {
+            container.addMessageListener(new MessageListener() {
+                @Override
+                public void onMessage(Message message, byte[] pattern) {
+                }
+            }, PatternTopic.of("*"));
+        }
+        container.stop();
+    }
 
     @Test
     public void testContainer() {
