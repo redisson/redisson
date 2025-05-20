@@ -46,12 +46,10 @@ public class MapCacheNativeWrapper<K, V> implements RMapCache<K, V>, Supplier<RM
 
     @Override
     public void setMaxSize(int maxSize) {
-        throw new UnsupportedOperationException();
     }
 
     @Override
     public void setMaxSize(int maxSize, EvictionMode mode) {
-        throw new UnsupportedOperationException();
     }
 
     @Override
