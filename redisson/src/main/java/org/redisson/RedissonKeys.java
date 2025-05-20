@@ -636,7 +636,7 @@ public final class RedissonKeys implements RKeys {
             return addListenerAsync("__keyevent@*:del", (DeletedObjectListener) listener, DeletedObjectListener::onDeleted);
         }
         if (listener instanceof FlushListener) {
-            if (commandExecutor.getServiceManager().getCfg().getProtocol() != Protocol.RESP3) {
+            if (!commandExecutor.getServiceManager().isResp3()) {
                 throw new IllegalStateException("`protocol` config setting should be set to RESP3 value");
             }
 
