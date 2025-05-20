@@ -1350,6 +1350,17 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     Collection<V> readIntersection(SetIntersectionArgs args);
 
     /**
+     * Intersect provided ScoredSortedSets
+     * with current ScoredSortedSet
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param args object
+     * @return result of intersection entries (value and its score)
+     */
+    Collection<ScoredEntry<V>> readIntersectionEntries(SetIntersectionArgs args);
+
+    /**
      * Union provided ScoredSortedSets 
      * and store result to current ScoredSortedSet
      * 
