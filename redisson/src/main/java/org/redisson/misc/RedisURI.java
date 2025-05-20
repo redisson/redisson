@@ -102,6 +102,7 @@ public final class RedisURI {
         } catch (MalformedURLException | UnsupportedEncodingException e) {
             throw new IllegalArgumentException(e);
         }
+        this.hashCode = Objects.hash(isSsl(), host, port);
     }
 
     private String parseUrl(String uri) {
