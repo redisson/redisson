@@ -470,6 +470,9 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                         .thenCompose(res -> {
                             InetSocketAddress slaveAddr = slaveAddrFuture.getNow(null);
                             InetSocketAddress masterAddr = masterAddrFuture.getNow(null);
+                            if (flags.contains("promoted")) {
+                                return CompletableFuture.completedFuture(res);
+                            }
                             if (isSlaveDown(flags, masterLinkStatus)) {
                                 slaveDown(slaveAddr);
                                 return CompletableFuture.completedFuture(res);
