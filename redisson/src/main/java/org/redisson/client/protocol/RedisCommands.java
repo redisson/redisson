@@ -94,6 +94,10 @@ public interface RedisCommands {
             new ListMultiDecoder2(new CodecDecoder(), new ScoredSortedSetReplayDecoderV2<>()));
 
     RedisCommand<List<Object>> ZUNION = new RedisCommand<>("ZUNION", new ObjectListReplayDecoder<>());
+    RedisCommand<List<ScoredEntry<Object>>> ZUNION_ENTRY = new RedisCommand("ZUNION", new ScoredSortedSetReplayDecoder<Object>());
+    RedisCommand<List<ScoredEntry<Object>>> ZUNION_ENTRY_V2 = new RedisCommand("ZUNION",
+            new ListMultiDecoder2(new CodecDecoder(), new ScoredSortedSetReplayDecoderV2<>()));
+
     RedisCommand<List<Object>> ZINTER = new RedisCommand<>("ZINTER", new ObjectListReplayDecoder<>());
 
     RedisCommand<List<ScoredEntry<Object>>> ZINITER_ENTRY = new RedisCommand("ZINTER", new ScoredSortedSetReplayDecoder<Object>());
