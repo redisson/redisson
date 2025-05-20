@@ -1172,6 +1172,17 @@ public interface RScoredSortedSetRx<V> extends RExpirableRx, RSortableRx<Set<V>>
     Single<Collection<V>> readIntersection(SetIntersectionArgs args);
 
     /**
+     * Intersect provided ScoredSortedSets
+     * with current ScoredSortedSet
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param args object
+     * @return result of intersection entries (value and its score)
+     */
+    Single<Collection<ScoredEntry<V>>> readIntersectionEntries(SetIntersectionArgs args);
+
+    /**
      * Counts elements of set as a result of sets intersection with current set.
      * <p>
      * Requires <b>Redis 7.0.0 and higher.</b>
