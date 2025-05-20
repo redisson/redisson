@@ -1247,6 +1247,18 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<Collection<V>> readUnionAsync(SetUnionArgs args);
 
     /**
+     * Union provided ScoredSortedSets mapped to weight multiplier
+     * with defined aggregation method
+     * and current ScoredSortedSet without state change
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param args object
+     * @return result of union entries (value and its score)
+     */
+    RFuture<Collection<ScoredEntry<V>>> readUnionEntriesAsync(SetUnionArgs args);
+
+    /**
      * Diff ScoredSortedSets specified by name
      * with current ScoredSortedSet without state change.
      * <p>

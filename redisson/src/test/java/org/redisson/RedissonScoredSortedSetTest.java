@@ -1935,6 +1935,33 @@ public class RedissonScoredSortedSetTest extends RedisDockerTest {
     }
 
     @Test
+    public void testReadUnionEntries() {
+        RScoredSortedSet<String> set1 = redisson.getScoredSortedSet("simple1");
+        set1.add(1, "one");
+        set1.add(2, "two");
+        set1.add(2, "four");
+
+        RScoredSortedSet<String> set2 = redisson.getScoredSortedSet("simple2");
+        set2.add(1, "one");
+        set2.add(3, "two");
+        set2.add(3, "three");
+
+        RScoredSortedSet<String> out = redisson.getScoredSortedSet("simple1");
+        assertThat(out.readUnionEntries(SetUnionArgs.names(set2.getName())))
+                .containsOnly(new ScoredEntry<>(2D, "one"), new ScoredEntry<>(5D, "two"),
+                        new ScoredEntry<>(3D, "three"), new ScoredEntry<>(2D, "four"));
+
+        assertThat(out.readUnionEntries((SetUnionArgs) SetUnionArgs.names(set2.getName()).aggregate(RScoredSortedSet.Aggregate.MAX)))
+                .containsOnly(new ScoredEntry<>(1D, "one"), new ScoredEntry<>(3D, "two"),
+                        new ScoredEntry<>(3D, "three"), new ScoredEntry<>(2D, "four"));
+
+        assertThat(out.readUnionEntries((SetUnionArgs) SetUnionArgs.names(set2.getName()).weights(2D, 3D)))
+                .containsOnly(new ScoredEntry<>(5D, "one"), new ScoredEntry<>(13D, "two"),
+                        new ScoredEntry<>(9D, "three"), new ScoredEntry<>(4D, "four"));
+
+    }
+
+    @Test
     public void testUnion() {
         RScoredSortedSet<String> set1 = redisson.getScoredSortedSet("simple1");
         set1.add(1, "one");
