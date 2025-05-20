@@ -1314,6 +1314,18 @@ public interface RScoredSortedSetRx<V> extends RExpirableRx, RSortableRx<Set<V>>
     Single<Collection<V>> readUnion(SetUnionArgs args);
 
     /**
+     * Union provided ScoredSortedSets mapped to weight multiplier
+     * with defined aggregation method
+     * and current ScoredSortedSet without state change
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param args object
+     * @return result of union entries (value and its score)
+     */
+    Single<Collection<ScoredEntry<V>>> readUnionEntries(SetUnionArgs args);
+
+    /**
      * Diff ScoredSortedSets specified by name
      * with current ScoredSortedSet without state change.
      * <p>
