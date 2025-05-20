@@ -510,6 +510,7 @@ public interface RedisCommands {
 
     RedisStrictCommand<Void> CLIENT_TRACKING = new RedisStrictCommand<Void>("CLIENT", "TRACKING", new VoidReplayConvertor());
 
+    RedisStrictCommand<Void> CLIENT_CAPA = new RedisStrictCommand<Void>("CLIENT", "CAPA", new VoidReplayConvertor());
     RedisStrictCommand<Void> CLIENT_SETNAME = new RedisStrictCommand<Void>("CLIENT", "SETNAME", new VoidReplayConvertor());
     RedisStrictCommand<String> CLIENT_GETNAME = new RedisStrictCommand<String>("CLIENT", "GETNAME", new ObjectDecoder(new StringDataDecoder()));
     RedisStrictCommand<Void> FLUSHDB = new RedisStrictCommand<Void>("FLUSHDB", new VoidReplayConvertor());

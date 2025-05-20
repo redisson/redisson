@@ -27,6 +27,8 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.TrustManagerFactory;
 import java.net.InetSocketAddress;
 import java.net.URL;
+import java.util.Collections;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 
@@ -86,6 +88,8 @@ public class RedisClientConfig {
 
     private Protocol protocol = Protocol.RESP2;
 
+    private Set<ValkeyCapability> capabilities = Collections.emptySet();
+
     public RedisClientConfig() {
     }
     
@@ -133,6 +137,7 @@ public class RedisClientConfig {
         this.protocol = config.protocol;
         this.sslKeystoreType = config.sslKeystoreType;
         this.sslVerificationMode = config.sslVerificationMode;
+        this.capabilities = config.capabilities;
     }
 
     public NettyHook getNettyHook() {
@@ -500,6 +505,15 @@ public class RedisClientConfig {
     }
     public RedisClientConfig setSslVerificationMode(SslVerificationMode sslVerificationMode) {
         this.sslVerificationMode = sslVerificationMode;
+        return this;
+    }
+
+    public Set<ValkeyCapability> getCapabilities() {
+        return capabilities;
+    }
+
+    public RedisClientConfig setCapabilities(Set<ValkeyCapability> capabilities) {
+        this.capabilities = capabilities;
         return this;
     }
 }

@@ -31,6 +31,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.net.URL;
+import java.util.Collections;
+import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -105,6 +107,8 @@ public class Config {
 
     private Protocol protocol = Protocol.RESP2;
 
+    private Set<ValkeyCapability> valkeyCapabilities = Collections.emptySet();
+
     public Config() {
     }
 
@@ -140,6 +144,7 @@ public class Config {
         setReliableTopicWatchdogTimeout(oldConf.getReliableTopicWatchdogTimeout());
         setLazyInitialization(oldConf.isLazyInitialization());
         setProtocol(oldConf.getProtocol());
+        setValkeyCapabilities(oldConf.getValkeyCapabilities());
 
         if (oldConf.getSingleServerConfig() != null) {
             setSingleServerConfig(new SingleServerConfig(oldConf.getSingleServerConfig()));
@@ -941,6 +946,21 @@ public class Config {
      */
     public Config setProtocol(Protocol protocol) {
         this.protocol = protocol;
+        return this;
+    }
+
+    public Set<ValkeyCapability> getValkeyCapabilities() {
+        return valkeyCapabilities;
+    }
+
+    /**
+     * Allows to declare which Valkey capabilities should be supported.
+     *
+     * @param valkeyCapabilities Valkey capabilites
+     * @return config
+     */
+    public Config setValkeyCapabilities(Set<ValkeyCapability> valkeyCapabilities) {
+        this.valkeyCapabilities = valkeyCapabilities;
         return this;
     }
 }

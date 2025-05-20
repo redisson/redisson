@@ -43,10 +43,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -55,6 +52,22 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 public class RedissonTest extends RedisDockerTest {
+
+    @Test
+    public void testValkeyCapabilities() {
+        GenericContainer<?> redis = createRedisWithVersion("valkey/valkey:latest");
+        redis.start();
+
+        Config config = createConfig(redis);
+        config.setValkeyCapabilities(Collections.singleton(ValkeyCapability.REDIRECT));
+        RedissonClient r = Redisson.create(config);
+
+        RBucket<String> b = r.getBucket("test");
+        b.set("1");
+        assertThat(b.get()).isEqualTo("1");
+
+        r.shutdown();
+    }
 
     @Test
     public void testZeroMinimumIdleSize() {

@@ -380,6 +380,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 .setNettyHook(serviceManager.getCfg().getNettyHook())
                 .setFailedNodeDetector(config.getFailedSlaveNodeDetector())
                 .setProtocol(serviceManager.getCfg().getProtocol())
+                .setCapabilities(serviceManager.getCfg().getValkeyCapabilities())
                 .setCommandMapper(config.getCommandMapper())
                 .setCredentialsResolver(config.getCredentialsResolver())
                 .setCredentialsReapplyInterval(config.getCredentialsReapplyInterval())

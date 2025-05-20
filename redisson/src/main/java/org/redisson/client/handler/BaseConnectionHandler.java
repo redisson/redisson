@@ -80,6 +80,10 @@ public abstract class BaseConnectionHandler<C extends RedisConnection> extends C
             CompletionStage<Object> future = connection.async(RedisCommands.CLIENT_SETNAME, config.getClientName());
             futures.add(future.toCompletableFuture());
         }
+        if (!config.getCapabilities().isEmpty()) {
+            CompletionStage<Object> future = connection.async(RedisCommands.CLIENT_CAPA, config.getCapabilities().toArray());
+            futures.add(future.toCompletableFuture());
+        }
         if (config.isReadOnly()) {
             CompletionStage<Object> future = connection.async(RedisCommands.READONLY);
             futures.add(future.toCompletableFuture());
