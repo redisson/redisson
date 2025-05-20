@@ -675,7 +675,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
     public RFuture<Integer> unionAsync(String... names) {
         List<Object> keys = new LinkedList<>();
         keys.add(getRawName());
-        keys.addAll(Arrays.asList(names));
+        keys.addAll(map(names));
         for (Object key : names) {
             String tempName = prefixName("__redisson_cache_temp", key.toString());
             keys.add(tempName);
@@ -704,22 +704,24 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
     public RFuture<Set<V>> readUnionAsync(String... names) {
         List<Object> keys = new LinkedList<>();
         keys.add(getRawName());
-        keys.addAll(Arrays.asList(names));
-        for (Object key : new ArrayList<>(keys)) {
-            String tempName = prefixName("__redisson_cache_temp", key.toString());
-            keys.add(tempName);
-        }
+        keys.addAll(map(names));
 
         return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_SET,
-                  "for i = 1, #KEYS, 1 do " +
-                            "local values = redis.call('zrangebyscore', KEYS[ARGV[3] + i], ARGV[1], ARGV[2], 'WITHSCORES');" +
-                            "for j = 1, #values, 2 do "
-                              + "redis.call('zadd', KEYS[ARGV[3] + i], values[j], values[j+1]); " +
-                            "end;" +
-                        "end; " +
-                        "local values = redis.call('zunion', ARGV[3], unpack(KEYS, ARGV[3], #ARGV), 'AGGREGATE', 'SUM');" +
-                        "redis.call('del', unpack(KEYS, ARGV[3], #KEYS)); " +
-                        "return values;",
+                     "local args = {} " +
+                     "table.insert(args, #KEYS) " +
+                     "for _, key_name in ipairs(KEYS) do " +
+                          "table.insert(args, key_name) " +
+                     "end " +
+                     "table.insert(args, 'WITHSCORES')" +
+
+                     "local values = redis.call('zunion', unpack(args)) " +
+                     "local res = {} " +
+                     "for j = 1, #values, 2 do " +
+                         "if tonumber(values[j+1]) > tonumber(ARGV[1]) then " +
+                             "table.insert(res, values[j]);" +
+                         "end " +
+                     "end;" +
+                     "return res;",
                 keys,
                 System.currentTimeMillis(), 92233720368547758L, names.length+1);
     }
@@ -728,7 +730,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
     public RFuture<Integer> diffAsync(String... names) {
         List<Object> keys = new LinkedList<>();
         keys.add(getRawName());
-        keys.addAll(Arrays.asList(names));
+        keys.addAll(map(names));
         for (Object key : names) {
             String tempName = prefixName("__redisson_cache_temp", key.toString());
             keys.add(tempName);
@@ -755,31 +757,32 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
     public RFuture<Set<V>> readDiffAsync(String... names) {
         List<Object> keys = new LinkedList<>();
         keys.add(getRawName());
-        keys.addAll(Arrays.asList(names));
-        for (Object key : new ArrayList<>(keys)) {
-            String tempName = prefixName("__redisson_cache_temp", key.toString());
-            keys.add(tempName);
-        }
+        keys.addAll(map(names));
+        return commandExecutor.evalReadAsync(getRawName(), codec, RedisCommands.EVAL_SET,
+               "local args = {} " +
+                     "table.insert(args, #KEYS) " +
+                     "for _, key_name in ipairs(KEYS) do " +
+                          "table.insert(args, key_name) " +
+                     "end " +
+                     "table.insert(args, 'WITHSCORES')" +
 
-        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_SET,
-                "for i = 1, #KEYS, 1 do " +
-                        "local values = redis.call('zrangebyscore', KEYS[ARGV[3] + i], ARGV[1], ARGV[2], 'WITHSCORES');" +
-                        "for j = 1, #values, 2 do "
-                          + "redis.call('zadd', KEYS[ARGV[3] + i], values[j], values[j+1]); " +
-                        "end;" +
-                     "end; " +
-                     "local values = redis.call('zdiff', ARGV[3], unpack(KEYS, ARGV[3], #ARGV));" +
-                     "redis.call('del', unpack(KEYS, ARGV[3], #KEYS)); " +
-                     "return values;",
+                     "local values = redis.call('zdiff', unpack(args)) " +
+                     "local res = {} " +
+                     "for j = 1, #values, 2 do " +
+                         "if tonumber(values[j+1]) > tonumber(ARGV[1]) then " +
+                             "table.insert(res, values[j]);" +
+                         "end " +
+                     "end;" +
+                     "return res;",
                         keys,
-                System.currentTimeMillis(), 92233720368547758L, names.length+1);
+                System.currentTimeMillis());
     }
 
     @Override
     public RFuture<Integer> intersectionAsync(String... names) {
         List<Object> keys = new LinkedList<>();
         keys.add(getRawName());
-        keys.addAll(Arrays.asList(names));
+        keys.addAll(map(names));
         for (Object key : names) {
             String tempName = prefixName("__redisson_cache_temp", key.toString());
             keys.add(tempName);
@@ -808,24 +811,26 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
     public RFuture<Set<V>> readIntersectionAsync(String... names) {
         List<Object> keys = new LinkedList<>();
         keys.add(getRawName());
-        keys.addAll(Arrays.asList(names));
-        for (Object key : new ArrayList<>(keys)) {
-            String tempName = prefixName("__redisson_cache_temp", key.toString());
-            keys.add(tempName);
-        }
+        keys.addAll(map(names));
 
         return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_SET,
-                  "for i = 1, #KEYS, 1 do " +
-                        "local values = redis.call('zrangebyscore', KEYS[ARGV[3] + i], ARGV[1], ARGV[2], 'WITHSCORES');" +
-                           "for j = 1, #values, 2 do "
-                            + "redis.call('zadd', KEYS[ARGV[3] + i], values[j], values[j+1]); " +
-                           "end;" +
-                        "end; " +
-                        "local values = redis.call('zinter', ARGV[3], unpack(KEYS, ARGV[3], #ARGV), 'AGGREGATE', 'SUM');" +
-                        "redis.call('del', unpack(KEYS, ARGV[3], #KEYS)); " +
-                        "return values;",
+               "local args = {} " +
+                     "table.insert(args, #KEYS) " +
+                     "for _, key_name in ipairs(KEYS) do " +
+                          "table.insert(args, key_name) " +
+                     "end " +
+                     "table.insert(args, 'WITHSCORES')" +
+
+                     "local values = redis.call('zinter', unpack(args)) " +
+                     "local res = {} " +
+                     "for j = 1, #values, 2 do " +
+                         "if tonumber(values[j+1]) > tonumber(ARGV[1]) then " +
+                             "table.insert(res, values[j]);" +
+                         "end " +
+                     "end;" +
+                     "return res;",
                          keys,
-                System.currentTimeMillis(), 92233720368547758L, names.length+1);
+                System.currentTimeMillis());
     }
 
     @Override
@@ -837,7 +842,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
     public RFuture<Integer> countIntersectionAsync(int limit, String... names) {
         List<Object> keys = new LinkedList<>();
         keys.add(getRawName());
-        keys.addAll(Arrays.asList(names));
+        keys.addAll(map(names));
         for (Object key : new ArrayList<>(keys)) {
             String tempName = prefixName("__redisson_cache_temp", key.toString());
             keys.add(tempName);

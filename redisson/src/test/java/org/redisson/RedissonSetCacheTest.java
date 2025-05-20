@@ -596,6 +596,9 @@ public class RedissonSetCacheTest extends RedisDockerTest {
         cache2.add(5, 1, TimeUnit.SECONDS);
         cache2.add(7);
 
+        Set<Integer> ff = cache1.readUnion("cache2");
+        assertThat(ff).containsOnly(1, 2, 5, 3, 4, 7);
+
 
         RSetCache<Integer> cache3 = redisson.getSetCache("cache3", IntegerCodec.INSTANCE);
         assertThat(cache3.union("cache1", "cache2")).isEqualTo(6);
@@ -625,6 +628,8 @@ public class RedissonSetCacheTest extends RedisDockerTest {
         cache2.add(5, 1, TimeUnit.SECONDS);
         cache2.add(7);
 
+        Set<Integer> ff = cache1.readDiff("cache2");
+        assertThat(ff).containsOnly(3, 1);
 
         RSetCache<Integer> cache3 = redisson.getSetCache("cache3", IntegerCodec.INSTANCE);
         assertThat(cache3.diff("cache1", "cache2")).isEqualTo(2);
@@ -653,6 +658,9 @@ public class RedissonSetCacheTest extends RedisDockerTest {
         cache2.add(2, 1, TimeUnit.SECONDS);
         cache2.add(5, 1, TimeUnit.SECONDS);
         cache2.add(7);
+
+        Set<Integer> ff = cache1.readIntersection("cache2");
+        assertThat(ff).containsOnly(2, 5);
 
 
         assertThat(cache1.countIntersection("cache2")).isEqualTo(2);
