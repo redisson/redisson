@@ -24,8 +24,20 @@ import org.redisson.api.RScoredSortedSet.Aggregate;
 
 public interface SetReadArgs {
 
+    /**
+     * Defines a weight multiplier for each ScoredSortedSet
+     *
+     * @param weights weight multiplier
+     * @return arguments object
+     */
     SetReadArgs weights(Double... weights);
 
+    /**
+     * Defines aggregation method
+     *
+     * @param aggregate score aggregation mode
+     * @return arguments object
+     */
     SetReadArgs aggregate(Aggregate aggregate);
 
 }

@@ -16,20 +16,12 @@
 package org.redisson.api;
 
 /**
- * Arguments object for RScoredSortedSet.readIntersection() methods.
  *
  * @author seakider
  *
  */
-public interface SetIntersectionArgs extends SetReadArgs {
-    /**
-     * Defines arguments object that
-     * intersect with current ScoredSortedSet
-     *
-     * @param names names of the specified ScoredSortedSets.
-     * @return arguments object
-     */
-    static SetIntersectionArgs names(String... names) {
-        return new SetIntersectionParams(names);
+public class SetUnionParams extends SetReadArgsParam implements SetUnionArgs {
+    SetUnionParams(String... names) {
+        super(names);
     }
 }

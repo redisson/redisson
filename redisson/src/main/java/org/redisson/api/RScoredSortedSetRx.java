@@ -1243,6 +1243,8 @@ public interface RScoredSortedSetRx<V> extends RExpirableRx, RSortableRx<Set<V>>
     Single<Integer> union(Aggregate aggregate, Map<String, Double> nameWithWeight);
 
     /**
+     * Use {@link #readUnion(SetUnionArgs)} instead.
+     * <p>
      * Union ScoredSortedSets specified by name with current ScoredSortedSet
      * without state change.
      * <p>
@@ -1251,9 +1253,12 @@ public interface RScoredSortedSetRx<V> extends RExpirableRx, RSortableRx<Set<V>>
      * @param names - names of ScoredSortedSet
      * @return result of union
      */
+    @Deprecated
     Single<Collection<V>> readUnion(String... names);
 
     /**
+     * Use {@link #readUnion(SetUnionArgs)} instead.
+     * <p>
      * Union ScoredSortedSets specified by name with defined aggregation method
      * and current ScoredSortedSet without state change.
      * <p>
@@ -1263,9 +1268,12 @@ public interface RScoredSortedSetRx<V> extends RExpirableRx, RSortableRx<Set<V>>
      * @param names - names of ScoredSortedSet
      * @return result of union
      */
+    @Deprecated
     Single<Collection<V>> readUnion(Aggregate aggregate, String... names);
 
     /**
+     * Use {@link #readUnion(SetUnionArgs)} instead.
+     * <p>
      * Union provided ScoredSortedSets mapped to weight multiplier
      * and current ScoredSortedSet without state change.
      * <p>
@@ -1274,9 +1282,12 @@ public interface RScoredSortedSetRx<V> extends RExpirableRx, RSortableRx<Set<V>>
      * @param nameWithWeight - name of ScoredSortedSet mapped to weight multiplier
      * @return result of union
      */
+    @Deprecated
     Single<Collection<V>> readUnion(Map<String, Double> nameWithWeight);
 
     /**
+     * Use {@link #readUnion(SetUnionArgs)} instead.
+     * <p>
      * Union provided ScoredSortedSets mapped to weight multiplier
      * with defined aggregation method
      * and current ScoredSortedSet without state change
@@ -1287,7 +1298,20 @@ public interface RScoredSortedSetRx<V> extends RExpirableRx, RSortableRx<Set<V>>
      * @param nameWithWeight - name of ScoredSortedSet mapped to weight multiplier
      * @return result of union
      */
+    @Deprecated
     Single<Collection<V>> readUnion(Aggregate aggregate, Map<String, Double> nameWithWeight);
+
+    /**
+     * Union provided ScoredSortedSets mapped to weight multiplier
+     * with defined aggregation method
+     * and current ScoredSortedSet without state change
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param args object
+     * @return result of union
+     */
+    Single<Collection<V>> readUnion(SetUnionArgs args);
 
     /**
      * Diff ScoredSortedSets specified by name
