@@ -22,6 +22,13 @@ package org.redisson.api;
  *
  */
 public interface SetIntersectionArgs extends SetReadArgs {
+    /**
+     * Defines arguments object that
+     * intersect with current ScoredSortedSet
+     *
+     * @param names names of the specified ScoredSortedSets.
+     * @return arguments object
+     */
     static SetIntersectionArgs names(String... names) {
         return new SetIntersectionParams(names);
     }

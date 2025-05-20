@@ -22,6 +22,13 @@ package org.redisson.api;
  *
  */
 public interface SetUnionArgs extends SetReadArgs{
+    /**
+     * Define arguments object that
+     * union with current ScoredSortedSet
+     *
+     * @param names names of the specified ScoredSortedSets.
+     * @return arguments object
+     */
     static SetUnionArgs names(String... names) {
         return new SetUnionParams(names);
     }
