@@ -1176,6 +1176,8 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<Integer> unionAsync(Aggregate aggregate, Map<String, Double> nameWithWeight);
 
     /**
+     * Use {@link #readUnionAsync(SetUnionArgs)} instead.
+     * <p>
      * Union ScoredSortedSets specified by name with current ScoredSortedSet
      * without state change.
      * <p>
@@ -1184,9 +1186,12 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      * @param names - names of ScoredSortedSet
      * @return result of union
      */
+    @Deprecated
     RFuture<Collection<V>> readUnionAsync(String... names);
 
     /**
+     * Use {@link #readUnionAsync(SetUnionArgs)} instead.
+     * <p>
      * Union ScoredSortedSets specified by name with defined aggregation method
      * and current ScoredSortedSet without state change.
      * <p>
@@ -1196,9 +1201,12 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      * @param names - names of ScoredSortedSet
      * @return result of union
      */
+    @Deprecated
     RFuture<Collection<V>> readUnionAsync(Aggregate aggregate, String... names);
 
     /**
+     * Use {@link #readUnionAsync(SetUnionArgs)} instead.
+     * <p>
      * Union provided ScoredSortedSets mapped to weight multiplier
      * and current ScoredSortedSet without state change.
      * <p>
@@ -1207,9 +1215,12 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      * @param nameWithWeight - name of ScoredSortedSet mapped to weight multiplier
      * @return result of union
      */
+    @Deprecated
     RFuture<Collection<V>> readUnionAsync(Map<String, Double> nameWithWeight);
 
     /**
+     * Use {@link #readUnionAsync(SetUnionArgs)} instead.
+     * <p>
      * Union provided ScoredSortedSets mapped to weight multiplier
      * with defined aggregation method
      * and current ScoredSortedSet without state change
@@ -1220,7 +1231,20 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      * @param nameWithWeight - name of ScoredSortedSet mapped to weight multiplier
      * @return result of union
      */
+    @Deprecated
     RFuture<Collection<V>> readUnionAsync(Aggregate aggregate, Map<String, Double> nameWithWeight);
+
+    /**
+     * Union provided ScoredSortedSets mapped to weight multiplier
+     * with defined aggregation method
+     * and current ScoredSortedSet without state change
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param args object
+     * @return result of union
+     */
+    RFuture<Collection<V>> readUnionAsync(SetUnionArgs args);
 
     /**
      * Diff ScoredSortedSets specified by name

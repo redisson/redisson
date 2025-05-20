@@ -1707,6 +1707,27 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
+    public Collection<V> readUnion(SetUnionArgs args) {
+        return get(readUnionAsync(args));
+    }
+
+    @Override
+    public RFuture<Collection<V>> readUnionAsync(SetUnionArgs args) {
+        SetUnionParams sup = (SetUnionParams) args;
+        List<Object> params = new LinkedList<>();
+        params.add(sup.getNames().length + 1);
+        params.add(getRawName());
+        params.addAll(map(sup.getNames()));
+        if (sup.getWeights() != null && sup.getWeights().length > 0) {
+            params.add("WEIGHTS");
+            params.addAll(Arrays.asList(sup.getWeights()));
+        }
+        params.add("AGGREGATE");
+        params.add(sup.getAggregate().name());
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.ZUNION, params.toArray());
+    }
+
+    @Override
     public Set<V> readSort(SortOrder order) {
         return get(readSortAsync(order));
     }
