@@ -996,15 +996,20 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<Collection<V>> readAllAsync();
 
     /**
+     * Use {@link #intersectionAsync(SetIntersectionArgs)} instead.
+     * <p>
      * Intersect provided ScoredSortedSets 
      * and store result to current ScoredSortedSet
      * 
      * @param names - names of ScoredSortedSet
      * @return length of intersection
      */
+    @Deprecated
     RFuture<Integer> intersectionAsync(String... names);
 
     /**
+     * Use {@link #intersectionAsync(SetIntersectionArgs)} instead.
+     * <p>
      * Intersect provided ScoredSortedSets with defined aggregation method 
      * and store result to current ScoredSortedSet
      * 
@@ -1012,18 +1017,24 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      * @param names - names of ScoredSortedSet
      * @return length of intersection
      */
+    @Deprecated
     RFuture<Integer> intersectionAsync(Aggregate aggregate, String... names);
 
     /**
+     * Use {@link #intersectionAsync(SetIntersectionArgs)} instead.
+     * <p>
      * Intersect provided ScoredSortedSets mapped to weight multiplier 
      * and store result to current ScoredSortedSet
      * 
      * @param nameWithWeight - name of ScoredSortedSet mapped to weight multiplier
      * @return length of intersection
      */
+    @Deprecated
     RFuture<Integer> intersectionAsync(Map<String, Double> nameWithWeight);
 
     /**
+     * Use {@link #intersectionAsync(SetIntersectionArgs)} instead.
+     * <p>
      * Intersect provided ScoredSortedSets mapped to weight multiplier 
      * with defined aggregation method 
      * and store result to current ScoredSortedSet
@@ -1032,8 +1043,19 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      * @param nameWithWeight - name of ScoredSortedSet mapped to weight multiplier
      * @return length of intersection
      */
+    @Deprecated
     RFuture<Integer> intersectionAsync(Aggregate aggregate, Map<String, Double> nameWithWeight);
-
+    
+    /**
+     * Intersect provided ScoredSortedSets mapped to weight multiplier
+     * with defined aggregation method
+     * and store result to current ScoredSortedSet
+     *
+     * @param args object
+     * @return length of intersection
+     */
+    RFuture<Integer> intersectionAsync(SetIntersectionArgs args);
+    
     /**
      * Use {@link #readIntersectionAsync(SetIntersectionArgs)} instead.
      * <p>
@@ -1137,15 +1159,20 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<Integer> countIntersectionAsync(int limit, String... names);
 
     /**
+     * Use {@link #unionAsync(SetUnionArgs)} instead.
+     * <p>
      * Union provided ScoredSortedSets 
      * and store result to current ScoredSortedSet
      * 
      * @param names - names of ScoredSortedSet
      * @return length of union
      */
+    @Deprecated
     RFuture<Integer> unionAsync(String... names);
 
     /**
+     * Use {@link #unionAsync(SetUnionArgs)} instead.
+     * <p>
      * Union provided ScoredSortedSets with defined aggregation method 
      * and store result to current ScoredSortedSet
      * 
@@ -1153,18 +1180,24 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      * @param names - names of ScoredSortedSet
      * @return length of union
      */
+    @Deprecated
     RFuture<Integer> unionAsync(Aggregate aggregate, String... names);
 
     /**
+     * Use {@link #unionAsync(SetUnionArgs)} instead.
+     * <p>
      * Union provided ScoredSortedSets mapped to weight multiplier 
      * and store result to current ScoredSortedSet
      * 
      * @param nameWithWeight - name of ScoredSortedSet mapped to weight multiplier
      * @return length of union
      */
+    @Deprecated
     RFuture<Integer> unionAsync(Map<String, Double> nameWithWeight);
 
     /**
+     * Use {@link #unionAsync(SetUnionArgs)} instead.
+     * <p>
      * Union provided ScoredSortedSets mapped to weight multiplier 
      * with defined aggregation method 
      * and store result to current ScoredSortedSet
@@ -1173,8 +1206,19 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      * @param nameWithWeight - name of ScoredSortedSet mapped to weight multiplier
      * @return length of union
      */
+    @Deprecated
     RFuture<Integer> unionAsync(Aggregate aggregate, Map<String, Double> nameWithWeight);
-
+    
+    /**
+     * Union provided ScoredSortedSets mapped to weight multiplier
+     * with defined aggregation method
+     * and store result to current ScoredSortedSet
+     *
+     * @param args object
+     * @return length of union
+     */
+    RFuture<Integer> unionAsync(SetUnionArgs args);
+    
     /**
      * Use {@link #readUnionAsync(SetUnionArgs)} instead.
      * <p>
