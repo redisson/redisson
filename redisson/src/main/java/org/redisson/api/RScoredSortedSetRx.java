@@ -1063,15 +1063,20 @@ public interface RScoredSortedSetRx<V> extends RExpirableRx, RSortableRx<Set<V>>
     Single<Collection<V>> readAll();
 
     /**
+     * Use {@link #intersection(SetIntersectionArgs)} instead.
+     * <p>
      * Intersect provided ScoredSortedSets 
      * and store result to current ScoredSortedSet
      * 
      * @param names - names of ScoredSortedSet
      * @return length of intersection
      */
+    @Deprecated
     Single<Integer> intersection(String... names);
 
     /**
+     * Use {@link #intersection(SetIntersectionArgs)} instead.
+     * <p>
      * Intersect provided ScoredSortedSets with defined aggregation method 
      * and store result to current ScoredSortedSet
      * 
@@ -1079,18 +1084,24 @@ public interface RScoredSortedSetRx<V> extends RExpirableRx, RSortableRx<Set<V>>
      * @param names - names of ScoredSortedSet
      * @return length of intersection
      */
+    @Deprecated
     Single<Integer> intersection(Aggregate aggregate, String... names);
 
     /**
+     * Use {@link #intersection(SetIntersectionArgs)} instead.
+     * <p>
      * Intersect provided ScoredSortedSets mapped to weight multiplier 
      * and store result to current ScoredSortedSet
      * 
      * @param nameWithWeight - name of ScoredSortedSet mapped to weight multiplier
      * @return length of intersection
      */
+    @Deprecated
     Single<Integer> intersection(Map<String, Double> nameWithWeight);
 
     /**
+     * Use {@link #intersection(SetIntersectionArgs)} instead.
+     * <p>
      * Intersect provided ScoredSortedSets mapped to weight multiplier 
      * with defined aggregation method 
      * and store result to current ScoredSortedSet
@@ -1099,8 +1110,19 @@ public interface RScoredSortedSetRx<V> extends RExpirableRx, RSortableRx<Set<V>>
      * @param nameWithWeight - name of ScoredSortedSet mapped to weight multiplier
      * @return length of intersection
      */
+    @Deprecated
     Single<Integer> intersection(Aggregate aggregate, Map<String, Double> nameWithWeight);
-
+    
+    /**
+     * Intersect provided ScoredSortedSets mapped to weight multiplier
+     * with defined aggregation method
+     * and store result to current ScoredSortedSet
+     *
+     * @param args object
+     * @return length of intersection
+     */
+    Single<Integer> intersection(SetIntersectionArgs args);
+    
     /**
      * Use {@link #readIntersection(SetIntersectionArgs)} instead.
      * <p>
@@ -1204,15 +1226,20 @@ public interface RScoredSortedSetRx<V> extends RExpirableRx, RSortableRx<Set<V>>
     Single<Integer> countIntersection(int limit, String... names);
 
     /**
+     * Use {@link #union(SetUnionArgs)} instead.
+     * <p>
      * Union provided ScoredSortedSets 
      * and store result to current ScoredSortedSet
      * 
      * @param names - names of ScoredSortedSet
      * @return length of union
      */
+    @Deprecated
     Single<Integer> union(String... names);
 
     /**
+     * Use {@link #union(SetUnionArgs)} instead.
+     * <p>
      * Union provided ScoredSortedSets with defined aggregation method 
      * and store result to current ScoredSortedSet
      * 
@@ -1220,18 +1247,24 @@ public interface RScoredSortedSetRx<V> extends RExpirableRx, RSortableRx<Set<V>>
      * @param names - names of ScoredSortedSet
      * @return length of union
      */
+    @Deprecated
     Single<Integer> union(Aggregate aggregate, String... names);
 
     /**
+     * Use {@link #union(SetUnionArgs)} instead.
+     * <p>
      * Union provided ScoredSortedSets mapped to weight multiplier 
      * and store result to current ScoredSortedSet
      * 
      * @param nameWithWeight - name of ScoredSortedSet mapped to weight multiplier
      * @return length of union
      */
+    @Deprecated
     Single<Integer> union(Map<String, Double> nameWithWeight);
 
     /**
+     * Use {@link #union(SetUnionArgs)} instead.
+     * <p>
      * Union provided ScoredSortedSets mapped to weight multiplier 
      * with defined aggregation method 
      * and store result to current ScoredSortedSet
@@ -1240,8 +1273,19 @@ public interface RScoredSortedSetRx<V> extends RExpirableRx, RSortableRx<Set<V>>
      * @param nameWithWeight - name of ScoredSortedSet mapped to weight multiplier
      * @return length of union
      */
+    @Deprecated
     Single<Integer> union(Aggregate aggregate, Map<String, Double> nameWithWeight);
-
+    
+    /**
+     * Union provided ScoredSortedSets mapped to weight multiplier
+     * with defined aggregation method
+     * and store result to current ScoredSortedSet
+     *
+     * @param args object
+     * @return length of union
+     */
+    Single<Integer> union(SetUnionArgs args);
+    
     /**
      * Use {@link #readUnion(SetUnionArgs)} instead.
      * <p>

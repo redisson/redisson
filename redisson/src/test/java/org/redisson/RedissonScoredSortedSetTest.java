@@ -1794,6 +1794,38 @@ public class RedissonScoredSortedSetTest extends RedisDockerTest {
     }
     
     @Test
+    public void testIntersection2() {
+        RScoredSortedSet<String> set1 = redisson.getScoredSortedSet("simple1");
+        set1.add(1, "one");
+        set1.add(2, "two");
+        
+        RScoredSortedSet<String> set2 = redisson.getScoredSortedSet("simple2");
+        set2.add(3, "three");
+        
+        RScoredSortedSet<String> out = redisson.getScoredSortedSet("out");
+        assertThat(out.intersection(SetIntersectionArgs.names(set1.getName(), set2.getName()))).isEqualTo(0);
+        
+        assertThat(out.readAll()).isEmpty();
+        
+        set2.add(1, "one");
+        set2.add(2, "two");
+        
+        assertThat(out.intersection(SetIntersectionArgs.names(set1.getName(), set2.getName()))).isEqualTo(2);
+        
+        assertThat(out.readAll()).containsOnly("one", "two");
+        assertThat(out.getScore("one")).isEqualTo(2);
+        assertThat(out.getScore("two")).isEqualTo(4);
+        
+        RScoredSortedSet<String> out2 = redisson.getScoredSortedSet("out2");
+        assertThat(out2.intersection((SetIntersectionArgs) SetIntersectionArgs.names(set1.getName(), set2.getName())
+                .weights(5D, 3D).aggregate(RScoredSortedSet.Aggregate.MIN))).isEqualTo(2);
+        
+        assertThat(out2.readAll()).containsOnly("one", "two");
+        assertThat(out2.getScore("one")).isEqualTo(3);
+        assertThat(out2.getScore("two")).isEqualTo(6);
+    }
+    
+    @Test
     public void testIntersectionEmpty() {
         RScoredSortedSet<String> set1 = redisson.getScoredSortedSet("simple1");
         set1.add(1, "one");
@@ -1979,6 +2011,35 @@ public class RedissonScoredSortedSetTest extends RedisDockerTest {
         assertThat(out.getScore("one")).isEqualTo(2);
         assertThat(out.getScore("two")).isEqualTo(4);
         assertThat(out.getScore("three")).isEqualTo(3);
+    }
+    
+    @Test
+    public void testUnion2() {
+        RScoredSortedSet<String> set1 = redisson.getScoredSortedSet("simple1");
+        set1.add(1, "one");
+        set1.add(2, "two");
+        
+        RScoredSortedSet<String> set2 = redisson.getScoredSortedSet("simple2");
+        set2.add(1, "one");
+        set2.add(2, "two");
+        set2.add(3, "three");
+        
+        RScoredSortedSet<String> out = redisson.getScoredSortedSet("out");
+        assertThat(out.union(SetUnionArgs.names(set1.getName(), set2.getName()))).isEqualTo(3);
+        
+        assertThat(out.readAll()).containsOnly("one", "two", "three");
+        assertThat(out.getScore("one")).isEqualTo(2);
+        assertThat(out.getScore("two")).isEqualTo(4);
+        assertThat(out.getScore("three")).isEqualTo(3);
+        
+        RScoredSortedSet<String> out2 = redisson.getScoredSortedSet("out2");
+        assertThat(out2.union((SetUnionArgs) SetUnionArgs.names(set1.getName(), set2.getName())
+                .weights(2D, 3D).aggregate(RScoredSortedSet.Aggregate.MAX))).isEqualTo(3);
+        
+        assertThat(out2.readAll()).containsOnly("one", "two", "three");
+        assertThat(out2.getScore("one")).isEqualTo(3);
+        assertThat(out2.getScore("two")).isEqualTo(6);
+        assertThat(out2.getScore("three")).isEqualTo(9);
     }
     
     @Test
