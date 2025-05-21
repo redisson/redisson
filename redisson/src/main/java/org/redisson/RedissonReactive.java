@@ -746,14 +746,14 @@ public final class RedissonReactive implements RedissonReactiveClient {
 
     @Override
     public RReliableTopicReactive getReliableTopic(String name) {
-        RedissonReliableTopic topic = new RedissonReliableTopic(commandExecutor, name, null);
+        RedissonReliableTopic topic = new RedissonReliableTopic(commandExecutor, name);
         return ReactiveProxyBuilder.create(commandExecutor, topic,
                 new RedissonReliableTopicReactive(topic), RReliableTopicReactive.class);
     }
 
     @Override
     public RReliableTopicReactive getReliableTopic(String name, Codec codec) {
-        RedissonReliableTopic topic = new RedissonReliableTopic(codec, commandExecutor, name, null);
+        RedissonReliableTopic topic = new RedissonReliableTopic(codec, commandExecutor, name);
         return ReactiveProxyBuilder.create(commandExecutor, topic,
                 new RedissonReliableTopicReactive(topic), RReliableTopicReactive.class);
     }
@@ -762,7 +762,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
     public RReliableTopicReactive getReliableTopic(PlainOptions options) {
         PlainParams params = (PlainParams) options;
         CommandReactiveExecutor ca = commandExecutor.copy(params);
-        RedissonReliableTopic topic = new RedissonReliableTopic(params.getCodec(), ca, params.getName(), null);
+        RedissonReliableTopic topic = new RedissonReliableTopic(params.getCodec(), ca, params.getName());
         return ReactiveProxyBuilder.create(commandExecutor, topic,
                 new RedissonReliableTopicReactive(topic), RReliableTopicReactive.class);
     }

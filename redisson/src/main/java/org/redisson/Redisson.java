@@ -900,19 +900,19 @@ public final class Redisson implements RedissonClient {
 
     @Override
     public RReliableTopic getReliableTopic(String name) {
-        return new RedissonReliableTopic(commandExecutor, name, null);
+        return new RedissonReliableTopic(commandExecutor, name);
     }
 
     @Override
     public RReliableTopic getReliableTopic(String name, Codec codec) {
-        return new RedissonReliableTopic(codec, commandExecutor, name, null);
+        return new RedissonReliableTopic(codec, commandExecutor, name);
     }
 
     @Override
     public RReliableTopic getReliableTopic(PlainOptions options) {
         PlainParams params = (PlainParams) options;
         return new RedissonReliableTopic(params.getCodec(),
-                commandExecutor.copy(params), params.getName(), null);
+                commandExecutor.copy(params), params.getName());
     }
 
     @Override

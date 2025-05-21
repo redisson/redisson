@@ -683,12 +683,12 @@ public final class RedissonRx implements RedissonRxClient {
 
     @Override
     public RReliableTopicRx getReliableTopic(String name) {
-        return RxProxyBuilder.create(commandExecutor, new RedissonReliableTopic(commandExecutor, name, null), RReliableTopicRx.class);
+        return RxProxyBuilder.create(commandExecutor, new RedissonReliableTopic(commandExecutor, name), RReliableTopicRx.class);
     }
 
     @Override
     public RReliableTopicRx getReliableTopic(String name, Codec codec) {
-        return RxProxyBuilder.create(commandExecutor, new RedissonReliableTopic(codec, commandExecutor, name, null), RReliableTopicRx.class);
+        return RxProxyBuilder.create(commandExecutor, new RedissonReliableTopic(codec, commandExecutor, name), RReliableTopicRx.class);
     }
 
     @Override
@@ -696,7 +696,7 @@ public final class RedissonRx implements RedissonRxClient {
         PlainParams params = (PlainParams) options;
         CommandRxExecutor ce = commandExecutor.copy(params);
         return RxProxyBuilder.create(commandExecutor,
-                new RedissonReliableTopic(params.getCodec(), ce, params.getName(), null), RReliableTopicRx.class);
+                new RedissonReliableTopic(params.getCodec(), ce, params.getName()), RReliableTopicRx.class);
     }
 
     @Override
