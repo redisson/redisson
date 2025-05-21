@@ -1456,6 +1456,27 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         args.add(aggregate.name());
         return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.ZINTERSTORE_INT, args.toArray());
     }
+    
+    @Override
+    public int intersection(SetIntersectionArgs args) {
+        return get(intersectionAsync(args));
+    }
+    
+    @Override
+    public RFuture<Integer> intersectionAsync(SetIntersectionArgs args) {
+        SetIntersectionParams sip = (SetIntersectionParams) args;
+        List<Object> params = new LinkedList<>();
+        params.add(getRawName());
+        params.add(sip.getNames().length);
+        params.addAll(map(sip.getNames()));
+        if (sip.getWeights() != null && sip.getWeights().length > 0) {
+            params.add("WEIGHTS");
+            params.addAll(Arrays.asList(sip.getWeights()));
+        }
+        params.add("AGGREGATE");
+        params.add(sip.getAggregate().name());
+        return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.ZINTERSTORE_INT, params.toArray());
+    }
 
     @Override
     public Collection<V> readIntersection(String... names) {
@@ -1646,6 +1667,27 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         args.add("AGGREGATE");
         args.add(aggregate.name());
         return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.ZUNIONSTORE_INT, args.toArray());
+    }
+    
+    @Override
+    public int union(SetUnionArgs args) {
+        return get(unionAsync(args));
+    }
+    
+    @Override
+    public RFuture<Integer> unionAsync(SetUnionArgs args) {
+        SetUnionParams sup = (SetUnionParams) args;
+        List<Object> params = new LinkedList<>();
+        params.add(getRawName());
+        params.add(sup.getNames().length);
+        params.addAll(map(sup.getNames()));
+        if (sup.getWeights() != null && sup.getWeights().length > 0) {
+            params.add("WEIGHTS");
+            params.addAll(Arrays.asList(sup.getWeights()));
+        }
+        params.add("AGGREGATE");
+        params.add(sup.getAggregate().name());
+        return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.ZUNIONSTORE_INT, params.toArray());
     }
 
     @Override
