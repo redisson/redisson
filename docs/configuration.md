@@ -157,6 +157,14 @@ Default value: RESP2
 
 Defines the Redis or Valkey protocol version. Available values: `RESP2`, `RESP3`
 
+**valkeyCapabilities**
+
+Default value: EMPTY
+
+Allows to declare which Valkey capabilities should be supported. Available values: 
+
+- `REDIRECT` - This option indicates that the client is capable of handling redirect messages.
+
 **lockWatchdogTimeout**
 
 Default value: `30000`
@@ -201,7 +209,7 @@ Available implementations:
 
 **useScriptCache**
 
-Default value: `false`
+Default value: `true`
 
 Defines whether to use the Lua-script cache on the Redis or Valkey side. Most Redisson methods are Lua-script-based, and turning this setting on could increase the speed of such methods' execution and save network traffic.
 
