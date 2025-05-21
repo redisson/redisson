@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.redisson</groupId>
         <artifactId>redisson-quarkus-30-parent</artifactId>
-        <version>3.47.0</version>
+        <version>3.47.1-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
 
