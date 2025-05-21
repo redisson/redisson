@@ -1,0 +1,86 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.redisson</groupId>
+        <artifactId>redisson-hibernate</artifactId>
+        <version>3.47.1-SNAPSHOT</version>
+        <relativePath>../</relativePath>
+    </parent>
+
+    <artifactId>redisson-hibernate-7</artifactId>
+    <packaging>jar</packaging>
+
+    <name>Redisson/Hibernate-7.0+</name>
+
+    <properties>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
+        <maven.compiler.release>11</maven.compiler.release>
+        <main.basedir>${project.parent.parent.basedir}</main.basedir>
+    </properties>
+
+    <dependencies>
+       <dependency>
+         <groupId>org.hibernate.orm</groupId>
+         <artifactId>hibernate-core</artifactId>
+         <version>7.0.0.Final</version>
+         <optional>true</optional>
+       </dependency>
+
+       <dependency>
+         <groupId>org.hibernate.orm</groupId>
+         <artifactId>hibernate-testing</artifactId>
+         <version>7.0.0.Final</version>
+         <scope>test</scope>
+       </dependency>
+
+       <dependency>
+         <groupId>org.testcontainers</groupId>
+         <artifactId>junit-jupiter</artifactId>
+         <scope>test</scope>
+       </dependency>
+
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-engine</artifactId>
+            <version>1.12.2</version>
+            <scope>test</scope>
+        </dependency>
+
+    </dependencies>
+
+    <build>
+        <plugins>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                    <configuration>
+                        <redirectTestOutputToFile>true</redirectTestOutputToFile>
+                        <reuseForks>true</reuseForks>
+                        <argLine>
+                           ${argLine}
+                           --add-opens=java.base/java.util=ALL-UNNAMED
+                           -javaagent:"${settings.localRepository}"/org/jmockit/jmockit/1.49/jmockit-1.49.jar
+                        </argLine>
+                    </configuration>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.4.1</version>
+                <configuration>
+                    <archive>  
+                        <manifestEntries>
+                            <Build-Time>${maven.build.timestamp}</Build-Time>
+                            <Automatic-Module-Name>redisson.hibernate7</Automatic-Module-Name>
+                        </manifestEntries>
+                    </archive> 
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+
+</project>

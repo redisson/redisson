@@ -19,6 +19,7 @@
         <module>redisson-hibernate-52</module>
         <module>redisson-hibernate-53</module>
         <module>redisson-hibernate-6</module>
+        <module>redisson-hibernate-7</module>
     </modules>
 
     <build>
