@@ -985,6 +985,18 @@ public final class RedissonRx implements RedissonRxClient {
     }
 
     @Override
+    public RVectorSetRx getVectorSet(String name) {
+        return RxProxyBuilder.create(commandExecutor, new RedissonVectorSet(commandExecutor, name), RVectorSetRx.class);
+    }
+
+    @Override
+    public RVectorSetRx getVectorSet(CommonOptions options) {
+        CommonParams params = (CommonParams) options;
+        CommandRxExecutor ce = commandExecutor.copy(params);
+        return RxProxyBuilder.create(commandExecutor, new RedissonVectorSet(ce, params.getName()), RVectorSetRx.class);
+    }
+
+    @Override
     public RBatchRx createBatch() {
         return createBatch(BatchOptions.defaults());
     }

@@ -1837,6 +1837,26 @@ public interface RedissonClient {
     RScript getScript(OptionalOptions options);
 
     /**
+     * Returns vector set instance by name.
+     * <p>
+     * Requires <b>Redis 8.0.0 and higher.</b>
+     *
+     * @param name - name of vector set
+     * @return vector set instance
+     */
+    RVectorSet getVectorSet(String name);
+
+    /**
+     * Returns vector set instance by name with specified <code>options</code>.
+     * <p>
+     * Requires <b>Redis 8.0.0 and higher.</b>
+     *
+     * @param options instance options
+     * @return vector set instance
+     */
+    RVectorSet getVectorSet(CommonOptions options);
+
+    /**
      * Returns ScheduledExecutorService by name
      * 
      * @param name name of object

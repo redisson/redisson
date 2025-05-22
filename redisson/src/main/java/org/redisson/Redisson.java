@@ -757,6 +757,17 @@ public final class Redisson implements RedissonClient {
     }
 
     @Override
+    public RVectorSet getVectorSet(String name) {
+        return new RedissonVectorSet(commandExecutor, name);
+    }
+
+    @Override
+    public RVectorSet getVectorSet(CommonOptions options) {
+        CommonParams params = (CommonParams) options;
+        return new RedissonVectorSet(commandExecutor.copy(params), params.getName());
+    }
+
+    @Override
     public RScheduledExecutorService getExecutorService(String name) {
         return getExecutorService(name, connectionManager.getServiceManager().getCfg().getCodec());
     }

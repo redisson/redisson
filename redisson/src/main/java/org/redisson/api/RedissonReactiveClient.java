@@ -1658,6 +1658,26 @@ public interface RedissonReactiveClient {
     RScriptReactive getScript(OptionalOptions options);
 
     /**
+     * Returns vector set instance by name.
+     * <p>
+     * Requires <b>Redis 8.0.0 and higher.</b>
+     *
+     * @param name - name of vector set
+     * @return vector set instance
+     */
+    RVectorSetReactive getVectorSet(String name);
+
+    /**
+     * Returns vector set instance by name with specified <code>options</code>.
+     * <p>
+     * Requires <b>Redis 8.0.0 and higher.</b>
+     *
+     * @param options instance options
+     * @return vector set instance
+     */
+    RVectorSetReactive getVectorSet(CommonOptions options);
+
+    /**
      * Creates transaction with <b>READ_COMMITTED</b> isolation level.
      * 
      * @param options transaction configuration
