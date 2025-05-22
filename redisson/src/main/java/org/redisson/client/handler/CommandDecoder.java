@@ -471,6 +471,13 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             decodeList(in, data, parts, channel, size, respParts, skipConvertor, commandsData, state);
 
             state.decLevel();
+        } else if (code == '#') {
+            String r = readString(in, StandardCharsets.US_ASCII);
+            if (r.equals("t")) {
+                handleResult(data, parts, 1L, false);
+            } else {
+                handleResult(data, parts, 0L, false);
+            }
         } else {
             String dataStr = in.toString(0, in.writerIndex(), CharsetUtil.UTF_8);
             throw new IllegalStateException("Can't decode replay: " + dataStr);
