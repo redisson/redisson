@@ -473,7 +473,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             state.decLevel();
         } else if (code == '#') {
             String r = readString(in, StandardCharsets.US_ASCII);
-            if (r.equals("t")) {
+            if ("t".equals(r)) {
                 handleResult(data, parts, 1L, false);
             } else {
                 handleResult(data, parts, 0L, false);

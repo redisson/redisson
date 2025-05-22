@@ -42,13 +42,13 @@ public class VectorInfoDecoder implements MultiDecoder<VectorInfo> {
         VectorInfo info = new VectorInfo();
         info.setDimensions((Long) map.get("vector-dim"));
         info.setAttributesCount((Long) map.get("attributes-count"));
-        info.setMaxConnections(((Long)map.get("hnsw-m")).intValue());
+        info.setMaxConnections(((Long) map.get("hnsw-m")).intValue());
         String qt = (String) map.get("quant-type");
-        if (qt.equals("int8")) {
+        if ("int8".equals(qt)) {
             info.setQuantizationType(QuantizationType.Q8);
-        } else if (qt.equals("bin")) {
+        } else if ("bin".equals(qt)) {
             info.setQuantizationType(QuantizationType.BIN);
-        } else if (qt.equals("f32")) {
+        } else if ("f32".equals(qt)) {
             info.setQuantizationType(QuantizationType.NOQUANT);
         }
         info.setSize((Long) map.get("size"));
