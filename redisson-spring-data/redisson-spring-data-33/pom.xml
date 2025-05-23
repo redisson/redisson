@@ -59,7 +59,7 @@
                     <archive>  
                         <manifestEntries>
                             <Build-Time>${maven.build.timestamp}</Build-Time>
-                            <Automatic-Module-Name>redisson.spring.data27</Automatic-Module-Name>
+                            <Automatic-Module-Name>redisson.spring.data33</Automatic-Module-Name>
                         </manifestEntries>
                     </archive> 
                 </configuration>
