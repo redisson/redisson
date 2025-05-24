@@ -19,7 +19,7 @@ import java.util.NavigableSet;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 /**
- * Detects failed Redis node if it has certain amount of command execution errors
+ * Detects failed Redis node if it has reached specified amount of command execution errors
  * <code>failedCommandsLimit</code> in <code>checkInterval</code> time interval.
  *
  * @author Nikita Koksharov
