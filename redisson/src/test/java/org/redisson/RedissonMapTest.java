@@ -160,7 +160,7 @@ public class RedissonMapTest extends BaseMapTest {
         CompletionStage<Void> f = iterateAll(iterator, list);
         f.toCompletableFuture().join();
 
-        assertThat(list.size()).isEqualTo(2);
+        assertThat(list.size()).isEqualTo(3);
 
     }
 
@@ -204,7 +204,7 @@ public class RedissonMapTest extends BaseMapTest {
         CompletionStage<Void> f = iterateAll(iterator, list);
         f.toCompletableFuture().join();
 
-        assertThat(list.size()).isEqualTo(2);
+        assertThat(list.size()).isEqualTo(3);
 
     }
 
