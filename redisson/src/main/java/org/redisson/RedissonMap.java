@@ -775,7 +775,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
             }
 
         };
-        return new CompositeAsyncIterator<>(Arrays.asList(asyncIterator), count);
+        return new CompositeAsyncIterator<>(Arrays.asList(asyncIterator), 0);
     }
 
     @Override
@@ -823,7 +823,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
             }
 
         };
-        return new CompositeAsyncIterator<>(Arrays.asList(asyncIterator), count);
+        return new CompositeAsyncIterator<>(Arrays.asList(asyncIterator), 0);
     }
 
     @Override
