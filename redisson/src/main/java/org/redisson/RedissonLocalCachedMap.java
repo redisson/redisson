@@ -420,13 +420,13 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         if (storeMode == LocalCachedMapOptions.StoreMode.LOCALCACHE) {
             keyEncoded.release();
             LocalCachedMapInvalidate msg = new LocalCachedMapInvalidate(instanceId, cacheKey.getKeyHash());
-            listener.publishAsync(msg);
-
-            V val = null;
-            if (value != null) {
-                val = (V) value.getValue();
-            }
-            return new CompletableFutureWrapper<>(val);
+            CompletionStage<V> f = listener.publishAsync(msg).thenApply(r -> {
+                if (value != null) {
+                    return (V) value.getValue();
+                }
+                return null;
+            });
+            return new CompletableFutureWrapper<>(f);
         }
 
         byte[] entryId = generateLogEntryId(cacheKey.getKeyHash());
@@ -538,16 +538,22 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     protected RFuture<Long> fastRemoveOperationAsync(K... keys) {
         if (storeMode == LocalCachedMapOptions.StoreMode.LOCALCACHE) {
             long count = 0;
+            List<CompletableFuture<Void>> futures = new ArrayList<>();
             for (K k : keys) {
                 CacheKey cacheKey = localCacheView.toCacheKey(k);
                 CacheValue val = cacheRemove(cacheKey);
                 if (val != null) {
                     count++;
                     LocalCachedMapInvalidate msg = new LocalCachedMapInvalidate(instanceId, cacheKey.getKeyHash());
-                    listener.publishAsync(msg);
+                    CompletionStage<Void> f = listener.publishAsync(msg).thenApply(t -> null);
+                    futures.add(f.toCompletableFuture());
                 }
             }
-            return new CompletableFutureWrapper<>(count);
+
+            long c = count;
+            CompletableFuture<Long> ff = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+                    .thenApply(r -> c);
+            return new CompletableFutureWrapper<>(ff);
         }
 
             if (invalidateEntryOnChange == 1) {
