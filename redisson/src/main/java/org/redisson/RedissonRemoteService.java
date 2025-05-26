@@ -21,6 +21,7 @@ import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.executor.RemotePromise;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.remote.*;
@@ -252,9 +253,10 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
                     }
                     log.error("Can't process the remote service request. A new attempt has been made.", e);
                     // re-subscribe after a failed takeAsync
+                    MasterSlaveServersConfig config = commandExecutor.getServiceManager().getConfig();
                     commandExecutor.getServiceManager().newTimeout(task -> {
                         subscribe(remoteInterface, requestQueue, executor, bean);
-                    }, commandExecutor.getServiceManager().getConfig().getRetryInterval(), TimeUnit.MILLISECONDS);
+                    }, config.getRetryDelay().calcDelay(config.getRetryAttempts()).toMillis(), TimeUnit.MILLISECONDS);
 
                     return;
                 }
@@ -282,7 +284,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
                         if (commandExecutor.getServiceManager().isShuttingDown(exc)) {
                             return;
                         }
-                        log.error("Can't process the remote service request with id {}. Try to increase 'retryInterval' and/or 'retryAttempts' settings", requestId, exc);
+                        log.error("Can't process the remote service request with id {}. Try to increase 'retryDelay' and/or 'retryAttempts' settings", requestId, exc);
                             
                         // re-subscribe after a failed takeAsync
                         resubscribe(remoteInterface, requestQueue, executor, bean);
@@ -332,7 +334,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
                                         if (commandExecutor.getServiceManager().isShuttingDown(ex)) {
                                             return;
                                         }
-                                        log.error("Can't send ack for request: {}. Try to increase 'retryInterval' and/or 'retryAttempts' settings", request, ex);
+                                        log.error("Can't send ack for request: {}. Try to increase 'retryDelay' and/or 'retryAttempts' settings", request, ex);
 
                                         // re-subscribe after a failed send (ack)
                                         resubscribe(remoteInterface, requestQueue, executor, bean);
@@ -352,7 +354,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
                                             if (commandExecutor.getServiceManager().isShuttingDown(exce)) {
                                                 return;
                                             }
-                                            log.error("Can't send ack for request: {}. Try to increase 'retryInterval' and/or 'retryAttempts' settings", request, exce);
+                                            log.error("Can't send ack for request: {}. Try to increase 'retryDelay' and/or 'retryAttempts' settings", request, exce);
 
                                             // re-subscribe after a failed send (ack)
                                             resubscribe(remoteInterface, requestQueue, executor, bean);
@@ -441,7 +443,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
                             if (commandExecutor.getServiceManager().isShuttingDown(exc)) {
                                 return;
                             }
-                            log.error("Can't send response: {} for request: {}. Try to increase 'retryInterval' and/or 'retryAttempts' settings", response, request, exc);
+                            log.error("Can't send response: {} for request: {}. Try to increase 'retryDelay' and/or 'retryAttempts' settings", response, request, exc);
                         }
 
                         resubscribe(remoteInterface, requestQueue, executor, method.getBean());

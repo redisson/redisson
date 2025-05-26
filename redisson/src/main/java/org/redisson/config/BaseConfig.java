@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.TrustManagerFactory;
 import java.net.URL;
+import java.time.Duration;
 
 /**
  * 
@@ -59,9 +60,14 @@ public class BaseConfig<T extends BaseConfig<T>> {
 
     private int subscriptionTimeout = 7500;
 
-    private int retryAttempts = 3;
+    private int retryAttempts = 4;
 
+    @Deprecated
     private int retryInterval = 1500;
+
+    private DelayStrategy retryDelay = new EqualJitterDelay(Duration.ofMillis(1000), Duration.ofSeconds(2));
+
+    private DelayStrategy reconnectionDelay = new EqualJitterDelay(Duration.ofMillis(100), Duration.ofSeconds(10));
 
     /**
      * Password for Redis authentication. Should be null if not needed
@@ -132,7 +138,8 @@ public class BaseConfig<T extends BaseConfig<T>> {
         setUsername(config.getUsername());
         setSubscriptionsPerConnection(config.getSubscriptionsPerConnection());
         setRetryAttempts(config.getRetryAttempts());
-        setRetryInterval(config.getRetryInterval());
+        setRetryDelay(config.getRetryDelay());
+        setReconnectionDelay(config.getReconnectionDelay());
         setTimeout(config.getTimeout());
         setClientName(config.getClientName());
         setConnectTimeout(config.getConnectTimeout());
@@ -243,11 +250,14 @@ public class BaseConfig<T extends BaseConfig<T>> {
      * @param retryInterval - time in milliseconds
      * @return config
      */
+    @Deprecated
     public T setRetryInterval(int retryInterval) {
         this.retryInterval = retryInterval;
+        this.retryDelay = new ConstantDelay(Duration.ofMillis(retryInterval));
         return (T) this;
     }
 
+    @Deprecated
     public int getRetryInterval() {
         return retryInterval;
     }
@@ -728,12 +738,41 @@ public class BaseConfig<T extends BaseConfig<T>> {
      * <p>
      * Default is <code>SslVerificationMode.STRICT</code>
      *
-     * @param sslVerificationMode
-     * @return
+     * @param sslVerificationMode mode value
+     * @return config
      */
     public T setSslVerificationMode(SslVerificationMode sslVerificationMode) {
         this.sslVerificationMode = sslVerificationMode;
         return (T) this;
     }
 
+    public DelayStrategy getRetryDelay() {
+        return retryDelay;
+    }
+
+    /**
+     * Defines the delay strategy for a new attempt to send a command.
+     *
+     * @param retryDelay delay strategy implementation
+     * @return options instance
+     */
+    public T setRetryDelay(DelayStrategy retryDelay) {
+        this.retryDelay = retryDelay;
+        return (T) this;
+    }
+
+    public DelayStrategy getReconnectionDelay() {
+        return reconnectionDelay;
+    }
+
+    /**
+     * Defines the delay strategy for a new attempt to reconnect a connection.
+     *
+     * @param reconnectionDelay delay strategy implementation
+     * @return options instance
+     */
+    public T setReconnectionDelay(DelayStrategy reconnectionDelay) {
+        this.reconnectionDelay = reconnectionDelay;
+        return (T) this;
+    }
 }

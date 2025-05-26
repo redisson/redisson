@@ -44,7 +44,8 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
         newconfig.setSslTrustManagerFactory(cfg.getSslTrustManagerFactory());
 
         newconfig.setRetryAttempts(cfg.getRetryAttempts());
-        newconfig.setRetryInterval(cfg.getRetryInterval());
+        newconfig.setRetryDelay(cfg.getRetryDelay());
+        newconfig.setReconnectionDelay(cfg.getReconnectionDelay());
         newconfig.setTimeout(cfg.getTimeout());
         newconfig.setPassword(cfg.getPassword());
         newconfig.setUsername(cfg.getUsername());

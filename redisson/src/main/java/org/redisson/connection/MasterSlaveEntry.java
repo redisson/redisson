@@ -36,6 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -740,15 +741,17 @@ public class MasterSlaveEntry {
                     CompletableFuture<Boolean> f = new CompletableFuture<>();
                     future.whenComplete((r, e) -> {
                         if (e != null) {
-                            int maxAttempts = connectionManager.getServiceManager().getConfig().getRetryAttempts();
-                            int retryInterval = connectionManager.getServiceManager().getConfig().getRetryInterval();
+                            MasterSlaveServersConfig config = connectionManager.getServiceManager().getConfig();
+                            int maxAttempts = config.getRetryAttempts();
                             log.error("Unable to unfreeze entry: {} attempt: {} of {}", entry, retry, maxAttempts, e);
                             entry.setInitialized(false);
                             if (retry < maxAttempts) {
+                                Duration timeout = config.getRetryDelay().calcDelay(retry);
+
                                 connectionManager.getServiceManager().newTimeout(t -> {
                                     CompletableFuture<Boolean> ff = unfreezeAsync(entry, freezeReason, retry + 1);
                                     connectionManager.getServiceManager().transfer(ff, f);
-                                }, retryInterval, TimeUnit.MILLISECONDS);
+                                }, timeout.toMillis(), TimeUnit.MILLISECONDS);
                             } else {
                                 f.complete(false);
                             }

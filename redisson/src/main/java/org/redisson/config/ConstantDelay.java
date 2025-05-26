@@ -13,22 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.api.options;
+package org.redisson.config;
 
-import org.redisson.config.DelayStrategy;
+import java.time.Duration;
 
 /**
+ * A constant delay strategy that returns the same delay duration for every retry attempt.
  *
  * @author Nikita Koksharov
  *
  */
-public interface ObjectParams {
+public class ConstantDelay implements DelayStrategy {
 
-    int getTimeout();
+    private final Duration delay;
 
-    int getRetryAttempts();
+    /**
+     * Creates a constant delay strategy with the specified delay duration.
+     *
+     * @param delay the fixed delay duration to use between retry attempts
+     */
+    public ConstantDelay(Duration delay) {
+        this.delay = delay;
+    }
 
-    DelayStrategy getRetryDelay();
-
-
+    @Override
+    public Duration calcDelay(int attempt) {
+        return delay;
+    }
 }

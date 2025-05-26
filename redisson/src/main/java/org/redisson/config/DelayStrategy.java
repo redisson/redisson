@@ -13,22 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.api.options;
+package org.redisson.config;
 
-import org.redisson.config.DelayStrategy;
+import java.time.Duration;
 
 /**
+ * Strategy interface for calculating delay durations between retry attempts.
  *
  * @author Nikita Koksharov
  *
  */
-public interface ObjectParams {
+public interface DelayStrategy {
 
-    int getTimeout();
-
-    int getRetryAttempts();
-
-    DelayStrategy getRetryDelay();
-
+    /**
+     * Calculates the delay duration to wait before the next retry attempt.
+     *
+     * @param attempt the zero-based retry attempt number (0 = first retry)
+     * @return the duration to wait before the next retry attempt
+     */
+    Duration calcDelay(int attempt);
 
 }

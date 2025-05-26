@@ -15,6 +15,9 @@
  */
 package org.redisson.api.options;
 
+import org.redisson.config.ConstantDelay;
+import org.redisson.config.DelayStrategy;
+
 import java.time.Duration;
 
 /**
@@ -27,7 +30,7 @@ class BaseOptions<T extends InvocationOptions<T>, C> implements CodecOptions<T, 
     private C codec;
     private int timeout;
     private int retryAttempts;
-    private int retryInterval;
+    private DelayStrategy retryDelay;
 
     @Override
     public T codec(C codec) {
@@ -49,7 +52,13 @@ class BaseOptions<T extends InvocationOptions<T>, C> implements CodecOptions<T, 
 
     @Override
     public T retryInterval(Duration interval) {
-        this.retryInterval = (int) interval.toMillis();
+        this.retryDelay = new ConstantDelay(interval);
+        return (T) this;
+    }
+
+    @Override
+    public T retryDelay(DelayStrategy interval) {
+        this.retryDelay = interval;
         return (T) this;
     }
 
@@ -61,12 +70,12 @@ class BaseOptions<T extends InvocationOptions<T>, C> implements CodecOptions<T, 
         return retryAttempts;
     }
 
-    public int getRetryInterval() {
-        return retryInterval;
-    }
-
     public C getCodec() {
         return codec;
     }
 
+    @Override
+    public DelayStrategy getRetryDelay() {
+        return retryDelay;
+    }
 }

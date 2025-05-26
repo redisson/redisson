@@ -38,6 +38,7 @@ import org.redisson.misc.Tuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -517,9 +518,10 @@ public class PublishSubscribeService {
 
         MasterSlaveEntry entry = getEntry(channelName);
         if (entry == null) {
+            Duration timeout = config.getRetryDelay().calcDelay(attempts.get());
             connectionManager.getServiceManager().newTimeout(tt -> {
                 trySubscribe(codec, channelNames, promise, type, lock, attempts, listeners);
-            }, config.getRetryInterval(), TimeUnit.MILLISECONDS);
+            }, timeout.toMillis(), TimeUnit.MILLISECONDS);
             return;
         }
 
@@ -679,6 +681,8 @@ public class PublishSubscribeService {
                          PubSubType type, AsyncSemaphore lock, AtomicInteger attempts,
                          RedisPubSubListener<?>... listeners) {
 
+        Duration timeout = config.getRetryDelay().calcDelay(attempts.get());
+
         CompletableFuture<RedisPubSubConnection> connFuture = msEntry.nextPubSubConnection(clientEntry);
         connectionManager.getServiceManager().newTimeout(t -> {
             if (!connFuture.cancel(false)
@@ -687,7 +691,7 @@ public class PublishSubscribeService {
             }
 
             trySubscribe(codec, channelNames, promise, type, lock, attempts, listeners);
-        }, config.getRetryInterval(), TimeUnit.MILLISECONDS);
+        }, timeout.toMillis(), TimeUnit.MILLISECONDS);
 
         promise.whenComplete((res, e) -> {
             if (e != null) {

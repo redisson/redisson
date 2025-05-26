@@ -28,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
@@ -178,10 +179,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     @Override
     public final void connect() {
-        int attempts = config.getRetryAttempts() + 1;
-        for (int i = 0; i < attempts; i++) {
+        int attempt = config.getRetryAttempts() + 1;
+        for (int i = 0; i < attempt; i++) {
             try {
-                if (i == attempts - 1) {
+                if (i == attempt - 1) {
                     lastAttempt = true;
                 }
                 doConnect(u -> null);
@@ -190,12 +191,13 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 shutdown();
                 throw e;
             } catch (Exception e) {
-                if (i == attempts - 1) {
+                if (i == attempt - 1) {
                     lastAttempt = false;
                     throw e;
                 }
                 try {
-                    Thread.sleep(config.getRetryInterval());
+                    Duration timeout = config.getRetryDelay().calcDelay(attempt);
+                    Thread.sleep(timeout.toMillis());
                 } catch (InterruptedException ex) {
                     Thread.currentThread().interrupt();
                     return;
@@ -283,7 +285,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         c.setSslKeyManagerFactory(cfg.getSslKeyManagerFactory());
         c.setSslTrustManagerFactory(cfg.getSslTrustManagerFactory());
 
-        c.setRetryInterval(cfg.getRetryInterval());
+        c.setRetryDelay(cfg.getRetryDelay());
+        c.setReconnectionDelay(cfg.getReconnectionDelay());
         c.setRetryAttempts(cfg.getRetryAttempts());
         c.setTimeout(cfg.getTimeout());
         c.setLoadBalancer(cfg.getLoadBalancer());
@@ -381,6 +384,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 .setFailedNodeDetector(config.getFailedSlaveNodeDetector())
                 .setProtocol(serviceManager.getCfg().getProtocol())
                 .setCapabilities(serviceManager.getCfg().getValkeyCapabilities())
+                .setReconnectionDelay(config.getReconnectionDelay())
                 .setCommandMapper(config.getCommandMapper())
                 .setCredentialsResolver(config.getCredentialsResolver())
                 .setCredentialsReapplyInterval(config.getCredentialsReapplyInterval())

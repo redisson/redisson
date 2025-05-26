@@ -204,7 +204,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
                         return CompletableFuture.<Map<String, String>>completedFuture(null);
                     }
 
-                    return connection.async(1, cfg.getRetryInterval(), cfg.getTimeout(),
+                    return connection.async(1, cfg.getRetryDelay(), cfg.getTimeout(),
                                                 StringCodec.INSTANCE, RedisCommands.INFO_REPLICATION);
                 })
                 .thenCompose(r -> {

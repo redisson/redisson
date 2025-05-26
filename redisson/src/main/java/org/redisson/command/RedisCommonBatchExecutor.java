@@ -27,6 +27,7 @@ import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.CommandsData;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandBatchService.Entry;
+import org.redisson.config.DelayStrategy;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.NodeSource;
 import org.redisson.connection.NodeSource.Redirect;
@@ -77,11 +78,11 @@ public class RedisCommonBatchExecutor extends RedisExecutor<Object, Void> {
         return result;
     }
 
-    private static int retryInterval(ConnectionManager connectionManager, BatchOptions options) {
-        if (options.getRetryInterval() > 0) {
-            return (int) options.getRetryInterval();
+    private static DelayStrategy retryInterval(ConnectionManager connectionManager, BatchOptions options) {
+        if (options.getRetryDelay() != null) {
+            return options.getRetryDelay();
         }
-        return connectionManager.getServiceManager().getConfig().getRetryInterval();
+        return connectionManager.getServiceManager().getConfig().getRetryDelay();
     }
 
     private static int retryAttempts(ConnectionManager connectionManager, BatchOptions options) {

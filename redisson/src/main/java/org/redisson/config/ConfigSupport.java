@@ -25,6 +25,7 @@ import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.netty.channel.EventLoopGroup;
 import org.redisson.api.NameMapper;
 import org.redisson.api.NatMapper;
@@ -41,6 +42,7 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.TrustManagerFactory;
 import java.io.*;
 import java.net.URL;
+import java.time.Duration;
 import java.util.Scanner;
 import java.util.concurrent.ExecutorService;
 import java.util.regex.Matcher;
@@ -67,6 +69,14 @@ public class ConfigSupport {
     @JsonIgnoreProperties({"slaveNotUsed"})
     public static class ConfigPropsMixIn {
 
+    }
+
+    public static class DelayMixin {
+
+        @JsonCreator
+        public DelayMixin(@JsonProperty("baseDelay") Duration baseDelay,
+                            @JsonProperty("maxDelay") Duration maxDelay) {
+        }
     }
 
     @JsonIgnoreProperties({"clusterConfig", "sentinelConfig", "singleConfig"})
@@ -248,6 +258,11 @@ public class ConfigSupport {
         mapper.addMixIn(TrustManagerFactory.class, IgnoreMixIn.class);
         mapper.addMixIn(CommandMapper.class, ClassMixIn.class);
         mapper.addMixIn(FailedNodeDetector.class, ClassMixIn.class);
+        mapper.addMixIn(DelayStrategy.class, ClassMixIn.class);
+        mapper.addMixIn(EqualJitterDelay.class, DelayMixin.class);
+        mapper.addMixIn(FullJitterDelay.class, DelayMixin.class);
+        mapper.addMixIn(DecorrelatedJitterDelay.class, DelayMixin.class);
+        mapper.registerModule(new JavaTimeModule());
 
         FilterProvider filterProvider = new SimpleFilterProvider()
                 .addFilter("classFilter", SimpleBeanPropertyFilter.filterOutAllExcept());

@@ -217,9 +217,9 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
     protected final RFuture<Boolean> unlockInnerAsync(long threadId) {
         String id = getServiceManager().generateId();
         MasterSlaveServersConfig config = getServiceManager().getConfig();
-        int timeout = (config.getTimeout() + config.getRetryInterval()) * config.getRetryAttempts();
+        long timeout = (config.getTimeout() + config.getRetryDelay().calcDelay(config.getRetryAttempts()).toMillis()) * config.getRetryAttempts();
         timeout = Math.max(timeout, 1);
-        RFuture<Boolean> r = unlockInnerAsync(threadId, id, timeout);
+        RFuture<Boolean> r = unlockInnerAsync(threadId, id, (int) timeout);
         CompletionStage<Boolean> ff = r.thenApply(v -> {
             CommandAsyncExecutor ce = commandExecutor;
             if (ce instanceof CommandBatchService) {

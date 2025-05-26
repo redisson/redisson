@@ -31,6 +31,7 @@ import org.redisson.client.protocol.BatchCommandData;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.config.DelayStrategy;
 import org.redisson.connection.ClientConnectionsEntry;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
@@ -162,7 +163,7 @@ public class CommandBatchService extends CommandAsyncService implements BatchSer
 
     private final AtomicBoolean executed = new AtomicBoolean();
 
-    private final long retryInterval;
+    private final DelayStrategy retryDelay;
     private final int retryAttempts;
 
     public CommandBatchService(CommandAsyncExecutor executor) {
@@ -192,10 +193,10 @@ public class CommandBatchService extends CommandAsyncService implements BatchSer
             this.retryAttempts = connectionManager.getServiceManager().getConfig().getRetryAttempts();
         }
 
-        if (options.getRetryInterval() > 0) {
-            this.retryInterval = this.options.getRetryInterval();
+        if (options.getRetryDelay() != null) {
+            this.retryDelay = this.options.getRetryDelay();
         } else {
-            this.retryInterval = connectionManager.getServiceManager().getConfig().getRetryInterval();
+            this.retryDelay = connectionManager.getServiceManager().getConfig().getRetryDelay();
         }
     }
 
@@ -457,7 +458,7 @@ public class CommandBatchService extends CommandAsyncService implements BatchSer
                                     .executionMode(this.options.getExecutionMode())
                                     .responseTimeout(this.options.getResponseTimeout(), TimeUnit.MILLISECONDS)
                                     .retryAttempts(Math.max(0, retryAttempts - attempt.get()))
-                                    .retryInterval(retryInterval, TimeUnit.MILLISECONDS);
+                                    .retryDelay(retryDelay);
 
                             if (this.options.isSkipResult()) {
                                 options.skipResult();
@@ -536,14 +537,18 @@ public class CommandBatchService extends CommandAsyncService implements BatchSer
         for (Map.Entry<NodeSource, Entry> e : commands.entrySet()) {
             MasterSlaveEntry entry = getEntry(e.getKey());
             if (entry == null) {
-                if (attempt.incrementAndGet() == retryAttempts + 1) {
+                if (attempt.get() == retryAttempts) {
                     future.completeExceptionally(connectionManager.getServiceManager().createNodeNotFoundException(e.getKey()));
                     return;
                 }
 
+                Duration timeout = retryDelay.calcDelay(attempt.get());
+
+                attempt.incrementAndGet();
+
                 connectionManager.getServiceManager().newTimeout(task -> {
                     resolveCommands(attempt, future);
-                }, retryInterval, TimeUnit.MILLISECONDS);
+                }, timeout.toMillis(), TimeUnit.MILLISECONDS);
                 return;
             }
             Entry ee = result.computeIfAbsent(entry, k -> new Entry());
@@ -564,14 +569,18 @@ public class CommandBatchService extends CommandAsyncService implements BatchSer
         for (Map.Entry<NodeSource, Entry> e : commands.entrySet()) {
             MasterSlaveEntry entry = getEntry(e.getKey());
             if (entry == null) {
-                if (attempt.incrementAndGet() == retryAttempts + 1) {
+                if (attempt.get() == retryAttempts) {
                     future.completeExceptionally(connectionManager.getServiceManager().createNodeNotFoundException(e.getKey()));
                     return;
                 }
 
+                Duration timeout = retryDelay.calcDelay(attempt.get());
+
+                attempt.incrementAndGet();
+
                 connectionManager.getServiceManager().newTimeout(task -> {
                     resolveCommandsInMemory(attempt, future);
-                }, retryInterval, TimeUnit.MILLISECONDS);
+                }, timeout.toMillis(), TimeUnit.MILLISECONDS);
                 return;
             }
 

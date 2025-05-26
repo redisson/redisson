@@ -27,6 +27,7 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.TrustManagerFactory;
 import java.net.InetSocketAddress;
 import java.net.URL;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -90,6 +91,8 @@ public class RedisClientConfig {
 
     private Set<ValkeyCapability> capabilities = Collections.emptySet();
 
+    private DelayStrategy reconnectionDelay = new EqualJitterDelay(Duration.ofMillis(100), Duration.ofSeconds(10));
+
     public RedisClientConfig() {
     }
     
@@ -138,6 +141,7 @@ public class RedisClientConfig {
         this.sslKeystoreType = config.sslKeystoreType;
         this.sslVerificationMode = config.sslVerificationMode;
         this.capabilities = config.capabilities;
+        this.reconnectionDelay = config.reconnectionDelay;
     }
 
     public NettyHook getNettyHook() {
@@ -514,6 +518,14 @@ public class RedisClientConfig {
 
     public RedisClientConfig setCapabilities(Set<ValkeyCapability> capabilities) {
         this.capabilities = capabilities;
+        return this;
+    }
+
+    public DelayStrategy getReconnectionDelay() {
+        return reconnectionDelay;
+    }
+    public RedisClientConfig setReconnectionDelay(DelayStrategy reconnectionDelay) {
+        this.reconnectionDelay = reconnectionDelay;
         return this;
     }
 }

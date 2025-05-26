@@ -24,10 +24,12 @@ import org.redisson.client.*;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.QueueCommand;
+import org.redisson.config.DelayStrategy;
 import org.redisson.misc.AsyncSemaphore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.util.Map.Entry;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -42,16 +44,17 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
+    private final DelayStrategy reconnectionDelay;
     private final Timer timer;
     private final Bootstrap bootstrap;
     private final ChannelGroup channels;
-    private static final int BACKOFF_CAP = 12;
     private final AsyncSemaphore semaphore = new AsyncSemaphore(2);
 
-    public ConnectionWatchdog(Bootstrap bootstrap, ChannelGroup channels, Timer timer) {
+    public ConnectionWatchdog(Bootstrap bootstrap, ChannelGroup channels, RedisClientConfig config) {
         this.bootstrap = bootstrap;
         this.channels  = channels;
-        this.timer = timer;
+        this.timer = config.getTimer();
+        this.reconnectionDelay = config.getReconnectionDelay();
     }
 
     @Override
@@ -70,10 +73,10 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
 
             if (!connection.isClosed()) {
                 if (connection.isFastReconnect()) {
-                    tryReconnect(connection, 1);
+                    tryReconnect(connection, 0);
                 } else {
                     semaphore.acquire().thenAccept(r -> {
-                        reconnect(connection, 1);
+                        reconnect(connection, 0);
                     });
                 }
             }
@@ -81,7 +84,7 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
         ctx.fireChannelInactive();
     }
 
-    private void reconnect(RedisConnection connection, int attempts){
+    private void reconnect(RedisConnection connection, int attempt){
         if (connection.isClosed()) {
             semaphore.release();
             return;
@@ -91,9 +94,10 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
             return;
         }
 
-        int timeout = 2 << attempts;
+        Duration timeout = reconnectionDelay.calcDelay(attempt);
+
         try {
-            timer.newTimeout(t -> tryReconnect(connection, Math.min(BACKOFF_CAP, attempts + 1)), timeout, TimeUnit.MILLISECONDS);
+            timer.newTimeout(t -> tryReconnect(connection, attempt + 1), timeout.toMillis(), TimeUnit.MILLISECONDS);
         } catch (IllegalStateException e) {
             // skip
         }

@@ -70,7 +70,7 @@ public class RedisChannelInitializer extends ChannelInitializer<Channel> {
         } else {
             pingConnectionHandler = null;
         }
-        connectionWatchdog = new ConnectionWatchdog(bootstrap, channels, config.getTimer());
+        connectionWatchdog = new ConnectionWatchdog(bootstrap, channels, config);
     }
     
     @Override

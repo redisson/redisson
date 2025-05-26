@@ -16,6 +16,8 @@
 package org.redisson.api;
 
 import org.redisson.config.BaseConfig;
+import org.redisson.config.ConstantDelay;
+import org.redisson.config.DelayStrategy;
 
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -71,7 +73,7 @@ public final class BatchOptions {
     
     private long responseTimeout;
     private int retryAttempts = -1;
-    private long retryInterval;
+    private DelayStrategy retryDelay;
 
     private long syncTimeout;
     private int syncSlaves;
@@ -123,10 +125,6 @@ public final class BatchOptions {
         return this;
     }
 
-    public long getRetryInterval() {
-        return retryInterval;
-    }
-    
     /**
      * Defines time interval for each attempt to send Redis commands batch 
      * if it hasn't been sent already.
@@ -137,8 +135,9 @@ public final class BatchOptions {
      * @param retryIntervalUnit time interval unit
      * @return self instance
      */
+    @Deprecated
     public BatchOptions retryInterval(long retryInterval, TimeUnit retryIntervalUnit) {
-        this.retryInterval = retryIntervalUnit.toMillis(retryInterval);
+        this.retryDelay = new ConstantDelay(Duration.ofMillis(retryIntervalUnit.toMillis(retryInterval)));
         return this;
     }
 
@@ -238,7 +237,13 @@ public final class BatchOptions {
     public String toString() {
         return "BatchOptions [queueStore=" + executionMode + "]";
     }
-    
-    
-    
+
+    public DelayStrategy getRetryDelay() {
+        return retryDelay;
+    }
+
+    public BatchOptions retryDelay(DelayStrategy retryDelay) {
+        this.retryDelay = retryDelay;
+        return this;
+    }
 }
