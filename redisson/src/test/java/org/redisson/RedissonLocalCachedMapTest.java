@@ -577,7 +577,7 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
 
     
     @Test
-    public void testLocalCacheClear() {
+    public void testLocalCacheClear() throws InterruptedException {
         LocalCachedMapOptions<String, Integer> options = LocalCachedMapOptions.<String, Integer>name("test")
                 .evictionPolicy(EvictionPolicy.LFU)
                 .cacheSize(5)
@@ -602,6 +602,8 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
         assertThat(cache2.size()).isEqualTo(2);
 
         map1.clearLocalCache();
+
+        Thread.sleep(100);
 
         assertThat(redisson.getKeys().count()).isEqualTo(1);
 
