@@ -53,7 +53,7 @@ public class RedissonReliableTopicTest extends RedisDockerTest {
         ee.shutdown();
         assertThat(ee.awaitTermination(10, TimeUnit.SECONDS)).isTrue();
 
-        Thread.sleep(100);
+        Thread.sleep(1000);
         assertThat(sent.get()).isEqualTo(500);
         assertThat(ii.get()).isEqualTo(500);
         rt.removeAllListeners();

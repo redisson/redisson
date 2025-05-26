@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.redisson.api.*;
 import org.redisson.api.RScript.Mode;
 import org.redisson.client.RedisException;
+import org.redisson.client.RedisNoScriptException;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.config.CommandMapper;
 import org.redisson.config.Config;
@@ -149,11 +150,9 @@ public class RedissonScriptTest extends RedisDockerTest {
         Assertions.assertEquals("bar", r1);
         redisson.getScript().scriptFlush();
 
-        try {
+        Assertions.assertThrows(RedisNoScriptException.class, () -> {
             redisson.getScript().evalSha(Mode.READ_ONLY, "282297a0228f48cd3fc6a55de6316f31422f5d17", RScript.ReturnType.VALUE, Collections.emptyList());
-        } catch (Exception e) {
-            Assertions.assertEquals(RedisException.class, e.getClass());
-        }
+        });
     }
 
     @Test
