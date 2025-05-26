@@ -26,6 +26,7 @@ import org.redisson.api.RFuture;
 import org.redisson.api.options.ObjectParams;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisException;
+import org.redisson.client.RedisNoScriptException;
 import org.redisson.client.RedisNodeNotFoundException;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
@@ -1132,9 +1133,17 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 }
 
                 RFuture<BatchResult<?>> future = executorService.executeAsync();
-                CompletionStage<T> f = future.handle((res, ex) -> {
+                CompletionStage<T> sf = future.handle((res, ex) -> {
                     if (ex != null) {
-                        throw new CompletionException(ex);
+                        if (ex instanceof RedisNoScriptException) {
+                            MasterSlaveEntry entry = connectionManager.getEntry(key);
+                            return loadScript(entry.getClient(), script).thenCompose(r3 ->
+                                        syncedEval(timeout, syncMode, retry, key, codec, evalCommandType, script, keys, params));
+                        }
+
+                        CompletableFuture<T> ef = new CompletableFuture<>();
+                        ef.completeExceptionally(ex);
+                        return ef;
                     }
                     if (res.getSyncedSlaves() < availableSlaves
                             || res.getSyncedSlaves() > availableSlaves) {
@@ -1146,9 +1155,9 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                                 new NoSyncedSlavesException("None of slaves were synced. Try to increase slavesSyncTimeout setting or set checkLockSyncedSlaves = false."));
                     }
 
-                    return getNow(result.toCompletableFuture());
-                });
-                return f;
+                    return result;
+                }).thenCompose(f -> f);
+                return sf;
             });
             return resultFuture;
         }).thenCompose(f -> f);
