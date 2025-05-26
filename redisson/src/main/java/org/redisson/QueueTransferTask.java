@@ -128,7 +128,8 @@ public abstract class QueueTransferTask {
                     pushTask();
                     
                     TimeoutTask currentTimeout = lastTimeout.get();
-                    if (currentTimeout.getTask() == timeout) {
+                    if (currentTimeout != null
+                            && currentTimeout.getTask() == timeout) {
                         lastTimeout.compareAndSet(currentTimeout, null);
                     }
                 }
