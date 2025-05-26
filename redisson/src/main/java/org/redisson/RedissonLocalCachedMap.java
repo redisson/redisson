@@ -123,7 +123,6 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
             } else {
                 msg = new LocalCachedMapInvalidate(instanceId, cacheKey.getKeyHash());
             }
-            mapKey.retain();
             f = listener.publishAsync(msg).thenApply(r -> null);
         }
         mapKey.release();
