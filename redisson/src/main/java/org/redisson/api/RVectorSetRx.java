@@ -16,6 +16,8 @@
 package org.redisson.api;
 
 import java.util.List;
+
+import io.reactivex.rxjava3.core.Maybe;
 import org.redisson.api.vector.VectorAddArgs;
 import org.redisson.api.vector.VectorInfo;
 import org.redisson.api.vector.VectorSimilarArgs;
@@ -74,7 +76,7 @@ public interface RVectorSetRx extends RExpirableRx {
      * @param clazz class type for deserialization
      * @return deserialized attributes object
      */
-    <T> Single<T> getAttributes(String element, Class<T> clazz);
+    <T> Maybe<T> getAttributes(String element, Class<T> clazz);
 
     /**
      * Returns metadata and internal details about the vector set
@@ -104,7 +106,7 @@ public interface RVectorSetRx extends RExpirableRx {
      *
      * @return random element name
      */
-    Single<String> random();
+    Maybe<String> random();
 
     /**
      * Returns multiple random elements from the vector set
