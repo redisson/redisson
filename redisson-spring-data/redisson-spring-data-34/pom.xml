@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.redisson</groupId>
         <artifactId>redisson-spring-data</artifactId>
-        <version>3.47.1-SNAPSHOT</version>
+        <version>3.48.0</version>
         <relativePath>../</relativePath>
     </parent>
 
