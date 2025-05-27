@@ -279,12 +279,16 @@ public class LocalCacheView<K, V> {
                 return cacheKey;
             }
         }
-        ByteBuf encoded = object.encodeMapKey(key);
+        ByteBuf encoded = encodeMapKey(key);
         try {
             return toCacheKey(encoded);
         } finally {
             encoded.release();
         }
+    }
+
+    protected ByteBuf encodeMapKey(Object key) {
+        return object.encodeMapKey(key);
     }
 
     public void putCacheKey(Object key, CacheKey cacheKey) {
