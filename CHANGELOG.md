@@ -5,7 +5,7 @@ Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
 
 ### 27-May-2025 - 3.48.0 released
 
-Feature - `retryDelay` and `reconnectionDelay` [settings](https://redisson.pro/docs/configuration/) added, allowing to define a delay strategy. Available implementations: `FullJitterDelay`, `EqualJitterDelay`, `DecorrelatedJitterDelay` and `ConstantDelay`. Default is `EqualJitterDelay`  
+Feature - `retryDelay` and `reconnectionDelay` [settings](https://redisson.pro/docs/api-models/#command-execution-reliability) added, allowing to define a delay strategy. Available implementations: `FullJitterDelay`, `EqualJitterDelay`, `DecorrelatedJitterDelay` and `ConstantDelay`. Default is `EqualJitterDelay`  
 Feature - [Vector Set](https://redisson.pro/docs/data-and-services/collections/#vector-set) object added  
 Feature - Spring Data Redis 3.5.0 implementation  
 Feature - Hibernate 7 support added  
