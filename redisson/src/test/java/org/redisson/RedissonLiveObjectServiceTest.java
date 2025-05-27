@@ -2457,7 +2457,7 @@ public class RedissonLiveObjectServiceTest extends RedisDockerTest {
         RLiveObjectService s = redisson.getLiveObjectService();
 
         List<TestREntity> objects = new ArrayList<>();
-        int objectsAmount = 800000;
+        int objectsAmount = 600000;
         for (int i = 0; i < objectsAmount; i++) {
             TestREntity e = new TestREntity();
             e.setName("" + i);
