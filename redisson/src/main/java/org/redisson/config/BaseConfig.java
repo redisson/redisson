@@ -752,6 +752,13 @@ public class BaseConfig<T extends BaseConfig<T>> {
 
     /**
      * Defines the delay strategy for a new attempt to send a command.
+     * <p>
+     * Default is <code>EqualJitterDelay(Duration.ofSeconds(1), Duration.ofSeconds(2))</code>
+     *
+     * @see DecorrelatedJitterDelay
+     * @see EqualJitterDelay
+     * @see FullJitterDelay
+     * @see ConstantDelay
      *
      * @param retryDelay delay strategy implementation
      * @return options instance
@@ -767,6 +774,13 @@ public class BaseConfig<T extends BaseConfig<T>> {
 
     /**
      * Defines the delay strategy for a new attempt to reconnect a connection.
+     * <p>
+     * Default is <code>EqualJitterDelay(Duration.ofMillis(100), Duration.ofSeconds(10))</code>
+     *
+     * @see DecorrelatedJitterDelay
+     * @see EqualJitterDelay
+     * @see FullJitterDelay
+     * @see ConstantDelay
      *
      * @param reconnectionDelay delay strategy implementation
      * @return options instance

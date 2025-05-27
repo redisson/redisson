@@ -20,7 +20,7 @@ import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * Equal jitter strategy that introduces moderate randomness while maintaining some stability.
+ * Equal jitter strategy that introduces moderate randomness while maintaining some stability of delay value.
  * This strategy keeps half of the exponential backoff delay and adds a random component
  * for the other half. The resulting delay is between backoff/2 and backoff, providing
  * a balance between predictability and randomness.
