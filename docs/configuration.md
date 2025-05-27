@@ -239,13 +239,31 @@ Default value: `100`
 Defines the amount of expired keys deleted per single operation during the cleanup process of expired entries. Applied to `JCache`, `RSetCache`, `RClusteredSetCache`, `RMapCache`, `RListMultimapCache`, `RSetMultimapCache`, `RLocalCachedMapCache`,
 `RClusteredLocalCachedMapCache` objects.
 
+**useThreadClassLoader**
+
+Default value: `true`  
+
+Defines whether to supply ContextClassLoader of the current Thread to Codec. 
+
+Usage of `Thread.getContextClassLoader()` may resolve `ClassNotFoundException` errors arising during Redis or Valkey response decoding. This error might occurr if Redisson is used in both Tomcat and deployed application.
+
+**registrationKey**
+
+_This setting is available only in [Redisson PRO](https://redisson.pro/feature-comparison.html) edition._  
+
+Defines the license key for the Redisson PRO version. Open source version doesn't require it.
+
+Can be defined as `redisson.pro.key` system property. Example of definition in JVM command-line:
+
+`java ... -Dredisson.pro.key=YYYYY`
+
 **meterMode**
+
+_This setting is available only in [Redisson PRO](https://redisson.pro/feature-comparison.html) edition._  
 
 Default value: `ALL`
 
 Defines the Micrometer statistics collection mode.
-
-_This setting is available only in [Redisson PRO](https://redisson.pro/feature-comparison.html) edition._  
 
 Available values:  
 
@@ -256,27 +274,19 @@ Available values:
 
 **meterRegistryProvider**
 
+_This setting is available only in [Redisson PRO](https://redisson.pro/feature-comparison.html) edition._  
+
 Default value: `null`
 
 Defines the Micrometer registry provider used to collect various statistics for Redisson objects. Please refer to the [statistics monitoring](observability.md) sections for list of all available providers.
 
-_This setting is available only in [Redisson PRO](https://redisson.pro/feature-comparison.html) edition._  
-
-**useThreadClassLoader**
-
-Default value: `true`  
-
-Defines whether to supply ContextClassLoader of the current Thread to Codec. 
-
-Usage of `Thread.getContextClassLoader()` may resolve `ClassNotFoundException` errors arising during Redis or Valkey response decoding. This error might occurr if Redisson is used in both Tomcat and deployed application.
-
 **performanceMode**
+
+_This setting is available only in [Redisson PRO](https://redisson.pro/feature-comparison.html) edition._  
 
 Default value: `LOWER_LATENCY_MODE_2`
 
 Defines the command processing engine performance mode. Since all values are application-specific (except for the `NORMAL` value) it’s recommended to try all of them.
-
-_This setting is available only in [Redisson PRO](https://redisson.pro/feature-comparison.html) edition._
 
 Available values:  
 
@@ -343,19 +353,20 @@ Default value: `1000`
 Scan interval in milliseconds. Applied to Redis or Valkey clusters topology scans.
 
 **topicSlots**
+
+_This setting is available only in [Redisson PRO](https://redisson.pro/feature-comparison.html) edition._
+
 Default value: `9`
 
 Partitions amount used for topic partitioning. Applied to `RClusteredTopic` and `RClusteredReliableTopic` objects.
 
-_This setting is available only in [Redisson PRO](https://redisson.pro/feature-comparison.html) edition._
-
 **slots**
+
+_This setting is available only in [Redisson PRO](https://redisson.pro/feature-comparison.html) edition._
 
 Default value: `231`
 
 Partitions amount used for data partitioning. Data partitioning supported by [Set](data-and-services/collections.md/#eviction-and-data-partitioning), [Map](data-and-services/collections.md/#eviction-local-cache-and-data-partitioning), [BitSet](data-and-services/objects.md/#data-partitioning), [Bloom filter](data-and-services/objects.md/#data-partitioning_1), [Spring Cache](cache-api-implementations.md/#eviction-local-cache-and-data-partitioning), [JCache](cache-api-implementations.md/#local-cache-and-data-partitioning), [Micronaut Cache](cache-api-implementations.md/#eviction-local-cache-and-data-partitioning_4), [Quarkus Cache](cache-api-implementations.md/#eviction-local-cache-and-data-partitioning_3) and [Hibernate Cache](cache-api-implementations.md/#eviction-local-cache-and-data-partitioning_1) structures.
-
-_This setting is available only in [Redisson PRO](https://redisson.pro/feature-comparison.html) edition._
 
 **readMode**
 
