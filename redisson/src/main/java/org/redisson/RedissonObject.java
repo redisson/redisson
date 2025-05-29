@@ -320,8 +320,8 @@ public abstract class RedissonObject implements RObject {
         String oldName = getRawName();
 
         if (!getServiceManager().getCfg().isClusterConfig()
-                            || (commandExecutor.getConnectionManager().calcSlot(nn) ==
-                                    commandExecutor.getConnectionManager().calcSlot(oldName))) {
+                            || commandExecutor.getConnectionManager().calcSlot(nn)
+                                    == commandExecutor.getConnectionManager().calcSlot(oldName)) {
             RFuture<Void> future = commandExecutor.writeAsync(oldName, StringCodec.INSTANCE, RedisCommands.RENAME, oldName, nn);
             CompletionStage<Void> f = future.thenAccept(r -> setName(newName));
             return new CompletableFutureWrapper<>(f);
