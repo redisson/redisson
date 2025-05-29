@@ -206,4 +206,21 @@ public interface RSetAsync<V> extends RCollectionAsync<V>, RSortableAsync<Set<V>
      */
     RFuture<Integer> addListenerAsync(ObjectListener listener);
 
+    /**
+     * Returns elements iterator fetches elements in a batch.
+     * Batch size is defined by <code>count</code> param.
+     *
+     * @return Asynchronous Iterable object
+     */
+    AsyncIterator<V> iteratorAsync();
+
+    /**
+     * Returns elements iterator fetches elements in a batch.
+     * Batch size is defined by <code>count</code> param.
+     *
+     * @param count - size of elements batch
+     * @return Asynchronous Iterable object
+     */
+    AsyncIterator<V> iteratorAsync(int count);
+
 }
