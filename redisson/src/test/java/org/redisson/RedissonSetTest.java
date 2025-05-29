@@ -6,17 +6,14 @@ import mockit.Mock;
 import mockit.MockUp;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.redisson.api.RFuture;
-import org.redisson.api.RList;
-import org.redisson.api.RSet;
-import org.redisson.api.RTransaction;
-import org.redisson.api.SortOrder;
-import org.redisson.api.TransactionOptions;
+import org.redisson.api.*;
 import org.redisson.client.codec.IntegerCodec;
 import org.redisson.client.codec.StringCodec;
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -536,6 +533,34 @@ public class RedissonSetTest extends RedisDockerTest {
         }
 
         Assertions.assertEquals(0, setCopy.size());
+    }
+
+    @Test
+    public void testIteratorAsync() {
+        RSet<Long> set = redisson.getSet("set");
+        for (int i = 0; i < 1000; i++) {
+            set.add(Long.valueOf(i));
+        }
+
+        AsyncIterator<Long> iterator = set.iteratorAsync(5);
+
+        Set<Long> set2 = new HashSet<>();
+        CompletionStage<Void> f = iterateAll(iterator, set2);
+        f.toCompletableFuture().join();
+        Assertions.assertEquals(1000, set2.size());
+    }
+
+    public CompletionStage<Void> iterateAll(AsyncIterator<Long> iterator, Set<Long> set) {
+        return iterator.hasNext().thenCompose(r -> {
+            if (r) {
+                return iterator.next().thenCompose(k -> {
+                    set.add(k);
+                    return iterateAll(iterator, set);
+                });
+            } else {
+                return CompletableFuture.completedFuture(null);
+            }
+        });
     }
 
     @Test
