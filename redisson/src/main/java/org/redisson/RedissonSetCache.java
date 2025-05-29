@@ -29,9 +29,11 @@ import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.eviction.EvictionScheduler;
+import org.redisson.iterator.BaseAsyncIterator;
 import org.redisson.iterator.RedissonBaseIterator;
 import org.redisson.mapreduce.RedissonCollectionMapReduce;
 import org.redisson.misc.CompletableFutureWrapper;
+import org.redisson.misc.CompositeAsyncIterator;
 
 import java.time.Duration;
 import java.util.*;
@@ -1492,6 +1494,24 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
         }
 
         return super.addListenerAsync(listener);
+    }
+
+    @Override
+    public AsyncIterator<V> iteratorAsync() {
+        return iteratorAsync(10);
+    }
+
+    @Override
+    public AsyncIterator<V> iteratorAsync(int count) {
+        AsyncIterator<V> asyncIterator = new BaseAsyncIterator<V, Object>() {
+
+            @Override
+            protected RFuture<ScanResult<Object>> iterator(RedisClient client, String nextItPos) {
+                return scanIteratorAsync(name, client, nextItPos, null, count);
+            }
+
+        };
+        return new CompositeAsyncIterator<>(Arrays.asList(asyncIterator), 0);
     }
 
     @Override

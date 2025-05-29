@@ -23,7 +23,9 @@ import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.*;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.iterator.BaseAsyncIterator;
 import org.redisson.iterator.RedissonBaseIterator;
+import org.redisson.misc.CompositeAsyncIterator;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -180,7 +182,11 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
          System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(o));
     }
 
-    private ListScanResult<Object> scanIterator(RedisClient client, String startPos, String pattern, int count) {
+    private ScanResult<Object> scanIterator(RedisClient client, String startPos, String pattern, int count) {
+        return get(scanIteratorAsync(client, startPos, pattern, count));
+    }
+
+    private RFuture<ScanResult<Object>> scanIteratorAsync(RedisClient client, String startPos, String pattern, int count) {
         List<Object> params = new ArrayList<Object>();
         params.add(System.currentTimeMillis());
         params.add(startPos);
@@ -190,7 +196,7 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
         }
         params.add(count);
         
-        RFuture<ListScanResult<Object>> f = commandExecutor.evalReadAsync(client, getRawName(), codec, EVAL_SSCAN,
+        return commandExecutor.evalReadAsync(client, getRawName(), codec, EVAL_SSCAN,
                 "local expireDate = 92233720368547758; " +
                 "local expireDateScore = redis.call('zscore', KEYS[1], ARGV[3]); "
               + "if expireDateScore ~= false then "
@@ -210,7 +216,6 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
               + "return res;", 
               Arrays.<Object>asList(timeoutSetName, getRawName()),
               params.toArray());
-      return get(f);
     }
 
     @Override
@@ -305,7 +310,7 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
         return new RedissonBaseIterator<V>() {
 
             @Override
-            protected ListScanResult<Object> iterator(RedisClient client, String nextIterPos) {
+            protected ScanResult<Object> iterator(RedisClient client, String nextIterPos) {
                 return scanIterator(client, nextIterPos, pattern, count);
             }
 
@@ -511,6 +516,24 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
     @Override
     public RFuture<List<V>> containsEachAsync(Collection<V> c) {
         throw new UnsupportedOperationException("This operation is not supported for SetMultimap values");
+    }
+
+    @Override
+    public AsyncIterator<V> iteratorAsync() {
+        return iteratorAsync(10);
+    }
+
+    @Override
+    public AsyncIterator<V> iteratorAsync(int count) {
+        AsyncIterator<V> asyncIterator = new BaseAsyncIterator<V, Object>() {
+
+            @Override
+            protected RFuture<ScanResult<Object>> iterator(RedisClient client, String nextItPos) {
+                return scanIteratorAsync(client, nextItPos, null, count);
+            }
+
+        };
+        return new CompositeAsyncIterator<>(Arrays.asList(asyncIterator), 0);
     }
 
     @Override
