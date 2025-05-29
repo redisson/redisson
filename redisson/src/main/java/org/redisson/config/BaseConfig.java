@@ -233,8 +233,13 @@ public class BaseConfig<T extends BaseConfig<T>> {
      * @return config
      */
     public T setRetryAttempts(int retryAttempts) {
+        if (retryAttempts < 0 || retryAttempts == Integer.MAX_VALUE) {
+            throw new IllegalArgumentException("retryAttempts setting can't be negative or MAX_VALUE");
+        }
+
         this.retryAttempts = retryAttempts;
         return (T) this;
+
     }
 
     public int getRetryAttempts() {
