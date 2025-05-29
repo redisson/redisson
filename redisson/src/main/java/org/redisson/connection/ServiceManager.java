@@ -281,8 +281,18 @@ public final class ServiceManager {
     }
 
     private void initTimer() {
+        Duration testdelay = config.getRetryDelay().calcDelay(0);
+        int minTimeout = Math.min((int) testdelay.toMillis(), config.getTimeout());
+        if (minTimeout % 100 != 0) {
+            minTimeout = (minTimeout % 100) / 2;
+        } else if (minTimeout == 100) {
+            minTimeout = 50;
+        } else {
+            minTimeout = 100;
+        }
+
         timer = new HashedWheelTimer(new DefaultThreadFactory("redisson-timer"),
-                                    100, TimeUnit.MILLISECONDS, 1024, false);
+                minTimeout, TimeUnit.MILLISECONDS, 1024, false);
 
         connectionWatcher = new IdleConnectionWatcher(group, config);
     }
