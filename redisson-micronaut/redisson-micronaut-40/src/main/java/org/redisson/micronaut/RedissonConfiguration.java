@@ -19,6 +19,7 @@ import io.micronaut.context.annotation.ConfigurationBuilder;
 import io.micronaut.context.annotation.ConfigurationProperties;
 import io.micronaut.context.annotation.Requires;
 import io.micronaut.context.env.PropertySourcePropertyResolver;
+import io.micronaut.core.naming.conventions.StringConvention;
 import jakarta.inject.Inject;
 import org.redisson.client.NettyHook;
 import org.redisson.client.codec.Codec;
@@ -40,32 +41,39 @@ public class RedissonConfiguration extends Config {
 
     @Inject
     public RedissonConfiguration(PropertySourcePropertyResolver propertyResolver) {
-        Collection<String> m = propertyResolver.getPropertyEntries("redisson");
-        if (m.contains("cluster-servers-config")) {
-            useClusterServers();
+        Collection<String> props = propertyResolver.getProperties("redisson", StringConvention.CAMEL_CASE).keySet();
+        for (String prop : props) {
+            if (prop.startsWith("clusterServersConfig")) {
+                useClusterServers();
+                break;
+            }
+            if (prop.startsWith("singleServerConfig")) {
+                useSingleServer();
+                break;
+            }
+            if (prop.startsWith("replicatedServersConfig")) {
+                useReplicatedServers();
+                break;
+            }
+            if (prop.startsWith("sentinelServersConfig")) {
+                useSentinelServers();
+                break;
+            }
+            if (prop.startsWith("masterSlaveServersConfig")) {
+                useMasterSlaveServers();
+                break;
+            }
         }
-        if (m.contains("single-server-config")) {
-            useSingleServer();
-        }
-        if (m.contains("replicated-servers-config")) {
-            useReplicatedServers();
-        }
-        if (m.contains("sentinel-servers-config")) {
-            useSentinelServers();
-        }
-        if (m.contains("master-slave-servers-config")) {
-            useMasterSlaveServers();
-        }
-        if (m.contains("codec")) {
+        if (props.contains("codec")) {
             setCodec(propertyResolver.getProperty("redisson.codec", String.class).get());
         }
-        if (m.contains("address-resolver-group-factory")) {
+        if (props.contains("addressResolverGroupFactory")) {
             setAddressResolverGroupFactory(propertyResolver.getProperty("redisson.address-resolver-group-factory", String.class).get());
         }
-        if (m.contains("connection-listener")) {
+        if (props.contains("connectionListener")) {
             setConnectionListener(propertyResolver.getProperty("redisson.connection-listener", String.class).get());
         }
-        if (m.contains("nettyHook")) {
+        if (props.contains("nettyHook")) {
             setNettyHook(propertyResolver.getProperty("redisson.netty-hook", String.class).get());
         }
     }
