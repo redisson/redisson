@@ -114,6 +114,24 @@ public class RedissonBucketTest extends RedisDockerTest {
     }
 
     @Test
+    public void testRenameInCluster2() {
+        testInCluster(rc -> {
+            RBucket<String> b = rc.getBucket("{abc}alpha");
+            b.set("123");
+
+            RBatch rb = rc.createBatch(BatchOptions.defaults().sync(1, Duration.ofSeconds(1)));
+            RBucketAsync<Object> b2 = rb.getBucket("{abc}alpha");
+            b2.renameAsync("{abc}beta");
+            rb.execute();
+
+            RBucket<String> bs = rc.getBucket("{abc}beta");
+            assertThat(bs.get()).isEqualTo("123");
+
+            assertThat(rc.getKeys().count()).isEqualTo(1);
+        });
+    }
+
+    @Test
     public void testRenameInCluster() {
         testInCluster(rc -> {
             RBucket<String> b = rc.getBucket("test1234");
@@ -222,7 +240,7 @@ public class RedissonBucketTest extends RedisDockerTest {
     @Test
     public void testOptions() {
         Config c = createConfig();
-        c.useSingleServer().setTimeout(10);
+        c.useSingleServer().setTimeout(2);
 
         RedissonClient r = Redisson.create(c);
 

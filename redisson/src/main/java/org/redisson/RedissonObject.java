@@ -316,22 +316,27 @@ public abstract class RedissonObject implements RObject {
 
     @Override
     public RFuture<Void> renameAsync(String newName) {
-        if (getServiceManager().getCfg().isClusterConfig()) {
-            checkNotBatch();
+        String nn = mapName(newName);
+        String oldName = getRawName();
 
-            String nn = mapName(newName);
-            String oldName = getRawName();
-            CompletionStage<Void> f = dumpAsync()
-                                       .thenCompose(val -> commandExecutor.writeAsync(nn, StringCodec.INSTANCE, RedisCommands.RESTORE, nn, 0, val, "REPLACE"))
-                                       .thenCompose(val -> {
-                                           setName(newName);
-                                           return deleteAsync(oldName).thenApply(r -> null);
-                                       });
+        if (!getServiceManager().getCfg().isClusterConfig()
+                            || (commandExecutor.getConnectionManager().calcSlot(nn) ==
+                                    commandExecutor.getConnectionManager().calcSlot(oldName))) {
+            RFuture<Void> future = commandExecutor.writeAsync(oldName, StringCodec.INSTANCE, RedisCommands.RENAME, oldName, nn);
+            CompletionStage<Void> f = future.thenAccept(r -> setName(newName));
             return new CompletableFutureWrapper<>(f);
         }
 
-        RFuture<Void> future = commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.RENAME, getRawName(), mapName(newName));
-        CompletionStage<Void> f = future.thenAccept(r -> setName(newName));
+        if (commandExecutor instanceof BatchService) {
+            throw new IllegalStateException("New name slot doesn't match with the slot of the old name. This is required for a batch in clustered mode");
+        }
+
+        CompletionStage<Void> f = dumpAsync()
+                .thenCompose(val -> commandExecutor.writeAsync(nn, StringCodec.INSTANCE, RedisCommands.RESTORE, nn, 0, val, "REPLACE"))
+                .thenCompose(val -> {
+                    setName(newName);
+                    return deleteAsync(oldName).thenApply(r -> null);
+                });
         return new CompletableFutureWrapper<>(f);
     }
 
