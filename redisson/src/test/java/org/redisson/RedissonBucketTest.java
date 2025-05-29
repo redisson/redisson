@@ -240,7 +240,7 @@ public class RedissonBucketTest extends RedisDockerTest {
     @Test
     public void testOptions() {
         Config c = createConfig();
-        c.useSingleServer().setTimeout(2);
+        c.useSingleServer().setTimeout(10);
 
         RedissonClient r = Redisson.create(c);
 
