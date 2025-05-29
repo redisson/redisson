@@ -1,0 +1,16 @@
+micronaut:
+  application:
+    name: redisson-cache-issue
+redisson:
+  threads: 10
+  single-server-config:
+    address: "redis://127.0.0.1:6379"
+  caches:
+    test:
+      expire-after-write: 10s
+      expire-after-access: 3s
+#      codec: org.redisson.codec.JsonJacksonCodec
+    my-cache-async:
+      expire-after-write: 1s
+    obj-cache-async:
+      expire-after-write: 1s

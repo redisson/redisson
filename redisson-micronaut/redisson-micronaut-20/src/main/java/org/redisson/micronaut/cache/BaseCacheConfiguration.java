@@ -15,10 +15,10 @@
  */
 package org.redisson.micronaut.cache;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
+import io.micronaut.core.annotation.NonNull;
 import io.micronaut.core.naming.Named;
-import org.redisson.api.MapOptions;
 import org.redisson.api.map.*;
+import org.redisson.api.options.MapParams;
 import org.redisson.client.codec.Codec;
 
 import java.time.Duration;
@@ -31,7 +31,7 @@ import java.time.Duration;
  */
 public class BaseCacheConfiguration implements Named {
 
-    MapOptions<Object, Object> mapOptions = MapOptions.defaults();
+    MapParams<Object, Object> mapOptions;
 
     private final String name;
 
@@ -42,6 +42,7 @@ public class BaseCacheConfiguration implements Named {
 
     public BaseCacheConfiguration(String name) {
         this.name = name;
+        this.mapOptions = (MapParams<Object, Object>) org.redisson.api.options.MapOptions.name(name);
     }
 
     @NonNull
@@ -61,11 +62,19 @@ public class BaseCacheConfiguration implements Named {
      * @see Codec
      * @see org.redisson.codec.Kryo5Codec
      *
-     * @param codec - data codec
+     * @param className codec class name
      * @return config
      */
-    public void setCodec(Codec codec) {
-        this.codec = codec;
+    public void setCodec(String className) {
+        this.codec = create(className);
+    }
+
+    private <T> T create(String className) {
+        try {
+            return (T) Class.forName(className).getDeclaredConstructor().newInstance();
+        } catch (Exception e) {
+            throw new IllegalArgumentException(e);
+        }
     }
 
     public Duration getExpireAfterWrite() {
@@ -134,36 +143,36 @@ public class BaseCacheConfiguration implements Named {
     /**
      * Sets {@link MapWriter} object used for write-through operations.
      *
-     * @param writer object
+     * @param className writer object class name
      */
-    public void setWriter(MapWriter<Object, Object> writer) {
-        mapOptions.writer(writer);
+    public void setWriter(String className) {
+        mapOptions.writer(create(className));
     }
 
     /**
      * Sets write mode.
      * <p>
-     * Default is <code>{@link MapOptions.WriteMode#WRITE_THROUGH}</code>
+     * Default is <code>{@link WriteMode#WRITE_THROUGH}</code>
      *
      * @param writeMode - write mode
      */
-    public void setWriteMode(MapOptions.WriteMode writeMode) {
+    public void setWriteMode(WriteMode writeMode) {
         mapOptions.writeMode(writeMode);
     }
 
     /**
      * Sets {@link MapLoader} object used to load entries during read-operations execution.
      *
-     * @param loader object
+     * @param className loader object class name
      */
-    public void setLoader(MapLoader<Object, Object> loader) {
-        mapOptions.loader(loader);
+    public void setLoader(String className) {
+        mapOptions.loader(create(className));
     }
 
     public <K, V> org.redisson.api.options.MapOptions<K, V> getMapOptions() {
         org.redisson.api.options.MapOptions<K, V> ops = org.redisson.api.options.MapOptions.name(getName());
         ops.writer((MapWriter<K, V>) mapOptions.getWriter());
-        ops.writeMode(WriteMode.valueOf(mapOptions.getWriteMode().toString()));
+        ops.writeMode(mapOptions.getWriteMode());
         ops.writerAsync((MapWriterAsync<K, V>) mapOptions.getWriterAsync());
         ops.writeBehindDelay(mapOptions.getWriteBehindDelay());
         ops.writeBehindBatchSize(mapOptions.getWriteBehindBatchSize());
@@ -173,7 +182,17 @@ public class BaseCacheConfiguration implements Named {
         return ops;
     }
 
-    public MapOptions<Object, Object> getOldMapOptions() {
-        return mapOptions;
+    public <K, V> org.redisson.api.options.MapCacheOptions<K, V> getMapCacheOptions() {
+        org.redisson.api.options.MapCacheOptions<K, V> ops = org.redisson.api.options.MapCacheOptions.name(getName());
+        ops.writer((MapWriter<K, V>) mapOptions.getWriter());
+        ops.writeMode(mapOptions.getWriteMode());
+        ops.writerAsync((MapWriterAsync<K, V>) mapOptions.getWriterAsync());
+        ops.writeBehindDelay(mapOptions.getWriteBehindDelay());
+        ops.writeBehindBatchSize(mapOptions.getWriteBehindBatchSize());
+        ops.loader((MapLoader<K, V>) mapOptions.getLoader());
+        ops.loaderAsync((MapLoaderAsync<K, V>) mapOptions.getLoaderAsync());
+        ops.codec(getCodec());
+        return ops;
     }
+
 }

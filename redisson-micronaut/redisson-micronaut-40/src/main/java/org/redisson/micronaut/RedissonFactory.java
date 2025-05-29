@@ -26,13 +26,11 @@ import org.redisson.api.RMap;
 import org.redisson.api.RMapCache;
 import org.redisson.api.RMapCacheNative;
 import org.redisson.api.RedissonClient;
-import org.redisson.client.codec.Codec;
 import org.redisson.config.Config;
 import org.redisson.micronaut.cache.RedissonCacheConfiguration;
 import org.redisson.micronaut.cache.RedissonCacheNativeConfiguration;
 import org.redisson.micronaut.cache.RedissonSyncCache;
 
-import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 
 /**
@@ -55,15 +53,14 @@ public class RedissonFactory {
                                      RedissonClient redisson,
                                      ConversionService conversionService,
                                      @Named(TaskExecutors.IO) ExecutorService executorService) {
-        Codec codec = Optional.ofNullable(configuration.getCodec())
-                                .orElse(redisson.getConfig().getCodec());
         if (configuration.getExpireAfterAccess().toMillis() != 0
                 || configuration.getExpireAfterWrite().toMillis() != 0
                     || configuration.getMaxSize() != 0) {
-            RMapCache<Object, Object> mapCache = redisson.getMapCache(configuration.getName(), codec);
+
+            RMapCache<Object, Object> mapCache = redisson.getMapCache(configuration.getMapCacheOptions());
             return new RedissonSyncCache(conversionService, mapCache, mapCache, executorService, configuration);
         }
-        RMap<Object, Object> map = redisson.getMap(configuration.getName(), codec);
+        RMap<Object, Object> map = redisson.getMap(configuration.getMapOptions());
         return new RedissonSyncCache(conversionService, null, map, executorService, configuration);
     }
 

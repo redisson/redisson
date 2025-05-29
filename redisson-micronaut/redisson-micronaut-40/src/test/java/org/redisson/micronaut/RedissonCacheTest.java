@@ -59,6 +59,23 @@ public class RedissonCacheTest {
     }
 
     @Test
+    public void testCacheYaml() throws InterruptedException {
+        ApplicationContext ac = ApplicationContext.run();
+
+        RedissonClient client = ac.getBean(RedissonClient.class);
+        assertThat(client).isNotNull();
+        RedissonSyncCache cache = ac.getBean(RedissonSyncCache.class, Qualifiers.byName("test"));
+        cache.put(1, 2);
+        Thread.sleep(3500);
+        assertThat(cache.get(1, Integer.class).isPresent()).isFalse();
+        cache.put(3, 4);
+        Thread.sleep(2000);
+        cache.get(3, Integer.class);
+        Thread.sleep(2000);
+        assertThat(cache.get(3, Integer.class).isPresent()).isTrue();
+    }
+
+    @Test
     public void testAsyncCache() throws ExecutionException, InterruptedException {
         Map<String, Object> map = new HashMap<>();
         map.put("redisson.threads", "10");
@@ -88,12 +105,12 @@ public class RedissonCacheTest {
         map.put("redisson.single-server-config.address", "redis://127.0.0.1:" + REDIS.getFirstMappedPort());
 //        map.put("redisson.clusterServersConfig.scanInterval", "3333");
 //        map.put("redisson.clusterServersConfig.nodeAddresses", Arrays.asList("redis://127.0.0.2:6379","redis://127.0.0.3:6379"));
-        map.put("redisson.caches-native.test.expire-after-write", "3s");
+        map.put("redisson.caches-native.test-native.expire-after-write", "3s");
         ApplicationContext ac = ApplicationContext.run(map);
 
         RedissonClient client = ac.getBean(RedissonClient.class);
         assertThat(client).isNotNull();
-        RedissonSyncCache cache = ac.getBean(RedissonSyncCache.class, Qualifiers.byName("test"));
+        RedissonSyncCache cache = ac.getBean(RedissonSyncCache.class, Qualifiers.byName("test-native"));
         cache.put(1, 2);
         Thread.sleep(3500);
         assertThat(cache.get(1, Integer.class).isPresent()).isFalse();
