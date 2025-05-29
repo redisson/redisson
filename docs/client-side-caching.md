@@ -18,7 +18,7 @@ Code usage example:
 ```java
 RClientSideCaching csc = redisson.getClientSideCaching(ClientSideCachingOptions.defaults());
 
-RBucket<String> b = redisson.getBucket("test");
+RBucket<String> b = csc.getBucket("test");
 
 // data requested and change is now tracked
 b.get();

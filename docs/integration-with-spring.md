@@ -651,6 +651,8 @@ Integrates Redisson with Spring Data Redis library. Implements Spring Data's `Re
             <artifactId>redisson-spring-data-33</artifactId>
             <!-- for Spring Data Redis v.3.4.x -->
             <artifactId>redisson-spring-data-34</artifactId>
+            <!-- for Spring Data Redis v.3.5.x -->
+            <artifactId>redisson-spring-data-35</artifactId>
             <version>xVERSIONx</version>
         </dependency>
         ```
@@ -690,6 +692,8 @@ Integrates Redisson with Spring Data Redis library. Implements Spring Data's `Re
         compile 'pro.redisson:redisson-spring-data-33:xVERSIONx'
         // for Spring Data Redis v.3.4.x
         compile 'pro.redisson:redisson-spring-data-34:xVERSIONx'
+        // for Spring Data Redis v.3.5.x
+        compile 'pro.redisson:redisson-spring-data-35:xVERSIONx'
         ```
 
     -   **Community Edition**
@@ -731,6 +735,8 @@ Integrates Redisson with Spring Data Redis library. Implements Spring Data's `Re
             <artifactId>redisson-spring-data-33</artifactId>
             <!-- for Spring Data Redis v.3.4.x -->
             <artifactId>redisson-spring-data-34</artifactId>
+            <!-- for Spring Data Redis v.3.5.x -->
+            <artifactId>redisson-spring-data-35</artifactId>
             <version>xVERSIONx</version>
         </dependency>
         ```
@@ -770,6 +776,8 @@ Integrates Redisson with Spring Data Redis library. Implements Spring Data's `Re
         compile 'org.redisson:redisson-spring-data-33:xVERSIONx'
         // for Spring Data Redis v.3.4.x
         compile 'org.redisson:redisson-spring-data-34:xVERSIONx'
+        // for Spring Data Redis v.3.5.x
+        compile 'org.redisson:redisson-spring-data-35:xVERSIONx'
         ```
 
     </div>

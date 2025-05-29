@@ -2350,7 +2350,7 @@ queue.removeListener(listenerId);
 
 ## Transfer Queue
 
-Java implementation of Redis or Valkey based [TransferQueue](https://www.javadoc.io/doc/org.redisson/redisson/latest/org/redisson/api/RTransferQueue.html) implements [java.util.concurrent.TransferQueue](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/TransferQueue.html) interface. Provides set of `transfer` methods which return only when value was successfully hand off to consumer. This object is thread-safe.  
+Java implementation of Valkey or Redis based [TransferQueue](https://www.javadoc.io/doc/org.redisson/redisson/latest/org/redisson/api/RTransferQueue.html) implements [java.util.concurrent.TransferQueue](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/TransferQueue.html) interface. Provides set of `transfer` methods which return only when value was successfully hand off to consumer. This object is thread-safe.  
 
 `poll` and `take` methods are resubscribed automatically during re-connection to a server or failover.
 

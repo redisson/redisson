@@ -1379,3 +1379,90 @@ int listenerId = set.addListener(new DeletedObjectListener() {
 
 set.removeListener(listenerId);
 ```
+
+## Vector Set 
+
+Java implementation of Valkey or Redis based VectorSet object is a specialized data type designed for managing high-dimensional vector data and enabling fast vector similarity search. Vector sets are similar to sorted sets but instead of a score, each element has a string representation of a vector, making them ideal for AI applications, machine learning models, and semantic search use cases.
+
+Vector sets support the HNSW (Hierarchical Navigable Small World) algorithm and use cosine similarity metrics for efficient vector similarity search. The data type is optimized for storing text embeddings and other high-dimensional vector representations commonly used in modern AI applications.
+
+**Features**
+
+The RVectorSet interfaces provide access to essential vector set operations including:
+
+- Vector Addition: Adding elements with their associated vectors to the set
+
+- Similarity Search: Retrieving elements most similar to a specified vector or existing element
+
+- Attribute Management: Setting and retrieving JSON attributes associated with vector elements
+
+- Filtered Search: Performing similarity searches with mathematical filters on element attributes
+
+- Cardinality Operations: Getting the number of elements and vector dimensions
+
+Usage examples:
+
+=== "Sync"
+    ```java
+	RVectorSet vectorSet = redisson.getVectorSet("my-vectors");
+	
+	vectorSet.add(VectorAddArgs.element("element1").vector(1.0, 1.0));
+	vectorSet.add(VectorAddArgs.element("element2").vector(-1.0, -1.0));
+
+    List<Double> vector1 = vectorSet.getVector("element1");
+	List<Double> vector2 = vectorSet.getVector("element2");
+
+    List<String> similarElements = vectorSet.getSimilar(VectorSimilarArgs.vector(1.0, 1.0));
+
+	vectorSet.remove("element1");
+	vectorSet.remove("element2");
+
+	```
+=== "Async"
+    ```java
+	RVectorSetAsync vectorSet = redisson.getVectorSet("my-vectors").async();
+
+	RFuture<Boolean> f1 = vectorSet.addAsync(VectorAddArgs.element("element1").vector(1.0, 1.0));
+	RFuture<Boolean> f2 = vectorSet.addAsync(VectorAddArgs.element("element2").vector(-1.0, -1.0));
+
+    RFuture<List<Double>> vector1 = vectorSet.getVectorAsync("element1");
+	RFuture<List<Double>> vector2 = vectorSet.getVectorAsync("element2");
+
+    RFuture<List<String>> similarElements = vectorSet.getSimilarAsync(VectorSimilarArgs.vector(1.0, 1.0));
+
+	RFuture<Boolean> r1 = vectorSet.removeAsync("element1");
+	RFuture<Boolean> r2 = vectorSet.removeAsync("element2");
+
+	```
+=== "Reactive"
+    ```java
+	RedissonReactiveClient redissonReactive = redisson.reactive();
+	RVectorSetReactive vectorSet = redissonReactive.getVectorSet("my-vectors");
+
+	Mono<Boolean> f1 = vectorSet.add(VectorAddArgs.element("element1").vector(1.0, 1.0));
+	Mono<Boolean> f2 = vectorSet.add(VectorAddArgs.element("element2").vector(-1.0, -1.0));
+
+    Mono<List<Double>> vector1 = vectorSet.getVector("element1");
+	Mono<List<Double>> vector2 = vectorSet.getVector("element2");
+
+    Mono<List<String>> similarElements = vectorSet.getSimilar(VectorSimilarArgs.vector(1.0, 1.0));
+	
+	Mono<Boolean> r1 = vectorSet.remove("element1");
+	Mono<Boolean> r2 = vectorSet.remove("element2");
+    ```
+=== "RxJava3"
+    ```java
+	RedissonRxClient redissonRx = redisson.rxJava();
+	RVectorSetRx<float[]> vectorSetRx = redissonRx.getVectorSet("myVectorSetRx");
+
+	Single<Boolean> f1 = vectorSet.add(VectorAddArgs.element("element1").vector(1.0, 1.0));
+	Single<Boolean> f2 = vectorSet.add(VectorAddArgs.element("element2").vector(-1.0, -1.0));
+
+    Single<List<Double>> vector1 = vectorSet.getVector("element1");
+	Single<List<Double>> vector2 = vectorSet.getVector("element2");
+
+    Single<List<String>> similarElements = vectorSet.getSimilar(VectorSimilarArgs.vector(1.0, 1.0));
+	
+	Single<Boolean> r1 = vectorSet.remove("element1");
+	Single<Boolean> r2 = vectorSet.remove("element2");
+    ```

@@ -5,7 +5,7 @@
 Redisson implements [Hibernate 2nd level Cache](https://docs.jboss.org/hibernate/orm/6.6/userguide/html_single/Hibernate_User_Guide.html#caching) provider based on Redis.  
 All Hibernate cache strategies are supported: `READ_ONLY`, `NONSTRICT_READ_WRITE`, `READ_WRITE` and `TRANSACTIONAL`.  
 
-Compatible with Hibernate 4.x, 5.1.x, 5.2.x, 5.3.3+ up to 5.6.x and 6.0.2+ up to 6.x.x
+Compatible with Hibernate 4.x, 5.1.x, 5.2.x, 5.3.3+ up to 5.6.x and 6.0.2+ up to 7.x.x
 
 ### Eviction, local cache and data partitioning
 
@@ -84,6 +84,8 @@ Redisson provides various Hibernate Cache factories including those with feature
             <artifactId>redisson-hibernate-53</artifactId>
             <!-- for Hibernate v6.0.2+ - v6.x.x -->
             <artifactId>redisson-hibernate-6</artifactId>
+            <!-- for Hibernate v7.x.x -->
+            <artifactId>redisson-hibernate-7</artifactId>
             <version>xVERSIONx</version>
         </dependency>
         ```
@@ -101,6 +103,8 @@ Redisson provides various Hibernate Cache factories including those with feature
         compile 'pro.redisson:redisson-hibernate-53:xVERSIONx'
         // for Hibernate v6.0.2+ - v6.x.x
         compile 'pro.redisson:redisson-hibernate-6:xVERSIONx'
+        // for Hibernate v7.x.x
+        compile 'pro.redisson:redisson-hibernate-7:xVERSIONx'
         ```
 
     -   **Community Edition**
@@ -120,6 +124,8 @@ Redisson provides various Hibernate Cache factories including those with feature
             <artifactId>redisson-hibernate-53</artifactId>
             <!-- for Hibernate v6.0.2+ - v6.x.x -->
             <artifactId>redisson-hibernate-6</artifactId>
+            <!-- for Hibernate v7.x.x -->
+            <artifactId>redisson-hibernate-7</artifactId>
             <version>xVERSIONx</version>
         </dependency>
         ```
@@ -137,6 +143,8 @@ Redisson provides various Hibernate Cache factories including those with feature
         compile 'org.redisson:redisson-hibernate-53:xVERSIONx'
         // for Hibernate v6.0.2+ - v6.x.x
         compile 'org.redisson:redisson-hibernate-6:xVERSIONx'
+        // for Hibernate v7.x.x
+        compile 'org.redisson:redisson-hibernate-7:xVERSIONx'
         ```
 
     </div>
