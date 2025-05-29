@@ -1012,4 +1012,13 @@ public class RedissonTest extends RedisDockerTest {
         }
     }
 
+    @Test
+    public void testRetryAttempts() {
+        Assertions.assertThrows(IllegalArgumentException.class, () -> {
+            Config redissonConfig = createConfig();
+            redissonConfig.useSingleServer()
+                    .setRetryAttempts(Integer.MAX_VALUE);
+        });
+    }
+
 }
