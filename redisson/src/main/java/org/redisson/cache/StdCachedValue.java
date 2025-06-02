@@ -26,8 +26,8 @@ public class StdCachedValue<K, V> implements CachedValue<K, V> {
     private final K key;
     private final V value;
 
-    private long ttl;
-    private long maxIdleTime;
+    private final long ttl;
+    private final long maxIdleTime;
 
     private long creationTime;
     private long lastAccess;
