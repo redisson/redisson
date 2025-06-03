@@ -854,10 +854,10 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
                         + "local res; "
                         + "res = redis.call('hscan', KEYS[1], 0, 'match', ARGV[1]); "
                         + "for i, value in ipairs(res[2]) do "
-                        + "if i % 2 ~= 0 then "
-                        + "local key = res[2][i]; "
-                        + "table.insert(result, key); "
-                        + "end; "
+                            + "if i % 2 ~= 0 then "
+                                + "local key = res[2][i]; "
+                                + "table.insert(result, key); "
+                            + "end; "
                         + "end;"
                         + "return result;",
                 Arrays.asList(name),
@@ -887,10 +887,10 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
                         + "local res; "
                         + "res = redis.call('hscan', KEYS[1], 0, 'match', ARGV[1]); "
                         + "for i, value in ipairs(res[2]) do "
-                        + "if i % 2 == 0 then "
-                        + "local val = res[2][i]; "
-                        + "table.insert(result, val); "
-                        + "end; "
+                            + "if i % 2 == 0 then "
+                                + "local val = res[2][i]; "
+                                + "table.insert(result, val); "
+                            + "end; "
                         + "end;"
                         + "return result;",
                 Arrays.asList(name),
