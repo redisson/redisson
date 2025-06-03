@@ -418,6 +418,15 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
             maxIdleTimeout = System.currentTimeMillis() + maxIdleDelta;
         }
 
+        RFuture<V> future = putIfAbsentOperationAsync(key, value, ttlTimeout, maxIdleTimeout, maxIdleDelta);
+        if (hasNoWriter()) {
+            return future;
+        }
+        MapWriterTask.Add task = new MapWriterTask.Add(key, value);
+        return mapWriterFuture(future, task, r -> r == null);
+    }
+
+    protected RFuture<V> putIfAbsentOperationAsync(K key, V value, long ttlTimeout, long maxIdleTimeout, long maxIdleDelta) {
         String name = getRawName(key);
         RFuture<V> future = commandExecutor.evalWriteAsync(name, codec, RedisCommands.EVAL_MAP_VALUE,
                 "local insertable = false; "
@@ -513,11 +522,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 Arrays.<Object>asList(name, getTimeoutSetName(name), getIdleSetName(name), getCreatedChannelName(name),
                         getLastAccessTimeSetName(name), getRemovedChannelName(name), getOptionsName(name)),
                 System.currentTimeMillis(), ttlTimeout, maxIdleTimeout, maxIdleDelta, encodeMapKey(key), encodeMapValue(value), publishCommand);
-        if (hasNoWriter()) {
-            return future;
-        }
-        MapWriterTask.Add task = new MapWriterTask.Add(key, value);
-        return mapWriterFuture(future, task, r -> r == null);
+        return future;
     }
 
     @Override
@@ -2455,6 +2460,16 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
             maxIdleTimeout = System.currentTimeMillis() + maxIdleDelta;
         }
 
+        RFuture<Boolean> future = fastPutIfAbsentOperationAsync(key, value, ttlTimeout, maxIdleTimeout, maxIdleDelta);
+        if (hasNoWriter()) {
+            return future;
+        }
+
+        MapWriterTask.Add listener = new MapWriterTask.Add(key, value);
+        return mapWriterFuture(future, listener, Function.identity());
+    }
+
+    protected RFuture<Boolean> fastPutIfAbsentOperationAsync(K key, V value, long ttlTimeout, long maxIdleTimeout, long maxIdleDelta) {
         String name = getRawName(key);
         RFuture<Boolean> future = commandExecutor.evalWriteAsync(name, codec, RedisCommands.EVAL_BOOLEAN,
                 "local insertable = false; " +
@@ -2546,12 +2561,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 Arrays.asList(name, getTimeoutSetName(name), getIdleSetName(name), getCreatedChannelName(name),
                         getLastAccessTimeSetName(name), getRemovedChannelName(name), getOptionsName(name)),
                 System.currentTimeMillis(), ttlTimeout, maxIdleTimeout, maxIdleDelta, encodeMapKey(key), encodeMapValue(value), publishCommand);
-        if (hasNoWriter()) {
-            return future;
-        }
-
-        MapWriterTask.Add listener = new MapWriterTask.Add(key, value);
-        return mapWriterFuture(future, listener, Function.identity());
+        return future;
     }
 
     @Override
