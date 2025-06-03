@@ -64,7 +64,7 @@ public class ClusterNodesDecoder implements Decoder<List<ClusterNodeInfo>> {
             }
             
             if (!node.containsFlag(Flag.NOADDR)) {
-                String uri = createUri(params);
+                String uri = createUri(params[1]);
                 if (uri == null) {
                     continue;
                 }
@@ -96,8 +96,8 @@ public class ClusterNodesDecoder implements Decoder<List<ClusterNodeInfo>> {
         return nodes;
     }
 
-    private String createUri(String[] params) {
-        String[] parts = params[1].split(",");
+    private String createUri(String addrstr) {
+        String[] parts = addrstr.split(",");
         String addr = parts[0].split("@")[0];
         String name = addr.substring(0, addr.lastIndexOf(":"));
         if (name.isEmpty()) {
