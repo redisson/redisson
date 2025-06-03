@@ -1454,6 +1454,45 @@ public class RedissonMapCacheTest extends BaseMapTest {
     }
 
     @Test
+    public void testReadAllEntrySetWithPattern() throws ExecutionException, InterruptedException {
+        RMapCache<String, String> map = redisson.getMapCache("simple12", StringCodec.INSTANCE);
+        map.put("10", "12");
+        map.put("12", "33", 5, TimeUnit.SECONDS, 60, TimeUnit.SECONDS);
+        map.put("21", "43");
+        assertThat((map.readAllEntrySetAsync("1?")).get().size()).isEqualTo(2);
+
+        Thread.sleep(6000);
+
+        assertThat((map.readAllEntrySetAsync("1?")).get().size()).isEqualTo(1);
+    }
+
+    @Test
+    public void testReadAllKeySetWithPattern() throws ExecutionException, InterruptedException {
+        RMapCache<String, String> map = redisson.getMapCache("simple12", StringCodec.INSTANCE);
+        map.put("10", "12");
+        map.put("12", "33", 5, TimeUnit.SECONDS, 60, TimeUnit.SECONDS);
+        map.put("21", "43");
+        assertThat((map.readAllKeySetAsync("1?")).get()).containsOnly("10", "12");
+
+        Thread.sleep(6000);
+
+        assertThat((map.readAllKeySetAsync("1?")).get()).containsOnly("10");
+    }
+
+    @Test
+    public void testReadAllValuesWithPattern() throws ExecutionException, InterruptedException {
+        RMapCache<String, String> map = redisson.getMapCache("simple12", StringCodec.INSTANCE);
+        map.put("10", "12");
+        map.put("12", "33", 5, TimeUnit.SECONDS, 60, TimeUnit.SECONDS);
+        map.put("21", "43");
+        assertThat((map.readAllValuesAsync("1?")).get()).containsOnly("12", "33");
+
+        Thread.sleep(6000);
+
+        assertThat((map.readAllValuesAsync("1?")).get()).containsOnly("12");
+    }
+
+    @Test
     public void testAddAndGetTTL() {
         RMapCache<String, Object> mapCache = redisson.getMapCache("test_put_if_absent", LongCodec.INSTANCE);
         assertThat(mapCache.putIfAbsent("4", 0L, 10000L, TimeUnit.SECONDS)).isNull();
