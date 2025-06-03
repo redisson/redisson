@@ -842,6 +842,29 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     @Override
+    public RFuture<Set<K>> readAllKeySetAsync(String keyPattern) {
+        if (keyPattern == null) {
+            return readAllKeySetAsync();
+        }
+
+        RedisCommand<Set<Object>> evalScan = new RedisCommand<Set<Object>>("EVAL",
+                new MapKeyDecoder(new ObjectSetReplayDecoder()));
+        return commandExecutor.evalReadAsync(name, codec, evalScan,
+                "local result = {}; "
+                        + "local res; "
+                        + "res = redis.call('hscan', KEYS[1], 0, 'match', ARGV[1]); "
+                        + "for i, value in ipairs(res[2]) do "
+                            + "if i % 2 ~= 0 then "
+                                + "local key = res[2][i]; "
+                                + "table.insert(result, key); "
+                            + "end; "
+                        + "end;"
+                        + "return result;",
+                Arrays.asList(name),
+                keyPattern);
+    }
+
+    @Override
     public Collection<V> readAllValues() {
         return get(readAllValuesAsync());
     }
@@ -852,6 +875,29 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     @Override
+    public RFuture<Collection<V>> readAllValuesAsync(String keyPattern){
+        if (keyPattern == null) {
+            return readAllValuesAsync();
+        }
+
+        RedisCommand<List<Object>> evalScan = new RedisCommand<List<Object>>("EVAL",
+                new MapKeyDecoder(new ObjectSetReplayDecoder()));
+        return commandExecutor.evalReadAsync(name, codec, evalScan,
+                "local result = {}; "
+                        + "local res; "
+                        + "res = redis.call('hscan', KEYS[1], 0, 'match', ARGV[1]); "
+                        + "for i, value in ipairs(res[2]) do "
+                            + "if i % 2 == 0 then "
+                                + "local val = res[2][i]; "
+                                + "table.insert(result, val); "
+                            + "end; "
+                        + "end;"
+                        + "return result;",
+                Arrays.asList(name),
+                keyPattern);
+    }
+
+    @Override
     public Set<Entry<K, V>> readAllEntrySet() {
         return get(readAllEntrySetAsync());
     }
@@ -859,6 +905,14 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     @Override
     public RFuture<Set<Entry<K, V>>> readAllEntrySetAsync() {
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.HGETALL_ENTRY, getRawName());
+    }
+
+    @Override
+    public RFuture<Set<Entry<K, V>>> readAllEntrySetAsync(String keyPattern) {
+        if (keyPattern == null) {
+            return readAllEntrySetAsync();
+        }
+        return commandExecutor.readAsync(getRawName(), codec, RedisCommands.HSCAN_ENTRY, getRawName(), 0, "MATCH", keyPattern);
     }
 
     @Override

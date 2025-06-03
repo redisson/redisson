@@ -609,6 +609,11 @@ public interface RedisCommands {
             new RedisCommand<MapScanResult<Object, Object>>("HSCAN",
                         new ListMultiDecoder2(new MapScanResultReplayDecoder(),
                                 new ObjectMapReplayDecoder()));
+
+    RedisCommand<Set<Entry<Object, Object>>> HSCAN_ENTRY=new RedisCommand<Set<Entry<Object, Object>>>("HSCAN",
+            new ListMultiDecoder2(new ListObjectDecoder(1),
+                    new ObjectMapEntryReplayDecoder()));
+
     RedisCommand<Map<Object, Object>> HRANDFIELD = new RedisCommand<>("HRANDFIELD",
                         new ObjectMapReplayDecoder(), new EmptyMapConvertor());
 

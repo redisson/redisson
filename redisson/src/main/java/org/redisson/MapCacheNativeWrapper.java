@@ -540,6 +540,22 @@ public class MapCacheNativeWrapper<K, V> implements RMapCache<K, V>, Supplier<RM
     }
 
     @Override
+    public RFuture<Set<K>> readAllKeySetAsync(String keyPattern) {
+        return cache.readAllKeySetAsync(keyPattern);
+    }
+
+    @Override
+    public RFuture<Collection<V>> readAllValuesAsync(String keyPattern) {
+        return cache.readAllValuesAsync(keyPattern);
+    }
+
+    @Override
+    public RFuture<Set<Entry<K, V>>> readAllEntrySetAsync(String keyPattern) {
+        return cache.readAllEntrySetAsync(keyPattern);
+    }
+
+
+    @Override
     public RFuture<Map<K, V>> readAllMapAsync() {
         return cache.readAllMapAsync();
     }
