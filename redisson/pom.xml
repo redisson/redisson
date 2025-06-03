@@ -175,28 +175,28 @@
             <groupId>org.springframework</groupId>
             <artifactId>spring-test</artifactId>
             <!-- 4.1+ -->
-            <version>6.1.19</version>
+            <version>6.1.20</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-core</artifactId>
             <!-- 4.1+ -->
-            <version>6.1.19</version>
+            <version>6.1.20</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-expression</artifactId>
             <!-- 4.1+ -->
-            <version>6.1.19</version>
+            <version>6.1.20</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-webflux</artifactId>
             <!-- 4.1+ -->            
-            <version>6.1.19</version>
+            <version>6.1.20</version>
             <scope>test</scope>
         </dependency>
 
@@ -346,7 +346,7 @@
             <groupId>org.springframework</groupId>
             <artifactId>spring-context</artifactId>
             <!-- 4.1+ -->
-            <version>6.1.19</version>
+            <version>6.1.20</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
@@ -354,7 +354,7 @@
             <groupId>org.springframework</groupId>
             <artifactId>spring-beans</artifactId>
             <!-- 4.1+ -->
-            <version>6.1.19</version>
+            <version>6.1.20</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
@@ -362,7 +362,7 @@
             <groupId>org.springframework</groupId>
             <artifactId>spring-context-support</artifactId>
             <!-- 4.1+ -->
-            <version>6.1.19</version>
+            <version>6.1.20</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
@@ -370,7 +370,7 @@
             <groupId>org.springframework</groupId>
             <artifactId>spring-web</artifactId>
             <!-- 4.1+ -->
-            <version>6.1.19</version>
+            <version>6.1.20</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
@@ -379,7 +379,7 @@
             <groupId>org.springframework</groupId>
             <artifactId>spring-tx</artifactId>
             <!-- 4.1+ -->
-            <version>6.1.19</version>
+            <version>6.1.20</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
