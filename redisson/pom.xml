@@ -175,28 +175,28 @@
             <groupId>org.springframework</groupId>
             <artifactId>spring-test</artifactId>
             <!-- 4.1+ -->
-            <version>6.1.14</version>
+            <version>6.1.19</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-core</artifactId>
             <!-- 4.1+ -->
-            <version>6.1.14</version>
+            <version>6.1.19</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-expression</artifactId>
             <!-- 4.1+ -->
-            <version>6.1.14</version>
+            <version>6.1.19</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-webflux</artifactId>
             <!-- 4.1+ -->            
-            <version>6.1.14</version>
+            <version>6.1.19</version>
             <scope>test</scope>
         </dependency>
 
