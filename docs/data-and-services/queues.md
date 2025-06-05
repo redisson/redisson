@@ -2,7 +2,7 @@
 
 _This feature is available only in [Redisson PRO](https://redisson.pro/feature-comparison.html) edition._
 
-The Reliable Queue is a specialized FIFO queue implementation built on top of  Valkey or Redis that provides robust message processing and advanced queue management features. The implementation doesn't use a standard Valkey or Redis queue, but a complex data structure that includes stream. This object is fully thread-safe.
+The [Reliable Queue](https://www.javadoc.io/doc/org.redisson/redisson/latest/org/redisson/api/RReliableQueue.html) object is a specialized FIFO queue implementation built on top of  Valkey or Redis that provides robust message processing and advanced queue management features. The implementation doesn't use a standard Valkey or Redis queue, but a complex data structure that includes stream. This object is fully thread-safe.
 
 Unlike standard Valkey and Redis queues, the Reliable Queue ensures message delivery even in failure scenarios, provides acknowledgment mechanisms, and offers fine-grained control over message handling. Moreover, Valkey and Redis [persistence with synchronized replication](#durability-and-synchronous-replication) significantly increases queue reliability by maintaining multiple consistent copies of data across nodes, ensuring that messages remain available even during node failures or network disruptions.
 
@@ -1339,7 +1339,7 @@ _This feature is available only in [Redisson PRO](https://redisson.pro/feature-c
 
 Fanout architecture is a messaging pattern in which a single message from a producer is broadcast to multiple consumers. This approach is essential in scenarios where identical data must be delivered to several consumers at once. In a fanout setup, messages are distributed to all subscribed consumers, allowing each to receive the information instantly and in real time.
 
-Reliable Fanout object is built on top of Valkey or Redis and ensures message delivery to multiple [ReliableQueue](#reliable-queue) objects in a publish-subscribe model. Every published message is sent to each queue subscribed to the same fanout object. All fanout operations are executed atomically to ensure data consistency and prevent race conditions. This object is fully thread-safe.
+[Reliable Fanout](https://www.javadoc.io/doc/org.redisson/redisson/latest/org/redisson/api/RReliableFanout.html) object is built on top of Valkey or Redis and ensures message delivery to multiple [Reliable Queue](#reliable-queue) objects in a publish-subscribe model. Every published message is sent to each queue subscribed to the same fanout object. All fanout operations are executed atomically to ensure data consistency and prevent race conditions. This object is fully thread-safe.
 
 The Reliable Fanout publish-subscribe model offers several advantages for distributed applications:
 
@@ -1791,14 +1791,46 @@ Valkey or Redis based unbounded [Queue](https://static.javadoc.io/org.redisson/r
 
 This queue lacks the reliability features of the [Reliable Queue](#reliable-queue), such as message acknowledgments, visibility timeouts, delivery guarantees and many more.
 
-It has [Async](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RQueueAsync.html), [Reactive](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RQueueReactive.html) and [RxJava3](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RQueueRx.html) interfaces.
+Code examples:
 
-```java
-RQueue<SomeObject> queue = redisson.getQueue("anyQueue");
-queue.add(new SomeObject());
-SomeObject obj = queue.peek();
-SomeObject someObj = queue.poll();
-```
+=== "Sync"
+	```java
+	RQueue<SomeObject> queue = redisson.getQueue("anyQueue");
+	
+	queue.add(new SomeObject());
+	
+	SomeObject obj = queue.peek();
+	SomeObject someObj = queue.poll();
+	```
+=== "Async"
+	```java
+	RQueueAsync<SomeObject> queue = redisson.getQueue("anyQueue");
+	
+	RFuture<Boolean> af = queue.addAsync(new SomeObject());
+	
+	RFuture<SomeObject> objf = queue.peekAsync();
+	RFuture<SomeObject> someObjf = queue.pollAsync();
+	```
+=== "Reactive"
+	```java
+	RedissonReactiveClient redissonReactive = redisson.reactive();
+	RQueueRx<String, String> queue = redissonReactive.getQueue("myMultimap");
+
+	Mono<Boolean> af = queue.add(new SomeObject());
+	
+	Mono<SomeObject> objf = queue.peek();
+	Mono<SomeObject> someObjf = queue.poll();
+	```
+=== "RxJava3"
+	```java
+	RedissonRxClient redissonRx = redisson.rxJava();
+	RQueueRx<SomeObject> queue = redissonRx.getQueue("anyQueue");
+
+	Single<Boolean> af = queue.add(new SomeObject());
+
+	Maybe<SomeObject> objf = queue.peek();
+	Maybe<SomeObject> someObjf = queue.poll();
+	```
 
 ### Listeners
 
@@ -1812,34 +1844,161 @@ Redisson allows binding listeners per `RQueue` object. This requires the `notify
 |org.redisson.api.ExpiredObjectListener|`RQueue` object expired|Ex|
 |org.redisson.api.DeletedObjectListener|`RQueue` object deleted|Eg|
 
-Usage example:
+Code examples:
 
-```java
-RQueue<String> queue = redisson.getQueue("anyList");
+=== "Sync"
+    ```
+    RQueue<String> queue = redisson.getQueue("anyQueue");
 
-int listenerId = queue.addListener(new DeletedObjectListener() {
-     @Override
-     public void onDeleted(String name) {
-        // ...
-     }
-});
+    int listenerId = queue.addListener(new DeletedObjectListener() {
+         @Override
+         public void onDeleted(String name) {
+            // ...
+         }
+    });
 
-// ...
+    // Add other listener types
+    int addListenerId = queue.addListener(new ListAddListener() {
+         @Override
+         public void onListAdd(ListAddEvent event) {
+            // ...
+         }
+    });
 
-queue.removeListener(listenerId);
-```
+    // Remove listeners
+    queue.removeListener(listenerId);
+    queue.removeListener(addListenerId);
+    ```
 
+=== "Async"
+    ```
+    RQueueAsync<String> queue = redisson.getQueue("anyQueue");
+
+    RFuture<Integer> listenerFuture = queue.addListenerAsync(new DeletedObjectListener() {
+         @Override
+         public void onDeleted(String name) {
+            // ...
+         }
+    });
+
+    // Add other listener types
+    RFuture<Integer> addListenerFuture = queue.addListenerAsync(new ListAddListener() {
+         @Override
+         public void onListAdd(ListAddEvent event) {
+            // ...
+         }
+    });
+
+    // Remove listeners
+    listenerFuture.whenComplete((listenerId, exception) -> {
+        if (exception == null) {
+            RFuture<Void> removeFuture = queue.removeListenerAsync(listenerId);
+            removeFuture.whenComplete((result, ex) -> {
+                // Listener removed
+            });
+        }
+    });
+    ```
+
+=== "Reactive"
+    ```
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RQueueReactive<String> queue = redisson.getQueue("anyQueue");
+
+    Mono<Integer> listenerMono = queue.addListener(new DeletedObjectListener() {
+         @Override
+         public void onDeleted(String name) {
+            // ...
+         }
+    });
+
+    // Add other listener types
+    Mono<Integer> addListenerMono = queue.addListener(new ListAddListener() {
+         @Override
+         public void onListAdd(ListAddEvent event) {
+            // ...
+         }
+    });
+
+    // Remove listeners
+    listenerMono.flatMap(listenerId -> 
+        queue.removeListener(listenerId)
+    ).subscribe();
+    ```
+
+=== "RxJava3"
+    ```
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RQueueRx<String> queue = redisson.getQueue("anyQueue");
+
+    Single<Integer> listenerSingle = queue.addListener(new DeletedObjectListener() {
+         @Override
+         public void onDeleted(String name) {
+            // ...
+         }
+    });
+
+    // Add other listener types
+    Single<Integer> addListenerSingle = queue.addListener(new ListAddListener() {
+         @Override
+         public void onListAdd(ListAddEvent event) {
+            // ...
+         }
+    });
+
+    // Remove listeners
+    listenerSingle.flatMapCompletable(listenerId -> 
+        queue.removeListener(listenerId)
+    ).subscribe();
+    ```
+	
 ## Deque
 Redis or Valkey based distributed unbounded [Deque](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RDeque.html) object for Java implements [java.util.Deque](https://docs.oracle.com/javase/8/docs/api/java/util/Deque.html) interface. It wraps Valkey or Redis deque commands and extends them by implementing new methods. This object is thread-safe.
 
-It has [Async](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RDequeAsync.html), [Reactive](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RDequeReactive.html) and [RxJava3](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RDequeRx.html) interfaces.
-```java
-RDeque<SomeObject> queue = redisson.getDeque("anyDeque");
-queue.addFirst(new SomeObject());
-queue.addLast(new SomeObject());
-SomeObject obj = queue.removeFirst();
-SomeObject someObj = queue.removeLast();
-```
+Code examples:
+
+=== "Sync"
+    ```
+    RDeque<SomeObject> deque = redisson.getDeque("anyDeque");
+    
+	deque.addFirst(new SomeObject());
+    deque.addLast(new SomeObject());
+    
+	SomeObject obj = deque.removeFirst();
+    SomeObject someObj = deque.removeLast();
+    ```
+=== "Async"
+    ```
+    RDequeAsync<SomeObject> deque = redisson.getDeque("anyDeque");
+	
+    RFuture<Boolean> addFirstF = deque.addFirstAsync(new SomeObject());
+    RFuture<Boolean> addLastF = deque.addLastAsync(new SomeObject());
+    
+	RFuture<SomeObject> objF = deque.removeFirstAsync();
+    RFuture<SomeObject> someObjF = deque.removeLastAsync();
+    ```
+=== "Reactive"
+    ```
+    RedissonReactiveClient redissonReactive = redisson.reactive();
+    RDequeReactive<SomeObject> deque = redissonReactive.getDeque("anyDeque");
+
+    Mono<Boolean> addFirstMono = deque.addFirst(new SomeObject());
+    Mono<Boolean> addLastMono = deque.addLast(new SomeObject());
+
+    Mono<SomeObject> objMono = deque.removeFirst();
+    Mono<SomeObject> someObjMono = deque.removeLast();
+    ```
+=== "RxJava3"
+    ```
+    RedissonRxClient redissonRx = redisson.rxJava();
+    RDequeRx<SomeObject> deque = redissonRx.getDeque("anyDeque");
+	
+    Single<Boolean> addFirstRx = deque.addFirst(new SomeObject());
+    Single<Boolean> addLastRx = deque.addLast(new SomeObject());
+    
+	Maybe<SomeObject> objRx = deque.removeFirst();
+    Maybe<SomeObject> someObjRx = deque.removeLast();
+    ```
 
 ### Listeners
 
@@ -1853,55 +2012,186 @@ Redisson allows binding listeners per `RDeque` object. This requires the `notify
 |org.redisson.api.ExpiredObjectListener|`RDeque` object expired|Ex|
 |org.redisson.api.DeletedObjectListener|`RDeque` object deleted|Eg|
 
-Usage example:
+Code examples:
 
-```java
-RDeque<String> deque = redisson.getDeque("anyList");
+=== "Sync"
+	```
+	RDeque<String> deque = redisson.getDeque("anyDeque");
 
-int listenerId = deque.addListener(new DeletedObjectListener() {
-     @Override
-     public void onDeleted(String name) {
-        // ...
-     }
-});
+	int listenerId = deque.addListener(new DeletedObjectListener() {
+		 @Override
+		 public void onDeleted(String name) {
+			// ...
+		 }
+	});
 
-// ...
+	// ...
 
-deque.removeListener(listenerId);
-```
+	deque.removeListener(listenerId);
+	```
+=== "Async"
+	```
+	RDequeAsync<String> deque = redisson.getDeque("anyDeque");
+
+	RFuture<Integer> listenerFuture = deque.addListenerAsync(new DeletedObjectListener() {
+		 @Override
+		 public void onDeleted(String name) {
+			// ...
+		 }
+	});
+
+	// ...
+
+	RFuture<Void> removeFuture = deque.removeListenerAsync(listenerId);
+	```
+=== "Reactive"
+	```
+	RedissonReactiveClient redisson = redissonClient.reactive();
+	RDequeReactive<String> deque = redisson.getDeque("anyDeque");
+
+	Mono<Integer> listenerMono = deque.addListener(new DeletedObjectListener() {
+		 @Override
+		 public void onDeleted(String name) {
+			// ...
+		 }
+	});
+
+	// ...
+
+	Mono<Void> removeMono = deque.removeListener(listenerId);
+	```
+=== "RxJava3"
+	```
+	RedissonRxClient redisson = redissonClient.rxJava();
+	RDequeRx<String> deque = redisson.getDeque("anyDeque");
+
+	Single<Integer> listenerRx = deque.addListener(new DeletedObjectListener() {
+		 @Override
+		 public void onDeleted(String name) {
+			// ...
+		 }
+	});
+
+	// ...
+
+	Completable removeRx = deque.removeListener(listenerId);
+	```
 
 ## Blocking Queue
 Redis or Valkey based distributed unbounded [BlockingQueue](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RBlockingQueue.html) object for Java implements  [java.util.concurrent.BlockingQueue](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/BlockingQueue.html) interface. It wraps Valkey or Redis blocking queue commands and extends them by implementing new methods. This object is thread-safe.  
 
 This queue lacks the reliability features of the [Reliable Queue](#reliable-queue), such as message acknowledgments, visibility timeouts, delivery guarantees and many more.
 
-It has [Async](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RBlockingQueueAsync.html), [Reactive](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RBlockingQueueReactive.html) and [RxJava3](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RBlockingQueueRx.html) interfaces.
+Code examples:
 
-```java
-RBlockingQueue<SomeObject> queue = redisson.getBlockingQueue("anyQueue");
+=== "Sync"
+    ```
+    RBlockingQueue<SomeObject> queue = redisson.getBlockingQueue("anyQueue");
+    
+	queue.offer(new SomeObject());
+    SomeObject obj = queue.peek();
+    
+	SomeObject obj2 = queue.poll();
+    SomeObject obj3 = queue.poll(10, TimeUnit.MINUTES);
+    ```
+=== "Async"
+    ```
+    RBlockingQueueAsync<SomeObject> queue = redisson.getBlockingQueue("anyQueue");
+    
+	RFuture<Boolean> offerF = queue.offerAsync(new SomeObject());
+	
+    RFuture<SomeObject> peekF = queue.peekAsync();
+    RFuture<SomeObject> pollF = queue.pollAsync();
+	
+    RFuture<SomeObject> pollTimeoutF = queue.pollAsync(10, TimeUnit.MINUTES);
+    ```
+=== "Reactive"
+    ```
+    RedissonReactiveClient redissonReactive = redisson.reactive();
+    RBlockingQueueReactive<SomeObject> queue = redissonReactive.getBlockingQueue("anyQueue");
+	
+    Mono<Boolean> offerMono = queue.offer(new SomeObject());
+    
+	Mono<SomeObject> peekMono = queue.peek();
+    Mono<SomeObject> pollMono = queue.poll();
+    
+	Mono<SomeObject> pollTimeoutMono = queue.poll(10, TimeUnit.MINUTES);
+    ```
+=== "RxJava3"
+    ```
+    RedissonRxClient redissonRx = redisson.rxJava();
+    RBlockingQueueRx<SomeObject> queue = redissonRx.getBlockingQueue("anyQueue");
 
-queue.offer(new SomeObject());
+    Single<Boolean> offerRx = queue.offer(new SomeObject());
 
-SomeObject obj = queue.peek();
-SomeObject obj = queue.poll();
-SomeObject obj = queue.poll(10, TimeUnit.MINUTES);
-```
+    Maybe<SomeObject> peekRx = queue.peek();
+    Maybe<SomeObject> pollRx = queue.poll();
+
+    Maybe<SomeObject> pollTimeoutRx = queue.poll(10, TimeUnit.MINUTES);
+    ```
+
 `poll`, `pollFromAny`, `pollLastAndOfferFirstTo` and `take` methods are resubscribed automatically during re-connection to server or failover.
 
 ## Blocking Deque
 Java implementation of Redis or Valkey based [BlockingDeque](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RBlockingDeque.html) implements `java.util.concurrent.BlockingDeque` interface. This object is thread-safe.
 
-It has [Async](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RBlockingDequeAsync.html), [Reactive](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RBlockingDequeReactive.html) and [RxJava3](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RBlockingDequeRx.html) interfaces.
+Code examples:
 
-```java
-RBlockingDeque<Integer> deque = redisson.getBlockingDeque("anyDeque");
-deque.putFirst(1);
-deque.putLast(2);
-Integer firstValue = queue.takeFirst();
-Integer lastValue = queue.takeLast();
-Integer firstValue = queue.pollFirst(10, TimeUnit.MINUTES);
-Integer lastValue = queue.pollLast(3, TimeUnit.MINUTES);
-```
+=== "Sync"
+    ```
+    RBlockingDeque<Integer> deque = redisson.getBlockingDeque("anyDeque");
+    
+	deque.putFirst(1);
+    deque.putLast(2);
+	
+    Integer firstValue = deque.takeFirst();
+    Integer lastValue = deque.takeLast();
+    
+	Integer firstValueTimeout = deque.pollFirst(10, TimeUnit.MINUTES);
+    Integer lastValueTimeout = deque.pollLast(3, TimeUnit.MINUTES);
+    ```
+=== "Async"
+    ```
+    RBlockingDequeAsync<Integer> deque = redisson.getBlockingDeque("anyDeque");
+    
+	RFuture<Void> putFirstF = deque.putFirstAsync(1);
+    RFuture<Void> putLastF = deque.putLastAsync(2);
+    
+	RFuture<Integer> takeFirstF = deque.takeFirstAsync();
+    RFuture<Integer> takeLastF = deque.takeLastAsync();
+    
+	RFuture<Integer> pollFirstTimeoutF = deque.pollFirstAsync(10, TimeUnit.MINUTES);
+    RFuture<Integer> pollLastTimeoutF = deque.pollLastAsync(3, TimeUnit.MINUTES);
+    ```
+=== "Reactive"
+    ```
+    RedissonReactiveClient redissonReactive = redisson.reactive();
+    RBlockingDequeReactive<Integer> deque = redissonReactive.getBlockingDeque("anyDeque");
+	
+    Mono<Void> putFirstMono = deque.putFirst(1);
+    Mono<Void> putLastMono = deque.putLast(2);
+    
+	Mono<Integer> takeFirstMono = deque.takeFirst();
+    Mono<Integer> takeLastMono = deque.takeLast();
+    
+	Mono<Integer> pollFirstTimeoutMono = deque.pollFirst(10, TimeUnit.MINUTES);
+    Mono<Integer> pollLastTimeoutMono = deque.pollLast(3, TimeUnit.MINUTES);
+    ```
+=== "RxJava3"
+    ```
+    RedissonRxClient redissonRx = redisson.rxJava();
+    RBlockingDequeRx<Integer> deque = redissonRx.getBlockingDeque("anyDeque");
+	
+    Completable putFirstRx = deque.putFirst(1);
+    Completable putLastRx = deque.putLast(2);
+    
+	Single<Integer> takeFirstRx = deque.takeFirst();
+    Single<Integer> takeLastRx = deque.takeLast();
+    
+	Maybe<Integer> pollFirstTimeoutRx = deque.pollFirst(10, TimeUnit.MINUTES);
+    Maybe<Integer> pollLastTimeoutRx = deque.pollLast(3, TimeUnit.MINUTES);
+    ```
+	
 `poll`, `pollFromAny`, `pollLastAndOfferFirstTo` and `take` methods are resubscribed automatically during re-connection to server or failover.
 
 ## Delayed Queue
@@ -2064,113 +2354,76 @@ Entry e = queue.takeLast();
 ## Stream
 Java implementation of Redis or Valkey based [Stream](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RStream.html) object wraps [Stream](https://redis.io/topics/streams-intro) feature. Basically it allows to create Consumers Group which consume data added by Producers. This object is thread-safe.  
 
-```java
-RStream<String, String> stream = redisson.getStream("test");
+Code examples:
 
-StreamMessageId sm = stream.add(StreamAddArgs.entry("0", "0"));
-
-stream.createGroup("testGroup");
-        
-StreamId id1 = stream.add(StreamAddArgs.entry("1", "1"));
-StreamId id2 = stream.add(StreamAddArgs.entry("2", "2"));
-        
-Map<StreamId, Map<String, String>> group = stream.readGroup("testGroup", "consumer1", StreamReadGroupArgs.neverDelivered());
-
-// return entries in pending state after read group method execution
-Map<StreamMessageId, Map<String, String>> pendingData = stream.pendingRange("testGroup", "consumer1", StreamMessageId.MIN, StreamMessageId.MAX, 100);
-
-// transfer ownership of pending messages to a new consumer
-List<StreamMessageId> transferedIds = stream.fastClaim("testGroup", "consumer2", 1, TimeUnit.MILLISECONDS, id1, id2);
-
-// mark pending entries as correctly processed
-long amount = stream.ack("testGroup", id1, id2);
-```
-
-Code example of **[Async interface](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RStreamAsync.html)** usage:
-
-```java
-RStream<String, String> stream = redisson.getStream("test");
-
-RFuture<StreamMessageId> smFuture = stream.addAsync(StreamAddArgs.entry("0", "0"));
-
-RFuture<Void> groupFuture = stream.createGroupAsync("testGroup");
-        
-RFuture<StreamId> id1Future = stream.addAsync(StreamAddArgs.entry("1", "1"));
-RFuture<StreamId> id2Future = stream.addAsync(StreamAddArgs.entry("2", "2"));
-        
-RFuture<Map<StreamId, Map<String, String>>> groupResultFuture = stream.readGroupAsync("testGroup", "consumer1", StreamReadGroupArgs.neverDelivered());
-
-// return entries in pending state after read group method execution
-RFuture<Map<StreamMessageId, Map<String, String>>> pendingDataFuture = stream.pendingRangeAsync("testGroup", "consumer1", StreamMessageId.MIN, StreamMessageId.MAX, 100);
-
-// transfer ownership of pending messages to a new consumer
-RFuture<List<StreamMessageId>> transferedIdsFuture = stream.fastClaim("testGroup", "consumer2", 1, TimeUnit.MILLISECONDS, id1, id2);
-
-// mark pending entries as correctly processed
-RFuture<Long> amountFuture = stream.ackAsync("testGroup", id1, id2);
-
-amountFuture.whenComplete((res, exception) -> {
-    // ...
-});
-```
-
-Code example of **[Reactive interface](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RStreamReactive.html)** usage:
-
-```java
-RedissonReactiveClient redisson = redissonClient.reactive();
-RStreamReactive<String, String> stream = redisson.getStream("test");
-
-Mono<StreamMessageId> smMono = stream.add(StreamAddArgs.entry("0", "0"));
-
-Mono<Void> groupMono = stream.createGroup("testGroup");
-        
-Mono<StreamId> id1Mono = stream.add(StreamAddArgs.entry("1", "1"));
-Mono<StreamId> id2Mono = stream.add(StreamAddArgs.entry("2", "2"));
-        
-Mono<Map<StreamId, Map<String, String>>> groupMono = stream.readGroup("testGroup", "consumer1", StreamReadGroupArgs.neverDelivered());
-
-// return entries in pending state after read group method execution
-Mono<Map<StreamMessageId, Map<String, String>>> pendingDataMono = stream.pendingRange("testGroup", "consumer1", StreamMessageId.MIN, StreamMessageId.MAX, 100);
-
-// transfer ownership of pending messages to a new consumer
-Mono<List<StreamMessageId>> transferedIdsMono = stream.fastClaim("testGroup", "consumer2", 1, TimeUnit.MILLISECONDS, id1, id2);
-
-// mark pending entries as correctly processed
-Mono<Long> amountMono = stream.ack("testGroup", id1, id2);
-
-amountMono.doOnNext(res -> {
-   // ...
-}).subscribe();
-```
-
-Code example of **[RxJava3 interface](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RStreamRx.html)** usage:
-
-```java
-RedissonRxClient redisson = redissonClient.rxJava();
-RStreamRx<String, String> stream = redisson.getStream("test");
-
-Single<StreamMessageId> smRx = stream.add(StreamAddArgs.entry("0", "0"));
-
-Completable groupRx = stream.createGroup("testGroup");
-        
-Single<StreamId> id1Rx = stream.add(StreamAddArgs.entry("1", "1"));
-Single<StreamId> id2Rx = stream.add(StreamAddArgs.entry("2", "2"));
-        
-Single<Map<StreamId, Map<String, String>>> groupRx = stream.readGroup("testGroup", "consumer1", StreamReadGroupArgs.neverDelivered());
-
-// return entries in pending state after read group method execution
-Single<Map<StreamMessageId, Map<String, String>>> pendingDataRx = stream.pendingRange("testGroup", "consumer1", StreamMessageId.MIN, StreamMessageId.MAX, 100);
-
-// transfer ownership of pending messages to a new consumer
-Single<List<StreamMessageId>> transferedIdsRx = stream.fastClaim("testGroup", "consumer2", 1, TimeUnit.MILLISECONDS, id1, id2);
-
-// mark pending entries as correctly processed
-Single<Long> amountRx = stream.ack("testGroup", id1, id2);
-
-amountRx.doOnSuccess(res -> {
-   // ...
-}).subscribe();
-```
+=== "Sync"
+    ```
+    RStream<String, String> stream = redisson.getStream("test");
+    StreamMessageId sm = stream.add(StreamAddArgs.entry("0", "0"));
+	
+    stream.createGroup("testGroup");
+    
+	StreamId id1 = stream.add(StreamAddArgs.entry("1", "1"));
+    StreamId id2 = stream.add(StreamAddArgs.entry("2", "2"));
+    
+	Map<StreamId, Map<String, String>> group = stream.readGroup("testGroup", "consumer1", StreamReadGroupArgs.neverDelivered());
+    Map<StreamMessageId, Map<String, String>> pendingData = stream.pendingRange("testGroup", "consumer1", StreamMessageId.MIN, StreamMessageId.MAX, 100);
+    
+	List<StreamMessageId> transferedIds = stream.fastClaim("testGroup", "consumer2", 1, TimeUnit.MILLISECONDS, id1, id2);
+    long amount = stream.ack("testGroup", id1, id2);
+    ```
+=== "Async"
+    ```
+    RStream<String, String> stream = redisson.getStream("test");
+	
+    RFuture<StreamMessageId> smFuture = stream.addAsync(StreamAddArgs.entry("0", "0"));
+    
+	RFuture<Void> groupFuture = stream.createGroupAsync("testGroup");
+    
+	RFuture<StreamId> id1Future = stream.addAsync(StreamAddArgs.entry("1", "1"));
+    RFuture<StreamId> id2Future = stream.addAsync(StreamAddArgs.entry("2", "2"));
+    
+	RFuture<Map<StreamId, Map<String, String>>> groupResultFuture = stream.readGroupAsync("testGroup", "consumer1", StreamReadGroupArgs.neverDelivered());
+    RFuture<Map<StreamMessageId, Map<String, String>>> pendingDataFuture = stream.pendingRangeAsync("testGroup", "consumer1", StreamMessageId.MIN, StreamMessageId.MAX, 100);
+    
+	RFuture<List<StreamMessageId>> transferedIdsFuture = stream.fastClaim("testGroup", "consumer2", 1, TimeUnit.MILLISECONDS, id1, id2);
+    RFuture<Long> amountFuture = stream.ackAsync("testGroup", id1, id2);
+    ```
+=== "Reactive"
+    ```
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RStreamReactive<String, String> stream = redisson.getStream("test");
+	
+    Mono<StreamMessageId> smMono = stream.add(StreamAddArgs.entry("0", "0"));
+    
+	Mono<Void> groupMono = stream.createGroup("testGroup");
+    
+	Mono<StreamId> id1Mono = stream.add(StreamAddArgs.entry("1", "1"));
+    Mono<StreamId> id2Mono = stream.add(StreamAddArgs.entry("2", "2"));
+    
+	Mono<Map<StreamId, Map<String, String>>> groupMono = stream.readGroup("testGroup", "consumer1", StreamReadGroupArgs.neverDelivered());
+    Mono<Map<StreamMessageId, Map<String, String>>> pendingDataMono = stream.pendingRange("testGroup", "consumer1", StreamMessageId.MIN, StreamMessageId.MAX, 100);
+    
+	Mono<List<StreamMessageId>> transferedIdsMono = stream.fastClaim("testGroup", "consumer2", 1, TimeUnit.MILLISECONDS, id1, id2);
+    Mono<Long> amountMono = stream.ack("testGroup", id1, id2);
+    ```
+=== "RxJava3"
+    ```
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RStreamRx<String, String> stream = redisson.getStream("test");
+	
+    Single<StreamMessageId> smRx = stream.add(StreamAddArgs.entry("0", "0"));
+    Completable groupRx = stream.createGroup("testGroup");
+    
+	Single<StreamId> id1Rx = stream.add(StreamAddArgs.entry("1", "1"));
+    Single<StreamId> id2Rx = stream.add(StreamAddArgs.entry("2", "2"));
+    
+	Single<Map<StreamId, Map<String, String>>> groupRx = stream.readGroup("testGroup", "consumer1", StreamReadGroupArgs.neverDelivered());
+    Single<Map<StreamMessageId, Map<String, String>>> pendingDataRx = stream.pendingRange("testGroup", "consumer1", StreamMessageId.MIN, StreamMessageId.MAX, 100);
+    
+	Single<List<StreamMessageId>> transferedIdsRx = stream.fastClaim("testGroup", "consumer2", 1, TimeUnit.MILLISECONDS, id1, id2);
+    Single<Long> amountRx = stream.ack("testGroup", id1, id2);
+    ```
 
 ### Listeners
 
@@ -2191,28 +2444,96 @@ Redisson allows binding listeners per `RStream` object. This requires the `notif
 
 Usage example:
 
-```java
-RStream<String, String> stream = redisson.getStream("anySet");
+=== "Sync"
+	```
+	RStream<String, String> stream = redisson.getStream("anyStream");
 
-int listenerId = stream.addListener(new DeletedObjectListener() {
-     @Override
-     public void onDeleted(String name) {
-        // ...
-     }
-});
+	int listenerId = stream.addListener(new DeletedObjectListener() {
+		 @Override
+		 public void onDeleted(String name) {
+			// ...
+		 }
+	});
 
-int listenerId = stream.addListener(new StreamAddListener() {
-    @Override
-    public void onAdd(String name) {
-        // ...
-    }
-});
+	int addListenerId = stream.addListener(new StreamAddListener() {
+		@Override
+		public void onAdd(String name) {
+			// ...
+		}
+	});
 
+	// ...
 
-// ...
+	stream.removeListener(listenerId);
+	```
+=== "Async"
+	```
+	RStreamAsync<String, String> stream = redisson.getStream("anyStream");
 
-stream.removeListener(listenerId);
-```
+	RFuture<Integer> listenerFuture = stream.addListenerAsync(new DeletedObjectListener() {
+		 @Override
+		 public void onDeleted(String name) {
+			// ...
+		 }
+	});
+
+	RFuture<Integer> addListenerFuture = stream.addListenerAsync(new StreamAddListener() {
+		@Override
+		public void onAdd(String name) {
+			// ...
+		}
+	});
+
+	// ...
+
+	RFuture<Void> removeFuture = stream.removeListenerAsync(listenerId);
+	```
+=== "Reactive"
+	```
+	RedissonReactiveClient redisson = redissonClient.reactive();
+	RStreamReactive<String, String> stream = redisson.getStream("anyStream");
+
+	Mono<Integer> listenerMono = stream.addListener(new DeletedObjectListener() {
+		 @Override
+		 public void onDeleted(String name) {
+			// ...
+		 }
+	});
+
+	Mono<Integer> addListenerMono = stream.addListener(new StreamAddListener() {
+		@Override
+		public void onAdd(String name) {
+			// ...
+		}
+	});
+
+	// ...
+
+	Mono<Void> removeMono = stream.removeListener(listenerId);
+	```
+=== "RxJava3"
+	```
+	RedissonRxClient redisson = redissonClient.rxJava();
+	RStreamRx<String, String> stream = redisson.getStream("anyStream");
+
+	Single<Integer> listenerRx = stream.addListener(new DeletedObjectListener() {
+		 @Override
+		 public void onDeleted(String name) {
+			// ...
+		 }
+	});
+
+	Single<Integer> addListenerRx = stream.addListener(new StreamAddListener() {
+		@Override
+		public void onAdd(String name) {
+			// ...
+		}
+	});
+
+	// ...
+
+	Completable removeRx = stream.removeListener(listenerId);
+	```
 
 ## Ring Buffer
 
@@ -2220,103 +2541,60 @@ Java implementation of Redis or Valkey based [RingBuffer](https://www.javadoc.io
 
 Should be initialized with capacity size by `trySetCapacity()` method before usage. 
 
-Code example:
+Code examples:
 
-```java
-RRingBuffer<Integer> buffer = redisson.getRingBuffer("test");
+=== "Sync"
+    ```
+    RRingBuffer<Integer> buffer = redisson.getRingBuffer("test");
+    buffer.trySetCapacity(4);
+    
+	buffer.add(1);
+    buffer.add(2);
+    buffer.add(3);
+    buffer.add(4);
+    buffer.add(5);
+    buffer.add(6);
+    ```
+=== "Async"
+    ```
+    RRingBuffer<Integer> buffer = redisson.getRingBuffer("test");
+    RFuture<Boolean> capacityFuture = buffer.trySetCapacityAsync(4);
+    
+	RFuture<Boolean> addFuture1 = buffer.addAsync(1);
+    RFuture<Boolean> addFuture2 = buffer.addAsync(2);
+    RFuture<Boolean> addFuture3 = buffer.addAsync(3);
+    RFuture<Boolean> addFuture4 = buffer.addAsync(4);
+    RFuture<Boolean> addFuture5 = buffer.addAsync(5);
+    RFuture<Boolean> addFuture6 = buffer.addAsync(6);
+    ```
+=== "Reactive"
+    ```
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RRingBufferReactive<Integer> buffer = redisson.getRingBuffer("test");
+	
+    Mono<Boolean> capacityMono = buffer.trySetCapacity(4);
+    
+	Mono<Boolean> addMono1 = buffer.add(1);
+    Mono<Boolean> addMono2 = buffer.add(2);
+    Mono<Boolean> addMono3 = buffer.add(3);
+    Mono<Boolean> addMono4 = buffer.add(4);
+    Mono<Boolean> addMono5 = buffer.add(5);
+    Mono<Boolean> addMono6 = buffer.add(6);
+    ```
+=== "RxJava3"
+    ```
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RRingBufferRx<Integer> buffer = redisson.getRingBuffer("test");
+	
+    Single<Boolean> capacityRx = buffer.trySetCapacity(4);
 
-// buffer capacity is 4 elements
-buffer.trySetCapacity(4);
-
-buffer.add(1);
-buffer.add(2);
-buffer.add(3);
-buffer.add(4);
-
-// buffer state is 1, 2, 3, 4
-
-buffer.add(5);
-buffer.add(6);
-
-// buffer state is 3, 4, 5, 6
-```
-
-Code example of **[Async interface](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RRingBufferAsync.html)** usage:
-
-```java
-RRingBuffer<Integer> buffer = redisson.getRingBuffer("test");
-
-// buffer capacity is 4 elements
-RFuture<Boolean> capacityFuture = buffer.trySetCapacityAsync(4);
-
-RFuture<Boolean> addFuture = buffer.addAsync(1);
-RFuture<Boolean> addFuture = buffer.addAsync(2);
-RFuture<Boolean> addFuture = buffer.addAsync(3);
-RFuture<Boolean> addFuture = buffer.addAsync(4);
-
-// buffer state is 1, 2, 3, 4
-
-RFuture<Boolean> addFuture = buffer.addAsync(5);
-RFuture<Boolean> addFuture = buffer.addAsync(6);
-
-// buffer state is 3, 4, 5, 6
-
-addFuture.whenComplete((res, exception) -> {
-    // ...
-});
-```
-
-Code example of **[Reactive interface](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RRingBufferReactive.html)** usage:
-
-```java
-RedissonReactiveClient redisson = redissonClient.reactive();
-RRingBufferReactive<Integer> buffer = redisson.getRingBuffer("test");
-
-// buffer capacity is 4 elements
-Mono<Boolean> capacityMono = buffer.trySetCapacity(4);
-
-Mono<Boolean> addMono = buffer.add(1);
-Mono<Boolean> addMono = buffer.add(2);
-Mono<Boolean> addMono = buffer.add(3);
-Mono<Boolean> addMono = buffer.add(4);
-
-// buffer state is 1, 2, 3, 4
-
-Mono<Boolean> addMono = buffer.add(5);
-Mono<Boolean> addMono = buffer.add(6);
-
-// buffer state is 3, 4, 5, 6
-
-addMono.doOnNext(res -> {
-   // ...
-}).subscribe();
-```
-
-Code example of **[RxJava3 interface](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RRingBufferRx.html)** usage:
-
-```java
-RedissonRxClient redisson = redissonClient.rxJava();
-RRingBufferRx<Integer> buffer = redisson.getRingBuffer("test");
-
-// buffer capacity is 4 elements
-Single<Boolean> capacityRx = buffer.trySetCapacity(4);
-
-Single<Boolean> addRx = buffer.add(1);
-Single<Boolean> addRx = buffer.add(2);
-Single<Boolean> addRx = buffer.add(3);
-Single<Boolean> addRx = buffer.add(4);
-
-// buffer state is 1, 2, 3, 4
-
-Single<Boolean> addRx = buffer.add(5);
-Single<Boolean> addRx = buffer.add(6);
-
-// buffer state is 3, 4, 5, 6
-
-addRx.doOnSuccess(res -> {
-   // ...
-}).subscribe();
-```
+    Single<Boolean> addRx1 = buffer.add(1);
+    Single<Boolean> addRx2 = buffer.add(2);
+    Single<Boolean> addRx3 = buffer.add(3);
+    Single<Boolean> addRx4 = buffer.add(4);
+    Single<Boolean> addRx5 = buffer.add(5);
+    Single<Boolean> addRx6 = buffer.add(6);
+    ```
 
 ### Listeners
 
@@ -2332,20 +2610,68 @@ Redisson allows binding listeners per `RRingBuffer` object. This requires the `n
 
 Usage example:
 
-```java
-RRingBuffer<String> queue = redisson.getRingBuffer("anyList");
+=== "Sync"
+	```
+	RRingBuffer<String> buffer = redisson.getRingBuffer("anyBuffer");
 
-int listenerId = queue.addListener(new DeletedObjectListener() {
-     @Override
-     public void onDeleted(String name) {
-        // ...
-     }
-});
+	int listenerId = buffer.addListener(new DeletedObjectListener() {
+		 @Override
+		 public void onDeleted(String name) {
+			// ...
+		 }
+	});
 
-// ...
+	// ...
 
-queue.removeListener(listenerId);
-```
+	buffer.removeListener(listenerId);
+	```
+=== "Async"
+	```
+	RRingBufferAsync<String> buffer = redisson.getRingBuffer("anyBuffer");
+
+	RFuture<Integer> listenerFuture = buffer.addListenerAsync(new DeletedObjectListener() {
+		 @Override
+		 public void onDeleted(String name) {
+			// ...
+		 }
+	});
+
+	// ...
+
+	RFuture<Void> removeFuture = buffer.removeListenerAsync(listenerId);
+	```
+=== "Reactive"
+	```
+	RedissonReactiveClient redisson = redissonClient.reactive();
+	RRingBufferReactive<String> buffer = redisson.getRingBuffer("anyBuffer");
+
+	Mono<Integer> listenerMono = buffer.addListener(new DeletedObjectListener() {
+		 @Override
+		 public void onDeleted(String name) {
+			// ...
+		 }
+	});
+
+	// ...
+
+	Mono<Void> removeMono = buffer.removeListener(listenerId);
+	```
+=== "RxJava3"
+	```
+	RedissonRxClient redisson = redissonClient.rxJava();
+	RRingBufferRx<String> buffer = redisson.getRingBuffer("anyBuffer");
+
+	Single<Integer> listenerRx = buffer.addListener(new DeletedObjectListener() {
+		 @Override
+		 public void onDeleted(String name) {
+			// ...
+		 }
+	});
+
+	// ...
+
+	Completable removeRx = buffer.removeListener(listenerId);
+	```
 
 
 ## Transfer Queue
@@ -2354,84 +2680,55 @@ Java implementation of Valkey or Redis based [TransferQueue](https://www.javadoc
 
 `poll` and `take` methods are resubscribed automatically during re-connection to a server or failover.
 
-Code example:
-```java
-RTransferQueue<String> queue = redisson.getTransferQueue("myCountDownLatch");
+Code examples:
 
-queue.transfer("data");
-// or try transfer immediately
-queue.tryTransfer("data");
-// or try transfer up to 10 seconds
-queue.tryTransfer("data", 10, TimeUnit.SECONDS);
-
-// in other thread or JVM
-
-queue.take();
-// or
-queue.poll();
-```
-
-Code example of **[Async interface](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RTransferQueueAsync.html)** usage:
-```java
-RTransferQueue<String> queue = redisson.getTransferQueue("myCountDownLatch");
-
-RFuture<Void> future = queue.transferAsync("data");
-// or try transfer immediately
-RFuture<Boolean> future = queue.tryTransferAsync("data");
-// or try transfer up to 10 seconds
-RFuture<Boolean> future = queue.tryTransferAsync("data", 10, TimeUnit.SECONDS);
-
-// in other thread or JVM
-
-RFuture<String> future = queue.takeAsync();
-// or
-RFuture<String> future = queue.pollAsync();
-
-future.whenComplete((res, exception) -> {
-    // ...
-});
-```
-
-Code example of **[Reactive interface](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RTransferQueueReactive.html)** usage:
-```java
-RedissonReactiveClient redisson = redissonClient.reactive();
-RTransferQueueReactive<String> queue = redisson.getTransferQueue("myCountDownLatch");
-
-Mono<Void> mono = queue.transfer("data");
-// or try transfer immediately
-Mono<Boolean> mono = queue.tryTransfer("data");
-// or try transfer up to 10 seconds
-Mono<Boolean> mono = queue.tryTransfer("data", 10, TimeUnit.SECONDS);
-
-// in other thread or JVM
-
-Mono<String> mono = queue.take();
-// or
-Mono<String> mono = queue.poll();
-
-mono.doOnNext(res -> {
-   // ...
-}).subscribe();
-```
-
-Code example of **[RxJava3 interface](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RTransferQueueRx.html)** usage:
-```java
-RedissonRxClient redisson = redissonClient.rxJava();
-RTransferQueueRx<String> queue = redisson.getTransferQueue("myCountDownLatch");
-
-Completable res = queue.transfer("data");
-// or try transfer immediately
-Single<Boolean> resRx = queue.tryTransfer("data");
-// or try transfer up to 10 seconds
-Single<Boolean> resRx = queue.tryTransfer("data", 10, TimeUnit.SECONDS);
-
-// in other thread or JVM
-
-Single<String> resRx = queue.take();
-// or
-Maybe<String> resRx = queue.poll();
-
-resRx.doOnSuccess(res -> {
-   // ...
-}).subscribe();
-```
+=== "Sync"
+    ```
+    RTransferQueue<String> queue = redisson.getTransferQueue("myCountDownLatch");
+    
+	queue.transfer("data");
+    queue.tryTransfer("data");
+    queue.tryTransfer("data", 10, TimeUnit.SECONDS);
+    
+	// in other thread or JVM
+    queue.take();
+    queue.poll();
+    ```
+=== "Async"
+    ```
+    RTransferQueue<String> queue = redisson.getTransferQueue("myCountDownLatch");
+    
+	RFuture<Void> future = queue.transferAsync("data");
+    RFuture<Boolean> futureTry = queue.tryTransferAsync("data");
+    RFuture<Boolean> futureTryTimeout = queue.tryTransferAsync("data", 10, TimeUnit.SECONDS);
+    
+	// in other thread or JVM
+	RFuture<String> futureTake = queue.takeAsync();
+    RFuture<String> futurePoll = queue.pollAsync();
+    ```
+=== "Reactive"
+    ```
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RTransferQueueReactive<String> queue = redisson.getTransferQueue("myCountDownLatch");
+	
+    Mono<Void> mono = queue.transfer("data");
+    Mono<Boolean> monoTry = queue.tryTransfer("data");
+    Mono<Boolean> monoTryTimeout = queue.tryTransfer("data", 10, TimeUnit.SECONDS);
+	
+	// in other thread or JVM
+    Mono<String> monoTake = queue.take();
+    Mono<String> monoPoll = queue.poll();
+    ```
+=== "RxJava3"
+    ```
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RTransferQueueRx<String> queue = redisson.getTransferQueue("myCountDownLatch");
+	
+    Completable res = queue.transfer("data");
+    Single<Boolean> resTry = queue.tryTransfer("data");
+    Single<Boolean> resTryTimeout = queue.tryTransfer("data", 10, TimeUnit.SECONDS);
+    
+	// in other thread or JVM
+	Single<String> resTake = queue.take();
+    Maybe<String> resPoll = queue.poll();
+    ```

@@ -2147,7 +2147,7 @@ Proxy mode supports single or multiple Redis or Valkey databases (including sync
 Depending on value of [proxyMode](#proxy-mode) setting there are two modes:  
 
 1. all nodes are primary and used for read/write operation with load balancer  
-2. single primary for read/write operation and the rest are idle secondary nodes  
+2. single primary for read/write operation and the rest are idle replica nodes  
 
 Failed nodes detection is managed by `scanMode` setting.
 
@@ -2224,7 +2224,7 @@ Default value: `ALL_ACTIVE`
 Defines proxy mode.  
 Available values:  
 
-* `FIRST_ACTIVE` - Primary (active) database is a first address in the list of addresses and the rest are idle secondary nodes used after failover.  
+* `FIRST_ACTIVE` - Primary (active) database is a first address in the list of addresses and the rest are idle replica nodes used after failover.  
 * `ALL_ACTIVE` - All databases are primary (active) and used for read/write operations.  
 
 **scanInterval**
@@ -2496,7 +2496,7 @@ transportMode: "NIO"
 
 _This feature is available only in [Redisson PRO](https://redisson.pro/feature-comparison.html) edition._
 
-Supports multiple Redis or Valkey Cluster setups with active-passive data replication relationship. Replication of the primary Cluster with secondary Redis Cluster is managed by `replicationMode` setting.
+Supports multiple Redis or Valkey Cluster setups with active-passive data replication relationship. Replication of the primary Cluster with secondary Valkey or Redis Cluster is managed by `replicationMode` setting.
 
 Cluster with all available master nodes becomes the primary. Master nodes availability scan interval is defined by `scanInterval` setting.
 
@@ -2589,7 +2589,7 @@ Defines whether to use sharded subscription feature available in Valkey or Redis
 
 Default value: `NONE`
 
-Defines replication of the primary Cluster with secondary Redis Clusters.  
+Defines replication of the primary Cluster with secondary Valkey or Redis Clusters.  
 
 Available values:  
 
@@ -2944,7 +2944,7 @@ Multi Sentinel connection mode is activated by follow line:
 
 Default value: `NONE`
 
-Defines replication of primary Sentinel deployment with secondary Redis Sentinel deployments.  
+Defines replication of primary Sentinel deployment with secondary Valkey or Redis Sentinel deployments.  
 
 Available values:  
 
