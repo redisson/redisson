@@ -3,6 +3,29 @@ Redisson Releases History
 
 Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
 
+### 04-Jun-2025 - 3.49.0 released
+
+Feature - `RClusteredScoredSortedSetRx`, `RClusteredScoredSortedSetReactive` interfaces added for `RClusteredScoredSortedSet` object  
+Feature - `iteratorAsync()` methods added to `RSet` object (thanks to @seakider)  
+Feature - `readAllKeySetAsync(pattern)`, `readAllValuesAsync(pattern)` and `readAllEntrySetAsync()` methods added to RMap interface (thanks to @seakider)  
+Feature - Redisson PRO license key can be defined through `redisson.pro.key` key stored in Valkey or Redis  
+
+Fixed - local cache update in `putIfAbsent()`, `fastPutIfExists()` and `fastPutIfAbsent()` methods of `RLocalCachedMapCache` and `RClusteredLocalCachedMapCache` objects  
+Fixed - `RLocalCachedMapCacheNative` object in `storeMode = LOCALCACHE` may allocate extra connections and miss updates if `syncStrategy = UPDATE`  
+Fixed - `RLocalCachedMapCacheNative.putIfAbsent()` method doesn't update local cache  
+Fixed - `RClusteredLocalCachedMapCacheNative` object in `storeMode = LOCALCACHE` may allocate extra connections and miss updates if `syncStrategy = UPDATE`  
+Fixed - `RClusteredLocalCachedMapCacheNative.putIfAbsent()` method doesn't update local cache  
+Fixed - `RClusteredLocalCachedMapCache` object in `storeMode = LOCALCACHE` may allocate extra connections and miss updates if `syncStrategy = UPDATE`  
+Fixed - `RLocalCachedMapCache` object in `storeMode = LOCALCACHE` may allocate extra connections and miss updates if `syncStrategy = UPDATE`  
+Fixed - `put()`, `fastPutIfAbsent()`, `putIfAbsent()` methods of `RLocalCachedMapCacheV2` in `storeMode = LOCALCACHE` may allocate extra connections and miss updates if `syncStrategy = UPDATE`  
+Fixed - `RLocalCachedJsonStore` object in `storeMode = LOCALCACHE` may allocate extra connections and miss updates if `syncStrategy = UPDATE`  
+Fixed - missed classes added to the Hibernate 7 module  
+Fixed - `retryAttempts` setting value limit (thanks to @seakider)  
+Fixed - `RObject.rename()` method doesn't work in batch mode if the new and old name slots match  
+Fixed - minTimeout value calculation for HashedWheelTimer object  
+Fixed - `codec`, `loader` and `writer` settings can't be parsed in Micronaut cache yaml configuration  
+Fixed - environment variables for Redisson configuration can't be used with Micronaut 4  
+
 ### 27-May-2025 - 3.48.0 released
 
 Feature - `retryDelay` and `reconnectionDelay` [settings](https://redisson.pro/docs/api-models/#command-execution-reliability) added, allowing to define a delay strategy. Available implementations: `FullJitterDelay`, `EqualJitterDelay`, `DecorrelatedJitterDelay` and `ConstantDelay`. Default is `EqualJitterDelay`  
