@@ -84,6 +84,15 @@ Tomcat 11.x - [redisson-tomcat-11-3.45.1.jar](https://repo1.maven.org/maven2/org
 
 [Redisson PRO vs. Community Edition ➜](https://redisson.pro/feature-comparison.html)
 
+**3. (optional) Enable SingleSignOn:**
+
+
+To use Redisson also for SingleSignOn (SSO) within multiple applications on single or multiple Tomcats, add following code into `tomcat/conf/server.xml` in `Host` tag area
+
+```xml
+        <Valve className="org.redisson.tomcat.RedissonSingleSignOn" />
+```
+
 ## Spring Session
 
 For information on using Spring Session implementation, please refer to the [Spring Session](integration-with-spring.md/#spring-session) documentation.
