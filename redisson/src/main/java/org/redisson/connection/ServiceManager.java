@@ -283,8 +283,10 @@ public final class ServiceManager {
     private void initTimer() {
         Duration testdelay = config.getRetryDelay().calcDelay(0);
         int minTimeout = Math.min((int) testdelay.toMillis(), config.getTimeout());
-        if (minTimeout % 100 != 0) {
-            minTimeout = (minTimeout % 100) / 2;
+        if (minTimeout <= 0) {
+            minTimeout = 10;
+        } else if (minTimeout % 100 != 0) {
+            minTimeout = Math.max(10, (minTimeout % 100) / 2);
         } else if (minTimeout == 100) {
             minTimeout = 50;
         } else {
