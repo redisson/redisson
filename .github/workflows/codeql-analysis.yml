@@ -15,7 +15,10 @@ on:
     - cron: '0 8 * * 1'
 
 permissions:
-  contents: read # to fetch code (actions/checkout)
+  actions: read
+  contents: read
+  security-events: write
+  packages: read
 
 jobs:
   analyze:
@@ -40,7 +43,7 @@ jobs:
       uses: actions/checkout@v4
       
     - name: Set up JDK 21
-      uses: actions/setup-java@v2
+      uses: actions/setup-java@v4
       with:
         java-version: 21
         distribution: temurin
@@ -51,7 +54,7 @@ jobs:
 #        fetch-depth: 2
 
     - name: Cache local Maven repository
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ~/.m2/repository
         key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
@@ -65,8 +68,9 @@ jobs:
 
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@v2
+      uses: github/codeql-action/init@v3
       with:
+        queries: security-extended
         languages: ${{ matrix.language }}
         # If you wish to specify custom queries, you can do so here or in a config file.
         # By default, queries listed here will override any specified in a config file. 
@@ -76,7 +80,7 @@ jobs:
     # Autobuild attempts to build any compiled languages  (C/C++, C#, or Java).
     # If this step fails, then you should remove it and run the build manually (see below)
     - name: Autobuild
-      uses: github/codeql-action/autobuild@v2
+      uses: github/codeql-action/autobuild@v3
 
     # ℹ️ Command-line programs to run using the OS shell.
     # 📚 https://git.io/JvXDl
@@ -90,4 +94,6 @@ jobs:
     #   make release
 
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v2
+      uses: github/codeql-action/analyze@v3
+      with:
+        category: "/language:${{matrix.language}}"      
