@@ -12,6 +12,10 @@ import org.apache.tomcat.util.res.StringManager;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 
+/**
+ * Extended implementation of Tomcat SSO valve to use Redis or Valkey as a storage.
+ * This allows to cluster Tomcat without sticky sessions.
+ */
 public class RedissonSingleSignOn extends SingleSignOn {
 
   private static final StringManager sm = StringManager.getManager(RedissonSingleSignOn.class);
@@ -61,7 +65,7 @@ public class RedissonSingleSignOn extends SingleSignOn {
       }
       boolean associated = super.associate(ssoId, session);
       if (associated) {
-          manager.getMap(SSO_SESSION_ENTRIES).put(ssoId, sso);
+          manager.getMap(SSO_SESSION_ENTRIES).fastPut(ssoId, sso);
       }
       return associated;
   }
@@ -84,7 +88,7 @@ public class RedissonSingleSignOn extends SingleSignOn {
           containerLog.trace(sm.getString("redissonSingleSignOn.trace.register"));
       }  
       super.register(ssoId, principal, authType, username, password);
-      manager.getMap(SSO_SESSION_ENTRIES).put(ssoId, cache.get(ssoId));
+      manager.getMap(SSO_SESSION_ENTRIES).fastPut(ssoId, cache.get(ssoId));
   }
 
   @Override
@@ -107,7 +111,7 @@ public class RedissonSingleSignOn extends SingleSignOn {
       }
       boolean updated = super.update(ssoId, principal, authType, username, password);
       if (updated) {
-          manager.getMap(SSO_SESSION_ENTRIES).put(ssoId, sso);
+          manager.getMap(SSO_SESSION_ENTRIES).fastPut(ssoId, sso);
       }
       return updated;
   }
