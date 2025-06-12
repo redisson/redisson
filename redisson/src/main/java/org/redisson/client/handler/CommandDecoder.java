@@ -503,19 +503,19 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             Channel channel, long size, List<Object> respParts, boolean skipConvertor, List<CommandData<?, ?>> commandsData, State state)
                     throws IOException {
         if (parts == null && commandsData != null) {
-            for (int i = respParts.size(); i < size; i++) {
+            for (long i = respParts.size(); i < size; i++) {
                 int suffix = 0;
                 if (RedisCommands.MULTI.getName().equals(commandsData.get(0).getCommand().getName())) {
                     suffix = 1;
                 }
-                CommandData<Object, Object> commandData = (CommandData<Object, Object>) commandsData.get(i+suffix);
+                CommandData<Object, Object> commandData = (CommandData<Object, Object>) commandsData.get((int)(i+suffix));
                 decode(in, commandData, respParts, channel, skipConvertor, commandsData, size, state);
                 if (commandData.getPromise().isDone() && commandData.getPromise().isCompletedExceptionally()) {
                     data.tryFailure(commandData.cause());
                 }
             }
         } else {
-            for (int i = respParts.size(); i < size; i++) {
+            for (long i = respParts.size(); i < size; i++) {
                 decode(in, data, respParts, channel, skipConvertor, null, size, state);
             }
         }
