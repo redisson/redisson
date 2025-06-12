@@ -86,7 +86,11 @@ public final class RedisURI {
             URL url = new URL(urlHost);
             if (url.getUserInfo() != null) {
                 String[] details = url.getUserInfo().split(":", 2);
-                if (details.length == 2) {
+                if (details.length == 1) {
+                    // According to RFC 1738 section 3.1, the password can be omitted.
+                    // However, Redis CLI extends this URL semantic and uses the single auth component as password
+                    password = URLDecoder.decode(details[0], StandardCharsets.UTF_8.toString());
+                } else if (details.length == 2) {
                     if (!details[0].isEmpty()) {
                         username = URLDecoder.decode(details[0], StandardCharsets.UTF_8.toString());
                     }
