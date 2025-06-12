@@ -1668,7 +1668,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
             }
 
             cacheManager.getStatBean(this).addPuts(res);
-            for (int i = 0; i < res; i++) {
+            for (long i = 0; i < res; i++) {
                 cacheManager.getStatBean(this).addPutTime((currentNanoTime() - startTime) / res);
             }
         });
