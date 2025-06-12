@@ -70,19 +70,28 @@ Amount of Redisson instances created by Tomcat for multiple contexts could be re
 **2. Copy two jars into `TOMCAT_BASE/lib` directory:**
 
 
-[redisson-all-3.45.1.jar](https://repo1.maven.org/maven2/org/redisson/redisson-all/3.45.1/redisson-all-3.45.1.jar)
+[redisson-all-3.50.0.jar](https://repo1.maven.org/maven2/org/redisson/redisson-all/3.50.0/redisson-all-3.50.0.jar)
 
-Tomcat 7.x - [redisson-tomcat-7-3.45.1.jar](https://repo1.maven.org/maven2/org/redisson/redisson-tomcat-7/3.45.1/redisson-tomcat-7-3.45.1.jar)  
+Tomcat 7.x - [redisson-tomcat-7-3.50.0.jar](https://repo1.maven.org/maven2/org/redisson/redisson-tomcat-7/3.50.0/redisson-tomcat-7-3.50.0.jar)  
 
-Tomcat 8.x - [redisson-tomcat-8-3.45.1.jar](https://repo1.maven.org/maven2/org/redisson/redisson-tomcat-8/3.45.1/redisson-tomcat-8-3.45.1.jar)  
+Tomcat 8.x - [redisson-tomcat-8-3.50.0.jar](https://repo1.maven.org/maven2/org/redisson/redisson-tomcat-8/3.50.0/redisson-tomcat-8-3.50.0.jar)  
 
-Tomcat 9.x - [redisson-tomcat-9-3.45.1.jar](https://repo1.maven.org/maven2/org/redisson/redisson-tomcat-9/3.45.1/redisson-tomcat-9-3.45.1.jar)  
+Tomcat 9.x - [redisson-tomcat-9-3.50.0.jar](https://repo1.maven.org/maven2/org/redisson/redisson-tomcat-9/3.50.0/redisson-tomcat-9-3.50.0.jar)  
 
-Tomcat 10.x - [redisson-tomcat-10-3.45.1.jar](https://repo1.maven.org/maven2/org/redisson/redisson-tomcat-10/3.45.1/redisson-tomcat-10-3.45.1.jar)  
+Tomcat 10.x - [redisson-tomcat-10-3.50.0.jar](https://repo1.maven.org/maven2/org/redisson/redisson-tomcat-10/3.50.0/redisson-tomcat-10-3.50.0.jar)  
 
-Tomcat 11.x - [redisson-tomcat-11-3.45.1.jar](https://repo1.maven.org/maven2/org/redisson/redisson-tomcat-11/3.45.1/redisson-tomcat-11-3.45.1.jar)  
+Tomcat 11.x - [redisson-tomcat-11-3.50.0.jar](https://repo1.maven.org/maven2/org/redisson/redisson-tomcat-11/3.50.0/redisson-tomcat-11-3.50.0.jar)  
 
 [Redisson PRO vs. Community Edition ➜](https://redisson.pro/feature-comparison.html)
+
+**3. (optional) Enable SingleSignOn:**
+
+
+To use Redisson also for SingleSignOn (SSO) within multiple applications on single or multiple Tomcats, add following code into `tomcat/conf/server.xml` in `Host` tag area
+
+```xml
+        <Valve className="org.redisson.tomcat.RedissonSingleSignOn" />
+```
 
 ## Spring Session
 
