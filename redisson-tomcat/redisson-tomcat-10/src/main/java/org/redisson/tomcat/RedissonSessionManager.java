@@ -271,6 +271,7 @@ public class RedissonSessionManager extends ManagerBase {
         
         Pipeline pipeline = getContext().getPipeline();
         synchronized (pipeline) {
+            tryInitSsoValve();
             if (readMode == ReadMode.REDIS) {
                 Optional<Valve> res = Arrays.stream(pipeline.getValves()).filter(v -> v.getClass() == UsageValve.class).findAny();
                 if (res.isPresent()) {
@@ -436,5 +437,26 @@ public class RedissonSessionManager extends ManagerBase {
             sess.save();
         }
     }
-    
+
+    private void tryInitSsoValve() {
+        Container c = getContext();
+        // SSO valve has to be in defined in Host
+        // it won't be picked up by Catalina from within Context
+        while (c != null && !(c instanceof org.apache.catalina.Host)) {
+            c = c.getParent();
+        }
+        if (c == null) {
+            log.warn("No Catalina Host found for current context. Can't configure Redisson SSO.");
+            return;
+        }
+        for (Valve valve : ((Host) c).getPipeline().getValves()) {
+            if (valve instanceof RedissonSingleSignOn) {
+                log.debug("Found SSO valve, passing RedissionSessionManager to it.");
+                ((RedissonSingleSignOn) valve).setSessionManager(this);
+                return;
+            }
+        }
+        log.trace("No Redisson SSO valve found. Redisson SSO is not configured.");
+    }
+
 }

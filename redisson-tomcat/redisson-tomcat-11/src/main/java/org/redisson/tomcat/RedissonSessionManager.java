@@ -458,5 +458,5 @@ public class RedissonSessionManager extends ManagerBase {
         }
         log.trace("No Redisson SSO valve found. Redisson SSO is not configured.");
     }
-    
+
 }
