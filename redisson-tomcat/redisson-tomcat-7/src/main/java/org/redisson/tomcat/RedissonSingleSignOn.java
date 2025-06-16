@@ -40,9 +40,9 @@ public class RedissonSingleSignOn extends SingleSignOn {
   private RedissonSessionManager manager;
 
   void setSessionManager(RedissonSessionManager manager) {
-    if (containerLog.isTraceEnabled()) {
+    if (containerLog != null && containerLog.isTraceEnabled()) {
       containerLog.trace(sm.getString("redissonSingleSignOn.trace.setSessionManager", manager));
-  }
+    }
     this.manager = manager;
   }
 
