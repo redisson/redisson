@@ -1169,7 +1169,7 @@ public class PublishSubscribeService {
     public void checkShardingSupport(ShardedSubscriptionMode mode, RedisConnection connection) {
         if (mode == ShardedSubscriptionMode.AUTO) {
             try {
-                connection.sync(RedisCommands.PUBSUB_SHARDNUMSUB);
+                connection.sync(RedisCommands.PUBSUB_SHARDNUMSUB, 0);
                 setShardingSupported(true);
             } catch (Exception e) {
                 // skip
