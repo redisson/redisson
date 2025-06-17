@@ -508,7 +508,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 if (RedisCommands.MULTI.getName().equals(commandsData.get(0).getCommand().getName())) {
                     suffix = 1;
                 }
-                CommandData<Object, Object> commandData = (CommandData<Object, Object>) commandsData.get((int)(i+suffix));
+                CommandData<Object, Object> commandData = (CommandData<Object, Object>) commandsData.get((int) (i+suffix));
                 decode(in, commandData, respParts, channel, skipConvertor, commandsData, size, state);
                 if (commandData.getPromise().isDone() && commandData.getPromise().isCompletedExceptionally()) {
                     data.tryFailure(commandData.cause());
