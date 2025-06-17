@@ -184,12 +184,12 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             skipBytes(in);
         } else if (code == '%') {
             long size = readLong(in);
-            for (int i = 0; i < size * 2; i++) {
+            for (long i = 0; i < size * 2; i++) {
                 skipDecode(in);
             }
         } else if (code == '*' || code == '>' || code == '~') {
             long size = readLong(in);
-            for (int i = 0; i < size; i++) {
+            for (long i = 0; i < size; i++) {
                 skipDecode(in);
             }
         }
