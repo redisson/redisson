@@ -8,7 +8,7 @@ Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
 Feature - Apache Tomcat SSO integration (thanks to @cogniware and @iamrakesh)  
 Feature - Valkey and Redis url may contain password only (thanks to @noxvost)  
 
-Fixed - Redisson can't connect to Azure Managed Redis (thanks to @beetlebugorg)  
+Fixed - Redisson can't connect to Azure Managed Redis Cluster (thanks to @beetlebugorg)  
 Fixed - commons-codec and json-smart libs updated  
 Fixed - `IllegalArgumentException: tickDuration : 0 (expected: > 0)` error is thrown  
 
