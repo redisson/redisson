@@ -3,6 +3,15 @@ Redisson Releases History
 
 Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
 
+### 17-Jun-2025 - 3.50.0 released
+
+Feature - Apache Tomcat SSO integration (thanks to @cogniware and @iamrakesh)  
+Feature - Valkey and Redis url may contain password only (thanks to @noxvost)  
+
+Fixed - Redisson can't connect to Azure Managed Redis (thanks to @beetlebugorg)  
+Fixed - commons-codec and json-smart libs updated  
+Fixed - `IllegalArgumentException: tickDuration : 0 (expected: > 0)` error is thrown  
+
 ### 04-Jun-2025 - 3.49.0 released
 
 Feature - `RClusteredScoredSortedSetRx`, `RClusteredScoredSortedSetReactive` interfaces added for `RClusteredScoredSortedSet` object  
