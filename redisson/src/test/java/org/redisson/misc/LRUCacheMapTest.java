@@ -76,5 +76,30 @@ public class LRUCacheMapTest {
         
         assertThat(map.keySet()).containsOnly(4, 3);
     }
-    
+    @Test
+    public void testRemoveExpiredEntries() throws InterruptedException {
+        LRUCacheMap<Integer, Integer> map = new LRUCacheMap<>(2, 0, 400);
+        map.put(1, 1);
+        Thread.sleep(100);
+        map.put(2, 2);
+        Thread.sleep(100);
+        map.get(1);
+        Thread.sleep(350);
+        //first it will remove the entry which key is 2
+        map.put(3, 3);
+        assertThat(map.get(2)).isNull();
+        Thread.sleep(200);
+        map.put(4, 4);
+        //second no entry expired, it will poll the entry which key is 1
+        assertThat(map.get(1)).isNull();
+        Thread.sleep(220);
+        //third it will remove the entry which key is 3
+        map.put(5, 5);
+        assertThat(map.get(3)).isNull();
+        assertThat(map.get(4)).isEqualTo(4);
+        assertThat(map.get(5)).isEqualTo(5);
+
+
+
+    }
 }

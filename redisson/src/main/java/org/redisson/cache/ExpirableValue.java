@@ -23,5 +23,6 @@ package org.redisson.cache;
 public interface ExpirableValue {
 
     boolean isExpired();
-    
+
+    long getExpireTime();
 }
