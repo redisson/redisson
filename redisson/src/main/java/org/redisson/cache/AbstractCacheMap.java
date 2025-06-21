@@ -41,6 +41,11 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
     private final long maxIdleInMillis;
     private Consumer<CachedValue<K, V>> removalListener;
 
+    /**
+     * the least expire time of entry in the map, this value may smaller than the real least expire time.
+     */
+    private volatile long leastExpireTime =  0L;
+
 
     public AbstractCacheMap(int size, long timeToLiveInMillis, long maxIdleInMillis) {
         if (size < 0) {
@@ -212,7 +217,10 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
         if (timeToLiveInMillis == 0 && maxIdleInMillis == 0) {
             return false;
         }
-
+        if (this.leastExpireTime > System.currentTimeMillis()) {
+            return false;
+        }
+        long newLeastExpireTime = Long.MAX_VALUE;
         boolean removed = false;
         // TODO optimize
         for (CachedValue<K, V> value : map.values()) {
@@ -221,8 +229,15 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
                     onValueRemove(value);
                     removed = true;
                 }
+            }else{
+                newLeastExpireTime = Math.min(newLeastExpireTime, value.getExpireTime());
             }
         }
+        //No worrying about concurrency here
+        if (newLeastExpireTime != Long.MAX_VALUE) {
+            this.leastExpireTime = newLeastExpireTime;
+        }
+
         return removed;
     }
 
