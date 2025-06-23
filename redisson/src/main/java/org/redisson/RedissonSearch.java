@@ -524,7 +524,7 @@ public class RedissonSearch implements RSearch {
                                             new ObjectListReplayDecoder()));
         }
 
-        return commandExecutor.writeAsync(indexName, StringCodec.INSTANCE, command, args.toArray());
+        return commandExecutor.readAsync(indexName, StringCodec.INSTANCE, command, args.toArray());
     }
 
     private String value(double score, boolean exclusive) {
