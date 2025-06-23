@@ -22,7 +22,7 @@
 
     <properties>
         <!-- Spring Framework version -->
-        <spring.version>6.1.21</spring.version>
+        <spring.version>6.2.8</spring.version>
         <!-- Spring Session version -->
         <spring-session.version>3.3.0</spring-session.version>
         <!-- Spring Boot versions -->
