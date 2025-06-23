@@ -41,7 +41,7 @@ public class RedissonSingleSignOn extends SingleSignOn {
 
   void setSessionManager(RedissonSessionManager manager) {
     if (containerLog != null && containerLog.isTraceEnabled()) {
-      containerLog.trace(sm.getString("redissonSingleSignOn.trace.setSessionManager", manager));
+        containerLog.trace(sm.getString("redissonSingleSignOn.trace.setSessionManager", manager));
     }
     this.manager = manager;
   }
@@ -52,12 +52,7 @@ public class RedissonSingleSignOn extends SingleSignOn {
           containerLog.trace(sm.getString("redissonSingleSignOn.trace.invoke"));
       }
       String ssoSessionId = getSsoSessionId(request);
-      if (ssoSessionId != null) {
-        SingleSignOnEntry ssoEntry = getSsoEntry(ssoSessionId);
-        if (ssoEntry != null) {
-          cache.put(ssoSessionId, ssoEntry);
-        }
-      }
+      syncAndGetSsoEntry(ssoSessionId);
       super.invoke(request, response);
   }
 
@@ -73,15 +68,12 @@ public class RedissonSingleSignOn extends SingleSignOn {
   @Override
   protected boolean associate(String ssoId, Session session) {
       if (containerLog.isTraceEnabled()) {
-        containerLog.trace(sm.getString("redissonSingleSignOn.trace.associate", ssoId, session));
+          containerLog.trace(sm.getString("redissonSingleSignOn.trace.associate", ssoId, session));
       }
-      SingleSignOnEntry sso = this.getSsoEntry(ssoId);
-      if (sso != null) {
-          cache.put(ssoId, sso);
-      }
+      syncAndGetSsoEntry(ssoId);
       boolean associated = super.associate(ssoId, session);
       if (associated) {
-          manager.getMap(SSO_SESSION_ENTRIES).fastPut(ssoId, sso);
+          manager.getMap(SSO_SESSION_ENTRIES).fastPut(ssoId, cache.get(ssoId));
       }
       return associated;
   }
@@ -91,10 +83,7 @@ public class RedissonSingleSignOn extends SingleSignOn {
       if (containerLog.isTraceEnabled()) {
           containerLog.trace(sm.getString("redissonSingleSignOn.trace.reauthenticate"));
       }
-      SingleSignOnEntry sso = this.getSsoEntry(ssoId);
-      if (sso != null) {
-          cache.put(ssoId, sso);
-      }
+      syncAndGetSsoEntry(ssoId);
       return super.reauthenticate(ssoId, realm, request);
   }
 
@@ -121,13 +110,10 @@ public class RedissonSingleSignOn extends SingleSignOn {
       if (containerLog.isTraceEnabled()) {
           containerLog.trace(sm.getString("redissonSingleSignOn.trace.update"));
       }
-      SingleSignOnEntry sso = this.getSsoEntry(ssoId);
-      if (sso != null) {
-          cache.put(ssoId, sso);
-      }
+      syncAndGetSsoEntry(ssoId);
       boolean updated = super.update(ssoId, principal, authType, username, password);
       if (updated) {
-          manager.getMap(SSO_SESSION_ENTRIES).fastPut(ssoId, sso);
+          manager.getMap(SSO_SESSION_ENTRIES).fastPut(ssoId, cache.get(ssoId));
       }
       return updated;
   }
@@ -137,29 +123,31 @@ public class RedissonSingleSignOn extends SingleSignOn {
       if (containerLog.isTraceEnabled()) {
           containerLog.trace(sm.getString("redissonSingleSignOn.trace.removeSession", session, ssoId));
       }
-      SingleSignOnEntry sso = this.getSsoEntry(ssoId);
-      if (sso == null) {
-          return;
-      }
-      cache.put(ssoId, sso);
+      SingleSignOnEntry sso = this.syncAndGetSsoEntry(ssoId);
       super.removeSession(ssoId, session);
-      if (sso.findSessions().isEmpty()) {
+      if (sso != null && sso.findSessions().isEmpty()) {
         deregister(ssoId);
       }
   }
 
   /**
-   * Lookup {@code SingleSignOnEntry} for the given SSO ID.
+   * Lookup {@code SingleSignOnEntry} for the given SSO ID and make sure local cache has the same value.
+   * That applies also to non existence.
    *
    * @param ssoSessionId SSO session id we are looking for
    * @return matching {@code SingleSignOnEntry} instance or null when not found
    */
-  private SingleSignOnEntry getSsoEntry(String ssoSessionId) {
+  private SingleSignOnEntry syncAndGetSsoEntry(String ssoSessionId) {
       if (containerLog.isTraceEnabled()) {
           containerLog.trace(sm.getString("redissonSingleSignOn.trace.getSsoEntry", ssoSessionId));
       }
+      if (ssoSessionId == null) {
+          return null;
+      }
       SingleSignOnEntry entry = (SingleSignOnEntry) manager.getMap(SSO_SESSION_ENTRIES).get(ssoSessionId);
-      if (entry != null) {
+      if (entry == null) {
+        this.cache.remove(ssoSessionId);
+      } else {
           this.cache.put(ssoSessionId, entry);
       }
       return entry;
