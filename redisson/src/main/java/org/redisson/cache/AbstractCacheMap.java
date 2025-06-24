@@ -21,6 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -41,6 +42,10 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
     private final long maxIdleInMillis;
     private Consumer<CachedValue<K, V>> removalListener;
 
+    /**
+     * the least expire time of entry in the map
+     */
+    private final AtomicLong leastExpireTime =  new AtomicLong(0L);
 
     public AbstractCacheMap(int size, long timeToLiveInMillis, long maxIdleInMillis) {
         if (size < 0) {
@@ -212,7 +217,10 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
         if (timeToLiveInMillis == 0 && maxIdleInMillis == 0) {
             return false;
         }
-
+        if (this.leastExpireTime.get() > System.currentTimeMillis()) {
+            return false;
+        }
+        long newLeastExpireTime = Long.MAX_VALUE;
         boolean removed = false;
         // TODO optimize
         for (CachedValue<K, V> value : map.values()) {
@@ -221,9 +229,24 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
                     onValueRemove(value);
                     removed = true;
                 }
+            }else{
+                newLeastExpireTime = Math.min(newLeastExpireTime, value.getExpireTime());
             }
         }
+        updateLeastExpireTime(newLeastExpireTime);
         return removed;
+    }
+    private void updateLeastExpireTime(long newLeastExpireTime) {
+       for (;;){
+           long currentLeastExpireTime = leastExpireTime.get();
+           if (newLeastExpireTime <= currentLeastExpireTime) {
+               break;
+           }
+           if (leastExpireTime.compareAndSet(currentLeastExpireTime, newLeastExpireTime)) {
+               break;
+           }
+
+       }
     }
 
     protected abstract void onMapFull();
