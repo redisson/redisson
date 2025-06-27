@@ -54,6 +54,24 @@ public class RedissonScriptTest extends RedisDockerTest {
         assertThat(m.get("key1")).isEqualTo("value3");
     }
 
+
+    @Test
+    public void testCommandMapping2() {
+        Config cfg = createConfig();
+        cfg.useSingleServer().setCommandMapper(new CommandMapper() {
+            @Override
+            public String map(String name) {
+                return name.equalsIgnoreCase("ttl") ? "pttl" : name;
+            }
+        });
+
+        RedissonClient r = Redisson.create(cfg);
+        String script = "redis.call('set','test','value','ex',60);redis.call('ttl','test');return redis.call('ttl','test');";
+        RScript rScript = r.getScript();
+        int eval = rScript.eval(Mode.READ_WRITE, script, RScript.ReturnType.INTEGER);
+        assert eval == 60000;
+    }
+
     @Test
     public void testMulti() {
         RLexSortedSet idx2 = redisson.getLexSortedSet("ABCD17436");
