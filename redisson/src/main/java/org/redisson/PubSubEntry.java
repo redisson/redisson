@@ -26,6 +26,8 @@ public interface PubSubEntry<E> {
 
     void acquire();
 
+    void acquire(int permits);
+
     int release();
 
     CompletableFuture<E> getPromise();

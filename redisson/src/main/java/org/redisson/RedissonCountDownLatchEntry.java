@@ -37,6 +37,9 @@ public class RedissonCountDownLatchEntry implements PubSubEntry<RedissonCountDow
     public void acquire() {
         counter++;
     }
+    public void acquire(int permits) {
+        counter+=permits;
+    }
 
     public int release() {
         return --counter;
