@@ -537,12 +537,17 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         }
 
         Matcher matcher = COMMANDS_PATTERN.matcher(script);
+        Set<String> mappedCommands = new HashSet<>();
         while (matcher.find()) {
 
             String command = matcher.group(1);
+            if (mappedCommands.contains(command)) {
+                continue;
+            }
             String mapped = getServiceManager().getConfig().getCommandMapper().map(command);
             if (!command.equalsIgnoreCase(mapped)) {
                 script = script.replace(command, mapped);
+                mappedCommands.add(command);
             }
         }
         return script;
