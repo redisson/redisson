@@ -13,8 +13,8 @@
 
     <name>Redisson/All-in-One</name>
 
-    <description>Easy Redis Java client and Real-Time Data Platform. Valkey compatible. Sync/Async/RxJava3/Reactive API. Client side caching. Over 50 Redis based Java objects and services: JCache API, Apache Tomcat, Hibernate, Spring, Set, Multimap, SortedSet, Map, List, Queue, Deque, Semaphore, Lock, AtomicLong, Map Reduce, Bloom filter, Scheduler, RPC</description>
-    <inceptionYear>2014</inceptionYear>
+    <description>Valkey and Redis Java client. Real-Time Data Platform. Sync/Async/RxJava3/Reactive API. Client side caching. Over 50 Redis based Java objects and services: JCache API, Apache Tomcat, Hibernate, Spring, Set, Multimap, SortedSet, Map, List, Queue, Deque, Semaphore, Lock, AtomicLong, Map Reduce, Bloom filter, Scheduler, RPC</description>
+    <inceptionYear>2013</inceptionYear>
     <url>https://redisson.org</url>
 
     <organization>
