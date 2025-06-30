@@ -357,6 +357,34 @@ public class RedissonSearchTest extends DockerRedisStackTest {
     }
 
     @Test
+    public void testMapSearchCluster() {
+        withNewCluster((nodes, redisson) -> {
+            RMap<String, SimpleObject> m = redisson.getMap("{doc}:1", new CompositeCodec(StringCodec.INSTANCE, redisson.getConfig().getCodec()));
+            m.put("t1", new SimpleObject("name1"));
+            m.put("t2", new SimpleObject("name2"));
+            RMap<String, SimpleObject> m2 = redisson.getMap("{doc}:2", new CompositeCodec(StringCodec.INSTANCE, redisson.getConfig().getCodec()));
+            m2.put("t1", new SimpleObject("name3"));
+            m2.put("t2", new SimpleObject("name4"));
+
+            RSearch s = redisson.getSearch();
+            s.createIndex("doc", IndexOptions.defaults()
+                            .on(IndexType.HASH)
+                            .prefix(Arrays.asList("{doc}:")),
+                    FieldIndex.text("t1"),
+                    FieldIndex.text("t2"));
+
+            SearchResult r = s.search("doc", "*", QueryOptions.defaults()
+                    .returnAttributes(new ReturnAttribute("t1"),
+                            new ReturnAttribute("t2")));
+
+            assertThat(r.getTotal()).isEqualTo(2);
+            Set<Map<String, Object>> l = r.getDocuments().stream().map(d -> d.getAttributes()).collect(Collectors.toSet());
+            assertThat(l).isEqualTo(new HashSet<>(Arrays.asList(m2.readAllMap(), m.readAllMap())));
+        });
+    }
+
+
+    @Test
     public void testJSONSearch() {
         RJsonBucket<String> b = redisson.getJsonBucket("doc:1", StringCodec.INSTANCE);
         b.set("[{\"arr\": [1, 2, 3]}, {\"val\": \"hello\"}, {\"val\": \"world\"}]");
