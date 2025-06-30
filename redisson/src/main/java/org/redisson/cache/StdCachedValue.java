@@ -62,6 +62,21 @@ public class StdCachedValue<K, V> implements CachedValue<K, V> {
     }
 
     @Override
+    public long getExpireTime() {
+        if (maxIdleTime == 0 && ttl == 0) {
+            return 0;
+        }
+        long expireTime = Long.MAX_VALUE;
+        if (maxIdleTime != 0) {
+            expireTime = Math.min(expireTime, lastAccess + maxIdleTime);
+        }
+        if (ttl != 0) {
+            expireTime = Math.min(expireTime, creationTime + ttl);
+        }
+        return expireTime;
+    }
+
+    @Override
     public K getKey() {
         return key;
     }
