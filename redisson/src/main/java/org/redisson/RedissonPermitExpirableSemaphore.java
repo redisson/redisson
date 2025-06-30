@@ -80,7 +80,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
             return ids;
         }
 
-        CompletableFuture<RedissonLockEntry> future = subscribe();
+        CompletableFuture<RedissonLockEntry> future = subscribe(permits);
         semaphorePubSub.timeout(future);
         RedissonLockEntry entry = commandExecutor.getInterrupted(future);
         try {
@@ -136,7 +136,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                 return CompletableFuture.completedFuture(ids);
             }
 
-            CompletableFuture<RedissonLockEntry> subscribeFuture = subscribe();
+            CompletableFuture<RedissonLockEntry> subscribeFuture = subscribe(permits);
             semaphorePubSub.timeout(subscribeFuture);
             return subscribeFuture.thenCompose(res -> acquireAsync(permits, res, leaseTime, timeUnit));
         });
@@ -464,7 +464,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         }
         
         current = System.currentTimeMillis();
-        CompletableFuture<RedissonLockEntry> future = subscribe();
+        CompletableFuture<RedissonLockEntry> future = subscribe(permits);
         RedissonLockEntry entry;
         try {
             entry = future.get(time, TimeUnit.MILLISECONDS);
@@ -548,7 +548,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
             
             long current = System.currentTimeMillis();
             AtomicReference<Timeout> futureRef = new AtomicReference<>();
-            CompletableFuture<RedissonLockEntry> subscribeFuture = subscribe();
+            CompletableFuture<RedissonLockEntry> subscribeFuture = subscribe(permits);
             subscribeFuture.whenComplete((r, ex) -> {
                 if (ex != null) {
                     result.completeExceptionally(ex);
@@ -581,8 +581,8 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         return new CompletableFutureWrapper<>(result);
     }
 
-    private CompletableFuture<RedissonLockEntry> subscribe() {
-        return semaphorePubSub.subscribe(getRawName(), channelName);
+    private CompletableFuture<RedissonLockEntry> subscribe(int permits) {
+        return semaphorePubSub.subscribe(getRawName(), channelName, permits);
     }
 
     private void unsubscribe(RedissonLockEntry entry) {

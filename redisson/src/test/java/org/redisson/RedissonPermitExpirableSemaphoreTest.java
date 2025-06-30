@@ -606,4 +606,43 @@ public class RedissonPermitExpirableSemaphoreTest extends BaseConcurrentTest {
             assertThat(semaphore.availablePermits()).isEqualTo(1);
         });
     }
+
+    @Test
+    public void testConcurrencyMultiPermits() throws InterruptedException {
+        final String key = "testConcurrencyMultiPermits";
+        RPermitExpirableSemaphore semaphore = redisson.getPermitExpirableSemaphore(key);
+        semaphore.trySetPermits(2);
+
+        AtomicInteger successCount = new AtomicInteger(0);
+        var t1 = new Thread(() -> {
+            try {
+                List<String> permitList = semaphore.tryAcquire(2, 2000, -1, TimeUnit.MILLISECONDS);
+                Thread.sleep(500);
+                if (!permitList.isEmpty()) {
+                    successCount.incrementAndGet();
+                    semaphore.tryRelease(permitList);
+                }
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+        var t2 = new Thread(() -> {
+            try {
+                List<String> permitList = semaphore.tryAcquire(2, 2000, -1, TimeUnit.MILLISECONDS);
+                Thread.sleep(500);
+                if (!permitList.isEmpty()) {
+                    successCount.incrementAndGet();
+                    semaphore.tryRelease(permitList);
+                }
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        });
+        t1.start();
+        t2.start();
+        t1.join();
+        t2.join();
+        assertThat(successCount.get()).isEqualTo(2);
+    }
 }

@@ -45,6 +45,9 @@ public class RedissonLockEntry implements PubSubEntry<RedissonLockEntry> {
     public void acquire() {
         counter++;
     }
+    public void acquire(int permits) {
+        counter+=permits;
+    }
 
     public int release() {
         return --counter;
