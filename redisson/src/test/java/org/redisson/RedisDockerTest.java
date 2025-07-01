@@ -20,13 +20,12 @@ import org.redisson.misc.RedisURI;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.*;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
-import org.testcontainers.containers.startupcheck.MinimumDurationRunningStartupCheckStrategy;
 import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
+import org.testcontainers.lifecycle.Startable;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.time.Duration;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -46,7 +45,7 @@ public class RedisDockerTest {
 
     protected static RedissonClient redissonCluster;
 
-    private static GenericContainer<?> REDIS_CLUSTER;
+    private static Startable REDIS_CLUSTER;
 
     protected static GenericContainer<?> createRedisWithVersion(String version, String... params) {
         return new GenericContainer<>(version)
@@ -131,25 +130,9 @@ public class RedisDockerTest {
 
     protected static void testInCluster(Consumer<RedissonClient> redissonCallback) {
         if (redissonCluster == null) {
-            REDIS_CLUSTER = new GenericContainer<>("vishnunair/docker-redis-cluster")
-                            .withExposedPorts(6379, 6380, 6381, 6382, 6383, 6384)
-                            .withStartupCheckStrategy(new MinimumDurationRunningStartupCheckStrategy(Duration.ofSeconds(15)));
-            REDIS_CLUSTER.start();
-
-            Config config = new Config();
-            config.setProtocol(protocol);
-            config.useClusterServers()
-                    .setNatMapper(new NatMapper() {
-                        @Override
-                        public RedisURI map(RedisURI uri) {
-                            if (REDIS_CLUSTER.getMappedPort(uri.getPort()) == null) {
-                                return uri;
-                            }
-                            return new RedisURI(uri.getScheme(), REDIS_CLUSTER.getHost(), REDIS_CLUSTER.getMappedPort(uri.getPort()));
-                        }
-                    })
-                    .addNodeAddress("redis://127.0.0.1:" + REDIS_CLUSTER.getFirstMappedPort());
-            redissonCluster = Redisson.create(config);
+            ClusterData data = createCluster();
+            REDIS_CLUSTER = data.container;
+            redissonCluster = data.redisson;
         }
 
         redissonCallback.accept(redissonCluster);
@@ -319,7 +302,7 @@ public class RedisDockerTest {
         List<GenericContainer<? extends GenericContainer<?>>> nodes = new ArrayList<>();
 
         GenericContainer<?> master =
-                new GenericContainer<>("bitnami/redis:latest")
+                new GenericContainer<>("bitnami/redis:7.2.4")
                         .withNetwork(network)
                         .withEnv("REDIS_REPLICATION_MODE", "master")
                         .withEnv("REDIS_PASSWORD", password)
@@ -337,7 +320,7 @@ public class RedisDockerTest {
 
         for (int i = 0; i < slaves; i++) {
             GenericContainer<?> slave =
-                    new GenericContainer<>("bitnami/redis:latest")
+                    new GenericContainer<>("bitnami/redis:7.2.4")
                             .withNetwork(network)
                             .withEnv("REDIS_REPLICATION_MODE", "slave")
                             .withEnv("REDIS_MASTER_HOST", "redis")
@@ -467,8 +450,9 @@ public class RedisDockerTest {
         dnsServer.stop();
     }
 
-    protected void withNewCluster(BiConsumer<List<ContainerState>, RedissonClient> callback) {
+    record ClusterData(Startable container, RedissonClient redisson, List<ContainerState> nodes) {}
 
+    private static ClusterData createCluster() {
         LogMessageWaitStrategy wait2 = new LogMessageWaitStrategy().withRegEx(".*REPLICA\ssync\\:\sFinished\swith\ssuccess.*");
 
         DockerComposeContainer environment =
@@ -527,12 +511,17 @@ public class RedisDockerTest {
                 .addNodeAddress("redis://127.0.0.1:" + mp[0].getHostPortSpec());
 
         RedissonClient redisson = Redisson.create(config);
+        return new ClusterData(environment, redisson, nodes);
+    }
+
+    protected void withNewCluster(BiConsumer<List<ContainerState>, RedissonClient> callback) {
+        ClusterData data = createCluster();
 
         try {
-            callback.accept(nodes, redisson);
+            callback.accept(data.nodes, data.redisson);
         } finally {
-            redisson.shutdown();
-            environment.stop();
+            data.redisson.shutdown();
+            data.container.stop();
         }
     }
 
