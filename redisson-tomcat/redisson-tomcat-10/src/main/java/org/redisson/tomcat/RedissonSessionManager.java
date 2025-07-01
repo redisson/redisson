@@ -109,6 +109,14 @@ public class RedissonSessionManager extends ManagerBase {
         return configPath;
     }
 
+    public void setConfig(Config config) {
+        this.config = config;
+    }
+
+    public Config getConfig() {
+        return config;
+    }
+
     public String getKeyPrefix() {
         return keyPrefix;
     }
