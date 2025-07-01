@@ -19,6 +19,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * LFU (least frequently used) cache.
@@ -72,7 +74,8 @@ public class LFUCacheMap<K, V> extends AbstractCacheMap<K, V> {
         }
         
     }
-    
+
+    private final Lock lock = new ReentrantLock();
     private final AtomicLong idGenerator = new AtomicLong();
     private final ConcurrentNavigableMap<MapKey, LFUCachedValue<K, V>> accessMap = new ConcurrentSkipListMap<>();
     
@@ -112,6 +115,9 @@ public class LFUCacheMap<K, V> extends AbstractCacheMap<K, V> {
     private void addAccessCount(LFUCachedValue<K, V> value, long c) {
         value.getLock().execute(() -> {
             long count = c;
+            if (count != 1) {
+                System.out.println(value.getKey() + " subtract " + count);
+            }
             if (count < 0 && value.accessCount == 0) {
                 return;
             }
@@ -124,6 +130,8 @@ public class LFUCacheMap<K, V> extends AbstractCacheMap<K, V> {
             if (count < 0) {
                 count = -Math.min(value.accessCount, -count);
             }
+
+
             value.addAccessCount(count);
 
             key = toKey(value);
@@ -141,17 +149,25 @@ public class LFUCacheMap<K, V> extends AbstractCacheMap<K, V> {
             super.onValueRemove(entry.getValue());
         }
 
-        if (entry.getValue().accessCount == 0) {
-            return;
-        }
-
-        // TODO optimize
         // decrease all values
-        for (LFUCachedValue<K, V> value : accessMap.values()) {
-            addAccessCount(value, -entry.getValue().accessCount);
-        }
+        decreaseAll();
     }
 
+    private void decreaseAll() {
+        if (lock.tryLock()) {
+            try {
+                Entry<MapKey, LFUCachedValue<K, V>> entry = accessMap.firstEntry();
+                long accessCount;
+                if (entry != null && (accessCount = entry.getValue().accessCount) != 0) {
+                    for (LFUCachedValue<K, V> value : accessMap.values()) {
+                        addAccessCount(value, accessCount);
+                    }
+                }
+            }finally {
+                lock.unlock();
+            }
+        }
+    }
     @Override
     public void clear() {
         accessMap.clear();
