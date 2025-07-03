@@ -19,8 +19,8 @@
     </modules>
 
      <properties>
-       <quarkus.version>3.22.1</quarkus.version>
-       <quarkus.plugin.version>3.22.1</quarkus.plugin.version>
+       <quarkus.version>3.24.2</quarkus.version>
+       <quarkus.plugin.version>3.24.2</quarkus.plugin.version>
        <maven.compiler.source>11</maven.compiler.source>
        <maven.compiler.target>11</maven.compiler.target>
        <maven.compiler.release>11</maven.compiler.release>
@@ -35,7 +35,15 @@
            <type>pom</type>
            <scope>import</scope>
          </dependency>
-       </dependencies>
+
+            <dependency>
+                <groupId>org.junit</groupId>
+                <artifactId>junit-bom</artifactId>
+                <version>5.13.2</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
      </dependencyManagement>
 
 </project>
