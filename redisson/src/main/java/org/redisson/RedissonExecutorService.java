@@ -426,11 +426,9 @@ public class RedissonExecutorService implements RScheduledExecutorService {
             byte[] lambdaBody = null;
             if (classStream == null) {
                 ByteArrayOutputStream os = new ByteArrayOutputStream();
-                try {
-                    ObjectOutput oo = new ObjectOutputStream(os);
+                try (ObjectOutput oo = new ObjectOutputStream(os)) {
                     oo.writeObject(task);
                     oo.flush();
-                    oo.close();
                 } catch (Exception e) {
                     throw new IllegalArgumentException("Unable to serialize lambda", e);
                 }
@@ -450,18 +448,11 @@ public class RedissonExecutorService implements RScheduledExecutorService {
             }
             
             byte[] classBody;
-            try {
-                DataInputStream s = new DataInputStream(classStream);
+            try (DataInputStream s = new DataInputStream(classStream)) {
                 classBody = new byte[s.available()];
                 s.readFully(classBody);
             } catch (IOException e) {
                 throw new IllegalArgumentException(e);
-            } finally {
-                try {
-                    classStream.close();
-                } catch (IOException e) {
-                    // skip
-                }
             }
             
             result = new ClassBody(lambdaBody, classBody, className);
