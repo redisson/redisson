@@ -7,7 +7,11 @@ import org.junit.jupiter.api.Test;
 import org.redisson.api.*;
 import org.redisson.api.MapOptions.WriteMode;
 import org.redisson.api.map.event.*;
+import org.redisson.client.RedisClient;
+import org.redisson.client.RedisClientConfig;
+import org.redisson.client.RedisConnection;
 import org.redisson.client.codec.*;
+import org.redisson.client.protocol.RedisCommands;
 import org.redisson.codec.CompositeCodec;
 import org.redisson.config.Config;
 import org.redisson.eviction.EvictionScheduler;
@@ -1561,6 +1565,50 @@ public class RedissonMapCacheTest extends BaseMapTest {
         assertThat("value3".equals(value)).isTrue();
         map.destroy();
 
+    }
+
+    @Test
+    public void testNameMapper() throws InterruptedException, ExecutionException {
+        Config config = new Config();
+        config.useSingleServer()
+                .setNameMapper(new NameMapper() {
+                    @Override
+                    public String map(String name) {
+                        return name + ":suffix:";
+                    }
+
+                    @Override
+                    public String unmap(String name) {
+                        return name.replace(":suffix:", "");
+                    }
+                })
+                .setConnectionMinimumIdleSize(3)
+                .setConnectionPoolSize(3)
+                .setAddress(redisson.getConfig().useSingleServer().getAddress());
+
+        RedissonClient redisson = Redisson.create(config);
+
+        AtomicBoolean executed = new AtomicBoolean();
+        RMapCache<String, String> map = redisson.getMapCache("test");
+        map.addListener(new EntryExpiredListener() {
+            @Override
+            public void onExpired(EntryEvent event) {
+                executed.set(true);
+            }
+        });
+        map.put("1", "2", 1, TimeUnit.SECONDS);
+
+        Awaitility.await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> assertThat(executed.get()).isTrue());
+
+        RedisClientConfig destinationCfg = new RedisClientConfig();
+        destinationCfg.setAddress(redisson.getConfig().useSingleServer().getAddress());
+        RedisClient client = RedisClient.create(destinationCfg);
+        RedisConnection destinationConnection = client.connect();
+        List<String> channels = destinationConnection.sync(RedisCommands.PUBSUB_CHANNELS);
+        assertThat(channels).contains("redisson_map_cache_expired:{test:suffix:}");
+        client.shutdown();
+
+        redisson.shutdown();
     }
 }
 
