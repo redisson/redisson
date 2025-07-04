@@ -366,5 +366,68 @@ public class RedissonRateLimiterTest extends RedisDockerTest {
         //clean all keys in test
         redisson.getKeys().deleteByPattern("*test_change_rate*");
     }
-    
+
+    @Test
+    public void testUpdateRate() throws InterruptedException {
+        // after set, rate should be 1, availablePermits should be 1
+        RRateLimiter rr = redisson.getRateLimiter("test_update_rate");
+        rr.setRate(RateType.PER_CLIENT, 1, Duration.ofSeconds(1));
+        assertThat(rr.getConfig().getRate()).isEqualTo(1);
+        assertThat(rr.availablePermits()).isEqualTo(1);
+
+        // after update, rate should be 2, availablePermits should be 2
+        rr.updateRate(RateType.PER_CLIENT, 2, Duration.ofSeconds(1));
+        assertThat(rr.getConfig().getRate()).isEqualTo(2);
+        assertThat(rr.availablePermits()).isEqualTo(2);
+        start = System.currentTimeMillis();
+        for (int i = 0; i < 3; i++) {
+            rr.acquire(1);
+            assertThat((System.currentTimeMillis() - start) / 1000).isEqualTo(i/2);
+        }
+
+        // after update, rate should be 5, availablePermits should be 1
+        rr.updateRate(RateType.PER_CLIENT, 5, Duration.ofSeconds(1));
+        assertThat(rr.getConfig().getRate()).isEqualTo(5);
+        assertThat(rr.availablePermits()).isEqualTo(1);
+        Thread.sleep(1000);
+        start = System.currentTimeMillis();
+        for (int i = 0; i < 11; i++) {
+            rr.acquire(1);
+            assertThat((System.currentTimeMillis() - start) / 1000).isEqualTo(i/5);
+        }
+
+        // after update, rate should be 1, availablePermits should be 1
+        rr.updateRate(RateType.PER_CLIENT, 1, Duration.ofSeconds(1));
+        assertThat(rr.getConfig().getRate()).isEqualTo(1);
+        assertThat(rr.availablePermits()).isEqualTo(1);
+        Thread.sleep(1000);
+        start = System.currentTimeMillis();
+        for (int i = 0; i < 3; i++) {
+            rr.acquire(1);
+            assertThat((System.currentTimeMillis() - start) / 1000).isEqualTo(i);
+        }
+
+        // after update, rate should be 6, availablePermits should be 0
+        rr.updateRate(RateType.PER_CLIENT, 6, Duration.ofSeconds(1));
+        assertThat(rr.getConfig().getRate()).isEqualTo(6);
+        assertThat(rr.availablePermits()).isEqualTo(0);
+        Thread.sleep(1000);
+        start = System.currentTimeMillis();
+        for (int i = 0; i < 5; i++) {
+            rr.acquire(6);
+            assertThat((System.currentTimeMillis() - start) / 1000).isEqualTo(i);
+        }
+
+        // after update, rate should be 6, availablePermits should be 0
+        rr.updateRate(RateType.PER_CLIENT, 6, Duration.ofSeconds(1));
+        assertThat(rr.getConfig().getRate()).isEqualTo(6);
+        assertThat(rr.availablePermits()).isEqualTo(0);
+        Thread.sleep(1000);
+        start = System.currentTimeMillis();
+        for (int i = 0; i < 5; i++) {
+            rr.acquire(3);
+            assertThat((System.currentTimeMillis() - start) / 1000).isEqualTo(i*3/6);
+        }
+    }
+
 }
