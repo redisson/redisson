@@ -15,6 +15,8 @@
  */
 package org.redisson.cache;
 
+import org.redisson.misc.WrappedLock;
+
 import java.util.Map;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -72,7 +74,7 @@ public class LFUCacheMap<K, V> extends AbstractCacheMap<K, V> {
         }
         
     }
-    
+    private final WrappedLock lock = new WrappedLock();
     private final AtomicLong idGenerator = new AtomicLong();
     private final ConcurrentNavigableMap<MapKey, LFUCachedValue<K, V>> accessMap = new ConcurrentSkipListMap<>();
     
@@ -133,23 +135,26 @@ public class LFUCacheMap<K, V> extends AbstractCacheMap<K, V> {
 
     @Override
     protected void onMapFull() {
-        Map.Entry<MapKey, LFUCachedValue<K, V>> entry = accessMap.pollFirstEntry();
-        if (entry == null) {
-            return;
-        }
-        if (map.remove(entry.getValue().getKey(), entry.getValue())) {
-            super.onValueRemove(entry.getValue());
-        }
+        lock.execute(() -> {
+            Map.Entry<MapKey, LFUCachedValue<K, V>> entry = accessMap.pollFirstEntry();
+            if (entry == null) {
+                return;
+            }
+            if (map.remove(entry.getValue().getKey(), entry.getValue())) {
+                super.onValueRemove(entry.getValue());
+            }
 
-        if (entry.getValue().accessCount == 0) {
-            return;
-        }
+            if (entry.getValue().accessCount == 0) {
+                return;
+            }
 
-        // TODO optimize
-        // decrease all values
-        for (LFUCachedValue<K, V> value : accessMap.values()) {
-            addAccessCount(value, -entry.getValue().accessCount);
-        }
+            // TODO optimize
+            // decrease all values
+            for (LFUCachedValue<K, V> value : accessMap.values()) {
+                addAccessCount(value, -entry.getValue().accessCount);
+            }
+        });
+
     }
 
     @Override
