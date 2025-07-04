@@ -4,6 +4,8 @@ import org.junit.jupiter.api.Test;
 import org.redisson.cache.Cache;
 import org.redisson.cache.LFUCacheMap;
 
+import java.util.Map;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class LFUCacheMapTest {
@@ -74,5 +76,47 @@ public class LFUCacheMapTest {
         
         assertThat(map.keySet()).contains(5).hasSize(2);
     }
-    
+
+    @Test
+    public void testLfuOnMapFull(){
+        for (int i = 0; i < 1000; i++) {
+            LFUCacheMap<String, Integer> map = new LFUCacheMap<>(6, 0, 0);
+            //the value is accessCount
+            Map<String, Integer> keyAccessCountMap = Map.of("F", 150, "E", 140, "D", 130, "C", 120, "B", 110, "A", 100);
+            map.put("F", 150);
+            map.put("E", 140);
+            map.put("D", 130);
+            map.put("C", 120);
+            map.put("B", 110);
+            map.put("A", 100);
+            //add accessCount
+            keyAccessCountMap.forEach((key, accessCount) -> {
+                for (int j = 0; j < accessCount; j++) {
+                    map.get(key);
+                }
+            });
+
+            Thread thread1 = new Thread(() -> {
+                map.put("w", 0);
+            });
+            Thread thread2 = new Thread(() -> {
+                map.put("x", 0);
+            });
+            Thread thread3 = new Thread(() -> {
+                map.put("z", 0);
+            });
+            thread1.start();
+            thread2.start();
+            thread3.start();
+            try {
+                thread1.join();
+                thread2.join();
+                thread3.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            assertThat(map.get("F") != null);
+        }
+
+    }
 }
