@@ -933,8 +933,9 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
             if (value == null) {
                 continue;
             }
-
-            mapKeys.add(encodeMapKey(value.getKey(), mapKeys));
+            if (storeMode != LocalCachedMapOptions.StoreMode.LOCALCACHE) {
+                mapKeys.add(encodeMapKey(value.getKey(), mapKeys));
+            }
             result.add((V) value.getValue());
         }
 
@@ -977,7 +978,9 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
             if (value == null) {
                 continue;
             }
-            mapKeys.add(encodeMapKey(value.getKey(), mapKeys));
+            if (storeMode != LocalCachedMapOptions.StoreMode.LOCALCACHE) {
+                mapKeys.add(encodeMapKey(value.getKey(), mapKeys));
+            }
             result.put((K) value.getKey(), (V) value.getValue());
         }
 
@@ -1032,8 +1035,10 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
             if (value == null) {
                 continue;
             }
+            if (storeMode != LocalCachedMapOptions.StoreMode.LOCALCACHE) {
+                mapKeys.add(encodeMapKey(value.getKey(), mapKeys));
+            }
 
-            mapKeys.add(encodeMapKey(value.getKey(), mapKeys));
             result.add(new AbstractMap.SimpleEntry<K, V>((K) value.getKey(), (V) value.getValue()));
         }
 
