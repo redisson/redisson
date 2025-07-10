@@ -9,10 +9,12 @@ import org.redisson.api.*;
 import org.redisson.api.listener.FlushListener;
 import org.redisson.api.listener.NewObjectListener;
 import org.redisson.api.options.KeysScanOptions;
+import org.redisson.api.rkeys.MigrateArgs;
 import org.redisson.api.stream.StreamAddArgs;
 import org.redisson.api.stream.StreamCreateGroupArgs;
 import org.redisson.config.Config;
 import org.redisson.config.Protocol;
+import org.testcontainers.containers.GenericContainer;
 
 import java.time.Duration;
 import java.util.*;
@@ -462,4 +464,42 @@ public class RedissonKeysTest extends RedisDockerTest {
         s = redisson.getKeys().count();
         assertThat(s).isEqualTo(1);
     }
+
+    @Test
+    public void testMigrate(){
+        String password = "123456";
+        GenericContainer<?> redis = createRedis("--requirepass " + password);
+        redis.start();
+        Config config = createConfigWithPassword(redis, password);
+        RedissonClient r2 = Redisson.create(config);
+        List<String> keys = Arrays.asList("{testMigrate}key1", "{testMigrate}key2");
+        for (String key : keys) {
+            redisson.getBucket(key).set(key);
+            r2.getBucket(key).delete();
+        }
+        redisson.getKeys()
+                .migrate(MigrateArgs.keys(keys.toArray(new String[0]))
+                        .host("host.docker.internal")
+                        .port(redis.getFirstMappedPort())
+                        .database(0)
+                        .timeout(5000)
+                        .password(password)
+                        .mode(MigrateMode.COPY_AND_REPLACE));
+
+        for (String key : keys) {
+            assertThat(key.equals(r2.getBucket(key).get()));
+        }
+    }
+
+    protected static Config createConfigWithPassword(GenericContainer<?> container, String password) {
+        Config config = new Config();
+        config.setProtocol(protocol);
+        config.useSingleServer()
+                .setAddress("redis://127.0.0.1:" + container.getFirstMappedPort())
+                .setPassword(password)
+        ;
+        return config;
+    }
+
+
 }

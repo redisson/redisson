@@ -20,6 +20,7 @@ import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Single;
 import org.redisson.api.options.KeysScanOptions;
+import org.redisson.api.rkeys.MigrateArgs;
 
 import java.util.concurrent.TimeUnit;
 
@@ -41,6 +42,7 @@ public interface RKeysRx {
     
     /**
      * Transfer object from source Redis instance to destination Redis instance
+     * @deprecated use {@link #migrate(MigrateArgs)}  instead
      *
      * @param name of object
      * @param host - destination host
@@ -49,10 +51,17 @@ public interface RKeysRx {
      * @param timeout - maximum idle time in any moment of the communication with the destination instance in milliseconds
      * @return void
      */
+    @Deprecated
     Completable migrate(String name, String host, int port, int database, long timeout);
-    
+    /**
+     * Transfer object from source Redis instance to destination Redis instance
+     *
+     * @param migrateArgs migrateArgs
+     */
+    Completable migrate(MigrateArgs migrateArgs);
     /**
      * Copy object from source Redis instance to destination Redis instance
+     * @deprecated use {@link #migrate(MigrateArgs)}  instead
      *
      * @param name of object
      * @param host - destination host
@@ -61,6 +70,7 @@ public interface RKeysRx {
      * @param timeout - maximum idle time in any moment of the communication with the destination instance in milliseconds
      * @return void
      */
+    @Deprecated
     Completable copy(String name, String host, int port, int database, long timeout);
     
     /**

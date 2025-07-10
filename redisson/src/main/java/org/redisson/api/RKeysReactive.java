@@ -16,6 +16,7 @@
 package org.redisson.api;
 
 import org.redisson.api.options.KeysScanOptions;
+import org.redisson.api.rkeys.MigrateArgs;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -39,6 +40,7 @@ public interface RKeysReactive {
     
     /**
      * Transfer object from source Redis instance to destination Redis instance
+     * @deprecated use {@link #migrate(MigrateArgs)}  instead
      *
      * @param name of object
      * @param host - destination host
@@ -47,10 +49,18 @@ public interface RKeysReactive {
      * @param timeout - maximum idle time in any moment of the communication with the destination instance in milliseconds
      * @return void
      */
+    @Deprecated
     Mono<Void> migrate(String name, String host, int port, int database, long timeout);
-    
+    /**
+     * Transfer object from source Redis instance to destination Redis instance
+     *
+     * @param migrateArgs migrateArgs
+     */
+    Mono<Void> migrate(MigrateArgs migrateArgs);
+
     /**
      * Copy object from source Redis instance to destination Redis instance
+     * @deprecated use {@link #migrate(MigrateArgs)}  instead
      *
      * @param name of object
      * @param host - destination host
@@ -59,6 +69,7 @@ public interface RKeysReactive {
      * @param timeout - maximum idle time in any moment of the communication with the destination instance in milliseconds
      * @return void
      */
+    @Deprecated
     Mono<Void> copy(String name, String host, int port, int database, long timeout);
     
     /**
