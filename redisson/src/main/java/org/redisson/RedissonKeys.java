@@ -21,6 +21,8 @@ import org.redisson.api.listener.NewObjectListener;
 import org.redisson.api.listener.SetObjectListener;
 import org.redisson.api.options.KeysScanOptions;
 import org.redisson.api.options.KeysScanParams;
+import org.redisson.api.rkeys.MigrateArgs;
+import org.redisson.api.rkeys.MigrateArgsParams;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisException;
 import org.redisson.client.codec.ByteArrayCodec;
@@ -551,9 +553,51 @@ public final class RedissonKeys implements RKeys {
     }
 
     @Override
+    public void migrate(MigrateArgs migrateArgs) {
+        commandExecutor.get(migrateAsync(migrateArgs));
+    }
+
+    @Override
     public RFuture<Void> migrateAsync(String name, String host, int port, int database, long timeout) {
         return commandExecutor.writeAsync(map(name), RedisCommands.MIGRATE, host, port, map(name), database, timeout);
     }
+
+    @Override
+    public RFuture<Void> migrateAsync(MigrateArgs migrateArgs) {
+        MigrateArgsParams migrateArgsParams = (MigrateArgsParams) migrateArgs;
+        List<Object> params = new ArrayList<>();
+        params.add(migrateArgsParams.getHost());
+        params.add(migrateArgsParams.getPort());
+        params.add("");
+        params.add(migrateArgsParams.getDatabase());
+        params.add(migrateArgsParams.getTimeout());
+        MigrateMode migrateMode = migrateArgsParams.getMode();
+        if ((migrateMode.ordinal() & MigrateMode.COPY.ordinal()) != 0) {
+            params.add(MigrateMode.COPY.name());
+        }
+        if ((migrateMode.ordinal() & MigrateMode.REPLACE.ordinal()) != 0) {
+            params.add(MigrateMode.REPLACE.name());
+        }
+        String username = migrateArgsParams.getUsername();
+        String password = migrateArgsParams.getPassword();
+        if (username != null && !username.isEmpty()) {
+            params.add("AUTH2");
+            params.add(username);
+            params.add(password);
+        } else if (password != null && !password.isEmpty()) {
+            params.add("AUTH");
+            params.add(password);
+        }
+        String[] keys = migrateArgsParams.getKeys();
+        String name = keys[0];
+        params.add("KEYS");
+        for (String key : keys) {
+            params.add(map(key));
+        }
+        return commandExecutor.writeAsync(map(name), RedisCommands.MIGRATE, params.toArray());
+    }
+
+
 
     @Override
     public void copy(String name, String host, int port, int database, long timeout) {

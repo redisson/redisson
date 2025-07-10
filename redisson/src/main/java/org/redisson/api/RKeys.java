@@ -16,6 +16,7 @@
 package org.redisson.api;
 
 import org.redisson.api.options.KeysScanOptions;
+import org.redisson.api.rkeys.MigrateArgs;
 
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
@@ -57,6 +58,7 @@ public interface RKeys extends RKeysAsync {
     
     /**
      * Transfer object from source Redis instance to destination Redis instance
+     * @deprecated use {@link #migrate(MigrateArgs)}  instead
      *
      * @param name of object
      * @param host - destination host
@@ -64,17 +66,28 @@ public interface RKeys extends RKeysAsync {
      * @param database - destination database
      * @param timeout - maximum idle time in any moment of the communication with the destination instance in milliseconds
      */
+    @Deprecated
     void migrate(String name, String host, int port, int database, long timeout);
-    
+
+    /**
+     * Transfer object from source Redis instance to destination Redis instance
+     *
+     * @param migrateArgs migrateArgs
+     */
+    void migrate(MigrateArgs migrateArgs);
+
     /**
      * Copy object from source Redis instance to destination Redis instance
+     * @deprecated use {@link #migrate(MigrateArgs)}  instead
      *
      * @param name of object
      * @param host - destination host
      * @param port - destination port
      * @param database - destination database
      * @param timeout - maximum idle time in any moment of the communication with the destination instance in milliseconds
+     *
      */
+    @Deprecated
     void copy(String name, String host, int port, int database, long timeout);
     
     /**
