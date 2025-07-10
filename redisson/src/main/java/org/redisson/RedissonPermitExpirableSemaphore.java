@@ -80,7 +80,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
             return ids;
         }
 
-        CompletableFuture<RedissonLockEntry> future = subscribe(permits);
+        CompletableFuture<RedissonLockEntry> future = subscribe();
         semaphorePubSub.timeout(future);
         RedissonLockEntry entry = commandExecutor.getInterrupted(future);
         try {
@@ -96,9 +96,9 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                 }
                 
                 if (nearestTimeout != null) {
-                    entry.getLatch().tryAcquire(permits, nearestTimeout, TimeUnit.MILLISECONDS);
+                    entry.getLatch().tryAcquire(nearestTimeout, TimeUnit.MILLISECONDS);
                 } else {
-                    entry.getLatch().acquire(permits);
+                    entry.getLatch().acquire();
                 }
             }
         } finally {
@@ -136,7 +136,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                 return CompletableFuture.completedFuture(ids);
             }
 
-            CompletableFuture<RedissonLockEntry> subscribeFuture = subscribe(permits);
+            CompletableFuture<RedissonLockEntry> subscribeFuture = subscribe();
             semaphorePubSub.timeout(subscribeFuture);
             return subscribeFuture.thenCompose(res -> acquireAsync(permits, res, leaseTime, timeUnit));
         });
@@ -279,7 +279,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                 return CompletableFuture.completedFuture(ids);
             }
 
-            if (entry.getLatch().tryAcquire(permits)) {
+            if (entry.getLatch().tryAcquire()) {
                 return acquireAsync(permits, entry, leaseTime, timeUnit);
             }
 
@@ -464,7 +464,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         }
         
         current = System.currentTimeMillis();
-        CompletableFuture<RedissonLockEntry> future = subscribe(permits);
+        CompletableFuture<RedissonLockEntry> future = subscribe();
         RedissonLockEntry entry;
         try {
             entry = future.get(time, TimeUnit.MILLISECONDS);
@@ -502,9 +502,9 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                 current = System.currentTimeMillis();
 
                 if (nearestTimeout != null) {
-                    entry.getLatch().tryAcquire(permits, Math.min(time, nearestTimeout), TimeUnit.MILLISECONDS);
+                    entry.getLatch().tryAcquire(Math.min(time, nearestTimeout), TimeUnit.MILLISECONDS);
                 } else {
-                    entry.getLatch().tryAcquire(permits, time, TimeUnit.MILLISECONDS);
+                    entry.getLatch().tryAcquire(time, TimeUnit.MILLISECONDS);
                 }
                 
                 long elapsed = System.currentTimeMillis() - current;
@@ -548,7 +548,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
             
             long current = System.currentTimeMillis();
             AtomicReference<Timeout> futureRef = new AtomicReference<>();
-            CompletableFuture<RedissonLockEntry> subscribeFuture = subscribe(permits);
+            CompletableFuture<RedissonLockEntry> subscribeFuture = subscribe();
             subscribeFuture.whenComplete((r, ex) -> {
                 if (ex != null) {
                     result.completeExceptionally(ex);
@@ -581,8 +581,8 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         return new CompletableFutureWrapper<>(result);
     }
 
-    private CompletableFuture<RedissonLockEntry> subscribe(int permits) {
-        return semaphorePubSub.subscribe(getRawName(), channelName, permits);
+    private CompletableFuture<RedissonLockEntry> subscribe() {
+        return semaphorePubSub.subscribe(getRawName(), channelName);
     }
 
     private void unsubscribe(RedissonLockEntry entry) {
