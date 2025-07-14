@@ -229,7 +229,7 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
                     onValueRemove(value);
                     removed = true;
                 }
-            }else{
+            } else {
                 newLeastExpireTime = Math.min(newLeastExpireTime, value.getExpireTime());
             }
         }
