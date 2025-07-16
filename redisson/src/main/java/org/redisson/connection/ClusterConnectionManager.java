@@ -21,6 +21,7 @@ import org.redisson.api.NodeType;
 import org.redisson.api.RFuture;
 import org.redisson.client.*;
 import org.redisson.client.codec.StringCodec;
+import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.client.protocol.decoder.ClusterNodesDecoder;
 import org.redisson.client.protocol.decoder.ObjectDecoder;
@@ -908,7 +909,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             }
 
             CompletableFuture<List<RedisURI>> ipsFuture = serviceManager.resolveAll(clusterNodeInfo.getAddress());
-            CompletableFuture<Void> f = ipsFuture.thenAccept(addresses -> {
+            CompletableFuture<Void> f = ipsFuture.thenCompose(addresses -> {
                 int index = 0;
                 if (addresses.size() > 1) {
                     addresses.sort(Comparator.comparing(RedisURI::getHost));
@@ -947,6 +948,23 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                     if (clusterNodeInfo.containsFlag(Flag.FAIL)) {
                         masterPartition.addFailedSlaveAddress(address);
                     }
+
+                    if (cfg.isCheckMasterLinkStatus()) {
+                        CompletionStage<RedisConnection> connectionFuture = connectToNode(cfg, address, configEndpointHostName);
+                        RedisURI finalAddress = address;
+                        return connectionFuture.thenCompose(con -> {
+                            RFuture<Map<String, String>> future = con.async(StringCodec.INSTANCE, RedisCommands.INFO_REPLICATION);
+                            return future.thenCompose(info -> {
+                                String masterLinkStatus = info.getOrDefault("master_link_status", "");
+                                if ("down".equals(masterLinkStatus)) {
+                                    masterPartition.addFailedSlaveAddress(finalAddress);
+                                }
+                                return CompletableFuture.<Void>completedFuture(null);
+                            });
+                        });
+                    }
+                    return CompletableFuture.<Void>completedFuture(null);
+
                 } else if (clusterNodeInfo.containsFlag(Flag.MASTER)) {
                     ClusterPartition masterPartition = partitions.computeIfAbsent(masterId, k -> new ClusterPartition(masterId));
                     masterPartition.setSlotRanges(clusterNodeInfo.getSlotRanges());
@@ -956,6 +974,10 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                         masterPartition.setMasterFail(true);
                     }
                 }
+
+                return CompletableFuture.<Void>completedFuture(null);
+
+
             }).exceptionally(ex -> {
                 if (clusterNodeInfo.containsFlag(Flag.FAIL)
                         || clusterNodeInfo.containsFlag(Flag.EVENTUAL_FAIL)) {
