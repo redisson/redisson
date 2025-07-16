@@ -355,6 +355,15 @@ public final class ServiceManager {
             List<RedisURI> nodes = future.getNow().stream().map(addr -> {
                 return toURI(uri.getScheme(), addr.getAddress().getHostAddress(), "" + addr.getPort());
             }).collect(Collectors.toList());
+
+            long loopbackCount = future.getNow().stream()
+                    .filter(addr -> addr.getAddress().isLoopbackAddress())
+                    .count();
+            if (loopbackCount > 1) {
+                nodes.sort(Comparator.comparing(RedisURI::getHost));
+                nodes = nodes.subList(0, 1);
+            }
+
             result.complete(nodes);
         });
         return result;
