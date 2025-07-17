@@ -45,6 +45,8 @@ public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterSe
 
     private boolean checkSlotsCoverage = true;
 
+    private boolean checkMasterLinkStatus = false;
+
     private ShardedSubscriptionMode shardedSubscriptionMode = ShardedSubscriptionMode.AUTO;
 
     public ClusterServersConfig() {
@@ -56,6 +58,7 @@ public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterSe
         setScanInterval(config.getScanInterval());
         setNatMapper(config.getNatMapper());
         setCheckSlotsCoverage(config.isCheckSlotsCoverage());
+        setCheckMasterLinkStatus(config.isCheckMasterLinkStatus());
         setShardedSubscriptionMode(config.getShardedSubscriptionMode());
     }
 
@@ -106,6 +109,23 @@ public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterSe
      */
     public ClusterServersConfig setCheckSlotsCoverage(boolean checkSlotsCoverage) {
         this.checkSlotsCoverage = checkSlotsCoverage;
+        return this;
+    }
+
+    public boolean isCheckMasterLinkStatus() {
+        return checkMasterLinkStatus;
+    }
+
+    /**
+     * Enable checking the 'master-link-status' of a slave from the INFO REPLICATION command.
+     * <p>
+     * Default is <code>false</code>
+     *
+     * @param checkMasterLinkStatus boolean value
+     * @return config
+     */
+    public ClusterServersConfig setCheckMasterLinkStatus(boolean checkMasterLinkStatus) {
+        this.checkMasterLinkStatus = checkMasterLinkStatus;
         return this;
     }
 
