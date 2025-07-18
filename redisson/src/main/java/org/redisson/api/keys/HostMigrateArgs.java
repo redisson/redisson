@@ -13,23 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.api.rkeys;
+package org.redisson.api.keys;
+
 
 /**
- * MigrateArgs
+ * DatabaseMigrateArgs
  *
  * @author lyrric
  */
-public interface MigrateArgs {
-
+public interface HostMigrateArgs {
     /**
-     * Defines keys to transfer
-     * Redis version >= 3.0.6
+     * Defines host of destination instance
      *
-     * @param keys keys to migrate，not empty
+     * @param host host
      * @return migrate conditions object
      */
-    static HostMigrateArgs keys(String... keys){
-        return new MigrateArgsParams(keys);
-    }
+    PortMigrateArgs host(String host);
 }

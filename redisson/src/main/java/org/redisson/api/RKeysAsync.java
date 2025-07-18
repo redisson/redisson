@@ -16,7 +16,7 @@
 package org.redisson.api;
 
 import org.redisson.api.options.KeysScanOptions;
-import org.redisson.api.rkeys.MigrateArgs;
+import org.redisson.api.keys.MigrateArgs;
 
 import java.util.concurrent.TimeUnit;
 

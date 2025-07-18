@@ -9,7 +9,7 @@ import org.redisson.api.*;
 import org.redisson.api.listener.FlushListener;
 import org.redisson.api.listener.NewObjectListener;
 import org.redisson.api.options.KeysScanOptions;
-import org.redisson.api.rkeys.MigrateArgs;
+import org.redisson.api.keys.MigrateArgs;
 import org.redisson.api.stream.StreamAddArgs;
 import org.redisson.api.stream.StreamCreateGroupArgs;
 import org.redisson.config.Config;

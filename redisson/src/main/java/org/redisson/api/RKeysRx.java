@@ -20,7 +20,7 @@ import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Single;
 import org.redisson.api.options.KeysScanOptions;
-import org.redisson.api.rkeys.MigrateArgs;
+import org.redisson.api.keys.MigrateArgs;
 
 import java.util.concurrent.TimeUnit;
 
