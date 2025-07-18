@@ -753,6 +753,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
             params.add(mapKey);
             params.add(mapValue);
             CacheKey cacheKey = localCacheView.toCacheKey(mapKey);
+            cachePut(cacheKey, t.getKey(), t.getValue());
             hashes[i] = cacheKey.getKeyHash();
             i++;
         }
@@ -800,12 +801,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 + "end;",
                 Arrays.asList(getRawName(), listener.getInvalidationTopicName(), listener.getUpdatesLogName()),
                 params.toArray());
-
-        CompletionStage<Void> f = future.thenApply(res -> {
-            cacheMap(map);
-            return null;
-        });
-        return new CompletableFutureWrapper<>(f);
+        return new CompletableFutureWrapper<>(future);
     }
 
     @Override
