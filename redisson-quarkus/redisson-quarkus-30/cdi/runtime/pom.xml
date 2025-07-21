@@ -59,7 +59,7 @@
               <groupId>org.graalvm.nativeimage</groupId>
               <artifactId>svm</artifactId>
               <scope>provided</scope>
-              <version>23.0.1</version>
+              <version>24.2.2</version>
           </dependency>
 
           <dependency>
