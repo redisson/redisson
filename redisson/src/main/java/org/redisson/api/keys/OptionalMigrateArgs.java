@@ -23,7 +23,7 @@ import org.redisson.api.MigrateMode;
  *
  * @author lyrric
  */
-public interface OptionalMigrateArgs {
+public interface OptionalMigrateArgs extends MigrateArgs {
 
 
     /**
