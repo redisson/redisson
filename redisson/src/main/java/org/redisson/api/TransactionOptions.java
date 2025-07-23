@@ -15,6 +15,7 @@
  */
 package org.redisson.api;
 
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -161,6 +162,21 @@ public final class TransactionOptions {
         this.timeout = timeoutUnit.toMillis(timeout);
         return this;
     }
- 
-    
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        TransactionOptions that = (TransactionOptions) o;
+        return responseTimeout == that.responseTimeout
+                    && retryAttempts == that.retryAttempts
+                        && retryInterval == that.retryInterval
+                            && syncSlaves == that.syncSlaves
+                                && syncTimeout == that.syncTimeout
+                                    && timeout == that.timeout;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(responseTimeout, retryAttempts, retryInterval, syncSlaves, syncTimeout, timeout);
+    }
 }
