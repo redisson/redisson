@@ -974,7 +974,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                                 if ("down".equals(masterLinkStatus)) {
                                     masterPartition.addFailedSlaveAddress(finalAddress);
                                 }
-                                return CompletableFuture.<Void>completedFuture(null);
+                                return null;
                             });
                         });
                     }
