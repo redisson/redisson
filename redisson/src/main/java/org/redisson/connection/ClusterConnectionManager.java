@@ -606,8 +606,13 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         }
 
         Set<RedisURI> addedSlaves = newPart.getSlaveAddresses().stream()
-                                                                .filter(uri -> !currentPart.getSlaveAddresses().contains(uri)
-                                                                                && !newPart.getFailedSlaveAddresses().contains(uri))
+                                                                .filter(uri -> (!currentPart.getSlaveAddresses().contains(uri)
+                                                                                            && !newPart.getFailedSlaveAddresses().contains(uri))
+                                                                                    || (currentPart.getSlaveAddresses().contains(uri)
+                                                                                            && currentPart.getFailedSlaveAddresses().contains(uri)
+                                                                                            && !newPart.getFailedSlaveAddresses().contains(uri)
+                                                                                            && !entry.hasSlave(uri))
+                                                                )
                                                                 .collect(Collectors.toSet());
 
         if (!addedSlaves.isEmpty()) {
@@ -624,6 +629,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 slaveUpFuture = slaveUpFuture.thenApply(v -> {
                     if (v) {
                         currentPart.addSlaveAddress(uri);
+                        currentPart.removeFailedSlaveAddress(uri);
                         log.info("slave: {} unfreezed for master {} and slot ranges: {}",
                                 currentPart.getMasterAddress(), uri, currentPart.getSlotRanges());
                         entry.excludeMasterFromSlaves(uri);
@@ -641,6 +647,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             CompletableFuture<Void> slaveUpFuture = entry.addSlave(uri, configEndpointHostName);
             CompletableFuture<Void> f = slaveUpFuture.thenAccept(res -> {
                 currentPart.addSlaveAddress(uri);
+                currentPart.removeFailedSlaveAddress(uri);
                 log.info("slave: {} added for master {} and slot ranges: {}",
                         currentPart.getMasterAddress(), uri, currentPart.getSlotRanges());
                 entry.excludeMasterFromSlaves(uri);
