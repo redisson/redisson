@@ -954,7 +954,15 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                         RedisURI finalAddress = address;
                         return connectionFuture.thenCompose(con -> {
                             RFuture<Map<String, String>> future = con.async(StringCodec.INSTANCE, RedisCommands.INFO_REPLICATION);
-                            return future.thenCompose(info -> {
+                            return future.handle((info, ex) -> {
+                                if (ex != null) {
+                                    if (ex instanceof RedisTimeoutException) {
+                                        return null;
+                                    }
+
+                                    throw new CompletionException(ex);
+                                }
+
                                 String masterLinkStatus = info.getOrDefault("master_link_status", "");
                                 if ("down".equals(masterLinkStatus)) {
                                     masterPartition.addFailedSlaveAddress(finalAddress);
