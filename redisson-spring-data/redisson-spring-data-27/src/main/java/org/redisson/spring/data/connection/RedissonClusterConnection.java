@@ -64,6 +64,10 @@ public class RedissonClusterConnection extends RedissonConnection implements Def
     public RedissonClusterConnection(RedissonClient redisson) {
         super(redisson);
     }
+    
+    public RedissonClusterConnection(RedissonClient redisson, boolean filterOkResponses) {
+        super(redisson, filterOkResponses);
+    }
 
     @Override
     public Iterable<RedisClusterNode> clusterGetNodes() {
