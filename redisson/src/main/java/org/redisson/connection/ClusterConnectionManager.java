@@ -915,8 +915,23 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 continue;
             }
 
-            CompletableFuture<List<RedisURI>> ipsFuture = serviceManager.resolveAll(clusterNodeInfo.getAddress());
-            CompletableFuture<Void> f = ipsFuture.thenCompose(addresses -> {
+            RedisURI uri;
+            if (clusterNodeInfo.getHostName() != null) {
+                uri = new RedisURI(clusterNodeInfo.getAddress().getScheme() + "://" + clusterNodeInfo.getHostName() +
+                        ":" + clusterNodeInfo.getAddress().getPort());
+            } else {
+                uri = clusterNodeInfo.getAddress();
+            }
+
+            CompletableFuture<List<RedisURI>> ipsFuture = serviceManager.resolveAll(uri);
+            CompletableFuture<Void> f = ipsFuture.handle((r, ex) -> {
+                        if (ex != null) {
+                            RedisURI mappedUri = serviceManager.toURI(clusterNodeInfo.getAddress().getScheme(), clusterNodeInfo.getAddress().getHost(), "" + clusterNodeInfo.getAddress().getPort());
+                            return Collections.singletonList(mappedUri);
+                        }
+                        return r;
+                    })
+                    .thenCompose(addresses -> {
                 int index = 0;
                 if (addresses.size() > 1) {
                     addresses.sort(Comparator.comparing(RedisURI::getHost));
@@ -937,11 +952,11 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 }
 
                 if (addresses.size() == 1) {
-                    if (!clusterNodeInfo.getAddress().equals(address)) {
-                        log.debug("{} resolved to {}", clusterNodeInfo.getAddress(), address);
+                    if (!uri.equals(address)) {
+                        log.debug("{} resolved to {}", uri, address);
                     }
                 } else {
-                    log.debug("{} resolved to {} and {} selected", clusterNodeInfo.getAddress(), addresses, address);
+                    log.debug("{} resolved to {} and {} selected", uri, addresses, address);
                 }
 
                 if (clusterNodeInfo.containsFlag(Flag.SLAVE)) {
