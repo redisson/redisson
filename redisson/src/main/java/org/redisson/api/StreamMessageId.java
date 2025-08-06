@@ -61,7 +61,7 @@ public class StreamMessageId {
     public static final StreamMessageId NEWEST = new StreamMessageId(-1);
 
     /**
-     * Defines id to receive Stream entries since the last message.
+     * Defines id to receive the latest Stream entry.
      * <p>
      * Used in {@link RStream#read}, {@link RStream#createGroup} methods
      * <p>
