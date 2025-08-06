@@ -50,6 +50,7 @@ public class ClusterNodeInfo {
     private RedisURI address;
     private final Set<Flag> flags = EnumSet.noneOf(Flag.class);
     private String slaveOf;
+    private String hostName;
 
     private final Set<ClusterSlotRange> slotRanges = new HashSet<>();
 
@@ -92,6 +93,14 @@ public class ClusterNodeInfo {
         this.slaveOf = slaveOf;
     }
 
+    public String getHostName() {
+        return hostName;
+    }
+
+    public void setHostName(String hostName) {
+        this.hostName = hostName;
+    }
+
     public String getNodeInfo() {
         return nodeInfo;
     }
@@ -99,7 +108,7 @@ public class ClusterNodeInfo {
     @Override
     public String toString() {
         return "ClusterNodeInfo [nodeId=" + nodeId + ", address=" + address + ", flags=" + flags
-                + ", slaveOf=" + slaveOf + ", slotRanges=" + slotRanges + "]";
+                + ", slaveOf=" + slaveOf + ", hostName=" + hostName + ", slotRanges=" + slotRanges + "]";
     }
 
 }
