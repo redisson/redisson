@@ -15,36 +15,64 @@
  */
 package io.quarkus.cache.redisson.runtime;
 
-import static io.quarkus.runtime.annotations.ConfigPhase.RUN_TIME;
-
-import java.util.Map;
-
-import io.quarkus.runtime.annotations.ConfigDocMapKey;
-import io.quarkus.runtime.annotations.ConfigDocSection;
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithParentName;
+
+import java.time.Duration;
+import java.util.Map;
+import java.util.Optional;
+
+import static io.quarkus.runtime.annotations.ConfigPhase.RUN_TIME;
 
 /**
  *
  * @author Nikita Koksharov
  *
  */
-@ConfigRoot(phase = RUN_TIME, name = "cache.redisson")
-public class RedissonCachesConfig {
+@ConfigRoot(phase = RUN_TIME)
+@ConfigMapping(prefix = "cache.redisson")
+public interface RedissonCachesConfig {
 
     /**
      * Default configuration applied to all Redis caches (lowest precedence)
      */
-    @ConfigItem(name = ConfigItem.PARENT)
-    public RedissonCacheRuntimeConfig defaultConfig;
+    @WithParentName
+    RedissonCacheRuntimeConfig defaultConfig();
 
     /**
      * Additional configuration applied to a specific Redis cache (highest precedence)
      */
-    @ConfigItem(name = ConfigItem.PARENT)
-    @ConfigDocMapKey("cache-name")
-    @ConfigDocSection
-    Map<String, RedissonCacheRuntimeConfig> cachesConfig;
+    @WithParentName
+    Map<String, RedissonCacheRuntimeConfig> cachesConfig();
+
+    interface RedissonCacheRuntimeConfig {
+
+        /**
+         * Specifies maximum size of this cache.
+         * Superfluous elements are evicted using LRU algorithm.
+         * If <code>0</code> the cache is unbounded (default).
+         */
+        Optional<Integer> maxSize();
+
+        /**
+         * Specifies that each entry should be automatically removed from the cache once a fixed duration has elapsed after
+         * the entry's creation, or the most recent replacement of its value.
+         */
+        Optional<Duration> expireAfterWrite();
+
+        /**
+         * Specifies that each entry should be automatically removed from the cache once a fixed duration has elapsed after
+         * the last access of its value.
+         */
+        Optional<Duration> expireAfterAccess();
+
+        /**
+         * Specifies the cache implementation.
+         */
+        Optional<CacheImplementation> implementation();
+
+    }
+
 
 }

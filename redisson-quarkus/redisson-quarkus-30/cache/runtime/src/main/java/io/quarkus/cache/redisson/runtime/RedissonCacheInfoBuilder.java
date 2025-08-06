@@ -15,8 +15,6 @@
  */
 package io.quarkus.cache.redisson.runtime;
 
-import io.quarkus.runtime.configuration.HashSetFactory;
-
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -40,31 +38,31 @@ public class RedissonCacheInfoBuilder {
             RedissonCacheInfo cacheInfo = new RedissonCacheInfo();
             cacheInfo.name = cacheName;
 
-            RedissonCacheRuntimeConfig defaultRuntimeConfig = runtimeConfig.defaultConfig;
-            RedissonCacheRuntimeConfig namedRuntimeConfig = runtimeConfig.cachesConfig.get(cacheInfo.name);
+            RedissonCachesConfig.RedissonCacheRuntimeConfig defaultRuntimeConfig = runtimeConfig.defaultConfig();
+            RedissonCachesConfig.RedissonCacheRuntimeConfig namedRuntimeConfig = runtimeConfig.cachesConfig().get(cacheInfo.name);
 
-            if (namedRuntimeConfig != null && namedRuntimeConfig.implementation.isPresent()) {
-                cacheInfo.implementation = namedRuntimeConfig.implementation;
-            } else if (defaultRuntimeConfig.implementation.isPresent()) {
-                cacheInfo.implementation = defaultRuntimeConfig.implementation;
+            if (namedRuntimeConfig != null && namedRuntimeConfig.implementation().isPresent()) {
+                cacheInfo.implementation = namedRuntimeConfig.implementation();
+            } else if (defaultRuntimeConfig.implementation().isPresent()) {
+                cacheInfo.implementation = defaultRuntimeConfig.implementation();
             }
 
-            if (namedRuntimeConfig != null && namedRuntimeConfig.expireAfterAccess.isPresent()) {
-                cacheInfo.expireAfterAccess = namedRuntimeConfig.expireAfterAccess;
-            } else if (defaultRuntimeConfig.expireAfterAccess.isPresent()) {
-                cacheInfo.expireAfterAccess = defaultRuntimeConfig.expireAfterAccess;
+            if (namedRuntimeConfig != null && namedRuntimeConfig.expireAfterAccess().isPresent()) {
+                cacheInfo.expireAfterAccess = namedRuntimeConfig.expireAfterAccess();
+            } else if (defaultRuntimeConfig.expireAfterAccess().isPresent()) {
+                cacheInfo.expireAfterAccess = defaultRuntimeConfig.expireAfterAccess();
             }
 
-            if (namedRuntimeConfig != null && namedRuntimeConfig.expireAfterWrite.isPresent()) {
-                cacheInfo.expireAfterWrite = namedRuntimeConfig.expireAfterWrite;
-            } else if (defaultRuntimeConfig.expireAfterWrite.isPresent()) {
-                cacheInfo.expireAfterWrite = defaultRuntimeConfig.expireAfterWrite;
+            if (namedRuntimeConfig != null && namedRuntimeConfig.expireAfterWrite().isPresent()) {
+                cacheInfo.expireAfterWrite = namedRuntimeConfig.expireAfterWrite();
+            } else if (defaultRuntimeConfig.expireAfterWrite().isPresent()) {
+                cacheInfo.expireAfterWrite = defaultRuntimeConfig.expireAfterWrite();
             }
 
-            if (namedRuntimeConfig != null && namedRuntimeConfig.maxSize.isPresent()) {
-                cacheInfo.maxSize = namedRuntimeConfig.maxSize;
-            } else if (defaultRuntimeConfig.maxSize.isPresent()) {
-                cacheInfo.maxSize = defaultRuntimeConfig.maxSize;
+            if (namedRuntimeConfig != null && namedRuntimeConfig.maxSize().isPresent()) {
+                cacheInfo.maxSize = namedRuntimeConfig.maxSize();
+            } else if (defaultRuntimeConfig.maxSize().isPresent()) {
+                cacheInfo.maxSize = defaultRuntimeConfig.maxSize();
             }
 
             result.add(cacheInfo);
