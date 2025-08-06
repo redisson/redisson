@@ -43,7 +43,7 @@
         <dependency>
             <groupId>org.jboss</groupId>
             <artifactId>jandex</artifactId>
-            <version>3.4.0</version>
+            <version>3.3.1</version>
             <scope>runtime</scope>
             <optional>true</optional>
         </dependency>
