@@ -12,6 +12,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RBucket;
 import org.redisson.api.RedissonClient;
+import org.testcontainers.containers.FixedHostPortGenericContainer;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -21,7 +25,12 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  */
 @ApplicationScoped
+@Testcontainers
 public class RedissonExtensionTest {
+
+    @Container
+    public static final GenericContainer REDIS = new FixedHostPortGenericContainer("redis:latest")
+            .withFixedExposedPort(6379, 6379);
 
     @BeforeEach
     void startCdiContainer() {
