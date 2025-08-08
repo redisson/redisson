@@ -41,7 +41,7 @@ public final class CacheKeyParams {
             return Hash.hash128(buf);
         } else if (obj instanceof Object[]) {
             return Arrays.stream((Object[]) obj)
-                    .map(value -> this.deepConvertByteBuf((value)))
+                    .map(value -> this.deepConvertByteBuf(value))
                     .toArray();
         }
         return obj;
