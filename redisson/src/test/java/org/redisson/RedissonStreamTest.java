@@ -628,7 +628,64 @@ public class RedissonStreamTest extends RedisDockerTest {
         assertThat(r2.get(new StreamMessageId(1))).isEqualTo(entries1);
         assertThat(r2.get(new StreamMessageId(2))).isEqualTo(entries2);
     }
-    
+
+    @Test
+    public void testRangeReversed2() {
+        RStream<String, String> stream = redisson.getStream("test");
+        assertThat(stream.size()).isEqualTo(0);
+
+        Map<String, String> entries1 = new HashMap<>();
+        entries1.put("1", "11");
+        entries1.put("3", "31");
+        stream.add(new StreamMessageId(1), StreamAddArgs.entries(entries1).trimNonStrict().maxLen(1).noLimit());
+        assertThat(stream.size()).isEqualTo(1);
+
+        Map<String, String> entries2 = new HashMap<>();
+        entries2.put("5", "55");
+        entries2.put("7", "77");
+        stream.add(new StreamMessageId(2), StreamAddArgs.entries(entries2).trimNonStrict().maxLen(1).noLimit());
+
+        Map<StreamMessageId, Map<String, String>> r2 = stream.rangeReversed(StreamRangeArgs.startId(StreamMessageId.MAX)
+                .endId(StreamMessageId.MIN)
+                .count(10));
+        assertThat(r2.keySet()).containsExactly(new StreamMessageId(2), new StreamMessageId(1));
+        assertThat(r2.get(new StreamMessageId(1))).isEqualTo(entries1);
+        assertThat(r2.get(new StreamMessageId(2))).isEqualTo(entries2);
+    }
+
+    @Test
+    public void testRange2() {
+        RStream<String, String> stream = redisson.getStream("test");
+        assertThat(stream.size()).isEqualTo(0);
+
+        Map<String, String> entries1 = new HashMap<>();
+        entries1.put("1", "11");
+        entries1.put("3", "31");
+        stream.add(new StreamMessageId(1), StreamAddArgs.entries(entries1).trimNonStrict().maxLen(1).noLimit());
+        assertThat(stream.size()).isEqualTo(1);
+
+        Map<String, String> entries2 = new HashMap<>();
+        entries2.put("5", "55");
+        entries2.put("7", "77");
+        stream.add(new StreamMessageId(2), StreamAddArgs.entries(entries2).trimNonStrict().maxLen(1).noLimit());
+
+        Map<StreamMessageId, Map<String, String>> r = stream.range(StreamRangeArgs
+                .startId(new StreamMessageId(0)).endId(new StreamMessageId(1)).count(10));
+        assertThat(r).hasSize(1);
+        assertThat(r.get(new StreamMessageId(1))).isEqualTo(entries1);
+
+        Map<StreamMessageId, Map<String, String>> r2 = stream.range(StreamRangeArgs
+                .startId(StreamMessageId.MIN).endId(StreamMessageId.MAX).count(10));
+        assertThat(r2.keySet()).containsExactly(new StreamMessageId(1), new StreamMessageId(2));
+        assertThat(r2.get(new StreamMessageId(1))).isEqualTo(entries1);
+        assertThat(r2.get(new StreamMessageId(2))).isEqualTo(entries2);
+
+        Map<StreamMessageId, Map<String, String>> r3 = stream.range(StreamRangeArgs
+                .startIdExclusive(new StreamMessageId(1)).endId(new StreamMessageId(2)));
+        assertThat(r3).hasSize(1);
+        assertThat(r3.get(new StreamMessageId(2))).isEqualTo(entries2);
+    }
+
     @Test
     public void testPollMultiKeys() {
         RStream<String, String> stream = redisson.getStream("test");

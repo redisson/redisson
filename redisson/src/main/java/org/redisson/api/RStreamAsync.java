@@ -368,6 +368,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param endId - end Stream ID
      * @return stream data mapped by Stream ID
      */
+    @Deprecated
     RFuture<Map<StreamMessageId, Map<K, V>>> rangeAsync(StreamMessageId startId, StreamMessageId endId);
 
     /**
@@ -378,7 +379,16 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param endId - end Stream ID
      * @return stream data mapped by Stream ID
      */
+    @Deprecated
     RFuture<Map<StreamMessageId, Map<K, V>>> rangeAsync(int count, StreamMessageId startId, StreamMessageId endId);
+
+    /**
+     * Returns stream data in range.
+     *
+     * @param args - method arguments object
+     * @return stream data mapped by Stream ID
+     */
+    RFuture<Map<StreamMessageId, Map<K, V>>> rangeAsync(StreamRangeArgs args);
     
     /**
      * Returns stream data in reverse order in range by specified start Stream ID (included) and end Stream ID (included).
@@ -387,6 +397,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param endId - end Stream ID
      * @return stream data mapped by Stream ID
      */
+    @Deprecated
     RFuture<Map<StreamMessageId, Map<K, V>>> rangeReversedAsync(StreamMessageId startId, StreamMessageId endId);
     
     /**
@@ -397,8 +408,16 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param endId - end Stream ID
      * @return stream data mapped by Stream ID
      */
+    @Deprecated
     RFuture<Map<StreamMessageId, Map<K, V>>> rangeReversedAsync(int count, StreamMessageId startId, StreamMessageId endId);
-    
+
+    /**
+     * Returns stream data in reverse order in range.
+     *
+     * @param args - method arguments object
+     * @return stream data mapped by Stream ID
+     */
+    RFuture<Map<StreamMessageId, Map<K, V>>> rangeReversedAsync(StreamRangeArgs args);
     /**
      * Removes messages by id.
      * 

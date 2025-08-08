@@ -424,8 +424,9 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
      * @param endId - end Stream Message ID
      * @return stream data mapped by Stream Message ID
      */
+    @Deprecated
     Map<StreamMessageId, Map<K, V>> range(StreamMessageId startId, StreamMessageId endId);
-    
+
     /**
      * Returns stream data in range by specified start Stream Message ID (included) and end Stream Message ID (included).
      * 
@@ -434,8 +435,17 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
      * @param endId - end Stream Message ID
      * @return stream data mapped by Stream Message ID
      */
+    @Deprecated
     Map<StreamMessageId, Map<K, V>> range(int count, StreamMessageId startId, StreamMessageId endId);
-    
+
+    /**
+     * Returns stream data in range.
+     *
+     * @param args - method arguments object
+     * @return stream data mapped by Stream ID
+     */
+    Map<StreamMessageId, Map<K, V>> range(StreamRangeArgs args);
+
     /**
      * Returns stream data in reverse order in range by specified start Stream Message ID (included) and end Stream Message ID (included).
      * 
@@ -443,8 +453,9 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
      * @param endId - end Stream Message ID
      * @return stream data mapped by Stream Message ID
      */
+    @Deprecated
     Map<StreamMessageId, Map<K, V>> rangeReversed(StreamMessageId startId, StreamMessageId endId);
-    
+
     /**
      * Returns stream data in reverse order in range by specified start Stream Message ID (included) and end Stream Message ID (included).
      * 
@@ -453,7 +464,16 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
      * @param endId - end Stream Message ID
      * @return stream data mapped by Stream Message ID
      */
+    @Deprecated
     Map<StreamMessageId, Map<K, V>> rangeReversed(int count, StreamMessageId startId, StreamMessageId endId);
+
+    /**
+     * Returns stream data in reverse order in range.
+     *
+     * @param args - method arguments object
+     * @return stream data mapped by Stream ID
+     */
+    Map<StreamMessageId, Map<K, V>> rangeReversed(StreamRangeArgs args);
 
     /**
      * Removes messages by id.
