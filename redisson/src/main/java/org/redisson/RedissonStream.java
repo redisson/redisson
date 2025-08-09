@@ -529,7 +529,60 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         }
         return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XADD_VOID, params.toArray());
     }
-    
+
+    @Override
+    public RFuture<Map<StreamMessageId, Map<K, V>>> rangeAsync(StreamRangeArgs args) {
+        StreamRangeParams pps = (StreamRangeParams) args;
+        List<Object> params = new LinkedList<Object>();
+        params.add(getRawName());
+        params.add(value(pps.getStartId(), pps.isStartIdExclusive()));
+        params.add(value(pps.getEndId(), pps.isEndIdExclusive()));
+
+        if (pps.getCount() > 0) {
+            params.add("COUNT");
+            params.add(pps.getCount());
+        }
+
+        return commandExecutor.readAsync(getRawName(), codec, RedisCommands.XRANGE, params.toArray());
+    }
+
+    private String value(StreamMessageId messageId, boolean exclusive) {
+        if (exclusive && messageId != StreamMessageId.MAX && messageId != StreamMessageId.MIN) {
+            StringBuilder element = new StringBuilder();
+            element.append("(");
+            element.append(messageId);
+            return element.toString();
+        } else {
+            return messageId.toString();
+        }
+    }
+
+    @Override
+    public Map<StreamMessageId, Map<K, V>> range(StreamRangeArgs args) {
+        return get(rangeAsync(args));
+    }
+
+    @Override
+    public RFuture<Map<StreamMessageId, Map<K, V>>> rangeReversedAsync(StreamRangeArgs args) {
+        StreamRangeParams pps = (StreamRangeParams) args;
+        List<Object> params = new LinkedList<Object>();
+        params.add(getRawName());
+        params.add(value(pps.getStartId(), pps.isStartIdExclusive()));
+        params.add(value(pps.getEndId(), pps.isEndIdExclusive()));
+
+        if (pps.getCount() > 0) {
+            params.add("COUNT");
+            params.add(pps.getCount());
+        }
+
+        return commandExecutor.readAsync(getRawName(), codec, RedisCommands.XREVRANGE, params.toArray());
+    }
+
+    @Override
+    public Map<StreamMessageId, Map<K, V>> rangeReversed(StreamRangeArgs args) {
+        return get(rangeReversedAsync(args));
+    }
+
     @Override
     public RFuture<Map<StreamMessageId, Map<K, V>>> rangeAsync(int count, StreamMessageId startId, StreamMessageId endId) {
         List<Object> params = new LinkedList<Object>();

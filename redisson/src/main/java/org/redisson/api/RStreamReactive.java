@@ -375,6 +375,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param endId - end Stream ID
      * @return stream data mapped by Stream ID
      */
+    @Deprecated
     Mono<Map<StreamMessageId, Map<K, V>>> range(StreamMessageId startId, StreamMessageId endId);
 
     /**
@@ -385,6 +386,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param endId - end Stream ID
      * @return stream data mapped by Stream ID
      */
+    @Deprecated
     Mono<Map<StreamMessageId, Map<K, V>>> range(int count, StreamMessageId startId, StreamMessageId endId);
     
     /**
@@ -394,6 +396,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param endId - end Stream ID
      * @return stream data mapped by Stream ID
      */
+    @Deprecated
     Mono<Map<StreamMessageId, Map<K, V>>> rangeReversed(StreamMessageId startId, StreamMessageId endId);
     
     /**
@@ -404,7 +407,24 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param endId - end Stream ID
      * @return stream data mapped by Stream ID
      */
+    @Deprecated
     Mono<Map<StreamMessageId, Map<K, V>>> rangeReversed(int count, StreamMessageId startId, StreamMessageId endId);
+
+    /**
+     * Returns stream data in range.
+     *
+     * @param args - method arguments object
+     * @return stream data mapped by Stream ID
+     */
+    Mono<Map<StreamMessageId, Map<K, V>>> range(StreamRangeArgs args);
+
+    /**
+     * Returns stream data in reverse order in range.
+     *
+     * @param args - method arguments object
+     * @return stream data mapped by Stream ID
+     */
+    Mono<Map<StreamMessageId, Map<K, V>>> rangeReversed(StreamRangeArgs args);
 
     /**
      * Removes messages by id.
