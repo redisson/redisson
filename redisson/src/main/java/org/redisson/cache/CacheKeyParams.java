@@ -15,6 +15,9 @@
  */
 package org.redisson.cache;
 
+import io.netty.buffer.ByteBuf;
+import org.redisson.misc.Hash;
+
 import java.util.Arrays;
 
 /**
@@ -27,7 +30,21 @@ public final class CacheKeyParams {
     private final Object[] values;
 
     public CacheKeyParams(Object[] values) {
-        this.values = values;
+        this.values = Arrays.stream(values)
+                .map(value -> deepConvertByteBuf(value))
+                .toArray();
+    }
+
+    private Object deepConvertByteBuf(Object obj) {
+        if (obj instanceof ByteBuf) {
+            ByteBuf buf = (ByteBuf) obj;
+            return Hash.hash128(buf);
+        } else if (obj instanceof Object[]) {
+            return Arrays.stream((Object[]) obj)
+                    .map(value -> this.deepConvertByteBuf(value))
+                    .toArray();
+        }
+        return obj;
     }
 
     @Override
