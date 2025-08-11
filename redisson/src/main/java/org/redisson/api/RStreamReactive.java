@@ -112,6 +112,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param count - amount of messages
      * @return list
      */
+    @Deprecated
     Mono<List<PendingEntry>> listPending(String groupName, StreamMessageId startId, StreamMessageId endId, int count);
     
     /**
@@ -128,6 +129,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param count - amount of messages
      * @return list
      */
+    @Deprecated
     Mono<List<PendingEntry>> listPending(String groupName, String consumerName, StreamMessageId startId, StreamMessageId endId, int count);
 
     /**
@@ -149,6 +151,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param count - amount of messages
      * @return list
      */
+    @Deprecated
     Mono<List<PendingEntry>> listPending(String groupName, StreamMessageId startId, StreamMessageId endId, long idleTime, TimeUnit idleTimeUnit, int count);
 
     /**
@@ -171,7 +174,17 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param count - amount of messages
      * @return list
      */
+    @Deprecated
     Mono<List<PendingEntry>> listPending(String groupName, String consumerName, StreamMessageId startId, StreamMessageId endId, long idleTime, TimeUnit idleTimeUnit, int count);
+
+    /**
+     * Returns list of common info about pending messages by group and consumer name.
+     * Limited by start Stream Message ID and end Stream Message ID and count.
+     *
+     * @param args - method arguments object
+     * @return list
+     */
+    Mono<List<PendingEntry>> listPending(StreamPendingRangeArgs args);
 
     /**
      * Returns stream data of pending messages by group name.

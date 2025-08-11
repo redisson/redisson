@@ -161,6 +161,54 @@ public class RedissonStreamTest extends RedisDockerTest {
     }
 
     @Test
+    public void testPendingIdle2() throws InterruptedException {
+        RStream<String, String> stream = redisson.getStream("test");
+
+        stream.add(StreamAddArgs.entry("0", "0"));
+
+        stream.createGroup(StreamCreateGroupArgs.name("testGroup"));
+
+        StreamMessageId id1 = stream.add(StreamAddArgs.entry("1", "1"));
+        StreamMessageId id2 = stream.add(StreamAddArgs.entry("2", "2"));
+
+        Map<StreamMessageId, Map<String, String>> s = stream.readGroup("testGroup", "consumer1", StreamReadGroupArgs.neverDelivered());
+        assertThat(s.size()).isEqualTo(2);
+
+        StreamMessageId id3 = stream.add(StreamAddArgs.entry("3", "3"));
+        StreamMessageId id4 = stream.add(StreamAddArgs.entry("4", "4"));
+
+        Map<StreamMessageId, Map<String, String>> s2 = stream.readGroup("testGroup", "consumer2", StreamReadGroupArgs.neverDelivered());
+        assertThat(s2.size()).isEqualTo(2);
+
+        Thread.sleep(5);
+
+        List<PendingEntry> list = stream.listPending(StreamPendingRangeArgs.groupName("testGroup")
+                .startId(StreamMessageId.MIN)
+                .endId(StreamMessageId.MAX)
+                .count(10)
+                .idleTime(Duration.ofMillis(1)));
+        assertThat(list.size()).isEqualTo(4);
+        for (PendingEntry pendingEntry : list) {
+            assertThat(pendingEntry.getId()).isIn(id1, id2, id3, id4);
+            assertThat(pendingEntry.getConsumerName()).isIn("consumer1", "consumer2");
+            assertThat(pendingEntry.getLastTimeDelivered()).isOne();
+        }
+
+        List<PendingEntry> list2 = stream.listPending(StreamPendingRangeArgs.groupName("testGroup")
+                .startId(StreamMessageId.MIN)
+                .endId(StreamMessageId.MAX)
+                .count(10)
+                .consumerName("consumer1")
+                .idleTime(Duration.ofMillis(1)));
+        assertThat(list2.size()).isEqualTo(2);
+        for (PendingEntry pendingEntry : list2) {
+            assertThat(pendingEntry.getId()).isIn(id1, id2);
+            assertThat(pendingEntry.getConsumerName()).isEqualTo("consumer1");
+            assertThat(pendingEntry.getLastTimeDelivered()).isOne();
+        }
+    }
+
+    @Test
     public void testTrim() {
         RStream<String, String> stream = redisson.getStream("test");
 
@@ -395,7 +443,7 @@ public class RedissonStreamTest extends RedisDockerTest {
         assertThat(pi.getHighestId()).isEqualTo(id4);
         assertThat(pi.getTotal()).isEqualTo(4);
         assertThat(pi.getConsumerNames().keySet()).containsExactly("consumer1", "consumer2");
-        
+
         List<PendingEntry> list = stream.listPending("testGroup", StreamMessageId.MIN, StreamMessageId.MAX, 10);
         assertThat(list.size()).isEqualTo(4);
         for (PendingEntry pendingEntry : list) {
@@ -405,6 +453,56 @@ public class RedissonStreamTest extends RedisDockerTest {
         }
         
         List<PendingEntry> list2 = stream.listPending("testGroup", "consumer1", StreamMessageId.MIN, StreamMessageId.MAX, 10);
+        assertThat(list2.size()).isEqualTo(2);
+        for (PendingEntry pendingEntry : list2) {
+            assertThat(pendingEntry.getId()).isIn(id1, id2);
+            assertThat(pendingEntry.getConsumerName()).isEqualTo("consumer1");
+            assertThat(pendingEntry.getLastTimeDelivered()).isOne();
+        }
+    }
+
+    @Test
+    public void testPending2() {
+        RStream<String, String> stream = redisson.getStream("test");
+
+        stream.add(StreamAddArgs.entry("0", "0"));
+
+        stream.createGroup(StreamCreateGroupArgs.name("testGroup"));
+
+        StreamMessageId id1 = stream.add(StreamAddArgs.entry("1", "1"));
+        StreamMessageId id2 = stream.add(StreamAddArgs.entry("2", "2"));
+
+        Map<StreamMessageId, Map<String, String>> s = stream.readGroup("testGroup", "consumer1", StreamReadGroupArgs.neverDelivered());
+        assertThat(s.size()).isEqualTo(2);
+
+        StreamMessageId id3 = stream.add(StreamAddArgs.entry("3", "3"));
+        StreamMessageId id4 = stream.add(StreamAddArgs.entry("4", "4"));
+
+        Map<StreamMessageId, Map<String, String>> s2 = stream.readGroup("testGroup", "consumer2", StreamReadGroupArgs.neverDelivered());
+        assertThat(s2.size()).isEqualTo(2);
+
+        PendingResult pi = stream.getPendingInfo("testGroup");
+        assertThat(pi.getLowestId()).isEqualTo(id1);
+        assertThat(pi.getHighestId()).isEqualTo(id4);
+        assertThat(pi.getTotal()).isEqualTo(4);
+        assertThat(pi.getConsumerNames().keySet()).containsExactly("consumer1", "consumer2");
+        //StreamPendingRangeArgs
+        List<PendingEntry> list = stream.listPending(StreamPendingRangeArgs.groupName("testGroup")
+                                                                            .startId(StreamMessageId.MIN)
+                                                                            .endId(StreamMessageId.MAX)
+                                                                            .count(10));
+        assertThat(list.size()).isEqualTo(4);
+        for (PendingEntry pendingEntry : list) {
+            assertThat(pendingEntry.getId()).isIn(id1, id2, id3, id4);
+            assertThat(pendingEntry.getConsumerName()).isIn("consumer1", "consumer2");
+            assertThat(pendingEntry.getLastTimeDelivered()).isOne();
+        }
+
+        List<PendingEntry> list2 = stream.listPending(StreamPendingRangeArgs.groupName("testGroup")
+                .startId(StreamMessageId.MIN)
+                .endId(StreamMessageId.MAX)
+                .count(10)
+                .consumerName("consumer1"));
         assertThat(list2.size()).isEqualTo(2);
         for (PendingEntry pendingEntry : list2) {
             assertThat(pendingEntry.getId()).isIn(id1, id2);

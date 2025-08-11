@@ -18,29 +18,18 @@ package org.redisson.api.stream;
 import org.redisson.api.StreamMessageId;
 
 /**
- * Arguments for RStream.range() method
  *
  * @author seakider
+ *
  */
-public interface StreamRangeArgs {
-
-    /**
-     * Defines stream range size limit.
-     *
-     * @param count stream range size limit
-     * @return arguments object
-     */
-    StreamRangeArgs count(int count);
-
+public interface StreamStartIdArgs<T> {
     /**
      * Defines startId in range inclusive
      *
      * @param startId
      * @return next options
      */
-    static StreamEndIdArgs<StreamRangeArgs> startId(StreamMessageId startId) {
-        return new StreamRangeParams(startId, false);
-    }
+    StreamEndIdArgs<T> startId(StreamMessageId startId);
 
     /**
      * Defines startId in range exclusive
@@ -48,7 +37,5 @@ public interface StreamRangeArgs {
      * @param startId
      * @return next options
      */
-    static StreamEndIdArgs<StreamRangeArgs> startIdExclusive(StreamMessageId startId) {
-        return new StreamRangeParams(startId, true);
-    }
+    StreamEndIdArgs<T> startIdExclusive(StreamMessageId startId);
 }
