@@ -117,6 +117,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param count - amount of messages
      * @return list
      */
+    @Deprecated
     RFuture<List<PendingEntry>> listPendingAsync(String groupName, StreamMessageId startId, StreamMessageId endId, long idleTime, TimeUnit idleTimeUnit, int count);
     
     /**
@@ -139,6 +140,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param count - amount of messages
      * @return list
      */
+    @Deprecated
     RFuture<List<PendingEntry>> listPendingAsync(String groupName, String consumerName, StreamMessageId startId, StreamMessageId endId, long idleTime, TimeUnit idleTimeUnit, int count);
 
     /**
@@ -156,6 +158,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param count - amount of messages
      * @return list
      */
+    @Deprecated
     RFuture<List<PendingEntry>> listPendingAsync(String groupName, StreamMessageId startId, StreamMessageId endId, int count);
 
     /**
@@ -174,7 +177,17 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param count - amount of messages
      * @return list
      */
+    @Deprecated
     RFuture<List<PendingEntry>> listPendingAsync(String groupName, String consumerName, StreamMessageId startId, StreamMessageId endId, int count);
+
+    /**
+     * Returns list of common info about pending messages by group and consumer name.
+     * Limited by minimum idle time, messages count, start and end Stream Message IDs.
+     *
+     * @param args - method arguments object
+     * @return list
+     */
+    RFuture<List<PendingEntry>> listPendingAsync(StreamPendingRangeArgs args);
 
     /**
      * Returns stream data of pending messages by group name.
