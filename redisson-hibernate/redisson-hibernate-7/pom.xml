@@ -24,14 +24,14 @@
        <dependency>
          <groupId>org.hibernate.orm</groupId>
          <artifactId>hibernate-core</artifactId>
-         <version>7.0.0.Final</version>
+         <version>7.1.0.Final</version>
          <optional>true</optional>
        </dependency>
 
        <dependency>
          <groupId>org.hibernate.orm</groupId>
          <artifactId>hibernate-testing</artifactId>
-         <version>7.0.0.Final</version>
+         <version>7.1.0.Final</version>
          <scope>test</scope>
        </dependency>
 
@@ -44,7 +44,7 @@
         <dependency>
             <groupId>org.junit.platform</groupId>
             <artifactId>junit-platform-engine</artifactId>
-            <version>1.12.2</version>
+            <version>1.13.4</version>
             <scope>test</scope>
         </dependency>
 
