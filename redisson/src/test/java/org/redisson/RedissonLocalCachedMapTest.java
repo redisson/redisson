@@ -6,10 +6,7 @@ import org.awaitility.Awaitility;
 import org.awaitility.Durations;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.redisson.api.NameMapper;
-import org.redisson.api.RLocalCachedMap;
-import org.redisson.api.RMap;
-import org.redisson.api.RedissonClient;
+import org.redisson.api.*;
 import org.redisson.api.listener.LocalCacheInvalidateListener;
 import org.redisson.api.map.MapLoader;
 import org.redisson.api.map.WriteMode;
@@ -962,7 +959,37 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
         RMap<SimpleKey, SimpleValue> map2 = redisson.getLocalCachedMap(LocalCachedMapOptions.name("test"));
         assertThat(map2.readAllEntrySet()).containsOnlyElementsOf(testMap.entrySet());
     }
-    
+
+    @Test
+    public void testPutIfAbsentUpdate() throws Exception {
+        LocalCachedMapOptions<SimpleKey, SimpleValue> options = LocalCachedMapOptions.<SimpleKey, SimpleValue>name("simple12").syncStrategy(SyncStrategy.UPDATE).storeCacheMiss(true);
+        RLocalCachedMap<SimpleKey, SimpleValue> map = redisson.getLocalCachedMap(options);
+
+        RLocalCachedMap<SimpleKey, SimpleValue> map2 = redisson.getLocalCachedMap(options);
+
+        SimpleKey key = new SimpleKey("1");
+        SimpleKey key2 = new SimpleKey("2");
+        SimpleValue value = new SimpleValue("3");
+        SimpleValue value2 = new SimpleValue("4");
+
+        assertThat(map.get(key)).isNull();
+        assertThat(map2.get(key)).isNull();
+        assertThat(map.get(key2)).isNull();
+        assertThat(map2.get(key2)).isNull();
+        assertThat(map.putIfAbsent(key, value)).isNull();
+        assertThat(map.fastPutIfAbsent(key2, value2)).isTrue();
+        Assertions.assertEquals(value, map.get(key));
+        Assertions.assertEquals(value2, map.get(key2));
+
+        Thread.sleep(100);
+
+        Assertions.assertEquals(value2, map2.get(key2));
+        Assertions.assertEquals(value, map2.get(key));
+
+        map.destroy();
+        map2.destroy();
+    }
+
     @Test
     public void testPutIfAbsent() {
         RLocalCachedMap<SimpleKey, SimpleValue> map = redisson.getLocalCachedMap(LocalCachedMapOptions.name("test"));

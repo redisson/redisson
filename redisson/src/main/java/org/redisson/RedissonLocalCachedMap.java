@@ -857,7 +857,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         ByteBuf encodedValue = encodeMapValue(value);
         ByteBuf msg = createSyncMessage(encodedKey, encodedValue, cacheKey);
         byte[] entryId = generateLogEntryId(cacheKey.getKeyHash());
-        RFuture<Boolean> future = commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
+        RFuture<Boolean> future = commandExecutor.evalWriteNoRetryAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
                 "local value = redis.call('hget', KEYS[1], ARGV[1]); "
                         + "if value ~= false then "
                             + "return 0; "
@@ -1322,25 +1322,42 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     }
 
     @Override
-    public RFuture<V> putIfAbsentAsync(K key, V value) {
+    protected RFuture<V> putIfAbsentOperationAsync(K key, V value) {
+        ByteBuf encodedKey = encodeMapKey(key);
+        CacheKey cacheKey = localCacheView.toCacheKey(encodedKey);
         if (storeMode == LocalCachedMapOptions.StoreMode.LOCALCACHE) {
-            ByteBuf mapKey = encodeMapKey(key);
-            CacheKey cacheKey = localCacheView.toCacheKey(mapKey);
-            CacheValue prevValue = cachePutIfAbsent(cacheKey, key, value);
+            CacheValue prevValue = cache.putIfAbsent(cacheKey, new CacheValue(key, value));
             if (prevValue == null) {
-                CompletionStage f = broadcastLocalCacheStore(value, mapKey, cacheKey)
-                        .thenApply(r -> null);
+                CompletionStage<V> f = broadcastLocalCacheStore(value, encodedKey, cacheKey)
+                                                    .thenApply(r -> null);
                 return new CompletableFutureWrapper<>(f);
             } else {
-                mapKey.release();
+                encodedKey.release();
                 return new CompletableFutureWrapper<>((V) prevValue.getValue());
             }
         }
 
-        RFuture<V> future = super.putIfAbsentAsync(key, value);
+        ByteBuf encodedValue = encodeMapValue(value);
+        ByteBuf msg = createSyncMessage(encodedKey, encodedValue, cacheKey);
+        byte[] entryId = generateLogEntryId(cacheKey.getKeyHash());
+        RFuture<V> future = commandExecutor.evalWriteNoRetryAsync(getRawName(), codec, RedisCommands.EVAL_MAP_VALUE,
+                    "local value = redis.call('hget', KEYS[1], ARGV[1]); "
+                        + "if value ~= false then "
+                            + "return value; "
+                        + "end; "
+                        + "redis.call('hset', KEYS[1], ARGV[1], ARGV[2]); "
+                        + "if ARGV[4] == '1' then "
+                            + "redis.call(ARGV[7], KEYS[2], ARGV[3]); "
+                        + "end;"
+                        + "if ARGV[4] == '2' then "
+                            + "redis.call('zadd', KEYS[3], ARGV[5], ARGV[6]);"
+                            + "redis.call(ARGV[7], KEYS[2], ARGV[3]); "
+                        + "end;"
+                        + "return nil; ",
+                Arrays.asList(getRawName(), listener.getInvalidationTopicName(), listener.getUpdatesLogName()),
+                encodedKey, encodedValue, msg, invalidateEntryOnChange, System.currentTimeMillis(), entryId, publishCommand);
         CompletionStage<V> f = future.thenApply(res -> {
             if (res == null) {
-                CacheKey cacheKey = localCacheView.toCacheKey(key);
                 cachePut(cacheKey, key, value);
             }
             return res;
