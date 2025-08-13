@@ -148,6 +148,30 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     }
 
     @Override
+    public List<PendingEntry> listPending(StreamPendingRangeArgs args) {
+        return get(listPendingAsync(args));
+    }
+
+    @Override
+    public RFuture<List<PendingEntry>> listPendingAsync(StreamPendingRangeArgs args) {
+        StreamPendingRangeParams pps = (StreamPendingRangeParams) args;
+        List<Object> params = new LinkedList<>();
+        params.add(getRawName());
+        params.add(pps.getGroupName());
+        if (pps.getIdleTime() != null) {
+            params.add("IDLE");
+            params.add(pps.getIdleTime().toMillis());
+        }
+        params.add(value(pps.getStartId(), pps.isStartIdExclusive()));
+        params.add(value(pps.getEndId(), pps.isEndIdExclusive()));
+        params.add(pps.getCount());
+        if (pps.getConsumerName() != null) {
+            params.add(pps.getConsumerName());
+        }
+        return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XPENDING_ENTRIES, params.toArray());
+    }
+
+    @Override
     public List<StreamMessageId> fastClaim(String groupName, String consumerName, long idleTime, TimeUnit idleTimeUnit,
             StreamMessageId... ids) {
         return get(fastClaimAsync(groupName, consumerName, idleTime, idleTimeUnit, ids));

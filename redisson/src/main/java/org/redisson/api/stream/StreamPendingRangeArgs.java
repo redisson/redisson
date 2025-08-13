@@ -15,40 +15,38 @@
  */
 package org.redisson.api.stream;
 
-import org.redisson.api.StreamMessageId;
+import java.time.Duration;
 
 /**
- * Arguments for RStream.range() method
+ * Arguments object for RStream.listPending() methods.
  *
  * @author seakider
+ *
  */
-public interface StreamRangeArgs {
+public interface StreamPendingRangeArgs {
+    /**
+     * Defines groupName of pending messages
+     *
+     * @param groupName name of group
+     * @return next options
+     */
+    static StreamStartIdArgs<StreamCountArgs> groupName(String groupName) {
+        return new StreamPendingRangeParams(groupName);
+    }
 
     /**
-     * Defines stream range size limit.
+     * Defines consumerName of pending messages
      *
-     * @param count stream range size limit
+     * @param consumerName name of consumer
      * @return arguments object
      */
-    StreamRangeArgs count(int count);
+    StreamPendingRangeArgs consumerName(String consumerName);
 
     /**
-     * Defines startId in range inclusive
+     * Defines minimum idle time limit.
      *
-     * @param startId
-     * @return next options
+     * @param idleTime minimum idle time of messages
+     * @return arguments object
      */
-    static StreamEndIdArgs<StreamRangeArgs> startId(StreamMessageId startId) {
-        return new StreamRangeParams(startId, false);
-    }
-
-    /**
-     * Defines startId in range exclusive
-     *
-     * @param startId
-     * @return next options
-     */
-    static StreamEndIdArgs<StreamRangeArgs> startIdExclusive(StreamMessageId startId) {
-        return new StreamRangeParams(startId, true);
-    }
+    StreamPendingRangeArgs idleTime(Duration idleTime);
 }

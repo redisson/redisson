@@ -15,28 +15,18 @@
  */
 package org.redisson.api.stream;
 
-import org.redisson.api.StreamMessageId;
-
 /**
  *
  * @author seakider
  *
  */
-public interface StreamEndIdArgs<T> {
-    /**
-     * Defines endId in range inclusive
-     *
-     * @param endId
-     * @return next options
-     */
-    T endId(StreamMessageId endId);
+public interface StreamCountArgs {
 
     /**
-     * Defines endId in range exclusive
+     * Defines messages count limit.
      *
-     * @param endId
+     * @param count amount of messages
      * @return next options
      */
-    T endIdExclusive(StreamMessageId endId);
+    StreamPendingRangeArgs count(int count);
 }
-
