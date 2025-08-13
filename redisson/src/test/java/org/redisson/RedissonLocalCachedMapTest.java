@@ -961,6 +961,41 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
     }
 
     @Test
+    public void testPutIfExistsCache() throws Exception {
+        LocalCachedMapOptions<SimpleKey, SimpleValue> options = LocalCachedMapOptions.<SimpleKey, SimpleValue>name("simple12").syncStrategy(SyncStrategy.UPDATE).storeCacheMiss(true);
+        RLocalCachedMap<SimpleKey, SimpleValue> map = redisson.getLocalCachedMap(options);
+
+        RLocalCachedMap<SimpleKey, SimpleValue> map2 = redisson.getLocalCachedMap(options);
+
+        SimpleKey key1 = new SimpleKey("1");
+        SimpleKey key2 = new SimpleKey("2");
+        SimpleValue value1 = new SimpleValue("3");
+        SimpleValue value11 = new SimpleValue("4");
+        SimpleValue value2 = new SimpleValue("5");
+        SimpleValue value21 = new SimpleValue("6");
+        map.put(key1, value1);
+        map.put(key2, value2);
+
+        map.get(key1);
+        map2.get(key1);
+        map.get(key2);
+        map2.get(key2);
+
+        assertThat(map.putIfExists(key1, value11)).isEqualTo(value1);
+        assertThat(map.fastPutIfExists(key2, value21)).isTrue();
+        Assertions.assertEquals(value11, map.get(key1));
+        Assertions.assertEquals(value21, map.get(key2));
+
+        Thread.sleep(1000);
+
+        Assertions.assertEquals(value11, map2.get(key1));
+        Assertions.assertEquals(value21, map2.get(key2));
+
+        map.destroy();
+        map2.destroy();
+    }
+
+    @Test
     public void testPutIfAbsentUpdate() throws Exception {
         LocalCachedMapOptions<SimpleKey, SimpleValue> options = LocalCachedMapOptions.<SimpleKey, SimpleValue>name("simple12").syncStrategy(SyncStrategy.UPDATE).storeCacheMiss(true);
         RLocalCachedMap<SimpleKey, SimpleValue> map = redisson.getLocalCachedMap(options);
