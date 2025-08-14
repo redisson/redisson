@@ -392,7 +392,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
                 return null;
             }
 
-            if (exc.getCause() instanceof CancellationException) {
+            if (exc instanceof CancellationException || exc.getCause() instanceof CancellationException) {
                 return null;
             }
 
