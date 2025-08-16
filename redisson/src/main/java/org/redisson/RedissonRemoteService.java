@@ -391,6 +391,11 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
             if (commandExecutor.getServiceManager().isShuttingDown(exc)) {
                 return null;
             }
+
+            if (exc instanceof CancellationException || exc.getCause() instanceof CancellationException) {
+                return null;
+            }
+
             log.error("Can't process the remote service request", exc);
             return null;
         });
