@@ -74,9 +74,10 @@ import static org.redisson.client.protocol.RedisCommands.LRANGE;
  */
 public class RedissonConnection extends AbstractRedisConnection {
 
-    private boolean closed;
+        private boolean closed;
     protected final Redisson redisson;
-    
+    private boolean filterOkResponses = false;
+
     CommandAsyncExecutor executorService;
     private RedissonSubscription subscription;
     
@@ -84,6 +85,21 @@ public class RedissonConnection extends AbstractRedisConnection {
         super();
         this.redisson = (Redisson) redisson;
         executorService = this.redisson.getCommandExecutor();
+    }
+    
+    public RedissonConnection(RedissonClient redisson, boolean filterOkResponses) {
+        super();
+        this.redisson = (Redisson) redisson;
+        this.filterOkResponses = filterOkResponses;
+        executorService = this.redisson.getCommandExecutor();
+    }
+
+    public boolean isFilterOkResponses() {
+        return filterOkResponses;
+    }
+
+    public void setFilterOkResponses(boolean filterOkResponses) {
+        this.filterOkResponses = filterOkResponses;
     }
 
     @Override
@@ -743,7 +759,7 @@ public class RedissonConnection extends AbstractRedisConnection {
     protected void indexCommand(RedisCommand<?> command) {
         if (isQueueing() || isPipelined()) {
             index++;
-            if (commandsToRemove.contains(command.getName())) {
+            if (filterOkResponses && commandsToRemove.contains(command.getName())) {
                 indexToRemove.add(index);
             }
         }
