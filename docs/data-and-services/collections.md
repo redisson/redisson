@@ -104,7 +104,7 @@ Available implementations:
 
 **4. Native eviction**
 
-Allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task, entries are cleaned on Redis side. Requires **Redis 7.4+**.
+Allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task, entries are cleaned on Valkey or Redis side. Requires **Redis 7.4+** or **Valkey 9.0+**.
 
 Each object implements [RMapCacheNative](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RMapCacheNative.html), [Async](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RMapCacheNativeAsync.html), [Reactive](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RMapCacheNativeReactive.html) and [RxJava3](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RMapCacheNativeRx.html) interfaces.
 
@@ -116,6 +116,7 @@ Available implementations:
 |getMapCacheNative()<br/><sub><i>[Redisson PRO](https://redisson.pro/feature-comparison.html) version</i></sub> | ❌ | ❌ | ✔️ |
 |getLocalCachedMapCacheNative()<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ✔️ | ❌ | ✔️ |
 |getClusteredMapCacheNative()<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ❌ | ✔️ | ✔️ |
+|getClusteredLocalCachedMapCacheNative()<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ✔️ | ✔️ | ✔️ |
 <br/>
 
 Redisson also provides various [Cache API](../cache-API-implementations.md) implementations.

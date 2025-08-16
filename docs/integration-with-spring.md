@@ -2,7 +2,7 @@
 
 Integrates Redisson with Spring Boot library. Depends on [Spring Data Redis](#spring-data-redis) module.
 
-Supports Spring Boot 1.3.x - 3.4.x
+Supports Spring Boot 1.3.x - 3.5.x
 
 ### Usage
 
@@ -275,10 +275,9 @@ spring:
 
 ## Spring Session
 
-### Dependencies
+Redisson integrates with [Spring Session](https://docs.spring.io/spring-session/reference/index.html) by providing `RedissonConnectionFactory`, which implements Spring Data Redis's `RedisConnectionFactory` and `ReactiveRedisConnectionFactory` interfaces. This allows Spring Session to use Redisson as the underlying Valkey or Redis client for session storage and retrieval.
 
-!!! note
-	Redis or Valkey `notify-keyspace-events` setting should contain `Exg` letters to make Spring Session integration work.
+### Dependencies
 
 Ensure you have Spring Session library in your classpath, add it if necessary:  
 
@@ -288,12 +287,12 @@ Ensure you have Spring Session library in your classpath, add it if necessary:
     <dependency>
       <groupId>org.springframework.session</groupId>
       <artifactId>spring-session-data-redis</artifactId>
-      <version>3.4.3</version>
+      <version>3.5.1</version>
     </dependency>
     ```
     Gradle:
     ```gradle
-    compile 'org.springframework.session:spring-session-data-redis:3.4.3'  
+    compile 'org.springframework.session:spring-session-data-redis:3.5.1'  
     ```
 2. Add [Redisson Spring Data Redis](#spring-data-redis) library in classpath:  
 
@@ -340,6 +339,9 @@ Ensure you have Spring Session library in your classpath, add it if necessary:
     [Redisson PRO vs. Community Edition ➜](https://redisson.pro/feature-comparison.html)
     <br>
     <br>    
+
+!!! note
+	Valkey or Redis `notify-keyspace-events` setting should contain `Exg` letters to make Spring Session integration work.
 
 ### Spring Http Session configuration
 
@@ -490,6 +492,7 @@ Compatible with Spring versions below.
 
 Spring Cloud Stream | Spring Cloud | Spring Boot
 -- | -- | --
+4.3.x | 2025.0.x | 3.5.x
 4.2.x | 2024.0.x | 3.4.x
 4.1.x | 2023.0.x | 3.0.x - 3.3.x
 4.0.x | 2022.0.x | 3.0.x - 3.3.x
@@ -605,7 +608,7 @@ spring:
 
 ## Spring Data Redis
 
-Integrates Redisson with Spring Data Redis library. Implements Spring Data's `RedisConnectionFactory` and `ReactiveRedisConnectionFactory` interfaces and allows to interact with Redis or Valkey through `RedisTemplate`, `ReactiveRedisTemplate` or `ReactiveRedisOperations` object.
+Redisson implements `RedisConnectionFactory` and `ReactiveRedisConnectionFactory` interfaces from [Spring Data Redis](https://docs.spring.io/spring-data/redis/reference/index.html) module, allowing usage of `RedisTemplate`, `ReactiveRedisTemplate` or `ReactiveRedisOperations` objects.
 
 ### Usage
 1. Add `redisson-spring-data` dependency into your project:  

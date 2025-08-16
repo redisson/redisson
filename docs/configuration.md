@@ -2492,7 +2492,7 @@ codec: !<org.redisson.codec.Kryo5Codec> {}
 transportMode: "NIO"
 ```
 
-## Multi cluster mode
+## Multi Cluster mode
 
 _This feature is available only in [Redisson PRO](https://redisson.pro/feature-comparison.html) edition._
 
