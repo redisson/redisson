@@ -144,9 +144,59 @@ public class RedissonSearch implements RSearch {
             addNumericIndex(args, field);
             addFlatVectorIndex(args, field);
             addHNSWVectorIndex(args, field);
+            addSVSVamanaVectorIndex(args, field);
         }
 
         return commandExecutor.writeAsync(indexName, StringCodec.INSTANCE, RedisCommands.FT_CREATE, args.toArray());
+    }
+
+    private static void addSVSVamanaVectorIndex(List<Object> args, FieldIndex field) {
+        if (field instanceof SVSVamanaVectorIndex) {
+            SVSVamanaVectorIndexParams params = (SVSVamanaVectorIndexParams) field;
+            args.add(params.getFieldName());
+            if (params.getAs() != null) {
+                args.add("AS");
+                args.add(params.getAs());
+            }
+            args.add("VECTOR");
+            args.add("SVS-VAMANA");
+            args.add(params.getCount() * 2);
+            args.add("TYPE");
+            args.add(params.getType());
+            args.add("DIM");
+            args.add(params.getDim());
+            args.add("DISTANCE_METRIC");
+            args.add(params.getDistanceMetric());
+
+            if (params.getCompressionAlgorithm() != null) {
+                args.add("COMPRESSION");
+                args.add(params.getCompressionAlgorithm());
+            }
+            if (params.getConstructionWindowSize() != null) {
+                args.add("CONSTRUCTION_WINDOW_SIZE");
+                args.add(params.getConstructionWindowSize());
+            }
+            if (params.getGraphMaxDegree() != null) {
+                args.add("GRAPH_MAX_DEGREE");
+                args.add(params.getGraphMaxDegree());
+            }
+            if (params.getSearchWindowSize() != null) {
+                args.add("SEARCH_WINDOW_SIZE");
+                args.add(params.getSearchWindowSize());
+            }
+            if (params.getEpsilon() != null) {
+                args.add("EPSILON");
+                args.add(params.getEpsilon());
+            }
+            if (params.getTrainingThreshold() != null) {
+                args.add("TRAINING_THRESHOLD");
+                args.add(params.getTrainingThreshold());
+            }
+            if (params.getLeanVecDim() != null) {
+                args.add("LEANVEC_DIM");
+                args.add(params.getLeanVecDim());
+            }
+        }
     }
 
     private static void addHNSWVectorIndex(List<Object> args, FieldIndex field) {
@@ -730,6 +780,7 @@ public class RedissonSearch implements RSearch {
             addNumericIndex(args, field);
             addFlatVectorIndex(args, field);
             addHNSWVectorIndex(args, field);
+            addSVSVamanaVectorIndex(args, field);
         }
 
         return commandExecutor.writeAsync(indexName, StringCodec.INSTANCE, RedisCommands.FT_ALTER, args.toArray());
