@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.redisson.api.RJsonBucket;
 import org.redisson.api.RMap;
 import org.redisson.api.RSearch;
+import org.redisson.api.RedissonClient;
 import org.redisson.api.search.SpellcheckOptions;
 import org.redisson.api.search.aggregate.*;
 import org.redisson.api.search.index.*;
@@ -16,6 +17,8 @@ import org.redisson.api.search.query.SearchResult;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.codec.CompositeCodec;
 import org.redisson.codec.JacksonCodec;
+import org.redisson.config.Config;
+import org.testcontainers.containers.GenericContainer;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -490,6 +493,36 @@ public class RedissonSearchTest extends DockerRedisStackTest {
         SearchResult r = s.search("text_index", "*", QueryOptions.defaults()
                                                                             .returnAttributes(new ReturnAttribute("vector", "vector11"),
                                                                                                 new ReturnAttribute("vector2", "vector22")));
+        assertThat(r.getTotal()).isEqualTo(1);
+    }
+
+    @Test
+    public void testVector2() {
+        GenericContainer<?> redis = RedisDockerTest.createRedisWithVersion("redis:8.2.0");
+        redis.start();
+
+        Config config = RedisDockerTest.createConfig(redis);
+        RedissonClient redisson = Redisson.create(config);
+
+        RJsonBucket<TestClass> b = redisson.getJsonBucket("doc:1", new JacksonCodec<>(new TypeReference<TestClass>() {
+        }));
+        List<Float> vector = Arrays.asList(1F, 2F, 3F, 4F);
+        TestClass test = new TestClass(vector, "test_content");
+        b.set(test);
+
+        RSearch s = redisson.getSearch(StringCodec.INSTANCE);
+        s.createIndex("text_index", IndexOptions.defaults()
+                        .on(IndexType.JSON)
+                        .prefix(Arrays.asList("doc:")),
+                FieldIndex.svsVamanaVector("$.vector")
+                        .as("vector1")
+                        .type(VectorTypeParam.Type.FLOAT32)
+                        .dim(vector.size())
+                        .distance(VectorDistParam.DistanceMetric.COSINE));
+
+        SearchResult r = s.search("text_index", "*", QueryOptions.defaults()
+                .returnAttributes(new ReturnAttribute("vector1", "vector11")
+                ));
         assertThat(r.getTotal()).isEqualTo(1);
     }
 
