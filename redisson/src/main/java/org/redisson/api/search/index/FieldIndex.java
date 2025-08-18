@@ -74,6 +74,16 @@ public interface FieldIndex {
     }
 
     /**
+     * Returns vector field index which uses SVS-VAMANA indexing method
+     *
+     * @param fieldName field name
+     * @return options object
+     */
+    static SVSVamanaVectorIndex svsVamanaVector(String fieldName) {
+        return new SVSVamanaVectorIndexParams(fieldName);
+    }
+
+    /**
      * Returns geo field index
      *
      * @param fieldName field name
