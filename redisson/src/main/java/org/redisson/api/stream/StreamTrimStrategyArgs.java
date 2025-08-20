@@ -32,7 +32,7 @@ public interface StreamTrimStrategyArgs<T> {
      * @param threshold - trim threshold
      * @return arguments object
      */
-    StreamTrimLimitArgs<T> maxLen(int threshold);
+    StreamTrimReferencesArgs<T> maxLen(int threshold);
 
     /**
      * Defines MINID strategy used for Stream trimming.
@@ -41,6 +41,6 @@ public interface StreamTrimStrategyArgs<T> {
      * @param messageId - stream Id
      * @return arguments object
      */
-    StreamTrimLimitArgs<T> minId(StreamMessageId messageId);
+    StreamTrimReferencesArgs<T> minId(StreamMessageId messageId);
 
 }

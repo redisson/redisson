@@ -484,6 +484,10 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
             params.add("NOMKSTREAM");
         }
 
+        if (pps.getRefPolicy() != null) {
+            params.add(pps.getRefPolicy());
+        }
+
         if (pps.getMaxLen() > 0) {
             params.add("MAXLEN");
             if (!pps.isTrimStrict()) {

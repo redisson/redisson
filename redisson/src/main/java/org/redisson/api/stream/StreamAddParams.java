@@ -26,7 +26,7 @@ import java.util.Map;
  */
 public final class StreamAddParams<K, V> implements StreamAddArgs<K, V>,
                                               StreamTrimStrategyArgs<StreamAddArgs<K, V>>,
-                                              StreamTrimLimitArgs<StreamAddArgs<K, V>>  {
+                                              StreamTrimReferencesArgs<StreamAddArgs<K, V>>  {
 
     private final Map<K, V> entries;
     private boolean noMakeStream;
@@ -35,6 +35,7 @@ public final class StreamAddParams<K, V> implements StreamAddArgs<K, V>,
     private int maxLen;
     private StreamMessageId minId;
     private int limit;
+    private RefPolicy refPolicy;
 
     StreamAddParams(Map<K, V> entries) {
         this.entries = entries;
@@ -59,13 +60,13 @@ public final class StreamAddParams<K, V> implements StreamAddArgs<K, V>,
     }
 
     @Override
-    public StreamTrimLimitArgs<StreamAddArgs<K, V>> maxLen(int threshold) {
+    public StreamTrimReferencesArgs<StreamAddArgs<K, V>> maxLen(int threshold) {
         this.maxLen = threshold;
         return this;
     }
 
     @Override
-    public StreamTrimLimitArgs<StreamAddArgs<K, V>> minId(StreamMessageId messageId) {
+    public StreamTrimReferencesArgs<StreamAddArgs<K, V>> minId(StreamMessageId messageId) {
         this.minId = messageId;
         return this;
     }
@@ -104,5 +105,27 @@ public final class StreamAddParams<K, V> implements StreamAddArgs<K, V>,
 
     public int getLimit() {
         return limit;
+    }
+
+    @Override
+    public StreamTrimLimitArgs<StreamAddArgs<K, V>> removeReferences() {
+        this.refPolicy = RefPolicy.DELREF;
+        return this;
+    }
+
+    @Override
+    public StreamTrimLimitArgs<StreamAddArgs<K, V>> keepReferences() {
+        this.refPolicy = RefPolicy.KEEPREF;
+        return this;
+    }
+
+    @Override
+    public StreamTrimLimitArgs<StreamAddArgs<K, V>> removeAcknowledgedOnly() {
+        this.refPolicy = RefPolicy.DELREF;
+        return this;
+    }
+
+    public RefPolicy getRefPolicy() {
+        return refPolicy;
     }
 }
