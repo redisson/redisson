@@ -876,6 +876,10 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
             params.add(pps.getLimit());
         }
 
+        if (pps.getRefPolicy() != null) {
+            params.add(pps.getRefPolicy());
+        }
+
         return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XTRIM, params.toArray());
     }
 
