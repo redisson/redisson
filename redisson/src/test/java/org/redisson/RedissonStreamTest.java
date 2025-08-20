@@ -7,6 +7,8 @@ import org.redisson.api.*;
 import org.redisson.api.listener.StreamAddListener;
 import org.redisson.api.stream.*;
 import org.redisson.client.RedisException;
+import org.redisson.config.Config;
+import org.testcontainers.containers.GenericContainer;
 
 import java.time.Duration;
 import java.util.*;
@@ -221,6 +223,40 @@ public class RedissonStreamTest extends RedisDockerTest {
         RStream<String, String> stream2 = redisson.getStream("myStream");
         StreamTrimArgs trimArgs = StreamTrimArgs.maxLen(0).noLimit();
         assertThat(stream2.trim(trimArgs)).isZero();
+    }
+
+    @Test
+    public void testTrim2() {
+        GenericContainer<?> redis = createRedisWithVersion("redis:8.2.0");
+        redis.start();
+
+        Config config = createConfig(redis);
+        RedissonClient redisson = Redisson.create(config);
+
+        RStream<String, String> stream = redisson.getStream("test");
+
+        stream.createGroup(StreamCreateGroupArgs.name("testGroup").makeStream());
+
+        stream.add(StreamAddArgs.entry("0", "0"));
+        stream.add(StreamAddArgs.entry("1", "1"));
+        stream.add(StreamAddArgs.entry("2", "2"));
+        stream.add(StreamAddArgs.entry("3", "3"));
+
+        Map<StreamMessageId, Map<String, String>> s = stream.readGroup("testGroup", "consumer1", StreamReadGroupArgs.neverDelivered());
+        assertThat(s.size()).isEqualTo(4);
+
+        assertThat(stream.trim(StreamTrimArgs.maxLen(3).noLimit())).isEqualTo(1);
+
+        List<PendingEntry> list = stream.listPending("testGroup", StreamMessageId.MIN, StreamMessageId.MAX, 1, TimeUnit.MILLISECONDS, 10);
+        assertThat(list.size()).isEqualTo(4);
+
+        assertThat(stream.trim(StreamTrimArgs.maxLen(2).removeReferences().noLimit())).isEqualTo(1);
+
+        List<PendingEntry> list2 = stream.listPending("testGroup", StreamMessageId.MIN, StreamMessageId.MAX, 1, TimeUnit.MILLISECONDS, 10);
+        assertThat(list2.size()).isEqualTo(3);
+
+        redisson.shutdown();
+        redis.stop();
     }
 
     @Test

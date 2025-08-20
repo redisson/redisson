@@ -15,36 +15,35 @@
  */
 package org.redisson.api.stream;
 
-import org.redisson.api.StreamMessageId;
-
 /**
  * Arguments object for Stream trim method.
  *
- * @author Nikita Koksharov
+ * @author seakider
  *
  */
-public interface StreamTrimArgs {
+public interface StreamTrimReferencesArgs<T> extends StreamTrimLimitArgs<T> {
 
     /**
-     * Defines MAXLEN strategy used for Stream trimming.
-     * Evicts entries which position exceeds the specified stream's length threshold.
+     * Defines DELREF reference policy for consumer groups when trimming.
+     * When trimming, removes all references from consumer groups’ PEL
      *
-     * @param threshold - trim threshold
      * @return arguments object
      */
-    static StreamTrimReferencesArgs<StreamTrimArgs> maxLen(int threshold) {
-        return new StreamTrimParams(threshold);
-    }
+    StreamTrimLimitArgs<T> removeReferences();
 
     /**
-     * Defines MINID strategy used for Stream trimming.
-     * Evicts entries with IDs lower than threshold, where threshold is a stream ID.
+     * Defines KEEPREF reference policy for consumer groups when trimming.
+     * When trimming, preserves references in consumer groups’ PEL
      *
-     * @param messageId - stream Id
      * @return arguments object
      */
-    static StreamTrimReferencesArgs<StreamTrimArgs> minId(StreamMessageId messageId) {
-        return new StreamTrimParams(messageId);
-    }
+    StreamTrimLimitArgs<T> keepReferences();
 
+    /**
+     * Defines ACKED reference policy for consumer groups when trimming.
+     * When trimming, only removes entries acknowledged by all consumer groups
+     *
+     * @return arguments object
+     */
+    StreamTrimLimitArgs<T> removeAcknowledgedOnly();
 }
