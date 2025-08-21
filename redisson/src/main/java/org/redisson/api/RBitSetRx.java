@@ -356,4 +356,41 @@ public interface RBitSetRx extends RExpirableRx {
      */
     Single<Long> xor(String... bitSetNames);
 
+    /**
+     * Performs bitwise DIFF operation storing result to destination BitSet.
+     * Sets bits in destination that are set in current BitSet but not in any of the other BitSets.
+     *
+     * @param bitSetNames other BitSet names
+     * @return size of destination BitSet
+     */
+    Single<Long> diff(String... bitSetNames);
+
+    /**
+     * Performs bitwise DIFF1 operation storing result to destination BitSet.
+     * Sets bits in destination that are set in one or more of the other BitSets but not in current BitSet.
+     *
+     * @param bitSetNames other BitSet names
+     * @return size of destination BitSet
+     */
+    Single<Long> diffInverse(String... bitSetNames);
+
+    /**
+     * Performs bitwise ANDOR operation storing result to destination BitSet.
+     * Sets bits in destination that are set in current BitSet AND also in one or more of the other BitSets.
+     *
+     * @param bitSetNames other BitSet names
+     * @return size of destination BitSet
+     */
+    Single<Long> andOr(String... bitSetNames);
+
+    /**
+     * Performs bitwise ONE operation storing result to destination BitSet.
+     * Sets bits in destination that are set in exactly one of the provided BitSets.
+     *
+     * @param bitSetNames BitSet names to compare
+     * @return size of destination BitSet
+     */
+    Single<Long> setExclusive(String... bitSetNames);
+
+
 }

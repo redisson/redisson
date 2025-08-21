@@ -534,4 +534,43 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
         return opAsync("XOR", bitSetNames);
     }
 
+    @Override
+    public long diff(String... bitSetNames) {
+        return get(diffAsync(bitSetNames));
+    }
+
+    @Override
+    public long diffInverse(String... bitSetNames) {
+        return get(diffInverseAsync(bitSetNames));
+    }
+
+    @Override
+    public long andOr(String... bitSetNames) {
+        return get(andOrAsync(bitSetNames));
+    }
+
+    @Override
+    public long setExclusive(String... bitSetNames) {
+        return get(setExclusiveAsync(bitSetNames));
+    }
+
+    @Override
+    public RFuture<Long> diffAsync(String... bitSetNames) {
+        return opAsync("DIFF", bitSetNames);
+    }
+
+    @Override
+    public RFuture<Long> diffInverseAsync(String... bitSetNames) {
+        return opAsync("DIFF1", bitSetNames);
+    }
+
+    @Override
+    public RFuture<Long> andOrAsync(String... bitSetNames) {
+        return opAsync("ANDOR", bitSetNames);
+    }
+
+    @Override
+    public RFuture<Long> setExclusiveAsync(String... bitSetNames) {
+        return opAsync("ONE", bitSetNames);
+    }
 }

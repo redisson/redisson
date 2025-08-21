@@ -358,4 +358,40 @@ public interface RBitSet extends RExpirable, RBitSetAsync {
      */
     long xor(String... bitSetNames);
 
+    /**
+     * Performs bitwise DIFF operation storing result to destination BitSet.
+     * Sets bits in destination that are set in current BitSet but not in any of the other BitSets.
+     *
+     * @param bitSetNames other BitSet names
+     * @return size of destination BitSet
+     */
+    long diff(String... bitSetNames);
+
+    /**
+     * Performs bitwise DIFF1 operation storing result to destination BitSet.
+     * Sets bits in destination that are set in one or more of the other BitSets but not in current BitSet.
+     *
+     * @param bitSetNames other BitSet names
+     * @return size of destination BitSet
+     */
+    long diffInverse(String... bitSetNames);
+
+    /**
+     * Performs bitwise ANDOR operation storing result to destination BitSet.
+     * Sets bits in destination that are set in current BitSet AND also in one or more of the other BitSets.
+     *
+     * @param bitSetNames other BitSet names
+     * @return size of destination BitSet
+     */
+    long andOr(String... bitSetNames);
+
+    /**
+     * Performs bitwise ONE operation storing result to destination BitSet.
+     * Sets bits in destination that are set in exactly one of the provided BitSets.
+     *
+     * @param bitSetNames BitSet names to compare
+     * @return size of destination BitSet
+     */
+    long setExclusive(String... bitSetNames);
+
 }

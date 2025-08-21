@@ -222,4 +222,45 @@ public class RedissonBitSetTest extends RedisDockerTest {
         assertThat(result[3]).isTrue();
     }
 
+    @Test
+    public void testAndOr() {
+        RBitSet bs1 = redisson.getBitSet("testbitset1");
+        bs1.set(3, 5);
+        assertThat(bs1.cardinality()).isEqualTo(2);
+        assertThat(bs1.size()).isEqualTo(8);
+
+        RBitSet bs2 = redisson.getBitSet("testbitset2");
+        bs2.set(4);
+        bs2.set(10);
+        assertThat(bs1.andOr(bs2.getName())).isEqualTo(2);
+        assertThat(bs1.get(3)).isFalse();
+        assertThat(bs1.get(4)).isTrue();
+        assertThat(bs1.get(5)).isFalse();
+        assertThat(bs2.get(10)).isTrue();
+
+        assertThat(bs1.cardinality()).isEqualTo(1);
+        assertThat(bs1.size()).isEqualTo(16);
+    }
+
+    @Test
+    public void testDiff() {
+        RBitSet bs1 = redisson.getBitSet("testbitset1");
+        bs1.set(3, 5);
+        assertThat(bs1.cardinality()).isEqualTo(2);
+        assertThat(bs1.size()).isEqualTo(8);
+
+        RBitSet bs2 = redisson.getBitSet("testbitset2");
+        bs2.set(4);
+        bs2.set(10);
+        assertThat(bs1.diff(bs2.getName())).isEqualTo(2);
+        assertThat(bs1.get(3)).isTrue();
+        assertThat(bs1.get(4)).isFalse();
+        assertThat(bs1.get(5)).isFalse();
+        assertThat(bs2.get(10)).isTrue();
+
+        assertThat(bs1.cardinality()).isEqualTo(1);
+        assertThat(bs1.size()).isEqualTo(16);
+    }
+
+
 }
