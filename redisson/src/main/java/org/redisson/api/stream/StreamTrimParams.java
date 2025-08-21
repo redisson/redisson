@@ -40,13 +40,13 @@ public final class StreamTrimParams implements StreamTrimStrategyArgs<StreamTrim
     }
 
     @Override
-    public StreamTrimLimitArgs<StreamTrimArgs> maxLen(int threshold) {
+    public StreamTrimReferencesArgs<StreamTrimArgs> maxLen(int threshold) {
         this.maxLen = threshold;
         return this;
     }
 
     @Override
-    public StreamTrimLimitArgs<StreamTrimArgs> minId(StreamMessageId messageId) {
+    public StreamTrimReferencesArgs<StreamTrimArgs> minId(StreamMessageId messageId) {
         this.minId = messageId;
         return this;
     }
