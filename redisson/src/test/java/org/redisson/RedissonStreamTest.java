@@ -255,6 +255,14 @@ public class RedissonStreamTest extends RedisDockerTest {
         List<PendingEntry> list2 = stream.listPending("testGroup", StreamMessageId.MIN, StreamMessageId.MAX, 1, TimeUnit.MILLISECONDS, 10);
         assertThat(list2.size()).isEqualTo(3);
 
+        stream.add(StreamAddArgs.entry("4", "4").trim().maxLen(2).removeReferences().noLimit());
+        List<PendingEntry> list3 = stream.listPending("testGroup", StreamMessageId.MIN, StreamMessageId.MAX, 1, TimeUnit.MILLISECONDS, 10);
+        assertThat(list3.size()).isEqualTo(2);
+
+        stream.add(StreamAddArgs.entry("5", "5").trim().maxLen(2).keepReferences().noLimit());
+        List<PendingEntry> list4 = stream.listPending("testGroup", StreamMessageId.MIN, StreamMessageId.MAX, 1, TimeUnit.MILLISECONDS, 10);
+        assertThat(list4.size()).isEqualTo(2);
+
         redisson.shutdown();
         redis.stop();
     }
