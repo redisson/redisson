@@ -249,9 +249,9 @@ public interface RBitSetReactive extends RExpirableReactive {
     /**
      * Executes NOT operation over all bits
      * 
-     * @return void
+     * @return length in bytes of the destination key
      */
-    Mono<Void> not();
+    Mono<Long> not();
 
     /**
      * Set all bits to one from <code>fromIndex</code> (inclusive) to <code>toIndex</code> (exclusive)
@@ -332,26 +332,26 @@ public interface RBitSetReactive extends RExpirableReactive {
      * Stores result into this object.
      * 
      * @param bitSetNames - name of stored bitsets
-     * @return void
+     * @return length in bytes of the destination key
      */
-    Mono<Void> or(String... bitSetNames);
+    Mono<Long> or(String... bitSetNames);
 
     /**
      * Executes AND operation over this object and specified bitsets.
      * Stores result into this object.
      * 
      * @param bitSetNames - name of stored bitsets
-     * @return void
+     * @return length in bytes of the destination key
      */
-    Mono<Void> and(String... bitSetNames);
+    Mono<Long> and(String... bitSetNames);
 
     /**
      * Executes XOR operation over this object and specified bitsets.
      * Stores result into this object.
      * 
      * @param bitSetNames - name of stored bitsets
-     * @return void
+     * @return length in bytes of the destination key
      */
-    Mono<Void> xor(String... bitSetNames);
+    Mono<Long> xor(String... bitSetNames);
 
 }

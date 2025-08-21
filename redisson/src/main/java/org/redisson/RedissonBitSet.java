@@ -377,32 +377,32 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
     }
 
     @Override
-    public void or(String... bitSetNames) {
-        get(orAsync(bitSetNames));
+    public long or(String... bitSetNames) {
+        return get(orAsync(bitSetNames));
     }
 
     @Override
-    public void and(String... bitSetNames) {
-        get(andAsync(bitSetNames));
+    public long and(String... bitSetNames) {
+        return get(andAsync(bitSetNames));
     }
 
     @Override
-    public void xor(String... bitSetNames) {
-        get(xorAsync(bitSetNames));
+    public long xor(String... bitSetNames) {
+        return get(xorAsync(bitSetNames));
     }
 
     @Override
-    public void not() {
-        get(notAsync());
+    public long not() {
+        return get(notAsync());
     }
 
-    private RFuture<Void> opAsync(String op, String... bitSetNames) {
-        List<Object> params = new ArrayList<Object>(bitSetNames.length + 3);
+    private RFuture<Long> opAsync(String op, String... bitSetNames) {
+        List<Object> params = new ArrayList<>(bitSetNames.length + 3);
         params.add(op);
         params.add(getRawName());
         params.add(getRawName());
         params.addAll(Arrays.asList(bitSetNames));
-        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.BITOP, params.toArray());
+        return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.BITOP, params.toArray());
     }
 
     @Override
@@ -485,7 +485,7 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
     }
 
     @Override
-    public RFuture<Void> notAsync() {
+    public RFuture<Long> notAsync() {
         return opAsync("NOT");
     }
 
@@ -520,17 +520,17 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
     }
 
     @Override
-    public RFuture<Void> orAsync(String... bitSetNames) {
+    public RFuture<Long> orAsync(String... bitSetNames) {
         return opAsync("OR", bitSetNames);
     }
 
     @Override
-    public RFuture<Void> andAsync(String... bitSetNames) {
+    public RFuture<Long> andAsync(String... bitSetNames) {
         return opAsync("AND", bitSetNames);
     }
 
     @Override
-    public RFuture<Void> xorAsync(String... bitSetNames) {
+    public RFuture<Long> xorAsync(String... bitSetNames) {
         return opAsync("XOR", bitSetNames);
     }
 

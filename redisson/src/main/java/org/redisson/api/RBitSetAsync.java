@@ -247,9 +247,9 @@ public interface RBitSetAsync extends RExpirableAsync {
     /**
      * Executes NOT operation over all bits
      *
-     * @return void
+     * @return length in bytes of the destination key
      */
-    RFuture<Void> notAsync();
+    RFuture<Long> notAsync();
 
     /**
      * Set all bits to one from <code>fromIndex</code> (inclusive) to <code>toIndex</code> (exclusive)
@@ -338,26 +338,26 @@ public interface RBitSetAsync extends RExpirableAsync {
      * Stores result into this object.
      *
      * @param bitSetNames - name of stored bitsets
-     * @return void
+     * @return length in bytes of the destination key
      */
-    RFuture<Void> orAsync(String... bitSetNames);
+    RFuture<Long> orAsync(String... bitSetNames);
 
     /**
      * Executes AND operation over this object and specified bitsets.
      * Stores result into this object.
      *
      * @param bitSetNames - name of stored bitsets
-     * @return void
+     * @return length in bytes of the destination key
      */
-    RFuture<Void> andAsync(String... bitSetNames);
+    RFuture<Long> andAsync(String... bitSetNames);
 
     /**
      * Executes XOR operation over this object and specified bitsets.
      * Stores result into this object.
      *
      * @param bitSetNames - name of stored bitsets
-     * @return void
+     * @return length in bytes of the destination key
      */
-    RFuture<Void> xorAsync(String... bitSetNames);
+    RFuture<Long> xorAsync(String... bitSetNames);
 
 }

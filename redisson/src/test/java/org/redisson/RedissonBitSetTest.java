@@ -120,7 +120,7 @@ public class RedissonBitSetTest extends RedisDockerTest {
         RBitSet bs = redisson.getBitSet("testbitset");
         bs.set(3);
         bs.set(5);
-        bs.not();
+        assertThat(bs.not()).isEqualTo(1);
         assertThat(bs.toString()).isEqualTo("{0, 1, 2, 4, 6, 7}");
     }
 
@@ -200,7 +200,7 @@ public class RedissonBitSetTest extends RedisDockerTest {
         RBitSet bs2 = redisson.getBitSet("testbitset2");
         bs2.set(4);
         bs2.set(10);
-        bs1.and(bs2.getName());
+        assertThat(bs1.and(bs2.getName())).isEqualTo(2);
         assertThat(bs1.get(3)).isFalse();
         assertThat(bs1.get(4)).isTrue();
         assertThat(bs1.get(5)).isFalse();

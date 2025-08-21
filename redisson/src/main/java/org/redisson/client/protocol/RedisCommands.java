@@ -120,7 +120,7 @@ public interface RedisCommands {
     RedisStrictCommand<Integer> BITPOS = new RedisStrictCommand<Integer>("BITPOS", new IntegerReplayConvertor());
     RedisStrictCommand<Void> SETBIT_VOID = new RedisStrictCommand<Void>("SETBIT", new VoidReplayConvertor());
     RedisStrictCommand<Boolean> SETBIT = new RedisStrictCommand<Boolean>("SETBIT", new BooleanReplayConvertor());
-    RedisStrictCommand<Void> BITOP = new RedisStrictCommand<Void>("BITOP", new VoidReplayConvertor());
+    RedisStrictCommand<Long> BITOP = new RedisStrictCommand<Long>("BITOP");
 
     RedisStrictCommand<Integer> WAIT = new RedisStrictCommand<Integer>("WAIT", new IntegerReplayConvertor());
     RedisCommand<List<Integer>> WAITAOF = new RedisCommand("WAITAOF", new ObjectListReplayDecoder<Integer>(), new IntegerReplayConvertor());

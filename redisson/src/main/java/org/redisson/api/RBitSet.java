@@ -249,8 +249,10 @@ public interface RBitSet extends RExpirable, RBitSetAsync {
 
     /**
      * Executes NOT operation over all bits
+     *
+     * @return length in bytes of the destination key
      */
-    void not();
+    long not();
 
     /**
      * Set all bits to one from <code>fromIndex</code> (inclusive) to <code>toIndex</code> (exclusive)
@@ -334,23 +336,26 @@ public interface RBitSet extends RExpirable, RBitSetAsync {
      * Stores result into this object.
      * 
      * @param bitSetNames - name of stored bitsets
+     * @return length in bytes of the destination key
      */
-    void or(String... bitSetNames);
+    long or(String... bitSetNames);
 
     /**
      * Executes AND operation over this object and specified bitsets.
      * Stores result into this object.
      * 
      * @param bitSetNames - name of stored bitsets
+     * @return length in bytes of the destination key
      */
-    void and(String... bitSetNames);
+    long and(String... bitSetNames);
 
     /**
      * Executes XOR operation over this object and specified bitsets.
      * Stores result into this object.
      * 
      * @param bitSetNames - name of stored bitsets
+     * @return length in bytes of the destination key
      */
-    void xor(String... bitSetNames);
+    long xor(String... bitSetNames);
 
 }
