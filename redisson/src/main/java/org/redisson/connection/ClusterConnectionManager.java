@@ -158,7 +158,12 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                     e = (Exception) e.getCause();
                 }
                 lastException = e;
-                log.warn(e.getMessage());
+                if (e instanceof TimeoutException) {
+                    log.warn("Connection timeout to {}", address);
+                }
+                if (e.getMessage() != null) {
+                    log.warn(e.getMessage());
+                }
             }
         }
 
