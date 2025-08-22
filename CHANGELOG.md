@@ -3,6 +3,55 @@ Redisson Releases History
 
 Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
 
+### 22-Aug-2025 - 3.51.0 released
+
+Feature - `RBitSet.diff()`, `diffInverse()`, `andOr()`, `setExclusive()` methods added  
+Feature - `FieldIndex.svsVamanaVector()` vector indexing added (thanks to @seakider)  
+Feature - `checkMasterLinkStatus` setting added for Cluster mode (thanks to @seakider)  
+Feature - `RKeys.migrate()` method added with auth support (thanks to @lyrric)  
+Feature - added support of KEEPREF, DELREF and ACKED options to `RStream.trim()` method (thanks to @seakider)  
+Feature - added support of KEEPREF, DELREF and ACKED options to `RStream.add()` method (thanks to @seakider)  
+Feature - new FIRST_PRIMARY_PUBSUB_NOTIFICATION mode added to Multi Cluster `primaryDiscoveryMode` setting  
+Feature - new metrics "responses.busy", "responses.wait", "responses.tryagain", "responses.loading", "responses.ask", "responses.moved" added  
+
+Improvement - `AbstractCacheMap.removeExpiredEntries()` method optimization (thanks to @lyrric)  
+Improvement - equals/hashcode implementation added to TransactionOptions  
+Improvement - Cluster manager uses IP if hostname can't be resolved (thanks to @seakider)  
+Improvement - new API for `RStream.range()`, `RStream.rangeReversed()` and `RStream.listPending()` methods (thanks to @seakider)  
+
+Fixed - `RReliableQueue` message reached delivery limit isn't removed and moved to `deadLetterQueue`  
+Fixed - visibility setting isn't applied if defined in `RReliableQueue` queue config
+Fixed - license key can't be read if defined as JVM option  
+Fixed - `RClusteredLocalCachedMapCache.putIfAbsent()` method sends incorrect local cache update date (regression since 3.49.0)  
+Fixed - `RLocalCachedMapCacheV2.fastPutIfExists()` method doesn't work (regression since 3.49.0)  
+Fixed - `SyncStrategy.UPDATE` doesn't work for `RLocalCachedJsonStore`  
+Fixed - `RClusteredLocalCachedMap.putIfAbsent()` and `fastPutIfAbsent()` methods don't update the local cache if `storeCacheMiss = true`  
+Fixed - `RClusteredLocalCachedMap.putIfExists()` method doesn't update the local cache if `storeCacheMiss = true`  
+Fixed - `RClusteredLocalCachedMapCache.putIfExists()` and `putIfAbsent()` methods doesn't update the local cache if `storeCacheMiss = true`  
+Fixed - `RClusteredLocalCachedMapCache.fastPutIfExists()`, `putIfExists()`, `putIfAbsent()` and `fastPutIfAbsent()` methods don't update the local cache if `storeCacheMiss = true`  
+Fixed - `RClusteredLocalCachedMapCacheNative.fastPutIfExists()`, `putIfExists()`, `putIfAbsent()` and `fastPutIfAbsent()` methods don't update the local cache if `storeCacheMiss = true`  
+Fixed - `RReliableQueue.get(Codec, String)` method doesn't work  
+Fixed - Multi Cluster mode doesn't detect failed clusters  
+Fixed - null is printed in logs during connection in Cluster mode  
+Fixed - `RBitSet.and()`, `not()`, `or()`, `xor()` methods return void instead of number  
+Fixed - `RScheduledExecutorService.deregisterWorkers()` method throws an exception (thanks to @seakider)  
+Fixed - `RLocalCachedMap.putIfExists()` method doesn't update the local cache if `storeCacheMiss = true`  
+Fixed - `RLocalCachedMap.putIfAbsent()` method doesn't update the local cache if `storeCacheMiss = true`  
+Fixed - `IllegalReferenceCountException` is thrown when using `RClientSideCaching` (thanks to @seakider)  
+Fixed - failed Slave at Redisson start moment can't be discovered later in Cluster mode  
+Fixed - `INFO REPLICATION` command timeout logging  
+Fixed - graalvm: Classes that should be initialized at run time got initialized during image building (thanks to @seakider)  
+Fixed - `DNSMonitor` logs a warning (thanks to @seakider)  
+Fixed - race condition during elements eviction in LFU cache (thanks to @lyrric)  
+Fixed - when acquire by RPermitExpirableSemaphore it may fail in some case (thanks to @lyrric)  
+Fixed - Direct byte buffer leak when using `RLocalCachedMap` with `StoreMode.LOCALCACHE` for `readAllValues()`, `readAllMap()` and `readAllEntrySet()` methods (thanks to @lyrric)  
+Fixed - DataInputStream closing to prevent resource leak in `RedissonExecutorService.getClassBody()` method (thanks to @backstraw)  
+Fixed - added missed setters and getters for Config object in `RedissonSessionManager` (thanks to @jglapa)  
+Fixed - `RPermitExpirableSemaphore.tryAcquire()` doesn't work when acquiring > 1 permit (thanks to @lyrric)  
+Fixed - `CommandMapper` isn't applied properly to `RScript` object (thanks to @lyrric)  
+Fixed - synchronization of remote and local Tomcat SSO cache (thanks to @cogniware)  
+Fixed - `FT.SEARCH` command is executed only on master nodes (thanks to @pfyod)  
+
 ### 17-Jun-2025 - 3.50.0 released
 
 Feature - Apache Tomcat SSO integration (thanks to @cogniware and @iamrakesh)  
