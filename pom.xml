@@ -70,6 +70,17 @@
         <module>redisson-micronaut</module>
     </modules>
 
+    <distributionManagement>
+        <repository>
+            <id>central</id>
+            <url>https://central.sonatype.com/api/v1/publisher/deployments/upload/</url>
+        </repository>
+        <snapshotRepository>
+            <id>central</id>
+            <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+        </snapshotRepository>
+    </distributionManagement>
+
     <profiles>
         <profile>
             <id>release</id>
@@ -233,19 +244,6 @@
                     <waitUntil>published</waitUntil>
                 </configuration>
           </plugin>
-          <plugin>
-         	<groupId>org.sonatype.plugins</groupId>
-         	<artifactId>nexus-staging-maven-plugin</artifactId>
-         	<version>1.7.0</version>
-         	<extensions>true</extensions>
-                <configuration>
-                    <serverId>ossrepo</serverId>
-                    <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-                    <autoReleaseAfterClose>true</autoReleaseAfterClose>
-                    <stagingProgressTimeoutMinutes>15</stagingProgressTimeoutMinutes>
- 		</configuration>
-          </plugin>
-
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-release-plugin</artifactId>
