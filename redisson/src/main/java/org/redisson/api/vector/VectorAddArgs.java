@@ -29,7 +29,7 @@ public interface VectorAddArgs {
      * @param name element name
      * @return arguments object
      */
-    static ElementStep element(String name) {
+    static ElementStep name(String name) {
         return new VectorAddParams(name);
     }
 

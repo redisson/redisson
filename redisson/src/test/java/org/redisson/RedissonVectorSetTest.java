@@ -37,21 +37,21 @@ public class RedissonVectorSetTest extends RedisDockerTest {
         vectorSet = redisson.getVectorSet(TEST_SET_NAME);
         vectorSet.delete();
 
-        vectorSet.add(VectorAddArgs.element(ELEMENT_A).vector(1.0, 1.0));
-        vectorSet.add(VectorAddArgs.element(ELEMENT_B).vector(-1.0, -1.0));
-        vectorSet.add(VectorAddArgs.element(ELEMENT_C).vector(-1.0, 1.0));
-        vectorSet.add(VectorAddArgs.element(ELEMENT_D).vector(1.0, -1.0));
+        vectorSet.add(VectorAddArgs.name(ELEMENT_A).vector(1.0, 1.0));
+        vectorSet.add(VectorAddArgs.name(ELEMENT_B).vector(-1.0, -1.0));
+        vectorSet.add(VectorAddArgs.name(ELEMENT_C).vector(-1.0, 1.0));
+        vectorSet.add(VectorAddArgs.name(ELEMENT_D).vector(1.0, -1.0));
     }
 
     @Test
     public void testAdd() {
-        boolean result = vectorSet.add(VectorAddArgs.element(ELEMENT_E).vector(1D, 0D));
+        boolean result = vectorSet.add(VectorAddArgs.name(ELEMENT_E).vector(1D, 0D));
         assertThat(result).isTrue();
 
         List<Double> vectors1 = vectorSet.getVector(ELEMENT_E);
         assertThat(vectors1.stream().map(v -> Math.round(v))).containsOnlyOnce(1L, 0L);
 
-        boolean replaceResult = vectorSet.add(VectorAddArgs.element(ELEMENT_E).vector(4D, 10D));
+        boolean replaceResult = vectorSet.add(VectorAddArgs.name(ELEMENT_E).vector(4D, 10D));
         assertThat(replaceResult).isFalse();
 
         List<Double> vectors2 = vectorSet.getVector(ELEMENT_E);
@@ -64,7 +64,7 @@ public class RedissonVectorSetTest extends RedisDockerTest {
     public void testSize() {
         assertThat(vectorSet.size()).isEqualTo(4);
 
-        vectorSet.add(VectorAddArgs.element(ELEMENT_E).vector(1.0, 0.0));
+        vectorSet.add(VectorAddArgs.name(ELEMENT_E).vector(1.0, 0.0));
         assertThat(vectorSet.size()).isEqualTo(5);
 
         vectorSet.remove(ELEMENT_E);
@@ -76,7 +76,7 @@ public class RedissonVectorSetTest extends RedisDockerTest {
         assertThat(vectorSet.dimensions()).isEqualTo(2);
 
         RVectorSet highDimSet = redisson.getVectorSet("high-dim-set");
-        highDimSet.add(VectorAddArgs.element("high-dim").vector(1.0, 2.0, 3.0, 4.0, 5.0));
+        highDimSet.add(VectorAddArgs.name("high-dim").vector(1.0, 2.0, 3.0, 4.0, 5.0));
 
         assertThat(highDimSet.dimensions()).isEqualTo(5);
     }
@@ -96,7 +96,7 @@ public class RedissonVectorSetTest extends RedisDockerTest {
     @Test
     public void testGetRawVector() {
         RVectorSet vectorSet = redisson.getVectorSet("raw-vectors");
-        vectorSet.add(VectorAddArgs.element("high-dim").vector(1.0, 2.0, 3.0, 4.0, 5.0));
+        vectorSet.add(VectorAddArgs.name("high-dim").vector(1.0, 2.0, 3.0, 4.0, 5.0));
 
         List<Object> rawVectorA = vectorSet.getRawVector("high-dim");
 
@@ -140,7 +140,7 @@ public class RedissonVectorSetTest extends RedisDockerTest {
         assertThat(info.getQuantizationType()).isEqualTo(QuantizationType.Q8);
 
         RVectorSet vectorSet2 = redisson.getVectorSet("test2");
-        vectorSet2.add(VectorAddArgs.element("G")
+        vectorSet2.add(VectorAddArgs.name("G")
                 .vector(0.7, 0.7, 0.4)
                 .quantization(QuantizationType.BIN)
                 .effort(5));
@@ -151,7 +151,7 @@ public class RedissonVectorSetTest extends RedisDockerTest {
         assertThat(info2.getSize()).isEqualTo(1);
 
         RVectorSet vectorSet3 = redisson.getVectorSet("test3");
-        vectorSet3.add(VectorAddArgs.element("G")
+        vectorSet3.add(VectorAddArgs.name("G")
                 .vector(0.7, 0.7, 0.4)
                 .quantization(QuantizationType.NOQUANT)
                 .effort(5));
@@ -166,7 +166,7 @@ public class RedissonVectorSetTest extends RedisDockerTest {
     @Test
     public void testGetNeighbors() {
         
-        vectorSet.add(VectorAddArgs.element(ELEMENT_E).vector(1.1, 1.1));
+        vectorSet.add(VectorAddArgs.name(ELEMENT_E).vector(1.1, 1.1));
 
         
         List<String> neighbors = vectorSet.getNeighbors(ELEMENT_A);
@@ -185,7 +185,7 @@ public class RedissonVectorSetTest extends RedisDockerTest {
     @Test
     public void testGetNeighborEntries() {
         
-        vectorSet.add(VectorAddArgs.element(ELEMENT_E).vector(1.1, 1.1));
+        vectorSet.add(VectorAddArgs.name(ELEMENT_E).vector(1.1, 1.1));
 
         
         List<ScoredEntry<String>> neighborEntries = vectorSet.getNeighborEntries(ELEMENT_A);
@@ -228,10 +228,10 @@ public class RedissonVectorSetTest extends RedisDockerTest {
         assertThat(emptyRandom).isNull();
 
         
-        vectorSet.add(VectorAddArgs.element(ELEMENT_A).vector(1.0, 1.0));
-        vectorSet.add(VectorAddArgs.element(ELEMENT_B).vector(-1.0, -1.0));
-        vectorSet.add(VectorAddArgs.element(ELEMENT_C).vector(-1.0, 1.0));
-        vectorSet.add(VectorAddArgs.element(ELEMENT_D).vector(1.0, -1.0));
+        vectorSet.add(VectorAddArgs.name(ELEMENT_A).vector(1.0, 1.0));
+        vectorSet.add(VectorAddArgs.name(ELEMENT_B).vector(-1.0, -1.0));
+        vectorSet.add(VectorAddArgs.name(ELEMENT_C).vector(-1.0, 1.0));
+        vectorSet.add(VectorAddArgs.name(ELEMENT_D).vector(1.0, -1.0));
     }
 
     @Test
@@ -274,7 +274,7 @@ public class RedissonVectorSetTest extends RedisDockerTest {
         assertThat(nonExistentRemove).isFalse();
 
         
-        vectorSet.add(VectorAddArgs.element(ELEMENT_A).vector(1.0, 1.0));
+        vectorSet.add(VectorAddArgs.name(ELEMENT_A).vector(1.0, 1.0));
     }
 
     @Test
@@ -335,7 +335,7 @@ public class RedissonVectorSetTest extends RedisDockerTest {
         
         TestAttributes attrs = new TestAttributes("test attribute", 100);
 
-        boolean result = vectorSet.add(VectorAddArgs.element("F").vector(0.5, 0.5).attributes(attrs));
+        boolean result = vectorSet.add(VectorAddArgs.name("F").vector(0.5, 0.5).attributes(attrs));
         assertThat(result).isTrue();
 
         
@@ -347,7 +347,7 @@ public class RedissonVectorSetTest extends RedisDockerTest {
     @Test
     public void testAddWithQuantization() {
         
-        boolean result = vectorSet.add(VectorAddArgs.element("G")
+        boolean result = vectorSet.add(VectorAddArgs.name("G")
                 .vector(0.7, 0.7)
                 .quantization(QuantizationType.Q8)
                 .effort(5));
@@ -365,8 +365,8 @@ public class RedissonVectorSetTest extends RedisDockerTest {
         TestAttributes attrs1 = new TestAttributes("category1", 2000);
         TestAttributes attrs2 = new TestAttributes("category2", 1980);
 
-        vectorSet.add(VectorAddArgs.element("F1").vector(0.5, 0.5).attributes(attrs1));
-        vectorSet.add(VectorAddArgs.element("F2").vector(0.6, 0.6).attributes(attrs2));
+        vectorSet.add(VectorAddArgs.name("F1").vector(0.5, 0.5).attributes(attrs1));
+        vectorSet.add(VectorAddArgs.name("F2").vector(0.6, 0.6).attributes(attrs2));
 
         
         List<String> filteredResults = vectorSet.getSimilar(
@@ -383,7 +383,7 @@ public class RedissonVectorSetTest extends RedisDockerTest {
     @Test
     public void testAddInvalidDimension() {
         assertThrows(RedisException.class, () -> {
-            vectorSet.add(VectorAddArgs.element("invalid-dim").vector(1.0, 2.0, 3.0));
+            vectorSet.add(VectorAddArgs.name("invalid-dim").vector(1.0, 2.0, 3.0));
         });
     }
 
@@ -401,12 +401,12 @@ public class RedissonVectorSetTest extends RedisDockerTest {
     @Test
     public void testAddWithReduceOption() {
         RVectorSet vectorSet = redisson.getVectorSet("test2");
-        boolean initResult = vectorSet.add(VectorAddArgs.element("FirstElement")
+        boolean initResult = vectorSet.add(VectorAddArgs.name("FirstElement")
                 .vector(1.0, 1.0, 1.0, 1.0)
                 .reduce(2));
         assertThat(initResult).isTrue();
 
-        boolean result = vectorSet.add(VectorAddArgs.element("H")
+        boolean result = vectorSet.add(VectorAddArgs.name("H")
                 .vector(0.8, 0.8, 0.8, 0.8)
                 .reduce(2));
         assertThat(result).isTrue();
@@ -441,7 +441,7 @@ public class RedissonVectorSetTest extends RedisDockerTest {
     @Test
     public void testAddWithCheckAndSet() {
         
-        boolean result = vectorSet.add(VectorAddArgs.element("CAS")
+        boolean result = vectorSet.add(VectorAddArgs.name("CAS")
                 .vector(0.3, 0.3)
                 .useCheckAndSet());
 
