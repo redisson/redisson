@@ -67,8 +67,8 @@ public final class VectorAddParams implements VectorAddArgs, VectorAddArgs.Eleme
     }
 
     @Override
-    public VectorAddArgs explorationFactor(int effort) {
-        this.effort = effort;
+    public VectorAddArgs explorationFactor(int value) {
+        this.effort = value;
         return this;
     }
 

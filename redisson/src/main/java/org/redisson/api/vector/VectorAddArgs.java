@@ -29,7 +29,7 @@ public interface VectorAddArgs {
      * @param name element name
      * @return arguments object
      */
-    static ElementStep name(String name) {
+    static ElementStep element(String name) {
         return new VectorAddParams(name);
     }
 
@@ -81,10 +81,10 @@ public interface VectorAddArgs {
     /**
      * Defines the exploration factor (EF)
      *
-     * @param effort exploration factor value
+     * @param value exploration factor value
      * @return arguments object
      */
-    VectorAddArgs explorationFactor(int effort);
+    VectorAddArgs explorationFactor(int value);
 
     /**
      * Defines the attributes. Used in the form of a JavaScript object.
