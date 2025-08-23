@@ -22,14 +22,15 @@ import org.redisson.api.vector.VectorSimilarArgs;
 import org.redisson.client.protocol.ScoredEntry;
 
 /**
- * Redis Vector Set interface
+ * Redis Vector Set
  *
  * @author Nikita Koksharov
  *
  */
 public interface RVectorSet extends RExpirable, RVectorSetAsync {
+
     /**
-     * Adds an element to the vector set
+     * Adds an element
      *
      * @param args vector add arguments
      * @return <code>true</code> if element was added and <code>false</code> if updated

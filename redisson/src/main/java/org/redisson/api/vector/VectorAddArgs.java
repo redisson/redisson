@@ -16,87 +16,89 @@
 package org.redisson.api.vector;
 
 /**
- * Vector add arguments
+ * Arguments object for RVectorSet.add() method
  *
  * @author Nikita Koksharov
  *
  */
 public interface VectorAddArgs {
+
     /**
-     * Creates a new element with the specified name
+     * Defines element name
      *
-     * @param element element name
-     * @return element vector builder
+     * @param name element name
+     * @return arguments object
      */
-    static ElementStep element(String element) {
-        return new VectorAddParams(element);
+    static ElementStep element(String name) {
+        return new VectorAddParams(name);
     }
 
     /**
-     * Element step interface for building vector add arguments
+     * Arguments object for vector data
      */
     interface ElementStep {
+
         /**
-         * Sets the vector as byte array
+         * Defines vector as byte array (32-bit floating point blob of values)
          *
          * @param vector vector as byte array
-         * @return vector add arguments
+         * @return arguments object
          */
         VectorAddArgs vector(byte[] vector);
 
         /**
-         * Sets the vector as array of doubles
+         * Defines vector as array of floating point numbers
          *
          * @param vector vector as array of doubles
-         * @return vector add arguments
+         * @return arguments object
          */
         VectorAddArgs vector(Double... vector);
     }
 
     /**
-     * Sets the reduce parameter
+     * Sets the random projection value to reduce the dimensionality of the vector.
      *
-     * @param reduce reduce value
-     * @return vector add arguments
+     * @param reduce value to reduce the dimensionality
+     * @return arguments object
      */
     VectorAddArgs reduce(int reduce);
 
     /**
-     * Enables check-and-set operation
+     * Defines whether it is to use check-and-set style for the addition execution.
      *
-     * @return vector add arguments
+     * @return arguments object
      */
     VectorAddArgs useCheckAndSet();
 
     /**
-     * Sets the quantization type
+     * Defines the quantization type
      *
      * @param type quantization type
-     * @return vector add arguments
+     * @return arguments object
      */
     VectorAddArgs quantization(QuantizationType type);
 
     /**
-     * Sets the effort parameter
+     * Defines the exploration factor (EF)
      *
-     * @param effort effort value
-     * @return vector add arguments
+     * @param effort exploration factor value
+     * @return arguments object
      */
     VectorAddArgs effort(int effort);
 
     /**
-     * Sets the attributes object
+     * Defines the attributes. Used in the form of a JavaScript object.
      *
      * @param attributes attributes object to serialize
-     * @return vector add arguments
+     * @return arguments object
      */
     VectorAddArgs attributes(Object attributes);
 
     /**
-     * Sets the maximum connections parameter
+     * Defines the number of maximum connections which each node will have with other nodes.
      *
-     * @param maxConnections maximum connections value
-     * @return vector add arguments
+     * @param maxConnections number of maximum connections
+     * @return arguments object
      */
     VectorAddArgs maxConnections(int maxConnections);
 }
