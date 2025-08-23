@@ -57,7 +57,7 @@ public final class VectorSimilarParams implements VectorSimilarArgs {
     }
 
     @Override
-    public VectorSimilarArgs effort(int effort) {
+    public VectorSimilarArgs explorationFactor(int effort) {
         this.effort = effort;
         return this;
     }

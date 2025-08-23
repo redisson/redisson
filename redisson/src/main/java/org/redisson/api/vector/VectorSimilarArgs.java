@@ -16,85 +16,86 @@
 package org.redisson.api.vector;
 
 /**
- * Vector similarity arguments
+ * Arguments object for RVectorSet.getSimilar() method
  *
  * @author Nikita Koksharov
  *
  */
 public interface VectorSimilarArgs {
+
     /**
-     * Creates arguments for finding similar vectors to the specified element
+     * Defines element name.
      *
-     * @param element - element name
-     * @return vector similarity arguments
+     * @param element element name
+     * @return arguments object
      */
     static VectorSimilarArgs element(String element) {
         return new VectorSimilarParams(element);
     }
 
     /**
-     * Creates arguments for finding similar vectors to the specified vector
+     * Defines vector as byte array (32-bit floating point blob of values).
      *
-     * @param vector - vector as byte array
-     * @return vector similarity arguments
+     * @param vector as byte array
+     * @return arguments object
      */
     static VectorSimilarArgs vector(byte[] vector) {
         return new VectorSimilarParams(vector);
     }
 
     /**
-     * Creates arguments for finding similar vectors to the specified vector
+     * Defines vector as array of floating point numbers.
      *
-     * @param vector - vector as array of doubles
-     * @return vector similarity arguments
+     * @param vector vector as array of doubles
+     * @return arguments object
      */
     static VectorSimilarArgs vector(Double... vector) {
         return new VectorSimilarParams(vector);
     }
 
     /**
-     * Sets the count parameter
+     * Defines the count parameter.
      *
-     * @param count - count value
-     * @return vector similarity arguments
+     * @param count count value
+     * @return arguments object
      */
     VectorSimilarArgs count(int count);
 
     /**
-     * Sets the effort parameter
+     * Defines the exploration factor (EF).
      *
-     * @param effort - effort value
-     * @return vector similarity arguments
+     * @param value exploration factor value
+     * @return arguments object
      */
-    VectorSimilarArgs effort(int effort);
+    VectorSimilarArgs explorationFactor(int value);
 
     /**
-     * Sets the filter expression
+     * Defines the filter expression to restrict matching elements.
      *
-     * @param filter - filter expression
-     * @return vector similarity arguments
+     * @param expression expression value
+     * @return arguments object
      */
-    VectorSimilarArgs filter(String filter);
+    VectorSimilarArgs filter(String expression);
 
     /**
-     * Sets the filter effort parameter
+     * Defines the limit of filtering attempts for the filter expression.
      *
      * @param filterEffort - filter effort value
-     * @return vector similarity arguments
+     * @return arguments object
      */
     VectorSimilarArgs filterEffort(int filterEffort);
 
     /**
-     * Enables linear scan for exact results
+     * Defines whether a linear scan is used to obtain exact results.
      *
-     * @return vector similarity arguments
+     * @return arguments object
      */
     VectorSimilarArgs useLinearScan();
 
     /**
-     * Forces execution on the main thread
+     * Defines whether the search is executed in the main thread or a background thread.
      *
-     * @return vector similarity arguments
+     * @return arguments object
      */
     VectorSimilarArgs useMainThread();
 }
