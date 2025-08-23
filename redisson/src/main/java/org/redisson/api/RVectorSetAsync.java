@@ -22,68 +22,70 @@ import org.redisson.api.vector.VectorSimilarArgs;
 import org.redisson.client.protocol.ScoredEntry;
 
 /**
- * Async interface for Redis Vector Set
+ * Async interface for Vector Set
  *
  * @author Nikita Koksharov
  *
  */
 public interface RVectorSetAsync extends RExpirableAsync {
+
     /**
-     * Adds an element to the vector set asynchronously
+     * Adds an element
      *
-     * @param args vector add arguments
+     * @param args add arguments
      * @return <code>true</code> if element was added and <code>false</code> if updated
      */
     RFuture<Boolean> addAsync(VectorAddArgs args);
 
     /**
-     * Returns the number of elements in the vector set asynchronously
+     * Returns the number of elements
      *
-     * @return cardinality of the vector set
+     * @return number of elements
      */
     RFuture<Integer> sizeAsync();
 
     /**
-     * Returns the dimension of vectors in the vector set asynchronously
+     * Returns the number of dimensions of vectors
      *
-     * @return dimension count
+     * @return dimensions count
      */
     RFuture<Integer> dimensionsAsync();
 
     /**
-     * Retrieves the vector associated with an element asynchronously
+     * Retrieves approximate vector associated with a given element name
      *
-     * @param element element name
+     * @param name element name
      * @return list of vector coordinates
      */
-    RFuture<List<Double>> getVectorAsync(String element);
+    RFuture<List<Double>> getVectorAsync(String name);
 
     /**
-     * Retrieves the raw vector associated with an element asynchronously
+     * Retrieves raw internal representation of
+     * the approximate vector associated with a given element name
      *
-     * @param element element name
+     * @param name element name
      * @return list of raw vector values
      */
-    RFuture<List<Object>> getRawVectorAsync(String element);
+    RFuture<List<Object>> getRawVectorAsync(String name);
 
     /**
-     * Retrieves attributes of a vector set element asynchronously
+     * Retrieves attributes associated with a given element name
      *
-     * @param element element name
-     * @param clazz class type for deserialization
-     * @return deserialized attributes object
+     * @param name element name
+     * @param clazz type for deserialization
+     * @return attributes
      */
-    <T> RFuture<T> getAttributesAsync(String element, Class<T> clazz);
+    <T> RFuture<T> getAttributesAsync(String name, Class<T> clazz);
 
     /**
-     * Returns metadata and internal details about the vector set asynchronously
+     * Returns metadata for this vector set
      *
      * @return vector set information
      */
     RFuture<VectorInfo> getInfoAsync();
 
     /**
-     * Retrieves the neighbors of a specified element asynchronously
+     * Retrieves the neighbors of a specified element by name
      *
      * @param element element name
      * @return list of neighbor element names
@@ -91,7 +93,7 @@ public interface RVectorSetAsync extends RExpirableAsync {
     RFuture<List<String>> getNeighborsAsync(String element);
 
     /**
-     * Retrieves the neighbors of a specified element with scores asynchronously
+     * Retrieves the neighbors with scores of a specified element by name
      *
      * @param element element name
      * @return list of neighbor elements with scores
@@ -99,14 +101,14 @@ public interface RVectorSetAsync extends RExpirableAsync {
     RFuture<List<ScoredEntry<String>>> getNeighborEntriesAsync(String element);
 
     /**
-     * Returns a random element from the vector set asynchronously
+     * Returns a random element name
      *
      * @return random element name
      */
     RFuture<String> randomAsync();
 
     /**
-     * Returns multiple random elements from the vector set asynchronously
+     * Returns random element names
      *
      * @param count number of elements to return
      * @return list of random element names
@@ -114,24 +116,24 @@ public interface RVectorSetAsync extends RExpirableAsync {
     RFuture<List<String>> randomAsync(int count);
 
     /**
-     * Removes an element from the vector set asynchronously
+     * Removes an element by name
      *
      * @param element element name to remove
-     * @return true if element was removed, false otherwise
+     * @return <code>true</code> if element was removed, <code>false</code> otherwise
      */
     RFuture<Boolean> removeAsync(String element);
 
     /**
-     * Sets attributes for a vector set element asynchronously
+     * Sets attributes for an element by name
      *
      * @param element element name
-     * @param attributes attributes object to serialize
-     * @return true if attributes were set, false otherwise
+     * @param attributes attributes
+     * @return <code>true</code> if attributes were set, <code>false</code> otherwise
      */
     RFuture<Boolean> setAttributesAsync(String element, Object attributes);
 
     /**
-     * Retrieves elements similar to a given vector or element asynchronously
+     * Retrieves element names similar to a specified vector or element
      *
      * @param args vector similarity arguments
      * @return list of similar element names
@@ -139,10 +141,10 @@ public interface RVectorSetAsync extends RExpirableAsync {
     RFuture<List<String>> getSimilarAsync(VectorSimilarArgs args);
 
     /**
-     * Retrieves elements similar to a given vector or element with scores asynchronously
+     * Retrieves element names with scores similar to a given vector or element
      *
-     * @param args vector similarity arguments
-     * @return list of similar elements with scores
+     * @param args similarity arguments
+     * @return list of similar element names with scores
      */
     RFuture<List<ScoredEntry<String>>> getSimilarEntriesAsync(VectorSimilarArgs args);
 }

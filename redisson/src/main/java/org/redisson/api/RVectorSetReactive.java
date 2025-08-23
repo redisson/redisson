@@ -23,68 +23,70 @@ import org.redisson.client.protocol.ScoredEntry;
 import reactor.core.publisher.Mono;
 
 /**
- * Reactive interface for Redis Vector Set
+ * Reactive interface for Vector Set
  *
  * @author Nikita Koksharov
  *
  */
 public interface RVectorSetReactive extends RExpirableReactive {
+
     /**
-     * Adds an element to the vector set
+     * Adds an element
      *
-     * @param args vector add arguments
+     * @param args add arguments
      * @return <code>true</code> if element was added and <code>false</code> if updated
      */
     Mono<Boolean> add(VectorAddArgs args);
 
     /**
-     * Returns the number of elements in the vector set
+     * Returns the number of elements
      *
-     * @return cardinality of the vector set
+     * @return number of elements
      */
     Mono<Integer> size();
 
     /**
-     * Returns the dimension of vectors in the vector set
+     * Returns the number of dimensions of vectors
      *
-     * @return dimension count
+     * @return dimensions count
      */
     Mono<Integer> dimensions();
 
     /**
-     * Retrieves the vector associated with an element
+     * Retrieves approximate vector associated with a given element name
      *
-     * @param element element name
+     * @param name element name
      * @return list of vector coordinates
      */
-    Mono<List<Double>> getVector(String element);
+    Mono<List<Double>> getVector(String name);
 
     /**
-     * Retrieves the raw vector associated with an element
+     * Retrieves raw internal representation of
+     * the approximate vector associated with a given element name
      *
-     * @param element element name
+     * @param name element name
      * @return list of raw vector values
      */
-    Mono<List<Object>> getRawVector(String element);
+    Mono<List<Object>> getRawVector(String name);
 
     /**
-     * Retrieves attributes of a vector set element
+     * Retrieves attributes associated with a given element name
      *
-     * @param element element name
-     * @param clazz class type for deserialization
-     * @return deserialized attributes object
+     * @param name element name
+     * @param clazz type for deserialization
+     * @return attributes
      */
-    <T> Mono<T> getAttributes(String element, Class<T> clazz);
+    <T> Mono<T> getAttributes(String name, Class<T> clazz);
 
     /**
-     * Returns metadata and internal details about the vector set
+     * Returns metadata for this vector set
      *
      * @return vector set information
      */
     Mono<VectorInfo> getInfo();
 
     /**
-     * Retrieves the neighbors of a specified element
+     * Retrieves the neighbors of a specified element by name
      *
      * @param element element name
      * @return list of neighbor element names
@@ -92,7 +94,7 @@ public interface RVectorSetReactive extends RExpirableReactive {
     Mono<List<String>> getNeighbors(String element);
 
     /**
-     * Retrieves the neighbors of a specified element with scores
+     * Retrieves the neighbors with scores of a specified element by name
      *
      * @param element element name
      * @return list of neighbor elements with scores
@@ -100,14 +102,14 @@ public interface RVectorSetReactive extends RExpirableReactive {
     Mono<List<ScoredEntry<String>>> getNeighborEntries(String element);
 
     /**
-     * Returns a random element from the vector set
+     * Returns a random element name
      *
      * @return random element name
      */
     Mono<String> random();
 
     /**
-     * Returns multiple random elements from the vector set
+     * Returns random element names
      *
      * @param count number of elements to return
      * @return list of random element names
@@ -115,24 +117,24 @@ public interface RVectorSetReactive extends RExpirableReactive {
     Mono<List<String>> random(int count);
 
     /**
-     * Removes an element from the vector set
+     * Removes an element by name
      *
      * @param element element name to remove
-     * @return <code>true</code> if element was removed, false otherwise
+     * @return <code>true</code> if element was removed, <code>false</code> otherwise
      */
     Mono<Boolean> remove(String element);
 
     /**
-     * Sets attributes for a vector set element
+     * Sets attributes for an element by name
      *
      * @param element element name
-     * @param attributes attributes object to serialize
-     * @return <code>true</code> if attributes were set, false otherwise
+     * @param attributes attributes
+     * @return <code>true</code> if attributes were set, <code>false</code> otherwise
      */
     Mono<Boolean> setAttributes(String element, Object attributes);
 
     /**
-     * Retrieves elements similar to a given vector or element
+     * Retrieves element names similar to a specified vector or element
      *
      * @param args vector similarity arguments
      * @return list of similar element names
@@ -140,10 +142,10 @@ public interface RVectorSetReactive extends RExpirableReactive {
     Mono<List<String>> getSimilar(VectorSimilarArgs args);
 
     /**
-     * Retrieves elements similar to a given vector or element with scores
+     * Retrieves element names with scores similar to a given vector or element
      *
-     * @param args vector similarity arguments
-     * @return list of similar elements with scores
+     * @param args similarity arguments
+     * @return list of similar element names with scores
      */
     Mono<List<ScoredEntry<String>>> getSimilarEntries(VectorSimilarArgs args);
 }

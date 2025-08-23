@@ -22,7 +22,9 @@ import org.redisson.api.vector.VectorSimilarArgs;
 import org.redisson.client.protocol.ScoredEntry;
 
 /**
- * Redis Vector Set
+ * Vector Set
+ * <p>
+ * Requires <b>Redis 8.0.0 or higher.</b>
  *
  * @author Nikita Koksharov
  *
@@ -40,14 +42,14 @@ public interface RVectorSet extends RExpirable, RVectorSetAsync {
     /**
      * Returns the number of elements
      *
-     * @return cardinality of the vector set
+     * @return number of elements
      */
     int size();
 
     /**
      * Returns the number of dimensions of vectors
      *
-     * @return dimension count
+     * @return dimensions count
      */
     int dimensions();
 

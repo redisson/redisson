@@ -25,68 +25,70 @@ import org.redisson.client.protocol.ScoredEntry;
 import io.reactivex.rxjava3.core.Single;
 
 /**
- * RxJava interface for Redis Vector Set
+ * Async interface for Vector Set
  *
  * @author Nikita Koksharov
  *
  */
 public interface RVectorSetRx extends RExpirableRx {
+
     /**
-     * Adds an element to the vector set
+     * Adds an element
      *
-     * @param args vector add arguments
+     * @param args add arguments
      * @return <code>true</code> if element was added and <code>false</code> if updated
      */
     Single<Boolean> add(VectorAddArgs args);
 
     /**
-     * Returns the number of elements in the vector set
+     * Returns the number of elements
      *
-     * @return cardinality of the vector set
+     * @return number of elements
      */
     Single<Integer> size();
 
     /**
-     * Returns the dimension of vectors in the vector set
+     * Returns the number of dimensions of vectors
      *
-     * @return dimension count
+     * @return dimensions count
      */
     Single<Integer> dimensions();
 
     /**
-     * Retrieves the vector associated with an element
+     * Retrieves approximate vector associated with a given element name
      *
-     * @param element element name
+     * @param name element name
      * @return list of vector coordinates
      */
-    Single<List<Double>> getVector(String element);
+    Single<List<Double>> getVector(String name);
 
     /**
-     * Retrieves the raw vector associated with an element
+     * Retrieves raw internal representation of
+     * the approximate vector associated with a given element name
      *
-     * @param element element name
+     * @param name element name
      * @return list of raw vector values
      */
-    Single<List<Object>> getRawVector(String element);
+    Single<List<Object>> getRawVector(String name);
 
     /**
-     * Retrieves attributes of a vector set element
+     * Retrieves attributes associated with a given element name
      *
-     * @param element element name
-     * @param clazz class type for deserialization
-     * @return deserialized attributes object
+     * @param name element name
+     * @param clazz type for deserialization
+     * @return attributes
      */
-    <T> Maybe<T> getAttributes(String element, Class<T> clazz);
+    <T> Maybe<T> getAttributes(String name, Class<T> clazz);
 
     /**
-     * Returns metadata and internal details about the vector set
+     * Returns metadata for this vector set
      *
      * @return vector set information
      */
     Single<VectorInfo> getInfo();
 
     /**
-     * Retrieves the neighbors of a specified element
+     * Retrieves the neighbors of a specified element by name
      *
      * @param element element name
      * @return list of neighbor element names
@@ -94,7 +96,7 @@ public interface RVectorSetRx extends RExpirableRx {
     Single<List<String>> getNeighbors(String element);
 
     /**
-     * Retrieves the neighbors of a specified element with scores
+     * Retrieves the neighbors with scores of a specified element by name
      *
      * @param element element name
      * @return list of neighbor elements with scores
@@ -102,14 +104,14 @@ public interface RVectorSetRx extends RExpirableRx {
     Single<List<ScoredEntry<String>>> getNeighborEntries(String element);
 
     /**
-     * Returns a random element from the vector set
+     * Returns a random element name
      *
      * @return random element name
      */
     Maybe<String> random();
 
     /**
-     * Returns multiple random elements from the vector set
+     * Returns random element names
      *
      * @param count number of elements to return
      * @return list of random element names
@@ -117,7 +119,7 @@ public interface RVectorSetRx extends RExpirableRx {
     Single<List<String>> random(int count);
 
     /**
-     * Removes an element from the vector set
+     * Removes an element by name
      *
      * @param element element name to remove
      * @return <code>true</code> if element was removed, <code>false</code> otherwise
@@ -125,16 +127,16 @@ public interface RVectorSetRx extends RExpirableRx {
     Single<Boolean> remove(String element);
 
     /**
-     * Sets attributes for a vector set element
+     * Sets attributes for an element by name
      *
      * @param element element name
-     * @param attributes attributes object to serialize
+     * @param attributes attributes
      * @return <code>true</code> if attributes were set, <code>false</code> otherwise
      */
     Single<Boolean> setAttributes(String element, Object attributes);
 
     /**
-     * Retrieves elements similar to a given vector or element
+     * Retrieves element names similar to a specified vector or element
      *
      * @param args vector similarity arguments
      * @return list of similar element names
@@ -142,10 +144,10 @@ public interface RVectorSetRx extends RExpirableRx {
     Single<List<String>> getSimilar(VectorSimilarArgs args);
 
     /**
-     * Retrieves elements similar to a given vector or element with scores
+     * Retrieves element names with scores similar to a given vector or element
      *
-     * @param args vector similarity arguments
-     * @return list of similar elements with scores
+     * @param args similarity arguments
+     * @return list of similar element names with scores
      */
     Single<List<ScoredEntry<String>>> getSimilarEntries(VectorSimilarArgs args);
 }
