@@ -143,7 +143,7 @@ public class RedissonVectorSetTest extends RedisDockerTest {
         vectorSet2.add(VectorAddArgs.name("G")
                 .vector(0.7, 0.7, 0.4)
                 .quantization(QuantizationType.BIN)
-                .effort(5));
+                .explorationFactor(5));
 
         VectorInfo info2 = vectorSet2.getInfo();
         assertThat(info2.getDimensions()).isEqualTo(3);
@@ -154,7 +154,7 @@ public class RedissonVectorSetTest extends RedisDockerTest {
         vectorSet3.add(VectorAddArgs.name("G")
                 .vector(0.7, 0.7, 0.4)
                 .quantization(QuantizationType.NOQUANT)
-                .effort(5));
+                .explorationFactor(5));
 
         VectorInfo info3 = vectorSet3.getInfo();
         assertThat(info3.getDimensions()).isEqualTo(3);
@@ -350,7 +350,7 @@ public class RedissonVectorSetTest extends RedisDockerTest {
         boolean result = vectorSet.add(VectorAddArgs.name("G")
                 .vector(0.7, 0.7)
                 .quantization(QuantizationType.Q8)
-                .effort(5));
+                .explorationFactor(5));
 
         assertThat(result).isTrue();
 

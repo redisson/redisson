@@ -84,7 +84,7 @@ public interface VectorAddArgs {
      * @param effort exploration factor value
      * @return arguments object
      */
-    VectorAddArgs effort(int effort);
+    VectorAddArgs explorationFactor(int effort);
 
     /**
      * Defines the attributes. Used in the form of a JavaScript object.
