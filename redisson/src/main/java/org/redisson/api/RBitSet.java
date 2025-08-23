@@ -359,38 +359,42 @@ public interface RBitSet extends RExpirable, RBitSetAsync {
     long xor(String... bitSetNames);
 
     /**
-     * Performs bitwise DIFF operation storing result to destination BitSet.
-     * Sets bits in destination that are set in current BitSet but not in any of the other BitSets.
+     * Executes bitwise DIFF operation over this object and specified bitsets.
+     * Sets bits that are set in this object but not in any of the other bitsets.
+     * Stores result into this object.
      *
-     * @param bitSetNames other BitSet names
-     * @return size of destination BitSet
+     * @param bitSetNames name of stored bitsets
+     * @return length in bytes of the destination key
      */
     long diff(String... bitSetNames);
 
     /**
-     * Performs bitwise DIFF1 operation storing result to destination BitSet.
-     * Sets bits in destination that are set in one or more of the other BitSets but not in current BitSet.
+     * Executes bitwise DIFF1 operation over this object and specified bitsets.
+     * Sets bits that are set in one or more of the other bitsets but not in this object.
+     * Stores result into this object.
      *
-     * @param bitSetNames other BitSet names
-     * @return size of destination BitSet
+     * @param bitSetNames name of stored bitsets
+     * @return length in bytes of the destination key
      */
     long diffInverse(String... bitSetNames);
 
     /**
-     * Performs bitwise ANDOR operation storing result to destination BitSet.
-     * Sets bits in destination that are set in current BitSet AND also in one or more of the other BitSets.
+     * Executes bitwise ANDOR operation over this object and specified bitsets.
+     * Sets bits that are set in this object AND also in one or more of the other bitsets.
+     * Stores result into this object.
      *
-     * @param bitSetNames other BitSet names
-     * @return size of destination BitSet
+     * @param bitSetNames name of stored bitsets
+     * @return length in bytes of the destination key
      */
     long andOr(String... bitSetNames);
 
     /**
-     * Performs bitwise ONE operation storing result to destination BitSet.
-     * Sets bits in destination that are set in exactly one of the provided BitSets.
+     * Executes bitwise ONE operation over this object and specified bitsets.
+     * Sets bits that are set in exactly one of the provided bitsets.
+     * Stores result into this object.
      *
-     * @param bitSetNames BitSet names to compare
-     * @return size of destination BitSet
+     * @param bitSetNames name of stored bitsets
+     * @return length in bytes of the destination key
      */
     long setExclusive(String... bitSetNames);
 
