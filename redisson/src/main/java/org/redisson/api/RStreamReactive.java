@@ -445,8 +445,17 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param ids - id of messages to remove
      * @return deleted messages amount
      */
+    @Deprecated
     Mono<Long> remove(StreamMessageId... ids);
 
+    /**
+     * Removes messages.
+     * Requires <b>Redis 8.2.0 and higher.</b>
+     *
+     * @param args - method arguments object
+     * @return List of messages deletion statuses
+     */
+    Mono<List<Integer>> remove(StreamRemoveArgs args);
     /**
      * Trims stream using strict trimming.
      *

@@ -24,7 +24,8 @@ import java.util.Map;
  * @author Nikita Koksharov
  *
  */
-public final class StreamAddParams<K, V> implements StreamAddArgs<K, V>,
+public final class StreamAddParams<K, V> extends BaseReferencesParams<StreamTrimLimitArgs<StreamAddArgs<K, V>>>
+                                        implements StreamAddArgs<K, V>,
                                               StreamTrimStrategyArgs<StreamAddArgs<K, V>>,
                                               StreamTrimReferencesArgs<StreamAddArgs<K, V>>  {
 
@@ -35,7 +36,6 @@ public final class StreamAddParams<K, V> implements StreamAddArgs<K, V>,
     private int maxLen;
     private StreamMessageId minId;
     private int limit;
-    private RefPolicy refPolicy;
 
     StreamAddParams(Map<K, V> entries) {
         this.entries = entries;
@@ -105,27 +105,5 @@ public final class StreamAddParams<K, V> implements StreamAddArgs<K, V>,
 
     public int getLimit() {
         return limit;
-    }
-
-    @Override
-    public StreamTrimLimitArgs<StreamAddArgs<K, V>> removeReferences() {
-        this.refPolicy = RefPolicy.DELREF;
-        return this;
-    }
-
-    @Override
-    public StreamTrimLimitArgs<StreamAddArgs<K, V>> keepReferences() {
-        this.refPolicy = RefPolicy.KEEPREF;
-        return this;
-    }
-
-    @Override
-    public StreamTrimLimitArgs<StreamAddArgs<K, V>> removeAcknowledgedOnly() {
-        this.refPolicy = RefPolicy.DELREF;
-        return this;
-    }
-
-    public RefPolicy getRefPolicy() {
-        return refPolicy;
     }
 }

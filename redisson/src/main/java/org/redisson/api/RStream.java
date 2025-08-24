@@ -494,7 +494,17 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
      * @param ids - id of messages to remove
      * @return deleted messages amount
      */
+    @Deprecated
     long remove(StreamMessageId... ids);
+
+    /**
+     * Removes messages.
+     * Requires <b>Redis 8.2.0 and higher.</b>
+     *
+     * @param args - method arguments object
+     * @return List of messages deletion statuses
+     */
+    List<Integer> remove(StreamRemoveArgs args);
 
     /**
      * Trims stream using strict trimming.

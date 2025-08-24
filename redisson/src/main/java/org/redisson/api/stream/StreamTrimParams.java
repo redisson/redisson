@@ -22,13 +22,13 @@ import org.redisson.api.StreamMessageId;
  * @author Nikita Koksharov
  *
  */
-public final class StreamTrimParams implements StreamTrimStrategyArgs<StreamTrimArgs>,
-                                         StreamTrimArgs,
-                                         StreamTrimReferencesArgs<StreamTrimArgs>{
+public final class StreamTrimParams extends BaseReferencesParams<StreamTrimLimitArgs<StreamTrimArgs>>
+                                        implements StreamTrimStrategyArgs<StreamTrimArgs>,
+                                            StreamTrimArgs,
+                                            StreamTrimReferencesArgs<StreamTrimArgs> {
 
     Integer maxLen;
     StreamMessageId minId;
-    RefPolicy refPolicy;
     int limit;
 
     StreamTrimParams(int threshold) {
@@ -73,27 +73,5 @@ public final class StreamTrimParams implements StreamTrimStrategyArgs<StreamTrim
 
     public int getLimit() {
         return limit;
-    }
-
-    @Override
-    public StreamTrimLimitArgs<StreamTrimArgs> removeReferences() {
-        this.refPolicy = RefPolicy.DELREF;
-        return this;
-    }
-
-    @Override
-    public StreamTrimLimitArgs<StreamTrimArgs> keepReferences() {
-        this.refPolicy = RefPolicy.KEEPREF;
-        return this;
-    }
-
-    @Override
-    public StreamTrimLimitArgs<StreamTrimArgs> removeAcknowledgedOnly() {
-        this.refPolicy = RefPolicy.DELREF;
-        return this;
-    }
-
-    public RefPolicy getRefPolicy() {
-        return refPolicy;
     }
 }

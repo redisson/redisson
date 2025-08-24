@@ -349,6 +349,42 @@ public class RedissonStreamTest extends RedisDockerTest {
     }
 
     @Test
+    public void testRemoveMessages2() {
+        GenericContainer<?> redis = createRedisWithVersion("redis:8.2.0");
+        redis.start();
+
+        Config config = createConfig(redis);
+        RedissonClient redisson = Redisson.create(config);
+
+        RStream<String, String> stream = redisson.getStream("test");
+
+        stream.createGroup(StreamCreateGroupArgs.name("testGroup").makeStream());
+
+        StreamMessageId id0 = stream.add(StreamAddArgs.entry("0", "0"));
+        StreamMessageId id1 = stream.add(StreamAddArgs.entry("1", "1"));
+        StreamMessageId id2 = stream.add(StreamAddArgs.entry("2", "2"));
+        StreamMessageId id3 = stream.add(StreamAddArgs.entry("3", "3"));
+
+        Map<StreamMessageId, Map<String, String>> s = stream.readGroup("testGroup", "consumer1", StreamReadGroupArgs.neverDelivered());
+        assertThat(s.size()).isEqualTo(4);
+
+        assertThat(stream.remove(StreamRemoveArgs.ids(id0, id1))).containsExactly(1, 1);
+
+        List<PendingEntry> list = stream.listPending("testGroup", StreamMessageId.MIN, StreamMessageId.MAX, 1, TimeUnit.MILLISECONDS, 10);
+        assertThat(list.size()).isEqualTo(4);
+
+        assertThat(stream.remove(StreamRemoveArgs.ids(id2).removeReferences())).containsExactly(1);
+
+        List<PendingEntry> list2 = stream.listPending("testGroup", StreamMessageId.MIN, StreamMessageId.MAX, 1, TimeUnit.MILLISECONDS, 10);
+        assertThat(list2.size()).isEqualTo(3);
+
+        assertThat(stream.remove(StreamRemoveArgs.ids(id3).removeAcknowledgedOnly())).containsExactly(2);
+
+        redisson.shutdown();
+        redis.stop();
+    }
+
+    @Test
     public void testClaimRemove() throws InterruptedException {
         RStream<String, String> stream = redisson.getStream("test");
 
