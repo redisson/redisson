@@ -617,7 +617,30 @@ public class RedissonStreamTest extends RedisDockerTest {
 
         assertThat(stream.ack("testGroup", id1, id2)).isEqualTo(2);
     }
-    
+
+    @Test
+    public void testAck2() {
+        RStream<String, String> stream = redisson.getStream("test");
+
+        stream.add(StreamAddArgs.entry("0", "0"));
+
+        stream.createGroup(StreamCreateGroupArgs.name("testGroup"));
+
+        stream.createGroup(StreamCreateGroupArgs.name("testGroup2"));
+
+        StreamMessageId id1 = stream.add(StreamAddArgs.entry("1", "1"));
+        StreamMessageId id2 = stream.add(StreamAddArgs.entry("2", "2"));
+
+        Map<StreamMessageId, Map<String, String>> s = stream.readGroup("testGroup", "consumer1", StreamReadGroupArgs.neverDelivered());
+        assertThat(s.size()).isEqualTo(2);
+
+        Map<StreamMessageId, Map<String, String>> s2 = stream.readGroup("testGroup2", "consumer2", StreamReadGroupArgs.neverDelivered());
+        assertThat(s2.size()).isEqualTo(2);
+
+        assertThat(stream.ack(StreamAckArgs.group("testGroup").ids(id1, id2).removeAcknowledgedOnly())).containsExactly(2,2);
+        assertThat(stream.ack(StreamAckArgs.group("testGroup2").ids(id1, id2).removeAcknowledgedOnly())).containsExactly(1,1);
+    }
+
     @Test
     public void testReadGroupMulti() {
         RStream<String, String> stream1 = redisson.getStream("test1");

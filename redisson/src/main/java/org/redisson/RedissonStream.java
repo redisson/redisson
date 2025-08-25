@@ -98,6 +98,29 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     }
 
     @Override
+    public RFuture<List<Integer>> ackAsync(StreamAckArgs args) {
+        StreamAckParams pps = (StreamAckParams) args;
+        List<Object> params = new ArrayList<Object>();
+        params.add(getRawName());
+        params.add(pps.getGroupName());
+
+        if (pps.getRefPolicy() != null) {
+            params.add(pps.getRefPolicy());
+        }
+
+        params.add("IDS");
+        params.add(pps.getIds().length);
+        params.addAll(Arrays.asList(pps.getIds()));
+
+        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XACKDEL, params.toArray());
+    }
+
+    @Override
+    public List<Integer> ack(StreamAckArgs args) {
+        return get(ackAsync(args));
+    }
+
+    @Override
     public RFuture<PendingResult> getPendingInfoAsync(String groupName) {
         return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XPENDING, getRawName(), groupName);
     }

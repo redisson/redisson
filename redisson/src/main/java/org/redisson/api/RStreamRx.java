@@ -91,7 +91,18 @@ public interface RStreamRx<K, V> extends RExpirableRx {
      * @return marked messages amount
      */
     Single<Long> ack(String groupName, StreamMessageId... ids);
-    
+
+    /**
+     * Acknowledges and conditionally deletes one or multiple entries (messages)
+     * for a stream consumer group at the specified key.
+     *
+     * Requires <b>Redis 8.2.0 and higher.</b>
+     *
+     * @param args - method arguments object
+     * @return list
+     */
+    Single<List<Integer>> ack(StreamAckArgs args);
+
     /**
      * Returns common info about pending messages by group name.
      * 

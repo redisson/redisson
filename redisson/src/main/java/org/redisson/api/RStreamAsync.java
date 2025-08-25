@@ -91,6 +91,17 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
     RFuture<Long> ackAsync(String groupName, StreamMessageId... ids);
 
     /**
+     * Acknowledges and conditionally deletes one or multiple entries (messages)
+     * for a stream consumer group at the specified key.
+     *
+     * Requires <b>Redis 8.2.0 and higher.</b>
+     *
+     * @param args - method arguments object
+     * @return list
+     */
+    RFuture<List<Integer>> ackAsync(StreamAckArgs args);
+
+    /**
      * Returns common info about pending messages by group name.
      * 
      * @param groupName - name of group
