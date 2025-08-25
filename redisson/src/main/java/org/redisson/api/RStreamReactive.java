@@ -445,7 +445,6 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param ids - id of messages to remove
      * @return deleted messages amount
      */
-    @Deprecated
     Mono<Long> remove(StreamMessageId... ids);
 
     /**

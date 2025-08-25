@@ -446,7 +446,6 @@ public interface RStreamRx<K, V> extends RExpirableRx {
      * @param ids - id of messages to remove
      * @return deleted messages amount
      */
-    @Deprecated
     Single<Long> remove(StreamMessageId... ids);
 
     /**

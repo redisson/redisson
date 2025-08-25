@@ -25,6 +25,8 @@ public interface StreamReferencesArgs<T> {
      * Defines DELREF reference policy for consumer groups when trimming.
      * When trimming, removes all references from consumer groups’ PEL
      *
+     * Requires <b>Redis 8.2.0 and higher.</b>
+     *
      * @return arguments object
      */
     T removeReferences();
@@ -33,6 +35,8 @@ public interface StreamReferencesArgs<T> {
      * Defines KEEPREF reference policy for consumer groups when trimming.
      * When trimming, preserves references in consumer groups’ PEL
      *
+     * Requires <b>Redis 8.2.0 and higher.</b>
+     *
      * @return arguments object
      */
     T keepReferences();
@@ -40,6 +44,8 @@ public interface StreamReferencesArgs<T> {
     /**
      * Defines ACKED reference policy for consumer groups when trimming.
      * When trimming, only removes entries acknowledged by all consumer groups
+     *
+     * Requires <b>Redis 8.2.0 and higher.</b>
      *
      * @return arguments object
      */

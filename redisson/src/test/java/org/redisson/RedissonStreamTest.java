@@ -227,12 +227,6 @@ public class RedissonStreamTest extends RedisDockerTest {
 
     @Test
     public void testTrim2() {
-        GenericContainer<?> redis = createRedisWithVersion("redis:8.2.0");
-        redis.start();
-
-        Config config = createConfig(redis);
-        RedissonClient redisson = Redisson.create(config);
-
         RStream<String, String> stream = redisson.getStream("test");
 
         stream.createGroup(StreamCreateGroupArgs.name("testGroup").makeStream());
@@ -262,9 +256,6 @@ public class RedissonStreamTest extends RedisDockerTest {
         stream.add(StreamAddArgs.entry("5", "5").trim().maxLen(2).keepReferences().noLimit());
         List<PendingEntry> list4 = stream.listPending("testGroup", StreamMessageId.MIN, StreamMessageId.MAX, 1, TimeUnit.MILLISECONDS, 10);
         assertThat(list4.size()).isEqualTo(2);
-
-        redisson.shutdown();
-        redis.stop();
     }
 
     @Test
@@ -350,12 +341,6 @@ public class RedissonStreamTest extends RedisDockerTest {
 
     @Test
     public void testRemoveMessages2() {
-        GenericContainer<?> redis = createRedisWithVersion("redis:8.2.0");
-        redis.start();
-
-        Config config = createConfig(redis);
-        RedissonClient redisson = Redisson.create(config);
-
         RStream<String, String> stream = redisson.getStream("test");
 
         stream.createGroup(StreamCreateGroupArgs.name("testGroup").makeStream());
@@ -379,9 +364,6 @@ public class RedissonStreamTest extends RedisDockerTest {
         assertThat(list2.size()).isEqualTo(3);
 
         assertThat(stream.remove(StreamRemoveArgs.ids(id3).removeAcknowledgedOnly())).containsExactly(2);
-
-        redisson.shutdown();
-        redis.stop();
     }
 
     @Test

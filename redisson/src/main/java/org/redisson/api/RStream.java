@@ -494,7 +494,6 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
      * @param ids - id of messages to remove
      * @return deleted messages amount
      */
-    @Deprecated
     long remove(StreamMessageId... ids);
 
     /**
