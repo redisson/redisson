@@ -449,6 +449,15 @@ public interface RStreamRx<K, V> extends RExpirableRx {
     Single<Long> remove(StreamMessageId... ids);
 
     /**
+     * Removes messages.
+     * Requires <b>Redis 8.2.0 and higher.</b>
+     *
+     * @param args - method arguments object
+     * @return List of messages deletion statuses
+     */
+    Single<List<Integer>> remove(StreamRemoveArgs args);
+
+    /**
      * Trims stream using strict trimming.
      *
      * @param args - method arguments object

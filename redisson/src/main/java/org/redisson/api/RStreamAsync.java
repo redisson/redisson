@@ -439,6 +439,15 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      */
     RFuture<Long> removeAsync(StreamMessageId... ids);
 
+    /**
+     * Removes messages.
+     * Requires <b>Redis 8.2.0 and higher.</b>
+     *
+     * @param args - method arguments object
+     * @return List of messages deletion statuses
+     */
+    RFuture<List<Integer>> removeAsync(StreamRemoveArgs args);
+
     RFuture<Long> trimAsync(StreamTrimArgs args);
 
     RFuture<Long> trimNonStrictAsync(StreamTrimArgs args);
