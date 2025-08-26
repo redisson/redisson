@@ -16,11 +16,33 @@
 package org.redisson.api.stream;
 
 /**
- * Arguments object for Stream trim method.
  *
  * @author seakider
  *
  */
-public interface StreamTrimReferencesArgs<T> extends StreamTrimLimitArgs<T>, StreamReferencesArgs<StreamTrimLimitArgs<T>> {
+public abstract class BaseReferencesParams<T> implements StreamReferencesArgs<T> {
+    private RefPolicy refPolicy;
+
+    @Override
+    public T removeReferences() {
+        this.refPolicy = RefPolicy.DELREF;
+        return (T) this;
+    }
+
+    @Override
+    public T keepReferences() {
+        this.refPolicy = RefPolicy.KEEPREF;
+        return (T) this;
+    }
+
+    @Override
+    public T removeAcknowledgedOnly() {
+        this.refPolicy = RefPolicy.ACKED;
+        return (T) this;
+    }
+
+    public RefPolicy getRefPolicy() {
+        return refPolicy;
+    }
 
 }

@@ -15,12 +15,23 @@
  */
 package org.redisson.api.stream;
 
+import org.redisson.api.StreamMessageId;
+
 /**
- * Arguments object for Stream trim method.
+ * Arguments object for RStream.remove() method.
  *
  * @author seakider
  *
  */
-public interface StreamTrimReferencesArgs<T> extends StreamTrimLimitArgs<T>, StreamReferencesArgs<StreamTrimLimitArgs<T>> {
+public interface StreamRemoveArgs extends StreamReferencesArgs<StreamRemoveArgs> {
 
+    /**
+     * Defines id of messages to remove
+     *
+     * @param ids id of messages to remove
+     * @return arguments object
+     */
+    static StreamRemoveArgs ids(StreamMessageId... ids) {
+        return new StreamRemoveParams(ids);
+    }
 }

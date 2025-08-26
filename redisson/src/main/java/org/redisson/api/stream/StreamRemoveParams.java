@@ -15,12 +15,22 @@
  */
 package org.redisson.api.stream;
 
+import org.redisson.api.StreamMessageId;
+
 /**
- * Arguments object for Stream trim method.
  *
  * @author seakider
  *
  */
-public interface StreamTrimReferencesArgs<T> extends StreamTrimLimitArgs<T>, StreamReferencesArgs<StreamTrimLimitArgs<T>> {
+public class StreamRemoveParams extends BaseReferencesParams<StreamRemoveArgs> implements StreamRemoveArgs {
 
+    private final StreamMessageId[] ids;
+
+    public StreamRemoveParams(StreamMessageId[] ids) {
+        this.ids = ids;
+    }
+
+    public StreamMessageId[] getIds() {
+        return ids;
+    }
 }

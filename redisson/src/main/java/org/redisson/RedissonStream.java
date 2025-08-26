@@ -686,6 +686,28 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     }
 
     @Override
+    public List<Integer> remove(StreamRemoveArgs args) {
+        return get(removeAsync(args));
+    }
+
+    @Override
+    public RFuture<List<Integer>> removeAsync(StreamRemoveArgs args) {
+        StreamRemoveParams pps = (StreamRemoveParams) args;
+        List<Object> params = new ArrayList<Object>();
+        params.add(getRawName());
+
+        if (pps.getRefPolicy() != null) {
+            params.add(pps.getRefPolicy());
+        }
+
+        params.add("IDS");
+        params.add(pps.getIds().length);
+        params.addAll(Arrays.asList(pps.getIds()));
+
+        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XDELEX, params.toArray());
+    }
+
+    @Override
     public RFuture<Void> removeGroupAsync(String groupName) {
         return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XGROUP, "DESTROY", getRawName(), groupName);
     }
