@@ -72,7 +72,7 @@ public class FuryCodec extends BaseCodec {
 
     public FuryCodec(ClassLoader classLoader, FuryCodec codec) {
         this(classLoader, codec.allowedClasses, codec.language);
-        log.error("FuryCodec is deprecated and will be removed in future. Use ForyCodec instead.");
+        log.warn("FuryCodec is deprecated and will be removed in future. Use ForyCodec instead.");
     }
 
     public FuryCodec(ClassLoader classLoader) {
