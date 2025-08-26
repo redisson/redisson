@@ -16,6 +16,7 @@
 package org.redisson.api;
 
 import org.redisson.api.stream.*;
+import org.redisson.client.protocol.StreamEntryStatus;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
@@ -98,9 +99,9 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * Requires <b>Redis 8.2.0 and higher.</b>
      *
      * @param args - method arguments object
-     * @return list
+     * @return map
      */
-    Mono<List<Integer>> ack(StreamAckArgs args);
+    Mono<Map<StreamMessageId, StreamEntryStatus>> ack(StreamAckArgs args);
 
     /**
      * Returns common info about pending messages by group name.
@@ -463,9 +464,9 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * Requires <b>Redis 8.2.0 and higher.</b>
      *
      * @param args - method arguments object
-     * @return List of messages deletion statuses
+     * @return map
      */
-    Mono<List<Integer>> remove(StreamRemoveArgs args);
+    Mono<Map<StreamMessageId, StreamEntryStatus>> remove(StreamRemoveArgs args);
     /**
      * Trims stream using strict trimming.
      *

@@ -26,6 +26,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.StreamEntryStatus;
 import org.redisson.client.protocol.decoder.*;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.CompletableFutureWrapper;
@@ -98,7 +99,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     }
 
     @Override
-    public RFuture<List<Integer>> ackAsync(StreamAckArgs args) {
+    public RFuture<Map<StreamMessageId, StreamEntryStatus>> ackAsync(StreamAckArgs args) {
         StreamAckParams pps = (StreamAckParams) args;
         List<Object> params = new ArrayList<Object>();
         params.add(getRawName());
@@ -110,13 +111,17 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
 
         params.add("IDS");
         params.add(pps.getIds().length);
-        params.addAll(Arrays.asList(pps.getIds()));
 
-        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XACKDEL, params.toArray());
+        List<StreamMessageId> ids = Arrays.asList(pps.getIds());
+        params.addAll(ids);
+
+        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE,
+                new RedisCommand<>("XACKDEL", new StreamEntryStatusDecoder<>(ids)),
+                params.toArray());
     }
 
     @Override
-    public List<Integer> ack(StreamAckArgs args) {
+    public Map<StreamMessageId, StreamEntryStatus> ack(StreamAckArgs args) {
         return get(ackAsync(args));
     }
 
@@ -709,12 +714,12 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     }
 
     @Override
-    public List<Integer> remove(StreamRemoveArgs args) {
+    public Map<StreamMessageId, StreamEntryStatus> remove(StreamRemoveArgs args) {
         return get(removeAsync(args));
     }
 
     @Override
-    public RFuture<List<Integer>> removeAsync(StreamRemoveArgs args) {
+    public RFuture<Map<StreamMessageId, StreamEntryStatus>> removeAsync(StreamRemoveArgs args) {
         StreamRemoveParams pps = (StreamRemoveParams) args;
         List<Object> params = new ArrayList<Object>();
         params.add(getRawName());
@@ -725,9 +730,12 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
 
         params.add("IDS");
         params.add(pps.getIds().length);
-        params.addAll(Arrays.asList(pps.getIds()));
+        List<StreamMessageId> ids = Arrays.asList(pps.getIds());
+        params.addAll(ids);
 
-        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XDELEX, params.toArray());
+        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE,
+                new RedisCommand<>("XDELEX", new StreamEntryStatusDecoder<>(ids)),
+                params.toArray());
     }
 
     @Override
