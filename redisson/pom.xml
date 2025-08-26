@@ -351,6 +351,13 @@
             <version>5.6.2</version>
         </dependency>
         <dependency>
+            <groupId>org.apache.fory</groupId>
+            <artifactId>fory-core</artifactId>
+            <version>0.12.0</version>
+            <scope>provided</scope>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
           <groupId>org.apache.fury</groupId>
           <artifactId>fury-core</artifactId>
           <version>0.10.3</version>

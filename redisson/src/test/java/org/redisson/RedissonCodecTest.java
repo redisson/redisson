@@ -26,7 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonCodecTest extends RedisDockerTest {
     private Codec kryo5Codec = new Kryo5Codec();
-    private Codec furyCodec = new FuryCodec();
+    private Codec foryCodec = new ForyCodec();
     private Codec zstdCodec = new ZStdCodec();
     private Codec smileCodec = new SmileJacksonCodec();
     private Codec codec = new SerializationCodec();
@@ -83,9 +83,9 @@ public class RedissonCodecTest extends RedisDockerTest {
     }
 
     @Test
-    public void testFury() {
+    public void testFory() {
         Config config = createConfig();
-        config.setCodec(furyCodec);
+        config.setCodec(foryCodec);
         RedissonClient redisson = Redisson.create(config);
 
         test(redisson);

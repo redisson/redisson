@@ -19,77 +19,71 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.ByteBufOutputStream;
-import org.apache.fury.Fury;
-import org.apache.fury.ThreadSafeFury;
-import org.apache.fury.config.FuryBuilder;
-import org.apache.fury.config.Language;
-import org.apache.fury.io.FuryStreamReader;
-import org.apache.fury.memory.MemoryBuffer;
-import org.apache.fury.memory.MemoryUtils;
+import org.apache.fory.Fory;
+import org.apache.fory.ThreadSafeFory;
+import org.apache.fory.config.ForyBuilder;
+import org.apache.fory.config.Language;
+import org.apache.fory.io.ForyStreamReader;
+import org.apache.fory.memory.MemoryBuffer;
+import org.apache.fory.memory.MemoryUtils;
 import org.redisson.client.codec.BaseCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Set;
 
 /**
- * <a href="https://github.com/apache/fury">Apache Fury</a> codec
+ * <a href="https://github.com/apache/fory">Apache Fory</a> codec
  * <p>
  * Fully thread-safe.
  *
  * @author Nikita Koksharov
  *
  */
-@Deprecated
-public class FuryCodec extends BaseCodec {
+public class ForyCodec extends BaseCodec {
 
-    static final Logger log = LoggerFactory.getLogger(FuryCodec.class);
-
-    private final ThreadSafeFury fury;
+    private final ThreadSafeFory fury;
     private final Set<String> allowedClasses;
     private final Language language;
 
-    public FuryCodec() {
+    public ForyCodec() {
         this(null, Collections.emptySet(), Language.JAVA);
     }
 
-    public FuryCodec(Set<String> allowedClasses) {
+    public ForyCodec(Set<String> allowedClasses) {
         this(null, allowedClasses, Language.JAVA);
     }
 
-    public FuryCodec(Language language) {
+    public ForyCodec(Language language) {
         this(null, Collections.emptySet(), language);
     }
 
-    public FuryCodec(Set<String> allowedClasses, Language language) {
+    public ForyCodec(Set<String> allowedClasses, Language language) {
         this(null, allowedClasses, language);
     }
 
-    public FuryCodec(ClassLoader classLoader, FuryCodec codec) {
+    public ForyCodec(ClassLoader classLoader, ForyCodec codec) {
         this(classLoader, codec.allowedClasses, codec.language);
-        log.error("FuryCodec is deprecated and will be removed in future. Use ForyCodec instead.");
     }
 
-    public FuryCodec(ClassLoader classLoader) {
+    public ForyCodec(ClassLoader classLoader) {
         this(classLoader, Collections.emptySet(), Language.JAVA);
     }
 
-    public FuryCodec(ClassLoader classLoader, Set<String> allowedClasses, Language language) {
+    public ForyCodec(ClassLoader classLoader, Set<String> allowedClasses, Language language) {
         this.allowedClasses = allowedClasses;
         this.language = language;
 
-        FuryBuilder builder = Fury.builder();
+        ForyBuilder builder = Fory.builder();
         if (classLoader != null) {
             builder.withClassLoader(classLoader);
         }
         builder.withLanguage(language);
         builder.requireClassRegistration(!allowedClasses.isEmpty());
-        fury = builder.buildThreadSafeFuryPool(10, 512);
+        fury = builder.buildThreadSafeForyPool(10, 512);
 
         for (String allowedClass : allowedClasses) {
             try {
@@ -111,7 +105,7 @@ public class FuryCodec extends BaseCodec {
                     buf.readerIndex(buf.readerIndex() + furyBuffer.readerIndex());
                 }
             } else {
-                return fury.deserialize(FuryStreamReader.of(new ByteBufInputStream(buf)));
+                return fury.deserialize(ForyStreamReader.of(new ByteBufInputStream(buf)));
             }
         }
     };
