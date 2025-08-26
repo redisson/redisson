@@ -99,7 +99,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * Requires <b>Redis 8.2.0 and higher.</b>
      *
      * @param args - method arguments object
-     * @return map
+     * @return map with entry statuses mapped by id
      */
     Mono<Map<StreamMessageId, StreamEntryStatus>> ack(StreamAckArgs args);
 
@@ -464,7 +464,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * Requires <b>Redis 8.2.0 and higher.</b>
      *
      * @param args - method arguments object
-     * @return map
+     * @return map with entry statuses mapped by id
      */
     Mono<Map<StreamMessageId, StreamEntryStatus>> remove(StreamRemoveArgs args);
     /**

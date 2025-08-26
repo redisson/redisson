@@ -98,7 +98,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * Requires <b>Redis 8.2.0 and higher.</b>
      *
      * @param args - method arguments object
-     * @return map
+     * @return map with entry statuses mapped by id
      */
     RFuture<Map<StreamMessageId, StreamEntryStatus>> ackAsync(StreamAckArgs args);
 
@@ -456,7 +456,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * Requires <b>Redis 8.2.0 and higher.</b>
      *
      * @param args - method arguments object
-     * @return map
+     * @return map with entry statuses mapped by id
      */
     RFuture<Map<StreamMessageId, StreamEntryStatus>> removeAsync(StreamRemoveArgs args);
 
