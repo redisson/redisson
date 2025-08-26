@@ -22,6 +22,8 @@ import org.jboss.marshalling.*;
 import org.redisson.client.codec.BaseCodec;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Locale;
@@ -38,6 +40,8 @@ import java.util.Locale;
  */
 @Deprecated
 public class MarshallingCodec extends BaseCodec {
+
+    static final Logger log = LoggerFactory.getLogger(MarshallingCodec.class);
 
     private final FastThreadLocal<Unmarshaller> decoderThreadLocal = new FastThreadLocal<Unmarshaller>() {
         @Override
@@ -195,6 +199,7 @@ public class MarshallingCodec extends BaseCodec {
         this(Protocol.RIVER, null);
         configuration.setClassResolver(new SimpleClassResolver(classLoader));
         this.classLoader = classLoader;
+        log.warn("MarshallingCodec is deprecated and will be removed in future. Use Kryo5Codec instead.");
     }
     
     public MarshallingCodec(ClassLoader classLoader, MarshallingCodec codec) {

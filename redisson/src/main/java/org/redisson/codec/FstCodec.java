@@ -43,6 +43,8 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.ByteBufOutputStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Efficient and speedy serialization codec fully
@@ -55,6 +57,8 @@ import io.netty.buffer.ByteBufOutputStream;
  */
 @Deprecated
 public class FstCodec extends BaseCodec {
+
+    static final Logger log = LoggerFactory.getLogger(FstCodec.class);
 
     @SuppressWarnings("AvoidInlineConditionals")
     static class FSTMapSerializerV2 extends FSTBasicObjectSerializer {
@@ -238,6 +242,8 @@ public class FstCodec extends BaseCodec {
 
         config.setStreamCoderFactory(new FSTDefaultStreamCoderFactory(config));
         this.useCache = useCache;
+
+        log.warn("FstCodec is deprecated and will be removed in future. Use Kryo5Codec instead.");
     }
 
     private final byte[] emptyArray = new byte[] {};

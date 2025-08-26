@@ -24,6 +24,8 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
@@ -32,6 +34,8 @@ import java.io.IOException;
  */
 @Deprecated
 public class SnappyCodec extends BaseCodec {
+
+    static final Logger log = LoggerFactory.getLogger(SnappyCodec.class);
 
     private static final FastThreadLocal<Snappy> SNAPPY_DECODER = new FastThreadLocal<Snappy>() {
         protected Snappy initialValue() {
@@ -53,6 +57,7 @@ public class SnappyCodec extends BaseCodec {
 
     public SnappyCodec(Codec innerCodec) {
         this.innerCodec = innerCodec;
+        log.warn("SnappyCodec is deprecated and will be removed in future. Use SnappyCodecV2 instead.");
     }
 
     public SnappyCodec(ClassLoader classLoader) {
