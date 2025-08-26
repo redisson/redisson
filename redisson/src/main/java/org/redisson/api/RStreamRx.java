@@ -18,6 +18,7 @@ package org.redisson.api;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Single;
 import org.redisson.api.stream.*;
+import org.redisson.client.protocol.StreamEntryStatus;
 
 import java.util.List;
 import java.util.Map;
@@ -91,7 +92,18 @@ public interface RStreamRx<K, V> extends RExpirableRx {
      * @return marked messages amount
      */
     Single<Long> ack(String groupName, StreamMessageId... ids);
-    
+
+    /**
+     * Acknowledges and conditionally deletes one or multiple entries (messages)
+     * for a stream consumer group at the specified key.
+     *
+     * Requires <b>Redis 8.2.0 and higher.</b>
+     *
+     * @param args - method arguments object
+     * @return map with entry statuses mapped by id
+     */
+    Single<Map<StreamMessageId, StreamEntryStatus>> ack(StreamAckArgs args);
+
     /**
      * Returns common info about pending messages by group name.
      * 
@@ -453,9 +465,9 @@ public interface RStreamRx<K, V> extends RExpirableRx {
      * Requires <b>Redis 8.2.0 and higher.</b>
      *
      * @param args - method arguments object
-     * @return List of messages deletion statuses
+     * @return map with entry statuses mapped by id
      */
-    Single<List<Integer>> remove(StreamRemoveArgs args);
+    Single<Map<StreamMessageId, StreamEntryStatus>> remove(StreamRemoveArgs args);
 
     /**
      * Trims stream using strict trimming.

@@ -784,7 +784,6 @@ public interface RedisCommands {
     RedisStrictCommand<Long> XLEN = new RedisStrictCommand<Long>("XLEN");
     RedisStrictCommand<Long> XACK = new RedisStrictCommand<Long>("XACK");
     RedisStrictCommand<Long> XDEL = new RedisStrictCommand<Long>("XDEL");
-    RedisCommand<List<Integer>> XDELEX = new RedisCommand("XDELEX", new ObjectListReplayDecoder<Integer>(), new IntegerReplayConvertor());
     RedisStrictCommand<Long> XTRIM = new RedisStrictCommand<Long>("XTRIM");
     RedisCommand<Object> XPENDING = new RedisCommand<Object>("XPENDING",
             new ListMultiDecoder2(new PendingResultDecoder(), new ObjectListReplayDecoder(), new ObjectListReplayDecoder()),

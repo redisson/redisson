@@ -7,8 +7,7 @@ import org.redisson.api.*;
 import org.redisson.api.listener.StreamAddListener;
 import org.redisson.api.stream.*;
 import org.redisson.client.RedisException;
-import org.redisson.config.Config;
-import org.testcontainers.containers.GenericContainer;
+import org.redisson.client.protocol.StreamEntryStatus;
 
 import java.time.Duration;
 import java.util.*;
@@ -353,17 +352,19 @@ public class RedissonStreamTest extends RedisDockerTest {
         Map<StreamMessageId, Map<String, String>> s = stream.readGroup("testGroup", "consumer1", StreamReadGroupArgs.neverDelivered());
         assertThat(s.size()).isEqualTo(4);
 
-        assertThat(stream.remove(StreamRemoveArgs.ids(id0, id1))).containsExactly(1, 1);
+        Map<StreamMessageId, StreamEntryStatus> map=stream.remove(StreamRemoveArgs.ids(id0, id1));
+        assertThat(map.get(id0)).isEqualTo(StreamEntryStatus.SUCCESS);
+        assertThat(map.get(id1)).isEqualTo(StreamEntryStatus.SUCCESS);
 
         List<PendingEntry> list = stream.listPending("testGroup", StreamMessageId.MIN, StreamMessageId.MAX, 1, TimeUnit.MILLISECONDS, 10);
         assertThat(list.size()).isEqualTo(4);
 
-        assertThat(stream.remove(StreamRemoveArgs.ids(id2).removeReferences())).containsExactly(1);
+        assertThat(stream.remove(StreamRemoveArgs.ids(id2).removeReferences()).get(id2)).isEqualTo(StreamEntryStatus.SUCCESS);
 
         List<PendingEntry> list2 = stream.listPending("testGroup", StreamMessageId.MIN, StreamMessageId.MAX, 1, TimeUnit.MILLISECONDS, 10);
         assertThat(list2.size()).isEqualTo(3);
 
-        assertThat(stream.remove(StreamRemoveArgs.ids(id3).removeAcknowledgedOnly())).containsExactly(2);
+        assertThat(stream.remove(StreamRemoveArgs.ids(id3).removeAcknowledgedOnly()).get(id3)).isEqualTo(StreamEntryStatus.HAS_PENDING_REFERENCES);
     }
 
     @Test
@@ -617,7 +618,33 @@ public class RedissonStreamTest extends RedisDockerTest {
 
         assertThat(stream.ack("testGroup", id1, id2)).isEqualTo(2);
     }
-    
+
+    @Test
+    public void testAck2() {
+        RStream<String, String> stream = redisson.getStream("test");
+
+        stream.add(StreamAddArgs.entry("0", "0"));
+
+        stream.createGroup(StreamCreateGroupArgs.name("testGroup"));
+
+        stream.createGroup(StreamCreateGroupArgs.name("testGroup2"));
+
+        StreamMessageId id1 = stream.add(StreamAddArgs.entry("1", "1"));
+        StreamMessageId id2 = stream.add(StreamAddArgs.entry("2", "2"));
+
+        Map<StreamMessageId, Map<String, String>> s = stream.readGroup("testGroup", "consumer1", StreamReadGroupArgs.neverDelivered());
+        assertThat(s.size()).isEqualTo(2);
+
+        Map<StreamMessageId, Map<String, String>> s2 = stream.readGroup("testGroup2", "consumer2", StreamReadGroupArgs.neverDelivered());
+        assertThat(s2.size()).isEqualTo(2);
+
+        assertThat(stream.ack(StreamAckArgs.group("testGroup").ids(id1).removeAcknowledgedOnly()).get(id1)).isEqualTo(StreamEntryStatus.HAS_PENDING_REFERENCES);
+
+        Map<StreamMessageId, StreamEntryStatus> map=stream.ack(StreamAckArgs.group("testGroup2").ids(id1, id2).removeAcknowledgedOnly());
+        assertThat(map.get(id1)).isEqualTo(StreamEntryStatus.SUCCESS);
+        assertThat(map.get(id2)).isEqualTo(StreamEntryStatus.HAS_PENDING_REFERENCES);
+    }
+
     @Test
     public void testReadGroupMulti() {
         RStream<String, String> stream1 = redisson.getStream("test1");
