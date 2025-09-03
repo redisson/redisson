@@ -1,6 +1,6 @@
 package org.redisson;
 
-import java.io.IOException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -11,6 +11,8 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -26,7 +28,6 @@ import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.config.Config;
-import org.redisson.connection.balancer.RandomLoadBalancer;
 
 public class RedissonSortedSetTest extends RedisDockerTest {
 
@@ -475,5 +476,57 @@ public class RedissonSortedSetTest extends RedisDockerTest {
 
         assertThat(result).containsAll(strings);
         assertThat(result).hasSize(strings.size());
+    }
+
+    @Test
+    public void testPollFirst() {
+        RSortedSet<Integer> set = redisson.getSortedSet("set");
+        set.add(3);
+        set.add(1);
+        set.add(2);
+        assertThat(set.pollFirst()).isEqualTo(1);
+
+        assertThat(set.pollFirst(2)).containsExactly(2,3);
+
+        long s = System.currentTimeMillis();
+        Executors.newSingleThreadScheduledExecutor().schedule(() -> {
+            set.add(4);
+        }, 3, TimeUnit.SECONDS);
+
+        assertThat(set.pollFirst(Duration.ofSeconds(1))).isNull();
+
+        List<Integer> list=set.pollFirst(Duration.ofSeconds(4),1);
+        assertThat(list).containsExactly(4);
+        assertThat(System.currentTimeMillis()-s).isLessThan(4000);
+
+    }
+
+    @Test
+    public void testPollLast() {
+        RSortedSet<Integer> set = redisson.getSortedSet("set");
+        set.add(3);
+        set.add(1);
+        set.add(2);
+        assertThat(set.pollLast()).isEqualTo(3);
+
+        assertThat(set.pollLast(2)).containsExactly(2, 1);
+
+        long s = System.currentTimeMillis();
+        Executors.newSingleThreadScheduledExecutor().schedule(() -> {
+            set.add(4);
+        }, 3, TimeUnit.SECONDS);
+
+        assertThat(set.pollLast(Duration.ofSeconds(1))).isNull();
+
+        List<Integer> list = set.pollLast(Duration.ofSeconds(4), 1);
+        assertThat(list).containsExactly(4);
+        assertThat(System.currentTimeMillis() - s).isLessThan(4000);
+
+        set.add(3);
+        set.add(1);
+        set.add(2);
+
+        assertThat(set.pollLast(Duration.ofSeconds(1), 2)).containsExactly(3, 2);
+
     }
 }

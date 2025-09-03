@@ -31,6 +31,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
 import java.math.BigInteger;
 import java.security.MessageDigest;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -151,7 +152,89 @@ public class RedissonSortedSet<V> extends RedissonExpirable implements RSortedSe
     public RFuture<Collection<V>> readAllAsync() {
         return (RFuture<Collection<V>>) (Object) list.readAllAsync();
     }
-    
+
+    @Override
+    public V pollFirst() {
+        return get(pollFirstAsync());
+    }
+
+    @Override
+    public RFuture<V> pollFirstAsync() {
+        return commandExecutor.writeAsync(list.getRawName(), codec, RedisCommands.LPOP, list.getRawName());
+    }
+
+    @Override
+    public Collection<V> pollFirst(int count) {
+        return get(pollFirstAsync(count));
+    }
+
+    @Override
+    public RFuture<Collection<V>> pollFirstAsync(int count) {
+        return commandExecutor.writeAsync(list.getRawName(), codec, RedisCommands.LPOP_LIST, list.getRawName(), count);
+    }
+
+    @Override
+    public V pollFirst(Duration duration) {
+        return get(pollFirstAsync(duration));
+    }
+
+    @Override
+    public RFuture<V> pollFirstAsync(Duration duration) {
+        return commandExecutor.writeAsync(list.getRawName(), codec, RedisCommands.BLPOP_VALUE, list.getRawName(), duration.getSeconds());
+    }
+
+    @Override
+    public List<V> pollFirst(Duration duration, int count) {
+        return get(pollFirstAsync(duration, count));
+    }
+
+    @Override
+    public RFuture<List<V>> pollFirstAsync(Duration duration, int count) {
+        return commandExecutor.writeAsync(list.getRawName(), codec, RedisCommands.BLMPOP_VALUES,
+                duration.getSeconds(), 1, list.getRawName(), "LEFT", "COUNT", count);
+    }
+
+    @Override
+    public V pollLast() {
+        return get(pollLastAsync());
+    }
+
+    @Override
+    public RFuture<V> pollLastAsync() {
+        return commandExecutor.writeAsync(list.getRawName(), codec, RedisCommands.RPOP, list.getRawName());
+    }
+
+    @Override
+    public Collection<V> pollLast(int count) {
+        return get(pollLastAsync(count));
+    }
+
+    @Override
+    public RFuture<Collection<V>> pollLastAsync(int count) {
+        return commandExecutor.writeAsync(list.getRawName(), codec, RedisCommands.RPOP_LIST, list.getRawName(), count);
+    }
+
+    @Override
+    public V pollLast(Duration duration) {
+        return get(pollLastAsync(duration));
+    }
+
+    @Override
+    public RFuture<V> pollLastAsync(Duration duration) {
+        return commandExecutor.writeAsync(list.getRawName(), codec, RedisCommands.BRPOP_VALUE, list.getRawName(), duration.getSeconds());
+    }
+
+    @Override
+    public List<V> pollLast(Duration duration, int count) {
+        return get(pollLastAsync(duration, count));
+    }
+
+    @Override
+    public RFuture<List<V>> pollLastAsync(Duration duration, int count) {
+        return commandExecutor.writeAsync(list.getRawName(), codec, RedisCommands.BLMPOP_VALUES,
+                duration.getSeconds(), 1, list.getRawName(), "RIGHT", "COUNT", count);
+    }
+
     @Override
     public int size() {
         return list.size();

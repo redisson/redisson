@@ -186,6 +186,17 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<V> pollFirstAsync(long timeout, TimeUnit unit);
 
     /**
+     * Removes and returns the head element or {@code null} if this sorted set is empty.
+     * <p>
+     * Requires <b>Redis 5.0.0 and higher.</b>
+     *
+     * @param duration how long to wait before giving up
+     * @return the head element,
+     *         or {@code null} if this sorted set is empty
+     */
+    RFuture<V> pollFirstAsync(Duration duration);
+
+    /**
      * Removes and returns the head elements.
      * <p>
      * Requires <b>Redis 7.0.0 and higher.</b>
@@ -233,6 +244,17 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      * @return the tail elements
      */
     RFuture<List<V>> pollLastAsync(Duration duration, int count);
+
+    /**
+     * Removes and returns the tail element or {@code null} if this sorted set is empty.
+     * <p>
+     * Requires <b>Redis 5.0.0 and higher.</b>
+     *
+     * @param duration how long to wait before giving up
+     * @return the tail element,
+     *         or {@code null} if this sorted set is empty
+     */
+    RFuture<V> pollLastAsync(Duration duration);
 
     /**
      * Removes and returns the head elements of this sorted set.
