@@ -260,6 +260,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      * @return the head element, 
      *         or {@code null} if this sorted set is empty
      */
+    @Deprecated
     V pollFirst(long timeout, TimeUnit unit);
 
     /**
@@ -295,6 +296,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      *        {@code timeout} parameter
      * @return the tail element or {@code null} if this sorted set is empty
      */
+    @Deprecated
     V pollLast(long timeout, TimeUnit unit);
 
     /**

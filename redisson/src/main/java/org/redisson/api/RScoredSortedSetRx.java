@@ -187,6 +187,7 @@ public interface RScoredSortedSetRx<V> extends RExpirableRx, RSortableRx<Set<V>>
      * @return the head element, 
      *         or {@code null} if this sorted set is empty
      */
+    @Deprecated
     Maybe<V> pollFirst(long timeout, TimeUnit unit);
 
     /**
@@ -222,6 +223,7 @@ public interface RScoredSortedSetRx<V> extends RExpirableRx, RSortableRx<Set<V>>
      *        {@code timeout} parameter
      * @return the tail element or {@code null} if this sorted set is empty
      */
+    @Deprecated
     Maybe<V> pollLast(long timeout, TimeUnit unit);
 
     /**

@@ -21,6 +21,7 @@ import org.redisson.api.mapreduce.RCollectionMapReduce;
 import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
+import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.iterator.RedissonBaseIterator;
@@ -34,7 +35,9 @@ import java.security.MessageDigest;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 /**
  *
@@ -153,6 +156,39 @@ public class RedissonSortedSet<V> extends RedissonExpirable implements RSortedSe
         return (RFuture<Collection<V>>) (Object) list.readAllAsync();
     }
 
+    protected final <T> RFuture<V> wrapLockedAsync(RedisCommand<T> command, Object... params) {
+        return wrapLockedAsync(() -> {
+            return commandExecutor.writeAsync(list.getRawName(), codec, command, params);
+        });
+    }
+
+    protected final <T, R> RFuture<R> wrapLockedAsync(Supplier<RFuture<R>> callable) {
+        long randomId = getServiceManager().getRandom().nextLong();
+        CompletionStage<R> f = lock.lockAsync(randomId).thenCompose(r -> {
+            RFuture<R> callback = callable.get();
+            return callback.handle((value, ex) -> {
+                CompletableFuture<R> result = new CompletableFuture<>();
+                lock.unlockAsync(randomId)
+                        .whenComplete((r2, ex2) -> {
+                            if (ex2 != null) {
+                                if (ex != null) {
+                                    ex2.addSuppressed(ex);
+                                }
+                                result.completeExceptionally(ex2);
+                                return;
+                            }
+                            if (ex != null) {
+                                result.completeExceptionally(ex);
+                                return;
+                            }
+                            result.complete(value);
+                        });
+                return result;
+            }).thenCompose(ff -> ff);
+        });
+        return new CompletableFutureWrapper<>(f);
+    }
+
     @Override
     public V pollFirst() {
         return get(pollFirstAsync());
@@ -160,7 +196,7 @@ public class RedissonSortedSet<V> extends RedissonExpirable implements RSortedSe
 
     @Override
     public RFuture<V> pollFirstAsync() {
-        return commandExecutor.writeAsync(list.getRawName(), codec, RedisCommands.LPOP, list.getRawName());
+        return wrapLockedAsync(RedisCommands.LPOP, list.getRawName());
     }
 
     @Override
@@ -170,7 +206,7 @@ public class RedissonSortedSet<V> extends RedissonExpirable implements RSortedSe
 
     @Override
     public RFuture<Collection<V>> pollFirstAsync(int count) {
-        return commandExecutor.writeAsync(list.getRawName(), codec, RedisCommands.LPOP_LIST, list.getRawName(), count);
+        return (RFuture<Collection<V>>) wrapLockedAsync(RedisCommands.LPOP_LIST, list.getRawName(), count);
     }
 
     @Override
@@ -180,7 +216,7 @@ public class RedissonSortedSet<V> extends RedissonExpirable implements RSortedSe
 
     @Override
     public RFuture<V> pollFirstAsync(Duration duration) {
-        return commandExecutor.writeAsync(list.getRawName(), codec, RedisCommands.BLPOP_VALUE, list.getRawName(), duration.getSeconds());
+        return wrapLockedAsync(RedisCommands.BLPOP_VALUE, list.getRawName(), duration.getSeconds());
     }
 
     @Override
@@ -190,7 +226,7 @@ public class RedissonSortedSet<V> extends RedissonExpirable implements RSortedSe
 
     @Override
     public RFuture<List<V>> pollFirstAsync(Duration duration, int count) {
-        return commandExecutor.writeAsync(list.getRawName(), codec, RedisCommands.BLMPOP_VALUES,
+        return (RFuture<List<V>>) wrapLockedAsync(RedisCommands.BLMPOP_VALUES,
                 duration.getSeconds(), 1, list.getRawName(), "LEFT", "COUNT", count);
     }
 
@@ -201,7 +237,7 @@ public class RedissonSortedSet<V> extends RedissonExpirable implements RSortedSe
 
     @Override
     public RFuture<V> pollLastAsync() {
-        return commandExecutor.writeAsync(list.getRawName(), codec, RedisCommands.RPOP, list.getRawName());
+        return wrapLockedAsync(RedisCommands.RPOP, list.getRawName());
     }
 
     @Override
@@ -211,7 +247,7 @@ public class RedissonSortedSet<V> extends RedissonExpirable implements RSortedSe
 
     @Override
     public RFuture<Collection<V>> pollLastAsync(int count) {
-        return commandExecutor.writeAsync(list.getRawName(), codec, RedisCommands.RPOP_LIST, list.getRawName(), count);
+        return (RFuture<Collection<V>>) wrapLockedAsync(RedisCommands.RPOP_LIST, list.getRawName(), count);
     }
 
     @Override
@@ -221,7 +257,7 @@ public class RedissonSortedSet<V> extends RedissonExpirable implements RSortedSe
 
     @Override
     public RFuture<V> pollLastAsync(Duration duration) {
-        return commandExecutor.writeAsync(list.getRawName(), codec, RedisCommands.BRPOP_VALUE, list.getRawName(), duration.getSeconds());
+        return wrapLockedAsync(RedisCommands.BRPOP_VALUE, list.getRawName(), duration.getSeconds());
     }
 
     @Override
@@ -231,7 +267,7 @@ public class RedissonSortedSet<V> extends RedissonExpirable implements RSortedSe
 
     @Override
     public RFuture<List<V>> pollLastAsync(Duration duration, int count) {
-        return commandExecutor.writeAsync(list.getRawName(), codec, RedisCommands.BLMPOP_VALUES,
+        return (RFuture<List<V>>) wrapLockedAsync(RedisCommands.BLMPOP_VALUES,
                 duration.getSeconds(), 1, list.getRawName(), "RIGHT", "COUNT", count);
     }
 

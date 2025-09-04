@@ -188,6 +188,7 @@ public interface RScoredSortedSetReactive<V> extends RExpirableReactive, RSortab
      * @return the head element, 
      *         or {@code null} if this sorted set is empty
      */
+    @Deprecated
     Mono<V> pollFirst(long timeout, TimeUnit unit);
 
     /**
@@ -222,6 +223,7 @@ public interface RScoredSortedSetReactive<V> extends RExpirableReactive, RSortab
      *        {@code timeout} parameter
      * @return the tail element or {@code null} if this sorted set is empty
      */
+    @Deprecated
     Mono<V> pollLast(long timeout, TimeUnit unit);
 
     /**

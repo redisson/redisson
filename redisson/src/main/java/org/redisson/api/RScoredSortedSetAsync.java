@@ -183,6 +183,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      * @return the head element, 
      *         or {@code null} if this sorted set is empty
      */
+    @Deprecated
     RFuture<V> pollFirstAsync(long timeout, TimeUnit unit);
 
     /**
@@ -232,6 +233,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      *        {@code timeout} parameter
      * @return the tail element or {@code null} if this sorted set is empty
      */
+    @Deprecated
     RFuture<V> pollLastAsync(long timeout, TimeUnit unit);
 
     /**
