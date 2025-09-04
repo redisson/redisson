@@ -16,6 +16,7 @@
 package org.redisson.api;
 
 import org.redisson.api.stream.*;
+import org.redisson.client.protocol.StreamEntryStatus;
 
 import java.util.List;
 import java.util.Map;
@@ -89,6 +90,17 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @return marked messages amount
      */
     RFuture<Long> ackAsync(String groupName, StreamMessageId... ids);
+
+    /**
+     * Acknowledges and conditionally deletes one or multiple entries (messages)
+     * for a stream consumer group at the specified key.
+     *
+     * Requires <b>Redis 8.2.0 and higher.</b>
+     *
+     * @param args - method arguments object
+     * @return map with entry statuses mapped by id
+     */
+    RFuture<Map<StreamMessageId, StreamEntryStatus>> ackAsync(StreamAckArgs args);
 
     /**
      * Returns common info about pending messages by group name.
@@ -444,9 +456,9 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * Requires <b>Redis 8.2.0 and higher.</b>
      *
      * @param args - method arguments object
-     * @return List of messages deletion statuses
+     * @return map with entry statuses mapped by id
      */
-    RFuture<List<Integer>> removeAsync(StreamRemoveArgs args);
+    RFuture<Map<StreamMessageId, StreamEntryStatus>> removeAsync(StreamRemoveArgs args);
 
     RFuture<Long> trimAsync(StreamTrimArgs args);
 

@@ -68,6 +68,11 @@ public class MapCacheNativeWrapper<K, V> implements RMapCache<K, V>, Supplier<RM
     }
 
     @Override
+    public V compute(K key, Duration ttl, BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
+        return null;
+    }
+
+    @Override
     public V getWithTTLOnly(K key) {
         return cache.get(key);
     }
@@ -230,6 +235,11 @@ public class MapCacheNativeWrapper<K, V> implements RMapCache<K, V>, Supplier<RM
     @Override
     public RFuture<V> computeIfAbsentAsync(K key, Duration ttl, Function<? super K, ? extends V> mappingFunction) {
         return cache.computeIfAbsentAsync(key, mappingFunction);
+    }
+
+    @Override
+    public RFuture<V> computeAsync(K key, Duration ttl, BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
+        return cache.computeAsync(key, remappingFunction);
     }
 
     @Override

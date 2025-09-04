@@ -1568,6 +1568,54 @@ public class RedissonMapCacheTest extends BaseMapTest {
     }
 
     @Test
+    public void testComputeWithTTL() throws Exception {
+        RMapCache<String, String> map = redisson.getMapCache("testMap");
+
+        Duration duration = Duration.ofSeconds(1);
+
+        assertThat(map.compute("key1", duration, (key, oldValue) -> "value1")).isEqualTo("value1");
+        assertThat(map.get("key1")).isEqualTo("value1");
+
+        assertThat(map.compute("key1", duration, (key, oldValue) -> "value2")).isEqualTo("value2");
+        assertThat(map.get("key1")).isEqualTo("value2");
+
+        assertThat(map.compute("key1", duration, (key, oldValue) -> null)).isNull();
+        assertThat(map.containsKey("key1")).isFalse();
+
+        assertThat(map.compute("key1", duration, (key, oldValue) -> "value3")).isEqualTo("value3");
+        assertThat(map.get("key1")).isEqualTo("value3");
+        Thread.sleep(1100);
+        assertThat(map.containsKey("key1")).isFalse();
+
+        map.destroy();
+
+    }
+
+    @Test
+    public void testComputeAsyncWithTTL() throws Exception {
+        RMapCache<String, String> map = redisson.getMapCache("testMap");
+
+        Duration duration = Duration.ofSeconds(1);
+
+        assertThat(map.computeAsync("key1", duration, (key, oldValue) -> "value1").toCompletableFuture().get()).isEqualTo("value1");
+        assertThat(map.get("key1")).isEqualTo("value1");
+
+        assertThat(map.computeAsync("key1", duration, (key, oldValue) -> "value2").toCompletableFuture().get()).isEqualTo("value2");
+        assertThat(map.get("key1")).isEqualTo("value2");
+
+        assertThat(map.computeAsync("key1", duration, (key, oldValue) -> null).toCompletableFuture().get()).isNull();
+        assertThat(map.containsKey("key1")).isFalse();
+
+        assertThat(map.computeAsync("key1", duration, (key, oldValue) -> "value3").toCompletableFuture().get()).isEqualTo("value3");
+        assertThat(map.get("key1")).isEqualTo("value3");
+        Thread.sleep(1100);
+        assertThat(map.containsKey("key1")).isFalse();
+
+        map.destroy();
+
+    }
+
+    @Test
     public void testNameMapper() throws InterruptedException, ExecutionException {
         Config config = new Config();
         config.useSingleServer()
