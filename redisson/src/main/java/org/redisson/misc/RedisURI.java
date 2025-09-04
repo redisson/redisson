@@ -186,6 +186,11 @@ public final class RedisURI {
 
     @Override
     public String toString() {
+        if (username != null && password != null) {
+            return getScheme() + "://" + username + ":" + password + "@" + trimIpv6Brackets(host) + ":" + port;
+        } else if (password != null) {
+            return getScheme() + "://" + password + "@" + trimIpv6Brackets(host) + ":" + port;
+        }
         return getScheme() + "://" + trimIpv6Brackets(host) + ":" + port;
     }
     

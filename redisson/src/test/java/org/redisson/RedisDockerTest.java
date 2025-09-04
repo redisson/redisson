@@ -525,6 +525,17 @@ public class RedisDockerTest {
         }
     }
 
+    protected void withNewCluster(Consumer<ClusterData> callback) {
+        ClusterData data = createCluster();
+
+        try {
+            callback.accept(data);
+        } finally {
+            data.redisson.shutdown();
+            data.container.stop();
+        }
+    }
+
     protected String execute(ContainerState node, String... commands) {
         try {
             Container.ExecResult r = node.execInContainer(commands);

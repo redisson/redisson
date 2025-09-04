@@ -1,5 +1,9 @@
 package org.redisson;
 
+import com.github.dockerjava.api.command.InspectContainerResponse;
+import com.github.dockerjava.api.model.ContainerNetwork;
+import com.github.dockerjava.api.model.ExposedPort;
+import com.github.dockerjava.api.model.Ports;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.socket.DatagramChannel;
@@ -15,9 +19,8 @@ import org.joor.Reflect;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.*;
-import org.redisson.api.redisnode.RedisMaster;
+import org.redisson.api.redisnode.*;
 import org.redisson.api.redisnode.RedisNodes;
-import org.redisson.api.redisnode.RedisSingle;
 import org.redisson.api.stream.StreamCreateGroupArgs;
 import org.redisson.client.RedisConnectionException;
 import org.redisson.client.RedisException;
@@ -34,6 +37,7 @@ import org.redisson.connection.*;
 import org.redisson.connection.pool.SlaveConnectionPool;
 import org.redisson.misc.RedisURI;
 import org.testcontainers.containers.ContainerState;
+import org.testcontainers.containers.DockerComposeContainer;
 import org.testcontainers.containers.FixedHostPortGenericContainer;
 import org.testcontainers.containers.GenericContainer;
 
@@ -1061,6 +1065,70 @@ public class RedissonTest extends RedisDockerTest {
 
         redisson.shutdown();
         s.stop();
+    }
+
+    @Test
+    public void testClusterWithPasswordInURL() {
+        withNewCluster(data -> {
+            RedisCluster rc = data.redisson().getRedisNodes(RedisNodes.CLUSTER);
+            for (RedisClusterMaster master : rc.getMasters()) {
+                master.setConfig("requirepass", "yes");
+                master.setConfig("masterauth", "yes");
+            }
+            for (RedisClusterSlave slave : rc.getSlaves()) {
+                slave.setConfig("requirepass", "yes");
+                slave.setConfig("masterauth", "yes");
+            }
+            data.redisson().shutdown();
+
+            DockerComposeContainer environment = (DockerComposeContainer) data.container();
+            List<ContainerState> nodes = new ArrayList<>();
+            for (int i = 0; i < 6; i++) {
+                Optional<ContainerState> cc = environment.getContainerByServiceName("redis-node-" + i);
+                nodes.add(cc.get());
+            }
+
+            Optional<ContainerState> cc2 = environment.getContainerByServiceName("redis-node-0");
+            Ports.Binding[] mp = cc2.get().getContainerInfo().getNetworkSettings()
+                    .getPorts().getBindings().get(new ExposedPort(cc2.get().getExposedPorts().get(0)));
+
+            Config config = new Config();
+            config.useClusterServers()
+                    .setNatMapper(new NatMapper() {
+
+                        @Override
+                        public RedisURI map(RedisURI uri) {
+                            for (ContainerState state : nodes) {
+                                if (state.getContainerInfo() == null) {
+                                    continue;
+                                }
+
+                                InspectContainerResponse node = state.getContainerInfo();
+                                Ports.Binding[] mappedPort = node.getNetworkSettings()
+                                        .getPorts().getBindings().get(new ExposedPort(uri.getPort()));
+
+                                Map<String, ContainerNetwork> ss = node.getNetworkSettings().getNetworks();
+                                ContainerNetwork s = ss.values().iterator().next();
+
+                                if (mappedPort != null
+                                        && s.getIpAddress().equals(uri.getHost())) {
+                                    return new RedisURI("redis://127.0.0.1:" + mappedPort[0].getHostPortSpec());
+                                }
+                            }
+                            return uri;
+                        }
+                    })
+                    .addNodeAddress("redis://yes@localhost:" + mp[0].getHostPortSpec());
+
+            RedissonClient redisson = Redisson.create(config);
+
+            for (int i = 0; i < 10; i++) {
+                redisson.getBucket("test" + i).set(i);
+                redisson.getBucket("test" + i).get();
+            }
+
+            redisson.shutdown();
+        });
     }
 
 }

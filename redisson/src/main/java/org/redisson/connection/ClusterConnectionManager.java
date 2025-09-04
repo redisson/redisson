@@ -62,6 +62,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     private RedisStrictCommand<List<ClusterNodeInfo>> clusterNodesCommand;
     
     private String configEndpointHostName;
+    private String configEndpointPassword;
     
     private final AtomicReferenceArray<MasterSlaveEntry> slot2entry = new AtomicReferenceArray<>(MAX_SLOT);
 
@@ -102,6 +103,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
                 if (cfg.getNodeAddresses().size() == 1 && !addr.isIP()) {
                     configEndpointHostName = addr.getHost();
+                    configEndpointPassword = addr.getPassword();
                 }
 
                 clusterNodesCommand = new RedisStrictCommand<List<ClusterNodeInfo>>("CLUSTER", "NODES",
@@ -943,6 +945,10 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 }
 
                 RedisURI address = addresses.get(index);
+
+                if (configEndpointPassword != null) {
+                    address = new RedisURI(address.getScheme() + "://" + configEndpointPassword + "@" + address.getHost() + ":" + address.getPort());
+                }
 
                 if (addresses.size() > 1) {
                     for (RedisURI addr : addresses) {
