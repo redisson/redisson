@@ -19,6 +19,7 @@ import io.netty.buffer.ByteBuf;
 import org.redisson.api.*;
 import org.redisson.api.mapreduce.RCollectionMapReduce;
 import org.redisson.client.RedisClient;
+import org.redisson.client.RedisConnectionException;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
@@ -36,6 +37,7 @@ import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
@@ -189,6 +191,57 @@ public class RedissonSortedSet<V> extends RedissonExpirable implements RSortedSe
         return new CompletableFutureWrapper<>(f);
     }
 
+    protected <T> void takeAsync(CompletableFuture<V> result, long delay, long timeoutInMicro, RedisCommand<T> command, Object... params) {
+        if (result.isDone()) {
+            return;
+        }
+
+        long start = System.currentTimeMillis();
+        getServiceManager().newTimeout(t -> {
+            if (result.isDone()) {
+                return;
+            }
+
+            RFuture<V> future = wrapLockedAsync(command, params);
+            future.whenComplete((res, e) -> {
+                if (e != null && !(e instanceof RedisConnectionException)) {
+                    result.completeExceptionally(e);
+                    return;
+                }
+
+                if (res != null && !(res instanceof List)) {
+                    result.complete(res);
+                    return;
+                }
+
+                if (res instanceof List && !((List) res).isEmpty()) {
+                    result.complete(res);
+                    return;
+                }
+
+                if (result.isCancelled()) {
+                    return;
+                }
+
+                long remain = 0;
+                if (timeoutInMicro > 0) {
+                    remain = timeoutInMicro - ((System.currentTimeMillis() - start))*1000;
+                    if (remain <= 0) {
+                        result.complete(res);
+                        return;
+                    }
+                }
+
+                long del = ThreadLocalRandom.current().nextInt(2000000);
+                if (timeoutInMicro > 0 && remain < 2000000) {
+                    del = 0;
+                }
+
+                takeAsync(result, del, remain, command, params);
+            });
+        }, delay, TimeUnit.MICROSECONDS);
+    }
+
     @Override
     public V pollFirst() {
         return get(pollFirstAsync());
@@ -216,7 +269,9 @@ public class RedissonSortedSet<V> extends RedissonExpirable implements RSortedSe
 
     @Override
     public RFuture<V> pollFirstAsync(Duration duration) {
-        return wrapLockedAsync(RedisCommands.BLPOP_VALUE, list.getRawName(), duration.getSeconds());
+        CompletableFuture<V> result = new CompletableFuture<V>();
+        takeAsync(result, 0, duration.toMillis() * 1000, RedisCommands.LPOP, list.getRawName());
+        return new CompletableFutureWrapper<>(result);
     }
 
     @Override
@@ -226,8 +281,9 @@ public class RedissonSortedSet<V> extends RedissonExpirable implements RSortedSe
 
     @Override
     public RFuture<List<V>> pollFirstAsync(Duration duration, int count) {
-        return (RFuture<List<V>>) wrapLockedAsync(RedisCommands.BLMPOP_VALUES,
-                duration.getSeconds(), 1, list.getRawName(), "LEFT", "COUNT", count);
+        CompletableFuture<V> result = new CompletableFuture<>();
+        takeAsync(result, 0, duration.toMillis() * 1000, RedisCommands.LPOP_LIST, list.getRawName(), count);
+        return new CompletableFutureWrapper<>((CompletableFuture<List<V>>) result);
     }
 
     @Override
@@ -257,7 +313,9 @@ public class RedissonSortedSet<V> extends RedissonExpirable implements RSortedSe
 
     @Override
     public RFuture<V> pollLastAsync(Duration duration) {
-        return wrapLockedAsync(RedisCommands.BRPOP_VALUE, list.getRawName(), duration.getSeconds());
+        CompletableFuture<V> result = new CompletableFuture<V>();
+        takeAsync(result, 0, duration.toMillis() * 1000, RedisCommands.RPOP, list.getRawName());
+        return new CompletableFutureWrapper<>(result);
     }
 
     @Override
@@ -267,8 +325,9 @@ public class RedissonSortedSet<V> extends RedissonExpirable implements RSortedSe
 
     @Override
     public RFuture<List<V>> pollLastAsync(Duration duration, int count) {
-        return (RFuture<List<V>>) wrapLockedAsync(RedisCommands.BLMPOP_VALUES,
-                duration.getSeconds(), 1, list.getRawName(), "RIGHT", "COUNT", count);
+        CompletableFuture<V> result = new CompletableFuture<>();
+        takeAsync(result, 0, duration.toMillis() * 1000, RedisCommands.RPOP_LIST, list.getRawName(), count);
+        return new CompletableFutureWrapper<>((CompletableFuture<List<V>>) result);
     }
 
     @Override

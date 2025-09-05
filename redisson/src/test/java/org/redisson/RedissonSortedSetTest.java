@@ -11,18 +11,17 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.redisson.api.NameMapper;
-import org.redisson.api.RFuture;
-import org.redisson.api.RSortedSet;
-import org.redisson.api.RedissonClient;
+import org.redisson.api.*;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.config.Config;
@@ -477,7 +476,7 @@ public class RedissonSortedSetTest extends RedisDockerTest {
     }
 
     @Test
-    public void testPollFirst() {
+    public void testPollFirst() throws InterruptedException {
         RSortedSet<Integer> set = redisson.getSortedSet("set");
         set.add(3);
         set.add(1);
@@ -490,29 +489,60 @@ public class RedissonSortedSetTest extends RedisDockerTest {
         Assertions.assertTrue(System.currentTimeMillis() - s > 4900);
 
         set.add(5);
+        set.add(3);
         set.add(4);
-        assertThat(set.pollFirst(Duration.ofSeconds(5), 2)).containsExactly(4, 5);
+
+        assertThat(set.pollFirst(Duration.ofSeconds(2), 2)).containsExactly(3, 4);
+        assertThat(set.pollFirst(Duration.ofSeconds(2))).isEqualTo(5);
+
+        final AtomicBoolean executed = new AtomicBoolean();
+        Thread t1 = new Thread(() -> {
+            long start = System.currentTimeMillis();
+            List<Integer> a = set.pollFirst(Duration.ofSeconds(2), 2);
+            assertThat(a).containsExactly(4);
+            Assertions.assertTrue(System.currentTimeMillis() - start < 2000);
+            executed.set(true);
+        });
+
+        t1.start();
+        Thread.sleep(1000);
+        set.add(4);
+        await().atMost(5, TimeUnit.SECONDS).untilTrue(executed);
     }
 
     @Test
-    public void testPollLast() {
+    public void testPollLast() throws InterruptedException {
         RSortedSet<Integer> set = redisson.getSortedSet("set");
         set.add(3);
         set.add(1);
         set.add(2);
         assertThat(set.pollLast()).isEqualTo(3);
-
         assertThat(set.pollLast(2)).containsExactly(2, 1);
 
         long s = System.currentTimeMillis();
         assertThat(set.pollLast(Duration.ofSeconds(5))).isNull();
         Assertions.assertTrue(System.currentTimeMillis() - s > 4900);
 
+        set.add(5);
         set.add(3);
-        set.add(1);
-        set.add(2);
+        set.add(4);
 
-        assertThat(set.pollLast(Duration.ofSeconds(1), 2)).containsExactly(3, 2);
+        assertThat(set.pollLast(Duration.ofSeconds(2), 2)).containsExactly(5, 4);
+        assertThat(set.pollLast(Duration.ofSeconds(2))).isEqualTo(3);
+
+        final AtomicBoolean executed = new AtomicBoolean();
+        Thread t1 = new Thread(() -> {
+            long start = System.currentTimeMillis();
+            List<Integer> a = set.pollLast(Duration.ofSeconds(2), 2);
+            assertThat(a).containsExactly(4);
+            Assertions.assertTrue(System.currentTimeMillis() - start < 2000);
+            executed.set(true);
+        });
+
+        t1.start();
+        Thread.sleep(1000);
+        set.add(4);
+        await().atMost(5, TimeUnit.SECONDS).untilTrue(executed);
 
     }
 }
