@@ -233,8 +233,18 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
+    public V pollFirst(Duration duration) {
+        return get(pollFirstAsync(duration));
+    }
+
+    @Override
     public RFuture<V> pollFirstAsync(long timeout, TimeUnit unit) {
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.BZPOPMIN_VALUE, getRawName(), toSeconds(timeout, unit));
+    }
+
+    @Override
+    public RFuture<V> pollFirstAsync(Duration duration) {
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.BZPOPMIN_VALUE, getRawName(), duration.getSeconds());
     }
 
     @Override
@@ -427,6 +437,16 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     public RFuture<List<V>> pollLastAsync(Duration duration, int count) {
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.BZMPOP_SINGLE_LIST,
                 duration.getSeconds(), 1, getRawName(), "MAX", "COUNT", count);
+    }
+
+    @Override
+    public V pollLast(Duration duration) {
+        return get(pollLastAsync(duration));
+    }
+
+    @Override
+    public RFuture<V> pollLastAsync(Duration duration) {
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.BZPOPMAX_VALUE, getRawName(), duration.getSeconds());
     }
 
     @Override

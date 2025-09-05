@@ -187,7 +187,19 @@ public interface RScoredSortedSetRx<V> extends RExpirableRx, RSortableRx<Set<V>>
      * @return the head element, 
      *         or {@code null} if this sorted set is empty
      */
+    @Deprecated
     Maybe<V> pollFirst(long timeout, TimeUnit unit);
+
+    /**
+     * Removes and returns the head element or {@code null} if this sorted set is empty.
+     * <p>
+     * Requires <b>Redis 5.0.0 and higher.</b>
+     *
+     * @param duration how long to wait before giving up
+     * @return the head element,
+     *         or {@code null} if this sorted set is empty
+     */
+    Maybe<V> pollFirst(Duration duration);
 
     /**
      * Removes and returns the head elements.
@@ -211,7 +223,18 @@ public interface RScoredSortedSetRx<V> extends RExpirableRx, RSortableRx<Set<V>>
      *        {@code timeout} parameter
      * @return the tail element or {@code null} if this sorted set is empty
      */
+    @Deprecated
     Maybe<V> pollLast(long timeout, TimeUnit unit);
+
+    /**
+     * Removes and returns the tail element or {@code null} if this sorted set is empty.
+     * <p>
+     * Requires <b>Redis 5.0.0 and higher.</b>
+     *
+     * @param duration how long to wait before giving up
+     * @return the tail element or {@code null} if this sorted set is empty
+     */
+    Maybe<V> pollLast(Duration duration);
 
     /**
      * Removes and returns the tail elements.

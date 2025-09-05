@@ -260,7 +260,19 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      * @return the head element, 
      *         or {@code null} if this sorted set is empty
      */
+    @Deprecated
     V pollFirst(long timeout, TimeUnit unit);
+
+    /**
+     * Removes and returns the head element or {@code null} if this sorted set is empty.
+     * <p>
+     * Requires <b>Redis 5.0.0 and higher.</b>
+     *
+     * @param duration how long to wait before giving up
+     * @return the head element,
+     *         or {@code null} if this sorted set is empty
+     */
+    V pollFirst(Duration duration);
 
     /**
      * Removes and returns the head elements.
@@ -284,6 +296,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      *        {@code timeout} parameter
      * @return the tail element or {@code null} if this sorted set is empty
      */
+    @Deprecated
     V pollLast(long timeout, TimeUnit unit);
 
     /**
@@ -296,6 +309,15 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      */
     List<V> pollLast(Duration duration, int count);
 
+    /**
+     * Removes and returns the tail element or {@code null} if this sorted set is empty.
+     * <p>
+     * Requires <b>Redis 5.0.0 and higher.</b>
+     *
+     * @param duration how long to wait before giving up
+     * @return the tail element or {@code null} if this sorted set is empty
+     */
+    V pollLast(Duration duration);
     /**
      * Removes and returns the head elements of this sorted set.
      *

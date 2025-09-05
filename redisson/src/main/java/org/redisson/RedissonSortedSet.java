@@ -19,8 +19,10 @@ import io.netty.buffer.ByteBuf;
 import org.redisson.api.*;
 import org.redisson.api.mapreduce.RCollectionMapReduce;
 import org.redisson.client.RedisClient;
+import org.redisson.client.RedisConnectionException;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
+import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.iterator.RedissonBaseIterator;
@@ -31,9 +33,13 @@ import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
 import java.math.BigInteger;
 import java.security.MessageDigest;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 /**
  *
@@ -151,7 +157,179 @@ public class RedissonSortedSet<V> extends RedissonExpirable implements RSortedSe
     public RFuture<Collection<V>> readAllAsync() {
         return (RFuture<Collection<V>>) (Object) list.readAllAsync();
     }
-    
+
+    protected final <T> RFuture<V> wrapLockedAsync(RedisCommand<T> command, Object... params) {
+        return wrapLockedAsync(() -> {
+            return commandExecutor.writeAsync(list.getRawName(), codec, command, params);
+        });
+    }
+
+    protected final <T, R> RFuture<R> wrapLockedAsync(Supplier<RFuture<R>> callable) {
+        long randomId = getServiceManager().getRandom().nextLong();
+        CompletionStage<R> f = lock.lockAsync(randomId).thenCompose(r -> {
+            RFuture<R> callback = callable.get();
+            return callback.handle((value, ex) -> {
+                CompletableFuture<R> result = new CompletableFuture<>();
+                lock.unlockAsync(randomId)
+                        .whenComplete((r2, ex2) -> {
+                            if (ex2 != null) {
+                                if (ex != null) {
+                                    ex2.addSuppressed(ex);
+                                }
+                                result.completeExceptionally(ex2);
+                                return;
+                            }
+                            if (ex != null) {
+                                result.completeExceptionally(ex);
+                                return;
+                            }
+                            result.complete(value);
+                        });
+                return result;
+            }).thenCompose(ff -> ff);
+        });
+        return new CompletableFutureWrapper<>(f);
+    }
+
+    protected <T> void takeAsync(CompletableFuture<V> result, long delay, long timeoutInMicro, RedisCommand<T> command, Object... params) {
+        if (result.isDone()) {
+            return;
+        }
+
+        long start = System.currentTimeMillis();
+        getServiceManager().newTimeout(t -> {
+            if (result.isDone()) {
+                return;
+            }
+
+            RFuture<V> future = wrapLockedAsync(command, params);
+            future.whenComplete((res, e) -> {
+                if (e != null && !(e instanceof RedisConnectionException)) {
+                    result.completeExceptionally(e);
+                    return;
+                }
+
+                if (res != null && !(res instanceof List)) {
+                    result.complete(res);
+                    return;
+                }
+
+                if (res instanceof List && !((List) res).isEmpty()) {
+                    result.complete(res);
+                    return;
+                }
+
+                if (result.isCancelled()) {
+                    return;
+                }
+
+                long remain = 0;
+                if (timeoutInMicro > 0) {
+                    remain = timeoutInMicro - ((System.currentTimeMillis() - start))*1000;
+                    if (remain <= 0) {
+                        result.complete(res);
+                        return;
+                    }
+                }
+
+                long del = ThreadLocalRandom.current().nextInt(2000000);
+                if (timeoutInMicro > 0 && remain < 2000000) {
+                    del = 0;
+                }
+
+                takeAsync(result, del, remain, command, params);
+            });
+        }, delay, TimeUnit.MICROSECONDS);
+    }
+
+    @Override
+    public V pollFirst() {
+        return get(pollFirstAsync());
+    }
+
+    @Override
+    public RFuture<V> pollFirstAsync() {
+        return wrapLockedAsync(RedisCommands.LPOP, list.getRawName());
+    }
+
+    @Override
+    public Collection<V> pollFirst(int count) {
+        return get(pollFirstAsync(count));
+    }
+
+    @Override
+    public RFuture<Collection<V>> pollFirstAsync(int count) {
+        return (RFuture<Collection<V>>) wrapLockedAsync(RedisCommands.LPOP_LIST, list.getRawName(), count);
+    }
+
+    @Override
+    public V pollFirst(Duration duration) {
+        return get(pollFirstAsync(duration));
+    }
+
+    @Override
+    public RFuture<V> pollFirstAsync(Duration duration) {
+        CompletableFuture<V> result = new CompletableFuture<V>();
+        takeAsync(result, 0, duration.toMillis() * 1000, RedisCommands.LPOP, list.getRawName());
+        return new CompletableFutureWrapper<>(result);
+    }
+
+    @Override
+    public List<V> pollFirst(Duration duration, int count) {
+        return get(pollFirstAsync(duration, count));
+    }
+
+    @Override
+    public RFuture<List<V>> pollFirstAsync(Duration duration, int count) {
+        CompletableFuture<V> result = new CompletableFuture<>();
+        takeAsync(result, 0, duration.toMillis() * 1000, RedisCommands.LPOP_LIST, list.getRawName(), count);
+        return new CompletableFutureWrapper<>((CompletableFuture<List<V>>) result);
+    }
+
+    @Override
+    public V pollLast() {
+        return get(pollLastAsync());
+    }
+
+    @Override
+    public RFuture<V> pollLastAsync() {
+        return wrapLockedAsync(RedisCommands.RPOP, list.getRawName());
+    }
+
+    @Override
+    public Collection<V> pollLast(int count) {
+        return get(pollLastAsync(count));
+    }
+
+    @Override
+    public RFuture<Collection<V>> pollLastAsync(int count) {
+        return (RFuture<Collection<V>>) wrapLockedAsync(RedisCommands.RPOP_LIST, list.getRawName(), count);
+    }
+
+    @Override
+    public V pollLast(Duration duration) {
+        return get(pollLastAsync(duration));
+    }
+
+    @Override
+    public RFuture<V> pollLastAsync(Duration duration) {
+        CompletableFuture<V> result = new CompletableFuture<V>();
+        takeAsync(result, 0, duration.toMillis() * 1000, RedisCommands.RPOP, list.getRawName());
+        return new CompletableFutureWrapper<>(result);
+    }
+
+    @Override
+    public List<V> pollLast(Duration duration, int count) {
+        return get(pollLastAsync(duration, count));
+    }
+
+    @Override
+    public RFuture<List<V>> pollLastAsync(Duration duration, int count) {
+        CompletableFuture<V> result = new CompletableFuture<>();
+        takeAsync(result, 0, duration.toMillis() * 1000, RedisCommands.RPOP_LIST, list.getRawName(), count);
+        return new CompletableFutureWrapper<>((CompletableFuture<List<V>>) result);
+    }
+
     @Override
     public int size() {
         return list.size();
