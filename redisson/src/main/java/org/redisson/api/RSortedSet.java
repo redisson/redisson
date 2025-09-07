@@ -15,10 +15,8 @@
  */
 package org.redisson.api;
 
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.SortedSet;
+import java.time.Duration;
+import java.util.*;
 
 import org.redisson.api.mapreduce.RCollectionMapReduce;
 
@@ -42,7 +40,157 @@ public interface RSortedSet<V> extends SortedSet<V>, RExpirable {
     Collection<V> readAll();
     
     RFuture<Collection<V>> readAllAsync();
-    
+
+    /**
+     * Removes and returns the head element or {@code null} if this sorted set is empty.
+     *
+     * @return the head element,
+     *         or {@code null} if this sorted set is empty
+     */
+    V pollFirst();
+
+    /**
+     * Removes and returns the head elements of this sorted set.
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param count - elements amount
+     * @return the head elements of this sorted set
+     */
+    Collection<V> pollFirst(int count);
+
+    /**
+     * Removes and returns the head element or {@code null} if this sorted set is empty.
+     *
+     * @param duration how long to wait before giving up
+     * @return the head element,
+     *         or {@code null} if this sorted set is empty
+     */
+    V pollFirst(Duration duration);
+
+    /**
+     * Removes and returns the head elements.
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param duration how long to wait before giving up
+     * @param count elements amount
+     * @return the head elements
+     */
+    List<V> pollFirst(Duration duration, int count);
+
+    /**
+     * Removes and returns the head element or {@code null} if this sorted set is empty.
+     *
+     * @return the head element,
+     *         or {@code null} if this sorted set is empty
+     */
+    RFuture<V> pollFirstAsync();
+
+    /**
+     * Removes and returns the head elements of this sorted set.
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param count - elements amount
+     * @return the head elements of this sorted set
+     */
+    RFuture<Collection<V>> pollFirstAsync(int count);
+
+    /**
+     * Removes and returns the head element or {@code null} if this sorted set is empty.
+     *
+     * @param duration how long to wait before giving up
+     * @return the head element,
+     *         or {@code null} if this sorted set is empty
+     */
+    RFuture<V> pollFirstAsync(Duration duration);
+
+    /**
+     * Removes and returns the head elements.
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param duration how long to wait before giving up
+     * @param count elements amount
+     * @return the head elements
+     */
+    RFuture<List<V>> pollFirstAsync(Duration duration, int count);
+
+    /**
+     * Removes and returns the tail element or {@code null} if this sorted set is empty.
+     *
+     * @return the tail element or {@code null} if this sorted set is empty
+     */
+    V pollLast();
+
+    /**
+     * Removes and returns the tail elements of this sorted set.
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param count - elements amount
+     * @return the tail elements of this sorted set
+     */
+    Collection<V> pollLast(int count);
+
+    /**
+     * Removes and returns the tail element or {@code null} if this sorted set is empty.
+     *
+     * @param duration how long to wait before giving up
+     * @return the tail element,
+     *         or {@code null} if this sorted set is empty
+     */
+    V pollLast(Duration duration);
+
+    /**
+     * Removes and returns the tail elements.
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param duration how long to wait before giving up
+     * @param count elements amount
+     * @return the tail elements
+     */
+    List<V> pollLast(Duration duration, int count);
+
+    /**
+     * Removes and returns the tail element or {@code null} if this sorted set is empty.
+     *
+     * @return the tail element or {@code null} if this sorted set is empty
+     */
+    RFuture<V> pollLastAsync();
+
+    /**
+     * Removes and returns the tail elements of this sorted set.
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param count - elements amount
+     * @return the tail elements of this sorted set
+     */
+    RFuture<Collection<V>> pollLastAsync(int count);
+
+    /**
+     * Removes and returns the tail element or {@code null} if this sorted set is empty.
+     *
+     * @param duration how long to wait before giving up
+     * @return the tail element,
+     *         or {@code null} if this sorted set is empty
+     */
+    RFuture<V> pollLastAsync(Duration duration);
+
+    /**
+     * Removes and returns the tail elements.
+     * <p>
+     * Requires <b>Redis 7.0.0 and higher.</b>
+     *
+     * @param duration how long to wait before giving up
+     * @param count elements amount
+     * @return the tail elements
+     */
+    RFuture<List<V>> pollLastAsync(Duration duration, int count);
+
     RFuture<Boolean> addAsync(V value);
     
     RFuture<Boolean> removeAsync(Object value);
