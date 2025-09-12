@@ -122,8 +122,14 @@ public class RedissonReactiveStreamCommands extends RedissonBaseReactive impleme
 
             Mono<PendingResult> m = write(k, StringCodec.INSTANCE, RedisCommands.XPENDING, k, command.getGroupName());
             return m.map(v -> {
-                Range<String> range = Range.open(v.getLowestId().toString(), v.getHighestId().toString());
-                PendingMessagesSummary s = new PendingMessagesSummary(command.getGroupName(), v.getTotal(), range, v.getConsumerNames());
+                PendingMessagesSummary s;
+                if (v.getTotal() == 0) {
+                    s = new PendingMessagesSummary(command.getGroupName(), 0, Range.unbounded(), v.getConsumerNames());
+
+                } else {
+                    Range<String> range = Range.open(v.getLowestId().toString(), v.getHighestId().toString());
+                    s = new PendingMessagesSummary(command.getGroupName(), v.getTotal(), range, v.getConsumerNames());
+                }
                 return new ReactiveRedisConnection.CommandResponse<>(command, s);
             });
         });
@@ -140,6 +146,7 @@ public class RedissonReactiveStreamCommands extends RedissonBaseReactive impleme
 
             List<Object> params = new ArrayList<>();
             params.add(k);
+            params.add(command.getGroupName());
 
             params.add(((Range.Bound<String>)command.getRange().getLowerBound()).getValue().orElse("-"));
             params.add(((Range.Bound<String>)command.getRange().getUpperBound()).getValue().orElse("+"));

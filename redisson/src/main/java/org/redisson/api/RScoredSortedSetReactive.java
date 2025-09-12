@@ -188,7 +188,19 @@ public interface RScoredSortedSetReactive<V> extends RExpirableReactive, RSortab
      * @return the head element, 
      *         or {@code null} if this sorted set is empty
      */
+    @Deprecated
     Mono<V> pollFirst(long timeout, TimeUnit unit);
+
+    /**
+     * Removes and returns the head element or {@code null} if this sorted set is empty.
+     * <p>
+     * Requires <b>Redis 5.0.0 and higher.</b>
+     *
+     * @param duration how long to wait before giving up
+     * @return the head element,
+     *         or {@code null} if this sorted set is empty
+     */
+    Mono<V> pollFirst(Duration duration);
 
     /**
      * Removes and returns the head elements.
@@ -211,7 +223,18 @@ public interface RScoredSortedSetReactive<V> extends RExpirableReactive, RSortab
      *        {@code timeout} parameter
      * @return the tail element or {@code null} if this sorted set is empty
      */
+    @Deprecated
     Mono<V> pollLast(long timeout, TimeUnit unit);
+
+    /**
+     * Removes and returns the tail element or {@code null} if this sorted set is empty.
+     * <p>
+     * Requires <b>Redis 5.0.0 and higher.</b>
+     *
+     * @param duration how long to wait before giving up
+     * @return the tail element or {@code null} if this sorted set is empty
+     */
+    Mono<V> pollLast(Duration duration);
 
     /**
      * Removes and returns the tail elements.
