@@ -23,11 +23,13 @@ import org.redisson.misc.AsyncSemaphore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Deque;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.function.Function;
 
 /**
@@ -40,7 +42,7 @@ public class ConnectionsHolder<T extends RedisConnection> {
     final Logger log = LoggerFactory.getLogger(getClass());
 
     private final Queue<T> allConnections = new ConcurrentLinkedQueue<>();
-    private final Queue<T> freeConnections = new ConcurrentLinkedQueue<>();
+    private final Deque<T> freeConnections = new ConcurrentLinkedDeque<>();
     private final AsyncSemaphore freeConnectionsCounter;
 
     private final RedisClient client;
@@ -108,7 +110,7 @@ public class ConnectionsHolder<T extends RedisConnection> {
         }
 
         connection.setLastUsageTime(System.nanoTime());
-        freeConnections.add(connection);
+        freeConnections.addFirst(connection);
         if (changeUsage) {
             connection.decUsage();
         }
