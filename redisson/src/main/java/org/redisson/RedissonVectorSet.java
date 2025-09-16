@@ -247,9 +247,6 @@ public final class RedissonVectorSet extends RedissonExpirable implements RVecto
     public RFuture<List<ScoreAttributesEntry<String>>> getSimilarScoreAttributesEntriesAsync(VectorSimilarArgs vargs) {
         VectorSimilarParams prms = (VectorSimilarParams) vargs;
         List<Object> args = createArgs(prms, true, true);
-        if (getServiceManager().isResp3()) {
-            return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.VSIM_WITHSCORESATTRIBS_V2, args.toArray());
-        }
         return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.VSIM_WITHSCORESATTRIBS, args.toArray());
     }
 

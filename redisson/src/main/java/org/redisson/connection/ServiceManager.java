@@ -665,6 +665,7 @@ public final class ServiceManager {
         RESP3MAPPING.put(RedisCommands.XREAD_BLOCKING, RedisCommands.XREAD_BLOCKING_V2);
         RESP3MAPPING.put(RedisCommands.XREAD, RedisCommands.XREAD_V2);
         RESP3MAPPING.put(RedisCommands.HRANDFIELD, RedisCommands.HRANDFIELD_V2);
+        RESP3MAPPING.put(RedisCommands.VSIM_WITHSCORESATTRIBS, RedisCommands.VSIM_WITHSCORESATTRIBS_V2);
     }
 
     public <R> RedisCommand<R> resp3(RedisCommand<R> command) {
