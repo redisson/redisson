@@ -1,7 +1,9 @@
 package org.redisson;
 
+import org.joor.Reflect;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.redisson.api.NameMapper;
 import org.redisson.api.RLock;
 import org.redisson.api.RScript;
 import org.redisson.api.RedissonClient;
@@ -965,6 +967,35 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
         }
 
         await().atMost(45, TimeUnit.SECONDS).until(() -> lockedCounter.get() == totalThreads);
+    }
+
+    @Test
+    public void testNameMapper() {
+        Config config = redisson.getConfig();
+        config.useSingleServer()
+                .setNameMapper(new NameMapper() {
+                    @Override
+                    public String map(String name) {
+                        return "test::" + name;
+                    }
+
+                    @Override
+                    public String unmap(String name) {
+                        return name.replace("test::", "");
+                    }
+                });
+
+        RedissonClient redisson = Redisson.create(config);
+
+        RLock lock = redisson.getFairLock("lock");
+        String threadsQueueName = Reflect.on(lock).get("threadsQueueName");
+        Assertions.assertTrue(threadsQueueName.contains("test::lock"));
+
+        Assertions.assertFalse(lock.isLocked());
+        lock.lock();
+        Assertions.assertTrue(lock.isLocked());
+        lock.unlock();
+        Assertions.assertFalse(lock.isLocked());
     }
 
 
