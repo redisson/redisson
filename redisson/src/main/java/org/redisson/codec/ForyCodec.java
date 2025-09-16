@@ -45,7 +45,7 @@ import java.util.Set;
  */
 public class ForyCodec extends BaseCodec {
 
-    private final ThreadSafeFory fury;
+    private final ThreadSafeFory fory;
     private final Set<String> allowedClasses;
     private final Language language;
 
@@ -83,15 +83,19 @@ public class ForyCodec extends BaseCodec {
         }
         builder.withLanguage(language);
         builder.requireClassRegistration(!allowedClasses.isEmpty());
-        fury = builder.buildThreadSafeForyPool(10, 512);
+        fory = create(builder);
 
         for (String allowedClass : allowedClasses) {
             try {
-                fury.register(Class.forName(allowedClass));
+                fory.register(Class.forName(allowedClass));
             } catch (ClassNotFoundException e) {
                 throw new IllegalStateException(e);
             }
         }
+    }
+
+    protected ThreadSafeFory create(ForyBuilder builder) {
+        return builder.buildThreadSafeForyPool(10, 512);
     }
 
     private final Decoder<Object> decoder = new Decoder<Object>() {
@@ -100,12 +104,12 @@ public class ForyCodec extends BaseCodec {
             if (buf.nioBufferCount() == 1) {
                 MemoryBuffer furyBuffer = MemoryUtils.wrap(buf.nioBuffer());
                 try {
-                    return fury.deserialize(furyBuffer);
+                    return fory.deserialize(furyBuffer);
                 } finally {
                     buf.readerIndex(buf.readerIndex() + furyBuffer.readerIndex());
                 }
             } else {
-                return fury.deserialize(ForyStreamReader.of(new ByteBufInputStream(buf)));
+                return fory.deserialize(ForyStreamReader.of(new ByteBufInputStream(buf)));
             }
         }
     };
@@ -124,7 +128,7 @@ public class ForyCodec extends BaseCodec {
             }
             if (furyBuffer != null) {
                 int size = furyBuffer.size();
-                fury.serialize(furyBuffer, in);
+                fory.serialize(furyBuffer, in);
                 if (furyBuffer.size() > size) {
                     out.writeBytes(furyBuffer.getHeapMemory(), 0, furyBuffer.size());
                 } else {
@@ -134,7 +138,7 @@ public class ForyCodec extends BaseCodec {
             } else {
                 try {
                     ByteBufOutputStream baos = new ByteBufOutputStream(out);
-                    fury.serialize(baos, in);
+                    fory.serialize(baos, in);
                     return baos.buffer();
                 } catch (Exception e) {
                     out.release();
