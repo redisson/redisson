@@ -604,9 +604,6 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public RFuture<ScoredEntry<V>> firstEntryAsync() {
-        if (getServiceManager().isResp3()) {
-            return commandExecutor.readAsync(getRawName(), codec, RedisCommands.ZRANGE_SINGLE_ENTRY_V2, getRawName(), 0, 0, "WITHSCORES");
-        }
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.ZRANGE_SINGLE_ENTRY, getRawName(), 0, 0, "WITHSCORES");
     }
 
@@ -627,9 +624,6 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public RFuture<ScoredEntry<V>> lastEntryAsync() {
-        if (getServiceManager().isResp3()) {
-            return commandExecutor.readAsync(getRawName(), codec, RedisCommands.ZRANGE_SINGLE_ENTRY_V2, getRawName(), -1, -1, "WITHSCORES");
-        }
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.ZRANGE_SINGLE_ENTRY, getRawName(), -1, -1, "WITHSCORES");
     }
 
@@ -1239,9 +1233,6 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public RFuture<Collection<ScoredEntry<V>>> entryRangeAsync(int startIndex, int endIndex) {
-        if (getServiceManager().isResp3()) {
-            return commandExecutor.readAsync(getRawName(), codec, RedisCommands.ZRANGE_ENTRY_V2, getRawName(), startIndex, endIndex, "WITHSCORES");
-        }
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.ZRANGE_ENTRY, getRawName(), startIndex, endIndex, "WITHSCORES");
     }
 
@@ -1252,9 +1243,6 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     
     @Override
     public RFuture<Collection<ScoredEntry<V>>> entryRangeReversedAsync(int startIndex, int endIndex) {
-        if (getServiceManager().isResp3()) {
-            return commandExecutor.readAsync(getRawName(), codec, RedisCommands.ZREVRANGE_ENTRY_V2, getRawName(), startIndex, endIndex, "WITHSCORES");
-        }
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.ZREVRANGE_ENTRY, getRawName(), startIndex, endIndex, "WITHSCORES");
     }
 
@@ -1335,9 +1323,6 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     public RFuture<Collection<ScoredEntry<V>>> entryRangeAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count) {
         String startValue = value(startScore, startScoreInclusive);
         String endValue = value(endScore, endScoreInclusive);
-        if (getServiceManager().isResp3()) {
-            return commandExecutor.readAsync(getRawName(), codec, RedisCommands.ZRANGEBYSCORE_ENTRY_V2, getRawName(), startValue, endValue, "WITHSCORES", "LIMIT", offset, count);
-        }
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.ZRANGEBYSCORE_ENTRY, getRawName(), startValue, endValue, "WITHSCORES", "LIMIT", offset, count);
     }
 
@@ -1352,9 +1337,6 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
             double endScore, boolean endScoreInclusive) {
         String startValue = value(startScore, startScoreInclusive);
         String endValue = value(endScore, endScoreInclusive);
-        if (getServiceManager().isResp3()) {
-            return commandExecutor.readAsync(getRawName(), codec, RedisCommands.ZREVRANGEBYSCORE_ENTRY_V2, getRawName(), endValue, startValue, "WITHSCORES");
-        }
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.ZREVRANGEBYSCORE_ENTRY, getRawName(), endValue, startValue, "WITHSCORES");
     }
     
@@ -1362,9 +1344,6 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     public RFuture<Collection<ScoredEntry<V>>> entryRangeReversedAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count) {
         String startValue = value(startScore, startScoreInclusive);
         String endValue = value(endScore, endScoreInclusive);
-        if (getServiceManager().isResp3()) {
-            return commandExecutor.readAsync(getRawName(), codec, RedisCommands.ZREVRANGEBYSCORE_ENTRY_V2, getRawName(), endValue, startValue, "WITHSCORES", "LIMIT", offset, count);
-        }
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.ZREVRANGEBYSCORE_ENTRY, getRawName(), endValue, startValue, "WITHSCORES", "LIMIT", offset, count);
     }
 
@@ -1596,10 +1575,6 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         params.add("AGGREGATE");
         params.add(sip.getAggregate().name());
         params.add("WITHSCORES");
-        if (getServiceManager().isResp3()) {
-            return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.ZINITER_ENTRY_V2, params.toArray());
-        }
-
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.ZINITER_ENTRY, params.toArray());
     }
 
@@ -1808,10 +1783,6 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         params.add("AGGREGATE");
         params.add(sup.getAggregate().name());
         params.add("WITHSCORES");
-        if (getServiceManager().isResp3()) {
-            return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.ZUNION_ENTRY_V2, params.toArray());
-        }
-
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.ZUNION_ENTRY, params.toArray());
     }
 
@@ -2076,10 +2047,6 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         args.add(getRawName());
         args.addAll(map(names));
         args.add("WITHSCORES");
-        if (getServiceManager().isResp3()) {
-            return commandExecutor.readAsync(getRawName(), codec, RedisCommands.ZDIFF_ENTRY_V2, args.toArray());
-        }
-
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.ZDIFF_ENTRY, args.toArray());
     }
 
