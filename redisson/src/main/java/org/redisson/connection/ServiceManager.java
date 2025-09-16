@@ -665,6 +665,15 @@ public final class ServiceManager {
         RESP3MAPPING.put(RedisCommands.XREAD_BLOCKING, RedisCommands.XREAD_BLOCKING_V2);
         RESP3MAPPING.put(RedisCommands.XREAD, RedisCommands.XREAD_V2);
         RESP3MAPPING.put(RedisCommands.HRANDFIELD, RedisCommands.HRANDFIELD_V2);
+
+        RESP3MAPPING.put(RedisCommands.ZRANGE_SINGLE_ENTRY, RedisCommands.ZRANGE_SINGLE_ENTRY_V2);
+        RESP3MAPPING.put(RedisCommands.ZRANGE_ENTRY, RedisCommands.ZRANGE_ENTRY_V2);
+        RESP3MAPPING.put(RedisCommands.ZREVRANGE_ENTRY, RedisCommands.ZREVRANGE_ENTRY_V2);
+        RESP3MAPPING.put(RedisCommands.ZRANGEBYSCORE_ENTRY, RedisCommands.ZRANGEBYSCORE_ENTRY_V2);
+        RESP3MAPPING.put(RedisCommands.ZREVRANGEBYSCORE_ENTRY, RedisCommands.ZREVRANGEBYSCORE_ENTRY_V2);
+        RESP3MAPPING.put(RedisCommands.ZINITER_ENTRY, RedisCommands.ZINITER_ENTRY_V2);
+        RESP3MAPPING.put(RedisCommands.ZUNION_ENTRY, RedisCommands.ZUNION_ENTRY_V2);
+        RESP3MAPPING.put(RedisCommands.ZDIFF_ENTRY, RedisCommands.ZDIFF_ENTRY_V2);
     }
 
     public <R> RedisCommand<R> resp3(RedisCommand<R> command) {
