@@ -62,6 +62,13 @@ public interface VectorSimilarArgs {
     VectorSimilarArgs count(int count);
 
     /**
+     * Defines the distance that is no further than the specified delta.
+     *
+     * @param value a floating point number between 0 and 1.
+     * @return arguments object
+     */
+    VectorSimilarArgs epsilon(double value);
+    /**
      * Defines the exploration factor (EF).
      *
      * @param value exploration factor value

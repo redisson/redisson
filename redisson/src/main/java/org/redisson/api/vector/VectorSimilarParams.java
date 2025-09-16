@@ -26,6 +26,7 @@ public final class VectorSimilarParams implements VectorSimilarArgs {
     private final byte[] vectorBytes;
     private final Double[] vectorDoubles;
     private Integer count;
+    private Double epsilon;
     private Integer effort;
     private String filter;
     private Integer filterEffort;
@@ -53,6 +54,12 @@ public final class VectorSimilarParams implements VectorSimilarArgs {
     @Override
     public VectorSimilarArgs count(int count) {
         this.count = count;
+        return this;
+    }
+
+    @Override
+    public VectorSimilarArgs epsilon(double value) {
+        this.epsilon = value;
         return this;
     }
 
@@ -100,6 +107,10 @@ public final class VectorSimilarParams implements VectorSimilarArgs {
 
     public Integer getCount() {
         return count;
+    }
+
+    public Double getEpsilon() {
+        return epsilon;
     }
 
     public Integer getEffort() {

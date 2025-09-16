@@ -21,6 +21,7 @@ import io.reactivex.rxjava3.core.Maybe;
 import org.redisson.api.vector.VectorAddArgs;
 import org.redisson.api.vector.VectorInfo;
 import org.redisson.api.vector.VectorSimilarArgs;
+import org.redisson.client.protocol.ScoreAttributesEntry;
 import org.redisson.client.protocol.ScoredEntry;
 import io.reactivex.rxjava3.core.Single;
 
@@ -150,4 +151,12 @@ public interface RVectorSetRx extends RExpirableRx {
      * @return list of similar element names with scores
      */
     Single<List<ScoredEntry<String>>> getSimilarEntries(VectorSimilarArgs args);
+
+    /**
+     * Retrieves element names with scores and attributes similar to a given vector or element
+     *
+     * @param args similarity arguments
+     * @return list of similar element names with scores and attributes
+     */
+    Single<List<ScoreAttributesEntry<String>>> getSimilarScoreAttributesEntries(VectorSimilarArgs args);
 }

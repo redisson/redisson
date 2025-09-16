@@ -9,6 +9,7 @@ import org.redisson.api.vector.VectorAddArgs;
 import org.redisson.api.vector.VectorInfo;
 import org.redisson.api.vector.VectorSimilarArgs;
 import org.redisson.client.RedisException;
+import org.redisson.client.protocol.ScoreAttributesEntry;
 import org.redisson.client.protocol.ScoredEntry;
 
 import java.util.List;
@@ -328,6 +329,30 @@ public class RedissonVectorSetTest extends RedisDockerTest {
         Assertions.assertThrows(RedisException.class, () -> {
             vectorSet.getSimilarEntries(VectorSimilarArgs.element("NON_EXISTENT").count(2));
         });
+    }
+
+    @Test
+    public void testGetSimilarScoreAttributesEntries() {
+
+        TestAttributes attrs = new TestAttributes("test attribute", 100);
+
+        boolean result = vectorSet.add(VectorAddArgs.element("F").vector(0.5, 0.5).attributes(attrs));
+        assertThat(result).isTrue();
+
+        List<ScoreAttributesEntry<String>> similarTo = vectorSet.getSimilarScoreAttributesEntries(VectorSimilarArgs.element("F").count(4).epsilon(0.2));
+
+        assertThat(similarTo).hasSize(2);
+
+        for (ScoreAttributesEntry<String> entry : similarTo) {
+            assertThat(entry.getScore()).isGreaterThan(0.8);
+
+            if (entry.getValue().equals("F")) {
+                assertThat(entry.getAttributes()).isNotNull();
+            } else {
+                assertThat(entry.getAttributes()).isNull();
+            }
+        }
+
     }
 
     @Test
