@@ -611,7 +611,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                                 ns = new NodeSource(nodeSource, executor.getRedisClient());
                             }
 
-                            RFuture<R> future = async(readOnlyMode, ns, codec, cmd, newargs.toArray(), false, noRetry);
+                            RFuture<R> future = asyncNoScript(readOnlyMode, ns, codec, cmd, newargs.toArray(), false, noRetry);
                             transfer(future.toCompletableFuture(), mainPromise);
                         });
                     } else {
@@ -634,6 +634,11 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         args.addAll(keys);
         args.addAll(Arrays.asList(params));
         return async(readOnlyMode, nodeSource, codec, evalCommandType, args.toArray(), false, noRetry);
+    }
+
+    protected <V, R> RFuture<R> asyncNoScript(boolean readOnlyMode, NodeSource source, Codec codec,
+                                              RedisCommand<V> command, Object[] params, boolean ignoreRedirect, boolean noRetry) {
+        return async(readOnlyMode, source, codec, command, params, ignoreRedirect, noRetry);
     }
 
     @Override
@@ -1077,30 +1082,44 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         }
         CompletionStage<T> resFuture = waitFuture.handle((r2, ex2) -> {
             if (ex2 != null) {
-                List<String> commands = new ArrayList<>(Arrays.asList(RedisCommands.WAIT.getName(), RedisCommands.WAITAOF.getName()));
+                List<String> commands = new ArrayList<>(Arrays.asList(RedisCommands.WAITAOF.getName(), RedisCommands.WAIT.getName()));
 
                 List<String> msgs = new ArrayList<>(2);
-                msgs.add(ex2.getMessage());
+                if (ex2.getCause() != null) {
+                    msgs.add(ex2.getCause().getMessage());
+                } else {
+                    msgs.add(ex2.getMessage());
+                }
                 for (Throwable throwable : ex2.getSuppressed()) {
-                    msgs.add(throwable.getMessage());
+                    if (throwable.getCause() != null) {
+                        msgs.add(throwable.getCause().getMessage());
+                    } else {
+                        msgs.add(throwable.getMessage());
+                    }
                 }
 
                 for (String msg : msgs) {
-                    for (String command : commands) {
+                    Iterator<String> iterator = commands.iterator();
+                    while (iterator.hasNext()) {
+                        String command = iterator.next();
                         if (msg.startsWith("ERR unknown command")
                                 && msg.toUpperCase().contains(command)) {
-                            commands.remove(command);
+                            iterator.remove();
                             break;
                         }
                     }
                 }
 
-                if (ex2.getMessage().startsWith("ERR unknown command")) {
+                if (commands.size() == 2) {
+                    throw new CompletionException(ex2);
+                } else {
                     waitSupportedCommands = commands;
+                }
+
+                if (commands.isEmpty()) {
                     CompletionStage<T> f = evalWriteAsync(key, codec, evalCommandType, script, keys, params);
                     return f;
                 }
-                throw new CompletionException(ex2);
             }
 
             if (waitSupportedCommands == null) {
@@ -1127,8 +1146,18 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             }
 
             CompletionStage<T> resultFuture = replicationFuture.thenCompose(r -> {
-                int availableSlaves = Integer.parseInt(r.getOrDefault("connected_slaves", "0"));
-                boolean aofEnabled = "1".equals(r.getOrDefault("aof_enabled", "0"));
+                int availableSlaves;
+                boolean aofEnabled;
+                if (waitSupportedCommands.contains(RedisCommands.WAIT.getName())) {
+                    availableSlaves = Integer.parseInt(r.getOrDefault("connected_slaves", "0"));
+                } else {
+                    availableSlaves = 0;
+                }
+                if (waitSupportedCommands.contains(RedisCommands.WAITAOF.getName())) {
+                    aofEnabled = "1".equals(r.getOrDefault("aof_enabled", "0"));
+                } else {
+                    aofEnabled = false;
+                }
                 e.setAvailableSlaves(availableSlaves);
                 e.setAofEnabled(aofEnabled);
 
