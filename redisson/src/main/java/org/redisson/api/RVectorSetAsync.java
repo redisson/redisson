@@ -19,6 +19,7 @@ import java.util.List;
 import org.redisson.api.vector.VectorAddArgs;
 import org.redisson.api.vector.VectorInfo;
 import org.redisson.api.vector.VectorSimilarArgs;
+import org.redisson.client.protocol.ScoreAttributesEntry;
 import org.redisson.client.protocol.ScoredEntry;
 
 /**
@@ -147,4 +148,12 @@ public interface RVectorSetAsync extends RExpirableAsync {
      * @return list of similar element names with scores
      */
     RFuture<List<ScoredEntry<String>>> getSimilarEntriesAsync(VectorSimilarArgs args);
+
+    /**
+     * Retrieves element names with scores and attributes similar to a given vector or element
+     *
+     * @param args similarity arguments
+     * @return list of similar element names with scores and attributes
+     */
+    RFuture<List<ScoreAttributesEntry<String>>> getSimilarEntriesWithAttributesAsync(VectorSimilarArgs args);
 }
