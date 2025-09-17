@@ -84,6 +84,18 @@ public interface RedisCommands {
     RedisCommand<Boolean> VSETATTR = new RedisCommand<>("VSETATTR", new BooleanReplayConvertor());
     RedisCommand<List<String>> VSIM = new RedisCommand<>("VSIM", new ListMultiDecoder2(new StringListReplayDecoder()));
     RedisCommand<List<ScoredEntry<String>>> VSIM_WITHSCORES = new RedisCommand<>("VSIM", new ScoredSortedSetReplayDecoder());
+    RedisCommand<List<ScoreAttributesEntry<String>>> VSIM_WITHSCORESATTRIBS = new RedisCommand<>("VSIM", new ScoredAttributesReplayDecoder());
+    RedisCommand<List<ScoreAttributesEntry<String>>> VSIM_WITHSCORESATTRIBS_V2 = new RedisCommand("VSIM",
+            new ListMultiDecoder2(new ScoredAttributesReplayDecoderV2<>(),
+                    new CodecDecoder() {
+                        @Override
+                        public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
+                            if (paramNum % 2 == 0) {
+                                return DoubleCodec.INSTANCE.getValueDecoder();
+                            }
+                            return codec.getValueDecoder();
+                        }
+                    }));
 
     RedisStrictCommand<Void> DEBUG = new RedisStrictCommand<Void>("DEBUG");
     

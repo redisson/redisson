@@ -23,14 +23,12 @@ import org.redisson.api.vector.*;
 import org.redisson.client.codec.DoubleCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.ScoreAttributesEntry;
 import org.redisson.client.protocol.ScoredEntry;
 import org.redisson.codec.TypedJsonJacksonCodec;
 import org.redisson.command.CommandAsyncExecutor;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 /**
  *
@@ -223,7 +221,7 @@ public final class RedissonVectorSet extends RedissonExpirable implements RVecto
     public RFuture<List<String>> getSimilarAsync(VectorSimilarArgs vargs) {
         VectorSimilarParams prms = (VectorSimilarParams) vargs;
 
-        List<Object> args = createArgs(prms, false);
+        List<Object> args = createArgs(prms, false, false);
 
         return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.VSIM, args.toArray());
     }
@@ -236,12 +234,23 @@ public final class RedissonVectorSet extends RedissonExpirable implements RVecto
     public RFuture<List<ScoredEntry<String>>> getSimilarEntriesAsync(VectorSimilarArgs vargs) {
         VectorSimilarParams prms = (VectorSimilarParams) vargs;
 
-        List<Object> args = createArgs(prms, true);
+        List<Object> args = createArgs(prms, true, false);
 
         return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.VSIM_WITHSCORES, args.toArray());
     }
 
-    private List<Object> createArgs(VectorSimilarParams prms, boolean withscores) {
+    @Override
+    public List<ScoreAttributesEntry<String>> getSimilarEntriesWithAttributes(VectorSimilarArgs args) {
+        return get(getSimilarEntriesWithAttributesAsync(args));
+    }
+
+    public RFuture<List<ScoreAttributesEntry<String>>> getSimilarEntriesWithAttributesAsync(VectorSimilarArgs vargs) {
+        VectorSimilarParams prms = (VectorSimilarParams) vargs;
+        List<Object> args = createArgs(prms, true, true);
+        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.VSIM_WITHSCORESATTRIBS, args.toArray());
+    }
+
+    private List<Object> createArgs(VectorSimilarParams prms, boolean withscores, boolean withattribs) {
         List<Object> args = new ArrayList<>();
         args.add(getName());
 
@@ -261,9 +270,18 @@ public final class RedissonVectorSet extends RedissonExpirable implements RVecto
             args.add("WITHSCORES");
         }
 
+        if (withattribs) {
+            args.add("WITHATTRIBS");
+        }
+
         if (prms.getCount() != null) {
             args.add("COUNT");
             args.add(prms.getCount());
+        }
+
+        if (prms.getEpsilon() != null) {
+            args.add("EPSILON");
+            args.add(prms.getEpsilon());
         }
 
         if (prms.getEffort() != null) {

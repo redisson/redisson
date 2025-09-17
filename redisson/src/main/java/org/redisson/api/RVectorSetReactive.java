@@ -19,6 +19,7 @@ import java.util.List;
 import org.redisson.api.vector.VectorAddArgs;
 import org.redisson.api.vector.VectorInfo;
 import org.redisson.api.vector.VectorSimilarArgs;
+import org.redisson.client.protocol.ScoreAttributesEntry;
 import org.redisson.client.protocol.ScoredEntry;
 import reactor.core.publisher.Mono;
 
@@ -148,4 +149,12 @@ public interface RVectorSetReactive extends RExpirableReactive {
      * @return list of similar element names with scores
      */
     Mono<List<ScoredEntry<String>>> getSimilarEntries(VectorSimilarArgs args);
+
+    /**
+     * Retrieves element names with scores and attributes similar to a given vector or element
+     *
+     * @param args similarity arguments
+     * @return list of similar element names with scores and attributes
+     */
+    Mono<List<ScoreAttributesEntry<String>>> getSimilarEntriesWithAttributes(VectorSimilarArgs args);
 }
