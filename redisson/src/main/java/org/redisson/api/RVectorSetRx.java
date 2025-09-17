@@ -158,5 +158,5 @@ public interface RVectorSetRx extends RExpirableRx {
      * @param args similarity arguments
      * @return list of similar element names with scores and attributes
      */
-    Single<List<ScoreAttributesEntry<String>>> getSimilarScoreAttributesEntries(VectorSimilarArgs args);
+    Single<List<ScoreAttributesEntry<String>>> getSimilarEntriesWithAttributes(VectorSimilarArgs args);
 }

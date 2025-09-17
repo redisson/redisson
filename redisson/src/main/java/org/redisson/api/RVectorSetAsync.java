@@ -155,5 +155,5 @@ public interface RVectorSetAsync extends RExpirableAsync {
      * @param args similarity arguments
      * @return list of similar element names with scores and attributes
      */
-    RFuture<List<ScoreAttributesEntry<String>>> getSimilarScoreAttributesEntriesAsync(VectorSimilarArgs args);
+    RFuture<List<ScoreAttributesEntry<String>>> getSimilarEntriesWithAttributesAsync(VectorSimilarArgs args);
 }

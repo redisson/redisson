@@ -157,5 +157,5 @@ public interface RVectorSet extends RExpirable, RVectorSetAsync {
      * @param args similarity arguments
      * @return list of similar element names with scores and attributes
      */
-    List<ScoreAttributesEntry<String>> getSimilarScoreAttributesEntries(VectorSimilarArgs args);
+    List<ScoreAttributesEntry<String>> getSimilarEntriesWithAttributes(VectorSimilarArgs args);
 }

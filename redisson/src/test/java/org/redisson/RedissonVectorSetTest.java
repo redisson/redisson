@@ -332,14 +332,14 @@ public class RedissonVectorSetTest extends RedisDockerTest {
     }
 
     @Test
-    public void testGetSimilarScoreAttributesEntries() {
+    public void testGetSimilarEntriesWithAttributes() {
 
         TestAttributes attrs = new TestAttributes("test attribute", 100);
 
         boolean result = vectorSet.add(VectorAddArgs.element("F").vector(0.5, 0.5).attributes(attrs));
         assertThat(result).isTrue();
 
-        List<ScoreAttributesEntry<String>> similarTo = vectorSet.getSimilarScoreAttributesEntries(VectorSimilarArgs.element("F").count(4).epsilon(0.2));
+        List<ScoreAttributesEntry<String>> similarTo = vectorSet.getSimilarEntriesWithAttributes(VectorSimilarArgs.element("F").count(4).epsilon(0.2));
 
         assertThat(similarTo).hasSize(2);
 

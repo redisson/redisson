@@ -156,5 +156,5 @@ public interface RVectorSetReactive extends RExpirableReactive {
      * @param args similarity arguments
      * @return list of similar element names with scores and attributes
      */
-    Mono<List<ScoreAttributesEntry<String>>> getSimilarScoreAttributesEntries(VectorSimilarArgs args);
+    Mono<List<ScoreAttributesEntry<String>>> getSimilarEntriesWithAttributes(VectorSimilarArgs args);
 }
