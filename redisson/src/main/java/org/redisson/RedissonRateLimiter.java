@@ -262,6 +262,61 @@ public final class RedissonRateLimiter extends RedissonExpirable implements RRat
                 value, System.currentTimeMillis(), random);
     }
 
+
+    @Override
+    public RFuture<Void> releaseAsync(long permits) {
+        if (permits < 0) {
+            throw new IllegalArgumentException("Permits amount can't be negative");
+        }
+        if (permits == 0) {
+            return new CompletableFutureWrapper<>((Void) null);
+        }
+        return commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
+                "local rate = redis.call('hget', KEYS[1], 'rate');"
+                + "local interval = redis.call('hget', KEYS[1], 'interval');"
+                + "local type = redis.call('hget', KEYS[1], 'type');"
+                + "assert(rate ~= false and interval ~= false and type ~= false, 'RateLimiter is not initialized');"
+
+                + "local valueName = KEYS[2];"
+                + "local permitsName = KEYS[4];"
+                + "if type == '1' then "
+                + "    valueName = KEYS[3];"
+                + "    permitsName = KEYS[5];"
+                + "end;"
+
+                + "local currentValue = redis.call('get', valueName);"
+                + "if currentValue == false then "
+                + "    currentValue = tonumber(rate);"
+                + "else "
+                + "    currentValue = tonumber(currentValue);"
+                + "end;"
+
+                + "local newValue = currentValue + tonumber(ARGV[1]);"
+                + "if newValue > tonumber(rate) then "
+                + "    newValue = tonumber(rate);"
+                + "end;"
+                + "redis.call('set', valueName, newValue);"
+
+                + "local keepAliveTime = redis.call('hget', KEYS[1], 'keepAliveTime');"
+                + "if (keepAliveTime ~= false and tonumber(keepAliveTime) > 0) then "
+                + "    redis.call('pexpire', KEYS[1], keepAliveTime);"
+                + "    redis.call('pexpire', valueName, keepAliveTime);"
+                + "    redis.call('pexpire', permitsName, keepAliveTime);"
+                + "else "
+                + "    local ttl = redis.call('pttl', KEYS[1]);"
+                + "    if ttl > 0 then "
+                + "        redis.call('pexpire', valueName, ttl);"
+                + "        redis.call('pexpire', permitsName, ttl);"
+                + "    end;"
+                + "end;",
+                Arrays.asList(getRawName(), getValueName(), getClientValueName(), getPermitsName(), getClientPermitsName()), permits);
+    }
+
+    @Override
+    public void release(long permits) {
+        get(releaseAsync(permits));
+    }
+
     @Override
     public boolean trySetRate(RateType type, long rate, long rateInterval, RateIntervalUnit unit) {
         return get(trySetRateAsync(type, rate, rateInterval, unit));

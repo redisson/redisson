@@ -13,6 +13,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 public class RedissonRateLimiterTest extends RedisDockerTest {
 
@@ -366,5 +367,62 @@ public class RedissonRateLimiterTest extends RedisDockerTest {
         //clean all keys in test
         redisson.getKeys().deleteByPattern("*test_change_rate*");
     }
-    
+
+    @Test
+    public void testRelease() {
+        RRateLimiter rateLimiter = redisson.getRateLimiter("test_release");
+
+        // ============================
+        // PER_CLIENT
+        // ============================
+        rateLimiter.setRate(RateType.PER_CLIENT, 10, Duration.ofSeconds(1));
+        assertThat(rateLimiter.getConfig().getRate()).isEqualTo(10);
+
+        // acquire 3
+        rateLimiter.acquire(3);
+        assertThat(rateLimiter.availablePermits()).isEqualTo(7); // 10 - 3 = 7
+
+        // release 3
+        rateLimiter.release(3);
+        assertThat(rateLimiter.availablePermits()).isEqualTo(10); // 7 + 3 = 10
+
+        // release 10
+        rateLimiter.release(10);
+        assertThat(rateLimiter.availablePermits()).isEqualTo(10); // max 10
+
+        // release 0
+        rateLimiter.release(0);
+        assertThat(rateLimiter.availablePermits()).isEqualTo(10); // 10
+
+        // release -1
+        assertThatThrownBy(() -> rateLimiter.release(-1)).isInstanceOf(IllegalArgumentException.class);
+
+        // ============================
+        // OVERALL
+        // ============================
+        rateLimiter.setRate(RateType.OVERALL, 10, Duration.ofSeconds(1));
+        assertThat(rateLimiter.getConfig().getRate()).isEqualTo(10);
+
+        // acquire 3
+        rateLimiter.acquire(3);
+        assertThat(rateLimiter.availablePermits()).isEqualTo(7); // 10 - 3 = 7
+
+        // release 3
+        rateLimiter.release(3);
+        assertThat(rateLimiter.availablePermits()).isEqualTo(10); // 7 + 3 = 10
+
+        // release 10
+        rateLimiter.release(10);
+        assertThat(rateLimiter.availablePermits()).isEqualTo(10); // max 10
+
+        // release 0
+        rateLimiter.release(0);
+        assertThat(rateLimiter.availablePermits()).isEqualTo(10); // 10
+
+        // release -1
+        assertThatThrownBy(() -> rateLimiter.release(-1)).isInstanceOf(IllegalArgumentException.class);
+
+        // clean
+        redisson.getKeys().deleteByPattern("*test_release*");
+    }
 }
