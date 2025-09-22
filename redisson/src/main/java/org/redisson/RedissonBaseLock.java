@@ -154,11 +154,12 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
 
     @Override
     public RFuture<Void> unlockAsync(long threadId) {
-        return getServiceManager().execute(() -> unlockAsync0(threadId));
+        String requestId = getServiceManager().generateId();
+        return getServiceManager().execute(() -> unlockAsync0(threadId, requestId));
     }
 
-    private RFuture<Void> unlockAsync0(long threadId) {
-        CompletionStage<Boolean> future = unlockInnerAsync(threadId);
+    private RFuture<Void> unlockAsync0(long threadId, String requestId) {
+        CompletionStage<Boolean> future = unlockInnerAsync(threadId, requestId);
         CompletionStage<Void> f = future.handle((res, e) -> {
             cancelExpirationRenewal(threadId, res);
 
@@ -214,12 +215,14 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
 
     protected abstract RFuture<Boolean> unlockInnerAsync(long threadId, String requestId, int timeout);
 
-    protected final RFuture<Boolean> unlockInnerAsync(long threadId) {
-        String id = getServiceManager().generateId();
+    protected final RFuture<Boolean> unlockInnerAsync(long threadId, String requestId) {
+        if (requestId == null) {
+            requestId = getServiceManager().generateId();
+        }
         MasterSlaveServersConfig config = getServiceManager().getConfig();
         long timeout = (config.getTimeout() + config.getRetryDelay().calcDelay(config.getRetryAttempts()).toMillis()) * config.getRetryAttempts();
         timeout = Math.max(timeout, 1);
-        RFuture<Boolean> r = unlockInnerAsync(threadId, id, (int) timeout);
+        RFuture<Boolean> r = unlockInnerAsync(threadId, requestId, (int) timeout);
         CompletionStage<Boolean> ff = r.thenApply(v -> {
             CommandAsyncExecutor ce = commandExecutor;
             if (ce instanceof CommandBatchService) {
@@ -267,7 +270,7 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
     }
 
     protected final <T> CompletionStage<T> handleNoSync(long threadId, CompletionStage<T> ttlRemainingFuture) {
-        return commandExecutor.handleNoSync(ttlRemainingFuture, e -> unlockInnerAsync(threadId));
+        return commandExecutor.handleNoSync(ttlRemainingFuture, e -> unlockInnerAsync(threadId, null));
     }
 
     @Override

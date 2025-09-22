@@ -593,6 +593,9 @@ public final class ServiceManager {
                     }
 
                     attempts.incrementAndGet();
+                    if (log.isDebugEnabled()) {
+                        log.debug("None of slaves were synced. new attempt {} ", attempts.get());
+                    }
 
                     Duration timeout = config.getRetryDelay().calcDelay(attempts.get());
                     newTimeout(t -> execute(attempts, result, supplier),

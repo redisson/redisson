@@ -575,10 +575,12 @@ public class RedissonFasterMultiLock extends RedissonBaseLock {
 
     @Override
     public RFuture<Void> unlockAsync(long threadId) {
-        return getServiceManager().execute(() -> unlockAsync0(threadId));
+        String requestId = getServiceManager().generateId();
+        return getServiceManager().execute(() -> unlockAsync0(threadId, requestId));
     }
-    private RFuture<Void> unlockAsync0(long threadId) {
-        CompletionStage<Boolean> future = unlockInnerAsync(threadId);
+
+    private RFuture<Void> unlockAsync0(long threadId, String requestId) {
+        CompletionStage<Boolean> future = unlockInnerAsync(threadId, requestId);
         CompletionStage<Void> f = future.handle((res, e) -> {
             cancelExpirationRenewal(threadId, res);
 
