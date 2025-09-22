@@ -415,7 +415,7 @@ public class RedissonLockTest extends BaseConcurrentTest {
     @Test
     public void testLockFailoverInCluster() {
         withNewCluster((nodes, redisson) -> {
-            for (int i = 0; i < 10; i++) {
+            for (int i = 0; i < 30; i++) {
                 RLock t = redisson.getLock("test_lock");
                 if (t.tryLock()) {
                     t.unlock();
