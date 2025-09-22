@@ -342,7 +342,7 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
         Assertions.assertTrue(fourthTTL >= 29900 && fourthTTL <= 30100, "Expected 40000 +/- 100 but was " + fourthTTL);
 
         // unlock the original lock holder
-        Boolean unlocked = lock.unlockInnerAsync(threadInit).toCompletableFuture().join();;
+        Boolean unlocked = lock.unlockInnerAsync(threadInit, null).toCompletableFuture().join();
         Assertions.assertNotNull(unlocked);
         Assertions.assertTrue(unlocked);
 
@@ -395,7 +395,7 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
         Assertions.assertFalse(locked);
 
         // unlock the original lock holder
-        Boolean unlocked = lock.unlockInnerAsync(threadInit).toCompletableFuture().join();;
+        Boolean unlocked = lock.unlockInnerAsync(threadInit, null).toCompletableFuture().join();
         Assertions.assertTrue(unlocked);
 
         // get the lock
@@ -452,7 +452,7 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
         Assertions.assertNotNull(secondTTL);
 
         // unlock the original lock holder
-        Boolean unlocked = lock.unlockInnerAsync(threadInit).toCompletableFuture().join();;
+        Boolean unlocked = lock.unlockInnerAsync(threadInit, null).toCompletableFuture().join();
         Assertions.assertNotNull(unlocked);
         Assertions.assertTrue(unlocked);
 
