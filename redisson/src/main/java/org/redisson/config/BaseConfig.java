@@ -247,10 +247,7 @@ public class BaseConfig<T extends BaseConfig<T>> {
     }
 
     /**
-     * Defines time interval for another one attempt send Redis command 
-     * if it hasn't been sent already.
-     * <p>
-     * Default is <code>1500</code> milliseconds
+     * Use {@link #setRetryDelay(DelayStrategy)} instead.
      *
      * @param retryInterval - time in milliseconds
      * @return config
@@ -631,19 +628,18 @@ public class BaseConfig<T extends BaseConfig<T>> {
         return (T) this;
     }
 
+    @Deprecated
     public int getCredentialsReapplyInterval() {
         return credentialsReapplyInterval;
     }
 
     /**
-     * Defines Credentials resolver invoke interval for Valkey or Redis server authentication.
-     * <code>0</code> means disable.
-     * <p>
-     * Default is <code>0</code>
+     * Implement {@link CredentialsResolver#timeToLive()} instead.
      *
      * @param credentialsReapplyInterval time in milliseconds
      * @return config
      */
+    @Deprecated
     public T setCredentialsReapplyInterval(int credentialsReapplyInterval) {
         this.credentialsReapplyInterval = credentialsReapplyInterval;
         return (T) this;
