@@ -29,6 +29,12 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
+ * Microsoft Entra ID (formerly Azure Active Directory) credentials resolver for Redis authentication.
+ *
+ * <p>This class implements the {@link CredentialsResolver} interface to provide authentication
+ * credentials for connecting to Azure Cache for Redis or Azure Managed Redis instances using
+ * Microsoft Entra ID authentication. It automatically handles token acquisition, refresh, and
+ * authentication state management for secure, password-free Redis connections.</p>
  *
  * @author Nikita Koksharov
  *
