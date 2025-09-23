@@ -20,8 +20,10 @@ import java.time.Duration;
 import java.util.concurrent.CompletionStage;
 
 /**
- * Credentials resolver object which is invoked during connection/reconnection process.
- * It makes possible to specify dynamically changing Redis credentials.
+ * Credentials resolver interface for dynamically managing Redis authentication credentials
+ * during connection and reconnection processes. This interface supports both static and
+ * dynamic credential resolution with optional time-based expiration and callback-driven
+ * renewal mechanisms.
  *
  * @author Nikita Koksharov
  *
@@ -58,7 +60,7 @@ public interface CredentialsResolver {
      * Registers a callback that will be invoked when authentication
      * credentials need to be renewed.
      * <p>
-     * The implementation must invoke a callback
+     * The implementation must be thread-safe and invoke a callback
      * only after the object returned by {@link #resolve(InetSocketAddress)}
      * method has been updated.
      *
@@ -71,6 +73,8 @@ public interface CredentialsResolver {
 
     /**
      * Unregisters a previously added authentication renewal callback.
+     * <p>
+     * The implementation must be thread-safe.
      *
      * @see EntraIdCredentialsResolver
      *
