@@ -22,11 +22,8 @@ import redis.clients.authentication.core.TokenListener;
 import redis.clients.authentication.core.TokenManager;
 
 import java.net.InetSocketAddress;
-import java.util.Collections;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Microsoft Entra ID (formerly Azure Active Directory) credentials resolver for Redis authentication.
@@ -45,9 +42,9 @@ public class EntraIdCredentialsResolver implements CredentialsResolver {
     private static final Logger log = LoggerFactory.getLogger(EntraIdCredentialsResolver.class);
 
     final TokenManager tokenManager;
-    final Set<Runnable> callbacks = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     volatile CompletableFuture<Credentials> future = new CompletableFuture<>();
+    volatile CompletableFuture<Void> renewalFuture = new CompletableFuture<>();
 
     public EntraIdCredentialsResolver(TokenManager tokenManager) {
         this.tokenManager = tokenManager;
@@ -57,13 +54,13 @@ public class EntraIdCredentialsResolver implements CredentialsResolver {
             @Override
             public void onTokenRenewed(Token token) {
                 if (!future.isDone()) {
+                    // update the initial future instance
                     future.complete(new Credentials(token.getUser(), token.getValue()));
                 } else {
                     future = CompletableFuture.completedFuture(new Credentials(token.getUser(), token.getValue()));
-                }
-
-                for (Runnable callback : callbacks) {
-                    callback.run();
+                    CompletableFuture<Void> oldFuture = renewalFuture;
+                    renewalFuture = new CompletableFuture<>();
+                    oldFuture.complete(null);
                 }
             }
 
@@ -90,12 +87,8 @@ public class EntraIdCredentialsResolver implements CredentialsResolver {
     }
 
     @Override
-    public void addRenewAuthCallback(Runnable callback) {
-        callbacks.add(callback);
+    public CompletionStage<Void> nextRenewal() {
+        return renewalFuture;
     }
 
-    @Override
-    public void removeRenewAuthCallback(Runnable callback) {
-        callbacks.remove(callback);
-    }
 }

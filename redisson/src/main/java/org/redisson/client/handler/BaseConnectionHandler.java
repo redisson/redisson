@@ -17,7 +17,10 @@ package org.redisson.client.handler;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import org.redisson.client.*;
+import org.redisson.client.RedisClient;
+import org.redisson.client.RedisClientConfig;
+import org.redisson.client.RedisConnection;
+import org.redisson.client.RedisRetryException;
 import org.redisson.client.protocol.QueueCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.config.Protocol;
@@ -40,7 +43,6 @@ public abstract class BaseConnectionHandler<C extends RedisConnection> extends C
 
     private static final Logger log = LoggerFactory.getLogger(BaseConnectionHandler.class);
 
-    final Runnable reauthCallback = () -> authWithCredential();
     final RedisClient redisClient;
     final CompletableFuture<C> connectionPromise = new CompletableFuture<>();
     C connection;
@@ -61,17 +63,10 @@ public abstract class BaseConnectionHandler<C extends RedisConnection> extends C
     abstract C createConnection(ChannelHandlerContext ctx);
 
     @Override
-    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        RedisClientConfig config = redisClient.getConfig();
-        config.getCredentialsResolver().removeRenewAuthCallback(reauthCallback);
-        super.channelInactive(ctx);
-    }
-
-    @Override
     public void channelActive(ChannelHandlerContext ctx) {
-        List<CompletableFuture<Object>> futures = new ArrayList<>(5);
+        List<CompletableFuture<?>> futures = new ArrayList<>(5);
 
-        CompletableFuture<Object> f = authWithCredential();
+        CompletableFuture<Void> f = authWithCredential();
         futures.add(f);
 
         RedisClientConfig config = redisClient.getConfig();
@@ -124,22 +119,37 @@ public abstract class BaseConnectionHandler<C extends RedisConnection> extends C
                 reapplyCredential(ctx, renewalInterval);
             }
 
-            config.getCredentialsResolver().addRenewAuthCallback(reauthCallback);
+            startRenewal(config);
 
             ctx.fireChannelActive();
             connectionPromise.complete(connection);
         });
     }
 
-    private CompletableFuture<Object> authWithCredential() {
+    private CompletionStage<Void> startRenewal(RedisClientConfig config) {
+        return config.getCredentialsResolver()
+                .nextRenewal()
+                .thenCompose(r -> authWithCredential())
+                .thenCompose(r -> startRenewal(config))
+                .exceptionally(throwable -> {
+                    log.warn("Renewal cycle failed, retrying", throwable);
+
+                    config.getTimer().newTimeout(t -> {
+                        startRenewal(config);
+                    }, 1, TimeUnit.SECONDS);
+                    return null;
+                });
+    }
+
+    private CompletableFuture<Void> authWithCredential() {
         RedisClientConfig config = redisClient.getConfig();
         InetSocketAddress addr = redisClient.resolveAddr().getNow(null);
-        CompletionStage<Object> f = config.getCredentialsResolver().resolve(addr)
+        CompletionStage<Void> f = config.getCredentialsResolver().resolve(addr)
                 .thenCompose(credentials -> {
                     String password = Objects.toString(config.getAddress().getPassword(),
                             Objects.toString(credentials.getPassword(), config.getPassword()));
                     if (password != null) {
-                        CompletionStage<Object> future;
+                        CompletionStage<Void> future;
                         String username = Objects.toString(config.getAddress().getUsername(),
                                 Objects.toString(credentials.getUsername(), config.getUsername()));
                         if (username != null) {
@@ -160,7 +170,7 @@ public abstract class BaseConnectionHandler<C extends RedisConnection> extends C
             return;
         }
 
-        CompletableFuture<Object> future;
+        CompletableFuture<Void> future;
         QueueCommand currentCommand = connection.getCurrentCommandData();
         if (connection.getUsage() == 0 && (currentCommand == null || !currentCommand.isBlockingCommand())) {
             future = authWithCredential();

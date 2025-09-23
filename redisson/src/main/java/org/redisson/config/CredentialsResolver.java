@@ -17,6 +17,7 @@ package org.redisson.config;
 
 import java.net.InetSocketAddress;
 import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -42,7 +43,7 @@ public interface CredentialsResolver {
     /**
      * Returns the time-to-live duration for the resolved credentials,
      * which begins when the connection is established.
-     *
+     * <p>
      * This indicates how long the credentials should be considered valid
      * before they need to be refreshed or renewed.
      * <p>
@@ -57,30 +58,23 @@ public interface CredentialsResolver {
     }
 
     /**
-     * Registers a callback that will be invoked when authentication
-     * credentials need to be renewed.
+     * Returns a CompletionStage that completes when the next credential renewal
+     * is needed.
      * <p>
-     * The implementation must be thread-safe and invoke a callback
-     * only after the object returned by {@link #resolve(InetSocketAddress)}
-     * method has been updated.
+     * The returned CompletionStage should complete when an external authentication
+     * system changed credentials and CompletionStage instance returned
+     * by {@link #resolve(InetSocketAddress)} method has been updated.
+     * <p>
+     * For continuous monitoring, implementations should return a new CompletionStage
+     * instance after each credentials update to support chaining multiple renewal events.
+     *
+     * @return CompletionStage that completes when credential renewal is needed.
      *
      * @see EntraIdCredentialsResolver
      *
-     * @param callback Runnable callback to be executed when auth renewal is needed
      */
-    default void addRenewAuthCallback(Runnable callback) {
-    }
-
-    /**
-     * Unregisters a previously added authentication renewal callback.
-     * <p>
-     * The implementation must be thread-safe.
-     *
-     * @see EntraIdCredentialsResolver
-     *
-     * @param callback Runnable callback to be removed
-     */
-    default void removeRenewAuthCallback(Runnable callback) {
+    default CompletionStage<Void> nextRenewal() {
+        return new CompletableFuture<>();
     }
 
 }
