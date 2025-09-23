@@ -107,7 +107,20 @@ public class RedisCommonBatchExecutor extends RedisExecutor<Object, Void> {
             free(command.getParams());
         }
     }
-    
+
+    @Override
+    protected CompletableFuture<RedisConnection> getConnection(CompletableFuture<Void> attemptPromise) {
+        CompletableFuture<RedisConnection> f = super.getConnection(attemptPromise);
+        f.whenComplete((r, e) -> {
+            if (e != null) {
+                if (source.getEntry().getReplacedBy() != null) {
+                    source = new NodeSource(source.getEntry().getReplacedBy());
+                }
+            }
+        });
+        return f;
+    }
+
     @Override
     protected void sendCommand(CompletableFuture<Void> attemptPromise, RedisConnection connection) {
         boolean isAtomic = options.getExecutionMode() != ExecutionMode.IN_MEMORY;

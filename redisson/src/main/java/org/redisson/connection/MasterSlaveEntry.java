@@ -56,6 +56,8 @@ public class MasterSlaveEntry {
 
     volatile ClientConnectionsEntry masterEntry;
 
+    MasterSlaveEntry replacedBy;
+
     int references;
     
     final MasterSlaveServersConfig config;
@@ -788,5 +790,13 @@ public class MasterSlaveEntry {
 
     public void setAofEnabled(boolean aof) {
         this.aofEnabled = aof;
+    }
+
+    public MasterSlaveEntry getReplacedBy() {
+        return replacedBy;
+    }
+
+    public void setReplacedBy(MasterSlaveEntry replacedBy) {
+        this.replacedBy = replacedBy;
     }
 }

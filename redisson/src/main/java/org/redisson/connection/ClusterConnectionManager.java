@@ -268,23 +268,23 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         MasterSlaveEntry oldEntry = slot2entry.getAndSet(slot, entry);
         if (oldEntry != entry) {
             entry.incReference();
-            shutdownEntry(oldEntry);
+            shutdownEntry(oldEntry, entry);
         }
         client2entry.put(entry.getClient(), entry);
     }
 
     private void removeEntry(Integer slot) {
         MasterSlaveEntry entry = slot2entry.getAndSet(slot, null);
-        shutdownEntry(entry);
+        shutdownEntry(entry, null);
     }
 
     private void removeEntry(Integer slot, MasterSlaveEntry entry) {
         if (slot2entry.compareAndSet(slot, entry, null)) {
-            shutdownEntry(entry);
+            shutdownEntry(entry, null);
         }
     }
 
-    private void shutdownEntry(MasterSlaveEntry entry) {
+    private void shutdownEntry(MasterSlaveEntry entry, MasterSlaveEntry newEntry) {
         if (entry != null && entry.decReference() == 0) {
             entry.getAllEntries().forEach(e -> {
                 RedisURI uri = new RedisURI(e.getClient().getConfig().getAddress().getScheme(),
@@ -295,6 +295,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             });
             entry.masterDown();
             entry.shutdownAsync();
+            entry.setReplacedBy(newEntry);
             subscribeService.remove(entry);
             RedisURI uri = new RedisURI(entry.getClient().getConfig().getAddress().getScheme(),
                                         entry.getClient().getAddr().getAddress().getHostAddress(),
