@@ -221,6 +221,18 @@ public interface RRateLimiter extends RRateLimiterAsync, RExpirable {
     boolean tryAcquire(long permits, Duration timeout);
 
     /**
+     * Releases the given number of <code>permits</code>.
+     *
+     * <p>Increases the number of available permits by the specified amount and completes
+     * immediately, causing any waiting acquirers that can now obtain permits to proceed.
+     *
+     * <p>The returned future completes when the release has been applied.
+     *
+     * @param permits amount to release; must be greater than or equal to zero
+     */
+    void release(long permits);
+
+    /**
      * Returns current configuration of this RateLimiter object.
      * 
      * @return config object
