@@ -660,12 +660,16 @@ public class RedissonTest extends RedisDockerTest {
         config.useSingleServer()
                 .setConnectionMinimumIdleSize(1)
                 .setConnectionPoolSize(1)
-                .setCredentialsReapplyInterval(5000)
                 .setCredentialsResolver(new CredentialsResolver() {
                     @Override
                     public CompletionStage<Credentials> resolve(InetSocketAddress address) {
                         latch.countDown();
                         return CompletableFuture.completedFuture(new Credentials(null, "1234"));
+                    }
+
+                    @Override
+                    public Duration timeToLive() {
+                        return Duration.ofSeconds(5);
                     }
                 });
 
