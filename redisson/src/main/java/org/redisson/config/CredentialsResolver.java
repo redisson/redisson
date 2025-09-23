@@ -16,6 +16,7 @@
 package org.redisson.config;
 
 import java.net.InetSocketAddress;
+import java.time.Duration;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -35,5 +36,47 @@ public interface CredentialsResolver {
      * @return Credentials object
      */
     CompletionStage<Credentials> resolve(InetSocketAddress address);
+
+    /**
+     * Returns the time-to-live duration for the resolved credentials,
+     * which begins when the connection is established.
+     *
+     * This indicates how long the credentials should be considered valid
+     * before they need to be refreshed or renewed.
+     * <p>
+     * Default implementation returns Duration.ZERO, meaning credentials
+     * don't expire and won't be automatically refreshed based on time.
+     *
+     * @return Duration representing the time-to-live for credentials,
+     *         or Duration.ZERO if credentials don't expire
+     */
+    default Duration timeToLive() {
+        return Duration.ZERO;
+    }
+
+    /**
+     * Registers a callback that will be invoked when authentication
+     * credentials need to be renewed.
+     * <p>
+     * The implementation must invoke a callback
+     * only after the object returned by {@link #resolve(InetSocketAddress)}
+     * method has been updated.
+     *
+     * @see EntraIdCredentialsResolver
+     *
+     * @param callback Runnable callback to be executed when auth renewal is needed
+     */
+    default void addRenewAuthCallback(Runnable callback) {
+    }
+
+    /**
+     * Unregisters a previously added authentication renewal callback.
+     *
+     * @see EntraIdCredentialsResolver
+     *
+     * @param callback Runnable callback to be removed
+     */
+    default void removeRenewAuthCallback(Runnable callback) {
+    }
 
 }

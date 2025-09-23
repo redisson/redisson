@@ -25,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -39,10 +40,11 @@ public abstract class BaseConnectionHandler<C extends RedisConnection> extends C
 
     private static final Logger log = LoggerFactory.getLogger(BaseConnectionHandler.class);
 
+    final Runnable reauthCallback = () -> authWithCredential();
     final RedisClient redisClient;
     final CompletableFuture<C> connectionPromise = new CompletableFuture<>();
     C connection;
-    
+
     public BaseConnectionHandler(RedisClient redisClient) {
         super();
         this.redisClient = redisClient;
@@ -57,7 +59,14 @@ public abstract class BaseConnectionHandler<C extends RedisConnection> extends C
     }
 
     abstract C createConnection(ChannelHandlerContext ctx);
-    
+
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        RedisClientConfig config = redisClient.getConfig();
+        config.getCredentialsResolver().removeRenewAuthCallback(reauthCallback);
+        super.channelInactive(ctx);
+    }
+
     @Override
     public void channelActive(ChannelHandlerContext ctx) {
         List<CompletableFuture<Object>> futures = new ArrayList<>(5);
@@ -107,9 +116,15 @@ public abstract class BaseConnectionHandler<C extends RedisConnection> extends C
                 return;
             }
 
+            Duration renewalInterval = config.getCredentialsResolver().timeToLive();
             if (config.getCredentialsReapplyInterval() > 0) {
-                reapplyCredential(ctx);
+                renewalInterval = Duration.ofMillis(config.getCredentialsReapplyInterval());
             }
+            if (renewalInterval.toMillis() > 0) {
+                reapplyCredential(ctx, renewalInterval);
+            }
+
+            config.getCredentialsResolver().addRenewAuthCallback(reauthCallback);
 
             ctx.fireChannelActive();
             connectionPromise.complete(connection);
@@ -140,7 +155,7 @@ public abstract class BaseConnectionHandler<C extends RedisConnection> extends C
         return f.toCompletableFuture();
     }
 
-    private void reapplyCredential(ChannelHandlerContext ctx) {
+    private void reapplyCredential(ChannelHandlerContext ctx, Duration renewalInterval) {
         if (isClosed(ctx, connection)) {
             return;
         }
@@ -162,7 +177,7 @@ public abstract class BaseConnectionHandler<C extends RedisConnection> extends C
 
             QueueCommand cd = connection.getCurrentCommandData();
             if (cd != null && cd.isBlockingCommand()) {
-                reapplyCredential(ctx);
+                reapplyCredential(ctx, renewalInterval);
                 return;
             }
 
@@ -176,13 +191,13 @@ public abstract class BaseConnectionHandler<C extends RedisConnection> extends C
                     log.debug("channel: {} closed due to AUTH response timeout set in {} ms", ctx.channel(), config.getCredentialsReapplyInterval());
                     ctx.channel().close();
                 } else {
-                    reapplyCredential(ctx);
+                    reapplyCredential(ctx, renewalInterval);
                 }
 
             } else {
-                reapplyCredential(ctx);
+                reapplyCredential(ctx, renewalInterval);
             }
-        }, config.getCredentialsReapplyInterval(), TimeUnit.MILLISECONDS);
+        }, renewalInterval.toMillis(), TimeUnit.MILLISECONDS);
     }
 
     protected Throwable cause(CompletableFuture<?> future) {
