@@ -70,10 +70,6 @@ public class RedissonLock extends RedissonBaseLock {
         return prefixName("redisson_lock__channel", getRawName());
     }
 
-    String getUnlockLatchName(String requestId) {
-        return prefixName("redisson_unlock_latch", getRawName()) + ":" + requestId;
-    }
-
     @Override
     public void lock() {
         try {
