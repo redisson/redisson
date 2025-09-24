@@ -71,7 +71,6 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
         newconfig.setTcpNoDelay(cfg.isTcpNoDelay());
         newconfig.setNameMapper(cfg.getNameMapper());
         newconfig.setCredentialsResolver(cfg.getCredentialsResolver());
-        newconfig.setCredentialsReapplyInterval(cfg.getCredentialsReapplyInterval());
         newconfig.setCommandMapper(cfg.getCommandMapper());
         newconfig.setSslVerificationMode(cfg.getSslVerificationMode());
         newconfig.setSubscriptionTimeout(cfg.getSubscriptionTimeout());

@@ -78,8 +78,6 @@ public class BaseConfig<T extends BaseConfig<T>> {
 
     private CredentialsResolver credentialsResolver = new DefaultCredentialsResolver();
 
-    private int credentialsReapplyInterval = 0;
-
     /**
      * Subscriptions per Redis connection limit
      */
@@ -163,7 +161,6 @@ public class BaseConfig<T extends BaseConfig<T>> {
         setTcpNoDelay(config.isTcpNoDelay());
         setNameMapper(config.getNameMapper());
         setCredentialsResolver(config.getCredentialsResolver());
-        setCredentialsReapplyInterval(config.getCredentialsReapplyInterval());
         setCommandMapper(config.getCommandMapper());
         setSslVerificationMode(config.getSslVerificationMode());
         setSubscriptionTimeout(config.getSubscriptionTimeout());
@@ -627,23 +624,6 @@ public class BaseConfig<T extends BaseConfig<T>> {
      */
     public T setCredentialsResolver(CredentialsResolver credentialsResolver) {
         this.credentialsResolver = credentialsResolver;
-        return (T) this;
-    }
-
-    @Deprecated
-    public int getCredentialsReapplyInterval() {
-        return credentialsReapplyInterval;
-    }
-
-    /**
-     * Implement {@link CredentialsResolver#timeToLive()} instead.
-     *
-     * @param credentialsReapplyInterval time in milliseconds
-     * @return config
-     */
-    @Deprecated
-    public T setCredentialsReapplyInterval(int credentialsReapplyInterval) {
-        this.credentialsReapplyInterval = credentialsReapplyInterval;
         return (T) this;
     }
 

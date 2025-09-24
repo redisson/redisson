@@ -28,7 +28,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -111,32 +110,47 @@ public abstract class BaseConnectionHandler<C extends RedisConnection> extends C
                 return;
             }
 
-            Duration renewalInterval = config.getCredentialsResolver().timeToLive();
-            if (config.getCredentialsReapplyInterval() > 0) {
-                renewalInterval = Duration.ofMillis(config.getCredentialsReapplyInterval());
-            }
-            if (renewalInterval.toMillis() > 0) {
-                reapplyCredential(ctx, renewalInterval);
-            }
-
-            startRenewal(config);
+            startRenewal(ctx, config);
 
             ctx.fireChannelActive();
             connectionPromise.complete(connection);
         });
     }
 
-    private CompletionStage<Void> startRenewal(RedisClientConfig config) {
+    private CompletionStage<Void> startRenewal(ChannelHandlerContext ctx, RedisClientConfig config) {
+        if (isClosed(ctx, connection)) {
+            return CompletableFuture.completedFuture(null);
+        }
+
         return config.getCredentialsResolver()
                 .nextRenewal()
-                .thenCompose(r -> authWithCredential())
-                .thenCompose(r -> startRenewal(config))
-                .exceptionally(throwable -> {
-                    log.warn("Renewal cycle failed, retrying", throwable);
+                .thenCompose(r -> {
+                    QueueCommand currentCommand = connection.getCurrentCommandData();
+                    if (currentCommand != null && currentCommand.isBlockingCommand()) {
+                        return connection.forceFastReconnectAsync();
+                    }
+                    return authWithCredential();
+                })
+                .thenCompose(r -> startRenewal(ctx, config))
+                .exceptionally(cause -> {
+                    if (isClosed(ctx, connection)) {
+                        return null;
+                    }
+
+                    if (!(cause instanceof RedisRetryException)) {
+                        log.error("Unable to send AUTH command over channel: {}", ctx.channel(), cause);
+
+                        log.debug("channel: {} closed due to AUTH error response", ctx.channel());
+                        ctx.channel().close();
+                        return null;
+                    }
+
+                    log.warn("Renewal cycle failed, retrying", cause);
 
                     config.getTimer().newTimeout(t -> {
-                        startRenewal(config);
+                        startRenewal(ctx, config);
                     }, 1, TimeUnit.SECONDS);
+
                     return null;
                 });
     }
@@ -165,50 +179,50 @@ public abstract class BaseConnectionHandler<C extends RedisConnection> extends C
         return f.toCompletableFuture();
     }
 
-    private void reapplyCredential(ChannelHandlerContext ctx, Duration renewalInterval) {
-        if (isClosed(ctx, connection)) {
-            return;
-        }
-
-        CompletableFuture<Void> future;
-        QueueCommand currentCommand = connection.getCurrentCommandData();
-        if (connection.getUsage() == 0 && (currentCommand == null || !currentCommand.isBlockingCommand())) {
-            future = authWithCredential();
-        } else {
-            future = null;
-        }
-
-        RedisClientConfig config = redisClient.getConfig();
-
-        config.getTimer().newTimeout(timeout -> {
-            if (isClosed(ctx, connection)) {
-                return;
-            }
-
-            QueueCommand cd = connection.getCurrentCommandData();
-            if (cd != null && cd.isBlockingCommand()) {
-                reapplyCredential(ctx, renewalInterval);
-                return;
-            }
-
-            if (connection.getUsage() == 0 && future != null && (future.cancel(false) || cause(future) != null)) {
-                Throwable cause = cause(future);
-                if (!(cause instanceof RedisRetryException)) {
-                    if (!future.isCancelled()) {
-                        log.error("Unable to send AUTH command over channel: {}", ctx.channel(), cause);
-                    }
-
-                    log.debug("channel: {} closed due to AUTH response timeout set in {} ms", ctx.channel(), config.getCredentialsReapplyInterval());
-                    ctx.channel().close();
-                } else {
-                    reapplyCredential(ctx, renewalInterval);
-                }
-
-            } else {
-                reapplyCredential(ctx, renewalInterval);
-            }
-        }, renewalInterval.toMillis(), TimeUnit.MILLISECONDS);
-    }
+//    private void reapplyCredential(ChannelHandlerContext ctx, Duration renewalInterval) {
+//        if (isClosed(ctx, connection)) {
+//            return;
+//        }
+//
+//        CompletableFuture<Void> future;
+//        QueueCommand currentCommand = connection.getCurrentCommandData();
+//        if (connection.getUsage() == 0 && (currentCommand == null || !currentCommand.isBlockingCommand())) {
+//            future = authWithCredential();
+//        } else {
+//            future = null;
+//        }
+//
+//        RedisClientConfig config = redisClient.getConfig();
+//
+//        config.getTimer().newTimeout(timeout -> {
+//            if (isClosed(ctx, connection)) {
+//                return;
+//            }
+//
+//            QueueCommand cd = connection.getCurrentCommandData();
+//            if (cd != null && cd.isBlockingCommand()) {
+//                reapplyCredential(ctx, renewalInterval);
+//                return;
+//            }
+//
+//            if (connection.getUsage() == 0 && future != null && (future.cancel(false) || cause(future) != null)) {
+//                Throwable cause = cause(future);
+//                if (!(cause instanceof RedisRetryException)) {
+//                    if (!future.isCancelled()) {
+//                        log.error("Unable to send AUTH command over channel: {}", ctx.channel(), cause);
+//                    }
+//
+//                    log.debug("channel: {} closed due to AUTH response timeout set in {} ms", ctx.channel(), config.getCredentialsReapplyInterval());
+//                    ctx.channel().close();
+//                } else {
+//                    reapplyCredential(ctx, renewalInterval);
+//                }
+//
+//            } else {
+//                reapplyCredential(ctx, renewalInterval);
+//            }
+//        }, renewalInterval.toMillis(), TimeUnit.MILLISECONDS);
+//    }
 
     protected Throwable cause(CompletableFuture<?> future) {
         try {

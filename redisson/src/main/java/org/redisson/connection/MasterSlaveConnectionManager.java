@@ -316,7 +316,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         c.setTcpNoDelay(cfg.isTcpNoDelay());
         c.setNameMapper(cfg.getNameMapper());
         c.setCredentialsResolver(cfg.getCredentialsResolver());
-        c.setCredentialsReapplyInterval(cfg.getCredentialsReapplyInterval());
         c.setCommandMapper(cfg.getCommandMapper());
         c.setSubscriptionTimeout(cfg.getSubscriptionTimeout());
         c.setSslVerificationMode(cfg.getSslVerificationMode());
@@ -387,7 +386,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 .setReconnectionDelay(config.getReconnectionDelay())
                 .setCommandMapper(config.getCommandMapper())
                 .setCredentialsResolver(config.getCredentialsResolver())
-                .setCredentialsReapplyInterval(config.getCredentialsReapplyInterval())
                 .setConnectedListener(addr -> {
                     if (!serviceManager.isShuttingDown()) {
                         NodeType nt = getNodeType(type, addr);

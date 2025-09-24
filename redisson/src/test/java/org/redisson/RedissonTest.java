@@ -668,9 +668,10 @@ public class RedissonTest extends RedisDockerTest {
                     }
 
                     @Override
-                    public Duration timeToLive() {
-                        return Duration.ofSeconds(5);
+                    public CompletionStage<Void> nextRenewal() {
+                        return CompletableFuture.supplyAsync(() -> null, CompletableFuture.delayedExecutor(5, TimeUnit.SECONDS));
                     }
+
                 });
 
         RedissonClient rc = Redisson.create(config);

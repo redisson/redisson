@@ -16,15 +16,12 @@
 package org.redisson.config;
 
 import java.net.InetSocketAddress;
-import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 /**
- * Credentials resolver interface for dynamically managing Redis authentication credentials
- * during connection and reconnection processes. This interface supports both static and
- * dynamic credential resolution with optional time-based expiration and callback-driven
- * renewal mechanisms.
+ * Credentials resolver interface for dynamically managing Valkey or Redis
+ * authentication credentials during connection and reconnection processes.
  *
  * @author Nikita Koksharov
  *
@@ -33,29 +30,12 @@ public interface CredentialsResolver {
 
     /**
      * Asynchronously resolves Credentials object
-     * for specified Redis node <code>address</code> .
+     * for specified Valkey or Redis node <code>address</code> .
      *
-     * @param address address of Redis node
+     * @param address address of Valkey or Redis node
      * @return Credentials object
      */
     CompletionStage<Credentials> resolve(InetSocketAddress address);
-
-    /**
-     * Returns the time-to-live duration for the resolved credentials,
-     * which begins when the connection is established.
-     * <p>
-     * This indicates how long the credentials should be considered valid
-     * before they need to be refreshed or renewed.
-     * <p>
-     * Default implementation returns Duration.ZERO, meaning credentials
-     * don't expire and won't be automatically refreshed based on time.
-     *
-     * @return Duration representing the time-to-live for credentials,
-     *         or Duration.ZERO if credentials don't expire
-     */
-    default Duration timeToLive() {
-        return Duration.ZERO;
-    }
 
     /**
      * Returns a CompletionStage that completes when the next credential renewal
