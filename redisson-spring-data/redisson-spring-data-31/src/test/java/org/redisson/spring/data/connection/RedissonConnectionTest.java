@@ -14,6 +14,7 @@ import org.springframework.data.redis.connection.zset.Tuple;
 import org.springframework.data.redis.core.*;
 import org.springframework.data.redis.core.types.Expiration;
 import org.springframework.data.redis.core.types.RedisClientInfo;
+import org.springframework.data.redis.serializer.RedisSerializer;
 
 import java.nio.ByteBuffer;
 import java.time.Duration;
@@ -289,6 +290,50 @@ public class RedissonConnectionTest extends BaseConnectionTest {
     public void testGetClientList() {
         List<RedisClientInfo> info = connection.getClientList();
         assertThat(info.size()).isGreaterThan(10);
+    }
+
+    @Test
+    public void testFilterOkResponsesInTransaction() {
+        // Test with filterOkResponses = false (default behavior)
+        RedisTemplate<String, String> redisTemplate = new RedisTemplate<>();
+        RedissonConnectionFactory connectionFactory = new RedissonConnectionFactory(redisson);
+        // connectionFactory.setFilterOkResponses(false);
+        redisTemplate.setConnectionFactory(connectionFactory);
+        redisTemplate.afterPropertiesSet();
+
+        List<Object> results = (List<Object>) redisTemplate.executePipelined((RedisCallback<Object>) connection -> {
+            connection.multi();
+            connection.set("test:key1".getBytes(), "value1".getBytes());
+            connection.set("test:key2".getBytes(), "value2".getBytes());
+            connection.get("test:key1".getBytes());
+            connection.get("test:key2".getBytes());
+            return connection.exec();
+        }, RedisSerializer.string()).get(0);
+
+        // With filterOkResponses=false, all responses including "OK" should be preserved
+        assertThat(results).hasSize(4);
+        assertThat(results.get(0)).isEqualTo(true);
+        assertThat(results.get(1)).isEqualTo(true);
+        assertThat(results.get(2)).isEqualTo("value1");
+        assertThat(results.get(3)).isEqualTo("value2");
+
+        // Test with filterOkResponses = true
+        connectionFactory.setFilterOkResponses(true);
+        redisTemplate.afterPropertiesSet();
+
+        List<Object> filteredResults = (List<Object>) redisTemplate.executePipelined((RedisCallback<Object>) connection -> {
+            connection.multi();
+            connection.set("test:key3".getBytes(), "value3".getBytes());
+            connection.set("test:key4".getBytes(), "value4".getBytes());
+            connection.get("test:key3".getBytes());
+            connection.get("test:key4".getBytes());
+            return connection.exec();
+        }, RedisSerializer.string()).get(0);
+
+        // With filterOkResponses=true, "OK" responses should be filtered out
+        assertThat(filteredResults).hasSize(2);
+        assertThat(filteredResults.get(0)).isEqualTo("value3");
+        assertThat(filteredResults.get(1)).isEqualTo("value4");
     }
     
 }

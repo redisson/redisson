@@ -57,6 +57,7 @@ public class RedissonConnectionFactory implements RedisConnectionFactory,
     private Config config;
     private RedissonClient redisson;
     private boolean hasOwnRedisson;
+    private boolean filterOkResponses = false;
 
     /**
      * Creates factory with default Redisson configuration
@@ -86,6 +87,14 @@ public class RedissonConnectionFactory implements RedisConnectionFactory,
         hasOwnRedisson = true;
     }
 
+    public boolean isFilterOkResponses() {
+        return filterOkResponses;
+    }
+
+    public void setFilterOkResponses(boolean filterOkResponses) {
+        this.filterOkResponses = filterOkResponses;
+    }
+
     @Override
     public DataAccessException translateExceptionIfPossible(RuntimeException ex) {
         return EXCEPTION_TRANSLATION.translate(ex);
@@ -108,9 +117,9 @@ public class RedissonConnectionFactory implements RedisConnectionFactory,
     @Override
     public RedisConnection getConnection() {
         if (redisson.getConfig().isClusterConfig()) {
-            return new RedissonClusterConnection(redisson);
+            return new RedissonClusterConnection(redisson, filterOkResponses);
         }
-        return new RedissonConnection(redisson);
+        return new RedissonConnection(redisson, filterOkResponses);
     }
 
     @Override
@@ -118,7 +127,7 @@ public class RedissonConnectionFactory implements RedisConnectionFactory,
         if (!redisson.getConfig().isClusterConfig()) {
             throw new InvalidDataAccessResourceUsageException("Redisson is not in Cluster mode");
         }
-        return new RedissonClusterConnection(redisson);
+        return new RedissonClusterConnection(redisson, filterOkResponses);
     }
 
     @Override
