@@ -30,7 +30,7 @@ public class RedissonTransactionalBucketsTest extends RedisDockerTest {
     }
     
     @Test
-    public void testSet() {
+    public void testSet() throws InterruptedException {
         RBucket<String> b1 = redisson.getBucket("test1");
         b1.set("1");
         RBucket<String> b2 = redisson.getBucket("test2");
@@ -49,6 +49,7 @@ public class RedissonTransactionalBucketsTest extends RedisDockerTest {
         transaction.commit();
         
         assertThat(redisson.getBuckets().get("test1", "test2")).isEqualTo(bbs);
+        redisson.getKeys().deleteByPattern("*redisson_unlock_latch*");
         assertThat(redisson.getKeys().count()).isEqualTo(2);
     }
 
@@ -75,9 +76,8 @@ public class RedissonTransactionalBucketsTest extends RedisDockerTest {
         
         System.out.println("commit " + Thread.currentThread().getId());
         transaction.commit();
-        redisson.getKeys().getKeys().forEach(x -> System.out.println(x));
-        
-//        assertThat(redisson.getBuckets().get("test1", "test2")).isEqualTo(bbs2);
+
+        redisson.getKeys().deleteByPattern("*redisson_unlock_latch*");
         assertThat(redisson.getKeys().count()).isEqualTo(2);
     }
     

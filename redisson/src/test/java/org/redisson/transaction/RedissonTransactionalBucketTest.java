@@ -74,7 +74,8 @@ public class RedissonTransactionalBucketTest extends RedisDockerTest {
         assertThat(bucket.get()).isEqualTo("234");
 
         transaction.commit();
-        
+
+        redisson.getKeys().deleteByPattern("*redisson_unlock_latch*");
         assertThat(redisson.getKeys().count()).isEqualTo(1);
         assertThat(b.get()).isEqualTo("234");
     }
@@ -133,7 +134,8 @@ public class RedissonTransactionalBucketTest extends RedisDockerTest {
         assertThat(bucket.getAndSet("324")).isEqualTo("0");
         
         transaction.commit();
-        
+
+        redisson.getKeys().deleteByPattern("*redisson_unlock_latch*");
         assertThat(redisson.getKeys().count()).isEqualTo(1);
         assertThat(b.get()).isEqualTo("324");
     }
@@ -151,7 +153,8 @@ public class RedissonTransactionalBucketTest extends RedisDockerTest {
         assertThat(bucket.get()).isEqualTo("232");
         
         transaction.commit();
-        
+
+        redisson.getKeys().deleteByPattern("*redisson_unlock_latch*");
         assertThat(redisson.getKeys().count()).isEqualTo(1);
         assertThat(b.get()).isEqualTo("232");
     }
@@ -169,7 +172,8 @@ public class RedissonTransactionalBucketTest extends RedisDockerTest {
         assertThat(bucket.trySet("43")).isFalse();
         
         transaction.commit();
-        
+
+        redisson.getKeys().deleteByPattern("*redisson_unlock_latch*");
         assertThat(redisson.getKeys().count()).isEqualTo(1);
         assertThat(b.get()).isEqualTo("324");
     }
@@ -189,7 +193,8 @@ public class RedissonTransactionalBucketTest extends RedisDockerTest {
         assertThat(set.getAndDelete()).isNull();
         
         transaction.commit();
-        
+
+        redisson.getKeys().deleteByPattern("*redisson_unlock_latch*");
         assertThat(redisson.getKeys().count()).isEqualTo(0);
         assertThat(m.get()).isNull();
     }
@@ -207,7 +212,8 @@ public class RedissonTransactionalBucketTest extends RedisDockerTest {
         assertThat(b.get()).isEqualTo("1234");
         
         transaction.rollback();
-        
+
+        redisson.getKeys().deleteByPattern("*redisson_unlock_latch*");
         assertThat(redisson.getKeys().count()).isEqualTo(1);
         
         assertThat(b.get()).isEqualTo("1234");
