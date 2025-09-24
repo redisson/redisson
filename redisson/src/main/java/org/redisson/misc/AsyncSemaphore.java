@@ -97,6 +97,8 @@ public final class AsyncSemaphore {
                 }
                 if (complete) {
                     return;
+                } else {
+                    counter.incrementAndGet();
                 }
             }
 
