@@ -583,8 +583,13 @@ Defines the SSL provider (JDK or OPENSSL) used to handle SSL connections. OPENSS
 
 Default value: `null`
 
-Defines the path to the SSL truststore. It stores certificates which is used to identify the server side of an SSL connection. SSL truststore is read on each new connection creation and can be dynamically reloaded.
+Defines the path to the SSL truststore. It stores certificates which is used to identify the server side of an SSL connection. SSL truststore is read on each new connection creation and can be dynamically reloaded. Supported formats: JKS, PKCS#12, PEM.
 
+The truststore should contain:
+
+* CA certificates - Root or intermediate Certificate Authority certificates that signed the Valkey or Redis server certificates
+* Self-signed certificates - If your Valkey or Redis servers use self-signed certificates, you'd include those directly
+* Server certificates - The actual certificates used by your Valkey or Redis instances
 
 **sslTruststorePassword**
 
@@ -993,7 +998,13 @@ Defines the SSL provider (JDK or OPENSSL) used to handle SSL connections. OPENSS
 
 Default value: `null`
 
-Defines the path to the SSL truststore. It stores certificates which are used to identify the server side of an SSL connections. The SSL truststore is read on each new connection creation and can be dynamically reloaded.
+Defines the path to the SSL truststore. It stores certificates which are used to identify the server side of an SSL connections. The SSL truststore is read on each new connection creation and can be dynamically reloaded. Supported formats: JKS, PKCS#12, PEM.
+
+The truststore should contain:
+
+* CA certificates - Root or intermediate Certificate Authority certificates that signed the Valkey or Redis server certificates
+* Self-signed certificates - If your Valkey or Redis servers use self-signed certificates, you'd include those directly
+* Server certificates - The actual certificates used by your Valkey or Redis instances
 
 **sslTruststorePassword**
 
@@ -1289,7 +1300,14 @@ OPENSSL is considered as the faster implementation and requires  [netty-tcnative
 
 Default value: `null`
 
-Defines the path to the SSL truststore. It stores certificates which are used to identify the server side of an SSL connections. The SSL truststore is read on each new connection creation and can be dynamically reloaded.
+Defines the path to the SSL truststore. It stores certificates which are used to identify the server side of an SSL connections. The SSL truststore is read on each new connection creation and can be dynamically reloaded. Supported formats: JKS, PKCS#12, PEM.
+
+The truststore should contain:
+
+* CA certificates - Root or intermediate Certificate Authority certificates that signed the Valkey or Redis server certificates
+* Self-signed certificates - If your Valkey or Redis servers use self-signed certificates, you'd include those directly
+* Server certificates - The actual certificates used by your Valkey or Redis instances
+
 
 **sslTruststorePassword**
 
@@ -1673,7 +1691,14 @@ OPENSSL is considered as a faster implementation and requires[netty-tcnative-bor
 
 Default value: `null`
 
-Defines path to the SSL truststore. It stores certificates which is used to identify the server side of an SSL connection. SSL truststore is read on each new connection creation and can be dynamically reloaded.
+Defines path to the SSL truststore. It stores certificates which is used to identify the server side of an SSL connection. SSL truststore is read on each new connection creation and can be dynamically reloaded. Supported formats: JKS, PKCS#12, PEM.
+
+The truststore should contain:
+
+* CA certificates - Root or intermediate Certificate Authority certificates that signed the Valkey or Redis server certificates
+* Self-signed certificates - If your Valkey or Redis servers use self-signed certificates, you'd include those directly
+* Server certificates - The actual certificates used by your Valkey or Redis instances
+
 
 **sslTruststorePassword**
 
@@ -2044,7 +2069,13 @@ OPENSSL considered as a faster implementation and requires[netty-tcnative-boring
 
 Default value: `null`
 
-Defines path to the SSL truststore. It stores certificates which is used to identify the server side of an SSL connection. SSL truststore is read on each new connection creation and can be dynamically reloaded.
+Defines path to the SSL truststore. It stores certificates which is used to identify the server side of an SSL connection. SSL truststore is read on each new connection creation and can be dynamically reloaded. Supported formats: JKS, PKCS#12, PEM.
+
+The truststore should contain:
+
+* CA certificates - Root or intermediate Certificate Authority certificates that signed the Valkey or Redis server certificates
+* Self-signed certificates - If your Valkey or Redis servers use self-signed certificates, you'd include those directly
+* Server certificates - The actual certificates used by your Valkey or Redis instances
 
 **sslTruststorePassword**
 
@@ -2392,7 +2423,13 @@ OPENSSL considered as a faster implementation and requires[netty-tcnative-boring
 
 Default value: `null`
 
-Defines path to the SSL truststore. It stores certificates which is used to identify the server side of an SSL connection. SSL truststore is read on each new connection creation and can be dynamically reloaded.
+Defines path to the SSL truststore. It stores certificates which is used to identify the server side of an SSL connection. SSL truststore is read on each new connection creation and can be dynamically reloaded. Supported formats: JKS, PKCS#12, PEM.
+
+The truststore should contain:
+
+* CA certificates - Root or intermediate Certificate Authority certificates that signed the Valkey or Redis server certificates
+* Self-signed certificates - If your Valkey or Redis servers use self-signed certificates, you'd include those directly
+* Server certificates - The actual certificates used by your Valkey or Redis instances
 
 **sslTruststorePassword**
 
@@ -2496,9 +2533,9 @@ transportMode: "NIO"
 
 _This feature is available only in [Redisson PRO](https://redisson.pro/feature-comparison.html) edition._
 
-Supports multiple Redis or Valkey Cluster setups with active-passive data replication relationship. Replication of the primary Cluster with secondary Valkey or Redis Cluster is managed by `replicationMode` setting.
+Supports multiple Valkey or Redis Cluster setups with active-passive data replication relationship. 
 
-Cluster with all available master nodes becomes the primary. Master nodes availability scan interval is defined by `scanInterval` setting.
+Replication of the primary Cluster with secondary Cluster is managed by `replicationMode` setting. Primary Cluster detection is managed by `primaryDiscoveryMode` setting.
 
 Compatible with:
 
@@ -2617,8 +2654,9 @@ Defines primary Cluster selection mode.
 
 Available values:  
 
-* `FIRST_PRIMARY` - Primary database is the first address in the list of addresses
-* `AUTO` - Primary database is selected if all master nodes are available
+* `AUTO` - The primary cluster is a cluster that has all master nodes available. Master nodes availability scan interval is defined by `scanInterval` setting.
+* `FIRST_PRIMARY` - The primary cluster is the first address in the list of specified addresses in configuration. No primary cluster failover detection.
+* `FIRST_PRIMARY_PUBSUB_NOTIFICATION` - The primary cluster is the first address in the list of specified addresses in the configuration. The new primary cluster is switched manually by connecting to the current primary cluster and publishing a message with the new primary database address in the format `<hostname:port>` to the 'redisson:multicluster:primary' channel. This mode is useful for data migration between clusters.
 
 **subscriptionConnectionMinimumIdleSize**
 
@@ -2796,7 +2834,13 @@ OPENSSL is considered the faster implementation and requires [netty-tcnative-bor
 
 Default value: `null`
 
-Defines the path to the SSL truststore. It stores certificates which are used to identify the server side of an SSL connections. The SSL truststore is read on each new connection creation and can be dynamically reloaded.
+Defines the path to the SSL truststore. It stores certificates which are used to identify the server side of an SSL connections. The SSL truststore is read on each new connection creation and can be dynamically reloaded. Supported formats: JKS, PKCS#12, PEM.
+
+The truststore should contain:
+
+* CA certificates - Root or intermediate Certificate Authority certificates that signed the Valkey or Redis server certificates
+* Self-signed certificates - If your Valkey or Redis servers use self-signed certificates, you'd include those directly
+* Server certificates - The actual certificates used by your Valkey or Redis instances
 
 **sslTruststorePassword**
 
@@ -3211,7 +3255,13 @@ OPENSSL considered as a faster implementation and requires [netty-tcnative-borin
 
 Default value: `null`
 
-Defines the path to the SSL truststore. It stores certificates which are used to identify the server side of an SSL connections. The SSL truststore is read on each new connection creation and can be dynamically reloaded.
+Defines the path to the SSL truststore. It stores certificates which are used to identify the server side of an SSL connections. The SSL truststore is read on each new connection creation and can be dynamically reloaded. Supported formats: JKS, PKCS#12, PEM.
+
+The truststore should contain:
+
+* CA certificates - Root or intermediate Certificate Authority certificates that signed the Valkey or Redis server certificates
+* Self-signed certificates - If your Valkey or Redis servers use self-signed certificates, you'd include those directly
+* Server certificates - The actual certificates used by your Valkey or Redis instances
 
 **sslTruststorePassword**
 
