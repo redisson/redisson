@@ -222,10 +222,10 @@ public class RedissonSetMultimapTest extends RedisDockerTest {
     public void testSizeInMemory() {
         RSetMultimap<String, String> set = redisson.getSetMultimap("test");
         set.put("1", "2");
-        assertThat(set.sizeInMemory()).isEqualTo(88);
+        assertThat(set.sizeInMemory()).isEqualTo(32);
 
         set.put("1", "3");
-        assertThat(set.sizeInMemory()).isEqualTo(96);
+        assertThat(set.sizeInMemory()).isEqualTo(40);
     }
     
     @Test

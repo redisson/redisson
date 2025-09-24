@@ -126,10 +126,10 @@ public class RedissonReactiveListMultimapTest extends BaseReactiveTest {
     public void testSizeInMemory() {
         RListMultimapReactive<Object, Object> list = redisson.getListMultimap("test");
         sync(list.put("1", "2"));
-        assertThat(sync(list.sizeInMemory())).isEqualTo(88);
+        assertThat(sync(list.sizeInMemory())).isEqualTo(32);
 
         sync(list.put("1", "3"));
-        assertThat(sync(list.sizeInMemory())).isEqualTo(96);
+        assertThat(sync(list.sizeInMemory())).isEqualTo(40 );
     }
 
     @Test

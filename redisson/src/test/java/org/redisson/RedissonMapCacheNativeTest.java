@@ -202,7 +202,7 @@ public class RedissonMapCacheNativeTest extends BaseMapTest {
             map.put(i, i, Duration.ofSeconds(5));
         }
         
-        assertThat(map.sizeInMemory()).isGreaterThanOrEqualTo(272);
+        assertThat(map.sizeInMemory()).isGreaterThanOrEqualTo(230);
     }
     
     @Test

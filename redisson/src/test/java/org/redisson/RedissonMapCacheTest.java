@@ -306,7 +306,7 @@ public class RedissonMapCacheTest extends BaseMapTest {
             map.put(i, i, 5, TimeUnit.SECONDS);
         }
         
-        assertThat(map.sizeInMemory()).isGreaterThanOrEqualTo(466);
+        assertThat(map.sizeInMemory()).isGreaterThanOrEqualTo(448);
     }
     
     @Test

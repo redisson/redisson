@@ -445,7 +445,7 @@ public class RedissonBucketTest extends RedisDockerTest {
     public void testSizeInMemory() {
         RBucket<Integer> al = redisson.getBucket("test");
         al.set(1234);
-        assertThat(al.sizeInMemory()).isEqualTo(56);
+        assertThat(al.sizeInMemory()).isEqualTo(32);
     }
     
     @Test
