@@ -5,7 +5,7 @@ Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
 
 ### 25-Sep-2025 - 3.52.0 released
 
-Feature - loadCoalescingConcurrency setting added to `RClusteredLocalCachedMapCache` object  
+Feature - `loadCoalescingConcurrency` setting added to `RClusteredLocalCachedMapCache` object  
 Feature - implemented `EntraIdCredentialsResolver` for authentication using Microsoft Entra ID  
 Feature - added support of RStream `XDELEX` command (thanks to @seakider)  
 Feature - added support of RStream `XACKDEL` command (thanks to @seakider)  
@@ -14,7 +14,8 @@ Feature - added `RMapCache.compute()` method with ttl parameter (thanks to @seak
 Feature - added `pollFirst()` & `pollLast()` methods to `RSortedSet` (thanks to @seakider)  
 Feature - password can be specified in config endpoint url for Valkey or Redis cluster  
 Feature - added `WITHATTRIBS` and `EPSILON` parameters for `VSIM` command in `RVectorSet` object (thanks to @seakider)  
-Feature - RRateLimiter.release() method added (thanks to @moil-xm)  
+Feature - `RRateLimiter.release()` method added (thanks to @moil-xm)  
+Feature - `CredentialsResolver.nextRenewal()` method added  
 
 __Breaking change - VectorSimilarArgs.effort() method renamed to VectorSimilarArgs.explorationFactor()__
 __Breaking change - VectorSimilarArgs.effort() method renamed to VectorSimilarArgs.explorationFactor()__
