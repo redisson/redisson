@@ -169,6 +169,7 @@ public class CacheConfigSupport {
         if (getTimeToLive == null) {
             throw new IllegalArgumentException("RedisCacheWriter.TtlFunction instance doesn't have getTimeToLive method.");
         }
+        ReflectionUtils.makeAccessible(getTimeToLive);
         return (Duration) ReflectionUtils.invokeMethod(getTimeToLive, ttlFun, Objects.class, null);
     }
 
