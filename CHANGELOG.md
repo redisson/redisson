@@ -3,6 +3,36 @@ Redisson Releases History
 
 Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
 
+### 25-Sep-2025 - 3.52.0 released
+
+Feature - loadCoalescingConcurrency setting added to `RClusteredLocalCachedMapCache` object  
+Feature - implemented `EntraIdCredentialsResolver` for authentication using Microsoft Entra ID  
+Feature - added support of RStream `XDELEX` command (thanks to @seakider)  
+Feature - added support of RStream `XACKDEL` command (thanks to @seakider)  
+Feature - Apache Fory - `ForyCodec` added  
+Feature - added `RMapCache.compute()` method with ttl parameter (thanks to @seakider)  
+Feature - added `pollFirst()` & `pollLast()` methods to `RSortedSet` (thanks to @seakider)  
+Feature - password can be specified in config endpoint url for Valkey or Redis cluster  
+Feature - added `WITHATTRIBS` and `EPSILON` parameters for `VSIM` command in `RVectorSet` object (thanks to @seakider)  
+Feature - RRateLimiter.release() method added (thanks to @moil-xm)  
+
+__Breaking change - VectorSimilarArgs.effort() method renamed to VectorSimilarArgs.explorationFactor()__
+__Breaking change - VectorSimilarArgs.effort() method renamed to VectorSimilarArgs.explorationFactor()__
+__Breaking change - VectorAddArgs.effort() method renamed to VectorAddArgs.explorationFactor()__
+__Breaking change - VectorAddArgs.element() renamed to VectorAddArgs.name()__
+__Breaking change - credentialsReapplyInterval setting removed and replaced with CredentialsResolver#nextRenewal()__
+
+Fixed - `Attempt to unlock lock, not locked by current thread by node id` error (thanks to @seakider)  
+Fixed - cluster failover handling for `RBatch` object  
+Fixed - inconsistent Command Result Filtering in Spring Data Redis Transactions/Pipelines (thanks to @pengyongqiang)
+Fixed - Spring Data Reactive module: `XPENDING` missing group (syntax error) and NPE on empty pending summary (thanks to @seakider)  
+Fixed - NameMapper isn't applied properly for `RFairLock` object (thanks to @seakider)  
+Fixed - Connection pool should prioritize recently used connections to allow idle connection discard  
+Fixed - QUIT command shouldn't be used  
+Fixed - ERR unknown command WAITAOF error  
+Fixed - `RLock` object doesn't work in MultiCluster mode  
+Fixed - redisson.license.expiration-year, redisson.license.expiration-month, redisson.license.expiration-day metrics output NaN  
+
 ### 22-Aug-2025 - 3.51.0 released
 
 Feature - `RBitSet.diff()`, `diffInverse()`, `andOr()`, `setExclusive()` methods added  
