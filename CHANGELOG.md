@@ -17,11 +17,11 @@ Feature - added `WITHATTRIBS` and `EPSILON` parameters for `VSIM` command in `RV
 Feature - `RRateLimiter.release()` method added (thanks to @moil-xm)  
 Feature - `CredentialsResolver.nextRenewal()` method added  
 
-__Breaking change - VectorSimilarArgs.effort() method renamed to VectorSimilarArgs.explorationFactor()__
-__Breaking change - VectorSimilarArgs.effort() method renamed to VectorSimilarArgs.explorationFactor()__
-__Breaking change - VectorAddArgs.effort() method renamed to VectorAddArgs.explorationFactor()__
-__Breaking change - VectorAddArgs.element() renamed to VectorAddArgs.name()__
-__Breaking change - credentialsReapplyInterval setting removed and replaced with CredentialsResolver#nextRenewal()__
+__Breaking change - VectorSimilarArgs.effort() method renamed to VectorSimilarArgs.explorationFactor()__  
+__Breaking change - VectorSimilarArgs.effort() method renamed to VectorSimilarArgs.explorationFactor()__  
+__Breaking change - VectorAddArgs.effort() method renamed to VectorAddArgs.explorationFactor()__  
+__Breaking change - VectorAddArgs.element() renamed to VectorAddArgs.name()__  
+__Breaking change - credentialsReapplyInterval setting removed and replaced with CredentialsResolver#nextRenewal()__  
 
 Fixed - `Attempt to unlock lock, not locked by current thread by node id` error (thanks to @seakider)  
 Fixed - cluster failover handling for `RBatch` object  
