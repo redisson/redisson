@@ -132,8 +132,7 @@ public class CacheConfigSupport {
             if (Objects.nonNull(ttl)){
                 cacheConfig.setTTL(ttl.toMillis());
             }
-
-            redissonCacheConfigMap.put(configEntry.getKey(),cacheConfig);
+            redissonCacheConfigMap.put(configEntry.getKey(), cacheConfig);
         }
         return redissonCacheConfigMap;
     }
@@ -157,12 +156,11 @@ public class CacheConfigSupport {
     private Duration resolveTtl(RedisCacheConfiguration config) {
         Method getTtl = ReflectionUtils.findMethod(RedisCacheConfiguration.class, "getTtl");
         Method getTtlFunction = ReflectionUtils.findMethod(RedisCacheConfiguration.class, "getTtlFunction");
-        if(Objects.isNull(getTtl) && Objects.isNull(getTtlFunction)) return null;
+        if (Objects.isNull(getTtl) && Objects.isNull(getTtlFunction)) return null;
         if (Objects.nonNull(getTtl))  {
             /// @see org.springframework.data.redis.cache.RedisCacheConfiguration#getTtl
             return (Duration) ReflectionUtils.invokeMethod(getTtl, config);
-        };
-
+        }
         /// @see org.springframework.data.redis.cache.RedisCacheWriter.TtlFunction#getTimeToLive
         Object ttlFun = ReflectionUtils.invokeMethod(getTtlFunction, config);
         if (Objects.isNull(ttlFun)) return null;
@@ -199,10 +197,12 @@ public class CacheConfigSupport {
             throw new IllegalArgumentException("CacheKeyPrefix instance doesn't have compute method.");
         }
         ReflectionUtils.makeAccessible(compute);
-        String keyPrefix = (String) ReflectionUtils.invokeMethod(compute, cacheKeyPrefixInstance,"");
+        String keyPrefix = (String) ReflectionUtils.invokeMethod(compute, cacheKeyPrefixInstance, "");
         if (Objects.isNull(keyPrefix)) return null;
         // Remove trailing "::" (double colon) if present
         String prefix = keyPrefix.replaceFirst(":{2}$", "");
-        return prefix.isEmpty() ? null : prefix;
+        if (prefix.isEmpty()) return null;
+        return prefix;
     }
+
 }
