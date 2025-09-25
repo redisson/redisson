@@ -28,6 +28,7 @@
         <!-- Spring Boot versions -->
         <spring-boot-actuator.version>3.2.5</spring-boot-actuator.version>
         <spring-boot-autoconfigure.version>3.3.1</spring-boot-autoconfigure.version>
+        <spring-data-redis.version>3.5.4</spring-data-redis.version>
     </properties>
 
     <profiles>
@@ -272,6 +273,15 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-autoconfigure</artifactId>
             <version>${spring-boot-autoconfigure.version}</version>
+            <scope>provided</scope>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- Spring cache support-->
+        <dependency>
+            <groupId>org.springframework.data</groupId>
+            <artifactId>spring-data-redis</artifactId>
+            <version>${spring-data-redis.version}</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>

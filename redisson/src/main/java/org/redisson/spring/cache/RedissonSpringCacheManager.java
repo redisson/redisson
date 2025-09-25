@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -252,10 +253,11 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
     }
 
     protected RMap<Object, Object> getMap(String name, CacheConfig config) {
+        String cacheName = this.createCacheName(name, config);
         if (codec != null) {
-            return redisson.getMap(name, codec);
+            return redisson.getMap(cacheName, codec);
         }
-        return redisson.getMap(name);
+        return redisson.getMap(cacheName);
     }
 
     private Cache createMapCache(String name, CacheConfig config) {
@@ -278,10 +280,11 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
     }
 
     protected RMapCache<Object, Object> getMapCache(String name, CacheConfig config) {
+        String cacheName = this.createCacheName(name, config);
         if (codec != null) {
-            return redisson.getMapCache(name, codec);
+            return redisson.getMapCache(cacheName, codec);
         }
-        return redisson.getMapCache(name);
+        return redisson.getMapCache(cacheName);
     }
 
     @Override
@@ -292,6 +295,11 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
     @Override
     public void setResourceLoader(ResourceLoader resourceLoader) {
         this.resourceLoader = resourceLoader;
+    }
+
+    protected String createCacheName(String name, CacheConfig config){
+        if (Objects.isNull(config) || Objects.isNull(config.getKeyPrefix())) return name;
+        return config.getKeyPrefix() + name;
     }
 
     @Override

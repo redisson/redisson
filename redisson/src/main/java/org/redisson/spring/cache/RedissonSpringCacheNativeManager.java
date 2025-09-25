@@ -34,7 +34,6 @@ import java.util.Map;
  * @author Nikita Koksharov
  *
  */
-@SuppressWarnings("unchecked")
 public class RedissonSpringCacheNativeManager extends RedissonSpringCacheManager implements CacheManager, ResourceLoaderAware, InitializingBean {
 
     /**
@@ -123,10 +122,11 @@ public class RedissonSpringCacheNativeManager extends RedissonSpringCacheManager
 
     @Override
     protected RMap<Object, Object> getMap(String name, CacheConfig config) {
+        String cacheName = super.createCacheName(name, config);
         if (codec != null) {
-            return redisson.getMapCacheNative(name, codec);
+            return redisson.getMapCacheNative(cacheName, codec);
         }
-        return redisson.getMapCacheNative(name);
+        return redisson.getMapCacheNative(cacheName);
     }
 
     @Override
