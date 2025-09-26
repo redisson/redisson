@@ -28,6 +28,9 @@ import org.redisson.misc.CompletableFutureWrapper;
 
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
@@ -491,6 +494,133 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
     @Override
     public RFuture<Void> removeListenerAsync(int listenerId) {
         return removeListenerAsync(super.removeListenerAsync(listenerId), listenerId, "__keyevent@*:hexpired");
+    }
+
+    @Override
+    public V compute(K key, Duration ttl, BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
+        checkNotBatch();
+
+        checkKey(key);
+        Objects.requireNonNull(remappingFunction);
+
+        RLock lock = getLock(key);
+        lock.lock();
+        try {
+            V oldValue = get(key);
+
+            V newValue = remappingFunction.apply(key, oldValue);
+            if (newValue == null) {
+                if (oldValue != null) {
+                    fastRemove(key);
+                }
+            } else {
+                fastPut(key, newValue, ttl);
+            }
+            return newValue;
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    @Override
+    public RFuture<V> computeAsync(K key, Duration ttl, BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
+        checkNotBatch();
+        checkKey(key);
+        Objects.requireNonNull(remappingFunction);
+
+        RLock lock = getLock(key);
+        long threadId = Thread.currentThread().getId();
+        CompletionStage<V> f = (CompletionStage<V>) lock.lockAsync(threadId)
+                .thenCompose(r -> {
+                    RFuture<V> oldValueFuture = getAsync(key, threadId);
+                    return oldValueFuture.thenCompose(oldValue -> {
+                        return CompletableFuture.supplyAsync(() -> remappingFunction.apply(key, oldValue), getServiceManager().getExecutor())
+                                .thenCompose(newValue -> {
+                                    if (newValue == null) {
+                                        if (oldValue != null) {
+                                            return fastRemoveAsync(key)
+                                                    .thenApply(rr -> newValue);
+                                        }
+                                        return CompletableFuture.completedFuture(newValue);
+                                    }
+                                    return fastPutAsync(key, newValue, ttl)
+                                            .thenApply(rr -> newValue);
+                                });
+                    }).whenComplete((c, e) -> {
+                        lock.unlockAsync(threadId);
+                    });
+                });
+        return new CompletableFutureWrapper<>(f);
+
+    }
+
+    @Override
+    public V computeIfAbsent(K key, Duration ttl, Function<? super K, ? extends V> mappingFunction) {
+        checkNotBatch();
+
+        checkKey(key);
+        Objects.requireNonNull(mappingFunction);
+
+        V value = get(key);
+        if (value != null) {
+            return value;
+        }
+        RLock lock = getLock(key);
+        lock.lock();
+        try {
+            value = get(key);
+            if (value == null) {
+                V newValue = mappingFunction.apply(key);
+                if (newValue != null) {
+                    V r = putIfAbsent(key, newValue, ttl);
+                    if (r != null) {
+                        return r;
+                    }
+                    return newValue;
+                }
+                return null;
+            }
+            return value;
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    @Override
+    public RFuture<V> computeIfAbsentAsync(K key, Duration ttl, Function<? super K, ? extends V> mappingFunction) {
+        checkNotBatch();
+
+        checkKey(key);
+        Objects.requireNonNull(mappingFunction);
+
+        RLock lock = getLock(key);
+        long threadId = Thread.currentThread().getId();
+        CompletionStage<V> f = lock.lockAsync(threadId)
+                .thenCompose(r -> {
+                    RFuture<V> oldValueFuture = getAsync(key, threadId);
+                    return oldValueFuture.thenCompose(oldValue -> {
+                        if (oldValue != null) {
+                            return CompletableFuture.completedFuture(oldValue);
+                        }
+
+                        return CompletableFuture.supplyAsync(() -> mappingFunction.apply(key), getServiceManager().getExecutor())
+                                .thenCompose(newValue -> {
+                                    if (newValue != null) {
+                                        return putIfAbsentAsync(key, newValue, ttl).thenApply(rr -> {
+                                            if (rr != null) {
+                                                return rr;
+                                            }
+                                            return newValue;
+                                        });
+                                    }
+                                    return CompletableFuture.completedFuture(null);
+                                });
+                    }).whenComplete((c, e) -> {
+                        lock.unlockAsync(threadId);
+                    });
+                });
+
+        return new CompletableFutureWrapper<>(f);
     }
 
 

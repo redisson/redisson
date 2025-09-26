@@ -23,6 +23,8 @@ import org.redisson.api.map.MapWriter;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 /**
  * Map-based cache with ability to set TTL per entry.
@@ -322,5 +324,34 @@ public interface RMapCacheNativeRx<K, V> extends RMapRx<K, V>, RDestroyable {
      * @return listener id
      */
     Single<Integer> addListener(ObjectListener listener);
+
+    /**
+     * If the specified key is not already associated
+     * with a value, attempts to compute its value using the given mapping function and enters it into this map .
+     * <p>
+     * Stores value mapped by key with specified time to live.
+     * Entry expires after specified time to live.
+     *
+     * @param key - map key
+     * @param ttl - time to live for key\value entry.
+     *              If <code>0</code> then stores infinitely.
+     * @param mappingFunction the mapping function to compute a value
+     * @return current associated value
+     */
+    Maybe<V> computeIfAbsent(K key, Duration ttl, Function<? super K, ? extends V> mappingFunction);
+
+    /**
+     * Computes a new mapping for the specified key and its current mapped value.
+     * <p>
+     * Stores value mapped by key with specified time to live.
+     * Entry expires after specified time to live.
+     *
+     * @param key - map key
+     * @param ttl - time to live for key\value entry.
+     *              If <code>0</code> then stores infinitely.
+     * @param remappingFunction - function to compute a value
+     * @return the new value associated with the specified key, or {@code null} if none
+     */
+    Maybe<V> compute(K key, Duration ttl, BiFunction<? super K, ? super V, ? extends V> remappingFunction);
 
 }
