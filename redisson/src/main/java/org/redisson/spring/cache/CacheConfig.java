@@ -17,6 +17,7 @@ package org.redisson.spring.cache;
 
 import org.redisson.api.EvictionMode;
 import org.redisson.api.map.event.MapEntryListener;
+import org.springframework.data.redis.cache.RedisCacheConfiguration;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,6 +35,8 @@ import java.util.Map;
  *
  */
 public class CacheConfig {
+
+    private String keyPrefix;
 
     private long ttl;
 
@@ -124,6 +127,20 @@ public class CacheConfig {
      */
     public void setMaxIdleTime(long maxIdleTime) {
         this.maxIdleTime = maxIdleTime;
+    }
+
+    public String getKeyPrefix() {
+        return keyPrefix;
+    }
+
+    /**
+     * Set key prefix.
+     *
+     * @param keyPrefix - key prefix
+     */
+    public CacheConfig setKeyPrefix(String keyPrefix) {
+        this.keyPrefix = keyPrefix;
+        return this;
     }
 
     /**
@@ -263,6 +280,16 @@ public class CacheConfig {
      */
     public static Map<String, ? extends CacheConfig> fromYAML(Reader reader) throws IOException {
         return new CacheConfigSupport().fromYAML(reader);
+    }
+
+    /**
+     * Convert redisson configuration to redisson config
+     *
+     * @param config map
+     * @return yaml string
+     */
+    public static Map<String, ? extends CacheConfig> fromConfig(Map<String, RedisCacheConfiguration> config) {
+        return new CacheConfigSupport().fromConfig(config);
     }
 
     /**
