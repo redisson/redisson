@@ -101,7 +101,7 @@ Using Redisson config file ([single mode](https://github.com/redisson/redisson/w
 spring:
   redis:
    redisson: 
-      file: classpath:redisson.yaml
+      config: classpath:redisson.yaml
 ```
 
 Using Redisson settings ([single mode](https://github.com/redisson/redisson/wiki/2.-Configuration#262-single-instance-yaml-config-format),
