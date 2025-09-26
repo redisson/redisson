@@ -145,6 +145,7 @@ public class RedissonSearch implements RSearch {
             addFlatVectorIndex(args, field);
             addHNSWVectorIndex(args, field);
             addSVSVamanaVectorIndex(args, field);
+            addGeoShapeIndex(args, field);
         }
 
         return commandExecutor.writeAsync(indexName, StringCodec.INSTANCE, RedisCommands.FT_CREATE, args.toArray());
@@ -307,6 +308,28 @@ public class RedissonSearch implements RSearch {
                 if (params.getSortMode() == SortMode.UNNORMALIZED) {
                     args.add("UNF");
                 }
+            }
+            if (params.isNoIndex()) {
+                args.add("NOINDEX");
+            }
+            if (params.isIndexMissing()) {
+                args.add("INDEXMISSING");
+            }
+        }
+    }
+
+    private static void addGeoShapeIndex(List<Object> args, FieldIndex field) {
+        if (field instanceof GeoShapeIndex) {
+            GeoShapeIndexParams params = (GeoShapeIndexParams) field;
+            args.add(params.getFieldName());
+            if (params.getAs() != null) {
+                args.add("AS");
+                args.add(params.getAs());
+            }
+            args.add("GEOSHAPE");
+
+            if (params.getCoordinateSystems() != null) {
+                args.add(params.getCoordinateSystems());
             }
             if (params.isNoIndex()) {
                 args.add("NOINDEX");
@@ -781,6 +804,7 @@ public class RedissonSearch implements RSearch {
             addFlatVectorIndex(args, field);
             addHNSWVectorIndex(args, field);
             addSVSVamanaVectorIndex(args, field);
+            addGeoShapeIndex(args, field);
         }
 
         return commandExecutor.writeAsync(indexName, StringCodec.INSTANCE, RedisCommands.FT_ALTER, args.toArray());

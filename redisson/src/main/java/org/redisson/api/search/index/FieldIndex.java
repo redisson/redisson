@@ -93,4 +93,13 @@ public interface FieldIndex {
         return new GeoIndexParams(fieldName);
     }
 
+    /**
+     * Returns geoshape field index
+     *
+     * @param fieldName field name
+     * @return options object
+     */
+    static GeoShapeIndex geoShape(String fieldName) {
+        return new GeoShapeIndexParams(fieldName);
+    }
 }
