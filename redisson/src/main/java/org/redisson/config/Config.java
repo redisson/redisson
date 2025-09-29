@@ -768,7 +768,7 @@ public class Config {
      * Most Redisson methods are Lua-script based and this setting turned
      * on could increase speed of such methods execution and save network traffic.
      * <p>
-     * Default is <code>false</code>.
+     * Default is <code>true</code>.
      * 
      * @param useScriptCache - <code>true</code> if Lua-script caching is required, <code>false</code> otherwise.
      * @return config
