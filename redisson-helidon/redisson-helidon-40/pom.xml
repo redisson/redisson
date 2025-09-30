@@ -50,7 +50,7 @@
         <dependency>
             <groupId>io.helidon.microprofile.config</groupId>
             <artifactId>helidon-microprofile-config</artifactId>
-            <version>4.2.4</version>
+            <version>4.3.0</version>
             <scope>runtime</scope>
             <optional>true</optional>
         </dependency>
@@ -65,7 +65,7 @@
         <dependency>
             <groupId>io.helidon.microprofile.cdi</groupId>
             <artifactId>helidon-microprofile-cdi</artifactId>
-            <version>4.2.4</version>
+            <version>4.3.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
