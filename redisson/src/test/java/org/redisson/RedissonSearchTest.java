@@ -65,6 +65,33 @@ public class RedissonSearchTest extends DockerRedisStackTest {
                                 new ReturnAttribute("val"))
                         .params(Collections.singletonMap("12", "323"))));
     }
+
+    @Test
+    public void testSearchWithParam2() {
+        RJsonBucket<String> b = redisson.getJsonBucket("shape:1", StringCodec.INSTANCE);
+        b.set("{\"name\": \"Green Square\", \"geom\": \"POLYGON ((1 1, 1 3, 3 3, 3 1, 1 1))\"}");
+        RJsonBucket<String> b2 = redisson.getJsonBucket("shape:2", StringCodec.INSTANCE);
+        b2.set("{\"name\": \"Red Rectangle\", \"geom\": \"POLYGON ((2 2.5, 2 3.5, 3.5 3.5, 3.5 2.5, 2 2.5))\"}");
+        RJsonBucket<String> b3 = redisson.getJsonBucket("shape:3", StringCodec.INSTANCE);
+        b3.set("{\"name\": \"Blue Triangle\", \"geom\": \"POLYGON ((3.5 1, 3.75 2, 4 1, 3.5 1))\"}");
+        RJsonBucket<String> b4 = redisson.getJsonBucket("shape:4", StringCodec.INSTANCE);
+        b4.set("{\"name\": \"Purple Point\", \"geom\": \"POINT (2 2)\"}");
+
+        RSearch s = redisson.getSearch(StringCodec.INSTANCE);
+        assertThat(s.getIndexes()).isEmpty();
+
+        s.createIndex("geomidx", IndexOptions.defaults()
+                        .on(IndexType.JSON)
+                        .prefix("shape:"),
+                FieldIndex.text("$.name").as("name"),
+                FieldIndex.geoShape("$.geom").as("geom").coordinateSystems(GeoShapeIndex.CoordinateSystems.FLAT));
+
+        SearchResult r = s.search("geomidx", "(-@name:(Green Square) @geom:[WITHIN $qshape])", QueryOptions.defaults()
+                .params(Collections.singletonMap("qshape", "POLYGON ((1 1, 1 3, 3 3, 3 1, 1 1))"))
+                .returnAttributes(new ReturnAttribute("name"))
+                .dialect(2));
+        assertThat(r.getTotal()).isEqualTo(1);
+    }
     
     @Test
     public void testSearchNoContent() {

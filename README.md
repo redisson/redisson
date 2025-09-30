@@ -16,7 +16,7 @@ Redisson greatly extends the capabilities of Valkey and Redis by providing addit
 * Android compatible
 * [Redis](https://redis.io) compatible - from 3.0 up to the latest version
 * [Valkey](https://valkey.io) compatible - from 7.2.5 up to the latest version
-* Supported deployment types
+* Supported Valkey and Redis deployment types
     * [Proxy](https://redisson.org/docs/configuration/#proxy-mode)
     * [Multi-Cluster](https://redisson.org/docs/configuration/#multi-cluster-mode)
     * [Multi-Sentinel](https://redisson.org/docs/configuration/#multi-sentinel-mode)
