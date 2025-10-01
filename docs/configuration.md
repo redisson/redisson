@@ -88,28 +88,28 @@ The following settings belong to the `org.redisson.Config` object and are common
 
 Default value: `org.redisson.codec.Kryo5Codec`  
 
-Redis or Valkey data codec. Used during read/write data operations. Several implementations are [available](data-and-services/data-serialization.md).
+Valkey or Redis data codec. Used during read/write data operations. Several implementations are [available](data-and-services/data-serialization.md).
 
 **connectionListener**
 
 Default value: `null`
 
-The connection listener, which is triggered when Redisson is connected/disconnected to a Redis or Valkey server.
+The connection listener, which is triggered when Redisson is connected/disconnected to a Valkey or Redis server.
 
 **lazyInitialization**
 
 Default value: `false`
 
-Defines whether Redisson connects to Redis or Valkey only when the first Redis or Valkey call is made or if Redisson connects during creation of the Redisson instance.
+Defines whether Redisson connects to Valkey or Redis only when the first Valkey or Redis call is made or if Redisson connects during creation of the Redisson instance.
 
-`true` - connects to Redis or Valkey only when the first Redis or Valkey call is made 
-`false` - connects to Redis or Valkey upon Redisson instance creation
+`true` - connects to Valkey or Redis only when the first Valkey or Redis call is made 
+`false` - connects to Valkey or Redis upon Redisson instance creation
 
 **nettyThreads**
 
 Default value: 32
 
-Defines the number of threads shared between all internal Redis or Valkey clients used by Redisson. Netty threads are used for Redis or Valkey response decoding and command sending. `0` = `cores_amount * 2`
+Defines the number of threads shared between all internal Valkey or Redis clients used by Redisson. Netty threads are used for Valkey or Redis response decoding and command sending. `0` = `cores_amount * 2`
 
 **nettyHook**
 
@@ -121,7 +121,7 @@ Netty hook applied to Netty Bootstrap and Channel objects.
 
 Default value: `null`
 
-Use the external `ExecutorService' which is used by Netty for Redis or Valkey response decoding and command sending.
+Use the external `ExecutorService' which is used by Netty for Valkey or Redis response decoding and command sending.
 
 **executor**
 
@@ -131,7 +131,7 @@ Use the external `ExecutorService` which processes all listeners of `RTopic,` `R
 
 **eventLoopGroup**
 
-Use external EventLoopGroup. EventLoopGroup processes all Netty connections tied with Redis or Valkey servers using its own threads. By default, each Redisson client creates its own EventLoopGroup. So, if there are multiple Redisson instances in the same JVM, it would be useful to share one EventLoopGroup among them.
+Use external EventLoopGroup. EventLoopGroup processes all Netty connections tied with Valkey or Redis servers using its own threads. By default, each Redisson client creates its own EventLoopGroup. So, if there are multiple Redisson instances in the same JVM, it would be useful to share one EventLoopGroup among them.
 
 Only `io.netty.channel.epoll.EpollEventLoopGroup`, `io.netty.channel.kqueue.KQueueEventLoopGroup` and `io.netty.channel.nio.NioEventLoopGroup` are allowed for usage.
 
@@ -155,7 +155,7 @@ Threads are used to execute the listener's logic of the `RTopic` object, invocat
 
 Default value: RESP2
 
-Defines the Redis or Valkey protocol version. Available values: `RESP2`, `RESP3`
+Defines the Valkey or Redis protocol version. Available values: `RESP2`, `RESP3`
 
 **valkeyCapabilities**
 
@@ -211,7 +211,7 @@ Available implementations:
 
 Default value: `true`
 
-Defines whether to use the Lua-script cache on the Redis or Valkey side. Most Redisson methods are Lua-script-based, and turning this setting on could increase the speed of such methods' execution and save network traffic.
+Defines whether to use the Lua-script cache on the Valkey or Redis side. Most Redisson methods are Lua-script-based, and turning this setting on could increase the speed of such methods' execution and save network traffic.
 
 **keepPubSubOrder**
 
@@ -245,7 +245,7 @@ Default value: `true`
 
 Defines whether to supply ContextClassLoader of the current Thread to Codec. 
 
-Usage of `Thread.getContextClassLoader()` may resolve `ClassNotFoundException` errors arising during Redis or Valkey response decoding. This error might occurr if Redisson is used in both Tomcat and deployed application.
+Usage of `Thread.getContextClassLoader()` may resolve `ClassNotFoundException` errors arising during Valkey or Redis response decoding. This error might occurr if Redisson is used in both Tomcat and deployed application.
 
 **registrationKey**
 
@@ -267,8 +267,8 @@ Defines the Micrometer statistics collection mode.
 
 Available values:  
 
-* `ALL` - collect both Redis or Valkey and Redisson objects statistics
-* `REDIS` - collect only Redis or Valkey statistics
+* `ALL` - collect both Valkey or Redis and Redisson objects statistics
+* `REDIS` - collect only Valkey or Redis statistics
 * `OBJECTS` - collect only Redisson objects statistics
 
 
@@ -344,13 +344,13 @@ Enables cluster slots check during Redisson startup.
 
 **nodeAddresses**
 
-Add a Redis or Valkey cluster node or endpoint address in `host:port` format. Redisson automatically discovers the cluster topology. Use the `rediss://` protocol for SSL connections.
+Add a Valkey or Redis cluster node or endpoint address in `host:port` format. Redisson automatically discovers the cluster topology. Use the `rediss://` protocol for SSL connections.
 
 **scanInterval**
 
 Default value: `1000`
 
-Scan interval in milliseconds. Applied to Redis or Valkey clusters topology scans.
+Scan interval in milliseconds. Applied to Valkey or Redis clusters topology scans.
 
 **topicSlots**
 
@@ -393,7 +393,7 @@ Available values:
 
 Default value: `org.redisson.connection.balancer.RoundRobinLoadBalancer`
 
-Сonnection load balancer for multiple Redis or Valkey servers.
+Сonnection load balancer for multiple Valkey or Redis servers.
 Available implementations:  
 
 * `org.redisson.connection.balancer.CommandsLoadBalancer`  
@@ -423,25 +423,25 @@ Defines whether to use the sharded subscription feature available in Valkey or R
 
 Default value: `24`
 
-Redis or Valkey `slave` node minimum idle connection amount for each slave node.
+Valkey or Redis `slave` node minimum idle connection amount for each slave node.
 
 **slaveConnectionPoolSize**
 
 Default value: `64`
 
-Redis or Valkey `slave` node maximum connection pool size for each slave node.
+Valkey or Redis `slave` node maximum connection pool size for each slave node.
 
 **masterConnectionMinimumIdleSize**
 
 Default value: `24`
 
-Minimum idle connections amount per Redis or Valkey master node.
+Minimum idle connections amount per Valkey or Redis master node.
 
 **masterConnectionPoolSize**
 
 Default value: `64`
 
-Redis or Valkey `master` node maximum connection pool size.
+Valkey or Redis `master` node maximum connection pool size.
 
 **idleConnectionTimeout**
 
@@ -453,19 +453,19 @@ If a pooled connection is not used for a timeout time and the current connection
 
 Default value: `10000`
 
-Timeout in milliseconds during connecting to any Redis or Valkey server. 
+Timeout in milliseconds during connecting to any Valkey or Redis server. 
 
 **timeout**
 
 Default value: `3000`
 
-Redis or Valkey server response timeout in milliseconds. Starts countdown after a Redis or Valkey command is successfully sent. 
+Valkey or Redis server response timeout in milliseconds. Starts countdown after a Valkey or Redis command is successfully sent. 
 
 **retryAttempts**
 
 Default value: `4`
 
-Error will be thrown if Redis or Valkey command can’t be sent to server
+Error will be thrown if Valkey or Redis command can’t be sent to server
 after *retryAttempts*. But if it was sent successfully then *timeout* will be started.
 
 **retryDelay**
@@ -499,44 +499,41 @@ Available implementations:
 
 Default value: `3000`
 
-Interval of Redis or Valkey Slave reconnection attempts, when it was excluded from an internal list of available servers. On each timeout event, Redisson tries to connect to the disconnected Redis or Valkey server. Value in milliseconds.
+Interval of Valkey or Redis Slave reconnection attempts, when it was excluded from an internal list of available servers. On each timeout event, Redisson tries to connect to the disconnected Valkey or Redis server. Value in milliseconds.
 
 **failedSlaveNodeDetector**
 
 Default value: `org.redisson.client.FailedConnectionDetector`
 
-Defines the failed Redis or Valkey Slave node detector object which implements failed node detection logic via the `org.redisson.client.FailedNodeDetector` interface.
+Defines the failed Valkey or Redis Slave node detector object which implements failed node detection logic via the `org.redisson.client.FailedNodeDetector` interface.
 
 Available implementations:  
 
-* `org.redisson.client.FailedConnectionDetector` - marks the Redis or Valkey node as failed if it has ongoing connection errors in the defined `checkInterval` interval (in milliseconds). Default is 180000 milliseconds.  
-* `org.redisson.client.FailedCommandsDetector` - marks the Redis or Valkey node as failed if it has certain amount of command execution errors defined by `failedCommandsLimit` in the defined `checkInterval` interval (in milliseconds).  
-* `org.redisson.client.FailedCommandsTimeoutDetector` - marks the Redis or Valkey node as failed if it has a certain amount of command execution timeout errors defined by `failedCommandsLimit` in the defined `checkInterval` interval in milliseconds.  
+* `org.redisson.client.FailedConnectionDetector` - marks the Valkey or Redis node as failed if it has ongoing connection errors in the defined `checkInterval` interval (in milliseconds). Default is 180000 milliseconds.  
+* `org.redisson.client.FailedCommandsDetector` - marks the Valkey or Redis node as failed if it has certain amount of command execution errors defined by `failedCommandsLimit` in the defined `checkInterval` interval (in milliseconds).  
+* `org.redisson.client.FailedCommandsTimeoutDetector` - marks the Valkey or Redis node as failed if it has a certain amount of command execution timeout errors defined by `failedCommandsLimit` in the defined `checkInterval` interval in milliseconds.  
 
 **password**
 
 Default value: `null`
 
-Password for Redis or Valkey server authentication.
+Password for Valkey or Redis server authentication.
 
 **username**
 
 Default value: `null`
 
-Username for Redis or Valkey server authentication. Requires Redis 6.0 and higher.
+Username for Valkey or Redis server authentication. Requires Redis 6.0 and higher.
 
 **credentialsResolver**
 
 Default value: empty
 
-Defines Credentials resolver, which is invoked during connection for Redis or Valkey server authentication. Returns Credentials object per Redis or Valkey node
-address, it contains `username` and `password` fields. Allows you to specify dynamically changing Redis or Valkey credentials.
+Defines Credentials resolver, which is invoked during connection for Valkey or Redis server authentication. Returns Credentials object per Valkey or Redis node address, it contains `username` and `password` fields. Allows you to specify dynamically changing Valkey or Redis credentials.
 
-**credentialsReapplyInterval** 
+Available implementations:  
 
-Default value: 0
-
-Defines Credentials resolver invoke interval in milliseconds for Valkey or Redis server authentication. `0` means disable.
+* `org.redisson.config.EntraIdCredentialsResolver`  
 
 **subscriptionsPerConnection**
 
@@ -670,7 +667,7 @@ subscription.
 
 Default value: no mapper
 
-Defines NAT mapper interface, which maps Redis or Valkey URI objects and applies to all connections. It can be used to map internal Redis or Valkey server IPs to external ones. 
+Defines NAT mapper interface, which maps Valkey or Redis URI objects and applies to all connections. It can be used to map internal Valkey or Redis server IPs to external ones. 
 
 Available implementations:
 
@@ -688,8 +685,8 @@ Applied to all Redisson objects.
 
 Default value: no mapper
 
-Defines Command mapper, which maps Redis or Valkey command name to a custom name.
-Applied to all Redis or Valkey commands.
+Defines Command mapper, which maps Valkey or Redis command name to a custom name.
+Applied to all Valkey or Redis commands.
 
 
 ### Cluster YAML config format
@@ -766,7 +763,7 @@ Replicated connection mode is activated by follow line:
 
 **nodeAddresses**
 
-Add Redis or Valkey node address in `host:port` format. Multiple nodes could be added at once. All nodes (master and slaves) should be defined. For Aiven Redis hosting single hostname is enough. Use `rediss://` protocol for SSL connection.
+Add Valkey or Redis node address in `host:port` format. Multiple nodes could be added at once. All nodes (master and slaves) should be defined. For Aiven Redis hosting single hostname is enough. Use `rediss://` protocol for SSL connection.
 
 **scanInterval**
 
@@ -778,7 +775,7 @@ Replicated nodes scan interval in milliseconds.
 
 Default value: `org.redisson.connection.balancer.RoundRobinLoadBalancer`
 
-Сonnection load balancer for multiple Redis or Valkey servers.
+Сonnection load balancer for multiple Valkey or Redis servers.
 
 Available implementations:  
 
@@ -791,7 +788,7 @@ Available implementations:
 
 Default value: `false`
 
-Check each Redis or Valkey hostname defined in the configuration for IP address
+Check each Valkey or Redis hostname defined in the configuration for IP address
 changes during the scan process.
 
 **subscriptionConnectionMinimumIdleSize**
@@ -814,25 +811,25 @@ Cached Region Factories.
 
 Default value: `24`
 
-Redis or Valkey `slave` node minimum idle connection amount for each slave node.
+Valkey or Redis `slave` node minimum idle connection amount for each slave node.
 
 **slaveConnectionPoolSize**
 
 Default value: `64`
 
-Redis or Valkey `slave` node maximum connection pool size for each slave node.
+Valkey or Redis `slave` node maximum connection pool size for each slave node.
 
 **masterConnectionMinimumIdleSize**
 
 Default value: `24`
 
-The minimum idle connection amount is per Redis or Valkey master node.
+The minimum idle connection amount is per Valkey or Redis master node.
 
 **masterConnectionPoolSize**
 
 Default value: `64`
 
-Redis or Valkey `master` node maximum connection pool size.
+Valkey or Redis `master` node maximum connection pool size.
 
 **idleConnectionTimeout**
 
@@ -865,19 +862,19 @@ Available values:
 
 Default value: `10000`
 
-Timeout during connecting to any Redis or Valkey server.
+Timeout during connecting to any Valkey or Redis server.
 
 **timeout**
 
 Default value: `3000`
 
-Redis or Valkey server response timeout. It starts to count down after a Redis or Valkey command is successfully sent. Value in milliseconds. 
+Valkey or Redis server response timeout. It starts to count down after a Valkey or Redis command is successfully sent. Value in milliseconds. 
 
 **retryAttempts**
 
 Default value: `4`
 
-An error will be thrown if a Redis or Valkey command can’t be sent to Redis or Valkey server
+An error will be thrown if a Valkey or Redis command can’t be sent to Valkey or Redis server
 after *retryAttempts*. But if it is sent successfully, then *timeout* will be
 started.
 
@@ -911,50 +908,50 @@ Available implementations:
 
 Default value: `3000`
 
-The interval of Redis or Valkey Slave reconnection attempts when excluded from
-the internal list of available servers. On each timeout event, Redisson tries to connect to a disconnected Redis or Valkey server. Value in milliseconds.
+The interval of Valkey or Redis Slave reconnection attempts when excluded from
+the internal list of available servers. On each timeout event, Redisson tries to connect to a disconnected Valkey or Redis server. Value in milliseconds.
 
 **failedSlaveNodeDetector**
 
 Default value: `org.redisson.client.FailedConnectionDetector`
 
-Defines failed Redis or Valkey Slave node detector object, which implements failed
+Defines failed Valkey or Redis Slave node detector object, which implements failed
 node detection logic via `org.redisson.client.FailedNodeDetector`
 interface.
 
 Available implementations:  
 
-* `org.redisson.client.FailedConnectionDetector` - marks the Redis or Valkey node as failed if it has ongoing connection errors in the defined `checkInterval` interval in milliseconds. The default is 180000 milliseconds. 
-* `org.redisson.client.FailedCommandsDetector` - marks the Redis or Valkey node as failed if it has a certain amount of command execution errors defined by the `failedCommandsLimit` in the defined `checkInterval` interval in milliseconds.
-* `org.redisson.client.FailedCommandsTimeoutDetector` - marks the Redis or Valkey node as failed if it has a certain amount of command execution timeout errors defined by the `failedCommandsLimit` in the defined `checkInterval` interval in milliseconds.
+* `org.redisson.client.FailedConnectionDetector` - marks the Valkey or Redis node as failed if it has ongoing connection errors in the defined `checkInterval` interval in milliseconds. The default is 180000 milliseconds. 
+* `org.redisson.client.FailedCommandsDetector` - marks the Valkey or Redis node as failed if it has a certain amount of command execution errors defined by the `failedCommandsLimit` in the defined `checkInterval` interval in milliseconds.
+* `org.redisson.client.FailedCommandsTimeoutDetector` - marks the Valkey or Redis node as failed if it has a certain amount of command execution timeout errors defined by the `failedCommandsLimit` in the defined `checkInterval` interval in milliseconds.
 
 **database**
 
 Default value: `0`
 
-Database index used for Redis or Valkey connection.
+Database index used for Valkey or Redis connection.
 
 **password**
 
 Default value: `null`
 
-Password for Redis or Valkey server authentication. 
+Password for Valkey or Redis server authentication. 
 
 **username**
 
 Default value: `null`
 
-Username for Redis or Valkey server authentication. Requires Redis 6.0 and higher.
+Username for Valkey or Redis server authentication. Requires Redis 6.0 and higher.
 
 **credentialsResolver**
+
 Default value: empty
 
-Defines Credentials resolver, which is invoked during connection for Redis or Valkey server authentication. Returns Credentials object per Redis or Valkey node address, it contains `username` and `password` fields. Allows to specify dynamically changing Redis credentials.
+Defines Credentials resolver, which is invoked during connection for Valkey or Redis server authentication. Returns Credentials object per Valkey or Redis node address, it contains `username` and `password` fields. Allows you to specify dynamically changing Valkey or Redis credentials.
 
-**credentialsReapplyInterval**
-Default value: 0
+Available implementations:  
 
-Defines Credentials resolver invoke interval in milliseconds for Valkey or Redis server authentication. `0` means disable.
+* `org.redisson.config.EntraIdCredentialsResolver`  
 
 **subscriptionsPerConnection**
 
@@ -1058,7 +1055,7 @@ Defines Name mapper which maps Redisson object name to a custom name. Applied to
 
 Default value: no mapper
 
-Defines Command mapper which maps Redis or Valkey command name to a custom name. Applied to all commands.  
+Defines Command mapper which maps Valkey or Redis command name to a custom name. Applied to all commands.  
 
 ### Replicated YAML config format
 Below is a replicated configuration example in YAML format. All property
@@ -1101,7 +1098,7 @@ transportMode: "NIO"
 
 ## Single mode
 
-Single mode can be utilized for a single instance of either a Redis or Valkey node.
+Single mode can be utilized for a single instance of either a Valkey or Redis node.
 
 Compatible with: 
 
@@ -1128,7 +1125,7 @@ RedissonClient redisson = Redisson.create(config);
 ```
 ### Single settings
 
-Documentation covering Redis or Valkey single server configuration is [here](https://redis.io/topics/config). 
+Documentation covering Valkey or Redis single server configuration is [here](https://redis.io/topics/config). 
 Multiple IP bindings for a single hostname are supported in [Proxy mode](#proxy-mode)  
 
 Single server connection mode is activated by the following line:  
@@ -1138,7 +1135,7 @@ Single server connection mode is activated by the following line:
 
 **address**
 
-Redis or Valkey server address in `host:port` format. Use `rediss://` protocol for SSL connection.
+Valkey or Redis server address in `host:port` format. Use `rediss://` protocol for SSL connection.
 
 **subscriptionConnectionMinimumIdleSize**
 
@@ -1156,13 +1153,13 @@ Maximum connection pool size for subscription (pub/sub) channels. Used by `RTopi
 
 Default value: `24`
 
-Minimum idle Redis or Valkey connection amount.
+Minimum idle Valkey or Redis connection amount.
 
 **connectionPoolSize**
 
 Default value: `64`
 
-Redis or Valkey connection maximum pool size.
+Valkey or Redis connection maximum pool size.
 
 **dnsMonitoringInterval**
 
@@ -1180,19 +1177,19 @@ If a pooled connection is not used for a timeout time and current connections am
 
 Default value: `10000`
 
-Timeout during connecting to any Redis or Valkey server
+Timeout during connecting to any Valkey or Redis server
 
 **timeout**
 
 Default value: `3000`
 
-Redis or Valkey server response timeout. It starts to count down once a Redis or Valkey command is successfully sent. Value in milliseconds. 
+Valkey or Redis server response timeout. It starts to count down once a Valkey or Redis command is successfully sent. Value in milliseconds. 
 
 **retryAttempts**
 
 Default value: `4`
 
-Error will be thrown if Redis or Valkey command can’t be sent to Redis or Valkey server
+Error will be thrown if Valkey or Redis command can’t be sent to Valkey or Redis server
 after the defined *retryAttempts*. But if it is sent successfully, then *timeout* will be started.
 
 **retryDelay**
@@ -1225,29 +1222,29 @@ Available implementations:
 
 Default value: `0`
 
-Database index used for Redis or Valkey connection.
+Database index used for Valkey or Redis connection.
 
 **password**
 
 Default value: `null`
 
-Password for Redis or Valkey server authentication.
+Password for Valkey or Redis server authentication.
 
 **username**
 
 Default value: `null`
 
-Username for Redis or Valkey server authentication. Requires Redis 6.0 and higher.
+Username for Valkey or Redis server authentication. Requires Redis 6.0 and higher.
 
 **credentialsResolver**
+
 Default value: empty
 
-Defines Credentials resolver, which is invoked during connection for Redis or Valkey server authentication. Returns Credentials object per Redis or Valkey node address, it contains `username` and `password` fields. Allows you to specify dynamically changing Redis credentials.
+Defines Credentials resolver, which is invoked during connection for Valkey or Redis server authentication. Returns Credentials object per Valkey or Redis node address, it contains `username` and `password` fields. Allows you to specify dynamically changing Valkey or Redis credentials.
 
-**credentialsReapplyInterval**
-Default value: 0
+Available implementations:  
 
-Defines Credentials resolver invoke interval in milliseconds for Valkey or Redis server authentication. `0` means disable.
+* `org.redisson.config.EntraIdCredentialsResolver`  
 
 **subscriptionsPerConnection**
 
@@ -1363,7 +1360,7 @@ Applied to all Redisson objects.
 
 Default value: no mapper
 
-Defines Command mapper which maps Redis or Valkey command name to a custom name. Applied to all commands.
+Defines Command mapper which maps Valkey or Redis command name to a custom name. Applied to all commands.
 
 ### Single YAML config format
 
@@ -1447,11 +1444,11 @@ Check if slave node `master-link-status` field has status `ok`.
 **masterName**
 
 
-Master server name used by Redis or Valkey Sentinel servers and master change monitoring task.
+Master server name used by Valkey or Redis Sentinel servers and master change monitoring task.
 
 **addSentinelAddress**
 
-Add Redis or Valkey Sentinel node address in `host:port` format. Multiple nodes at once could be added.
+Add Valkey or Redis Sentinel node address in `host:port` format. Multiple nodes at once could be added.
 
 **readMode**
 
@@ -1478,7 +1475,7 @@ Available values:
 
 Default value: `org.redisson.connection.balancer.RoundRobinLoadBalancer`
 
-Сonnection load balancer for multiple Redis or Valkey servers.
+Сonnection load balancer for multiple Valkey or Redis servers.
 Available implementations:  
 
 * `org.redisson.connection.balancer.CommandsLoadBalancer`  
@@ -1502,26 +1499,26 @@ Maximum connection pool size for subscription (pub/sub) channels. Used by `RTopi
 
 Default value: `24`
 
-Redis or Valkey `slave` node minimum idle connection amount for each slave node.
+Valkey or Redis `slave` node minimum idle connection amount for each slave node.
 
 **slaveConnectionPoolSize**
 
 Default value: `64`
 
-Redis or Valkey `slave` node maximum connection pool size for each slave node
+Valkey or Redis `slave` node maximum connection pool size for each slave node
 
 
 **masterConnectionMinimumIdleSize**
 
 Default value: `24`
 
-Minimum idle connections amount per Redis or Valkey master node.
+Minimum idle connections amount per Valkey or Redis master node.
 
 **masterConnectionPoolSize**
 
 Default value: `64`
 
-Redis or Valkey `master` node maximum connection pool size.
+Valkey or Redis `master` node maximum connection pool size.
 
 **idleConnectionTimeout**
 
@@ -1533,19 +1530,19 @@ If a pooled connection is not used for a timeout time and current connections am
 
 Default value: `10000`
 
-Timeout during connecting to any Redis or Valkey server. 
+Timeout during connecting to any Valkey or Redis server. 
 
 **timeout**
 
 Default value: `3000`
 
-Redis or Valkey server response timeout. Starts to count down when a command was successfully sent. Value in milliseconds. 
+Valkey or Redis server response timeout. Starts to count down when a command was successfully sent. Value in milliseconds. 
 
 **retryAttempts**
 
 Default value: `4`
 
-Error will be thrown if Redis or Valkey command can’t be sent to Redis server after *retryAttempts*. But if it was sent successfully then *timeout* will be started.
+Error will be thrown if Valkey or Redis command can’t be sent to Redis server after *retryAttempts*. But if it was sent successfully then *timeout* will be started.
 
 **retryDelay**
 
@@ -1578,62 +1575,62 @@ Available implementations:
 
 Default value: `3000`
 
-The interval of Redis or Valkey Slave reconnection attempts when it was excluded from internal list of available servers. On each timeout event Redisson tries to connect to disconnected server. Value in milliseconds.
+The interval of Valkey or Redis Slave reconnection attempts when it was excluded from internal list of available servers. On each timeout event Redisson tries to connect to disconnected server. Value in milliseconds.
 
 **failedSlaveNodeDetector**
 
 Default value: `org.redisson.client.FailedConnectionDetector`
 
-Defines failed Redis or Valkey Slave node detector object which implements failed node detection logic via `org.redisson.client.FailedNodeDetector`
+Defines failed Valkey or Redis Slave node detector object which implements failed node detection logic via `org.redisson.client.FailedNodeDetector`
 interface.
 
 Available implementations:  
 
-* `org.redisson.client.FailedConnectionDetector` - marks the Redis or Valkey node as failed if it has ongoing connection errors in defined `checkInterval` interval in milliseconds. Default is 180000 milliseconds.  
-* `org.redisson.client.FailedCommandsDetector` - marks the Redis or Valkey node as failed if it has certain amount of command execution errors defined by `failedCommandsLimit` in defined `checkInterval` interval in milliseconds.  
-* `org.redisson.client.FailedCommandsTimeoutDetector` - marks the Redis or Valkey node as failed if it has certain amount of command execution timeout errors defined by `failedCommandsLimit` in defined `checkInterval` interval in milliseconds.  
+* `org.redisson.client.FailedConnectionDetector` - marks the Valkey or Redis node as failed if it has ongoing connection errors in defined `checkInterval` interval in milliseconds. Default is 180000 milliseconds.  
+* `org.redisson.client.FailedCommandsDetector` - marks the Valkey or Redis node as failed if it has certain amount of command execution errors defined by `failedCommandsLimit` in defined `checkInterval` interval in milliseconds.  
+* `org.redisson.client.FailedCommandsTimeoutDetector` - marks the Valkey or Redis node as failed if it has certain amount of command execution timeout errors defined by `failedCommandsLimit` in defined `checkInterval` interval in milliseconds.  
 
 **database**
 
 Default value: `0`
 
-Database index used for Redis or Valkey connection.
+Database index used for Valkey or Redis connection.
 
 **password**
 
 Default value: `null`
 
-Password for Redis or Valkey servers authentication.
+Password for Valkey or Redis servers authentication.
 
 **username**
 
 Default value: `null`
 
-Username for Redis or Valkey servers authentication. Requires Redis 6.0 and higher.
+Username for Valkey or Redis servers authentication. Requires Redis 6.0 and higher.
 
 **sentinelPassword**
 
 Default value: `null`
 
-Password for Redis or Valkey Sentinel servers authentication. Used only if
+Password for Valkey or Redis Sentinel servers authentication. Used only if
 Sentinel password differs from master’s and slave’s.
 
 **sentinelUsername**
 
 Default value: `null`
 
-Username for Redis or Valkey Sentinel servers for authentication. Used only if
+Username for Valkey or Redis Sentinel servers for authentication. Used only if
 Sentinel username differs from master’s and slave’s. Requires Redis 6.0 and higher.
 
 **credentialsResolver**
+
 Default value: empty
 
-Defines Credentials resolver, which is invoked during connection for Redis or Valkey server authentication. Returns Credentials object per node address, it contains `username` and `password` fields. Allows you to specify dynamically changing credentials.
+Defines Credentials resolver, which is invoked during connection for Valkey or Redis server authentication. Returns Credentials object per Valkey or Redis node address, it contains `username` and `password` fields. Allows you to specify dynamically changing Valkey or Redis credentials.
 
-**credentialsReapplyInterval**
-Default value: 0
+Available implementations:  
 
-Defines Credentials resolver invoke interval in milliseconds for Valkey or Redis server authentication. `0` means disable.
+* `org.redisson.config.EntraIdCredentialsResolver`  
 
 **sentinelsDiscovery**
 
@@ -1747,7 +1744,7 @@ Enables TCP noDelay for connections.
 
 Default value: no mapper
 
-Defines NAT mapper interface which maps Redis or Valkey URI object and applied to all connections. Can be used to map internal Redis server IPs to external ones. 
+Defines NAT mapper interface which maps Valkey or Redis URI object and applied to all connections. Can be used to map internal Redis server IPs to external ones. 
 
 Available implementations:  
 
@@ -1765,7 +1762,7 @@ Applied to all Redisson objects.
 
 Default value: no mapper
 
-Defines Command mapper which maps Redis or Valkey command name to a custom name. Applied to all commands.
+Defines Command mapper which maps Valkey or Redis command name to a custom name. Applied to all commands.
 
 ### Sentinel YAML config format
 
@@ -1825,7 +1822,7 @@ RedissonClient redisson = Redisson.create(config);
 ```
 ### Master slave settings
 
-Documentation covering Redis or Valkey server master/slave configuration is [here](https://redis.io/topics/replication).  
+Documentation covering Valkey or Redis server master/slave configuration is [here](https://redis.io/topics/replication).  
 
 Master slave connection mode is activated by the following line:  
 `MasterSlaveServersConfig masterSlaveConfig = config.useMasterSlaveServers();`  
@@ -1842,11 +1839,11 @@ disable.
 
 **masterAddress**
 
-Redis or Valkey master node address in `host:port` format. Use `rediss://` protocol for SSL connection.
+Valkey or Redis master node address in `host:port` format. Use `rediss://` protocol for SSL connection.
 
 **addSlaveAddress**
 
-Add Redis or Valkey slave node address in `host:port` format. Multiple nodes at
+Add Valkey or Redis slave node address in `host:port` format. Multiple nodes at
 once could be added. Use `rediss://` protocol for SSL connection.
 
 **readMode**
@@ -1875,7 +1872,7 @@ Available values:
 
 Default value: `org.redisson.connection.balancer.RoundRobinLoadBalancer`
 
-Сonnection load balancer for multiple Redis or Valkey servers.
+Сonnection load balancer for multiple Valkey or Redis servers.
 Available implementations:  
 
 * `org.redisson.connection.balancer.CommandsLoadBalancer`  
@@ -1899,25 +1896,25 @@ Maximum connection pool size for subscription (pub/sub) channels. Used by `RTopi
 
 Default value: `24`
 
-Redis or Valkey `slave` node minimum idle connection amount for each slave node.
+Valkey or Redis `slave` node minimum idle connection amount for each slave node.
 
 **slaveConnectionPoolSize**
 
 Default value: `64`
 
-Redis or Valkey `slave` node maximum connection pool size for each slave node.
+Valkey or Redis `slave` node maximum connection pool size for each slave node.
 
 **masterConnectionMinimumIdleSize**
 
 Default value: `24`
 
-Minimum idle connections amount per Redis or Valkey master node.
+Minimum idle connections amount per Valkey or Redis master node.
 
 **masterConnectionPoolSize**
 
 Default value: `64`
 
-Redis or Valkey `master` node maximum connection pool size.
+Valkey or Redis `master` node maximum connection pool size.
 
 **idleConnectionTimeout**
 
@@ -1929,19 +1926,19 @@ If a pooled connection is not used for a timeout time and current connections am
 
 Default value: `10000`
 
-Timeout during connecting to any Redis or Valkey server. 
+Timeout during connecting to any Valkey or Redis server. 
 
 **timeout**
 
 Default value: `3000`
 
-Redis or Valkey server response timeout. Starts to count down when a command was successfully sent. Value in milliseconds. 
+Valkey or Redis server response timeout. Starts to count down when a command was successfully sent. Value in milliseconds. 
 
 **retryAttempts**
 
 Default value: `4`
 
-Error will be thrown if Redis or Valkey command can’t be sent to server after *retryAttempts*. But if it was sent successfully then *timeout* will be started.
+Error will be thrown if Valkey or Redis command can’t be sent to server after *retryAttempts*. But if it was sent successfully then *timeout* will be started.
 
 **retryDelay**
 
@@ -1973,47 +1970,47 @@ Available implementations:
 
 Default value: `3000`
 
-Interval of Redis or Valkey Slave reconnection attempts when it was excluded from internal list of available servers. On each timeout event Redisson tries to connect to disconnected server. Value in milliseconds.
+Interval of Valkey or Redis Slave reconnection attempts when it was excluded from internal list of available servers. On each timeout event Redisson tries to connect to disconnected server. Value in milliseconds.
 
 **failedSlaveNodeDetector**
 
 Default value: `org.redisson.client.FailedConnectionDetector`
 
-Defines failed Redis or Valkey Slave node detector object which implements failed node detection logic via `org.redisson.client.FailedNodeDetector` interface.
+Defines failed Valkey or Redis Slave node detector object which implements failed node detection logic via `org.redisson.client.FailedNodeDetector` interface.
 
 Available implementations:  
 
-* `org.redisson.client.FailedConnectionDetector` - marks the Redis or Valkey node as failed if it has ongoing connection errors in defined `checkInterval` interval in milliseconds. Default is 180000 milliseconds. 
-* `org.redisson.client.FailedCommandsDetector` - marks the Redis or Valkey node as failed if it has certain amount of command execution errors defined by `failedCommandsLimit` in defined `checkInterval` interval in milliseconds.
-* `org.redisson.client.FailedCommandsTimeoutDetector` - marks the Redis or Valkey node as failed if it has certain amount of command execution timeout errors defined by `failedCommandsLimit` in defined `checkInterval` interval in milliseconds.
+* `org.redisson.client.FailedConnectionDetector` - marks the Valkey or Redis node as failed if it has ongoing connection errors in defined `checkInterval` interval in milliseconds. Default is 180000 milliseconds. 
+* `org.redisson.client.FailedCommandsDetector` - marks the Valkey or Redis node as failed if it has certain amount of command execution errors defined by `failedCommandsLimit` in defined `checkInterval` interval in milliseconds.
+* `org.redisson.client.FailedCommandsTimeoutDetector` - marks the Valkey or Redis node as failed if it has certain amount of command execution timeout errors defined by `failedCommandsLimit` in defined `checkInterval` interval in milliseconds.
 
 **database**
 
 Default value: `0`
 
-Database index used for Redis or Valkey connection.
+Database index used for Valkey or Redis connection.
 
 **password**
 
 Default value: `null`
 
-Password for Redis or Valkey server authentication. 
+Password for Valkey or Redis server authentication. 
 
 **username**
 
 Default value: `null`
 
-Username for Redis or Valkey server authentication. Requires Redis 6.0 and higher.
+Username for Valkey or Redis server authentication. Requires Redis 6.0 and higher.
 
 **credentialsResolver**
+
 Default value: empty
 
-Defines Credentials resolver, which is invoked during connection for Redis or Valkey server authentication. Returns Credentials object per address, it contains `username` and `password` fields. Allows you to specify dynamically changing credentials.
+Defines Credentials resolver, which is invoked during connection for Valkey or Redis server authentication. Returns Credentials object per Valkey or Redis node address, it contains `username` and `password` fields. Allows you to specify dynamically changing Valkey or Redis credentials.
 
-**credentialsReapplyInterval**
-Default value: 0
+Available implementations:  
 
-Defines Credentials resolver invoke interval in milliseconds for Valkey or Redis server authentication. `0` means disable.
+* `org.redisson.config.EntraIdCredentialsResolver`  
 
 **subscriptionsPerConnection**
 
@@ -2130,7 +2127,7 @@ Defines Name mapper which maps Redisson object name to a custom name. Applied to
 
 Default value: no mapper
 
-Defines Command mapper which maps Redis or Valkey command name to a custom name. Applied to all commands.  
+Defines Command mapper which maps Valkey or Redis command name to a custom name. Applied to all commands.  
 
 ### Master slave YAML config format
 
@@ -2173,7 +2170,7 @@ transportMode: "NIO"
 
 _This feature is available only in [Redisson PRO](https://redisson.pro/feature-comparison.html) edition._
 
-Proxy mode supports single or multiple Redis or Valkey databases (including synced with active-active replication) used for read/write operations. Each Redis or Valkey hostname might be resolved to more than one IP address. 
+Proxy mode supports single or multiple Valkey or Redis databases (including synced with active-active replication) used for read/write operations. Each Valkey or Redis hostname might be resolved to more than one IP address. 
 
 Depending on value of [proxyMode](#proxy-mode) setting there are two modes:  
 
@@ -2212,7 +2209,7 @@ Proxy servers connection mode is activated by the following line:
 
 **addresses**
 
-Redis or Valkey proxy servers addresses in `host:port` format. If single hostname is defined and DNS monitoring is enabled then all resolved ips are considered as proxy nodes and used by load balancer. Use `rediss://` protocol for SSL connection.
+Valkey or Redis proxy servers addresses in `host:port` format. If single hostname is defined and DNS monitoring is enabled then all resolved ips are considered as proxy nodes and used by load balancer. Use `rediss://` protocol for SSL connection.
 
 **subscriptionConnectionMinimumIdleSize**
 
@@ -2230,23 +2227,23 @@ Maximum connection pool size for subscription (pub/sub) channels. Used by `RTopi
 
 Default value: `24`
 
-Minimum idle Redis or Valkey connection amount.
+Minimum idle Valkey or Redis connection amount.
 
 **connectionPoolSize**
 
 Default value: `64`
 
-Redis or Valkey connection maximum pool size.
+Valkey or Redis connection maximum pool size.
 
 **scanMode**
 
 Default value: `PING`
 
-Defines scan mode to detect failed Redis or Valkey nodes.
+Defines scan mode to detect failed Valkey or Redis nodes.
 Available values:  
 
-* `PING` - Each Redis or Valkey node is checked using PING command. If node unable to response then it considered as a failed node.  
-* `PUBSUB` - Messages are sent over pubsub channel per Redis or Valkey node and should be received by all other nodes. If node unable to subscribe or receive message then it considered as a failed node.  
+* `PING` - Each Valkey or Redis node is checked using PING command. If node unable to response then it considered as a failed node.  
+* `PUBSUB` - Messages are sent over pubsub channel per Valkey or Redis node and should be received by all other nodes. If node unable to subscribe or receive message then it considered as a failed node.  
 
 **proxyMode**
 
@@ -2268,7 +2265,7 @@ Defines proxy nodes scan interval in milliseconds. `0` means disable.
 
 Default value: `3000`
 
-Defines proxy nodes scan timeout in milliseconds applied per Redis or Valkey node.
+Defines proxy nodes scan timeout in milliseconds applied per Valkey or Redis node.
 
 **dnsMonitoringInterval**
 
@@ -2286,19 +2283,19 @@ If a pooled connection is not used for a timeout time and current connections am
 
 Default value: `10000`
 
-Timeout during connecting to any Redis or Valkey server.
+Timeout during connecting to any Valkey or Redis server.
 
 **timeout**
 
 Default value: `3000`
 
-Redis or Valkey server response timeout. Starts to count down when a command was successfully sent. Value in milliseconds. 
+Valkey or Redis server response timeout. Starts to count down when a command was successfully sent. Value in milliseconds. 
 
 **retryAttempts**
 
 Default value: `4`
 
-Error will be thrown if Redis or Valkey  ommand can’t be sent to a server after *retryAttempts*. But if it was sent successfully then *timeout* will be started.
+Error will be thrown if Valkey or Redis  ommand can’t be sent to a server after *retryAttempts*. But if it was sent successfully then *timeout* will be started.
 
 **retryDelay**
 
@@ -2330,11 +2327,11 @@ Available implementations:
 
 Default value: `0`
 
-Database index used for Redis or Valkey connection.
+Database index used for Valkey or Redis connection.
 
 **failedNodeReconnectionInterval**
 
-When the retry interval reached Redisson tries to connect to the disconnected Redis or Valkey node. After successful reconnection Redis node is become available for read/write operations execution.
+When the retry interval reached Redisson tries to connect to the disconnected Valkey or Redis node. After successful reconnection Redis node is become available for read/write operations execution.
 
 Default value: `3000`
 
@@ -2342,37 +2339,36 @@ Default value: `3000`
 
 Default value: `org.redisson.client.FailedConnectionDetector`
 
-Defines failed Redis or Valkey Slave node detector object which implements failed node detection logic via `org.redisson.client.FailedNodeDetector` interface.
+Defines failed Valkey or Redis Slave node detector object which implements failed node detection logic via `org.redisson.client.FailedNodeDetector` interface.
 
 Available implementations:  
 
-* `org.redisson.client.FailedConnectionDetector` - marks the Redis or Valkey node as failed if it has ongoing connection errors in defined `checkInterval` interval in milliseconds. Default is 180000 milliseconds. 
-* `org.redisson.client.FailedCommandsDetector` - marks the Redis or Valkey node as failed if it has certain amount of command execution errors defined by `failedCommandsLimit` in defined `checkInterval` interval in
+* `org.redisson.client.FailedConnectionDetector` - marks the Valkey or Redis node as failed if it has ongoing connection errors in defined `checkInterval` interval in milliseconds. Default is 180000 milliseconds. 
+* `org.redisson.client.FailedCommandsDetector` - marks the Valkey or Redis node as failed if it has certain amount of command execution errors defined by `failedCommandsLimit` in defined `checkInterval` interval in
 milliseconds.
-* `org.redisson.client.FailedCommandsTimeoutDetector` - marks the Redis or Valkey node as failed if it has certain amount of command execution timeout errors defined by `failedCommandsLimit` in defined `checkInterval` interval in milliseconds.
+* `org.redisson.client.FailedCommandsTimeoutDetector` - marks the Valkey or Redis node as failed if it has certain amount of command execution timeout errors defined by `failedCommandsLimit` in defined `checkInterval` interval in milliseconds.
 
 **password**
 
 Default value: `null`
 
-Password for Redis or Valkey server authentication.
+Password for Valkey or Redis server authentication.
 
 **username**
 
 Default value: `null`
 
-Username for Redis or Valkey server authentication. Requires Redis 6.0 and higher.
+Username for Valkey or Redis server authentication. Requires Redis 6.0 and higher.
 
 **credentialsResolver**
 
 Default value: empty
 
-Defines Credentials resolver, which is invoked during connection for Redis or Valkey server authentication. Returns Credentials object per address, it contains `username` and `password` fields. Allows you to specify dynamically changing credentials.
+Defines Credentials resolver, which is invoked during connection for Valkey or Redis server authentication. Returns Credentials object per Valkey or Redis node address, it contains `username` and `password` fields. Allows you to specify dynamically changing Valkey or Redis credentials.
 
-**credentialsReapplyInterval**
-Default value: 0
+Available implementations:  
 
-Defines Credentials resolver invoke interval in milliseconds for Valkey or Redis server authentication. `0` means disable.
+* `org.redisson.config.EntraIdCredentialsResolver`  
 
 **subscriptionsPerConnection**
 
@@ -2477,7 +2473,7 @@ Enables TCP noDelay for connection.
 
 Default value: `org.redisson.connection.balancer.RoundRobinLoadBalancer`
 
-Сonnection load balancer for multiple Redis or Valkey servers.
+Сonnection load balancer for multiple Valkey or Redis servers.
 Available implementations:  
 
 * `org.redisson.connection.balancer.CommandsLoadBalancer`  
@@ -2496,7 +2492,7 @@ Applied to all Redisson objects.
 
 Default value: no mapper
 
-Defines Command mapper which maps Redis or Valkey command name to a custom name. Applied to all commands.
+Defines Command mapper which maps Valkey or Redis command name to a custom name. Applied to all commands.
 
 ### Proxy mode YAML config format
 
@@ -2569,7 +2565,7 @@ Enables cluster slots check during Redisson startup.
 
 **addresses**
 
-Each entry is a Redis or Valkey cluster setup, which is defined by the hostname of any of nodes in cluster or endpoint. Addresses should be in `redis://host:port` format. Use `rediss://` protocol for SSL connection.
+Each entry is a Valkey or Redis cluster setup, which is defined by the hostname of any of nodes in cluster or endpoint. Addresses should be in `redis://host:port` format. Use `rediss://` protocol for SSL connection.
 
 **scanInterval**
 
@@ -2630,15 +2626,15 @@ Defines replication of the primary Cluster with secondary Valkey or Redis Cluste
 
 Available values:  
 
-* `NONE` - No replication executed by Redisson. Replication should be executed on Redis or Valkey side,  
-* `SYNC` - Each Redisson method invocation which modifies data is completed only if it has been replicated to all Redis or Valkey deployments,  
-* `ASYNC` - Each Redisson method invocation which modifies data doesn't wait for replication to complete on other Redis or Valkey deployments  
+* `NONE` - No replication executed by Redisson. Replication should be executed on Valkey or Redis side,  
+* `SYNC` - Each Redisson method invocation which modifies data is completed only if it has been replicated to all Valkey or Redis deployments,  
+* `ASYNC` - Each Redisson method invocation which modifies data doesn't wait for replication to complete on other Valkey or Redis deployments  
 
 **loadBalancer**
 
 Default value: `org.redisson.connection.balancer.RoundRobinLoadBalancer`
 
-Сonnection load balancer for multiple Redis or Valkey servers.
+Сonnection load balancer for multiple Valkey or Redis servers.
 Available implementations:  
 
 * `org.redisson.connection.balancer.CommandsLoadBalancer`  
@@ -2674,25 +2670,25 @@ Maximum connection pool size for subscription (pub/sub) channels. Used by `RTopi
 
 Default value: `24`
 
-Redis or Valkey `slave` node minimum idle connection amount for each slave node.
+Valkey or Redis `slave` node minimum idle connection amount for each slave node.
 
 **slaveConnectionPoolSize**
 
 Default value: `64`
 
-Redis or Valkey `slave` node maximum connection pool size for each slave node.
+Valkey or Redis `slave` node maximum connection pool size for each slave node.
 
 **masterConnectionMinimumIdleSize**
 
 Default value: `24`
 
-Minimum idle connections amount per Redis or Valkey master node.
+Minimum idle connections amount per Valkey or Redis master node.
 
 **masterConnectionPoolSize**
 
 Default value: `64`
 
-Redis or Valkey `master' node maximum connection pool size.
+Valkey or Redis `master' node maximum connection pool size.
 
 **idleConnectionTimeout**
 
@@ -2704,19 +2700,19 @@ If a pooled connection is not used for a timeout time and current connections am
 
 Default value: `10000`
 
-Timeout in milliseconds during connecting to any Redis or Valkey server
+Timeout in milliseconds during connecting to any Valkey or Redis server
 
 **timeout**
 
 Default value: `3000`
 
-Redis or Valkey server response timeout in milliseconds. Starts to count down when a command was successfully sent. 
+Valkey or Redis server response timeout in milliseconds. Starts to count down when a command was successfully sent. 
 
 **retryAttempts**
 
 Default value: `4`
 
-Error will be thrown if Redis or Valkey command can’t be sent to a server after *retryAttempts*. But if it was sent successfully then *timeout* will be started.
+Error will be thrown if Valkey or Redis command can’t be sent to a server after *retryAttempts*. But if it was sent successfully then *timeout* will be started.
 
 **retryDelay**
 
@@ -2748,42 +2744,41 @@ Available implementations:
 
 Default value: `3000`
 
-Interval of Redis or Valkey Slave reconnection attempts when it was excluded from internal list of available servers. On each timeout event Redisson tries to connect to disconnected server. Value in milliseconds.
+Interval of Valkey or Redis Slave reconnection attempts when it was excluded from internal list of available servers. On each timeout event Redisson tries to connect to disconnected server. Value in milliseconds.
 
 **failedSlaveNodeDetector**
 
 Default value: `org.redisson.client.FailedConnectionDetector`
 
-Defines failed Redis or Valkey Slave node detector object which implements failed node detection logic via `org.redisson.client.FailedNodeDetector` interface.  
+Defines failed Valkey or Redis Slave node detector object which implements failed node detection logic via `org.redisson.client.FailedNodeDetector` interface.  
 
 Available implementations:  
 
-* `org.redisson.client.FailedConnectionDetector` - marks the Redis or Valkey node as failed if it has ongoing connection errors in defined `checkInterval` interval in milliseconds. Default is 180000 milliseconds.  
-* `org.redisson.client.FailedCommandsDetector` - marks the Redis or Valkey node as failed if it has certain amount of command execution errors defined by `failedCommandsLimit` in defined `checkInterval` interval in milliseconds.  
+* `org.redisson.client.FailedConnectionDetector` - marks the Valkey or Redis node as failed if it has ongoing connection errors in defined `checkInterval` interval in milliseconds. Default is 180000 milliseconds.  
+* `org.redisson.client.FailedCommandsDetector` - marks the Valkey or Redis node as failed if it has certain amount of command execution errors defined by `failedCommandsLimit` in defined `checkInterval` interval in milliseconds.  
 * `org.redisson.client.FailedCommandsTimeoutDetector` - marks the Redis node as failed if it has certain amount of command execution timeout errors defined by `failedCommandsLimit` in defined `checkInterval` interval in milliseconds.  
 
 **password**
 
 Default value: `null`
 
-Password for Redis or Valkey server authentication.
+Password for Valkey or Redis server authentication.
 
 **username**
 
 Default value: `null`
 
-Username for Redis or Valkey server authentication. Requires Redis 6.0 and higher.
+Username for Valkey or Redis server authentication. Requires Redis 6.0 and higher.
 
 **credentialsResolver**
 
 Default value: empty
 
-Defines Credentials resolver, which is invoked during connection for Redis or Valkey server authentication. Returns Credentials object per node address, it contains `username` and `password` fields. Allows you to specify dynamically changing credentials.
+Defines Credentials resolver, which is invoked during connection for Valkey or Redis server authentication. Returns Credentials object per Valkey or Redis node address, it contains `username` and `password` fields. Allows you to specify dynamically changing Valkey or Redis credentials.
 
-**credentialsReapplyInterval**
-Default value: 0
+Available implementations:  
 
-Defines Credentials resolver invoke interval in milliseconds for Valkey or Redis server authentication. `0` means disable.
+* `org.redisson.config.EntraIdCredentialsResolver`  
 
 **subscriptionsPerConnection**
 
@@ -2891,7 +2886,7 @@ Enables TCP noDelay for connection.
 
 Default value: no mapper
 
-Defines NAT mapper interface which maps Redis or Valkey URI object and applied to all connections. Can be used to map internal Redis server IPs to external ones. Available implementations:  
+Defines NAT mapper interface which maps Valkey or Redis URI object and applied to all connections. Can be used to map internal Redis server IPs to external ones. Available implementations:  
 
 * `org.redisson.api.HostPortNatMapper`  
 * `org.redisson.api.HostNatMapper`  
@@ -2906,7 +2901,7 @@ Defines Name mapper which maps Redisson object name to a custom name. Applied to
 
 Default value: no mapper
 
-Defines Command mapper which maps Redis or Valkey command name to a custom name. Applied to all commands.  
+Defines Command mapper which maps Valkey or Redis command name to a custom name. Applied to all commands.  
 
 ### Multi Cluster YAML config format
 
@@ -2955,7 +2950,7 @@ transportMode: "NIO"
 
 _This feature is available only in [Redisson PRO](https://redisson.pro/feature-comparison.html) edition._
 
-Supports multiple Redis or Valkey Sentinel setups with active-passive data replication.  
+Supports multiple Valkey or Redis Sentinel setups with active-passive data replication.  
 
 Replication of primary Sentinel deployment with secondary Sentinel deployments is managed by `replicationMode` setting. First sentinel host belongs to the active Sentinel setup and others to Passive Sentinel Setups.
 
@@ -2977,7 +2972,7 @@ RedissonClient redisson = Redisson.create(config);
 ```
 ### Multi Sentinel settings
 
-Documentation covering Redis or Valkey server sentinel configuration is [here](https://redis.io/topics/sentinel).  
+Documentation covering Valkey or Redis server sentinel configuration is [here](https://redis.io/topics/sentinel).  
 
 Multi Sentinel connection mode is activated by follow line:  
 `MultiSentinelServersConfig sentinelConfig = config.useMultiSentinelServers();`  
@@ -2992,9 +2987,9 @@ Defines replication of primary Sentinel deployment with secondary Valkey or Redi
 
 Available values:  
 
-* `NONE` - No replication executed by Redisson. Replication should be executed on Redis or Valkey side,  
-* `SYNC` - Each Redisson method invocation which modifies data is completed only if it has been replicated to all Redis or Valkey deployments,  
-* `ASYNC` - Each Redisson method invocation which modifies data doesn't wait for replication to complete on other Redis or Valkey deployments  
+* `NONE` - No replication executed by Redisson. Replication should be executed on Valkey or Redis side,  
+* `SYNC` - Each Redisson method invocation which modifies data is completed only if it has been replicated to all Valkey or Redis deployments,  
+* `ASYNC` - Each Redisson method invocation which modifies data doesn't wait for replication to complete on other Valkey or Redis deployments  
 
 **checkSentinelsList**
 
@@ -3047,7 +3042,7 @@ Available values:
 
 Default value: `org.redisson.connection.balancer.RoundRobinLoadBalancer`
 
-Сonnection load balancer for multiple Redis or Valkey servers.
+Сonnection load balancer for multiple Valkey or Redis servers.
 Available implementations:  
 
 * `org.redisson.connection.balancer.CommandsLoadBalancer`  
@@ -3071,25 +3066,25 @@ Maximum connection pool size for subscription (pub/sub) channels. Used by `RTopi
 
 Default value: `24`
 
-Redis or Valkey `slave` node minimum idle connection amount for each slave node.
+Valkey or Redis `slave` node minimum idle connection amount for each slave node.
 
 **slaveConnectionPoolSize**
 
 Default value: `64`
 
-Redis or Valkey `slave` node maximum connection pool size for <b>each</b> slave node.
+Valkey or Redis `slave` node maximum connection pool size for <b>each</b> slave node.
 
 **masterConnectionMinimumIdleSize**
 
 Default value: `24`
 
-Minimum idle connections amount per Redis or Valkey master node.
+Minimum idle connections amount per Valkey or Redis master node.
 
 **masterConnectionPoolSize**
 
 Default value: `64`
 
-Redis or Valkey `master` node maximum connection pool size.
+Valkey or Redis `master` node maximum connection pool size.
 
 **idleConnectionTimeout**
 
@@ -3101,19 +3096,19 @@ If a pooled connection is not used for a timeout time and current connections am
 
 Default value: `10000`
 
-Timeout during connecting to any Redis or Valkey server.
+Timeout during connecting to any Valkey or Redis server.
 
 **timeout**
 
 Default value: `3000`
 
-Redis or Valkey server response timeout. Starts to count down when a command was successfully sent. Value in milliseconds. 
+Valkey or Redis server response timeout. Starts to count down when a command was successfully sent. Value in milliseconds. 
 
 **retryAttempts**
 
 Default value: `4`
 
-Error will be thrown if Redis or Valkey command can’t be sent to a server after *retryAttempts*. But if it was sent successfully then *timeout* will be started.
+Error will be thrown if Valkey or Redis command can’t be sent to a server after *retryAttempts*. But if it was sent successfully then *timeout* will be started.
 
 **retryDelay**
 
@@ -3146,37 +3141,37 @@ Available implementations:
 
 Default value: `3000`
 
-Interval of Redis or Valkey Slave reconnection attempts when it was excluded from internal list of available servers. On each timeout event Redisson tries to connect to disconnected server. Value in milliseconds.
+Interval of Valkey or Redis Slave reconnection attempts when it was excluded from internal list of available servers. On each timeout event Redisson tries to connect to disconnected server. Value in milliseconds.
 
 **failedSlaveNodeDetector**
 
 Default value: `org.redisson.client.FailedConnectionDetector`
 
-Defines failed Redis or Valkey Slave node detector object which implements failed node detection logic via `org.redisson.client.FailedNodeDetector` interface.
+Defines failed Valkey or Redis Slave node detector object which implements failed node detection logic via `org.redisson.client.FailedNodeDetector` interface.
 
 Available implementations:  
 
-* `org.redisson.client.FailedConnectionDetector` - marks the Redis or Valkey node as failed if it has ongoing connection errors in defined `checkInterval` interval in milliseconds. Default is 180000 milliseconds. 
-* `org.redisson.client.FailedCommandsDetector` - marks the Redis or Valkey node as failed if it has certain amount of command execution errors defined by `failedCommandsLimit` in defined `checkInterval` interval in milliseconds.
-* `org.redisson.client.FailedCommandsTimeoutDetector` - marks the Redis or Valkey node as failed if it has certain amount of command execution timeout errors defined by `failedCommandsLimit` in defined `checkInterval` interval in milliseconds.
+* `org.redisson.client.FailedConnectionDetector` - marks the Valkey or Redis node as failed if it has ongoing connection errors in defined `checkInterval` interval in milliseconds. Default is 180000 milliseconds. 
+* `org.redisson.client.FailedCommandsDetector` - marks the Valkey or Redis node as failed if it has certain amount of command execution errors defined by `failedCommandsLimit` in defined `checkInterval` interval in milliseconds.
+* `org.redisson.client.FailedCommandsTimeoutDetector` - marks the Valkey or Redis node as failed if it has certain amount of command execution timeout errors defined by `failedCommandsLimit` in defined `checkInterval` interval in milliseconds.
 
 **database**
 
 Default value: `0`
 
-Database index used for Redis or Valkey connections.
+Database index used for Valkey or Redis connections.
 
 **password**
 
 Default value: `null`
 
-Password for Redis or Valkey servers authentication.
+Password for Valkey or Redis servers authentication.
 
 **username**
 
 Default value: `null`
 
-Username for Redis or Valkey servers authentication. Requires Redis 6.0 and higher.
+Username for Valkey or Redis servers authentication. Requires Redis 6.0 and higher.
 
 **sentinelPassword**
 
@@ -3191,14 +3186,14 @@ Default value: `null`
 Username for Sentinel servers for authentication. Used only if Sentinel username differs from master's and slave's. Requires Redis 6.0 and higher.
 
 **credentialsResolver**
+
 Default value: empty
 
-Defines Credentials resolver, which is invoked during connection for Redis or Valkey server authentication. Returns Credentials object per node address, it contains `username` and `password` fields. Allows you to specify dynamically changing credentials.
+Defines Credentials resolver, which is invoked during connection for Valkey or Redis server authentication. Returns Credentials object per Valkey or Redis node address, it contains `username` and `password` fields. Allows you to specify dynamically changing Valkey or Redis credentials.
 
-**credentialsReapplyInterval**
-Default value: 0
+Available implementations:  
 
-Defines Credentials resolver invoke interval in milliseconds for Valkey or Redis server authentication. `0` means disable.
+* `org.redisson.config.EntraIdCredentialsResolver`  
 
 **sentinelsDiscovery**
 
@@ -3309,7 +3304,7 @@ Enables TCP noDelay for connection.
 
 Default value: no mapper
 
-Defines NAT mapper interface which maps Redis or Valkey URI object and applied to all connections. Can be used to map internal Redis or Valkey server IPs to external ones. Available implementations:  
+Defines NAT mapper interface which maps Valkey or Redis URI object and applied to all connections. Can be used to map internal Valkey or Redis server IPs to external ones. Available implementations:  
 
 * `org.redisson.api.HostPortNatMapper`  
 * `org.redisson.api.HostNatMapper`  
@@ -3324,7 +3319,7 @@ Defines Name mapper which maps Redisson object name to a custom name. Applied to
 
 Default value: no mapper
 
-Defines Command mapper which maps Redis or Valkey command name to a custom name. Applied to all commands.  
+Defines Command mapper which maps Valkey or Redis command name to a custom name. Applied to all commands.  
 
 ### Multi Sentinel YAML config format
 

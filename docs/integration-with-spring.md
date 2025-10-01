@@ -486,7 +486,7 @@ public class TransactionalBean {
 
 _This feature is available only in [Redisson PRO](https://redisson.pro/feature-comparison.html) edition._
 
-Redisson implements [Spring Cloud Stream](https://spring.io/projects/spring-cloud-stream) integration using the [Reliable Queue](data-and-services/queues.md/#reliable-queue) for messages delivery. 
+Redisson implements [Spring Cloud Stream](https://spring.io/projects/spring-cloud-stream) Binder based on Valkey or Redis using the [Reliable Queue](data-and-services/queues.md/#reliable-queue) for messages delivery. 
 
 Compatible with Spring versions below.
 
@@ -500,7 +500,7 @@ Spring Cloud Stream | Spring Cloud | Spring Boot
 3.1.x | 2020.0.x | 2.4.x, 2.5.x (Starting with 2020.0.3 of Spring Cloud)
 
 
-To use Valkey or Redis binder with Redisson you need to add Spring Cloud Stream Binder library in classpath:  
+To use binder with Redisson you need to add Spring Cloud Stream Binder library in classpath:  
 
 Maven:
 ```xml
@@ -517,14 +517,6 @@ compile 'pro.redisson:spring-cloud-stream-binder-redisson:xVERSIONx'
 
 ### Receiving messages
 
-Consumer settings:
-
-- `pollBatchSize` - Sets the maximum number of messages to retrieve in a single poll operation. Default value is `10`.
-	
-- `visibilityTimeout` - Sets the visibility timeout for retrieved messages. The time period during which a message is invisible to other consumers after being retrieved. This prevents duplicate processing and allows the message to reappear in the queue if it wasn't acknowledged during that timeout. Default value is `30 seconds`.
-
-- `negativeAcknowledgeDelay` - Specifies the delay duration before a message handled with an exception is eligible for redelivery. Default value is `15 seconds`.
-
 Register the input binder (an event sink) for receiving messages as follows:
 
 ```java
@@ -536,7 +528,17 @@ public Consumer<MyObject> receiveMessage() {
 }
 ```
 
-Define channel id in the configuration file `application.properties`. Example for `receiveMessage` bean defined above connected to `my-channel` channel:
+Define channel id in the configuration file `application.properties`. 
+
+Consumer settings:
+
+- `pollBatchSize` - Sets the maximum number of messages to retrieve in a single poll operation. Default value is `10`.
+	
+- `visibilityTimeout` - Sets the visibility timeout for retrieved messages. The time period during which a message is invisible to other consumers after being retrieved. This prevents duplicate processing and allows the message to reappear in the queue if it wasn't acknowledged during that timeout. Default value is `30 seconds`.
+
+- `negativeAcknowledgeDelay` - Specifies the delay duration before a message handled with an exception is eligible for redelivery. Default value is `15 seconds`.
+
+Example for `receiveMessage` bean defined above connected to `my-channel` channel:
 
 ```
 spring.cloud.stream.bindings.receiveMessage-in-0.destination=my-channel
