@@ -104,7 +104,8 @@ Available implementations:
 
 **4. Native eviction**
 
-Allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task, entries are cleaned on Valkey or Redis side. Requires **Valkey 9.0+** or **Redis 7.4+**.
+Allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task, entries are cleaned on Valkey or Redis side.  
+Requires **Valkey 9.0+** or **Redis 7.4+**.
 
 Each object implements [RMapCacheNative](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RMapCacheNative.html), [Async](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RMapCacheNativeAsync.html), [Reactive](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RMapCacheNativeReactive.html) and [RxJava3](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RMapCacheNativeRx.html) interfaces.
 

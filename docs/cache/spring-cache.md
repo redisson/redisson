@@ -43,7 +43,7 @@ Redisson provides various Spring Cache managers with multiple important features
 5. **Native eviction**
 
     Allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task, entries are cleaned on Redis side.  
-    Requires **Redis 7.4+**.
+    Requires **Valkey 9.0+** or **Redis 7.4+**.
     
 	Available implementations:
 

@@ -8,7 +8,7 @@ Codec class name| Description
 `org.redisson.codec.TypedJsonJacksonCodec`| Jackson JSON codec which doesn't store type id (`@class` field)
 `org.redisson.codec.AvroJacksonCodec`| [Avro](http://avro.apache.org/) binary json codec  
 `org.redisson.codec.ProtobufCodec`| [Protobuf](https://github.com/protocolbuffers/protobuf) codec  
-`org.redisson.codec.FuryCodec`| [Apache Fury](https://github.com/apache/fury) codec  
+`org.redisson.codec.ForyCodec`| [Apache Fory](https://github.com/apache/fory) codec  
 `org.redisson.codec.SmileJacksonCodec`| [Smile](http://wiki.fasterxml.com/SmileFormatSpec) binary json codec  
 `org.redisson.codec.CborJacksonCodec`| [CBOR](http://cbor.io/) binary json codec  
 `org.redisson.codec.MsgPackJacksonCodec`| [MsgPack](http://msgpack.org/) binary json codec  
@@ -18,7 +18,7 @@ Codec class name| Description
 `org.redisson.codec.LZ4Codec`| [LZ4](https://github.com/jpountz/lz4-java) compression codec.<br/> Uses `Kryo5Codec` for serialization by default  
 `org.redisson.codec.LZ4CodecV2`| [LZ4 Apache Commons](https://github.com/apache/commons-compress) compression codec.<br/> Uses `Kryo5Codec` for serialization by default  
 `org.redisson.codec.SnappyCodecV2` | Snappy compression codec based on [snappy-java](https://github.com/xerial/snappy-java) project.<br/> Uses `Kryo5Codec` for serialization by default  
+`org.redisson.codec.CompositeCodec` | Allows to mix different codecs as one  
 `org.redisson.client.codec.StringCodec`| String codec  
 `org.redisson.client.codec.LongCodec`| Long codec  
 `org.redisson.client.codec.ByteArrayCodec` | Byte array codec
-`org.redisson.codec.CompositeCodec` | Allows to mix different codecs as one

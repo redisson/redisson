@@ -1,4 +1,4 @@
-Redis or Valkey command|Sync / Async API<br/><sub>Redisson.create(config)</sub>|Reactive API<br/><sub>redisson.reactive()</sub>|RxJava3 API<br/><sub>redisson.rxJava()</sub>|
+Valkey or Redis command|Sync / Async API<br/><sub>Redisson.create(config)</sub>|Reactive API<br/><sub>redisson.reactive()</sub>|RxJava3 API<br/><sub>redisson.rxJava()</sub>|
 | --- | --- | --- | --- |
 AUTH | Config.setPassword() | - | - |
 APPEND | RBinaryStream.<br/>getOutputStream().write() | - | - |
@@ -41,12 +41,14 @@ GEODIST|RGeo.<br/>dist()<br/>distAsync()| RGeoReactive.<br/>dist()| RGeoRx.<br/>
 GEOHASH|RGeo.<br/>hash()<br/>hashAsync()| RGeoReactive.<br/>hash()| RGeoRx.<br/>hash()|
 GEOPOS|RGeo.<br/>pos()<br/>posAsync()| RGeoReactive.<br/>pos()| RGeoRx.<br/>pos()|
 GEORADIUS|RGeo.<br/>radius()<br/>radiusAsync()<br/>radiusWithDistance()<br/>radiusWithDistanceAsync()<br/>radiusWithPosition()<br/>radiusWithPositionAsync()|RGeoReactive.<br/>radius()<br/>radiusWithDistance()<br/>radiusWithPosition()|RGeoRx.<br/>radius()<br/>radiusWithDistance()<br/>radiusWithPosition()|
+GEORADIUSBYMEMBER | RGeo.<br/>radiusWithDistance()<br/>radiusWithDistanceAsync() | RGeoReactive.<br/>radiusWithDistance() | RGeoRx.<br/>radiusWithDistance()|
 GEOSEARCH|RGeo.<br/>search()<br/>searchAsync()| RGeoReactive.<br/>search()| RGeoRx.<br/>search()|
 GEOSEARCHSTORE|RGeo.<br/>storeSearchTo()<br/>storeSearchToAsync()| RGeoReactive.<br/>storeSearchTo()| RGeoRx.<br/>storeSearchTo()|
 GET|RBucket.<br/>get()<br/>getAsync()<br/><br/>RBinaryStream.<br/>get()<br/>getAsync()| RBucketReactive.<br/>get()<br/><br/>RBinaryStreamReactive.<br/>get()| RBucketRx.<br/>get()<br/><br/>RBinaryStreamRx.<br/>get()|
 GETEX|RBucket.<br/>getAndExpire()<br/>getAndExpireAsync()<br/>getAndClearExpire()<br/>getAndClearExpireAsync()| RBucketReactive.<br/>getAndExpire()<br/>getAndClearExpire()| RBucketRx.<br/>getAndExpire()<br/>getAndClearExpire()|
 GETBIT|RBitSet.<br/>get()<br/>getAsync()| RBitSetReactive.<br/>get()| RBitSetRx.<br/>get() |
-GETSET|RBucket.<br/>getAndSet()<br/>getAndSetAsync()<br/><br/>RAtomicLong.<br/>getAndSet()<br/>getAndSetAsync()<br/><br/>RAtomicDouble.<br/>getAndSet()<br/>getAndSetAsync()|RBucketReactive.<br/>getAndSet()<br/><br/>RAtomicLongReactive.<br/>getAndSet()<br/><br/>RAtomicDoubleReactive.<br/>getAndSet()|RBucketRx.<br/>getAndSet()<br/><br/>RAtomicLongRx.<br/>getAndSet()<br/><br/>RAtomicDoubleRx.<br/>getAndSet()
+GETSET|RBucket.<br/>getAndSet()<br/>getAndSetAsync()<br/><br/>RAtomicLong.<br/>getAndSet()<br/>getAndSetAsync()<br/><br/>RAtomicDouble.<br/>getAndSet()<br/>getAndSetAsync()|RBucketReactive.<br/>getAndSet()<br/><br/>RAtomicLongReactive.<br/>getAndSet()<br/><br/>RAtomicDoubleReactive.<br/>getAndSet()|RBucketRx.<br/>getAndSet()<br/><br/>RAtomicLongRx.<br/>getAndSet()<br/><br/>RAtomicDoubleRx.<br/>getAndSet() |
+LCS|RBucket.<br/>findCommon()<br/>findCommonAsync()<br/>findCommonLength()<br/>findCommonLengthAsync() | RBucketReactive.<br/>findCommon()<br/>findCommonLength() | RBucketRx.<br/>findCommon()<br/>findCommonLength() |
 HDEL|RMap.<br/>fastRemove()<br/>fastRemoveAsync()| RMapReactive.<br/>fastRemove()| RMapRx.<br/>fastRemove()|
 HEXISTS|RMap.<br/>containsKey()<br/>containsKeyAsync()| RMapReactive.<br/>containsKey()| RMapRx.<br/>containsKey()|
 HGET|RMap.<br/>get()<br/>getAsync()|RMapReactive.<br/>get()|RMapRx.<br/>get()|
@@ -145,6 +147,7 @@ SETBIT|RBitSet.<br/>set()<br/>clear()<br/>setAsync()<br/>clearAsync()|RBitSetRea
 SETEX|RBucket.<br/>set()<br/>setAsync()|RBucketReactive.<br/>set()|RBucketRx.<br/>set()|
 SETNX|RBucket.<br/>setIfAbsent()<br/>setIfAbsentAsync()|RBucketReactive.<br/>setIfAbsent()|RBucketRx.<br/>setIfAbsent()|
 SISMEMBER|RSet.<br/>contains()<br/>containsAsync()|RSetReactive.<br/>contains()|RSetRx.<br/>contains()|
+SMISMEMBER|RSet.<br/>containsEach()<br/>containsEachAsync()|RSetReactive.<br/>containsEach()|RSetRx.<br/>containsEach()|
 SINTERSTORE|RSet.<br/>intersection()<br/>intersectionAsync()|RSetReactive.<br/>intersection()|RSetRx.<br/>intersection()|
 SINTER|RSet.<br/>readIntersection()<br/>readIntersectionAsync()|RSetReactive.<br/>readIntersection()|RSetRx.<br/>readIntersection()|
 SMEMBERS|RSet.<br/>readAll()<br/>readAllAsync()|RSetReactive.<br/>readAll()|RSetRx.<br/>readAll()|
@@ -193,6 +196,9 @@ ZREMRANGEBYSCORE|RScoredSortedSet.<br/>removeRangeByScore()<br/>removeRangeBySco
 ZREVRANGEBYSCORE|RScoredSortedSet.<br/>valueRangeReversed()<br/>entryRangeReversed()<br/>valueRangeReversedAsync()<br/>entryRangeReversedAsync()|RScoredSortedSetReactive.<br/>entryRangeReversed()<br/>valueRangeReversed()|RScoredSortedSetRx.<br/>entryRangeReversed()<br/>valueRangeReversed()|
 ZREVRANK|RScoredSortedSet.<br/>revRank()<br/>revRankAsync()|RScoredSortedSetReactive.<br/>revRank()|RScoredSortedSetRx.<br/>revRank()|
 ZSCORE|RScoredSortedSet.<br/>getScore()<br/>getScoreAsync()|RScoredSortedSetReactive.<br/>getScore()|RScoredSortedSetRx.<br/>getScore()|
+ZMSCORE|RScoredSortedSet.<br/>getScore()<br/>getScoreAsync()|RScoredSortedSetReactive.<br/>getScore()|RScoredSortedSetRx.<br/>getScore()|
+ZINTERCARD | RScoredSortedSet.<br/>countIntersection()<br/>countIntersectionAsync() | RScoredSortedSetReactive.<br/>countIntersection() | RScoredSortedSetRx.<br/>countIntersection() |
+ZRANGESTORE | RScoredSortedSet.<br/>rangeTo()<br/>rangeToAsync()<br/>revRangeTo()<br/>revRangeToAsync() | RScoredSortedSetReactive.<br/>rangeTo()<br/>revRangeTo() | RScoredSortedSetRx.<br/>rangeTo()<br/>revRangeTo() |
 XACK|RStream.<br/>ack()<br/>ackAsync()|RStreamReactive.<br/>ack()|RStreamRx.<br/>ack()|
 XADD|RStream.<br/>add()<br/>addAsync()|RStreamReactive.<br/>add()|RStreamRx.<br/>add()|
 XAUTOCLAIM|RStream.<br/>autoClaim()<br/>autoClaimAsync()|RStreamReactive.<br/>autoClaim()|RStreamRx.<br/>autoClaim()|

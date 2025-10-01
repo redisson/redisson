@@ -42,7 +42,7 @@ Redisson provides various [Micronaut Cache](https://guides.micronaut.io/latest/m
 5. **Native eviction**
 
     Allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task, entries are cleaned on Redis side.  
-    Requires **Redis 7.4+**.
+    Requires **Valkey 9.0+** or **Redis 7.4+**.
 
     Available implementations:
 

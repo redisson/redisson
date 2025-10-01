@@ -37,7 +37,7 @@ Redisson provides various Hibernate Cache factories including those with feature
 
 4. **Advanced eviction**
 
-    Allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task, entries are cleaned on Redis or Valkey side.
+    Allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task, entries are cleaned by Valkey or Redis.
 
     Available implementations:
 
@@ -48,8 +48,8 @@ Redisson provides various Hibernate Cache factories including those with feature
 
 5. **Native eviction**
 
-    Allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task, entries are cleaned on Redis or Valkey side.  
-    Requires **Redis 7.4+**.
+    Allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task, entries are cleaned by Valkey or Redis.  
+    Requires **Valkey 9.0+** or **Redis 7.4+**.
 
     Available implementations:
 
@@ -485,7 +485,7 @@ Redisson provides JCache implementations with many important features:
 
 5. **Advanced eviction**
 
-    Doesn't use an entry eviction task, entries are cleaned on Redis or Valkey side.
+    Doesn't use an entry eviction task, entries are cleaned by Valkey or Redis.  
 
     Available implementations:
 
@@ -496,8 +496,8 @@ Redisson provides JCache implementations with many important features:
 
 6. **Native eviction**
 
-    Doesn't use an entry eviction task, entries are cleaned on Redis side.  
-    Requires **Redis 7.4+**.
+    Doesn't use an entry eviction task, entries are cleaned by Valkey or Redis.  
+    Requires **Valkey 9.0+** or **Redis 7.4+**.
 
     Available implementations:
 
@@ -1073,7 +1073,7 @@ Redisson provides multiple MyBatis Cache implementations which support features 
 
 3. **Advanced eviction**
 
-    Allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task, entries are cleaned on Redis or Valkey side.
+    Allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task, entries are cleaned by Valkey or Redis.  
 
     Available implementations:
 
@@ -1084,8 +1084,8 @@ Redisson provides multiple MyBatis Cache implementations which support features 
 
 4. **Native eviction**
 
-    Allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task, entries are cleaned on Redis side.  
-    Requires **Redis 7.4+**.
+    Allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task, entries are cleaned by Valkey or Redis.  
+    Requires **Valkey 9.0+** or **Redis 7.4+**.
 
     Available implementations:
 
@@ -1288,7 +1288,7 @@ Redisson provides various [Quarkus Cache](https://quarkus.io/guides/cache) imple
 
 4. **Advanced eviction**
 
-    Allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task, entries are cleaned on Redis or Valkey side.
+    Allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task, entries are cleaned by Valkey or Redis.  
 
     Available implementations:
 
@@ -1299,8 +1299,8 @@ Redisson provides various [Quarkus Cache](https://quarkus.io/guides/cache) imple
 
 5. **Native eviction**
 
-    Allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task, entries are cleaned on Redis side.  
-    Requires **Redis 7.4+**.
+    Allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task, entries are cleaned by Valkey or Redis.  
+    Requires **Valkey 9.0+** or **Redis 7.4+**.
 
     Available implementations:
 
