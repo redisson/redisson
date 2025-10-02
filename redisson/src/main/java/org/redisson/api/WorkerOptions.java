@@ -37,7 +37,6 @@ public final class WorkerOptions {
     private int workers = 1;
     private ExecutorService executorService;
     private TasksInjector tasksInjector;
-    private BeanFactory beanFactory;
     private long taskTimeout;
     private List<TaskListener> listeners = new ArrayList<>();
     
@@ -64,25 +63,29 @@ public final class WorkerOptions {
         return this;
     }
     
-    public BeanFactory getBeanFactory() {
-        return beanFactory;
-    }
-    
     /**
-     * Defines Spring BeanFactory instance to execute tasks with Spring's '@Autowired', 
-     * '@Value' or JSR-330's '@Inject' annotation.
-     * 
+     * Use {@code tasksInjector(new SpringTasksInjector(beanFactory)} instead.
+     *
      * @param beanFactory - Spring BeanFactory instance
      * @return self instance
      */
+    @Deprecated
     public WorkerOptions beanFactory(BeanFactory beanFactory) {
-        this.beanFactory = beanFactory;
         if (beanFactory != null) {
             this.tasksInjector = new SpringTasksInjector(beanFactory);
         }
         return this;
     }
 
+    /**
+     * Defines TasksInjector instance to execute tasks with CDI.
+     * For example, Spring's '@Autowired', '@Value' or JSR-330's '@Inject' annotation.
+     *
+     * @param tasksInjector task
+     * @return self instance
+     *
+     * @see SpringTasksInjector
+     */
     public WorkerOptions tasksInjector(TasksInjector tasksInjector) {
         this.tasksInjector = tasksInjector;
         return this;

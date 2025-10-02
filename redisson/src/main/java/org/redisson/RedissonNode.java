@@ -25,6 +25,7 @@ import org.redisson.config.RedissonNodeConfig;
 import org.redisson.config.RedissonNodeFileConfig;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
+import org.redisson.executor.SpringTasksInjector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -157,7 +158,7 @@ public final class RedissonNode {
             
             WorkerOptions options = WorkerOptions.defaults()
                                                 .workers(mapReduceWorkers)
-                                                .beanFactory(config.getBeanFactory());
+                                                .tasksInjector(new SpringTasksInjector(config.getBeanFactory()));
 
             RScheduledExecutorService e = redisson.getExecutorService(RExecutorService.MAPREDUCE_NAME);
             e.registerWorkers(options);
@@ -171,7 +172,7 @@ public final class RedissonNode {
             
             WorkerOptions options = WorkerOptions.defaults()
                                                 .workers(workers)
-                                                .beanFactory(config.getBeanFactory());
+                                                .tasksInjector(new SpringTasksInjector(config.getBeanFactory()));
 
             RScheduledExecutorService e = redisson.getExecutorService(name);
             e.registerWorkers(options);
