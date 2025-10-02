@@ -110,7 +110,7 @@ public class RedissonSpringCacheTest extends RedisDockerTest {
         @Bean
         CacheManager cacheManager(RedissonClient redissonClient) throws IOException {
             Map<String, CacheConfig> config = new HashMap<String, CacheConfig>();
-            config.put("testMap", new CacheConfig(24 * 60 * 1000, 12 * 60 * 1000));
+            config.put("testMap", new CacheConfig(24 * 60 * 1000, 12 * 60 * 1000).setKeyPrefix("prefix:"));
             return new RedissonSpringCacheManager(redissonClient, config);
         }
 
