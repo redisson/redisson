@@ -19,7 +19,7 @@ public class SimpleDnsServer {
     private final int port;
 
     public SimpleDnsServer() throws InterruptedException {
-        this(ThreadLocalRandom.current().nextInt(50, 1000));
+        this(ThreadLocalRandom.current().nextInt(49152, 65535));
     }
 
     public SimpleDnsServer(int port) throws InterruptedException {
