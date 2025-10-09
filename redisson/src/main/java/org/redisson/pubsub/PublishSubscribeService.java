@@ -931,7 +931,7 @@ public class PublishSubscribeService {
                 }
 
                 if (topicType == PubSubType.PUNSUBSCRIBE) {
-                    psubscribe(en, channelName, listeners, subscribeCodec);
+                    psubscribe(channelName, listeners, subscribeCodec);
                 } else if (topicType == PubSubType.SUNSUBSCRIBE) {
                     ssubscribe(channelName, listeners, subscribeCodec);
                 } else {
@@ -996,7 +996,7 @@ public class PublishSubscribeService {
         });
     }
 
-    private void psubscribe(MasterSlaveEntry oldEntry, ChannelName channelName, Collection<RedisPubSubListener<?>> listeners,
+    private void psubscribe(ChannelName channelName, Collection<RedisPubSubListener<?>> listeners,
                             Codec subscribeCodec) {
         if (connectionManager.getServiceManager().isShuttingDown()) {
             log.warn("listeners of '{}' channel-pattern haven't been resubscribed due to Redisson shutdown process", channelName);
@@ -1007,13 +1007,13 @@ public class PublishSubscribeService {
         if (isMultiEntity(channelName)) {
             entry = connectionManager.getEntrySet()
                     .stream()
-                    .filter(e -> !name2PubSubConnection.containsKey(new PubSubKey(channelName, e)) && e != oldEntry)
+                    .filter(e -> !name2PubSubConnection.containsKey(new PubSubKey(channelName, e)))
                     .findFirst()
                     .orElse(null);
         }
         if (entry == null) {
             connectionManager.getServiceManager().newTimeout(task -> {
-                psubscribe(oldEntry, channelName, listeners, subscribeCodec);
+                psubscribe(channelName, listeners, subscribeCodec);
             }, 1, TimeUnit.SECONDS);
             return;
         }
@@ -1023,7 +1023,7 @@ public class PublishSubscribeService {
         subscribeFuture.whenComplete((res, e) -> {
             if (e != null) {
                 connectionManager.getServiceManager().newTimeout(task -> {
-                    psubscribe(oldEntry, channelName, listeners, subscribeCodec);
+                    psubscribe(channelName, listeners, subscribeCodec);
                 }, 1, TimeUnit.SECONDS);
                 return;
             }
