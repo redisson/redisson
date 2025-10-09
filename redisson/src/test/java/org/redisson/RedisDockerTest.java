@@ -453,32 +453,30 @@ public class RedisDockerTest {
     record ClusterData(Startable container, RedissonClient redisson, List<ContainerState> nodes) {}
 
     private static ClusterData createCluster() {
-        LogMessageWaitStrategy wait2 = new LogMessageWaitStrategy().withRegEx(".*REPLICA\ssync\\:\sFinished\swith\ssuccess.*");
-
         DockerComposeContainer environment =
-                new DockerComposeContainer(new File("src/test/resources/docker-compose.yml"))
-                        .withExposedService("redis-node-0", 6379)
+                new DockerComposeContainer(new File("src/test/resources/docker-compose-redis-cluster.yml"))
                         .withExposedService("redis-node-1", 6379)
                         .withExposedService("redis-node-2", 6379)
                         .withExposedService("redis-node-3", 6379)
                         .withExposedService("redis-node-4", 6379)
-                        .withExposedService("redis-node-5", 6379, wait2);
+                        .withExposedService("redis-node-5", 6379)
+                        .withExposedService("redis-node-6", 6379);
 
         environment.start();
 
         try {
-            Thread.sleep(5000);
+            Thread.sleep(10000);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
 
         List<ContainerState> nodes = new ArrayList<>();
-        for (int i = 0; i < 6; i++) {
+        for (int i = 1; i <= 6; i++) {
             Optional<ContainerState> cc = environment.getContainerByServiceName("redis-node-" + i);
             nodes.add(cc.get());
         }
 
-        Optional<ContainerState> cc2 = environment.getContainerByServiceName("redis-node-0");
+        Optional<ContainerState> cc2 = environment.getContainerByServiceName("redis-node-1");
         Ports.Binding[] mp = cc2.get().getContainerInfo().getNetworkSettings()
                 .getPorts().getBindings().get(new ExposedPort(cc2.get().getExposedPorts().get(0)));
 
