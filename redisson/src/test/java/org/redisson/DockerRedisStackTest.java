@@ -64,7 +64,7 @@ public class DockerRedisStackTest {
         LogMessageWaitStrategy wait2 = new LogMessageWaitStrategy().withRegEx(".*Verifying\scluster\sstatus.*");
 
         DockerComposeContainer environment =
-                new DockerComposeContainer(new File("src/test/resources/docker-compose-stack.yml"))
+                new DockerComposeContainer(new File("src/test/resources/docker-compose-redis-stack-cluster.yml"))
                         .withExposedService("redis-node-1", 6379)
                         .withExposedService("redis-node-2", 6379)
                         .withExposedService("redis-node-3", 6379)

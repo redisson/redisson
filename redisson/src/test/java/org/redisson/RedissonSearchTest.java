@@ -403,6 +403,12 @@ public class RedissonSearchTest extends DockerRedisStackTest {
                     FieldIndex.text("t1"),
                     FieldIndex.text("t2"));
 
+            try {
+                Thread.sleep(300);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+
             SearchResult r = s.search("doc", "*", QueryOptions.defaults()
                     .returnAttributes(new ReturnAttribute("t1"),
                             new ReturnAttribute("t2")));

@@ -2,74 +2,68 @@ services:
   redis-node-1:
     image: redis/redis-stack-server:latest
     command: redis-server --cluster-enabled yes --cluster-config-file nodes-6379.conf --cluster-node-timeout 5000 --appendonly yes --port 6379 --protected-mode no --loadmodule /opt/redis-stack/lib/redisearch.so
-    ports:
-      - "7001:6379"
-      - "17001:16379"
     volumes:
       - redis-data-1:/data
     networks:
-      rediscluster:
-        ipv4_address: 10.0.0.11
+      - rediscluster
+    ports:
+      - "6379"
+      - "16379"
 
   redis-node-2:
     image: redis/redis-stack-server:latest
     command: redis-server --cluster-enabled yes --cluster-config-file nodes-6379.conf --cluster-node-timeout 5000 --appendonly yes --port 6379 --protected-mode no --loadmodule /opt/redis-stack/lib/redisearch.so
-    ports:
-      - "7002:6379"
-      - "17002:16379"
     volumes:
       - redis-data-2:/data
     networks:
-      rediscluster:
-        ipv4_address: 10.0.0.12
+      - rediscluster
+    ports:
+      - "6379"
+      - "16379"
 
   redis-node-3:
     image: redis/redis-stack-server:latest
     command: redis-server --cluster-enabled yes --cluster-config-file nodes-6379.conf --cluster-node-timeout 5000 --appendonly yes --port 6379 --protected-mode no --loadmodule /opt/redis-stack/lib/redisearch.so
-    ports:
-      - "7003:6379"
-      - "17003:16379"
     volumes:
       - redis-data-3:/data
     networks:
-      rediscluster:
-        ipv4_address: 10.0.0.13
+      - rediscluster
+    ports:
+      - "6379"
+      - "16379"
 
   redis-node-4:
     image: redis/redis-stack-server:latest
     command: redis-server --cluster-enabled yes --cluster-config-file nodes-6379.conf --cluster-node-timeout 5000 --appendonly yes --port 6379 --protected-mode no --loadmodule /opt/redis-stack/lib/redisearch.so
-    ports:
-      - "7004:6379"
-      - "17004:16379"
     volumes:
       - redis-data-4:/data
     networks:
-      rediscluster:
-        ipv4_address: 10.0.0.14
+      - rediscluster
+    ports:
+      - "6379"
+      - "16379"
 
   redis-node-5:
     image: redis/redis-stack-server:latest
     command: redis-server --cluster-enabled yes --cluster-config-file nodes-6379.conf --cluster-node-timeout 5000 --appendonly yes --port 6379 --protected-mode no --loadmodule /opt/redis-stack/lib/redisearch.so
-    ports:
-      - "7005:6379"
-      - "17005:16379"
     volumes:
       - redis-data-5:/data
     networks:
-      rediscluster:
-        ipv4_address: 10.0.0.15
+      - rediscluster
+    ports:
+      - "6379"
+      - "16379"
 
   redis-node-6:
     image: redis/redis-stack-server:latest
     command: redis-server --cluster-enabled yes --cluster-config-file nodes-6379.conf --cluster-node-timeout 5000 --appendonly yes --port 6379 --protected-mode no --loadmodule /opt/redis-stack/lib/redisearch.so
-    ports:
-      - "7006:6379"
-      - "17006:16379"
     volumes:
       - redis-data-6:/data
     networks:
-      rediscluster:
-        ipv4_address: 10.0.0.16
+      - rediscluster
+    ports:
+      - "6379"
+      - "16379"
 
   cluster-init:
     image: redis/redis-stack-server:latest
@@ -83,24 +77,23 @@ services:
     command: >
       sh -c "
         sleep 5 &&
-        redis-cli -h 10.0.0.11 -p 6379 ping &&
-        redis-cli -h 10.0.0.12 -p 6379 ping &&
-        redis-cli -h 10.0.0.13 -p 6379 ping &&
-        redis-cli -h 10.0.0.14 -p 6379 ping &&
-        redis-cli -h 10.0.0.15 -p 6379 ping &&
-        redis-cli -h 10.0.0.16 -p 6379 ping &&
+        redis-cli -h redis-node-1 -p 6379 ping &&
+        redis-cli -h redis-node-2 -p 6379 ping &&
+        redis-cli -h redis-node-3 -p 6379 ping &&
+        redis-cli -h redis-node-4 -p 6379 ping &&
+        redis-cli -h redis-node-5 -p 6379 ping &&
+        redis-cli -h redis-node-6 -p 6379 ping &&
         echo 'All nodes are ready. Creating cluster...' &&
-        redis-cli --cluster create 10.0.0.11:6379 10.0.0.12:6379 10.0.0.13:6379 10.0.0.14:6379 10.0.0.15:6379 10.0.0.16:6379 --cluster-replicas 1 --cluster-yes &&
+        redis-cli --cluster create redis-node-1:6379 redis-node-2:6379 redis-node-3:6379 redis-node-4:6379 redis-node-5:6379 redis-node-6:6379 --cluster-replicas 1 --cluster-yes &&
         echo 'Cluster created successfully!' &&
         sleep 5 &&
         echo 'Verifying cluster status...' &&
-        redis-cli -h 10.0.0.11 -p 6379 cluster nodes &&
+        redis-cli -h redis-node-1 -p 6379 cluster nodes &&
         echo 'Verifying modules availability...' &&
-        redis-cli -h 10.0.0.11 -p 6379 MODULE LIST      
+        redis-cli -h redis-node-1 -p 6379 MODULE LIST      
       "
     networks:
-      rediscluster:
-        ipv4_address: 10.0.0.20
+      - rediscluster
     restart: "no"
 
 volumes:
@@ -114,6 +107,3 @@ volumes:
 networks:
   rediscluster:
     driver: bridge
-    ipam:
-      config:
-        - subnet: 10.0.0.0/24
