@@ -190,7 +190,7 @@ public class RedisDockerTest {
         }
 
         GenericContainer<?> sentinel1 =
-                new GenericContainer<>("bitnami/redis-sentinel:7.2.4")
+                new GenericContainer<>("bitnami/redis-sentinel:latest")
 
                         .withNetwork(network)
                         .withEnv("REDIS_SENTINEL_DOWN_AFTER_MILLISECONDS", "5000")
@@ -207,7 +207,7 @@ public class RedisDockerTest {
         nodes.add(sentinel1);
 
         GenericContainer<?> sentinel2 =
-                new GenericContainer<>("bitnami/redis-sentinel:7.2.4")
+                new GenericContainer<>("bitnami/redis-sentinel:latest")
                         .withNetwork(network)
                         .withEnv("REDIS_SENTINEL_DOWN_AFTER_MILLISECONDS", "5000")
                         .withEnv("REDIS_SENTINEL_FAILOVER_TIMEOUT", "10000")
@@ -223,7 +223,7 @@ public class RedisDockerTest {
         nodes.add(sentinel2);
 
         GenericContainer<?> sentinel3 =
-                new GenericContainer<>("bitnami/redis-sentinel:7.2.4")
+                new GenericContainer<>("bitnami/redis-sentinel:latest")
                         .withNetwork(network)
                         .withEnv("REDIS_SENTINEL_DOWN_AFTER_MILLISECONDS", "5000")
                         .withEnv("REDIS_SENTINEL_FAILOVER_TIMEOUT", "10000")
@@ -339,7 +339,7 @@ public class RedisDockerTest {
         }
 
         GenericContainer<?> sentinel1 =
-                new GenericContainer<>("bitnami/redis-sentinel:7.2.4")
+                new GenericContainer<>("bitnami/redis-sentinel:latest")
 
                         .withNetwork(network)
                         .withEnv("REDIS_SENTINEL_DOWN_AFTER_MILLISECONDS", "5000")
@@ -358,7 +358,7 @@ public class RedisDockerTest {
         nodes.add(sentinel1);
 
         GenericContainer<?> sentinel2 =
-                new GenericContainer<>("bitnami/redis-sentinel:7.2.4")
+                new GenericContainer<>("bitnami/redis-sentinel:latest")
                         .withNetwork(network)
                         .withEnv("REDIS_SENTINEL_DOWN_AFTER_MILLISECONDS", "5000")
                         .withEnv("REDIS_SENTINEL_FAILOVER_TIMEOUT", "10000")
@@ -376,7 +376,7 @@ public class RedisDockerTest {
         nodes.add(sentinel2);
 
         GenericContainer<?> sentinel3 =
-                new GenericContainer<>("bitnami/redis-sentinel:7.2.4")
+                new GenericContainer<>("bitnami/redis-sentinel:latest")
                         .withNetwork(network)
                         .withEnv("REDIS_SENTINEL_DOWN_AFTER_MILLISECONDS", "5000")
                         .withEnv("REDIS_SENTINEL_FAILOVER_TIMEOUT", "10000")
