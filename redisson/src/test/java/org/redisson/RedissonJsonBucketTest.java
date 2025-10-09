@@ -14,7 +14,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class RedissonJsonBucketTest extends DockerRedisStackTest {
+public class RedissonJsonBucketTest extends RedisDockerTest {
 
     public static class NestedType {
 
