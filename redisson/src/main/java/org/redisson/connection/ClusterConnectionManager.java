@@ -78,7 +78,9 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     @Override
     protected MasterSlaveServersConfig create(BaseMasterSlaveServersConfig<?> cfg) {
         this.cfg = (ClusterServersConfig) cfg;
-        return super.create(cfg);
+        MasterSlaveServersConfig res = super.create(cfg);
+        res.setDatabase(((ClusterServersConfig) cfg).getDatabase());
+        return res;
     }
 
     @Override

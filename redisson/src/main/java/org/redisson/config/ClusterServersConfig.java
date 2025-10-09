@@ -49,6 +49,8 @@ public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterSe
 
     private ShardedSubscriptionMode shardedSubscriptionMode = ShardedSubscriptionMode.AUTO;
 
+    private int database = 0;
+
     public ClusterServersConfig() {
     }
 
@@ -60,6 +62,7 @@ public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterSe
         setCheckSlotsCoverage(config.isCheckSlotsCoverage());
         setCheckMasterLinkStatus(config.isCheckMasterLinkStatus());
         setShardedSubscriptionMode(config.getShardedSubscriptionMode());
+        setDatabase(config.getDatabase());
     }
 
     /**
@@ -178,4 +181,23 @@ public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterSe
         this.shardedSubscriptionMode = shardedSubscriptionMode;
         return this;
     }
+
+    /**
+     * Database index used for Valkey connection.
+     * <p>
+     * Default is <code>0</code>
+     * <p>
+     * <b>Requires <b>Valkey 9.0.0 and higher.</b>
+     *
+     * @param database number
+     * @return config
+     */
+    public ClusterServersConfig setDatabase(int database) {
+        this.database = database;
+        return this;
+    }
+    public int getDatabase() {
+        return database;
+    }
+
 }
