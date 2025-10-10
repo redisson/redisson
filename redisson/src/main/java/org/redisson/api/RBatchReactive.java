@@ -185,7 +185,7 @@ public interface RBatchReactive {
      * Returns map instance by name.
      * Supports entry eviction with a given TTL.
      * <p>
-     * Requires <b>Redis 7.4.0 and higher.</b>
+     * Requires <b>Redis 7.4.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
      *
      * @param <K> type of key
      * @param <V> type of value
@@ -199,7 +199,7 @@ public interface RBatchReactive {
      * using provided codec for both map keys and values.
      * Supports entry eviction with a given TTL.
      * <p>
-     * Requires <b>Redis 7.4.0 and higher.</b>
+     * Requires <b>Redis 7.4.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
      *
      * @param <K> type of key
      * @param <V> type of value
@@ -216,7 +216,7 @@ public interface RBatchReactive {
      * <p>
      * Uses Redis native commands for entry expiration and not a scheduled eviction task.
      * <p>
-     * Requires <b>Redis 7.4.0 and higher.</b>
+     * Requires <b>Redis 7.4.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
      *
      * @param <K> type of key
      * @param <V> type of value
@@ -233,7 +233,7 @@ public interface RBatchReactive {
      * <p>
      * Uses Redis native commands for entry expiration and not a scheduled eviction task.
      * <p>
-     * Requires <b>Redis 7.4.0 and higher.</b>
+     * Requires <b>Redis 7.4.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
      *
      * @param <K> type of key
      * @param <V> type of value
@@ -250,7 +250,7 @@ public interface RBatchReactive {
      * <p>
      * Uses Redis native commands for entry expiration and not a scheduled eviction task.
      * <p>
-     * Requires <b>Redis 7.4.0 and higher.</b>
+     * Requires <b>Redis 7.4.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
      *
      * @param <K> type of key
      * @param <V> type of value
@@ -267,7 +267,7 @@ public interface RBatchReactive {
      * <p>
      * Uses Redis native commands for entry expiration and not a scheduled eviction task.
      * <p>
-     * Requires <b>Redis 7.4.0 and higher.</b>
+     * Requires <b>Redis 7.4.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
      *
      * @param <K> type of key
      * @param <V> type of value
