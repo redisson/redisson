@@ -219,5 +219,24 @@ public class RedissonTransactionalBucketTest extends RedisDockerTest {
         assertThat(b.get()).isEqualTo("1234");
     }
 
+    @Test
+    public void testRollback2() {
+        String key = "TRANS_TEST";
+        RBucket<Object> b = redisson.getBucket(key);
+        RTransaction transaction = redisson.createTransaction(TransactionOptions.defaults());
+
+        redisson.getKeys().delete(key);
+
+        RBucket<String> bucket = transaction.getBucket(key);
+        bucket.set("1");
+        bucket.set("2");
+        bucket.set("3");
+        bucket.set("4");
+        bucket.set("5");
+        bucket.setIfAbsent("LAST_VALUE");
+        transaction.rollback();
+
+        assertThat(b.get()).isNull();
+    }
     
 }
