@@ -256,6 +256,8 @@ public class RedisDockerTest {
                 .setPingConnectionInterval(0)
                 .setNatMapper(new NatMapper() {
 
+                    private final Map<RedisURI, Integer> cache = new HashMap<>();
+
                     @Override
                     public RedisURI map(RedisURI uri) {
                         for (GenericContainer<? extends GenericContainer<?>> node : nodes) {
@@ -278,8 +280,14 @@ public class RedisDockerTest {
 
                             if (mappedPort != null
                                     && s.getIpAddress().equals(uri.getHost())) {
+                                cache.put(uri, Integer.valueOf(mappedPort[0].getHostPortSpec()));
                                 return new RedisURI(uri.getScheme(), "127.0.0.1", Integer.valueOf(mappedPort[0].getHostPortSpec()));
                             }
+                        }
+
+                        Integer p = cache.get(uri);
+                        if (p != null) {
+                            return new RedisURI(uri.getScheme(), "127.0.0.1", p);
                         }
                         return uri;
                     }
