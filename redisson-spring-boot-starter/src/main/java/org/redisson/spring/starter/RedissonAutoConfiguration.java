@@ -243,15 +243,16 @@ public class RedissonAutoConfiguration {
                 }
             }
 
-            config = new Config();
+            config = new Config()
+                    .setUsername(username)
+                    .setPassword(password);
+
             SentinelServersConfig c = config.useSentinelServers()
                     .setMasterName(sentinelMaster)
                     .addSentinelAddress(nodes)
                     .setSentinelPassword(sentinelPassword)
                     .setSentinelUsername(sentinelUsername)
                     .setDatabase(database)
-                    .setUsername(username)
-                    .setPassword(password)
                     .setClientName(clientName);
             if (connectTimeout != null) {
                 c.setConnectTimeout(connectTimeout);
@@ -280,11 +281,11 @@ public class RedissonAutoConfiguration {
                 }
             }
 
-            config = new Config();
+            config = new Config()
+                    .setUsername(username)
+                    .setPassword(password);
             ClusterServersConfig c = config.useClusterServers()
                     .addNodeAddress(nodes)
-                    .setUsername(username)
-                    .setPassword(password)
                     .setClientName(clientName);
             if (connectTimeout != null) {
                 c.setConnectTimeout(connectTimeout);
@@ -294,7 +295,9 @@ public class RedissonAutoConfiguration {
             }
             initSSL(c);
         } else {
-            config = new Config();
+            config = new Config()
+                    .setUsername(username)
+                    .setPassword(password);
 
             String singleAddr = prefix + redisProperties.getHost() + ":" + redisProperties.getPort();
 
@@ -310,8 +313,6 @@ public class RedissonAutoConfiguration {
             SingleServerConfig c = config.useSingleServer()
                     .setAddress(singleAddr)
                     .setDatabase(database)
-                    .setUsername(username)
-                    .setPassword(password)
                     .setClientName(clientName);
             if (connectTimeout != null) {
                 c.setConnectTimeout(connectTimeout);

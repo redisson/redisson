@@ -16,6 +16,7 @@
 package org.redisson.config;
 
 import io.netty.channel.EventLoopGroup;
+import org.redisson.client.DefaultCredentialsResolver;
 import org.redisson.client.DefaultNettyHook;
 import org.redisson.client.NettyHook;
 import org.redisson.client.codec.Codec;
@@ -56,6 +57,12 @@ public class Config {
     private ClusterServersConfig clusterServersConfig;
 
     private ReplicatedServersConfig replicatedServersConfig;
+
+    private String password;
+
+    private String username;
+
+    private CredentialsResolver credentialsResolver = new DefaultCredentialsResolver();
 
     private int threads = 16;
 
@@ -136,6 +143,9 @@ public class Config {
         setSlavesSyncTimeout(oldConf.getSlavesSyncTimeout());
         setNettyThreads(oldConf.getNettyThreads());
         setThreads(oldConf.getThreads());
+        setUsername(oldConf.getUsername());
+        setPassword(oldConf.getPassword());
+        setCredentialsResolver(oldConf.getCredentialsResolver());
         setCodec(oldConf.getCodec());
         setReferenceEnabled(oldConf.isReferenceEnabled());
         setEventLoopGroup(oldConf.getEventLoopGroup());
@@ -374,6 +384,60 @@ public class Config {
 
     public boolean isSingleConfig() {
         return singleServerConfig != null;
+    }
+
+    /**
+     * Password for Redis authentication. Should be null if not needed.
+     * <p>
+     * Default is <code>null</code>
+     *
+     * @param password for connection
+     * @return config
+     */
+    public Config setPassword(String password) {
+        this.password = password;
+        return this;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    /**
+     * Username for Redis authentication. Should be null if not needed
+     * <p>
+     * Default is <code>null</code>
+     * <p>
+     * Requires Redis 6.0+
+     *
+     * @param username for connection
+     * @return config
+     */
+    public Config setUsername(String username) {
+        this.username = username;
+        return this;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public CredentialsResolver getCredentialsResolver() {
+        return credentialsResolver;
+    }
+
+    /**
+     * Defines Credentials resolver which is invoked during connection for Redis server authentication.
+     * It makes possible to specify dynamically changing Redis credentials.
+     *
+     * @see EntraIdCredentialsResolver
+     *
+     * @param credentialsResolver Credentials resolver object
+     * @return config
+     */
+    public Config setCredentialsResolver(CredentialsResolver credentialsResolver) {
+        this.credentialsResolver = credentialsResolver;
+        return this;
     }
 
     public int getThreads() {

@@ -377,15 +377,15 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 .setTcpKeepAliveInterval(config.getTcpKeepAliveInterval())
                 .setTcpUserTimeout(config.getTcpUserTimeout())
                 .setTcpNoDelay(config.isTcpNoDelay())
-                .setUsername(config.getUsername())
-                .setPassword(config.getPassword())
+                .setUsername(Objects.toString(serviceManager.getCfg().getUsername(), config.getUsername()))
+                .setPassword(Objects.toString(serviceManager.getCfg().getPassword(), config.getPassword()))
                 .setNettyHook(serviceManager.getCfg().getNettyHook())
                 .setFailedNodeDetector(config.getFailedSlaveNodeDetector())
                 .setProtocol(serviceManager.getCfg().getProtocol())
                 .setCapabilities(serviceManager.getCfg().getValkeyCapabilities())
                 .setReconnectionDelay(config.getReconnectionDelay())
                 .setCommandMapper(config.getCommandMapper())
-                .setCredentialsResolver(config.getCredentialsResolver())
+                .setCredentialsResolver(serviceManager.getCfg().getCredentialsResolver())
                 .setConnectedListener(addr -> {
                     if (!serviceManager.isShuttingDown()) {
                         NodeType nt = getNodeType(type, addr);
@@ -398,6 +398,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                         serviceManager.getConnectionEventsHub().fireDisconnect(addr, nt);
                     }
                 });
+
+        if (redisConfig.getCredentialsResolver() instanceof DefaultCredentialsResolver) {
+            redisConfig.setCredentialsResolver(config.getCredentialsResolver());
+        }
 
         if (type != NodeType.SENTINEL) {
             redisConfig.setDatabase(config.getDatabase());

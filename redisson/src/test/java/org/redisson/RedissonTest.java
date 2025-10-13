@@ -22,9 +22,7 @@ import org.redisson.api.*;
 import org.redisson.api.redisnode.*;
 import org.redisson.api.redisnode.RedisNodes;
 import org.redisson.api.stream.StreamCreateGroupArgs;
-import org.redisson.client.RedisConnectionException;
-import org.redisson.client.RedisException;
-import org.redisson.client.RedisOutOfMemoryException;
+import org.redisson.client.*;
 import org.redisson.client.codec.BaseCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.handler.State;
@@ -646,6 +644,30 @@ public class RedissonTest extends RedisDockerTest {
         b.set("123");
 
         redisson.shutdown();
+
+        config.setCredentialsResolver(new CredentialsResolver() {
+            @Override
+            public CompletionStage<Credentials> resolve(InetSocketAddress address) {
+                return CompletableFuture.completedFuture(new Credentials(null, "12345"));
+            }
+        });
+
+        Assertions.assertThrows(RedisConnectionException.class, () -> {
+            Redisson.create(config);
+        });
+
+        config.setCredentialsResolver(new CredentialsResolver() {
+            @Override
+            public CompletionStage<Credentials> resolve(InetSocketAddress address) {
+                return CompletableFuture.completedFuture(new Credentials(null, "1234"));
+            }
+        });
+
+        RedissonClient r = Redisson.create(config);
+        b = r.getBucket("test");
+        b.set("123");
+
+        r.shutdown();
         redis.stop();
     }
 

@@ -72,10 +72,13 @@ public class BaseConfig<T extends BaseConfig<T>> {
     /**
      * Password for Redis authentication. Should be null if not needed
      */
+    @Deprecated
     private String password;
 
+    @Deprecated
     private String username;
 
+    @Deprecated
     private CredentialsResolver credentialsResolver = new DefaultCredentialsResolver();
 
     /**
@@ -184,6 +187,7 @@ public class BaseConfig<T extends BaseConfig<T>> {
     }
 
     /**
+     * Use {@link Config#setPassword(String)} instead.
      * Password for Redis authentication. Should be null if not needed.
      * <p>
      * Default is <code>null</code>
@@ -192,15 +196,18 @@ public class BaseConfig<T extends BaseConfig<T>> {
      * @return config
      */
     public T setPassword(String password) {
+        log.warn("password setting is deprecated. Use password setting in Config instead.");
         this.password = password;
         return (T) this;
     }
 
+    @Deprecated
     public String getPassword() {
         return password;
     }
 
     /**
+     * Use {@link Config#setUsername(String)} instead.
      * Username for Redis authentication. Should be null if not needed
      * <p>
      * Default is <code>null</code>
@@ -210,11 +217,14 @@ public class BaseConfig<T extends BaseConfig<T>> {
      * @param username for connection
      * @return config
      */
+    @Deprecated
     public T setUsername(String username) {
+        log.warn("username setting is deprecated. Use username setting in object instead.");
         this.username = username;
         return (T) this;
     }
 
+    @Deprecated
     public String getUsername() {
         return username;
     }
@@ -609,11 +619,13 @@ public class BaseConfig<T extends BaseConfig<T>> {
         return (T) this;
     }
 
+    @Deprecated
     public CredentialsResolver getCredentialsResolver() {
         return credentialsResolver;
     }
 
     /**
+     * Use {@link Config#setCredentialsResolver(CredentialsResolver)} instead.
      * Defines Credentials resolver which is invoked during connection for Redis server authentication.
      * It makes possible to specify dynamically changing Redis credentials.
      *
@@ -622,7 +634,9 @@ public class BaseConfig<T extends BaseConfig<T>> {
      * @param credentialsResolver Credentials resolver object
      * @return config
      */
+    @Deprecated
     public T setCredentialsResolver(CredentialsResolver credentialsResolver) {
+        log.warn("credentialsResolver setting is deprecated. Use credentialsResolver setting in Config instead.");
         this.credentialsResolver = credentialsResolver;
         return (T) this;
     }
