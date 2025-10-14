@@ -47,19 +47,14 @@ import io.netty.util.internal.PlatformDependent;
 import org.redisson.ElementsSubscribeService;
 import org.redisson.QueueTransferService;
 import org.redisson.RedissonShutdownException;
-import org.redisson.api.NatMapper;
-import org.redisson.api.RFuture;
-import org.redisson.api.RLock;
+import org.redisson.api.*;
 import org.redisson.cache.LRUCacheMap;
 import org.redisson.client.RedisNodeNotFoundException;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.NoSyncedSlavesException;
-import org.redisson.config.Config;
-import org.redisson.config.MasterSlaveServersConfig;
-import org.redisson.config.Protocol;
-import org.redisson.config.TransportMode;
+import org.redisson.config.*;
 import org.redisson.liveobject.resolver.MapResolver;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.FastRemovalQueue;
@@ -452,6 +447,20 @@ public final class ServiceManager {
 
     public MasterSlaveServersConfig getConfig() {
         return config;
+    }
+
+    public NameMapper getNameMapper() {
+        if (!(cfg.getNameMapper() instanceof DefaultNameMapper)) {
+            return cfg.getNameMapper();
+        }
+        return config.getNameMapper();
+    }
+
+    public CommandMapper getCommandMapper() {
+        if (!(cfg.getCommandMapper() instanceof DefaultCommandMapper)) {
+            return cfg.getCommandMapper();
+        }
+        return config.getCommandMapper();
     }
 
     public ElementsSubscribeService getElementsSubscribeService() {

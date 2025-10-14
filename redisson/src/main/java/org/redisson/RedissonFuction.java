@@ -203,7 +203,7 @@ public class RedissonFuction implements RFunction {
         if (!keys.isEmpty()) {
             args.addAll(keys.stream().map(k -> {
                                          if (k instanceof String) {
-                                             return commandExecutor.getServiceManager().getConfig().getNameMapper().map(k.toString());
+                                             return commandExecutor.getServiceManager().getNameMapper().map(k.toString());
                                          }
                                          return k;
                                      })
@@ -226,7 +226,7 @@ public class RedissonFuction implements RFunction {
             } else {
                 key = keys.get(0).toString();
             }
-            key = commandExecutor.getServiceManager().getConfig().getNameMapper().map(key);
+            key = commandExecutor.getServiceManager().getNameMapper().map(key);
         }
         return callAsync(key, mode, name, returnType, keys, values);
     }

@@ -109,7 +109,7 @@ public abstract class RedissonObject implements RObject {
 
     @Override
     public String getName() {
-        return commandExecutor.getServiceManager().getConfig().getNameMapper().unmap(name);
+        return commandExecutor.getServiceManager().getNameMapper().unmap(name);
     }
 
     public final String getRawName() {
@@ -305,7 +305,7 @@ public abstract class RedissonObject implements RObject {
     }
 
     protected final String mapName(String name) {
-        return commandExecutor.getServiceManager().getConfig().getNameMapper().map(name);
+        return commandExecutor.getServiceManager().getNameMapper().map(name);
     }
 
     protected final void checkNotBatch() {

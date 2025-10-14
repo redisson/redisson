@@ -75,7 +75,7 @@ public class RedissonBuckets implements RBuckets {
         }
 
         List<Object> keysList = Arrays.stream(keys)
-                                        .map(k -> commandExecutor.getServiceManager().getConfig().getNameMapper().map(k))
+                                        .map(k -> commandExecutor.getServiceManager().getNameMapper().map(k))
                                         .collect(Collectors.toList());
 
         Codec commandCodec = new CompositeCodec(StringCodec.INSTANCE, codec, codec);
@@ -89,7 +89,7 @@ public class RedissonBuckets implements RBuckets {
                         .flatMap(c -> c.entrySet().stream())
                         .filter(e -> e.getKey() != null && e.getValue() != null)
                         .map(e -> {
-                            String key = commandExecutor.getServiceManager().getConfig().getNameMapper().unmap((String) e.getKey());
+                            String key = commandExecutor.getServiceManager().getNameMapper().unmap((String) e.getKey());
                             return new AbstractMap.SimpleEntry<>(key, (V) e.getValue());
                         }).collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
             }
@@ -128,7 +128,7 @@ public class RedissonBuckets implements RBuckets {
 
     private Map<String, ?> map(Map<String, ?> buckets) {
         return buckets.entrySet().stream().collect(
-                Collectors.toMap(e -> commandExecutor.getServiceManager().getConfig().getNameMapper().map(e.getKey()),
+                Collectors.toMap(e -> commandExecutor.getServiceManager().getNameMapper().map(e.getKey()),
                         e -> e.getValue()));
     }
 
