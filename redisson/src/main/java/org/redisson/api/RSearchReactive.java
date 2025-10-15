@@ -16,8 +16,10 @@
 package org.redisson.api;
 
 import org.redisson.api.search.SpellcheckOptions;
+import org.redisson.api.search.aggregate.AggregationEntry;
 import org.redisson.api.search.aggregate.AggregationOptions;
 import org.redisson.api.search.aggregate.AggregationResult;
+import org.redisson.api.search.aggregate.IterableAggregationOptions;
 import org.redisson.api.search.index.FieldIndex;
 import org.redisson.api.search.index.IndexInfo;
 import org.redisson.api.search.index.IndexOptions;
@@ -85,6 +87,22 @@ public interface RSearchReactive {
      * @return aggregation result
      */
     Mono<AggregationResult> aggregate(String indexName, String query, AggregationOptions options);
+
+    /**
+     * Executes aggregation over defined index using defined query.
+     * <p>
+     * Code example:
+     * <pre>
+     * Iterable<AggregationEntry> r = s.aggregate("idx", "*", IterableAggregationOptions.defaults()
+     *                                                                 .load("t1", "t2"));
+     * </pre>
+     *
+     * @param indexName index name
+     * @param query query value
+     * @param options iterable aggregationOptions options
+     * @return iterable aggregation result
+     */
+    Mono<AggregationEntry> aggregate(String indexName, String query, IterableAggregationOptions options);
 
     /**
      * Adds alias to defined index name

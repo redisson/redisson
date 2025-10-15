@@ -21,6 +21,7 @@ import org.redisson.api.search.SpellcheckOptions;
 import org.redisson.api.search.aggregate.*;
 import org.redisson.api.search.index.*;
 import org.redisson.api.search.query.*;
+import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.DoubleCodec;
 import org.redisson.client.codec.LongCodec;
@@ -32,12 +33,10 @@ import org.redisson.client.protocol.convertor.EmptyMapConvertor;
 import org.redisson.client.protocol.decoder.*;
 import org.redisson.codec.CompositeCodec;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.iterator.RedissonBaseIterator;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  *
@@ -623,7 +622,68 @@ public class RedissonSearch implements RSearch {
     }
 
     @Override
-    public RFuture<AggregationResult> aggregateAsync(String indexName, String query, AggregationOptions options) {
+    public Iterable<AggregationEntry> aggregate(String indexName, String query, IterableAggregationOptions options) {
+        List<Object> args = createAggregateArgs(indexName, query, options);
+        int reducers = options.getGroupByParams().stream()
+                .mapToInt(g -> g.getReducers().size())
+                .sum();
+
+        return () -> new RedissonBaseIterator<AggregationEntry>() {
+
+            @Override
+            protected ScanResult<Object> iterator(RedisClient client, String nextIterPos) {
+                RedisStrictCommand<ListScanResult<AggregationEntry>> command;
+                if ("0".equals(nextIterPos)) {
+                    if (commandExecutor.getServiceManager().isResp3()) {
+                        command = new RedisStrictCommand<>("FT.AGGREGATE",
+                                new ListMultiDecoder2(new AggregationCursorResultScanDecoderV2(),
+                                        new ObjectListReplayDecoder(),
+                                        new ObjectListReplayDecoder(),
+                                        new ObjectMapReplayDecoder(),
+                                        new AggregationEntryDecoder(new CompositeCodec(StringCodec.INSTANCE, codec), reducers)));
+                    } else {
+                        command = new RedisStrictCommand<>("FT.AGGREGATE",
+                                new ListMultiDecoder2(new AggregationCursorResultScanDecoder(),
+                                        new ObjectListReplayDecoder(),
+                                        new AggregationEntryDecoder(new CompositeCodec(StringCodec.INSTANCE, codec), reducers)));
+                    }
+                    return scanIterator(indexName, command, args.toArray());
+                }
+
+
+                if (commandExecutor.getServiceManager().isResp3()) {
+                    command = new RedisStrictCommand<>("FT.CURSOR", "READ",
+                            new ListMultiDecoder2(new AggregationCursorResultScanDecoderV2(),
+                                    new ObjectListReplayDecoder(),
+                                    new ObjectListReplayDecoder(),
+                                    new ObjectMapReplayDecoder(),
+                                    new ObjectMapReplayDecoder(new CompositeCodec(StringCodec.INSTANCE, codec))));
+                } else {
+                    command = new RedisStrictCommand<>("FT.CURSOR", "READ",
+                            new ListMultiDecoder2(new AggregationCursorResultScanDecoder(),
+                                    new ObjectListReplayDecoder(),
+                                    new ObjectMapReplayDecoder(new CompositeCodec(StringCodec.INSTANCE, codec))));
+                }
+
+                return scanIterator(indexName, command, indexName, nextIterPos);
+            }
+
+            @Override
+            protected void remove(Object value) {
+                throw new UnsupportedOperationException();
+            }
+        };
+    }
+
+    private ScanResult<Object> scanIterator(String indexName, RedisCommand<?> command, Object... params) {
+        return commandExecutor.get(scanIteratorAsync(indexName, command, params));
+    }
+
+    private RFuture<ScanResult<Object>> scanIteratorAsync(String indexName, RedisCommand<?> command, Object... params) {
+        return commandExecutor.writeAsync(indexName, StringCodec.INSTANCE, command, params);
+    }
+
+    private List<Object> createAggregateArgs(String indexName, String query, AggregationBaseOptions<?> options){
         List<Object> args = new ArrayList<>();
         args.add(indexName);
         args.add(query);
@@ -699,9 +759,10 @@ public class RedissonSearch implements RSearch {
             }
             if (options.getCursorMaxIdle() != null) {
                 args.add("MAXIDLE");
-                args.add(options.getCursorMaxIdle());
+                args.add(options.getCursorMaxIdle().toMillis());
             }
         }
+
         if (!options.getParams().isEmpty()) {
             args.add("PARAMS");
             args.add(options.getParams().size()*2);
@@ -714,7 +775,12 @@ public class RedissonSearch implements RSearch {
             args.add("DIALECT");
             args.add(options.getDialect());
         }
+        return args;
+    }
 
+    @Override
+    public RFuture<AggregationResult> aggregateAsync(String indexName, String query, AggregationOptions options) {
+        List<Object> args = createAggregateArgs(indexName, query, options);
         int reducers = options.getGroupByParams().stream()
                                                  .mapToInt(g -> g.getReducers().size())
                                                  .sum();
