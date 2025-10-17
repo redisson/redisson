@@ -64,6 +64,14 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     private boolean lastAttempt;
 
+    Map<RedisURI, RedisConnection> getNodeConnections() {
+        return Collections.unmodifiableMap(nodeConnections);
+    }
+
+    void registerNodeConnection(RedisURI uri, RedisConnection connection) {
+        nodeConnections.put(uri, connection);
+    }
+
     MasterSlaveConnectionManager(BaseMasterSlaveServersConfig<?> cfg, Config configCopy) {
         if (cfg instanceof MasterSlaveServersConfig) {
             this.config = (MasterSlaveServersConfig) cfg;
