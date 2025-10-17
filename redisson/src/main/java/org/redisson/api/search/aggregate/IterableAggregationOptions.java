@@ -19,33 +19,28 @@ import java.time.Duration;
 
 /**
  *
- * @author Nikita Koksharov
+ * @author seakider
  *
  */
-public final class AggregationOptions extends AggregationBaseOptions<AggregationOptions> {
+public final class IterableAggregationOptions extends AggregationBaseOptions<IterableAggregationOptions> {
 
-    private AggregationOptions() {
-    }
-
-    public static AggregationOptions defaults() {
-        return new AggregationOptions();
-    }
-
-    public AggregationOptions withCursor() {
+    private IterableAggregationOptions() {
         withCursor = true;
-        return this;
     }
 
-    public AggregationOptions withCursor(int count) {
-        withCursor = true;
+    public static IterableAggregationOptions defaults() {
+        return new IterableAggregationOptions();
+    }
+
+    @Override
+    public IterableAggregationOptions cursorCount(int count) {
         cursorCount = count;
         return this;
     }
 
-    public AggregationOptions withCursor(int count, int maxIdle) {
-        withCursor = true;
-        cursorCount = count;
-        cursorMaxIdle = Duration.ofMillis(maxIdle);
+    @Override
+    public IterableAggregationOptions cursorMaxIdle(Duration duration) {
+        cursorMaxIdle = duration;
         return this;
     }
 

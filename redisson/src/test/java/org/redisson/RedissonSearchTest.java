@@ -1,6 +1,8 @@
 package org.redisson;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import org.awaitility.Awaitility;
+import org.awaitility.Durations;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RJsonBucket;
@@ -20,6 +22,7 @@ import org.redisson.codec.JacksonCodec;
 import org.redisson.config.Config;
 import org.testcontainers.containers.GenericContainer;
 
+import java.time.Duration;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -153,6 +156,36 @@ public class RedissonSearchTest extends DockerRedisStackTest {
         assertThat(r3.getAttributes()).isNotEqualTo(r2.getAttributes());
         assertThat(r2.getAttributes()).hasSize(1).isSubsetOf(m.readAllMap(), m2.readAllMap());
 
+    }
+
+    @Test
+    public void testIterableAggregate() {
+        for (int i = 0; i < 1000; i++) {
+            RMap<String, String> m = redisson.getMap("doc:" + i, StringCodec.INSTANCE);
+            m.fastPut("t1", "name" + i);
+        }
+
+        RSearch s = redisson.getSearch(StringCodec.INSTANCE);
+        s.createIndex("idx", IndexOptions.defaults()
+                        .on(IndexType.HASH)
+                        .prefix(Arrays.asList("doc:")),
+                FieldIndex.text("t1"));
+
+        Awaitility.await().atMost(Durations.FIVE_SECONDS).untilAsserted(() -> {
+            assertThat(s.info("idx").getIndexing()).isEqualTo(0);
+        });
+
+        Iterable<AggregationEntry> iterable = s.aggregate("idx", "*", IterableAggregationOptions.defaults()
+                .cursorCount(100).cursorMaxIdle(Duration.ofSeconds(10))
+                .groupBy(GroupBy.fieldNames("@t1").reducers(Reducer.count().as("count"))));
+        Iterator<AggregationEntry> iterator = iterable.iterator();
+        int count = 0;
+        while (iterator.hasNext()) {
+            count++;
+            AggregationEntry cc = iterator.next();
+            assertThat(cc.getAttributes().get("count")).isEqualTo("1");
+        }
+        assertThat(count).isEqualTo(1000);
     }
 
     @Test
