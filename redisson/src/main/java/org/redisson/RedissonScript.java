@@ -210,11 +210,11 @@ public class RedissonScript implements RScript {
     public <R> RFuture<R> evalShaAsync(String key, Mode mode, String shaDigest, ReturnType returnType,
             List<Object> keys, Object... values) {
         RedisCommand command = new RedisCommand(returnType.getCommand(), "EVALSHA");
-        String mappedKey = commandExecutor.getServiceManager().getConfig().getNameMapper().map(key);
+        String mappedKey = commandExecutor.getServiceManager().getNameMapper().map(key);
         List<Object> mappedKeys = keys.stream()
                                         .map(k -> {
                                             if (k instanceof String) {
-                                                return commandExecutor.getServiceManager().getConfig().getNameMapper().map(k.toString());
+                                                return commandExecutor.getServiceManager().getNameMapper().map(k.toString());
                                             }
                                             return k;
                                         })
@@ -240,11 +240,11 @@ public class RedissonScript implements RScript {
     @Override
     public <R> RFuture<R> evalAsync(String key, Mode mode, String luaScript, ReturnType returnType, List<Object> keys,
             Object... values) {
-        String mappedKey = commandExecutor.getServiceManager().getConfig().getNameMapper().map(key);
+        String mappedKey = commandExecutor.getServiceManager().getNameMapper().map(key);
         List<Object> mappedKeys = keys.stream()
                                         .map(k -> {
                                             if (k instanceof String) {
-                                                return commandExecutor.getServiceManager().getConfig().getNameMapper().map(k.toString());
+                                                return commandExecutor.getServiceManager().getNameMapper().map(k.toString());
                                             }
                                             return k;
                                         })

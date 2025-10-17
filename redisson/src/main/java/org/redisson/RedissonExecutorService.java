@@ -107,7 +107,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         super();
         this.codec = commandExecutor.getServiceManager().getCodec(codec);
         this.commandExecutor = commandExecutor;
-        this.name = commandExecutor.getServiceManager().getConfig().getNameMapper().map(name);
+        this.name = commandExecutor.getServiceManager().getNameMapper().map(name);
         this.redisson = redisson;
         this.queueTransferService = commandExecutor.getServiceManager().getQueueTransferService();
         this.responses = commandExecutor.getServiceManager().getResponses();
@@ -489,7 +489,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
 
     @Override
     public String getName() {
-        return commandExecutor.getServiceManager().getConfig().getNameMapper().unmap(name);
+        return commandExecutor.getServiceManager().getNameMapper().unmap(name);
     }
     
     @Override

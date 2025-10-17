@@ -28,6 +28,7 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
+import org.redisson.client.protocol.RedisCommands;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.codec.SerializationCodec;
 import org.redisson.config.*;
@@ -724,6 +725,63 @@ public class RedissonTest extends RedisDockerTest {
         assertThat(e.getMessage()).startsWith("ERR unknown command 'EVAL_111'");
 
         redisson.shutdown();
+
+        c.setCommandMapper(n -> {
+            if (n.equals("EVAL")) {
+                return "EVAL_222";
+            }
+            return n;
+        });
+
+        RedissonClient redisson2 = Redisson.create(c);
+        RBucket<String> b2 = redisson2.getBucket("test");
+        RedisException e2 = Assertions.assertThrows(RedisException.class, () -> {
+            b2.compareAndSet("test", "v1");
+        });
+        assertThat(e2.getMessage()).startsWith("ERR unknown command 'EVAL_222'");
+
+        redisson2.shutdown();
+    }
+
+    @Test
+    public void testNameMapper() {
+        Config config = redisson.getConfig();
+        config.setNameMapper(new NameMapper() {
+            @Override
+            public String map(String name) {
+                return "test2::" + name;
+            }
+
+            @Override
+            public String unmap(String name) {
+                return name.replace("test2::", "");
+            }
+        });
+        config.useSingleServer()
+                .setNameMapper(new NameMapper() {
+                    @Override
+                    public String map(String name) {
+                        return "test::" + name;
+                    }
+
+                    @Override
+                    public String unmap(String name) {
+                        return name.replace("test::", "");
+                    }
+                });
+
+        RedissonClient redisson = Redisson.create(config);
+        RBucket bucket = redisson.getBucket("k1",StringCodec.INSTANCE);
+        bucket.set("v1");
+
+        RedisClientConfig cc = new RedisClientConfig();
+        cc.setAddress(redisson.getConfig().useSingleServer().getAddress());
+        RedisClient c = RedisClient.create(cc);
+        RedisConnection ccc = c.connect();
+        assertThat(ccc.sync(RedisCommands.GET, "test2::k1")).isEqualTo("v1");
+
+        redisson.shutdown();
+        c.shutdown();
     }
 
     @Test

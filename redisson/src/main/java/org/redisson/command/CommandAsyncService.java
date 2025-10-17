@@ -532,7 +532,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     private static final Pattern COMMANDS_PATTERN = Pattern.compile("redis\\.call\\(['\"]{1}([\\w.]+)['\"]{1}");
 
     private String map(String script) {
-        if (getServiceManager().getConfig().getCommandMapper() instanceof DefaultCommandMapper) {
+        if (getServiceManager().getCommandMapper() instanceof DefaultCommandMapper) {
             return script;
         }
 
@@ -544,7 +544,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             if (mappedCommands.contains(command)) {
                 continue;
             }
-            String mapped = getServiceManager().getConfig().getCommandMapper().map(command);
+            String mapped = getServiceManager().getCommandMapper().map(command);
             if (!command.equalsIgnoreCase(mapped)) {
                 script = script.replace(command, mapped);
                 mappedCommands.add(command);
@@ -963,7 +963,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     @Override
     public <V> RFuture<V> pollFromAnyAsync(String name, Codec codec, RedisCommand<?> command, long secondsTimeout, String... queueNames) {
-        List<String> mappedNames = Arrays.stream(queueNames).map(m -> connectionManager.getServiceManager().getConfig().getNameMapper().map(m)).collect(Collectors.toList());
+        List<String> mappedNames = Arrays.stream(queueNames).map(m -> connectionManager.getServiceManager().getNameMapper().map(m)).collect(Collectors.toList());
         if (getServiceManager().getCfg().isClusterConfig() && queueNames.length > 0) {
             AtomicReference<Iterator<String>> ref = new AtomicReference<>();
             List<String> names = new ArrayList<>();

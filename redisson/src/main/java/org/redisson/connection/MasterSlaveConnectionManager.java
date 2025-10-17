@@ -384,7 +384,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 .setProtocol(serviceManager.getCfg().getProtocol())
                 .setCapabilities(serviceManager.getCfg().getValkeyCapabilities())
                 .setReconnectionDelay(config.getReconnectionDelay())
-                .setCommandMapper(config.getCommandMapper())
+                .setCommandMapper(serviceManager.getCommandMapper())
                 .setCredentialsResolver(serviceManager.getCfg().getCredentialsResolver())
                 .setConnectedListener(addr -> {
                     if (!serviceManager.isShuttingDown()) {

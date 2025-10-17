@@ -68,7 +68,7 @@ public abstract class BaseRemoteService {
 
     public BaseRemoteService(Codec codec, String name, CommandAsyncExecutor commandExecutor, String executorId) {
         this.codec = commandExecutor.getServiceManager().getCodec(codec);
-        this.name = commandExecutor.getServiceManager().getConfig().getNameMapper().map(name);
+        this.name = commandExecutor.getServiceManager().getNameMapper().map(name);
         this.commandExecutor = commandExecutor;
         this.executorId = executorId;
         this.cancelRequestMapName = "{" + name + ":remote" + "}:cancel-request";
