@@ -127,8 +127,10 @@ public class BaseConfig<T extends BaseConfig<T>> {
 
     private boolean tcpNoDelay = true;
 
+    @Deprecated
     private NameMapper nameMapper = NameMapper.direct();
 
+    @Deprecated
     private CommandMapper commandMapper = CommandMapper.direct();
     
     BaseConfig() {
@@ -195,6 +197,7 @@ public class BaseConfig<T extends BaseConfig<T>> {
      * @param password for connection
      * @return config
      */
+    @Deprecated
     public T setPassword(String password) {
         log.warn("password setting is deprecated. Use password setting in Config instead.");
         this.password = password;
@@ -603,18 +606,22 @@ public class BaseConfig<T extends BaseConfig<T>> {
     }
 
 
+    @Deprecated
     public NameMapper getNameMapper() {
         return nameMapper;
     }
 
     /**
+     * Use {@link Config#setNameMapper(NameMapper)} instead.
      * Defines Name mapper which maps Redisson object name.
      * Applied to all Redisson objects.
      *
      * @param nameMapper name mapper object
      * @return config
      */
+    @Deprecated
     public T setNameMapper(NameMapper nameMapper) {
+        log.warn("nameMapper setting is deprecated. Use nameMapper setting in Config instead.");
         this.nameMapper = nameMapper;
         return (T) this;
     }
@@ -709,18 +716,22 @@ public class BaseConfig<T extends BaseConfig<T>> {
         return this;
     }
 
+    @Deprecated
     public CommandMapper getCommandMapper() {
         return commandMapper;
     }
 
     /**
+     * Use {@link Config#setCommandMapper(CommandMapper)} instead.
      * Defines Command mapper which maps Redis command name.
      * Applied to all Redis commands.
      *
      * @param commandMapper Redis command name mapper object
      * @return config
      */
+    @Deprecated
     public T setCommandMapper(CommandMapper commandMapper) {
+        log.warn("commandMapper setting is deprecated. Use commandMapper setting in Config instead.");
         this.commandMapper = commandMapper;
         return (T) this;
     }

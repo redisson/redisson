@@ -16,6 +16,7 @@
 package org.redisson.config;
 
 import io.netty.channel.EventLoopGroup;
+import org.redisson.api.NameMapper;
 import org.redisson.client.DefaultCredentialsResolver;
 import org.redisson.client.DefaultNettyHook;
 import org.redisson.client.NettyHook;
@@ -116,6 +117,10 @@ public class Config {
 
     private Set<ValkeyCapability> valkeyCapabilities = Collections.emptySet();
 
+    private NameMapper nameMapper = NameMapper.direct();
+
+    private CommandMapper commandMapper = CommandMapper.direct();
+
     public Config() {
     }
 
@@ -155,6 +160,8 @@ public class Config {
         setLazyInitialization(oldConf.isLazyInitialization());
         setProtocol(oldConf.getProtocol());
         setValkeyCapabilities(oldConf.getValkeyCapabilities());
+        setNameMapper(oldConf.getNameMapper());
+        setCommandMapper(oldConf.getCommandMapper());
 
         if (oldConf.getSingleServerConfig() != null) {
             setSingleServerConfig(new SingleServerConfig(oldConf.getSingleServerConfig()));
@@ -1025,6 +1032,38 @@ public class Config {
      */
     public Config setValkeyCapabilities(Set<ValkeyCapability> valkeyCapabilities) {
         this.valkeyCapabilities = valkeyCapabilities;
+        return this;
+    }
+
+    public NameMapper getNameMapper() {
+        return nameMapper;
+    }
+
+    /**
+     * Defines Name mapper which maps Redisson object name.
+     * Applied to all Redisson objects.
+     *
+     * @param nameMapper name mapper object
+     * @return config
+     */
+    public Config setNameMapper(NameMapper nameMapper) {
+        this.nameMapper = nameMapper;
+        return this;
+    }
+
+    public CommandMapper getCommandMapper() {
+        return commandMapper;
+    }
+
+    /**
+     * Defines Command mapper which maps Redis command name.
+     * Applied to all Redis commands.
+     *
+     * @param commandMapper Redis command name mapper object
+     * @return config
+     */
+    public Config setCommandMapper(CommandMapper commandMapper) {
+        this.commandMapper = commandMapper;
         return this;
     }
 }
