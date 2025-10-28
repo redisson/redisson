@@ -62,7 +62,7 @@ public class RedissonTopic implements RTopic {
     }
 
     public RedissonTopic(Codec codec, CommandAsyncExecutor commandExecutor, String... names) {
-        this(codec, commandExecutor, commandExecutor.getServiceManager().getConfig().getNameMapper(), names);
+        this(codec, commandExecutor, commandExecutor.getServiceManager().getNameMapper(), names);
     }
 
     public RedissonTopic(Codec codec, CommandAsyncExecutor commandExecutor, NameMapper nameMapper, String... names) {

@@ -212,7 +212,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private void checkAuth(SentinelServersConfig cfg) {
-        if (cfg.getPassword() == null) {
+        if (serviceManager.getCfg().getPassword() == null && cfg.getPassword() == null) {
             return;
         }
 

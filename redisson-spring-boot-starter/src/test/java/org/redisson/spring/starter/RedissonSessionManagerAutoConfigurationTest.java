@@ -32,7 +32,8 @@ public class RedissonSessionManagerAutoConfigurationTest {
 
     @Container
     public static final GenericContainer REDIS = new FixedHostPortGenericContainer("redis:latest")
-            .withFixedExposedPort(6379, 6379);
+            .withFixedExposedPort(6379, 6379)
+            .withCommand("redis-server", "--requirepass", "123456");
 
 
     @LocalServerPort

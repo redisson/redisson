@@ -1,8 +1,11 @@
 package org.redisson;
 
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.redisson.api.RBucket;
+import org.redisson.api.RedissonClient;
 import org.redisson.client.*;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
@@ -11,6 +14,7 @@ import org.redisson.client.protocol.CommandsData;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.client.protocol.pubsub.PubSubType;
+import org.redisson.config.Config;
 import org.redisson.config.Protocol;
 
 import java.util.ArrayList;
@@ -53,6 +57,35 @@ public class RedisClientTest  {
         RedisConnection c2 = client.connect();
         assertThat(c2.sync(RedisCommands.PING)).isEqualTo("PONG");
         client.shutdown();
+    }
+
+    @Test
+    public void testUsername2() {
+        RedisConnection c = redisClient.connect();
+        c.sync(new RedisStrictCommand<Void>("ACL"), "SETUSER", "testuser", "on", ">123456", "~*", "allcommands");
+        c.close();
+
+        Config config = RedisDockerTest.createConfig(RedisDockerTest.REDIS);
+        config.useSingleServer()
+                .setUsername("testuser")
+                .setPassword("123456");
+
+        RedissonClient redisson = Redisson.create(config);
+        RBucket<String> b = redisson.getBucket("test");
+        b.set("123");
+
+        config.setUsername("user");
+
+        Assertions.assertThrows(RedisConnectionException.class, () -> {
+            Redisson.create(config);
+        });
+
+        config.setUsername("testuser");
+        RedissonClient r = Redisson.create(config);
+        b = r.getBucket("test");
+        b.set("123");
+
+        r.shutdown();
     }
 
     @Test
