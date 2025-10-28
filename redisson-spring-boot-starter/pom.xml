@@ -137,7 +137,7 @@
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-core</artifactId>
-            <version>1.5.16</version>
+            <version>1.5.19</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
