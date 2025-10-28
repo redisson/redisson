@@ -16,9 +16,9 @@
 package org.redisson.reactive;
 
 import org.reactivestreams.Publisher;
-import org.redisson.BaseRedissonList;
 import org.redisson.RedissonList;
 import org.redisson.api.RFuture;
+import org.redisson.api.RList;
 import org.redisson.client.codec.Codec;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
@@ -35,9 +35,9 @@ import java.util.function.LongConsumer;
  */
 public class RedissonListReactive<V> {
 
-    private final BaseRedissonList<V> instance;
+    private final RList<V> instance;
     
-    public RedissonListReactive(BaseRedissonList<V> instance) {
+    public RedissonListReactive(RList<V> instance) {
         this.instance = instance;
     }
 
@@ -48,7 +48,7 @@ public class RedissonListReactive<V> {
     public RedissonListReactive(Codec codec, CommandReactiveExecutor commandExecutor, String name) {
         this.instance = new RedissonList<V>(codec, commandExecutor, name, null);
     }
-    
+
     public Publisher<V> descendingIterator() {
         return iterator(-1, false);
     }
@@ -87,7 +87,7 @@ public class RedissonListReactive<V> {
                     }
                     
                     private void onRequest(boolean forward, FluxSink<V> emitter, long n) {
-                        instance.getAsync(currentIndex).whenComplete((value, e) -> {
+                        getAsync(currentIndex).whenComplete((value, e) -> {
                                 if (e != null) {
                                     emitter.error(e);
                                     return;
@@ -112,22 +112,31 @@ public class RedissonListReactive<V> {
                                 onRequest(forward, emitter, n-1);
                         });
                     }
+
                 });
                 
             }
 
         });
     }
-    
+
+    RFuture<V> getAsync(int currentIndex) {
+        return instance.getAsync(currentIndex);
+    }
+
     public Publisher<Boolean> addAll(Publisher<? extends V> c) {
         return new PublisherAdder<V>() {
 
             @Override
             public RFuture<Boolean> add(Object o) {
-                return instance.addAsync((V) o);
+                return addAsync((V) o);
             }
 
         }.addAll(c);
+    }
+
+    RFuture<Boolean> addAsync(V o) {
+        return instance.addAsync(o);
     }
 
 }

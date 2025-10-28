@@ -33,7 +33,7 @@ public class RedissonBlockingQueueReactive<V> extends RedissonListReactive<V> {
     private final RBlockingQueue<V> queue;
     
     public RedissonBlockingQueueReactive(RBlockingQueue<V> queue) {
-        super((BaseRedissonList<V>) queue);
+        super(null);
         this.queue = queue;
     }
 
@@ -45,5 +45,14 @@ public class RedissonBlockingQueueReactive<V> extends RedissonListReactive<V> {
             }
         });
     }
-    
+
+    @Override
+    RFuture<V> getAsync(int currentIndex) {
+        return ((BaseRedissonList) queue).getAsync(currentIndex);
+    }
+
+    @Override
+    RFuture<Boolean> addAsync(V o) {
+        return ((BaseRedissonList) queue).addAsync(o);
+    }
 }

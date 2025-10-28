@@ -15,7 +15,7 @@
  */
 package org.redisson.reactive;
 
-import org.redisson.RedissonSet;
+import org.redisson.api.RSet;
 import org.redisson.api.RSetMultimap;
 import org.redisson.api.RSetReactive;
 import org.redisson.api.RedissonReactiveClient;
@@ -41,7 +41,7 @@ public class RedissonSetMultimapCacheReactive<K, V> {
     }
 
     public RSetReactive<V> get(K key) {
-        RedissonSet<V> set = (RedissonSet<V>) instance.get(key);
+        RSet<V> set = instance.get(key);
         return ReactiveProxyBuilder.create(commandExecutor, set, new RedissonSetReactive<>(set, redisson), RSetReactive.class);
     }
 }

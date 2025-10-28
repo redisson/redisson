@@ -15,7 +15,7 @@
  */
 package org.redisson.reactive;
 
-import org.redisson.RedissonList;
+import org.redisson.api.RList;
 import org.redisson.api.RListMultimap;
 import org.redisson.api.RListReactive;
 
@@ -37,7 +37,7 @@ public class RedissonListMultimapCacheReactive<K, V> {
     }
 
     public RListReactive<V> get(K key) {
-        RedissonList<V> list = (RedissonList<V>) instance.get(key);
+        RList<V> list = instance.get(key);
         return ReactiveProxyBuilder.create(commandExecutor, list, new RedissonListReactive<>(list), RListReactive.class);
     }
 }
