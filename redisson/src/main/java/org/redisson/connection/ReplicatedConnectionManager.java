@@ -20,6 +20,7 @@ import org.redisson.api.NodeType;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisConnectionException;
+import org.redisson.client.RedisTimeoutException;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.config.*;
@@ -33,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -183,7 +185,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
         }
     }
 
-    private CompletableFuture<Role> checkNode(RedisURI uri, ReplicatedServersConfig cfg, Set<InetSocketAddress> slaveIPs) {
+    CompletableFuture<Role> checkNode(RedisURI uri, ReplicatedServersConfig cfg, Set<InetSocketAddress> slaveIPs) {
         CompletionStage<RedisConnection> connectionFuture = connectToNode(cfg, uri, uri.getHost());
         return connectionFuture
                 .thenCompose(c -> {
@@ -237,10 +239,24 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
                 })
                 .whenComplete((r, ex) -> {
                     if (ex != null) {
+                        handleNodeCheckError(uri, connectionFuture, ex);
                         log.error("Unable to update node {} status. A new attempt will be made.", uri, ex);
                     }
                 })
                 .toCompletableFuture();
+    }
+
+    protected void handleNodeCheckError(RedisURI uri, CompletionStage<RedisConnection> connectionFuture, Throwable ex) {
+        Throwable cause = ex;
+        if (ex instanceof CompletionException) {
+            Throwable c = ex.getCause();
+            if (c != null) {
+                cause = c;
+            }
+        }
+        if (cause instanceof RedisTimeoutException) {
+            disconnectNode(uri);
+        }
     }
 
     private CompletableFuture<Void> slaveUp(InetSocketAddress address, RedisURI uri) {
@@ -275,4 +291,3 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
         super.shutdown(quietPeriod, timeout, unit);
     }
 }
-
