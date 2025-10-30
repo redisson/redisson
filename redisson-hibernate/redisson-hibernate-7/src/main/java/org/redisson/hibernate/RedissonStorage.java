@@ -46,21 +46,21 @@ public class RedissonStorage implements DomainDataStorageAccess {
     boolean fallback;
     volatile boolean fallbackMode;
     
-    public RedissonStorage(RMapCache<Object, Object> mapCache, ServiceManager serviceManager, Map<String, Object> properties, String defaultKey) {
+    public RedissonStorage(String regionName, RMapCache<Object, Object> mapCache, ServiceManager serviceManager, Map<String, Object> properties, String defaultKey) {
         super();
         this.mapCache = mapCache;
         this.serviceManager = serviceManager;
         
-        String maxEntries = getProperty(properties, mapCache.getName(), defaultKey, RedissonRegionFactory.MAX_ENTRIES_SUFFIX);
+        String maxEntries = getProperty(properties, mapCache.getName(), regionName, defaultKey, RedissonRegionFactory.MAX_ENTRIES_SUFFIX);
         if (maxEntries != null) {
             size = Integer.valueOf(maxEntries);
             mapCache.setMaxSize(size);
         }
-        String timeToLive = getProperty(properties, mapCache.getName(), defaultKey, RedissonRegionFactory.TTL_SUFFIX);
+        String timeToLive = getProperty(properties, mapCache.getName(), regionName, defaultKey, RedissonRegionFactory.TTL_SUFFIX);
         if (timeToLive != null) {
             ttl = Integer.valueOf(timeToLive);
         }
-        String maxIdleTime = getProperty(properties, mapCache.getName(), defaultKey, RedissonRegionFactory.MAX_IDLE_SUFFIX);
+        String maxIdleTime = getProperty(properties, mapCache.getName(), regionName, defaultKey, RedissonRegionFactory.MAX_IDLE_SUFFIX);
         if (maxIdleTime != null) {
             maxIdle = Integer.valueOf(maxIdleTime);
         }
@@ -69,16 +69,16 @@ public class RedissonStorage implements DomainDataStorageAccess {
         fallback = Boolean.valueOf(fallbackValue);
     }
 
-    private String getProperty(Map<String, Object> properties, String name, String defaultKey, String suffix) {
+    private String getProperty(Map<String, Object> properties, String name, String regionName, String defaultKey, String suffix) {
         String maxEntries = (String) properties.get(RedissonRegionFactory.CONFIG_PREFIX + name + suffix);
         if (maxEntries != null) {
             return maxEntries;
         }
-        String defValue = (String) properties.get(RedissonRegionFactory.CONFIG_PREFIX + defaultKey + suffix);
-        if (defValue != null) {
-            return defValue;
+        maxEntries = (String) properties.get(RedissonRegionFactory.CONFIG_PREFIX + regionName + suffix);
+        if (maxEntries != null) {
+            return maxEntries;
         }
-        return null;
+        return (String) properties.get(RedissonRegionFactory.CONFIG_PREFIX + defaultKey + suffix);
     }
 
     private void ping() {
