@@ -214,7 +214,7 @@ public class RedissonRegionFactory extends RegionFactoryTemplate {
         }
 
         RMapCache<Object, Object> mapCache = getCache(qualifyName(regionConfig.getRegionName()), buildingContext.getSessionFactory().getProperties(), defaultKey);
-        return new RedissonStorage(mapCache, ((Redisson)redisson).getServiceManager(), buildingContext.getSessionFactory().getProperties(), defaultKey);
+        return new RedissonStorage(regionConfig.getRegionName(), mapCache, ((Redisson)redisson).getServiceManager(), buildingContext.getSessionFactory().getProperties(), defaultKey);
     }
 
     private String qualifyName(String name) {
@@ -225,18 +225,18 @@ public class RedissonRegionFactory extends RegionFactoryTemplate {
     protected StorageAccess createQueryResultsRegionStorageAccess(String regionName,
             SessionFactoryImplementor sessionFactory) {
         RMapCache<Object, Object> mapCache = getCache(qualifyName(regionName), sessionFactory.getProperties(), QUERY_DEF);
-        return new RedissonStorage(mapCache, ((Redisson)redisson).getServiceManager(), sessionFactory.getProperties(), QUERY_DEF);
+        return new RedissonStorage(regionName, mapCache, ((Redisson)redisson).getServiceManager(), sessionFactory.getProperties(), QUERY_DEF);
     }
 
     @Override
     protected StorageAccess createTimestampsRegionStorageAccess(String regionName,
             SessionFactoryImplementor sessionFactory) {
         RMapCache<Object, Object> mapCache = getCache(qualifyName(regionName), sessionFactory.getProperties(), TIMESTAMPS_DEF);
-        return new RedissonStorage(mapCache, ((Redisson)redisson).getServiceManager(), sessionFactory.getProperties(), TIMESTAMPS_DEF);
+        return new RedissonStorage(regionName, mapCache, ((Redisson)redisson).getServiceManager(), sessionFactory.getProperties(), TIMESTAMPS_DEF);
     }
 
-    protected RMapCache<Object, Object> getCache(String regionName, Map properties, String defaultKey) {
-        return redisson.getMapCache(regionName);
+    protected RMapCache<Object, Object> getCache(String cacheName, Map properties, String defaultKey) {
+        return redisson.getMapCache(cacheName);
     }
     
 }

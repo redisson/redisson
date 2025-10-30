@@ -2,6 +2,7 @@ package org.redisson.hibernate;
 
 import org.hibernate.Session;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
+import org.hibernate.cfg.Environment;
 import org.hibernate.query.Query;
 import org.hibernate.stat.Statistics;
 import org.hibernate.testing.orm.junit.BaseSessionFactoryFunctionalTest;
@@ -40,6 +41,7 @@ public class ReadWriteTest extends BaseSessionFactoryFunctionalTest {
 
     @Override
     protected void applySettings(StandardServiceRegistryBuilder builder) {
+        builder.applySetting(Environment.CACHE_REGION_PREFIX, "my-prefix");
         builder.applySetting("hibernate.cache.redisson.item.eviction.max_entries", "100");
         builder.applySetting("hibernate.cache.redisson.item.expiration.time_to_live", "1500");
         builder.applySetting("hibernate.cache.redisson.item.expiration.max_idle_time", "1000");
