@@ -692,7 +692,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         }
 
         CompletableFuture<R> mainPromise = createPromise();
-        if (getServiceManager().hasCachingInstances()) {
+        if (!readOnlyMode && getServiceManager().hasCachingInstances()) {
             Arrays.stream(params)
                     .filter(r -> r instanceof String)
                     .map(m -> (String) m)
