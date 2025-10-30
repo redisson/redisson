@@ -46,6 +46,7 @@ import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.internal.PlatformDependent;
 import org.redisson.ElementsSubscribeService;
 import org.redisson.QueueTransferService;
+import org.redisson.RedissonClientSideCaching;
 import org.redisson.RedissonShutdownException;
 import org.redisson.api.*;
 import org.redisson.cache.LRUCacheMap;
@@ -746,4 +747,25 @@ public final class ServiceManager {
     public LockRenewalScheduler getRenewalScheduler() {
         return renewalScheduler;
     }
+
+    private final Set<RedissonClientSideCaching> cachingInstances = Collections.newSetFromMap(new ConcurrentHashMap<>());
+
+    public void addClientSideCaching(RedissonClientSideCaching cachingInstance) {
+        cachingInstances.add(cachingInstance);
+    }
+
+    public void removeClientSideCaching(RedissonClientSideCaching cachingInstance) {
+        cachingInstances.remove(cachingInstance);
+    }
+
+    public boolean hasCachingInstances() {
+        return !cachingInstances.isEmpty();
+    }
+
+    public void evictClientSideCaching(String name) {
+        for (RedissonClientSideCaching cachingInstance : cachingInstances) {
+            cachingInstance.clearCache(name);
+        }
+    }
+
 }

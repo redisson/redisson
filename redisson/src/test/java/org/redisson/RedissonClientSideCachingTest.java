@@ -16,7 +16,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class RedissonClientSideCachingTest extends RedisDockerTest {
 
     @Test
-    public void testBucket() throws InterruptedException {
+    public void testBucket() {
         Config c = redisson.getConfig();
         c.setProtocol(Protocol.RESP3);
 
@@ -29,9 +29,13 @@ public class RedissonClientSideCachingTest extends RedisDockerTest {
 
         RBucket<Object> b2 = rs.getBucket("test1");
         b2.set("123");
-        Thread.sleep(100);
 
         Assertions.assertThat(b.get()).isEqualTo("123");
+
+        csc.destroy();
+
+        RBucket<Object> b3 = rs.getBucket("test1");
+        b3.set("123");
 
         rs.shutdown();
     }

@@ -16,7 +16,6 @@
 package org.redisson;
 
 import org.redisson.api.*;
-import org.redisson.api.listener.TrackingListener;
 import org.redisson.api.options.ClientSideCachingOptions;
 import org.redisson.api.options.ClientSideCachingParams;
 import org.redisson.cache.*;
@@ -66,25 +65,24 @@ public final class RedissonClientSideCaching implements RClientSideCaching {
             cache = ReferenceCacheMap.weak(params.getTtl(), params.getIdleTime());
         }
 
+        commandExecutor.getServiceManager().addClientSideCaching(this);
         CommandAsyncExecutor tracked = commandExecutor.copy(true);
         this.commandExecutor = create(tracked, CommandAsyncExecutor.class);
 
         PublishSubscribeService subscribeService = this.commandExecutor.getConnectionManager().getSubscribeService();
-        CompletableFuture<Integer> r = subscribeService.subscribe(this.commandExecutor,
-                new TrackingListener() {
-                    @Override
-                    public void onChange(String name) {
-                        Set<CacheKeyParams> keys = name2cacheKey.remove(name);
-                        if (keys == null) {
-                            return;
-                        }
-
-                        for (CacheKeyParams key : keys) {
-                            cache.remove(key);
-                        }
-                    }
-                });
+        CompletableFuture<Integer> r = subscribeService.subscribe(this.commandExecutor, this::clearCache);
         listenerId = r.join();
+    }
+
+    public void clearCache(String name) {
+        Set<CacheKeyParams> keys = name2cacheKey.remove(name);
+        if (keys == null) {
+            return;
+        }
+
+        for (CacheKeyParams key : keys) {
+            cache.remove(key);
+        }
     }
 
     public <T> T create(Object instance, Class<T> clazz) {
@@ -232,5 +230,6 @@ public final class RedissonClientSideCaching implements RClientSideCaching {
     public void destroy() {
         PublishSubscribeService subscribeService = commandExecutor.getConnectionManager().getSubscribeService();
         commandExecutor.get(subscribeService.removeFlushListenerAsync(listenerId));
+        commandExecutor.getServiceManager().removeClientSideCaching(this);
     }
 }

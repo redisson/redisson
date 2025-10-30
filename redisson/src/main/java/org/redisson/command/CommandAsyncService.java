@@ -692,6 +692,17 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         }
 
         CompletableFuture<R> mainPromise = createPromise();
+        if (getServiceManager().hasCachingInstances()) {
+            Arrays.stream(params)
+                    .filter(r -> r instanceof String)
+                    .map(m -> (String) m)
+                    .findFirst()
+                    .ifPresent(name -> {
+                        mainPromise.thenAccept(r -> {
+                            getServiceManager().evictClientSideCaching(name);
+                        });
+                    });
+        }
         RedisExecutor<V, R> executor = new RedisExecutor<>(readOnlyMode, source, codec, cmnd, params, mainPromise,
                                                             ignoreRedirect, connectionManager, objectBuilder, referenceType, noRetry,
                                                             retryAttempts, retryDelay, responseTimeout, trackChanges);
