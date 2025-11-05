@@ -15,6 +15,7 @@
  */
 package org.redisson.config;
 
+import org.redisson.api.DefaultNameMapper;
 import org.redisson.api.NameMapper;
 import org.redisson.client.DefaultCredentialsResolver;
 import org.slf4j.Logger;
@@ -90,27 +91,38 @@ public class BaseConfig<T extends BaseConfig<T>> {
      * Name of client connection
      */
     private String clientName;
-
+    
+    @Deprecated
     private SslVerificationMode sslVerificationMode = SslVerificationMode.STRICT;
-
+    
+    @Deprecated
     private String sslKeystoreType;
-
+    
+    @Deprecated
     private SslProvider sslProvider = SslProvider.JDK;
     
+    @Deprecated
     private URL sslTruststore;
     
+    @Deprecated
     private String sslTruststorePassword;
     
+    @Deprecated
     private URL sslKeystore;
     
+    @Deprecated
     private String sslKeystorePassword;
-
+    
+    @Deprecated
     private String[] sslProtocols;
-
+    
+    @Deprecated
     private String[] sslCiphers;
-
+    
+    @Deprecated
     private TrustManagerFactory sslTrustManagerFactory;
-
+    
+    @Deprecated
     private KeyManagerFactory sslKeyManagerFactory;
 
     private int pingConnectionInterval = 30000;
@@ -137,8 +149,56 @@ public class BaseConfig<T extends BaseConfig<T>> {
     }
 
     BaseConfig(T config) {
-        setPassword(config.getPassword());
-        setUsername(config.getUsername());
+        if (config.getUsername() != null) {
+            setUsername(config.getUsername());
+        }
+        if (config.getPassword() != null) {
+            setPassword(config.getPassword());
+        }
+        if (!(config.getNameMapper() instanceof DefaultNameMapper)) {
+            setNameMapper(config.getNameMapper());
+        }
+        if (!(config.getCommandMapper() instanceof DefaultCommandMapper)) {
+            setCommandMapper(config.getCommandMapper());
+        }
+        if (!(config.getCredentialsResolver() instanceof DefaultCredentialsResolver)) {
+            setCredentialsResolver(config.getCredentialsResolver());
+        }
+        
+        if (config.getSslVerificationMode() != SslVerificationMode.STRICT) {
+            setSslVerificationMode(config.getSslVerificationMode());
+        }
+        if (config.getSslKeystoreType() != null) {
+            setSslKeystoreType(config.getSslKeystoreType());
+        }
+        if (config.getSslProvider() != SslProvider.JDK) {
+            setSslProvider(config.getSslProvider());
+        }
+        if (config.getSslTruststore() != null) {
+            setSslTruststore(config.getSslTruststore());
+        }
+        if (config.getSslTruststorePassword() != null) {
+            setSslTruststorePassword(config.getSslTruststorePassword());
+        }
+        if (config.getSslKeystore() != null) {
+            setSslKeystore(config.getSslKeystore());
+        }
+        if (config.getSslKeystorePassword() != null) {
+            setSslKeystorePassword(config.getSslKeystorePassword());
+        }
+        if (config.getSslProtocols() != null) {
+            setSslProtocols(config.getSslProtocols());
+        }
+        if (config.getSslCiphers() != null) {
+            setSslCiphers(config.getSslCiphers());
+        }
+        if (config.getSslKeyManagerFactory() != null) {
+            setSslKeyManagerFactory(config.getSslKeyManagerFactory());
+        }
+        if (config.getSslTrustManagerFactory() != null) {
+            setSslTrustManagerFactory(config.getSslTrustManagerFactory());
+        }
+        
         setSubscriptionsPerConnection(config.getSubscriptionsPerConnection());
         setRetryAttempts(config.getRetryAttempts());
         setRetryDelay(config.getRetryDelay());
@@ -147,16 +207,6 @@ public class BaseConfig<T extends BaseConfig<T>> {
         setClientName(config.getClientName());
         setConnectTimeout(config.getConnectTimeout());
         setIdleConnectionTimeout(config.getIdleConnectionTimeout());
-        setSslProvider(config.getSslProvider());
-        setSslTruststore(config.getSslTruststore());
-        setSslTruststorePassword(config.getSslTruststorePassword());
-        setSslKeystoreType(config.getSslKeystoreType());
-        setSslKeystore(config.getSslKeystore());
-        setSslKeystorePassword(config.getSslKeystorePassword());
-        setSslProtocols(config.getSslProtocols());
-        setSslCiphers(config.getSslCiphers());
-        setSslKeyManagerFactory(config.getSslKeyManagerFactory());
-        setSslTrustManagerFactory(config.getSslTrustManagerFactory());
         setPingConnectionInterval(config.getPingConnectionInterval());
         setKeepAlive(config.isKeepAlive());
         setTcpKeepAliveCount(config.getTcpKeepAliveCount());
@@ -164,10 +214,6 @@ public class BaseConfig<T extends BaseConfig<T>> {
         setTcpKeepAliveInterval(config.getTcpKeepAliveInterval());
         setTcpUserTimeout(config.getTcpUserTimeout());
         setTcpNoDelay(config.isTcpNoDelay());
-        setNameMapper(config.getNameMapper());
-        setCredentialsResolver(config.getCredentialsResolver());
-        setCommandMapper(config.getCommandMapper());
-        setSslVerificationMode(config.getSslVerificationMode());
         setSubscriptionTimeout(config.getSubscriptionTimeout());
     }
 
@@ -383,12 +429,14 @@ public class BaseConfig<T extends BaseConfig<T>> {
         }
         return (T) this;
     }
-
+    
+    @Deprecated
     public SslProvider getSslProvider() {
         return sslProvider;
     }
 
     /**
+     * Use {@link Config#setSslProvider(SslProvider)} instead.
      * Defines SSL provider used to handle SSL connections.
      * <p>
      * Default is <code>JDK</code>
@@ -396,16 +444,20 @@ public class BaseConfig<T extends BaseConfig<T>> {
      * @param sslProvider ssl provider
      * @return config
      */
+    @Deprecated
     public T setSslProvider(SslProvider sslProvider) {
+        log.warn("sslProvider setting is deprecated. Use sslProvider setting in Config instead.");
         this.sslProvider = sslProvider;
         return (T) this;
     }
-
+    
+    @Deprecated
     public URL getSslTruststore() {
         return sslTruststore;
     }
 
     /**
+     * Use {@link Config#setSslTruststore(URL)} instead.
      * Defines path to SSL truststore 
      * <p>
      * Default is <code>null</code>
@@ -413,16 +465,20 @@ public class BaseConfig<T extends BaseConfig<T>> {
      * @param sslTruststore truststore path
      * @return config
      */
+    @Deprecated
     public T setSslTruststore(URL sslTruststore) {
+        log.warn("sslTruststore setting is deprecated. Use sslTruststore setting in Config instead.");
         this.sslTruststore = sslTruststore;
         return (T) this;
     }
-
+    
+    @Deprecated
     public String getSslTruststorePassword() {
         return sslTruststorePassword;
     }
 
     /**
+     * Use {@link Config#setSslTruststorePassword(String)} instead.
      * Defines password for SSL truststore.
      * SSL truststore is read on each new connection creation and can be dynamically reloaded.
      * <p>
@@ -431,16 +487,20 @@ public class BaseConfig<T extends BaseConfig<T>> {
      * @param sslTruststorePassword - password
      * @return config
      */
+    @Deprecated
     public T setSslTruststorePassword(String sslTruststorePassword) {
+        log.warn("sslTruststorePassword setting is deprecated. Use sslTruststorePassword setting in Config instead.");
         this.sslTruststorePassword = sslTruststorePassword;
         return (T) this;
     }
-
+    
+    @Deprecated
     public URL getSslKeystore() {
         return sslKeystore;
     }
 
     /**
+     * Use {@link Config#setSslKeystore(URL)} instead.
      * Defines path to SSL keystore.
      * SSL keystore is read on each new connection creation and can be dynamically reloaded.
      * <p>
@@ -449,16 +509,20 @@ public class BaseConfig<T extends BaseConfig<T>> {
      * @param sslKeystore path to keystore
      * @return config
      */
+    @Deprecated
     public T setSslKeystore(URL sslKeystore) {
+        log.warn("sslKeystore setting is deprecated. Use sslKeystore setting in Config instead.");
         this.sslKeystore = sslKeystore;
         return (T) this;
     }
-
+    
+    @Deprecated
     public String getSslKeystorePassword() {
         return sslKeystorePassword;
     }
 
     /**
+     * Use {@link Config#setSslKeystorePassword(String)} instead.
      * Defines password for SSL keystore
      * <p>
      * Default is <code>null</code>
@@ -466,16 +530,20 @@ public class BaseConfig<T extends BaseConfig<T>> {
      * @param sslKeystorePassword password
      * @return config
      */
+    @Deprecated
     public T setSslKeystorePassword(String sslKeystorePassword) {
+        log.warn("sslKeystorePassword setting is deprecated. Use sslKeystorePassword setting in Config instead.");
         this.sslKeystorePassword = sslKeystorePassword;
         return (T) this;
     }
-
+    
+    @Deprecated
     public String[] getSslProtocols() {
         return sslProtocols;
     }
 
     /**
+     * Use {@link Config#setSslProtocols(String[])} instead.
      * Defines SSL protocols.
      * Example values: TLSv1.3, TLSv1.2, TLSv1.1, TLSv1
      * <p>
@@ -484,7 +552,9 @@ public class BaseConfig<T extends BaseConfig<T>> {
      * @param sslProtocols protocols
      * @return config
      */
+    @Deprecated
     public T setSslProtocols(String[] sslProtocols) {
+        log.warn("sslProtocols setting is deprecated. Use sslProtocols setting in Config instead.");
         this.sslProtocols = sslProtocols;
         return (T) this;
     }
@@ -647,12 +717,14 @@ public class BaseConfig<T extends BaseConfig<T>> {
         this.credentialsResolver = credentialsResolver;
         return (T) this;
     }
-
+    
+    @Deprecated
     public String getSslKeystoreType() {
         return sslKeystoreType;
     }
 
     /**
+     * Use {@link Config#setSslKeystoreType(String)} instead.
      * Defines SSL keystore type.
      * <p>
      * Default is <code>null</code>
@@ -660,16 +732,20 @@ public class BaseConfig<T extends BaseConfig<T>> {
      * @param sslKeystoreType keystore type
      * @return config
      */
+    @Deprecated
     public T setSslKeystoreType(String sslKeystoreType) {
+        log.warn("sslKeystoreType setting is deprecated. Use sslKeystoreType setting in Config instead.");
         this.sslKeystoreType = sslKeystoreType;
         return (T) this;
     }
-
+    
+    @Deprecated
     public String[] getSslCiphers() {
         return sslCiphers;
     }
 
     /**
+     * Use {@link Config#setSslCiphers(String[])} instead.
      * Defines SSL ciphers.
      * <p>
      * Default is <code>null</code>
@@ -677,16 +753,20 @@ public class BaseConfig<T extends BaseConfig<T>> {
      * @param sslCiphers ciphers
      * @return config
      */
+    @Deprecated
     public T setSslCiphers(String[] sslCiphers) {
+        log.warn("sslCiphers setting is deprecated. Use sslCiphers setting in Config instead.");
         this.sslCiphers = sslCiphers;
         return (T) this;
     }
-
+    
+    @Deprecated
     public TrustManagerFactory getSslTrustManagerFactory() {
         return sslTrustManagerFactory;
     }
 
     /**
+     * Use {@link Config#setSslTrustManagerFactory(TrustManagerFactory)} instead.
      * Defines SSL TrustManagerFactory.
      * <p>
      * Default is <code>null</code>
@@ -694,16 +774,20 @@ public class BaseConfig<T extends BaseConfig<T>> {
      * @param trustManagerFactory trust manager value
      * @return config
      */
+    @Deprecated
     public T setSslTrustManagerFactory(TrustManagerFactory trustManagerFactory) {
+        log.warn("trustManagerFactory setting is deprecated. Use trustManagerFactory setting in Config instead.");
         this.sslTrustManagerFactory = trustManagerFactory;
         return (T) this;
     }
-
+    
+    @Deprecated
     public KeyManagerFactory getSslKeyManagerFactory() {
         return sslKeyManagerFactory;
     }
 
     /**
+     * Use {@link Config#setSslKeyManagerFactory(KeyManagerFactory)} instead.
      * Defines SSL KeyManagerFactory.
      * <p>
      * Default is <code>null</code>
@@ -711,7 +795,9 @@ public class BaseConfig<T extends BaseConfig<T>> {
      * @param keyManagerFactory key manager value
      * @return config
      */
+    @Deprecated
     public BaseConfig<T> setSslKeyManagerFactory(KeyManagerFactory keyManagerFactory) {
+        log.warn("keyManagerFactory setting is deprecated. Use keyManagerFactory setting in Config instead.");
         this.sslKeyManagerFactory = keyManagerFactory;
         return this;
     }
@@ -735,12 +821,14 @@ public class BaseConfig<T extends BaseConfig<T>> {
         this.commandMapper = commandMapper;
         return (T) this;
     }
-
+    
+    @Deprecated
     public SslVerificationMode getSslVerificationMode() {
         return sslVerificationMode;
     }
 
     /**
+     * Use {@link Config#setSslVerificationMode(SslVerificationMode)} instead.
      * Defines SSL verification mode, which prevents man-in-the-middle attacks.
      *
      * <p>
@@ -749,7 +837,9 @@ public class BaseConfig<T extends BaseConfig<T>> {
      * @param sslVerificationMode mode value
      * @return config
      */
+    @Deprecated
     public T setSslVerificationMode(SslVerificationMode sslVerificationMode) {
+        log.warn("sslVerificationMode setting is deprecated. Use sslVerificationMode setting in Config instead.");
         this.sslVerificationMode = sslVerificationMode;
         return (T) this;
     }

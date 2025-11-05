@@ -28,6 +28,8 @@ import org.redisson.connection.SequentialDnsAddressResolverFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.TrustManagerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -120,6 +122,28 @@ public class Config {
     private NameMapper nameMapper = NameMapper.direct();
 
     private CommandMapper commandMapper = CommandMapper.direct();
+    
+    private SslVerificationMode sslVerificationMode = SslVerificationMode.STRICT;
+    
+    private String sslKeystoreType;
+    
+    private SslProvider sslProvider = SslProvider.JDK;
+    
+    private URL sslTruststore;
+    
+    private String sslTruststorePassword;
+    
+    private URL sslKeystore;
+    
+    private String sslKeystorePassword;
+    
+    private String[] sslProtocols;
+    
+    private String[] sslCiphers;
+    
+    private TrustManagerFactory sslTrustManagerFactory;
+    
+    private KeyManagerFactory sslKeyManagerFactory;
 
     public Config() {
     }
@@ -162,6 +186,17 @@ public class Config {
         setValkeyCapabilities(oldConf.getValkeyCapabilities());
         setNameMapper(oldConf.getNameMapper());
         setCommandMapper(oldConf.getCommandMapper());
+        setSslProvider(oldConf.getSslProvider());
+        setSslTruststore(oldConf.getSslTruststore());
+        setSslTruststorePassword(oldConf.getSslTruststorePassword());
+        setSslKeystoreType(oldConf.getSslKeystoreType());
+        setSslKeystore(oldConf.getSslKeystore());
+        setSslKeystorePassword(oldConf.getSslKeystorePassword());
+        setSslProtocols(oldConf.getSslProtocols());
+        setSslCiphers(oldConf.getSslCiphers());
+        setSslKeyManagerFactory(oldConf.getSslKeyManagerFactory());
+        setSslTrustManagerFactory(oldConf.getSslTrustManagerFactory());
+        setSslVerificationMode(oldConf.getSslVerificationMode());
 
         if (oldConf.getSingleServerConfig() != null) {
             setSingleServerConfig(new SingleServerConfig(oldConf.getSingleServerConfig()));
@@ -1064,6 +1099,197 @@ public class Config {
      */
     public Config setCommandMapper(CommandMapper commandMapper) {
         this.commandMapper = commandMapper;
+        return this;
+    }
+    
+    public SslProvider getSslProvider() {
+        return sslProvider;
+    }
+    
+    /**
+     * Defines SSL provider used to handle SSL connections.
+     * <p>
+     * Default is <code>JDK</code>
+     *
+     * @param sslProvider ssl provider
+     * @return config
+     */
+    public Config setSslProvider(SslProvider sslProvider) {
+        this.sslProvider = sslProvider;
+        return this;
+    }
+    
+    public URL getSslTruststore() {
+        return sslTruststore;
+    }
+    
+    /**
+     * Defines path to SSL truststore
+     * <p>
+     * Default is <code>null</code>
+     *
+     * @param sslTruststore truststore path
+     * @return config
+     */
+    public Config setSslTruststore(URL sslTruststore) {
+        this.sslTruststore = sslTruststore;
+        return this;
+    }
+    
+    public String getSslTruststorePassword() {
+        return sslTruststorePassword;
+    }
+    
+    /**
+     * Defines password for SSL truststore.
+     * SSL truststore is read on each new connection creation and can be dynamically reloaded.
+     * <p>
+     * Default is <code>null</code>
+     *
+     * @param sslTruststorePassword - password
+     * @return config
+     */
+    public Config setSslTruststorePassword(String sslTruststorePassword) {
+        this.sslTruststorePassword = sslTruststorePassword;
+        return this;
+    }
+    
+    public URL getSslKeystore() {
+        return sslKeystore;
+    }
+    
+    /**
+     * Defines path to SSL keystore.
+     * SSL keystore is read on each new connection creation and can be dynamically reloaded.
+     * <p>
+     * Default is <code>null</code>
+     *
+     * @param sslKeystore path to keystore
+     * @return config
+     */
+    public Config setSslKeystore(URL sslKeystore) {
+        this.sslKeystore = sslKeystore;
+        return this;
+    }
+    
+    public String getSslKeystorePassword() {
+        return sslKeystorePassword;
+    }
+    
+    /**
+     * Defines password for SSL keystore
+     * <p>
+     * Default is <code>null</code>
+     *
+     * @param sslKeystorePassword password
+     * @return config
+     */
+    public Config setSslKeystorePassword(String sslKeystorePassword) {
+        this.sslKeystorePassword = sslKeystorePassword;
+        return this;
+    }
+    
+    public String[] getSslProtocols() {
+        return sslProtocols;
+    }
+    
+    /**
+     * Defines SSL protocols.
+     * Example values: TLSv1.3, TLSv1.2, TLSv1.1, TLSv1
+     * <p>
+     * Default is <code>null</code>
+     *
+     * @param sslProtocols protocols
+     * @return config
+     */
+    public Config setSslProtocols(String[] sslProtocols) {
+        this.sslProtocols = sslProtocols;
+        return this;
+    }
+    
+    public String getSslKeystoreType() {
+        return sslKeystoreType;
+    }
+    
+    /**
+     * Defines SSL keystore type.
+     * <p>
+     * Default is <code>null</code>
+     *
+     * @param sslKeystoreType keystore type
+     * @return config
+     */
+    public Config setSslKeystoreType(String sslKeystoreType) {
+        this.sslKeystoreType = sslKeystoreType;
+        return this;
+    }
+    
+    public String[] getSslCiphers() {
+        return sslCiphers;
+    }
+    
+    /**
+     * Defines SSL ciphers.
+     * <p>
+     * Default is <code>null</code>
+     *
+     * @param sslCiphers ciphers
+     * @return config
+     */
+    public Config setSslCiphers(String[] sslCiphers) {
+        this.sslCiphers = sslCiphers;
+        return this;
+    }
+    
+    public TrustManagerFactory getSslTrustManagerFactory() {
+        return sslTrustManagerFactory;
+    }
+    
+    /**
+     * Defines SSL TrustManagerFactory.
+     * <p>
+     * Default is <code>null</code>
+     *
+     * @param trustManagerFactory trust manager value
+     * @return config
+     */
+    public Config setSslTrustManagerFactory(TrustManagerFactory trustManagerFactory) {
+        this.sslTrustManagerFactory = trustManagerFactory;
+        return this;
+    }
+    
+    public KeyManagerFactory getSslKeyManagerFactory() {
+        return sslKeyManagerFactory;
+    }
+    
+    /**
+     * Defines SSL KeyManagerFactory.
+     * <p>
+     * Default is <code>null</code>
+     *
+     * @param keyManagerFactory key manager value
+     * @return config
+     */
+    public Config setSslKeyManagerFactory(KeyManagerFactory keyManagerFactory) {
+        this.sslKeyManagerFactory = keyManagerFactory;
+        return this;
+    }
+    
+    public SslVerificationMode getSslVerificationMode() {
+        return sslVerificationMode;
+    }
+    
+    /**
+     * Defines SSL verification mode, which prevents man-in-the-middle attacks.
+     *
+     * <p>
+     * Default is <code>SslVerificationMode.STRICT</code>
+     *
+     * @param sslVerificationMode mode value
+     * @return config
+     */
+    public Config setSslVerificationMode(SslVerificationMode sslVerificationMode) {
+        this.sslVerificationMode = sslVerificationMode;
         return this;
     }
 }
