@@ -825,9 +825,18 @@ public class RedissonTest extends RedisDockerTest {
     public void testSingleConfigYAML() throws IOException {
         RedissonClient r = createInstance();
         String t = r.getConfig().toYAML();
-        String cc = t.replace("!<org.redisson.config.EqualJitterDelay> {}", "!<org.redisson.config.EqualJitterDelay> {baseDelay: PT1S, maxDelay: PT2S}");
-        Config c = Config.fromYAML(cc);
+        assertThat(t).hasSizeGreaterThan(1900);
+        Config c = Config.fromYAML(t);
         assertThat(c.toYAML()).isEqualTo(t);
+    }
+
+    @Test
+    public void testSingleConfigJSON() throws IOException {
+        RedissonClient r = createInstance();
+        String t = r.getConfig().toJSON();
+        assertThat(t).hasSizeGreaterThan(1900);
+        Config c = Config.fromJSON(t);
+        assertThat(c.toJSON()).isEqualTo(t);
     }
 
     @Test
@@ -835,9 +844,19 @@ public class RedissonTest extends RedisDockerTest {
         Config c2 = new Config();
         c2.useSentinelServers().addSentinelAddress("redis://123.1.1.1:1231").setMasterName("mymaster");
         String t = c2.toYAML();
-        String cc = t.replace("!<org.redisson.config.EqualJitterDelay> {}", "!<org.redisson.config.EqualJitterDelay> {baseDelay: PT1S, maxDelay: PT2S}");
-        Config c = Config.fromYAML(cc);
+        assertThat(t).hasSizeGreaterThan(2200);
+        Config c = Config.fromYAML(t);
         assertThat(c.toYAML()).isEqualTo(t);
+    }
+
+    @Test
+    public void testSentinelJSON() throws IOException {
+        Config c2 = new Config();
+        c2.useSentinelServers().addSentinelAddress("redis://123.1.1.1:1231").setMasterName("mymaster");
+        String t = c2.toJSON();
+        assertThat(t).hasSizeGreaterThan(2200);
+        Config c = Config.fromJSON(t);
+        assertThat(c.toJSON()).isEqualTo(t);
     }
 
     @Test
@@ -869,11 +888,62 @@ public class RedissonTest extends RedisDockerTest {
     @Test
     public void testMasterSlaveConfigYAML() throws IOException {
         Config c2 = new Config();
+        c2.setUsername("tester");
         c2.useMasterSlaveServers().setMasterAddress("redis://123.1.1.1:1231").addSlaveAddress("redis://82.12.47.12:1028", "redis://82.12.47.14:1028");
         String t = c2.toYAML();
-        String cc = t.replace("!<org.redisson.config.EqualJitterDelay> {}", "!<org.redisson.config.EqualJitterDelay> {baseDelay: PT1S, maxDelay: PT2S}");
-        Config c = Config.fromYAML(cc);
+        assertThat(t).hasSizeGreaterThan(2200);
+        Config c = Config.fromYAML(t);
         assertThat(c.toYAML()).isEqualTo(t);
+    }
+
+    @Test
+    public void testMasterSlaveConfigJSON() throws IOException {
+        Config c2 = new Config();
+        c2.useMasterSlaveServers().setMasterAddress("redis://123.1.1.1:1231").addSlaveAddress("redis://82.12.47.12:1028", "redis://82.12.47.14:1028");
+        String t = c2.toJSON();
+        assertThat(t).hasSizeGreaterThan(2200);
+        Config c = Config.fromJSON(t);
+        assertThat(c.toJSON()).isEqualTo(t);
+    }
+
+    @Test
+    public void testClusterConfigYAML() throws IOException {
+        Config c2 = new Config();
+        c2.useClusterServers().addNodeAddress("redis://82.12.47.12:1028", "redis://82.12.47.14:1028");
+        String t = c2.toYAML();
+        assertThat(t).hasSizeGreaterThan(2200);
+        Config c = Config.fromYAML(t);
+        assertThat(c.toYAML()).isEqualTo(t);
+    }
+
+    @Test
+    public void testClusterConfigJSON() throws IOException {
+        Config c2 = new Config();
+        c2.useClusterServers().addNodeAddress("redis://82.12.47.12:1028", "redis://82.12.47.14:1028");
+        String t = c2.toJSON();
+        assertThat(t).hasSizeGreaterThan(2200);
+        Config c = Config.fromJSON(t);
+        assertThat(c.toJSON()).isEqualTo(t);
+    }
+
+    @Test
+    public void testReplicatedConfigYAML() throws IOException {
+        Config c2 = new Config();
+        c2.useReplicatedServers().addNodeAddress("redis://82.12.47.12:1028", "redis://82.12.47.14:1028");
+        String t = c2.toYAML();
+        assertThat(t).hasSizeGreaterThan(2200);
+        Config c = Config.fromYAML(t);
+        assertThat(c.toYAML()).isEqualTo(t);
+    }
+
+    @Test
+    public void testReplicatedConfigJSON() throws IOException {
+        Config c2 = new Config();
+        c2.useReplicatedServers().addNodeAddress("redis://82.12.47.12:1028", "redis://82.12.47.14:1028");
+        String t = c2.toJSON();
+        assertThat(t).hasSizeGreaterThan(2200);
+        Config c = Config.fromJSON(t);
+        assertThat(c.toJSON()).isEqualTo(t);
     }
 
     @Test

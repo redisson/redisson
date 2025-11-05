@@ -17,6 +17,8 @@ package org.redisson.spring.cache;
 
 import org.redisson.api.EvictionMode;
 import org.redisson.api.map.event.MapEntryListener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -35,6 +37,8 @@ import java.util.Map;
  */
 public class CacheConfig {
 
+    static final Logger log = LoggerFactory.getLogger(CacheConfig.class);
+
     private long ttl;
 
     private long maxIdleTime;
@@ -43,7 +47,7 @@ public class CacheConfig {
 
     private EvictionMode evictionMode = EvictionMode.LRU;
 
-    private final List<MapEntryListener> listeners = new ArrayList<>();
+    private List<MapEntryListener> listeners = new ArrayList<>();
 
     /**
      * Creates config object with
@@ -139,7 +143,11 @@ public class CacheConfig {
     public void addListener(MapEntryListener listener) {
         listeners.add(listener);
     }
-    
+
+    public void setListeners(List<MapEntryListener> listeners) {
+        this.listeners = listeners;
+    }
+
     public List<MapEntryListener> getListeners() {
         return listeners;
     }
@@ -151,7 +159,9 @@ public class CacheConfig {
      * @return config
      * @throws IOException error
      */
+    @Deprecated
     public static Map<String, ? extends CacheConfig> fromJSON(String content) throws IOException {
+        log.error("JSON configuration is deprecated and will be removed in future!");
         return new CacheConfigSupport().fromJSON(content);
     }
 
@@ -162,7 +172,9 @@ public class CacheConfig {
      * @return config
      * @throws IOException error
      */
+    @Deprecated
     public static Map<String, ? extends CacheConfig> fromJSON(InputStream inputStream) throws IOException {
+        log.error("JSON Spring cache configuration is deprecated and will be removed in future!");
         return new CacheConfigSupport().fromJSON(inputStream);
     }
 
@@ -173,7 +185,9 @@ public class CacheConfig {
      * @return config
      * @throws IOException error
      */
+    @Deprecated
     public static Map<String, ? extends CacheConfig> fromJSON(File file) throws IOException {
+        log.error("JSON Spring cache configuration is deprecated and will be removed in future!");
         return new CacheConfigSupport().fromJSON(file);
     }
 
@@ -184,7 +198,9 @@ public class CacheConfig {
      * @return config
      * @throws IOException error
      */
+    @Deprecated
     public static Map<String, ? extends CacheConfig> fromJSON(URL url) throws IOException {
+        log.error("JSON Spring cache configuration is deprecated and will be removed in future!");
         return new CacheConfigSupport().fromJSON(url);
     }
 
@@ -195,7 +211,9 @@ public class CacheConfig {
      * @return config
      * @throws IOException error
      */
+    @Deprecated
     public static Map<String, ? extends CacheConfig> fromJSON(Reader reader) throws IOException {
+        log.error("JSON Spring cache configuration is deprecated and will be removed in future!");
         return new CacheConfigSupport().fromJSON(reader);
     }
 
@@ -206,7 +224,9 @@ public class CacheConfig {
      * @return json string
      * @throws IOException error
      */
+    @Deprecated
     public static String toJSON(Map<String, ? extends CacheConfig> config) throws IOException {
+        log.error("JSON Spring cache configuration is deprecated and will be removed in future!");
         return new CacheConfigSupport().toJSON(config);
     }
 
@@ -276,4 +296,14 @@ public class CacheConfig {
         return new CacheConfigSupport().toYAML(config);
     }
 
+    @Override
+    public String toString() {
+        return "CacheConfig{" +
+                "ttl=" + ttl +
+                ", maxIdleTime=" + maxIdleTime +
+                ", maxSize=" + maxSize +
+                ", evictionMode=" + evictionMode +
+                ", listeners=" + listeners +
+                '}';
+    }
 }

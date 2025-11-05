@@ -130,6 +130,23 @@ public class RedissonSpringCacheShortTTLTest extends RedisDockerTest {
 
     }
     
+    @Configuration
+    @ComponentScan
+    @EnableCaching
+    public static class YamlConfigApplication {
+
+        @Bean(destroyMethod = "shutdown")
+        RedissonClient redisson() {
+            return createRedisson();
+        }
+
+        @Bean
+        CacheManager cacheManager(RedissonClient redissonClient) {
+            return new RedissonSpringCacheManager(redissonClient, "classpath:/org/redisson/spring/cache/cache-config-shortTTL.yaml");
+        }
+
+    }
+
     public static class SimpleExpireListener implements EntryExpiredListener<String, RedissonSpringCacheTest.SampleObject> {
         @Override
         public void onExpired(EntryEvent<String, RedissonSpringCacheTest.SampleObject> event) {
@@ -153,7 +170,7 @@ public class RedissonSpringCacheShortTTLTest extends RedisDockerTest {
     private static final Map<String, AtomicInteger> counter = new HashMap<>();
 
     public static List<Class<?>> data() {
-        return Arrays.asList(Application.class, JsonConfigApplication.class);
+        return Arrays.asList(Application.class, JsonConfigApplication.class, YamlConfigApplication.class);
     }
 
     @BeforeAll
@@ -197,6 +214,9 @@ public class RedissonSpringCacheShortTTLTest extends RedisDockerTest {
     @MethodSource("data")
     public void testListener(Class<?> contextClass) throws InterruptedException {
         AnnotationConfigApplicationContext context = contexts.get(contextClass);
+
+        assertThat(counter.get(contextClass.getName())).isNull();
+
         SampleBean bean = context.getBean(SampleBean.class);
         bean.store(contextClass.getName(), new SampleObject("name1", "value1"));
         

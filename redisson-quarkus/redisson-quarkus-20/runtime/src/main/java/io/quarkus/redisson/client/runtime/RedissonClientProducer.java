@@ -15,7 +15,6 @@
  */
 package io.quarkus.redisson.client.runtime;
 
-import com.fasterxml.jackson.databind.MapperFeature;
 import io.quarkus.arc.DefaultBean;
 import io.quarkus.runtime.shutdown.ShutdownConfig;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -77,11 +76,7 @@ public class RedissonClientProducer {
             }, false);
         }
 
-        ConfigSupport support = new ConfigSupport() {
-            {
-                yamlMapper.configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
-            }
-        };
+        ConfigSupport support = new ConfigSupport(true);
         Config c = support.fromYAML(config, Config.class);
         redisson = Redisson.create(c);
         return redisson;

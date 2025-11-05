@@ -560,7 +560,7 @@
                     <instructions>
                         <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
                         <DynamicImport-Package>*</DynamicImport-Package>
-                        <Import-Package>jdk.net;resolution:=optional,javax.cache.*;resolution:=optional,io.reactivex.rxjava3.*;resolution:=optional,jodd.*;resolution:=optional,net.bytebuddy.*;resolution:=optional,org.jboss.marshalling.*;resolution:=optional,org.springframework.*;resolution:=optional,io.projectreactor.*;resolution:=optional,*</Import-Package>
+                        <Import-Package>jdk.net;resolution:=optional,javax.cache.*;resolution:=optional,io.reactivex.rxjava3.*;resolution:=optional,net.bytebuddy.*;resolution:=optional,org.jboss.marshalling.*;resolution:=optional,org.springframework.*;resolution:=optional,io.projectreactor.*;resolution:=optional,*</Import-Package>
                     </instructions>
                 </configuration>
             </plugin>

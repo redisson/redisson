@@ -1,0 +1,5 @@
+testMap:
+  ttl: 1000
+  maxIdleTime: 1000
+  listeners:
+    - !<org.redisson.spring.cache.RedissonSpringCacheShortTTLTest$SimpleExpireListener> {}
