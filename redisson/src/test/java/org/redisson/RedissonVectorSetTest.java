@@ -11,6 +11,7 @@ import org.redisson.api.vector.VectorSimilarArgs;
 import org.redisson.client.RedisException;
 import org.redisson.client.protocol.ScoreAttributesEntry;
 import org.redisson.client.protocol.ScoredEntry;
+import org.redisson.codec.JacksonCodec;
 
 import java.util.List;
 
@@ -25,13 +26,15 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  */
 public class RedissonVectorSetTest extends RedisDockerTest {
 
-    private RVectorSet vectorSet;
-    private static final String TEST_SET_NAME = "test-vector-set";
-    private static final String ELEMENT_A = "A";
-    private static final String ELEMENT_B = "B";
-    private static final String ELEMENT_C = "C";
-    private static final String ELEMENT_D = "D";
-    private static final String ELEMENT_E = "E";
+    JacksonCodec<Object> jsonCodec = new JacksonCodec<>(Object.class);
+
+    RVectorSet vectorSet;
+    static final String TEST_SET_NAME = "test-vector-set";
+    static final String ELEMENT_A = "A";
+    static final String ELEMENT_B = "B";
+    static final String ELEMENT_C = "C";
+    static final String ELEMENT_D = "D";
+    static final String ELEMENT_E = "E";
 
     @BeforeEach
     public void setUp() {
@@ -111,7 +114,7 @@ public class RedissonVectorSetTest extends RedisDockerTest {
     public void testGetAndSetAttributes() {
         TestAttributes attrs = new TestAttributes("test value", 42);
 
-        boolean setResult = vectorSet.setAttributes(ELEMENT_A, attrs);
+        boolean setResult = vectorSet.setAttributes(ELEMENT_A, attrs, jsonCodec);
         assertThat(setResult).isTrue();
 
         TestAttributes retrievedAttrs = vectorSet.getAttributes(ELEMENT_A, TestAttributes.class);
@@ -119,14 +122,14 @@ public class RedissonVectorSetTest extends RedisDockerTest {
         assertThat(retrievedAttrs.getIntValue()).isEqualTo(42);
 
         TestAttributes attrs2 = new TestAttributes("test 2", 52);
-        boolean r2 = vectorSet.setAttributes(ELEMENT_A, attrs2);
+        boolean r2 = vectorSet.setAttributes(ELEMENT_A, attrs2, jsonCodec);
         assertThat(r2).isTrue();
 
         TestAttributes retrievedAttrs2 = vectorSet.getAttributes(ELEMENT_A, TestAttributes.class);
         assertThat(retrievedAttrs2.getStringValue()).isEqualTo("test 2");
         assertThat(retrievedAttrs2.getIntValue()).isEqualTo(52);
 
-        boolean nonExistentSetResult = vectorSet.setAttributes("NON_EXISTENT", attrs);
+        boolean nonExistentSetResult = vectorSet.setAttributes("NON_EXISTENT", attrs, jsonCodec);
         assertThat(nonExistentSetResult).isFalse();
 
         TestAttributes nonExistentAttrs = vectorSet.getAttributes("NON_EXISTENT", TestAttributes.class);
@@ -336,7 +339,7 @@ public class RedissonVectorSetTest extends RedisDockerTest {
 
         TestAttributes attrs = new TestAttributes("test attribute", 100);
 
-        boolean result = vectorSet.add(VectorAddArgs.element("F").vector(0.5, 0.5).attributes(attrs));
+        boolean result = vectorSet.add(VectorAddArgs.element("F").vector(0.5, 0.5).attributes(attrs, jsonCodec));
         assertThat(result).isTrue();
 
         List<ScoreAttributesEntry<String>> similarTo = vectorSet.getSimilarEntriesWithAttributes(VectorSimilarArgs.element("F").count(4).epsilon(0.2));
@@ -360,7 +363,7 @@ public class RedissonVectorSetTest extends RedisDockerTest {
         
         TestAttributes attrs = new TestAttributes("test attribute", 100);
 
-        boolean result = vectorSet.add(VectorAddArgs.element("F").vector(0.5, 0.5).attributes(attrs));
+        boolean result = vectorSet.add(VectorAddArgs.element("F").vector(0.5, 0.5).attributes(attrs, jsonCodec));
         assertThat(result).isTrue();
 
         
@@ -390,8 +393,8 @@ public class RedissonVectorSetTest extends RedisDockerTest {
         TestAttributes attrs1 = new TestAttributes("category1", 2000);
         TestAttributes attrs2 = new TestAttributes("category2", 1980);
 
-        vectorSet.add(VectorAddArgs.element("F1").vector(0.5, 0.5).attributes(attrs1));
-        vectorSet.add(VectorAddArgs.element("F2").vector(0.6, 0.6).attributes(attrs2));
+        vectorSet.add(VectorAddArgs.element("F1").vector(0.5, 0.5).attributes(attrs1, jsonCodec));
+        vectorSet.add(VectorAddArgs.element("F2").vector(0.6, 0.6).attributes(attrs2, jsonCodec));
 
         
         List<String> filteredResults = vectorSet.getSimilar(

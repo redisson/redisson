@@ -21,6 +21,7 @@ import org.redisson.api.vector.VectorInfo;
 import org.redisson.api.vector.VectorSimilarArgs;
 import org.redisson.client.protocol.ScoreAttributesEntry;
 import org.redisson.client.protocol.ScoredEntry;
+import org.redisson.codec.JsonCodec;
 
 /**
  * Async interface for Vector Set
@@ -129,9 +130,10 @@ public interface RVectorSetAsync extends RExpirableAsync {
      *
      * @param element element name
      * @param attributes attributes
+     * @param jsonCodec json codec for attributes serialization
      * @return <code>true</code> if attributes were set, <code>false</code> otherwise
      */
-    RFuture<Boolean> setAttributesAsync(String element, Object attributes);
+    RFuture<Boolean> setAttributesAsync(String element, Object attributes, JsonCodec jsonCodec);
 
     /**
      * Retrieves element names similar to a specified vector or element

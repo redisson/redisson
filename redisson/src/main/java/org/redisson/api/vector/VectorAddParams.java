@@ -15,6 +15,10 @@
  */
 package org.redisson.api.vector;
 
+import org.redisson.codec.JsonCodec;
+
+import java.util.Objects;
+
 /**
  * Vector add arguments implementation
  *
@@ -31,6 +35,7 @@ public final class VectorAddParams implements VectorAddArgs, VectorAddArgs.Eleme
     private Integer effort;
     private Object attributes;
     private Integer maxConnections;
+    private JsonCodec attributesJsonCodec;
 
     VectorAddParams(String element) {
         this.element = element;
@@ -73,8 +78,12 @@ public final class VectorAddParams implements VectorAddArgs, VectorAddArgs.Eleme
     }
 
     @Override
-    public VectorAddArgs attributes(Object attributes) {
+    public VectorAddArgs attributes(Object attributes, JsonCodec jsonCodec) {
+        Objects.requireNonNull(attributes);
+        Objects.requireNonNull(jsonCodec);
+
         this.attributes = attributes;
+        this.attributesJsonCodec = jsonCodec;
         return this;
     }
 
@@ -120,4 +129,7 @@ public final class VectorAddParams implements VectorAddArgs, VectorAddArgs.Eleme
         return maxConnections;
     }
 
+    public JsonCodec getAttributesJsonCodec() {
+        return attributesJsonCodec;
+    }
 }

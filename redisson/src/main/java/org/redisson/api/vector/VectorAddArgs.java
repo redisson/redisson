@@ -15,6 +15,8 @@
  */
 package org.redisson.api.vector;
 
+import org.redisson.codec.JsonCodec;
+
 /**
  * Arguments object for RVectorSet.add() method
  *
@@ -92,7 +94,7 @@ public interface VectorAddArgs {
      * @param attributes attributes object to serialize
      * @return arguments object
      */
-    VectorAddArgs attributes(Object attributes);
+    VectorAddArgs attributes(Object attributes, JsonCodec jsonCodec);
 
     /**
      * Defines the number of maximum connections which each node will have with other nodes.

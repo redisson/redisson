@@ -15,8 +15,7 @@
  */
 package org.redisson;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import io.netty.buffer.ByteBuf;
 import org.redisson.api.RFuture;
 import org.redisson.api.RVectorSet;
 import org.redisson.api.vector.*;
@@ -25,10 +24,15 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.ScoreAttributesEntry;
 import org.redisson.client.protocol.ScoredEntry;
+import org.redisson.codec.JsonCodec;
 import org.redisson.codec.TypedJsonJacksonCodec;
 import org.redisson.command.CommandAsyncExecutor;
 
-import java.util.*;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 /**
  *
@@ -36,8 +40,6 @@ import java.util.*;
  *
  */
 public final class RedissonVectorSet extends RedissonExpirable implements RVectorSet {
-
-    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public RedissonVectorSet(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
@@ -85,7 +87,12 @@ public final class RedissonVectorSet extends RedissonExpirable implements RVecto
 
         if (params.getAttributes() != null) {
             args.add("SETATTR");
-            args.add(serializeToJson(params.getAttributes()));
+            try {
+                ByteBuf json = params.getAttributesJsonCodec().getEncoder().encode(params.getAttributes());
+                args.add(json);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         if (params.getMaxConnections() != null) {
@@ -196,19 +203,16 @@ public final class RedissonVectorSet extends RedissonExpirable implements RVecto
     }
 
     @Override
-    public boolean setAttributes(String element, Object attributes) {
-        return get(setAttributesAsync(element, attributes));
+    public boolean setAttributes(String element, Object attributes, JsonCodec jsonCodec) {
+        return get(setAttributesAsync(element, attributes, jsonCodec));
     }
 
-    public RFuture<Boolean> setAttributesAsync(String element, Object attributes) {
-        String json = serializeToJson(attributes);
-        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.VSETATTR, getName(), element, json);
-    }
-
-    private String serializeToJson(Object obj) {
+    @Override
+    public RFuture<Boolean> setAttributesAsync(String element, Object attributes, JsonCodec jsonCodec) {
         try {
-            return objectMapper.writeValueAsString(obj);
-        } catch (JsonProcessingException e) {
+            ByteBuf json = jsonCodec.getEncoder().encode(attributes);
+            return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.VSETATTR, getName(), element, json);
+        } catch (IOException e) {
             throw new IllegalArgumentException(e);
         }
     }
@@ -218,6 +222,7 @@ public final class RedissonVectorSet extends RedissonExpirable implements RVecto
         return get(getSimilarAsync(args));
     }
 
+    @Override
     public RFuture<List<String>> getSimilarAsync(VectorSimilarArgs vargs) {
         VectorSimilarParams prms = (VectorSimilarParams) vargs;
 
@@ -231,6 +236,7 @@ public final class RedissonVectorSet extends RedissonExpirable implements RVecto
         return get(getSimilarEntriesAsync(args));
     }
 
+    @Override
     public RFuture<List<ScoredEntry<String>>> getSimilarEntriesAsync(VectorSimilarArgs vargs) {
         VectorSimilarParams prms = (VectorSimilarParams) vargs;
 
@@ -244,6 +250,7 @@ public final class RedissonVectorSet extends RedissonExpirable implements RVecto
         return get(getSimilarEntriesWithAttributesAsync(args));
     }
 
+    @Override
     public RFuture<List<ScoreAttributesEntry<String>>> getSimilarEntriesWithAttributesAsync(VectorSimilarArgs vargs) {
         VectorSimilarParams prms = (VectorSimilarParams) vargs;
         List<Object> args = createArgs(prms, true, true);
