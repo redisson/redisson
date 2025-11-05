@@ -310,6 +310,7 @@ Compatible with:
 * [AWS ElastiCache Cluster](https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/designing-elasticache-cluster.html)  
 * [Amazon MemoryDB](https://aws.amazon.com/memorydb)  
 * [Azure Redis Cache](https://azure.microsoft.com/en-us/services/cache/)  
+* [Azure Managed Redis (OSS clustering)](https://learn.microsoft.com/en-us/azure/redis/)  
 * [Google Cloud Memorystore for Redis Cluster](https://cloud.google.com/memorystore/docs/cluster)
 * [Oracle OCI Cache](https://docs.oracle.com/en-us/iaas/Content/ocicache/managingclusters.htm)
 
@@ -1102,11 +1103,12 @@ Single mode can be utilized for a single instance of either a Valkey or Redis no
 
 Compatible with: 
 
- * [Azure Redis Cache](https://azure.microsoft.com/en-us/services/cache/) 
- * [Google Cloud Memorystore for Redis](https://cloud.google.com/memorystore/docs/redis/).
- * [Google Cloud Memorystore for Valkey](https://cloud.google.com/memorystore/docs/valkey/).
- * [Redis on SAP BTP](https://www.sap.com/products/technology-platform/redis-on-sap-btp-hyperscaler-option.html) 
- * [IBM Cloud Databases for Redis](https://cloud.ibm.com/docs/databases-for-redis)
+ * [Azure Redis Cache](https://azure.microsoft.com/en-us/services/cache/)  
+ * [Azure Managed Redis (Non-Clustered)](https://learn.microsoft.com/en-us/azure/redis/)  
+ * [Google Cloud Memorystore for Redis](https://cloud.google.com/memorystore/docs/redis/)  
+ * [Google Cloud Memorystore for Valkey](https://cloud.google.com/memorystore/docs/valkey/)  
+ * [Redis on SAP BTP](https://www.sap.com/products/technology-platform/redis-on-sap-btp-hyperscaler-option.html)  
+ * [IBM Cloud Databases for Redis](https://cloud.ibm.com/docs/databases-for-redis)  
 
 Programmatic config example:  
 ```java
@@ -2182,10 +2184,11 @@ Failed nodes detection is managed by `scanMode` setting.
 Compatible with:  
 
 * [AWS ElastiCache Serverless](https://aws.amazon.com/elasticache/features/#Serverless)  
-* [Azure Redis Cache active-active replication](https://learn.microsoft.com/en-us/azure/azure-cache-for-redis/cache-how-to-active-geo-replication)  
-* [Redis Enterprise Multiple Active Proxy](https://docs.redis.com/latest/rs/databases/configure/proxy-policy/#about-multiple-active-proxy-support)  
-* [Redis Enterprise Active-Active databases](https://docs.redis.com/latest/rs/databases/active-active/get-started/)  
-* [IBM Cloud Databases for Redis High availability](https://cloud.ibm.com/docs/databases-for-redis?topic=databases-for-redis-high-availability)
+* [Azure Managed Redis (Enterprise clustering)](https://learn.microsoft.com/en-us/azure/redis/)  
+* [Azure Redis Cache Active-Active replication](https://learn.microsoft.com/en-us/azure/azure-cache-for-redis/cache-how-to-active-geo-replication)  
+* [Redis Enterprise Active-Active databases](https://redis.io/docs/latest/operate/rs/databases/active-active/get-started/)  
+* [Redis Enterprise All primary shards / All nodes](https://redis.io/docs/latest/operate/rs/databases/configure/proxy-policy/)  
+* [IBM Cloud Databases for Redis High availability](https://cloud.ibm.com/docs/databases-for-redis?topic=databases-for-redis-ha-dr)
 
 Programmatic config example:  
 ```java
@@ -2531,7 +2534,7 @@ _This feature is available only in [Redisson PRO](https://redisson.pro/feature-c
 
 Supports multiple Valkey or Redis Cluster setups with active-passive data replication relationship. 
 
-Replication of the primary Cluster with secondary Cluster is managed by `replicationMode` setting. Primary Cluster detection is managed by `primaryDiscoveryMode` setting.
+Replication of the primary Cluster with secondary Clusters is managed by `replicationMode` setting. Primary Cluster detection is managed by `primaryDiscoveryMode` setting.
 
 Compatible with:
 
@@ -2546,7 +2549,7 @@ config.useMultiClusterServers()
     // use "valkey://" for Valkey connection
     // use "valkeys://" for Valkey SSL connection
     // use "rediss://" for Redis SSL connection
-    .addAddress("redis://cluster1:7000", "redis://cluster2:70002");
+    .addAddress("redis://cluster1:7000", "redis://cluster2:7002",  "redis://cluster3:70003");
 
 RedissonClient redisson = Redisson.create(config);
 ```
@@ -2952,7 +2955,8 @@ _This feature is available only in [Redisson PRO](https://redisson.pro/feature-c
 
 Supports multiple Valkey or Redis Sentinel setups with active-passive data replication.  
 
-Replication of primary Sentinel deployment with secondary Sentinel deployments is managed by `replicationMode` setting. First sentinel host belongs to the active Sentinel setup and others to Passive Sentinel Setups.
+Replication of the primary Sentinel deployment with secondary Sentinel deployments is managed by `replicationMode` setting. 
+The first address in the list of specified addresses in the configuration is the primary Sentinel deployment, and the others are secondary Sentinel deployments.
 
 Programmatic config example:  
 ```java

@@ -32,7 +32,7 @@ Supports Apache Tomcat versions 7.x up to 11.x
 
 	```xml
 	<Manager className="org.redisson.tomcat.RedissonSessionManager"
-		 configPath="${catalina.base}/redisson.conf" 
+		 configPath="${catalina.base}/redisson.yaml" 
 		 readMode="REDIS" updateMode="DEFAULT" broadcastSessionEvents="false"
 		 keyPrefix=""/>
 	```

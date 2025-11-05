@@ -1,6 +1,6 @@
 Valkey or Redis command|Sync / Async API<br/><sub>Redisson.create(config)</sub>|Reactive API<br/><sub>redisson.reactive()</sub>|RxJava3 API<br/><sub>redisson.rxJava()</sub>|
 | --- | --- | --- | --- |
-AUTH | Config.setPassword() | - | - |
+AUTH | Config.<br/>setPassword()<br/>setUsername() | - | - |
 APPEND | RBinaryStream.<br/>getOutputStream().write() | - | - |
 BZPOPMAX|RScoredSortedSet.<br/>pollLast()<br/>pollLastAsync() | RScoredSortedSetReactive.<br/>pollLast()| RScoredSortedSetRx.<br/>pollLast() |
 BZPOPMIN|RScoredSortedSet.<br/>pollFirst()<br/>pollFirstAsync() | RScoredSortedSetReactive.<br/>pollFirst() | RScoredSortedSetRx.<br/>pollFirst() |
