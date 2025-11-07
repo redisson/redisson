@@ -260,7 +260,7 @@ public class RedissonAutoConfiguration {
             if (connectTimeoutMethod != null && timeout != null) {
                 c.setTimeout(timeout);
             }
-            initSSL(c);
+            initSSL(config);
         } else if ((clusterMethod != null && ReflectionUtils.invokeMethod(clusterMethod, redisProperties) != null)
                     || isCluster) {
 
@@ -293,7 +293,7 @@ public class RedissonAutoConfiguration {
             if (connectTimeoutMethod != null && timeout != null) {
                 c.setTimeout(timeout);
             }
-            initSSL(c);
+            initSSL(config);
         } else {
             config = new Config()
                     .setUsername(username)
@@ -320,7 +320,7 @@ public class RedissonAutoConfiguration {
             if (connectTimeoutMethod != null && timeout != null) {
                 c.setTimeout(timeout);
             }
-            initSSL(c);
+            initSSL(config);
         }
         if (redissonAutoConfigurationCustomizers != null) {
             for (RedissonAutoConfigurationCustomizer customizer : redissonAutoConfigurationCustomizers) {
@@ -330,7 +330,7 @@ public class RedissonAutoConfiguration {
         return Redisson.create(config);
     }
 
-    private void initSSL(BaseConfig<?> config) {
+    private void initSSL(Config config) {
         Method getSSLMethod = ReflectionUtils.findMethod(RedisProperties.class, "getSsl");
         if (getSSLMethod == null) {
             return;

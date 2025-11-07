@@ -16,6 +16,7 @@
 package org.redisson.connection;
 
 import io.netty.buffer.ByteBuf;
+import org.redisson.api.DefaultNameMapper;
 import org.redisson.api.NodeType;
 import org.redisson.client.*;
 import org.redisson.cluster.ClusterSlotRange;
@@ -272,26 +273,63 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     protected MasterSlaveServersConfig create(BaseMasterSlaveServersConfig<?> cfg) {
         MasterSlaveServersConfig c = new MasterSlaveServersConfig();
-
+        
+        if (cfg.getUsername() != null) {
+            c.setUsername(cfg.getUsername());
+        }
+        if (cfg.getPassword() != null) {
+            c.setPassword(cfg.getPassword());
+        }
+        if (!(cfg.getNameMapper() instanceof DefaultNameMapper)) {
+            c.setNameMapper(cfg.getNameMapper());
+        }
+        if (!(cfg.getCommandMapper() instanceof DefaultCommandMapper)) {
+            c.setCommandMapper(cfg.getCommandMapper());
+        }
+        if (!(cfg.getCredentialsResolver() instanceof DefaultCredentialsResolver)) {
+            c.setCredentialsResolver(cfg.getCredentialsResolver());
+        }
+        
+        if (cfg.getSslVerificationMode() != SslVerificationMode.STRICT) {
+            c.setSslVerificationMode(cfg.getSslVerificationMode());
+        }
+        if (cfg.getSslKeystoreType() != null) {
+            c.setSslKeystoreType(cfg.getSslKeystoreType());
+        }
+        if (cfg.getSslProvider() != SslProvider.JDK) {
+            c.setSslProvider(cfg.getSslProvider());
+        }
+        if (cfg.getSslTruststore() != null) {
+            c.setSslTruststore(cfg.getSslTruststore());
+        }
+        if (cfg.getSslTruststorePassword() != null) {
+            c.setSslTruststorePassword(cfg.getSslTruststorePassword());
+        }
+        if (cfg.getSslKeystore() != null) {
+            c.setSslKeystore(cfg.getSslKeystore());
+        }
+        if (cfg.getSslKeystorePassword() != null) {
+            c.setSslKeystorePassword(cfg.getSslKeystorePassword());
+        }
+        if (cfg.getSslProtocols() != null) {
+            c.setSslProtocols(cfg.getSslProtocols());
+        }
+        if (cfg.getSslCiphers() != null) {
+            c.setSslCiphers(cfg.getSslCiphers());
+        }
+        if (cfg.getSslKeyManagerFactory() != null) {
+            c.setSslKeyManagerFactory(cfg.getSslKeyManagerFactory());
+        }
+        if (cfg.getSslTrustManagerFactory() != null) {
+            c.setSslTrustManagerFactory(cfg.getSslTrustManagerFactory());
+        }
+        
         c.setPingConnectionInterval(cfg.getPingConnectionInterval());
-        c.setSslProvider(cfg.getSslProvider());
-        c.setSslKeystoreType(cfg.getSslKeystoreType());
-        c.setSslTruststore(cfg.getSslTruststore());
-        c.setSslTruststorePassword(cfg.getSslTruststorePassword());
-        c.setSslKeystore(cfg.getSslKeystore());
-        c.setSslKeystorePassword(cfg.getSslKeystorePassword());
-        c.setSslProtocols(cfg.getSslProtocols());
-        c.setSslCiphers(cfg.getSslCiphers());
-        c.setSslKeyManagerFactory(cfg.getSslKeyManagerFactory());
-        c.setSslTrustManagerFactory(cfg.getSslTrustManagerFactory());
-
         c.setRetryDelay(cfg.getRetryDelay());
         c.setReconnectionDelay(cfg.getReconnectionDelay());
         c.setRetryAttempts(cfg.getRetryAttempts());
         c.setTimeout(cfg.getTimeout());
         c.setLoadBalancer(cfg.getLoadBalancer());
-        c.setPassword(cfg.getPassword());
-        c.setUsername(cfg.getUsername());
         c.setClientName(cfg.getClientName());
         c.setMasterConnectionPoolSize(cfg.getMasterConnectionPoolSize());
         c.setSlaveConnectionPoolSize(cfg.getSlaveConnectionPoolSize());
@@ -299,7 +337,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         c.setSubscriptionsPerConnection(cfg.getSubscriptionsPerConnection());
         c.setConnectTimeout(cfg.getConnectTimeout());
         c.setIdleConnectionTimeout(cfg.getIdleConnectionTimeout());
-
+        
         c.setFailedSlaveReconnectionInterval(cfg.getFailedSlaveReconnectionInterval());
         c.setFailedSlaveNodeDetector(cfg.getFailedSlaveNodeDetector());
         c.setMasterConnectionMinimumIdleSize(cfg.getMasterConnectionMinimumIdleSize());
@@ -314,12 +352,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         c.setTcpKeepAliveInterval(cfg.getTcpKeepAliveInterval());
         c.setTcpUserTimeout(cfg.getTcpUserTimeout());
         c.setTcpNoDelay(cfg.isTcpNoDelay());
-        c.setNameMapper(cfg.getNameMapper());
-        c.setCredentialsResolver(cfg.getCredentialsResolver());
-        c.setCommandMapper(cfg.getCommandMapper());
         c.setSubscriptionTimeout(cfg.getSubscriptionTimeout());
-        c.setSslVerificationMode(cfg.getSslVerificationMode());
-
+        
         return c;
     }
 
@@ -347,6 +381,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     protected RedisClientConfig createRedisConfig(NodeType type, RedisURI address, int timeout, int commandTimeout, String sslHostname) {
+        Config serviceCfg = serviceManager.getCfg();
         RedisClientConfig redisConfig = new RedisClientConfig();
         redisConfig.setAddress(address)
                 .setTimer(serviceManager.getTimer())
@@ -357,19 +392,19 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 .setConnectTimeout(timeout)
                 .setCommandTimeout(commandTimeout)
                 .setSslHostname(sslHostname)
-                .setSslVerificationMode(config.getSslVerificationMode())
-                .setSslProvider(config.getSslProvider())
-                .setSslKeystoreType(config.getSslKeystoreType())
-                .setSslTruststore(config.getSslTruststore())
-                .setSslTruststorePassword(config.getSslTruststorePassword())
-                .setSslKeystore(config.getSslKeystore())
-                .setSslKeystorePassword(config.getSslKeystorePassword())
-                .setSslProtocols(config.getSslProtocols())
-                .setSslCiphers(config.getSslCiphers())
-                .setSslKeyManagerFactory(config.getSslKeyManagerFactory())
-                .setSslTrustManagerFactory(config.getSslTrustManagerFactory())
+                .setSslVerificationMode(serviceCfg.getSslVerificationMode())
+                .setSslProvider(serviceCfg.getSslProvider())
+                .setSslKeystoreType(Objects.toString(serviceCfg.getSslKeystoreType(), config.getSslKeystoreType()))
+                .setSslTruststore(Optional.ofNullable(serviceCfg.getSslTruststore()).orElse(config.getSslTruststore()))
+                .setSslTruststorePassword(Objects.toString(serviceCfg.getSslTruststorePassword(), config.getSslTruststorePassword()))
+                .setSslKeystore(Optional.ofNullable(serviceCfg.getSslKeystore()).orElse(config.getSslKeystore()))
+                .setSslKeystorePassword(Objects.toString(serviceCfg.getSslKeystorePassword(), config.getSslKeystorePassword()))
+                .setSslProtocols(Optional.ofNullable(serviceCfg.getSslProtocols()).orElse(config.getSslProtocols()))
+                .setSslCiphers(Optional.ofNullable(serviceCfg.getSslCiphers()).orElse(config.getSslCiphers()))
+                .setSslKeyManagerFactory(Optional.ofNullable(serviceCfg.getSslKeyManagerFactory()).orElse(config.getSslKeyManagerFactory()))
+                .setSslTrustManagerFactory(Optional.ofNullable(serviceCfg.getSslTrustManagerFactory()).orElse(config.getSslTrustManagerFactory()))
                 .setClientName(config.getClientName())
-                .setKeepPubSubOrder(serviceManager.getCfg().isKeepPubSubOrder())
+                .setKeepPubSubOrder(serviceCfg.isKeepPubSubOrder())
                 .setPingConnectionInterval(config.getPingConnectionInterval())
                 .setKeepAlive(config.isKeepAlive())
                 .setTcpKeepAliveCount(config.getTcpKeepAliveCount())
@@ -377,15 +412,15 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 .setTcpKeepAliveInterval(config.getTcpKeepAliveInterval())
                 .setTcpUserTimeout(config.getTcpUserTimeout())
                 .setTcpNoDelay(config.isTcpNoDelay())
-                .setUsername(Objects.toString(serviceManager.getCfg().getUsername(), config.getUsername()))
-                .setPassword(Objects.toString(serviceManager.getCfg().getPassword(), config.getPassword()))
-                .setNettyHook(serviceManager.getCfg().getNettyHook())
+                .setUsername(Objects.toString(serviceCfg.getUsername(), config.getUsername()))
+                .setPassword(Objects.toString(serviceCfg.getPassword(), config.getPassword()))
+                .setNettyHook(serviceCfg.getNettyHook())
                 .setFailedNodeDetector(config.getFailedSlaveNodeDetector())
-                .setProtocol(serviceManager.getCfg().getProtocol())
-                .setCapabilities(serviceManager.getCfg().getValkeyCapabilities())
+                .setProtocol(serviceCfg.getProtocol())
+                .setCapabilities(serviceCfg.getValkeyCapabilities())
                 .setReconnectionDelay(config.getReconnectionDelay())
                 .setCommandMapper(serviceManager.getCommandMapper())
-                .setCredentialsResolver(serviceManager.getCfg().getCredentialsResolver())
+                .setCredentialsResolver(serviceCfg.getCredentialsResolver())
                 .setConnectedListener(addr -> {
                     if (!serviceManager.isShuttingDown()) {
                         NodeType nt = getNodeType(type, addr);
@@ -398,15 +433,21 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                         serviceManager.getConnectionEventsHub().fireDisconnect(addr, nt);
                     }
                 });
-
+        
         if (redisConfig.getCredentialsResolver() instanceof DefaultCredentialsResolver) {
             redisConfig.setCredentialsResolver(config.getCredentialsResolver());
         }
-
+        if (redisConfig.getSslVerificationMode() == SslVerificationMode.STRICT && config.getSslVerificationMode() != SslVerificationMode.STRICT) {
+            redisConfig.setSslVerificationMode(config.getSslVerificationMode());
+        }
+        if (redisConfig.getSslProvider() == SslProvider.JDK && config.getSslProvider() != SslProvider.JDK) {
+            redisConfig.setSslProvider(config.getSslProvider());
+        }
+        
         if (type != NodeType.SENTINEL) {
             redisConfig.setDatabase(config.getDatabase());
         }
-
+        
         return redisConfig;
     }
 
