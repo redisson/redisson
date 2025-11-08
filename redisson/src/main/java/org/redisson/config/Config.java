@@ -144,6 +144,18 @@ public class Config {
     private TrustManagerFactory sslTrustManagerFactory;
     
     private KeyManagerFactory sslKeyManagerFactory;
+    
+    private boolean tcpKeepAlive;
+    
+    private int tcpKeepAliveCount;
+    
+    private int tcpKeepAliveIdle;
+    
+    private int tcpKeepAliveInterval;
+    
+    private int tcpUserTimeout;
+    
+    private boolean tcpNoDelay = true;
 
     public Config() {
     }
@@ -1290,6 +1302,104 @@ public class Config {
      */
     public Config setSslVerificationMode(SslVerificationMode sslVerificationMode) {
         this.sslVerificationMode = sslVerificationMode;
+        return this;
+    }
+    
+    public boolean isTcpKeepAlive() {
+        return tcpKeepAlive;
+    }
+    
+    /**
+     * Enables TCP keepAlive for connection
+     * <p>
+     * Default is <code>false</code>
+     *
+     * @param tcpKeepAlive boolean value
+     * @return config
+     */
+    public Config setTcpKeepAlive(boolean tcpKeepAlive) {
+        this.tcpKeepAlive = tcpKeepAlive;
+        return this;
+    }
+    
+    public int getTcpKeepAliveCount() {
+        return tcpKeepAliveCount;
+    }
+    
+    /**
+     * Defines the maximum number of keepalive probes
+     * TCP should send before dropping the connection.
+     *
+     * @param tcpKeepAliveCount maximum number of keepalive probes
+     * @return config
+     */
+    public Config setTcpKeepAliveCount(int tcpKeepAliveCount) {
+        this.tcpKeepAliveCount = tcpKeepAliveCount;
+        return this;
+    }
+    
+    public int getTcpKeepAliveIdle() {
+        return tcpKeepAliveIdle;
+    }
+    
+    /**
+     * Defines the time in seconds the connection needs to remain idle
+     * before TCP starts sending keepalive probes,
+     *
+     * @param tcpKeepAliveIdle time in seconds
+     * @return config
+     */
+    public Config setTcpKeepAliveIdle(int tcpKeepAliveIdle) {
+        this.tcpKeepAliveIdle = tcpKeepAliveIdle;
+        return this;
+    }
+    
+    public int getTcpKeepAliveInterval() {
+        return tcpKeepAliveInterval;
+    }
+    
+    /**
+     * Defines the time in seconds between individual keepalive probes.
+     *
+     * @param tcpKeepAliveInterval time in seconds
+     * @return config
+     */
+    public Config setTcpKeepAliveInterval(int tcpKeepAliveInterval) {
+        this.tcpKeepAliveInterval = tcpKeepAliveInterval;
+        return this;
+    }
+    
+    public int getTcpUserTimeout() {
+        return tcpUserTimeout;
+    }
+    
+    /**
+     * Defines the maximum amount of time in milliseconds that transmitted data may
+     * remain unacknowledged, or buffered data may remain untransmitted
+     * (due to zero window size) before TCP will forcibly close the connection.
+     *
+     * @param tcpUserTimeout time in milliseconds
+     * @return config
+     */
+    public Config setTcpUserTimeout(int tcpUserTimeout) {
+        this.tcpUserTimeout = tcpUserTimeout;
+        return this;
+    }
+    
+    public boolean isTcpNoDelay() {
+        return tcpNoDelay;
+    }
+    
+    /**
+     * Enables TCP noDelay for connection
+     * <p>
+     * Default is <code>true</code>
+     *
+     * @param tcpNoDelay boolean value
+     * @return config
+     */
+    public Config setTcpNoDelay(boolean tcpNoDelay) {
+        this.tcpNoDelay = tcpNoDelay;
         return this;
     }
 }
