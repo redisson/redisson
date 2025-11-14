@@ -324,6 +324,25 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             c.setSslTrustManagerFactory(cfg.getSslTrustManagerFactory());
         }
         
+        if (cfg.isKeepAlive()) {
+            c.setKeepAlive(cfg.isKeepAlive());
+        }
+        if (cfg.getTcpKeepAliveCount() != 0) {
+            c.setTcpKeepAliveCount(cfg.getTcpKeepAliveCount());
+        }
+        if (cfg.getTcpKeepAliveIdle() != 0) {
+            c.setTcpKeepAliveIdle(cfg.getTcpKeepAliveIdle());
+        }
+        if (cfg.getTcpKeepAliveInterval() != 0) {
+            c.setTcpKeepAliveInterval(cfg.getTcpKeepAliveInterval());
+        }
+        if (cfg.getTcpUserTimeout() != 0) {
+            c.setTcpUserTimeout(cfg.getTcpUserTimeout());
+        }
+        if (!cfg.isTcpNoDelay()) {
+            c.setTcpNoDelay(cfg.isTcpNoDelay());
+        }
+        
         c.setPingConnectionInterval(cfg.getPingConnectionInterval());
         c.setRetryDelay(cfg.getRetryDelay());
         c.setReconnectionDelay(cfg.getReconnectionDelay());
@@ -346,12 +365,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         c.setReadMode(cfg.getReadMode());
         c.setSubscriptionMode(cfg.getSubscriptionMode());
         c.setDnsMonitoringInterval(cfg.getDnsMonitoringInterval());
-        c.setKeepAlive(cfg.isKeepAlive());
-        c.setTcpKeepAliveCount(cfg.getTcpKeepAliveCount());
-        c.setTcpKeepAliveIdle(cfg.getTcpKeepAliveIdle());
-        c.setTcpKeepAliveInterval(cfg.getTcpKeepAliveInterval());
-        c.setTcpUserTimeout(cfg.getTcpUserTimeout());
-        c.setTcpNoDelay(cfg.isTcpNoDelay());
         c.setSubscriptionTimeout(cfg.getSubscriptionTimeout());
         
         return c;
@@ -406,12 +419,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 .setClientName(config.getClientName())
                 .setKeepPubSubOrder(serviceCfg.isKeepPubSubOrder())
                 .setPingConnectionInterval(config.getPingConnectionInterval())
-                .setKeepAlive(config.isKeepAlive())
-                .setTcpKeepAliveCount(config.getTcpKeepAliveCount())
-                .setTcpKeepAliveIdle(config.getTcpKeepAliveIdle())
-                .setTcpKeepAliveInterval(config.getTcpKeepAliveInterval())
-                .setTcpUserTimeout(config.getTcpUserTimeout())
-                .setTcpNoDelay(config.isTcpNoDelay())
                 .setUsername(Objects.toString(serviceCfg.getUsername(), config.getUsername()))
                 .setPassword(Objects.toString(serviceCfg.getPassword(), config.getPassword()))
                 .setNettyHook(serviceCfg.getNettyHook())
@@ -442,6 +449,37 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
         if (redisConfig.getSslProvider() == SslProvider.JDK && config.getSslProvider() != SslProvider.JDK) {
             redisConfig.setSslProvider(config.getSslProvider());
+        }
+        
+        if (config.isKeepAlive()) {
+            redisConfig.setKeepAlive(config.isKeepAlive());
+        } else {
+            redisConfig.setKeepAlive(serviceCfg.isTcpKeepAlive());
+        }
+        if (config.getTcpKeepAliveCount() != 0) {
+            redisConfig.setTcpKeepAliveCount(config.getTcpKeepAliveCount());
+        } else {
+            redisConfig.setTcpKeepAliveCount(serviceCfg.getTcpKeepAliveCount());
+        }
+        if (config.getTcpKeepAliveIdle() != 0) {
+            redisConfig.setTcpKeepAliveIdle(config.getTcpKeepAliveIdle());
+        } else {
+            redisConfig.setTcpKeepAliveIdle(serviceCfg.getTcpKeepAliveIdle());
+        }
+        if (config.getTcpKeepAliveInterval() != 0) {
+            redisConfig.setTcpKeepAliveInterval(config.getTcpKeepAliveInterval());
+        } else {
+            redisConfig.setTcpKeepAliveInterval(serviceCfg.getTcpKeepAliveInterval());
+        }
+        if (config.getTcpUserTimeout() != 0) {
+            redisConfig.setTcpUserTimeout(config.getTcpUserTimeout());
+        } else {
+            redisConfig.setTcpUserTimeout(serviceCfg.getTcpUserTimeout());
+        }
+        if (!config.isTcpNoDelay()) {
+            redisConfig.setTcpNoDelay(config.isTcpNoDelay());
+        } else {
+            redisConfig.setTcpNoDelay(serviceCfg.isTcpNoDelay());
         }
         
         if (type != NodeType.SENTINEL) {

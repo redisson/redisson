@@ -83,6 +83,25 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
             newconfig.setSslTrustManagerFactory(cfg.getSslTrustManagerFactory());
         }
         
+        if (cfg.isKeepAlive()) {
+            newconfig.setKeepAlive(cfg.isKeepAlive());
+        }
+        if (cfg.getTcpKeepAliveCount() != 0) {
+            newconfig.setTcpKeepAliveCount(cfg.getTcpKeepAliveCount());
+        }
+        if (cfg.getTcpKeepAliveIdle() != 0) {
+            newconfig.setTcpKeepAliveIdle(cfg.getTcpKeepAliveIdle());
+        }
+        if (cfg.getTcpKeepAliveInterval() != 0) {
+            newconfig.setTcpKeepAliveInterval(cfg.getTcpKeepAliveInterval());
+        }
+        if (cfg.getTcpUserTimeout() != 0) {
+            newconfig.setTcpUserTimeout(cfg.getTcpUserTimeout());
+        }
+        if (!cfg.isTcpNoDelay()) {
+            newconfig.setTcpNoDelay(cfg.isTcpNoDelay());
+        }
+        
         newconfig.setPingConnectionInterval(cfg.getPingConnectionInterval());
         newconfig.setRetryAttempts(cfg.getRetryAttempts());
         newconfig.setRetryDelay(cfg.getRetryDelay());
@@ -102,12 +121,6 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
         newconfig.setSubscriptionConnectionMinimumIdleSize(cfg.getSubscriptionConnectionMinimumIdleSize());
         newconfig.setReadMode(ReadMode.MASTER);
         newconfig.setSubscriptionMode(SubscriptionMode.MASTER);
-        newconfig.setKeepAlive(cfg.isKeepAlive());
-        newconfig.setTcpKeepAliveCount(cfg.getTcpKeepAliveCount());
-        newconfig.setTcpKeepAliveIdle(cfg.getTcpKeepAliveIdle());
-        newconfig.setTcpKeepAliveInterval(cfg.getTcpKeepAliveInterval());
-        newconfig.setTcpUserTimeout(cfg.getTcpUserTimeout());
-        newconfig.setTcpNoDelay(cfg.isTcpNoDelay());
         newconfig.setSubscriptionTimeout(cfg.getSubscriptionTimeout());
         
         return newconfig;

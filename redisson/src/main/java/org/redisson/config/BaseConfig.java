@@ -126,17 +126,23 @@ public class BaseConfig<T extends BaseConfig<T>> {
     private KeyManagerFactory sslKeyManagerFactory;
 
     private int pingConnectionInterval = 30000;
-
+    
+    @Deprecated
     private boolean keepAlive;
-
+    
+    @Deprecated
     private int tcpKeepAliveCount;
-
+    
+    @Deprecated
     private int tcpKeepAliveIdle;
-
+    
+    @Deprecated
     private int tcpKeepAliveInterval;
-
+    
+    @Deprecated
     private int tcpUserTimeout;
-
+    
+    @Deprecated
     private boolean tcpNoDelay = true;
 
     @Deprecated
@@ -199,6 +205,25 @@ public class BaseConfig<T extends BaseConfig<T>> {
             setSslTrustManagerFactory(config.getSslTrustManagerFactory());
         }
         
+        if (config.isKeepAlive()) {
+            setKeepAlive(config.isKeepAlive());
+        }
+        if (config.getTcpKeepAliveCount() != 0) {
+            setTcpKeepAliveCount(config.getTcpKeepAliveCount());
+        }
+        if (config.getTcpKeepAliveIdle() != 0) {
+            setTcpKeepAliveIdle(config.getTcpKeepAliveIdle());
+        }
+        if (config.getTcpKeepAliveInterval() != 0) {
+            setTcpKeepAliveInterval(config.getTcpKeepAliveInterval());
+        }
+        if (config.getTcpUserTimeout() != 0) {
+            setTcpUserTimeout(config.getTcpUserTimeout());
+        }
+        if (!config.isTcpNoDelay()) {
+            setTcpNoDelay(config.isTcpNoDelay());
+        }
+        
         setSubscriptionsPerConnection(config.getSubscriptionsPerConnection());
         setRetryAttempts(config.getRetryAttempts());
         setRetryDelay(config.getRetryDelay());
@@ -208,12 +233,6 @@ public class BaseConfig<T extends BaseConfig<T>> {
         setConnectTimeout(config.getConnectTimeout());
         setIdleConnectionTimeout(config.getIdleConnectionTimeout());
         setPingConnectionInterval(config.getPingConnectionInterval());
-        setKeepAlive(config.isKeepAlive());
-        setTcpKeepAliveCount(config.getTcpKeepAliveCount());
-        setTcpKeepAliveIdle(config.getTcpKeepAliveIdle());
-        setTcpKeepAliveInterval(config.getTcpKeepAliveInterval());
-        setTcpUserTimeout(config.getTcpUserTimeout());
-        setTcpNoDelay(config.isTcpNoDelay());
         setSubscriptionTimeout(config.getSubscriptionTimeout());
     }
 
@@ -577,11 +596,13 @@ public class BaseConfig<T extends BaseConfig<T>> {
         return (T) this;
     }
 
+    @Deprecated
     public boolean isKeepAlive() {
         return keepAlive;
     }
 
     /**
+     * Use {@link Config#setTcpKeepAlive(boolean)} instead.
      * Enables TCP keepAlive for connection
      * <p>
      * Default is <code>false</code>
@@ -589,63 +610,79 @@ public class BaseConfig<T extends BaseConfig<T>> {
      * @param keepAlive boolean value
      * @return config
      */
+    @Deprecated
     public T setKeepAlive(boolean keepAlive) {
+        log.warn("setKeepAlive setting is deprecated. Use setTcpKeepAlive setting in Config instead.");
         this.keepAlive = keepAlive;
         return (T) this;
     }
 
+    @Deprecated
     public int getTcpKeepAliveCount() {
         return tcpKeepAliveCount;
     }
 
     /**
+     * Use {@link Config#setTcpKeepAliveCount(int)} instead.
      * Defines the maximum number of keepalive probes
      * TCP should send before dropping the connection.
      *
      * @param tcpKeepAliveCount maximum number of keepalive probes
      * @return config
      */
+    @Deprecated
     public T setTcpKeepAliveCount(int tcpKeepAliveCount) {
+        log.warn("setTcpKeepAliveCount setting is deprecated. Use setTcpKeepAliveCount setting in Config instead.");
         this.tcpKeepAliveCount = tcpKeepAliveCount;
         return (T) this;
     }
-
+    
+    @Deprecated
     public int getTcpKeepAliveIdle() {
         return tcpKeepAliveIdle;
     }
 
     /**
+     * Use {@link Config#setTcpKeepAliveIdle(int)} instead.
      * Defines the time in seconds the connection needs to remain idle
      * before TCP starts sending keepalive probes,
      *
      * @param tcpKeepAliveIdle time in seconds
      * @return config
      */
+    @Deprecated
     public T setTcpKeepAliveIdle(int tcpKeepAliveIdle) {
+        log.warn("setTcpKeepAliveIdle setting is deprecated. Use setTcpKeepAliveIdle setting in Config instead.");
         this.tcpKeepAliveIdle = tcpKeepAliveIdle;
         return (T) this;
     }
-
+    
+    @Deprecated
     public int getTcpKeepAliveInterval() {
         return tcpKeepAliveInterval;
     }
 
     /**
+     * Use {@link Config#setTcpKeepAliveInterval(int)} instead.
      * Defines the time in seconds between individual keepalive probes.
      *
      * @param tcpKeepAliveInterval time in seconds
      * @return config
      */
+    @Deprecated
     public T setTcpKeepAliveInterval(int tcpKeepAliveInterval) {
+        log.warn("setTcpKeepAliveInterval setting is deprecated. Use setTcpKeepAliveInterval setting in Config instead.");
         this.tcpKeepAliveInterval = tcpKeepAliveInterval;
         return (T) this;
     }
-
+    
+    @Deprecated
     public int getTcpUserTimeout() {
         return tcpUserTimeout;
     }
 
     /**
+     * Use {@link Config#setTcpUserTimeout(int)} instead.
      * Defines the maximum amount of time in milliseconds that transmitted data may
      * remain unacknowledged, or buffered data may remain untransmitted
      * (due to zero window size) before TCP will forcibly close the connection.
@@ -653,16 +690,20 @@ public class BaseConfig<T extends BaseConfig<T>> {
      * @param tcpUserTimeout time in milliseconds
      * @return config
      */
+    @Deprecated
     public T setTcpUserTimeout(int tcpUserTimeout) {
+        log.warn("setTcpUserTimeout setting is deprecated. Use setTcpUserTimeout setting in Config instead.");
         this.tcpUserTimeout = tcpUserTimeout;
         return (T) this;
     }
-
+    
+    @Deprecated
     public boolean isTcpNoDelay() {
         return tcpNoDelay;
     }
 
     /**
+     * Use {@link Config#setTcpNoDelay(boolean)} instead.
      * Enables TCP noDelay for connection
      * <p>
      * Default is <code>true</code>
@@ -670,7 +711,9 @@ public class BaseConfig<T extends BaseConfig<T>> {
      * @param tcpNoDelay boolean value
      * @return config
      */
+    @Deprecated
     public T setTcpNoDelay(boolean tcpNoDelay) {
+        log.warn("setTcpNoDelay setting is deprecated. Use setTcpNoDelay setting in Config instead.");
         this.tcpNoDelay = tcpNoDelay;
         return (T) this;
     }
