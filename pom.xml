@@ -68,6 +68,7 @@
         <module>redisson-helidon</module>
         <module>redisson-quarkus</module>
         <module>redisson-micronaut</module>
+        <module>redisson-spring</module>
     </modules>
 
     <distributionManagement>
