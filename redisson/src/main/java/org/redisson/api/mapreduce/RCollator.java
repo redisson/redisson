@@ -33,7 +33,7 @@ public interface RCollator<K, V, R> extends Serializable {
     /**
      * Collates result map from reduce phase of MapReduce process.
      * 
-     * @param resultMap contains reduced entires
+     * @param resultMap contains reduced entries
      * @return single result object
      */
     R collate(Map<K, V> resultMap);
