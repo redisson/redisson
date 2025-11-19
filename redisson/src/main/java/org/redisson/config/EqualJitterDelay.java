@@ -50,7 +50,7 @@ public class EqualJitterDelay implements DelayStrategy {
     @Override
     public Duration calcDelay(int attempt) {
         long exponentialDelayMs = Math.min(
-                baseDelay.toMillis() * (1L << attempt),
+                Math.max(baseDelay.toMillis() * (1L << Math.min(attempt, 62)), maxDelay.toMillis()),
                 maxDelay.toMillis()
         );
 
