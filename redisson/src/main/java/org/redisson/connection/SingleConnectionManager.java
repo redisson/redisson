@@ -15,6 +15,8 @@
  */
 package org.redisson.connection;
 
+import org.redisson.api.DefaultNameMapper;
+import org.redisson.client.DefaultCredentialsResolver;
 import org.redisson.config.*;
 
 /**
@@ -31,24 +33,80 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
     private static MasterSlaveServersConfig create(SingleServerConfig cfg) {
         MasterSlaveServersConfig newconfig = new MasterSlaveServersConfig();
         
+        if (cfg.getUsername() != null) {
+            newconfig.setUsername(cfg.getUsername());
+        }
+        if (cfg.getPassword() != null) {
+            newconfig.setPassword(cfg.getPassword());
+        }
+        if (!(cfg.getNameMapper() instanceof DefaultNameMapper)) {
+            newconfig.setNameMapper(cfg.getNameMapper());
+        }
+        if (!(cfg.getCommandMapper() instanceof DefaultCommandMapper)) {
+            newconfig.setCommandMapper(cfg.getCommandMapper());
+        }
+        if (!(cfg.getCredentialsResolver() instanceof DefaultCredentialsResolver)) {
+            newconfig.setCredentialsResolver(cfg.getCredentialsResolver());
+        }
+        
+        if (cfg.getSslVerificationMode() != SslVerificationMode.STRICT) {
+            newconfig.setSslVerificationMode(cfg.getSslVerificationMode());
+        }
+        if (cfg.getSslKeystoreType() != null) {
+            newconfig.setSslKeystoreType(cfg.getSslKeystoreType());
+        }
+        if (cfg.getSslProvider() != SslProvider.JDK) {
+            newconfig.setSslProvider(cfg.getSslProvider());
+        }
+        if (cfg.getSslTruststore() != null) {
+            newconfig.setSslTruststore(cfg.getSslTruststore());
+        }
+        if (cfg.getSslTruststorePassword() != null) {
+            newconfig.setSslTruststorePassword(cfg.getSslTruststorePassword());
+        }
+        if (cfg.getSslKeystore() != null) {
+            newconfig.setSslKeystore(cfg.getSslKeystore());
+        }
+        if (cfg.getSslKeystorePassword() != null) {
+            newconfig.setSslKeystorePassword(cfg.getSslKeystorePassword());
+        }
+        if (cfg.getSslProtocols() != null) {
+            newconfig.setSslProtocols(cfg.getSslProtocols());
+        }
+        if (cfg.getSslCiphers() != null) {
+            newconfig.setSslCiphers(cfg.getSslCiphers());
+        }
+        if (cfg.getSslKeyManagerFactory() != null) {
+            newconfig.setSslKeyManagerFactory(cfg.getSslKeyManagerFactory());
+        }
+        if (cfg.getSslTrustManagerFactory() != null) {
+            newconfig.setSslTrustManagerFactory(cfg.getSslTrustManagerFactory());
+        }
+        
+        if (cfg.isKeepAlive()) {
+            newconfig.setKeepAlive(cfg.isKeepAlive());
+        }
+        if (cfg.getTcpKeepAliveCount() != 0) {
+            newconfig.setTcpKeepAliveCount(cfg.getTcpKeepAliveCount());
+        }
+        if (cfg.getTcpKeepAliveIdle() != 0) {
+            newconfig.setTcpKeepAliveIdle(cfg.getTcpKeepAliveIdle());
+        }
+        if (cfg.getTcpKeepAliveInterval() != 0) {
+            newconfig.setTcpKeepAliveInterval(cfg.getTcpKeepAliveInterval());
+        }
+        if (cfg.getTcpUserTimeout() != 0) {
+            newconfig.setTcpUserTimeout(cfg.getTcpUserTimeout());
+        }
+        if (!cfg.isTcpNoDelay()) {
+            newconfig.setTcpNoDelay(cfg.isTcpNoDelay());
+        }
+        
         newconfig.setPingConnectionInterval(cfg.getPingConnectionInterval());
-        newconfig.setSslProvider(cfg.getSslProvider());
-        newconfig.setSslKeystoreType(cfg.getSslKeystoreType());
-        newconfig.setSslTruststore(cfg.getSslTruststore());
-        newconfig.setSslTruststorePassword(cfg.getSslTruststorePassword());
-        newconfig.setSslKeystore(cfg.getSslKeystore());
-        newconfig.setSslKeystorePassword(cfg.getSslKeystorePassword());
-        newconfig.setSslProtocols(cfg.getSslProtocols());
-        newconfig.setSslCiphers(cfg.getSslCiphers());
-        newconfig.setSslKeyManagerFactory(cfg.getSslKeyManagerFactory());
-        newconfig.setSslTrustManagerFactory(cfg.getSslTrustManagerFactory());
-
         newconfig.setRetryAttempts(cfg.getRetryAttempts());
         newconfig.setRetryDelay(cfg.getRetryDelay());
         newconfig.setReconnectionDelay(cfg.getReconnectionDelay());
         newconfig.setTimeout(cfg.getTimeout());
-        newconfig.setPassword(cfg.getPassword());
-        newconfig.setUsername(cfg.getUsername());
         newconfig.setDatabase(cfg.getDatabase());
         newconfig.setClientName(cfg.getClientName());
         newconfig.setMasterAddress(cfg.getAddress());
@@ -58,23 +116,13 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
         newconfig.setConnectTimeout(cfg.getConnectTimeout());
         newconfig.setIdleConnectionTimeout(cfg.getIdleConnectionTimeout());
         newconfig.setDnsMonitoringInterval(cfg.getDnsMonitoringInterval());
-
+        
         newconfig.setMasterConnectionMinimumIdleSize(cfg.getConnectionMinimumIdleSize());
         newconfig.setSubscriptionConnectionMinimumIdleSize(cfg.getSubscriptionConnectionMinimumIdleSize());
         newconfig.setReadMode(ReadMode.MASTER);
         newconfig.setSubscriptionMode(SubscriptionMode.MASTER);
-        newconfig.setKeepAlive(cfg.isKeepAlive());
-        newconfig.setTcpKeepAliveCount(cfg.getTcpKeepAliveCount());
-        newconfig.setTcpKeepAliveIdle(cfg.getTcpKeepAliveIdle());
-        newconfig.setTcpKeepAliveInterval(cfg.getTcpKeepAliveInterval());
-        newconfig.setTcpUserTimeout(cfg.getTcpUserTimeout());
-        newconfig.setTcpNoDelay(cfg.isTcpNoDelay());
-        newconfig.setNameMapper(cfg.getNameMapper());
-        newconfig.setCredentialsResolver(cfg.getCredentialsResolver());
-        newconfig.setCommandMapper(cfg.getCommandMapper());
-        newconfig.setSslVerificationMode(cfg.getSslVerificationMode());
         newconfig.setSubscriptionTimeout(cfg.getSubscriptionTimeout());
-
+        
         return newconfig;
     }
 
