@@ -1164,7 +1164,8 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 } else {
                     availableSlaves = 0;
                 }
-                if (waitSupportedCommands.contains(RedisCommands.WAITAOF.getName())) {
+                if (waitSupportedCommands.contains(RedisCommands.WAITAOF.getName())
+                        && (syncMode == SyncMode.WAIT_AOF || syncMode == SyncMode.AUTO)) {
                     aofEnabled = "1".equals(r.getOrDefault("aof_enabled", "0"));
                 } else {
                     aofEnabled = false;
