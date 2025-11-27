@@ -5,7 +5,7 @@ import org.redisson.api.RMap;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.StringCodec;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.data.redis.RedisConnectionDetails;
+import org.springframework.boot.data.redis.autoconfigure.DataRedisConnectionDetails;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -35,8 +35,8 @@ public class RedissonAutoConfiguration2Test {
     static class RedissonConnectionDetailsConfig {
 
         @Bean
-        RedisConnectionDetails redisConnectionDetails() {
-            return new RedisConnectionDetails() {
+        DataRedisConnectionDetails redisConnectionDetails() {
+            return new DataRedisConnectionDetails() {
                 @Override
                 public Standalone getStandalone() {
                     return Standalone.of("localhost", 6379);

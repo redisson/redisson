@@ -3,8 +3,9 @@ package org.redisson.spring.starter;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
+import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -27,6 +28,7 @@ import java.util.List;
             "spring.session.store-type=redis",
 //            "spring.session.timeout.seconds=900",
         })
+@AutoConfigureTestRestTemplate
 @Testcontainers
 public class RedissonSessionManagerAutoConfigurationTest {
 

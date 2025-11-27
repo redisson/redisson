@@ -30,7 +30,7 @@ import org.springframework.data.redis.core.RedisOperations;
  *
  */
 @AutoConfiguration(before = RedisAutoConfiguration.class)
-@ConditionalOnClass({Redisson.class, RedisOperations.class})
+@ConditionalOnClass({Redisson.class, RedisOperations.class, RedisAutoConfiguration.class})
 @EnableConfigurationProperties({RedissonProperties.class, RedisProperties.class})
 public class RedissonAutoConfigurationV2 extends RedissonAutoConfiguration {
 
