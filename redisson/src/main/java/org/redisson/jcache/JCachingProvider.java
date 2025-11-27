@@ -15,11 +15,11 @@
  */
 package org.redisson.jcache;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.redisson.Redisson;
 import org.redisson.config.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.yaml.snakeyaml.error.YAMLException;
 
 import javax.cache.CacheException;
 import javax.cache.CacheManager;
@@ -108,7 +108,7 @@ public class JCachingProvider implements CachingProvider {
             } else {
                 throw new FileNotFoundException("/redisson-jcache.yaml");
             }
-        } catch (JsonProcessingException e) {
+        } catch (YAMLException e) {
             throw new CacheException(e);
         } catch (IOException e) {
             try {
