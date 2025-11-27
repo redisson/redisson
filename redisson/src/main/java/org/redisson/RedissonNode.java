@@ -157,8 +157,10 @@ public final class RedissonNode {
             }
             
             WorkerOptions options = WorkerOptions.defaults()
-                                                .workers(mapReduceWorkers)
-                                                .tasksInjector(new SpringTasksInjector(config.getBeanFactory()));
+                                                .workers(mapReduceWorkers);
+            if (config.getBeanFactory() != null) {
+                options.tasksInjector(new SpringTasksInjector(config.getBeanFactory()));
+            }
 
             RScheduledExecutorService e = redisson.getExecutorService(RExecutorService.MAPREDUCE_NAME);
             e.registerWorkers(options);
@@ -169,10 +171,12 @@ public final class RedissonNode {
         for (Entry<String, Integer> entry : config.getExecutorServiceWorkers().entrySet()) {
             String name = entry.getKey();
             int workers = entry.getValue();
-            
+
             WorkerOptions options = WorkerOptions.defaults()
-                                                .workers(workers)
-                                                .tasksInjector(new SpringTasksInjector(config.getBeanFactory()));
+                    .workers(mapReduceWorkers);
+            if (config.getBeanFactory() != null) {
+                options.tasksInjector(new SpringTasksInjector(config.getBeanFactory()));
+            }
 
             RScheduledExecutorService e = redisson.getExecutorService(name);
             e.registerWorkers(options);
