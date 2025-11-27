@@ -83,6 +83,12 @@ public class RedissonClusterConnectionTest extends BaseTest {
                 map.put(("test" + i).getBytes(), ("test" + i*100).getBytes());
             }
             connection.mSet(map);
+            try {
+                // slave node delay
+                Thread.sleep(50);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
             for (Map.Entry<byte[], byte[]> entry : map.entrySet()) {
                 assertThat(connection.get(entry.getKey())).isEqualTo(entry.getValue());
             }
@@ -97,6 +103,12 @@ public class RedissonClusterConnectionTest extends BaseTest {
                 map.put(("test" + i).getBytes(), ("test" + i*100).getBytes());
             }
             connection.mSet(map);
+            try {
+                // slave node delay
+                Thread.sleep(50);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
             List<byte[]> r = connection.mGet(map.keySet().toArray(new byte[0][]));
             assertThat(r).containsExactly(map.values().toArray(new byte[0][]));
         });
