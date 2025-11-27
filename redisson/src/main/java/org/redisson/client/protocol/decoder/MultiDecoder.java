@@ -31,6 +31,11 @@ import org.redisson.client.protocol.Decoder;
  */
 public interface MultiDecoder<T> {
 
+    default Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size, List<Object> parts) {
+        return getDecoder(codec, paramNum, state, size);
+    }
+
+    @Deprecated
     default Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         if (codec == null) {
             codec = StringCodec.INSTANCE;

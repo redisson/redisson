@@ -568,7 +568,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
 
         MultiDecoder<Object> multiDecoder = data.getCommand().getReplayMultiDecoder();
         Integer paramIndex = Optional.ofNullable(parts).map(List::size).orElse(0);
-        return multiDecoder.getDecoder(data.getCodec(), paramIndex, state, size);
+        return multiDecoder.getDecoder(data.getCodec(), paramIndex, state, size, parts);
     }
 
     private ByteBuf readBytes(ByteBuf is) throws IOException {

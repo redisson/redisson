@@ -301,7 +301,7 @@ public class CommandPubSubDecoder extends CommandDecoder {
     private Decoder<Object> getDecoder(Codec codec, List<Object> parts, byte[] name, long size) {
         PubSubEntry entry = entries.get(new ChannelName(name));
         if (entry != null) {
-            return entry.getDecoder().getDecoder(codec, parts.size(), state(), size);
+            return entry.getDecoder().getDecoder(codec, parts.size(), state(), size, parts);
         }
         return ByteArrayCodec.INSTANCE.getValueDecoder();
     }
