@@ -81,6 +81,14 @@ public interface RSemaphoreAsync extends RExpirableAsync {
     RFuture<Void> releaseAsync(int permits);
 
     /**
+     * Releases defined amount of <code>permits</code> only if semaphore exists.
+     * Increases the number of available permits by <code>permits</code> amount.
+     *
+     * @param permits amount of permits
+     */
+    RFuture<Void> releaseIfExistsAsync(int permits);
+
+    /**
      * Tries to set number of permits.
      *
      * @param permits number of permits

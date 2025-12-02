@@ -472,6 +472,36 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
     }
 
     @Override
+    public void releaseIfExists(int permits) {
+        get(releaseIfExistsAsync(permits));
+    }
+
+    @Override
+    public RFuture<Void> releaseIfExistsAsync(int permits) {
+        if (permits < 0) {
+            throw new IllegalArgumentException("Permits amount can't be negative");
+        }
+        if (permits == 0) {
+            return new CompletableFutureWrapper<>((Void) null);
+        }
+
+        RFuture<Void> future = commandExecutor.syncedEvalNoRetry(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
+                        "if redis.call('exists', KEYS[1]) == 0 then " +
+                           "return " +
+                        "end " +
+
+                        "local value = redis.call('incrby', KEYS[1], ARGV[1]) " +
+                        "redis.call(ARGV[2], KEYS[2], value) ",
+                Arrays.asList(getRawName(), getChannelName()), permits, getSubscribeService().getPublishCommand());
+        if (LOGGER.isDebugEnabled()) {
+            future.thenAccept(o -> {
+                LOGGER.debug("released, permits: {}, name: {}", permits, getName());
+            });
+        }
+        return future;
+    }
+
+    @Override
     public int drainPermits() {
         return get(drainPermitsAsync());
     }

@@ -126,6 +126,14 @@ public interface RSemaphore extends RExpirable, RSemaphoreAsync {
     void release(int permits);
 
     /**
+     * Releases defined amount of <code>permits</code> only if semaphore exists.
+     * Increases the number of available permits by <code>permits</code> amount.
+     *
+     * @param permits amount of permits
+     */
+    void releaseIfExists(int permits);
+
+    /**
      * Returns amount of available permits.
      *
      * @return number of permits
