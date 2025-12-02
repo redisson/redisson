@@ -65,6 +65,7 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.TrustManagerFactory;
 import java.beans.PropertyEditorSupport;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
@@ -73,22 +74,36 @@ import java.util.concurrent.ExecutorService;
  */
 final class RedissonPropertyEditorRegistrar implements PropertyEditorRegistrar {
 
-    private static final Map<Class<?>, Class<?>> REDISSON_MIXIN = Map.ofEntries(
-            Map.entry(Config.class, ConfigMixIn.class),
-            Map.entry(BaseMasterSlaveServersConfig.class, ConfigPropsMixIn.class),
-            Map.entry(ReferenceCodecProvider.class, ClassMixIn.class),
-            Map.entry(AddressResolverGroupFactory.class, ClassMixIn.class), Map.entry(Codec.class, ClassMixIn.class),
-            Map.entry(RedissonNodeInitializer.class, ClassMixIn.class), Map.entry(LoadBalancer.class, ClassMixIn.class),
-            Map.entry(NatMapper.class, ClassMixIn.class), Map.entry(NameMapper.class, ClassMixIn.class),
-            Map.entry(NettyHook.class, ClassMixIn.class), Map.entry(CredentialsResolver.class, ClassMixIn.class),
-            Map.entry(EventLoopGroup.class, ClassMixIn.class), Map.entry(ConnectionListener.class, ClassMixIn.class),
-            Map.entry(ExecutorService.class, ClassMixIn.class), Map.entry(KeyManagerFactory.class, IgnoreMixIn.class),
-            Map.entry(TrustManagerFactory.class, IgnoreMixIn.class), Map.entry(CommandMapper.class, ClassMixIn.class),
-            Map.entry(FailedNodeDetector.class, ClassMixIn.class), Map.entry(DelayStrategy.class, ClassMixIn.class),
-            Map.entry(EqualJitterDelay.class, DelayMixin.class), Map.entry(FullJitterDelay.class, DelayMixin.class),
-            Map.entry(DecorrelatedJitterDelay.class, DelayMixin.class));
+    private static final Map<Class<?>, Class<?>> REDISSON_MIXIN = initMixin();
 
     private static final ObjectMapper SUPPORT;
+
+    private static Map<Class<?>, Class<?>> initMixin(){
+        Map<Class<?>, Class<?>> redissonMixin = new HashMap<>();
+        redissonMixin.put(Config.class, ConfigMixIn.class);
+        redissonMixin.put(BaseMasterSlaveServersConfig.class, ConfigPropsMixIn.class);
+        redissonMixin.put(ReferenceCodecProvider.class, ClassMixIn.class);
+        redissonMixin.put(AddressResolverGroupFactory.class, ClassMixIn.class);
+        redissonMixin.put(Codec.class, ClassMixIn.class);
+        redissonMixin.put(RedissonNodeInitializer.class, ClassMixIn.class);
+        redissonMixin.put(LoadBalancer.class, ClassMixIn.class);
+        redissonMixin.put(NatMapper.class, ClassMixIn.class);
+        redissonMixin.put(NameMapper.class, ClassMixIn.class);
+        redissonMixin.put(NettyHook.class, ClassMixIn.class);
+        redissonMixin.put(CredentialsResolver.class, ClassMixIn.class);
+        redissonMixin.put(EventLoopGroup.class, ClassMixIn.class);
+        redissonMixin.put(ConnectionListener.class, ClassMixIn.class);
+        redissonMixin.put(ExecutorService.class, ClassMixIn.class);
+        redissonMixin.put(KeyManagerFactory.class, IgnoreMixIn.class);
+        redissonMixin.put(TrustManagerFactory.class, IgnoreMixIn.class);
+        redissonMixin.put(CommandMapper.class, ClassMixIn.class);
+        redissonMixin.put(FailedNodeDetector.class, ClassMixIn.class);
+        redissonMixin.put(DelayStrategy.class, ClassMixIn.class);
+        redissonMixin.put(EqualJitterDelay.class, DelayMixin.class);
+        redissonMixin.put(FullJitterDelay.class, DelayMixin.class);
+        redissonMixin.put(DecorrelatedJitterDelay.class, DelayMixin.class);
+        return redissonMixin;
+    }
 
     static {
         FilterProvider filterProvider = new SimpleFilterProvider().addFilter("classFilter",
