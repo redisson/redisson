@@ -42,7 +42,7 @@ public interface RSearch extends RSearchAsync {
      * <p>
      * Code example:
      * <pre>
-     *             search.create("idx", IndexOptions.defaults()
+     *             search.createIndex("idx", IndexOptions.defaults()
      *                                     .on(IndexType.HASH)
      *                                     .prefix(Arrays.asList("doc:")),
      *                                     FieldIndex.text("t1"),
