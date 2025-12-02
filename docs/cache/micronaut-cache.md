@@ -89,6 +89,9 @@ Redisson provides various [Micronaut Cache](https://guides.micronaut.io/latest/m
         compile 'pro.redisson:redisson-micronaut-40:xVERSIONx'
         ```
 
+        [License key configuration](configuration.md/#license-key-configuration)
+
+
     -   **Community Edition**
 
         Maven

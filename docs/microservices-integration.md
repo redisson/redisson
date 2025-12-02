@@ -42,6 +42,9 @@ Supports Micronaut 2.0.x - 4.x.x
         compile 'pro.redisson:redisson-micronaut-40:xVERSIONx'
         ```
 
+        [License key configuration](configuration.md/#license-key-configuration)
+
+
     -   **Community Edition**
 
         Maven
@@ -194,6 +197,9 @@ Supports Quarkus 1.6.x - 3.x.x
         compile 'pro.redisson:redisson-quarkus-30:xVERSIONx'
         ```
 
+        [License key configuration](configuration.md/#license-key-configuration)
+
+
     -   **Community Edition**
 
         Maven
@@ -300,6 +306,9 @@ Supports Helidon 1.4.x - 4.x.x
         // for Helidon v4.x.x
         compile 'pro.redisson:redisson-helidon-40:xVERSIONx'
         ```
+
+        [License key configuration](configuration.md/#license-key-configuration)
+
 
     -   **Community Edition**
 

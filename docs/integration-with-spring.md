@@ -28,6 +28,9 @@ Supports Spring Boot 1.3.x - 3.5.x
         compile 'pro.redisson:redisson-spring-boot-starter:xVERSIONx'
         ```
 
+        [License key configuration](configuration.md/#license-key-configuration)
+
+
     -   **Community Edition**
 
         Maven
@@ -315,6 +318,9 @@ Ensure you have Spring Session library in your classpath, add it if necessary:
         ```groovy
         compile 'pro.redisson:redisson-spring-data-34:xVERSIONx'
         ```
+
+        [License key configuration](configuration.md/#license-key-configuration)
+
 
     -   **Community Edition**
 
@@ -700,6 +706,9 @@ Redisson implements `RedisConnectionFactory` and `ReactiveRedisConnectionFactory
         // for Spring Data Redis v.3.5.x
         compile 'pro.redisson:redisson-spring-data-35:xVERSIONx'
         ```
+
+        [License key configuration](configuration.md/#license-key-configuration)
+
 
     -   **Community Edition**
 
