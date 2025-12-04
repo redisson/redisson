@@ -340,7 +340,7 @@ public class RedissonSearch implements RSearch {
     }
 
     private static void addTagIndex(List<Object> args, FieldIndex field) {
-        if (field instanceof TagIndexParams) {
+        if (field instanceof TagIndex) {
             TagIndexParams params = (TagIndexParams) field;
             args.add(params.getFieldName());
             if (params.getAs() != null) {
@@ -377,7 +377,7 @@ public class RedissonSearch implements RSearch {
     }
 
     private static void addTextIndex(List<Object> args, FieldIndex field) {
-        if (field instanceof TextIndexParams) {
+        if (field instanceof TextIndex) {
             TextIndexParams params = (TextIndexParams) field;
             args.add(params.getFieldName());
             if (params.getAs() != null) {
@@ -445,8 +445,7 @@ public class RedissonSearch implements RSearch {
             args.add("WITHSORTKEYS");
         }
         for (QueryFilter filter : options.getFilters()) {
-            if (filter instanceof NumericFilterParams) {
-                NumericFilterParams params = (NumericFilterParams) filter;
+            if (filter instanceof NumericFilterParams params) {
                 args.add("FILTER");
                 args.add(params.getFieldName());
                 args.add(value(params.getMin(), params.isMinExclusive()));
@@ -454,8 +453,7 @@ public class RedissonSearch implements RSearch {
             }
         }
         for (QueryFilter filter : options.getFilters()) {
-            if (filter instanceof GeoFilterParams) {
-                GeoFilterParams params = (GeoFilterParams) filter;
+            if (filter instanceof GeoFilterParams params) {
                 args.add("GEOFILTER");
                 args.add(params.getFieldName());
                 args.add(params.getLongitude());
@@ -584,7 +582,7 @@ public class RedissonSearch implements RSearch {
 
         RedisStrictCommand<SearchResult> command;
         if (commandExecutor.getServiceManager().isResp3()) {
-            command = new RedisStrictCommand<>("FT.SEARCH",
+            command = new RedisStrictCommand<SearchResult>("FT.SEARCH",
                     new ListMultiDecoder2(new SearchResultDecoderV2(),
                             new ObjectListReplayDecoder(),
                             new ObjectMapReplayDecoder(),
@@ -938,10 +936,10 @@ public class RedissonSearch implements RSearch {
 
     @Override
     public RFuture<AggregationResult> readCursorAsync(String indexName, long cursorId, int count) {
-        RedisStrictCommand command = new RedisStrictCommand<>("FT.CURSOR", "READ",
-                new ListMultiDecoder2(new AggregationCursorResultDecoder(),
-                        new ObjectListReplayDecoder(),
-                        new ObjectMapReplayDecoder(new CompositeCodec(StringCodec.INSTANCE, codec))));
+        RedisStrictCommand<Object> command = new RedisStrictCommand<>("FT.CURSOR", "READ",
+                new ListMultiDecoder2<>(new AggregationCursorResultDecoder(),
+                        new ObjectListReplayDecoder<>(),
+                        new ObjectMapReplayDecoder<>(new CompositeCodec(StringCodec.INSTANCE, codec))));
 
         return commandExecutor.writeAsync(indexName, StringCodec.INSTANCE, command, indexName, cursorId, "COUNT", count);
     }
