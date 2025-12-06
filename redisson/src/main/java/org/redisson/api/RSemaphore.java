@@ -131,7 +131,7 @@ public interface RSemaphore extends RExpirable, RSemaphoreAsync {
      *
      * @param permits amount of permits
      */
-    void releaseIfExists(int permits);
+    boolean releaseIfExists(int permits);
 
     /**
      * Returns amount of available permits.

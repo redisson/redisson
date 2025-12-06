@@ -88,7 +88,7 @@ public interface RSemaphoreReactive extends RExpirableReactive {
      *
      * @param permits amount of permits
      */
-    Mono<Void> releaseIfExists(int permits);
+    Mono<Boolean> releaseIfExists(int permits);
 
     /**
      * Tries to set number of permits.

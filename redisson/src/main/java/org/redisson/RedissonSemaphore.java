@@ -472,26 +472,27 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
     }
 
     @Override
-    public void releaseIfExists(int permits) {
-        get(releaseIfExistsAsync(permits));
+    public boolean releaseIfExists(int permits) {
+        return get(releaseIfExistsAsync(permits));
     }
 
     @Override
-    public RFuture<Void> releaseIfExistsAsync(int permits) {
+    public RFuture<Boolean> releaseIfExistsAsync(int permits) {
         if (permits < 0) {
             throw new IllegalArgumentException("Permits amount can't be negative");
         }
         if (permits == 0) {
-            return new CompletableFutureWrapper<>((Void) null);
+            return new CompletableFutureWrapper<>(false);
         }
 
-        RFuture<Void> future = commandExecutor.syncedEvalNoRetry(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
-                        "if redis.call('exists', KEYS[1]) == 0 then " +
-                           "return " +
+        RFuture<Boolean> future = commandExecutor.syncedEvalNoRetry(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                  "if redis.call('exists', KEYS[1]) == 0 then " +
+                           "return 0 " +
                         "end " +
 
                         "local value = redis.call('incrby', KEYS[1], ARGV[1]) " +
-                        "redis.call(ARGV[2], KEYS[2], value) ",
+                        "redis.call(ARGV[2], KEYS[2], value) " +
+                        "return 1 ",
                 Arrays.asList(getRawName(), getChannelName()), permits, getSubscribeService().getPublishCommand());
         if (LOGGER.isDebugEnabled()) {
             future.thenAccept(o -> {
