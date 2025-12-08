@@ -86,7 +86,7 @@ public interface RSemaphoreAsync extends RExpirableAsync {
      *
      * @param permits amount of permits
      */
-    RFuture<Void> releaseIfExistsAsync(int permits);
+    RFuture<Boolean> releaseIfExistsAsync(int permits);
 
     /**
      * Tries to set number of permits.

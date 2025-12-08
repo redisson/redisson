@@ -89,7 +89,7 @@ public interface RSemaphoreRx extends RExpirableRx {
      *
      * @param permits amount of permits
      */
-    Completable releaseIfExists(int permits);
+    Single<Boolean> releaseIfExists(int permits);
 
     /**
      * Tries to set number of permits.

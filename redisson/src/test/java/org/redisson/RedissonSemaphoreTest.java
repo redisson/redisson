@@ -240,6 +240,19 @@ public class RedissonSemaphoreTest extends BaseConcurrentTest {
         assertThat(s.availablePermits()).isEqualTo(10);
     }
 
+    @Test
+    public void testReleaseIfExists() throws InterruptedException {
+        RSemaphore s = redisson.getSemaphore("test");
+        s.trySetPermits(10);
+        s.acquire();
+        assertThat(s.availablePermits()).isEqualTo(9);
+        assertThat(s.releaseIfExists(1)).isTrue();
+        assertThat(s.availablePermits()).isEqualTo(10);
+
+        RSemaphore s1 = redisson.getSemaphore("test2");
+        assertThat(s1.releaseIfExists(1)).isFalse();
+    }
+
 
     @Test
     public void testConcurrency_SingleInstance() throws InterruptedException {
