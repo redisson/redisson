@@ -60,7 +60,7 @@ import java.util.regex.Pattern;
  */
 public class ConfigSupport {
 
-    private final Yaml yaml;
+    private final ClassLoader classLoader;
     private final boolean useCaseInsensitive;
 
     public ConfigSupport() {
@@ -72,8 +72,11 @@ public class ConfigSupport {
     }
 
     public ConfigSupport(ClassLoader classLoader, boolean useCaseInsensitive) {
+        this.classLoader = classLoader;
         this.useCaseInsensitive = useCaseInsensitive;
+    }
 
+    private Yaml createYamlParser(ClassLoader classLoader, boolean useCaseInsensitive) {
         LoaderOptions loaderOptions = new LoaderOptions();
         loaderOptions.setTagInspector(tag -> true);
 
@@ -86,7 +89,7 @@ public class ConfigSupport {
         DelayConstructor constructor = new DelayConstructor(classLoader, loaderOptions, useCaseInsensitive);
         CustomRepresenter representer = new CustomRepresenter(dumperOptions, useCaseInsensitive);
 
-        this.yaml = new Yaml(constructor, representer, dumperOptions, loaderOptions);
+        return new Yaml(constructor, representer, dumperOptions, loaderOptions);
     }
 
     private static class CustomPropertyUtils extends PropertyUtils {
@@ -1281,6 +1284,7 @@ public class ConfigSupport {
     public <T> T fromYAML(String content, Class<T> configType) throws IOException {
         content = resolveEnvParams(content);
         content = unfixTagFormat(content);
+        Yaml yaml = createYamlParser(classLoader, useCaseInsensitive);
         return yaml.loadAs(content, configType);
     }
 
@@ -1305,24 +1309,28 @@ public class ConfigSupport {
     public <T> T fromYAML(URL url, Class<T> configType) throws IOException {
         String content = resolveEnvParams(new InputStreamReader(url.openStream()));
         content = unfixTagFormat(content);
+        Yaml yaml = createYamlParser(classLoader, useCaseInsensitive);
         return yaml.loadAs(content, configType);
     }
 
     public <T> T fromYAML(Reader reader, Class<T> configType) throws IOException {
         String content = resolveEnvParams(reader);
         content = unfixTagFormat(content);
+        Yaml yaml = createYamlParser(classLoader, useCaseInsensitive);
         return yaml.loadAs(content, configType);
     }
 
     public <T> T fromYAML(InputStream inputStream, Class<T> configType) throws IOException {
         String content = resolveEnvParams(new InputStreamReader(inputStream));
         content = unfixTagFormat(content);
+        Yaml yaml = createYamlParser(classLoader, useCaseInsensitive);
         return yaml.loadAs(content, configType);
     }
 
-    public String toYAML(Config config) throws IOException {
-        String yaml = this.yaml.dump(config);
-        return fixTagFormat(yaml);
+    public String toYAML(Config config) {
+        Yaml yaml = createYamlParser(classLoader, useCaseInsensitive);
+        String yamlStr = yaml.dump(config);
+        return fixTagFormat(yamlStr);
     }
 
     private static final Pattern TAG_FIX_PATTERN = Pattern.compile("!([a-zA-Z0-9_.]+)");
