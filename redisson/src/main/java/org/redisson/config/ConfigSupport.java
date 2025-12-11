@@ -419,6 +419,26 @@ public class ConfigSupport {
             return super.getClassForName(name);
         }
 
+        @Override
+        protected Object constructObject(Node node) {
+            if (node instanceof org.yaml.snakeyaml.nodes.ScalarNode) {
+                org.yaml.snakeyaml.nodes.ScalarNode scalarNode = (org.yaml.snakeyaml.nodes.ScalarNode) node;
+                String value = scalarNode.getValue();
+                if (value != null && value.startsWith("!")) {
+                    String className = value.substring(1);
+                    try {
+                        Class<?> clazz = getClassForName(className);
+                        java.lang.reflect.Constructor<?> constructor = clazz.getDeclaredConstructor();
+                        constructor.setAccessible(true);
+                        return constructor.newInstance();
+                    } catch (Exception e) {
+                        throw new IllegalStateException("Failed to instantiate class from scalar: " + className, e);
+                    }
+                }
+            }
+            return super.constructObject(node);
+        }
+
         private final class ConstructDelayStrategy extends ConstructMapping {
             @Override
             public Object construct(Node node) {

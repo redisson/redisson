@@ -4,13 +4,41 @@ import mockit.Invocation;
 import mockit.Mock;
 import mockit.MockUp;
 import org.junit.jupiter.api.Test;
+import org.redisson.codec.JsonJacksonCodec;
 
 import java.io.IOException;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ConfigSupportTest {
-    
+
+    @Test
+    public void testParsingConfig() throws IOException {
+        ConfigSupport configSupport = new ConfigSupport();
+        String yml = "singleServerConfig:\n" +
+                "  address: \"redis://localhost:6379\"\n" +
+                "  password: \"123456\"\n" +
+                "  database: 7\n" +
+                "  idleConnectionTimeout: 10000\n" +
+                "  connectTimeout: 10000\n" +
+                "  timeout: 3000\n" +
+                "  retryAttempts: 3\n" +
+                "  subscriptionsPerConnection: 25\n" +
+                "  subscriptionConnectionMinimumIdleSize: 10\n" +
+                "  subscriptionConnectionPoolSize: 150\n" +
+                "  connectionMinimumIdleSize: 12\n" +
+                "  connectionPoolSize: 44\n" +
+                "  dnsMonitoringInterval: 2000\n" +
+                "threads: 0\n" +
+                "nettyThreads: 0\n" +
+                "codec: \'!org.redisson.codec.JsonJacksonCodec\'\n" +
+                "transportMode: \"NIO\"\n";
+        Config config = configSupport.fromYAML(yml, Config.class);
+        assertThat(config.getSingleServerConfig().getAddress()).isEqualTo("redis://localhost:6379");
+        assertThat(config.getCodec()).isInstanceOf(JsonJacksonCodec.class);
+    }
+
     @Test
     public void testParsingLiteral() throws IOException {
         mockHostEnv("1.1.1.1", null);
