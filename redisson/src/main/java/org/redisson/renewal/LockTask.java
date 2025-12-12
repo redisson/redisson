@@ -59,8 +59,13 @@ public class LockTask extends RenewalTask {
                 continue;
             }
 
+            String lockName = entry.getLockName(threadId);
+            if (lockName == null) {
+                continue;
+            }
+
             keys.add(key);
-            args.add(entry.getLockName(threadId));
+            args.add(lockName);
             name2threadId.put(key, threadId);
 
             if (keys.size() == chunkSize) {
