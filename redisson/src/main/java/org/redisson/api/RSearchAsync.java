@@ -40,7 +40,7 @@ public interface RSearchAsync {
      * <p>
      * Code example:
      * <pre>
-     *             search.create("idx", IndexOptions.defaults()
+     *             search.createIndexAsync("idx", IndexOptions.defaults()
      *                                     .on(IndexType.HASH)
      *                                     .prefix(Arrays.asList("doc:")),
      *                                     FieldIndex.text("t1"),
@@ -58,7 +58,7 @@ public interface RSearchAsync {
      * <p>
      * Code example:
      * <pre>
-     * SearchResult r = s.search("idx", "*", QueryOptions.defaults()
+     * SearchResult r = s.searchAsync("idx", "*", QueryOptions.defaults()
      *                                                   .returnAttributes(new ReturnAttribute("t1"), new ReturnAttribute("t2")));
      * </pre>
      *
@@ -74,7 +74,7 @@ public interface RSearchAsync {
      * <p>
      * Code example:
      * <pre>
-     * AggregationResult r = s.aggregate("idx", "*", AggregationOptions.defaults()
+     * AggregationResult r = s.aggregateAsync("idx", "*", AggregationOptions.defaults()
      *                                                                 .load("t1", "t2"));
      * </pre>
      *
@@ -216,7 +216,7 @@ public interface RSearchAsync {
      * Returns a map of misspelled terms and their score.
      *
      * <pre>
-     * Map<String, Map<String, Double>> res = s.spellcheck("idx", "Hocke sti", SpellcheckOptions.defaults()
+     * Map<String, Map<String, Double>> res = s.spellcheckAsync("idx", "Hocke sti", SpellcheckOptions.defaults()
      *                                                                                          .includedTerms("name"));
      * </pre>
      *
