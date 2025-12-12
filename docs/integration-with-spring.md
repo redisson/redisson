@@ -140,6 +140,46 @@ Supports Spring Boot 1.3.x - 3.5.x
           master:
           nodes:
     ```
+   
+    Using Redisson Spring Boot up to 4.0.x settings:
+    ```yaml
+    spring:
+      redisson:
+        config:
+          clusterServersConfig:
+            idleConnectionTimeout: 10000
+            connectTimeout: 10000
+            timeout: 3000
+            retryAttempts: 3
+            retryInterval: 1500
+            failedSlaveReconnectionInterval: 3000
+            failedSlaveCheckInterval: 60000
+            password: null
+            subscriptionsPerConnection: 5
+            clientName: null
+            loadBalancer: !<org.redisson.connection.balancer.RoundRobinLoadBalancer> { }
+            subscriptionConnectionMinimumIdleSize: 1
+            subscriptionConnectionPoolSize: 50
+            slaveConnectionMinimumIdleSize: 24
+            slaveConnectionPoolSize: 64
+            masterConnectionMinimumIdleSize: 24
+            masterConnectionPoolSize: 64
+            readMode: "SLAVE"
+            subscriptionMode: "SLAVE"
+            nodeAddresses:
+              - "redis://127.0.0.1:7004"
+              - "redis://127.0.0.1:7001"
+              - "redis://127.0.0.1:7000"
+            scanInterval: 1000
+            pingConnectionInterval: 0
+            keepAlive: false
+            tcpNoDelay: false
+            retry-delay: !<org.redisson.config.FullJitterDelay> {baseDelay: 2h,maxDelay: 2h}
+          threads: 16
+          nettyThreads: 32
+          codec: !<org.redisson.codec.Kryo5Codec> { }
+          transportMode: "NIO"
+    ```
 
 
     Using Redisson config file: 
