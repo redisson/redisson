@@ -238,7 +238,7 @@ public abstract class LocalCacheListener {
                 }
                 if (clearMsg.isReleaseSemaphore()) {
                     RSemaphore semaphore = getClearSemaphore(clearMsg.getRequestId());
-                    semaphore.releaseAsync();
+                    semaphore.releaseIfExistsAsync(1);
                 }
             }
         }

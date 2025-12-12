@@ -79,7 +79,7 @@ abstract class RenewalTask implements TimerTask {
             return CompletableFuture.completedFuture(null);
         }
 
-        if (!executor.getServiceManager().getCfg().isClusterConfig()) {
+        if (!executor.getServiceManager().isClusterSetup()) {
             return renew(name2entry.keySet().iterator(), chunkSize);
         }
 
@@ -110,7 +110,7 @@ abstract class RenewalTask implements TimerTask {
         if (threadId == null || task.hasNoThreads()) {
             name2entry.remove(name);
 
-            if (executor.getServiceManager().getCfg().isClusterConfig()) {
+            if (executor.getServiceManager().isClusterSetup()) {
                 int slot = executor.getConnectionManager().calcSlot(name);
                 slot2names.computeIfPresent(slot, (k, v) -> {
                     v.remove(name);
@@ -147,7 +147,7 @@ abstract class RenewalTask implements TimerTask {
     }
 
     void addSlotName(String rawName) {
-        if (!executor.getServiceManager().getCfg().isClusterConfig()) {
+        if (!executor.getServiceManager().isClusterSetup()) {
             return;
         }
 

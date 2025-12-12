@@ -3365,3 +3365,76 @@ nettyThreads: 32
 codec: !<org.redisson.codec.Kryo5Codec> {}
 transportMode: "NIO"
 ```
+
+## License key configuration
+
+License keys are required only for Redisson PRO. Redisson Community Edition 
+does not require a license key.
+
+You can configure your license key using any of the following methods. 
+
+1. Valkey or Redis Storage
+
+    Allows dynamic license key updates without application restart.
+
+    Store the license key in Valkey or Redis as a string value:
+
+    ```bash
+    valkey-cli SET redisson.pro.key "YOUR_LICENSE_KEY"
+    ```
+
+    ```bash
+    redis-cli SET redisson.pro.key "YOUR_LICENSE_KEY"
+    ```
+
+    **Use case:** Centralized license management across multiple application instances.
+    <br/>
+    <br/>
+
+2. JVM System Property
+
+    Set the license key as a JVM command-line parameter:
+    ```bash
+    -Dredisson.pro.key=YOUR_LICENSE_KEY
+    ```
+
+    **Use case:** Suitable for containerized environments or when you want to avoid committing keys to version control.
+
+    **Note:** Requires application restart for license renewal.
+    <br/>
+    <br/>
+
+3. YAML Configuration File
+
+    Add the `registrationKey` property to your Redisson configuration file:
+    ```yaml
+    registrationKey: "YOUR_LICENSE_KEY"
+    ```
+
+    **Use case:** Recommended when using externalized configuration management.
+
+    **Note:** Requires application restart for license renewal.
+    <br/>
+    <br/>
+
+4. Programmatic Configuration
+
+    Set the license key directly in your Java code:
+    ```java
+    Config config = new Config();
+    config.setRegistrationKey("YOUR_LICENSE_KEY");
+    ```
+
+    **Use case:** Useful when building configuration dynamically or integrating with secret management systems.
+
+    **Note:** Requires application restart for license renewal.
+
+
+**Configuration Priority**
+
+If multiple methods are used, Redisson applies them in the following order 
+(highest to lowest priority):
+
+1. Programmatic and YAML file configuration
+2. JVM system property
+3. Valkey or Redis storage

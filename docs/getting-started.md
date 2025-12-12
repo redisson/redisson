@@ -20,6 +20,8 @@
         compile 'pro.redisson:redisson:xVERSIONx'
         ```
 
+        [License key configuration](configuration.md/#license-key-configuration)
+
     -   **Community Edition**
 
         Maven
