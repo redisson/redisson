@@ -21,7 +21,6 @@ import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.config.ReplicatedServersConfig;
 import org.redisson.config.SentinelServersConfig;
 import org.redisson.config.SingleServerConfig;
-import org.redisson.spring.starter.RedissonPropertyEditorRegistrar;
 import org.springframework.beans.PropertyEditorRegistry;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
@@ -97,35 +96,30 @@ public class RedissonPropertiesV4 {
 
         @Override
         @NestedConfigurationProperty
-
         public SingleServerConfig getSingleServerConfig() {
             return super.getSingleServerConfig();
         }
 
         @Override
         @NestedConfigurationProperty
-
         public MasterSlaveServersConfig getMasterSlaveServersConfig() {
             return super.getMasterSlaveServersConfig();
         }
 
         @Override
         @NestedConfigurationProperty
-
         public ClusterServersConfig getClusterServersConfig() {
             return super.getClusterServersConfig();
         }
 
         @Override
         @NestedConfigurationProperty
-
         public ReplicatedServersConfig getReplicatedServersConfig() {
             return super.getReplicatedServersConfig();
         }
 
         @Override
         @NestedConfigurationProperty
-
         public SentinelServersConfig getSentinelServersConfig() {
             return super.getSentinelServersConfig();
         }
