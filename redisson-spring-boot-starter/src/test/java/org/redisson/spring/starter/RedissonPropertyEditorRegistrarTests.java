@@ -40,7 +40,7 @@ class RedissonPropertyEditorRegistrarTests {
         registrar.registerCustomEditors(converter);
 
         DelayStrategy fullJitterDelay = converter.convertIfNecessary(
-                "!<org.redisson.config.FullJitterDelay> {baseDelay: 2h,maxDelay: 2h}", DelayStrategy.class);
+                "!<org.redisson.config.FullJitterDelay> {baseDelay: PT2H,maxDelay: PT2H}", DelayStrategy.class);
         assertThat(fullJitterDelay).isInstanceOf(FullJitterDelay.class);
 
         Codec codec = converter.convertIfNecessary("!<org.redisson.codec.JsonJacksonCodec> {}", Codec.class);
