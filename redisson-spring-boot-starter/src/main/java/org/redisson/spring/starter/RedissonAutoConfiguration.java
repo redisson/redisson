@@ -199,7 +199,7 @@ public class RedissonAutoConfiguration {
                     throw new IllegalArgumentException("Can't parse config", e1);
                 }
             }
-        } else if (redissonProperties.getFile() != null) {
+        } else if (redissonProperties.getFile() != null && !redissonProperties.getFile().isEmpty()) {
             try {
                 InputStream is = getConfigStream();
                 config = Config.fromYAML(is);
