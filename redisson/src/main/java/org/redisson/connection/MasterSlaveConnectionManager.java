@@ -19,6 +19,7 @@ import io.netty.buffer.ByteBuf;
 import org.redisson.api.DefaultNameMapper;
 import org.redisson.api.NodeType;
 import org.redisson.client.*;
+import org.redisson.client.protocol.RedisCommands;
 import org.redisson.cluster.ClusterSlotRange;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.config.*;
@@ -187,6 +188,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                     lastAttempt = true;
                 }
                 doConnect(u -> null);
+
+                detectCluster();
                 return;
             } catch (IllegalArgumentException e) {
                 shutdown();
@@ -204,6 +207,25 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                     return;
                 }
             }
+        }
+    }
+
+    private void detectCluster() {
+        if (masterSlaveEntry == null) {
+            return;
+        }
+
+        CompletableFuture<RedisConnection> c = masterSlaveEntry.connectionReadOp(RedisCommands.MGET, false);
+        RedisConnection cc = c.join();
+        try {
+            cc.sync(RedisCommands.MGET, "test1", "test2");
+        } catch (Exception e) {
+            if (e.getMessage().startsWith("CROSSSLOT")) {
+                log.info("Cluster setup detected");
+                serviceManager.setClusterDetected(true);
+            }
+        } finally {
+            masterSlaveEntry.releaseRead(cc);
         }
     }
 

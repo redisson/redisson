@@ -768,4 +768,14 @@ public final class ServiceManager {
         }
     }
 
+    private boolean clusterDetected;
+
+    public void setClusterDetected(boolean clusterDetected) {
+        this.clusterDetected = clusterDetected;
+    }
+
+    public boolean isClusterSetup() {
+        return cfg.isClusterConfig() || clusterDetected;
+    }
+
 }

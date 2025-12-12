@@ -4,13 +4,15 @@ import mockit.Invocation;
 import mockit.Mock;
 import mockit.MockUp;
 import org.junit.jupiter.api.Test;
+import org.redisson.codec.JsonJacksonCodec;
 
 import java.io.IOException;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ConfigSupportTest {
-    
+
     @Test
     public void testParsingLiteral() throws IOException {
         mockHostEnv("1.1.1.1", null);

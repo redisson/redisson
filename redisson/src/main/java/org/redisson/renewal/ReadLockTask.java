@@ -60,10 +60,17 @@ public class ReadLockTask extends LockTask {
                 continue;
             }
 
+            String keyPrefix = entry.getKeyPrefix(threadId);
+            String lockName = entry.getLockName(threadId);
+
+            if (keyPrefix == null || lockName == null) {
+                continue;
+            }
+
             keys.add(key);
             keysArgs.add(key);
-            keysArgs.add(entry.getKeyPrefix(threadId));
-            args.add(entry.getLockName(threadId));
+            keysArgs.add(keyPrefix);
+            args.add(lockName);
             name2lockName.put(key, threadId);
 
             if (keys.size() == chunkSize) {
@@ -92,8 +99,8 @@ public class ReadLockTask extends LockTask {
                             "for n, key in ipairs(keys) do " +
                                 "counter = tonumber(redis.call('hget', KEYS[i], key)); " +
                                 "if type(counter) == 'number' then " +
-                                    "for i=counter, 1, -1 do " +
-                                        "redis.call('pexpire', KEYS[i+1] .. ':' .. key .. ':rwlock_timeout:' .. i, ARGV[1]); " +
+                                    "for c=counter, 1, -1 do " +
+                                        "redis.call('pexpire', KEYS[i+1] .. ':' .. key .. ':rwlock_timeout:' .. c, ARGV[1]); " +
                                     "end; " +
                                 "end; " +
                             "end; " +

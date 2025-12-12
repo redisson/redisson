@@ -498,6 +498,9 @@ public class RedisExecutor<V, R> {
                         || command.getReplayMultiDecoder() instanceof ListMultiDecoder2) {
                     res = (R) Collections.emptyList();
                 }
+                if (RedisCommands.XREAD.getName().equals(command.getName())) {
+                    res = (R) Collections.emptyMap();
+                }
                 if (attemptPromise.complete(res)) {
                     connection.forceFastReconnectAsync();
                 }
