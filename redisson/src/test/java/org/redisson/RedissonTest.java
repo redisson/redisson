@@ -95,14 +95,17 @@ public class RedissonTest extends RedisDockerTest {
     public void testStopThreads() throws IOException {
         Set<Thread> threads = Thread.getAllStackTraces().keySet();
 
-        List<String> cfgs = Arrays.asList("{\"clusterServersConfig\":{\"nodeAddresses\": []}}",
-                                          "{\"singleServerConfig\":{\"address\": \"\"}}",
-                                          "{\"replicatedServersConfig\":{\"nodeAddresses\": []}}",
-                                          "{\"sentinelServersConfig\":{\"sentinelAddresses\": []}}",
-                                          "{\"masterSlaveServersConfig\":{\"masterAddress\": \"\"}}");
+        List<String> cfgs = Arrays.asList(
+                "clusterServersConfig:\n  nodeAddresses: []",
+                "singleServerConfig:\n  address: \"\"",
+                "replicatedServersConfig:\n  nodeAddresses: []",
+                "sentinelServersConfig:\n  sentinelAddresses: []",
+                "masterSlaveServersConfig:\n  masterAddress: \"\""
+        );
+
         for (String cfg : cfgs) {
             ConfigSupport support = new ConfigSupport();
-            Config config = support.fromJSON(cfg, Config.class);
+            Config config = support.fromYAML(cfg, Config.class);
 
             Assertions.assertThrows(IllegalArgumentException.class, () -> {
                 Redisson.create(config);
