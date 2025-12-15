@@ -15,6 +15,8 @@
  */
 package org.redisson.api;
 
+import org.redisson.api.stream.StreamMessageId;
+
 /**
  * Entry object for pending messages request.
  * 

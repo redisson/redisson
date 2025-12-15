@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.api;
+package org.redisson.api.stream;
 
 /**
  * Object containing details about Stream Group
@@ -21,7 +21,7 @@ package org.redisson.api;
  * @author Nikita Koksharov
  *
  */
-public class StreamGroup {
+public final class StreamGroup {
 
     private final String name;
     private final int consumers;

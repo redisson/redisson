@@ -15,6 +15,8 @@
  */
 package org.redisson.api;
 
+import org.redisson.api.stream.StreamMessageId;
+
 import java.io.Serializable;
 import java.util.Map;
 

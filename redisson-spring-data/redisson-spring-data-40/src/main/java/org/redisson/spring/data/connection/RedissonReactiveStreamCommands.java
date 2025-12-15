@@ -17,6 +17,9 @@ package org.redisson.spring.data.connection;
 
 import org.reactivestreams.Publisher;
 import org.redisson.api.*;
+import org.redisson.api.stream.StreamConsumer;
+import org.redisson.api.stream.StreamGroup;
+import org.redisson.api.stream.StreamMessageId;
 import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
@@ -27,7 +30,6 @@ import org.redisson.reactive.CommandReactiveExecutor;
 import org.springframework.data.domain.Range;
 import org.springframework.data.redis.connection.ReactiveRedisConnection;
 import org.springframework.data.redis.connection.ReactiveStreamCommands;
-import org.springframework.data.redis.connection.RedisStreamCommands;
 import org.springframework.data.redis.connection.stream.StreamInfo;
 import org.springframework.data.redis.connection.stream.*;
 import org.springframework.util.Assert;
@@ -175,7 +177,7 @@ public class RedissonReactiveStreamCommands extends RedissonBaseReactive impleme
         });
     }
 
-    private static final RedisCommand<org.redisson.api.StreamInfo<Object, Object>> XINFO_STREAM = new RedisCommand<>("XINFO", "STREAM",
+    private static final RedisCommand<org.redisson.api.stream.StreamInfo<Object, Object>> XINFO_STREAM = new RedisCommand<>("XINFO", "STREAM",
                 new ListMultiDecoder2(
                         new StreamInfoDecoder(),
                         new ObjectDecoder(StringCodec.INSTANCE.getValueDecoder()),
@@ -189,7 +191,7 @@ public class RedissonReactiveStreamCommands extends RedissonBaseReactive impleme
 
             byte[] k = toByteArray(command.getKey());
 
-            Mono<org.redisson.api.StreamInfo<byte[], byte[]>> m = write(k, ByteArrayCodec.INSTANCE, XINFO_STREAM, k);
+            Mono<org.redisson.api.stream.StreamInfo<byte[], byte[]>> m = write(k, ByteArrayCodec.INSTANCE, XINFO_STREAM, k);
             return m.map(i -> {
 
                 Map<String, Object> res = new HashMap<>();

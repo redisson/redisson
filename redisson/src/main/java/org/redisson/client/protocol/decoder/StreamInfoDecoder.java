@@ -15,8 +15,8 @@
  */
 package org.redisson.client.protocol.decoder;
 
-import org.redisson.api.StreamInfo;
-import org.redisson.api.StreamMessageId;
+import org.redisson.api.stream.StreamInfo;
+import org.redisson.api.stream.StreamMessageId;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.convertor.StreamIdConvertor;
 

@@ -15,7 +15,7 @@
  */
 package org.redisson.spring.data.connection;
 
-import org.redisson.api.StreamMessageId;
+import org.redisson.api.stream.StreamMessageId;
 import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.handler.State;
@@ -155,7 +155,7 @@ public class RedissonStreamCommands implements RedisStreamCommands {
         }
     }
 
-    private static final RedisCommand<org.redisson.api.StreamInfo<Object, Object>> XINFO_STREAM = new RedisCommand<>("XINFO", "STREAM",
+    private static final RedisCommand<org.redisson.api.stream.StreamInfo<Object, Object>> XINFO_STREAM = new RedisCommand<>("XINFO", "STREAM",
             new ListMultiDecoder2(
                     new XInfoStreamReplayDecoder(),
                     new CodecDecoder(),

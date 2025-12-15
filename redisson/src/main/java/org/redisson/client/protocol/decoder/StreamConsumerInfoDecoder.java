@@ -15,7 +15,7 @@
  */
 package org.redisson.client.protocol.decoder;
 
-import org.redisson.api.StreamConsumer;
+import org.redisson.api.stream.StreamConsumer;
 import org.redisson.client.handler.State;
 
 import java.util.List;

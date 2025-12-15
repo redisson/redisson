@@ -17,7 +17,7 @@ package org.redisson.client.protocol.decoder;
 
 import java.io.IOException;
 
-import org.redisson.api.StreamMessageId;
+import org.redisson.api.stream.StreamMessageId;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;

@@ -15,7 +15,7 @@
  */
 package org.redisson.client.protocol.convertor;
 
-import org.redisson.api.StreamMessageId;
+import org.redisson.api.stream.StreamMessageId;
 
 /**
  * 

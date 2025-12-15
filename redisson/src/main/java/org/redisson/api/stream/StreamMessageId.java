@@ -13,7 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.api;
+package org.redisson.api.stream;
+
+import org.redisson.api.RStream;
 
 import java.util.Objects;
 
@@ -23,7 +25,7 @@ import java.util.Objects;
  * @author Nikita Koksharov
  *
  */
-public class StreamMessageId {
+public final class StreamMessageId {
 
     /**
      * Defines id to receive Stream entries never delivered to any other consumer.

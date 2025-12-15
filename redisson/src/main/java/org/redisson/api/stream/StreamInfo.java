@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.api;
+package org.redisson.api.stream;
 
 import java.util.Map;
 
@@ -25,7 +25,7 @@ import java.util.Map;
  * @param <K> key type
  * @param <V> value type
  */
-public class StreamInfo<K, V> {
+public final class StreamInfo<K, V> {
 
     public static class Entry<K, V> {
 

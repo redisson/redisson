@@ -15,8 +15,6 @@
  */
 package org.redisson.api.stream;
 
-import org.redisson.api.StreamMessageId;
-
 import java.time.Duration;
 import java.util.Map;
 

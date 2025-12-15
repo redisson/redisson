@@ -15,8 +15,6 @@
  */
 package org.redisson.api.stream;
 
-import org.redisson.api.StreamMessageId;
-
 /**
  * Arguments object for {@link org.redisson.api.RStream#createGroup(StreamCreateGroupArgs)} method.
  *

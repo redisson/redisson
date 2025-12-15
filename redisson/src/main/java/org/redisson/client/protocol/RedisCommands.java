@@ -17,6 +17,8 @@ package org.redisson.client.protocol;
 
 import org.redisson.api.*;
 import org.redisson.api.search.index.IndexInfo;
+import org.redisson.api.stream.StreamInfo;
+import org.redisson.api.stream.StreamMessageId;
 import org.redisson.api.vector.VectorInfo;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.DoubleCodec;

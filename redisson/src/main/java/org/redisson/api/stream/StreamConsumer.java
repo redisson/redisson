@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.api;
+package org.redisson.api.stream;
 
 /**
  * Object containing details about Stream Consumer
@@ -21,7 +21,7 @@ package org.redisson.api;
  * @author Nikita Koksharov
  *
  */
-public class StreamConsumer {
+public final class StreamConsumer {
 
     private final String name;
     private final int pending;

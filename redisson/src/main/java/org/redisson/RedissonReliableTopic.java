@@ -19,7 +19,7 @@ import io.netty.util.Timeout;
 import org.redisson.api.RFuture;
 import org.redisson.api.RReliableTopic;
 import org.redisson.api.RStream;
-import org.redisson.api.StreamMessageId;
+import org.redisson.api.stream.StreamMessageId;
 import org.redisson.api.listener.MessageListener;
 import org.redisson.api.stream.StreamReadGroupArgs;
 import org.redisson.client.codec.Codec;
