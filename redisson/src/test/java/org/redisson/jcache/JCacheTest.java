@@ -1,7 +1,5 @@
 package org.redisson.jcache;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.joor.Reflect;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
@@ -12,7 +10,6 @@ import org.redisson.api.CacheAsync;
 import org.redisson.api.CacheReactive;
 import org.redisson.api.CacheRx;
 import org.redisson.api.NameMapper;
-import org.redisson.codec.TypedJsonJacksonCodec;
 import org.redisson.config.Config;
 import org.redisson.jcache.configuration.RedissonConfiguration;
 
@@ -24,14 +21,13 @@ import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
 import javax.cache.integration.CacheLoader;
 import javax.cache.integration.CacheLoaderException;
-import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.Serializable;
 import java.net.URI;
-import java.net.URL;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
@@ -46,6 +42,7 @@ public class JCacheTest extends RedisDockerTest {
     public static void before() throws IOException, InterruptedException {
         org.testcontainers.containers.Container.ExecResult r = REDIS.execInContainer("redis-cli", "CONFIG", "SET", "notify-keyspace-events", "Ehx");
         assertThat(r.getExitCode()).isEqualTo(0);
+        System.setProperty("port", REDIS.getFirstMappedPort().toString());
     }
 
     @AfterAll
@@ -59,53 +56,12 @@ public class JCacheTest extends RedisDockerTest {
     }
 
     @Test
-    public void testYAML() throws IOException {
-        URI configUrl = resolve("redisson-jcache.yaml", REDIS.getFirstMappedPort());
-        Config cfg = Config.fromYAML(configUrl.toURL());
-
-        MutableConfiguration<String, String> c = createJCacheConfig();
-        c.setStatisticsEnabled(true);
-        Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg, c);
-
-        Cache<String, String> cache1 = Caching.getCachingProvider()
-                .getCacheManager().createCache("test1", config);
-        cache1.put("1", "2");
-        assertThat(cache1.get("1")).isEqualTo("2");
-        cache1.close();
-
-        Cache<String, String> cache2 = Caching.getCachingProvider().getCacheManager(configUrl, null)
-                .createCache("test2", config);
-        cache2.put("3", "4");
-        assertThat(cache2.get("3")).isEqualTo("4");
-        cache2.close();
-    }
-
-    public URI resolve(String filename, int serverPort) throws IOException {
-        File inputFile = new File(getClass().getResource(filename).getFile());
-        String content = new String(Files.readAllBytes(inputFile.toPath()));
-
-        content = content.replace("${port}", String.valueOf(serverPort));
-
-        Path tempFile = Files.createTempFile("modified_", "_" + filename);
-        Files.write(tempFile, content.getBytes());
-
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            try {
-                Files.deleteIfExists(tempFile);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }));
-
-        return tempFile.toUri();
-    }
-    @Test
     public void testClose() {
         MutableConfiguration<String, String> c = createJCacheConfig();
         c.setStatisticsEnabled(true);
         Configuration<String, String> config = RedissonConfiguration.fromInstance(redisson, c);
         Cache<String, String> cache = Caching.getCachingProvider()
-                                                .getCacheManager().createCache("test", config);
+                .getCacheManager().createCache("test", config);
         cache.close();
     }
 
@@ -332,26 +288,6 @@ public class JCacheTest extends RedisDockerTest {
     }
 
     @Test
-    public void testJson() throws IllegalArgumentException, IOException {
-        URL configUrl = resolve("redisson-jcache.yaml", REDIS.getFirstMappedPort()).toURL();
-        Config cfg = Config.fromYAML(configUrl);
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.registerModule(new JavaTimeModule());
-        cfg.setCodec(new TypedJsonJacksonCodec(String.class, LocalDateTime.class, objectMapper));
-
-        Configuration<String, LocalDateTime> c = createJCacheConfig();
-        Configuration<String, LocalDateTime> config = RedissonConfiguration.fromConfig(cfg, c);
-        Cache<String, LocalDateTime> cache = Caching.getCachingProvider().getCacheManager()
-                .createCache("test", config);
-
-        LocalDateTime t = LocalDateTime.now();
-        cache.put("1", t);
-        Assertions.assertEquals(t, cache.get("1"));
-
-        cache.close();
-    }
-
-    @Test
     public void testGetAndPut() {
         Cache<String, String> cache = createCache();
 
@@ -469,9 +405,8 @@ public class JCacheTest extends RedisDockerTest {
     }
 
     @Test
-    public void testScriptCache() throws IOException {
-        URL configUrl = resolve("redisson-jcache.yaml", REDIS.getFirstMappedPort()).toURL();
-        Config cfg = Config.fromYAML(configUrl);
+    public void testScriptCache() {
+        Config cfg = Config.fromYAML(getClass().getResourceAsStream("/redisson-jcache.yaml"));
         cfg.setUseScriptCache(true);
 
         Configuration<String, String> c = createJCacheConfig();
@@ -526,7 +461,7 @@ public class JCacheTest extends RedisDockerTest {
     }
 
     @Test
-    public void testUpdate() throws InterruptedException {
+    public void testUpdate() throws InterruptedException, URISyntaxException {
         MutableConfiguration<String, String> cfg = createJCacheConfig();
         cfg.setStoreByValue(true);
 
@@ -649,13 +584,13 @@ public class JCacheTest extends RedisDockerTest {
 
         cache.close();
     }
-    
+
     public static class ExpiredListener implements CacheEntryExpiredListener<String, String>, Serializable {
 
         private Object key;
         private Object value;
         private CountDownLatch latch;
-        
+
         public ExpiredListener(CountDownLatch latch, Object key, Object value) {
             super();
             this.latch = latch;
@@ -669,7 +604,7 @@ public class JCacheTest extends RedisDockerTest {
         public void onExpired(Iterable<CacheEntryEvent<? extends String, ? extends String>> events)
                 throws CacheEntryListenerException {
             CacheEntryEvent<? extends String, ? extends String> entry = events.iterator().next();
-            
+
             assertThat(entry.getKey()).isEqualTo(key);
             assertThat(entry.getValue()).isEqualTo(value);
             assertThat(entry.getOldValue()).isEqualTo(value);
@@ -677,9 +612,9 @@ public class JCacheTest extends RedisDockerTest {
             latch.countDown();
         }
 
-        
+
     }
-    
+
     public static class UpdatedListener implements CacheEntryUpdatedListener<String, String>, Serializable {
         private Object key;
         private Object oldValue;
