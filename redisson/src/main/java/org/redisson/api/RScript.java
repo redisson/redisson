@@ -46,7 +46,7 @@ public interface RScript extends RScriptAsync {
         BOOLEAN(RedisCommands.EVAL_BOOLEAN_SAFE),
         INTEGER(RedisCommands.EVAL_LONG),
         LIST(RedisCommands.EVAL_LIST),
-        STATUS(RedisCommands.EVAL_STRING),
+        STRING(RedisCommands.EVAL_STRING),
         VALUE(RedisCommands.EVAL_OBJECT),
         MAPVALUE(RedisCommands.EVAL_MAP_VALUE),
         MAPVALUELIST(RedisCommands.EVAL_MAP_VALUE_LIST);

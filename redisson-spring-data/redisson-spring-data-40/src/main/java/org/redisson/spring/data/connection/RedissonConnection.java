@@ -1884,7 +1884,7 @@ public class RedissonConnection extends AbstractRedisConnection {
             c = org.redisson.api.RScript.ReturnType.LIST.getCommand();
             return new RedisCommand(c, name, new BinaryConvertor());
         } else if (returnType == ReturnType.STATUS) {
-            c = org.redisson.api.RScript.ReturnType.STATUS.getCommand();
+            c = org.redisson.api.RScript.ReturnType.STRING.getCommand();
         } else if (returnType == ReturnType.VALUE) {
             c = org.redisson.api.RScript.ReturnType.VALUE.getCommand();
             return new RedisCommand(c, name, new BinaryConvertor());

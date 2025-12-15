@@ -103,7 +103,7 @@ public class RedissonScriptTest extends RedisDockerTest {
     @Test
     public void testString() {
         RScript script = redisson.getScript(StringCodec.INSTANCE);
-        String res = script.eval(RScript.Mode.READ_ONLY, "return 'hello'", RScript.ReturnType.STATUS);
+        String res = script.eval(RScript.Mode.READ_ONLY, "return 'hello'", RScript.ReturnType.STRING);
         assertThat(res).isEqualTo("hello");
     }
 
