@@ -1738,22 +1738,6 @@ public interface RedissonReactiveClient {
     Config getConfig();
     
     /**
-     * Use {@link org.redisson.api.RedissonClient#getRedisNodes(org.redisson.api.redisnode.RedisNodes)} instead
-     *
-     * @return NodesGroup object
-     */
-    @Deprecated
-    NodesGroup<Node> getNodesGroup();
-
-    /**
-     * Use {@link org.redisson.api.RedissonClient#getRedisNodes(org.redisson.api.redisnode.RedisNodes)} instead
-     *
-     * @return NodesGroup object
-     */
-    @Deprecated
-    NodesGroup<ClusterNode> getClusterNodesGroup();
-
-    /**
      * Returns {@code true} if this Redisson instance has been shut down.
      *
      * @return <code>true</code> if this Redisson instance has been shut down otherwise <code>false</code>

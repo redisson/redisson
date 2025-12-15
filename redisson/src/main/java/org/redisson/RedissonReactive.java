@@ -1091,19 +1091,6 @@ public final class RedissonReactive implements RedissonReactiveClient {
     }
 
     @Override
-    public NodesGroup<Node> getNodesGroup() {
-        return new RedisNodes<>(connectionManager, connectionManager.getServiceManager(), commandExecutor);
-    }
-
-    @Override
-    public NodesGroup<ClusterNode> getClusterNodesGroup() {
-        if (!getConfig().isClusterConfig()) {
-            throw new IllegalStateException("Redisson not in cluster mode!");
-        }
-        return new RedisNodes<>(connectionManager, connectionManager.getServiceManager(), commandExecutor);
-    }
-
-    @Override
     public void shutdown() {
         writeBehindService.stop();
         connectionManager.shutdown();

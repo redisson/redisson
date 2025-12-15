@@ -1317,19 +1317,6 @@ public final class Redisson implements RedissonClient {
     }
 
     @Override
-    public NodesGroup<Node> getNodesGroup() {
-        return new RedisNodes<Node>(connectionManager, connectionManager.getServiceManager(), commandExecutor);
-    }
-
-    @Override
-    public ClusterNodesGroup getClusterNodesGroup() {
-        if (!config.isClusterConfig()) {
-            throw new IllegalStateException("Redisson is not in cluster mode!");
-        }
-        return new RedisClusterNodes(connectionManager, connectionManager.getServiceManager(), commandExecutor);
-    }
-
-    @Override
     public boolean isShutdown() {
         return connectionManager.getServiceManager().isShutdown();
     }

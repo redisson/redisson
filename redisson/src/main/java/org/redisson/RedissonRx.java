@@ -15,10 +15,10 @@
  */
 package org.redisson;
 
+import org.redisson.api.*;
 import org.redisson.api.LocalCachedMapOptions;
 import org.redisson.api.MapCacheOptions;
 import org.redisson.api.MapOptions;
-import org.redisson.api.*;
 import org.redisson.api.options.*;
 import org.redisson.client.codec.Codec;
 import org.redisson.codec.JsonCodec;
@@ -1021,19 +1021,6 @@ public final class RedissonRx implements RedissonRxClient {
     @Override
     public Config getConfig() {
         return connectionManager.getServiceManager().getCfg();
-    }
-
-    @Override
-    public NodesGroup<Node> getNodesGroup() {
-        return new RedisNodes<Node>(connectionManager, connectionManager.getServiceManager(), commandExecutor);
-    }
-
-    @Override
-    public NodesGroup<ClusterNode> getClusterNodesGroup() {
-        if (!getConfig().isClusterConfig()) {
-            throw new IllegalStateException("Redisson not in cluster mode!");
-        }
-        return new RedisNodes<ClusterNode>(connectionManager, connectionManager.getServiceManager(), commandExecutor);
     }
 
     @Override

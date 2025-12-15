@@ -2075,30 +2075,18 @@ public interface RedissonClient {
     Config getConfig();
 
     /**
-     * Returns API to manage Redis nodes
+     * Returns API to manage Valkey or Redis nodes
      *
      * @see RedisNodes#CLUSTER
      * @see RedisNodes#MASTER_SLAVE
      * @see RedisNodes#SENTINEL_MASTER_SLAVE
      * @see RedisNodes#SINGLE
      *
-     * @param nodes Redis nodes API class
-     * @param <T> type of Redis nodes API
-     * @return Redis nodes API object
+     * @param nodes Valkey or Redis nodes API class
+     * @param <T> type of Valkey or Redis nodes API
+     * @return Valkey or Redis nodes API object
      */
     <T extends BaseRedisNodes> T getRedisNodes(RedisNodes<T> nodes);
-
-    /*
-     * Use getRedisNodes() method instead
-     */
-    @Deprecated
-    NodesGroup<Node> getNodesGroup();
-
-    /*
-     * Use getRedisNodes() method instead
-     */
-    @Deprecated
-    ClusterNodesGroup getClusterNodesGroup();
 
     /**
      * Returns {@code true} if this Redisson instance has been shut down.
