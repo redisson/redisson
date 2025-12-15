@@ -15,8 +15,6 @@
  */
 package org.redisson.api.geo;
 
-import org.redisson.api.GeoUnit;
-
 /**
  * Arguments object for RGeo search method.
  *

@@ -15,9 +15,6 @@
  */
 package org.redisson.api.geo;
 
-import org.redisson.api.GeoOrder;
-import org.redisson.api.GeoUnit;
-
 /**
  * @author Nikita Koksharov
  */

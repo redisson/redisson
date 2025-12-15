@@ -15,7 +15,7 @@
  */
 package org.redisson.api.search.query;
 
-import org.redisson.api.GeoUnit;
+import org.redisson.api.geo.GeoUnit;
 
 /**
  *

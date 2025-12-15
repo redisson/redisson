@@ -13,26 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.api;
-
-import java.util.Objects;
+package org.redisson.api.geo;
 
 /**
  * 
  * @author Nikita Koksharov
  *
  */
-public class GeoPosition {
+public class GeoEntry {
 
     private final double longitude;
     private final double latitude;
+    private final Object member;
     
-    public GeoPosition(double longitude, double latitude) {
+    public GeoEntry(double longitude, double latitude, Object member) {
         super();
         this.longitude = longitude;
         this.latitude = latitude;
+        this.member = member;
     }
-
+    
     public double getLatitude() {
         return latitude;
     }
@@ -40,23 +40,9 @@ public class GeoPosition {
     public double getLongitude() {
         return longitude;
     }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        GeoPosition that = (GeoPosition) o;
-        return Double.compare(longitude, that.longitude) == 0 && Double.compare(latitude, that.latitude) == 0;
+    
+    public Object getMember() {
+        return member;
     }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(longitude, latitude);
-    }
-
-    @Override
-    public String toString() {
-        return "GeoPosition [longitude=" + longitude + ", latitude=" + latitude + "]";
-    }
-
+    
 }

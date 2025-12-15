@@ -2,7 +2,7 @@ package org.redisson;
 
 import org.junit.jupiter.api.Test;
 import org.redisson.api.*;
-import org.redisson.api.geo.GeoSearchArgs;
+import org.redisson.api.geo.*;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;

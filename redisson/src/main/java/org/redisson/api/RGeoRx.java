@@ -16,7 +16,10 @@
 package org.redisson.api;
 
 import io.reactivex.rxjava3.core.Single;
+import org.redisson.api.geo.GeoEntry;
+import org.redisson.api.geo.GeoPosition;
 import org.redisson.api.geo.GeoSearchArgs;
+import org.redisson.api.geo.GeoUnit;
 
 import java.util.List;
 import java.util.Map;

@@ -16,8 +16,7 @@
 package org.redisson;
 
 import org.redisson.api.*;
-import org.redisson.api.geo.GeoSearchArgs;
-import org.redisson.api.geo.GeoSearchParams;
+import org.redisson.api.geo.*;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;

@@ -15,7 +15,10 @@
  */
 package org.redisson.api;
 
+import org.redisson.api.geo.GeoEntry;
+import org.redisson.api.geo.GeoPosition;
 import org.redisson.api.geo.GeoSearchArgs;
+import org.redisson.api.geo.GeoUnit;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
