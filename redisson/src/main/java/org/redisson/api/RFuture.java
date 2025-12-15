@@ -16,8 +16,6 @@
 package org.redisson.api;
 
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
-import java.util.function.BiConsumer;
 
 /**
  * Represents the result of an asynchronous computation
