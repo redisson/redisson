@@ -18,7 +18,7 @@ package org.redisson.api.redisnode;
 import java.util.Collection;
 
 /**
- * Redis Master Slave nodes API interface
+ * Valkey or Redis Master Slave nodes API interface
  *
  * @author Nikita Koksharov
  *

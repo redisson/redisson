@@ -16,7 +16,7 @@
 package org.redisson.api.redisnode;
 
 /**
- * Redis Single node API interface
+ * Valkey or Redis Single node API interface
  *
  * @author Nikita Koksharov
  *
@@ -24,7 +24,7 @@ package org.redisson.api.redisnode;
 public interface RedisSingle extends BaseRedisNodes {
 
     /**
-     * Returns Redis node
+     * Returns Valkey or Redis node
      *
      * @return Redis node
      */

@@ -18,7 +18,7 @@ package org.redisson.api.redisnode;
 import java.util.Collection;
 
 /**
- * Redis Cluster nodes API interface
+ * Valkey or Redis Cluster nodes API interface
  *
  * @author Nikita Koksharov
  *
