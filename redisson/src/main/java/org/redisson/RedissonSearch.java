@@ -584,7 +584,7 @@ public class RedissonSearch implements RSearch {
 
         RedisStrictCommand<SearchResult> command;
         if (commandExecutor.getServiceManager().isResp3()) {
-            command = new RedisStrictCommand<>("FT.SEARCH",
+            command = new RedisStrictCommand<SearchResult>("FT.SEARCH",
                     new ListMultiDecoder2(new SearchResultDecoderV2(),
                             new ObjectListReplayDecoder(),
                             new ObjectMapReplayDecoder(),
