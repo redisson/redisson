@@ -13,39 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.api;
+package org.redisson.config;
 
-import org.redisson.config.NatMapper;
 import org.redisson.misc.RedisURI;
 
-import java.util.Map;
-
 /**
- * Maps host of RedisURI object using map defined in <code>hostsMap</code> setting.
  *
  * @author Nikita Koksharov
  *
  */
-public class HostNatMapper implements NatMapper {
-
-    private Map<String, String> hostsMap;
-
+public class DefaultNatMapper implements NatMapper {
     @Override
     public RedisURI map(RedisURI uri) {
-        String host = hostsMap.get(uri.getHost());
-        if (host == null) {
-            return uri;
-        }
-        return new RedisURI(uri.getScheme(), host, uri.getPort());
+        return uri;
     }
-
-    /**
-     * Defines hosts mapping. Host as key mapped to host as value.
-     *
-     * @param hostsMap - hosts map
-     */
-    public void setHostsMap(Map<String, String> hostsMap) {
-        this.hostsMap = hostsMap;
-    }
-
 }

@@ -16,7 +16,7 @@
 package org.redisson.connection;
 
 import io.netty.buffer.ByteBuf;
-import org.redisson.api.DefaultNameMapper;
+import org.redisson.config.DefaultNameMapper;
 import org.redisson.api.NodeType;
 import org.redisson.client.*;
 import org.redisson.client.protocol.RedisCommands;

@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.api;
+package org.redisson.config;
 
-import org.redisson.config.NatMapper;
 import org.redisson.misc.RedisURI;
 
 import java.util.Map;

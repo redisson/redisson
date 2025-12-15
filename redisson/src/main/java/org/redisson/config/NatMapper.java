@@ -15,9 +15,6 @@
  */
 package org.redisson.config;
 
-import org.redisson.api.DefaultNatMapper;
-import org.redisson.api.HostNatMapper;
-import org.redisson.api.HostPortNatMapper;
 import org.redisson.misc.RedisURI;
 
 /**

@@ -15,8 +15,6 @@
  */
 package org.redisson.config;
 
-import org.redisson.api.DefaultNameMapper;
-
 /**
  * Maps Redisson object name.
  *

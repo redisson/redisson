@@ -15,7 +15,7 @@
  */
 package org.redisson.connection;
 
-import org.redisson.api.DefaultNameMapper;
+import org.redisson.config.DefaultNameMapper;
 import org.redisson.client.DefaultCredentialsResolver;
 import org.redisson.config.*;
 
