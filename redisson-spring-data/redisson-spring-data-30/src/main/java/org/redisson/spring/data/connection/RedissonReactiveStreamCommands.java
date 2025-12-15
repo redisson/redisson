@@ -16,10 +16,7 @@
 package org.redisson.spring.data.connection;
 
 import org.reactivestreams.Publisher;
-import org.redisson.api.*;
-import org.redisson.api.stream.StreamConsumer;
-import org.redisson.api.stream.StreamGroup;
-import org.redisson.api.stream.StreamMessageId;
+import org.redisson.api.stream.*;
 import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;

@@ -13,9 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.api;
-
-import org.redisson.api.stream.StreamMessageId;
+package org.redisson.api.stream;
 
 /**
  * Entry object for pending messages request.

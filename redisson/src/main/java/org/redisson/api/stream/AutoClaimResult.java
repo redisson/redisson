@@ -13,44 +13,52 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.api;
+package org.redisson.api.stream;
 
-import org.redisson.api.stream.StreamMessageId;
+import org.redisson.api.RStream;
+import org.redisson.api.RStreamAsync;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
  * Result object for autoClaim request.
  *
- * @see RStream#fastAutoClaim(String, String, long, TimeUnit, StreamMessageId, int)
- * @see RStreamAsync#fastAutoClaimAsync(String, String, long, TimeUnit, StreamMessageId, int)
+ * @see RStream#autoClaim(String, String, long, TimeUnit, StreamMessageId, int)
+ * @see RStreamAsync#autoClaimAsync(String, String, long, TimeUnit, StreamMessageId, int)
  * 
  * @author Nikita Koksharov
  *
  */
-public class FastAutoClaimResult implements Serializable {
+public final class AutoClaimResult<K, V> implements Serializable {
 
     private static final long serialVersionUID = -5525031552305408248L;
 
     private StreamMessageId nextId;
-    private List<StreamMessageId> ids;
+    private Map<StreamMessageId, Map<K, V>> messages;
+    private List<StreamMessageId> deletedIds;
 
-    public FastAutoClaimResult() {
+    public AutoClaimResult() {
     }
 
-    public FastAutoClaimResult(StreamMessageId nextId, List<StreamMessageId> ids) {
+    public AutoClaimResult(StreamMessageId nextId, Map<StreamMessageId, Map<K, V>> messages, List<StreamMessageId> deletedIds) {
         super();
         this.nextId = nextId;
-        this.ids = ids;
+        this.messages = messages;
+        this.deletedIds = deletedIds;
     }
 
     public StreamMessageId getNextId() {
         return nextId;
     }
 
-    public List<StreamMessageId> getIds() {
-        return ids;
+    public Map<StreamMessageId, Map<K, V>> getMessages() {
+        return messages;
+    }
+
+    public List<StreamMessageId> getDeletedIds() {
+        return deletedIds;
     }
 }

@@ -15,7 +15,7 @@
  */
 package org.redisson.client.protocol.decoder;
 
-import org.redisson.api.PendingResult;
+import org.redisson.api.stream.PendingResult;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.convertor.StreamIdConvertor;
 
