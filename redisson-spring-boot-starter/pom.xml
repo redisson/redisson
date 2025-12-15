@@ -27,12 +27,12 @@
                 <artifactId>maven-jar-plugin</artifactId>
                 <version>3.4.1</version>
                 <configuration>
-                    <archive>  
+                    <archive>
                         <manifestEntries>
                             <Build-Time>${maven.build.timestamp}</Build-Time>
                             <Automatic-Module-Name>redisson.spring.boot.starter</Automatic-Module-Name>
                         </manifestEntries>
-                    </archive> 
+                    </archive>
                 </configuration>
             </plugin>
 
@@ -119,7 +119,24 @@
                  <groupId>io.lettuce</groupId>
                  <artifactId>lettuce-core</artifactId>
               </exclusion>
-            </exclusions> 
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>tools.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-yaml</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-configuration-processor</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-configuration-metadata</artifactId>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
@@ -212,10 +229,35 @@
             <artifactId>logback-classic</artifactId>
             <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-core</artifactId>
             <version>1.5.19</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-testcontainers</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers-junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.redis</groupId>
+            <artifactId>testcontainers-redis</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
