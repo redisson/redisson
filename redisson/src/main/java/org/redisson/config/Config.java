@@ -25,8 +25,6 @@ import org.redisson.codec.Kryo5Codec;
 import org.redisson.connection.AddressResolverGroupFactory;
 import org.redisson.connection.ConnectionListener;
 import org.redisson.connection.SequentialDnsAddressResolverFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.TrustManagerFactory;
@@ -48,8 +46,6 @@ import java.util.concurrent.TimeUnit;
  *
  */
 public class Config {
-
-    static final Logger log = LoggerFactory.getLogger(Config.class);
 
     private SentinelServersConfig sentinelServersConfig;
 
@@ -758,62 +754,13 @@ public class Config {
         return addressResolverGroupFactory;
     }
 
-    @Deprecated
-    public static Config fromJSON(String content) throws IOException {
-        log.error("JSON configuration is deprecated and will be removed in future!");
-        ConfigSupport support = new ConfigSupport();
-        return support.fromJSON(content, Config.class);
-    }
-
-    @Deprecated
-    public static Config fromJSON(InputStream inputStream) throws IOException {
-        log.error("JSON configuration is deprecated and will be removed in future!");
-        ConfigSupport support = new ConfigSupport();
-        return support.fromJSON(inputStream, Config.class);
-    }
-
-    @Deprecated
-    public static Config fromJSON(File file, ClassLoader classLoader) throws IOException {
-        log.error("JSON configuration is deprecated and will be removed in future!");
-        ConfigSupport support = new ConfigSupport();
-        return support.fromJSON(file, Config.class, classLoader);
-    }
-
-    @Deprecated
-    public static Config fromJSON(File file) throws IOException {
-        log.error("JSON configuration is deprecated and will be removed in future!");
-        return fromJSON(file, null);
-    }
-
-    @Deprecated
-    public static Config fromJSON(URL url) throws IOException {
-        log.error("JSON configuration is deprecated and will be removed in future!");
-        ConfigSupport support = new ConfigSupport();
-        return support.fromJSON(url, Config.class);
-    }
-
-    @Deprecated
-    public static Config fromJSON(Reader reader) throws IOException {
-        log.error("JSON configuration is deprecated and will be removed in future!");
-        ConfigSupport support = new ConfigSupport();
-        return support.fromJSON(reader, Config.class);
-    }
-
-    @Deprecated
-    public String toJSON() throws IOException {
-        log.error("JSON configuration is deprecated and will be removed in future!");
-        ConfigSupport support = new ConfigSupport();
-        return support.toJSON(this);
-    }
-
     /**
      * Read config object stored in YAML format from <code>String</code>
      *
      * @param content of config
      * @return config
-     * @throws IOException error
      */
-    public static Config fromYAML(String content) throws IOException {
+    public static Config fromYAML(String content) {
         ConfigSupport support = new ConfigSupport();
         return support.fromYAML(content, Config.class);
     }
@@ -823,9 +770,8 @@ public class Config {
      *
      * @param inputStream object
      * @return config
-     * @throws IOException error
      */
-    public static Config fromYAML(InputStream inputStream) throws IOException {
+    public static Config fromYAML(InputStream inputStream) {
         ConfigSupport support = new ConfigSupport();
         return support.fromYAML(inputStream, Config.class);
     }

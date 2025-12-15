@@ -15,19 +15,14 @@
  */
 package org.redisson;
 
+import org.redisson.api.RedissonClient;
+import org.redisson.config.Config;
+
+import javax.naming.*;
+import javax.naming.spi.ObjectFactory;
 import java.io.File;
 import java.io.IOException;
 import java.util.Hashtable;
-
-import javax.naming.Context;
-import javax.naming.Name;
-import javax.naming.NamingException;
-import javax.naming.RefAddr;
-import javax.naming.Reference;
-import javax.naming.spi.ObjectFactory;
-
-import org.redisson.api.RedissonClient;
-import org.redisson.config.Config;
 
 /**
  * Redisson object factory used to register instance in JNDI registry. 
@@ -50,15 +45,7 @@ public class JndiRedissonFactory implements ObjectFactory {
         try {
             config = Config.fromYAML(new File(configPath), getClass().getClassLoader());
         } catch (IOException e) {
-            // trying next format
-            try {
-                config = Config.fromJSON(new File(configPath), getClass().getClassLoader());
-            } catch (IOException e1) {
-                NamingException ex = new NamingException("Can't parse config " + configPath);
-                e1.addSuppressed(e);
-                ex.initCause(e1);
-                throw ex;
-            }
+            throw new NamingException("Can't parse config " + configPath);
         }
         
         try {

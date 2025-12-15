@@ -24,7 +24,6 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
 import javax.enterprise.inject.spi.*;
 import javax.inject.Named;
-import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.util.Collections;
 import java.util.HashSet;
@@ -79,7 +78,7 @@ public class RedissonExtension implements Extension {
                     try {
                         org.redisson.config.Config config = org.redisson.config.Config.fromYAML(yamlConfig);
                         return Redisson.create(config);
-                    } catch (IOException e) {
+                    } catch (Exception e) {
                         throw new IllegalStateException(e);
                     }
                 });

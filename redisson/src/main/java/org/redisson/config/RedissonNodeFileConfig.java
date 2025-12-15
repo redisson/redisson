@@ -99,18 +99,6 @@ public class RedissonNodeFileConfig extends Config {
     }
 
     /**
-     * Read config object stored in JSON format from <code>File</code>
-     *
-     * @param file object
-     * @return config
-     * @throws IOException error
-     */
-    public static RedissonNodeFileConfig fromJSON(File file) throws IOException {
-        ConfigSupport support = new ConfigSupport();
-        return support.fromJSON(file, RedissonNodeFileConfig.class);
-    }
-
-    /**
      * Read config object stored in YAML format from <code>File</code>
      *
      * @param file object

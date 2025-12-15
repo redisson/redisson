@@ -175,30 +175,10 @@ public class RedissonAutoConfigurationV4 {
         }
 
         if (redissonProperties.getConfig() != null) {
-            try {
-                config = Config.fromYAML(redissonProperties.getConfig());
-            } catch (IOException e) {
-                try {
-                    config = Config.fromJSON(redissonProperties.getConfig());
-                } catch (IOException e1) {
-                    e1.addSuppressed(e);
-                    throw new IllegalArgumentException("Can't parse config", e1);
-                }
-            }
+            config = Config.fromYAML(redissonProperties.getConfig());
         } else if (redissonProperties.getFile() != null) {
-            try {
-                InputStream is = getConfigStream();
-                config = Config.fromYAML(is);
-            } catch (IOException e) {
-                // trying next format
-                try {
-                    InputStream is = getConfigStream();
-                    config = Config.fromJSON(is);
-                } catch (IOException e1) {
-                    e1.addSuppressed(e);
-                    throw new IllegalArgumentException("Can't parse config", e1);
-                }
-            }
+            InputStream is = getConfigStream();
+            config = Config.fromYAML(is);
         } else if (redisProperties.getSentinel() != null || isSentinel) {
             String[] nodes = {};
             String sentinelMaster = null;

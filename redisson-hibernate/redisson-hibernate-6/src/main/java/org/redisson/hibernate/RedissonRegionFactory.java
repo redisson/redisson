@@ -121,13 +121,7 @@ public class RedissonRegionFactory extends RegionFactoryTemplate {
         try {
             return Config.fromYAML(new File(configPath));
         } catch (IOException e) {
-            // trying next format
-            try {
-                return Config.fromJSON(new File(configPath));
-            } catch (IOException e1) {
-                e1.addSuppressed(e);
-                throw new CacheException("Can't parse default config", e1);
-            }
+            throw new CacheException("Can't parse default config", e);
         }
     }
     
@@ -136,14 +130,8 @@ public class RedissonRegionFactory extends RegionFactoryTemplate {
         if (is != null) {
             try {
                 return Config.fromYAML(is);
-            } catch (IOException e) {
-                try {
-                    is = classLoader.getResourceAsStream(fileName);
-                    return Config.fromJSON(is);
-                } catch (IOException e1) {
-                    e1.addSuppressed(e);
-                    throw new CacheException("Can't parse config", e1);
-                }
+            } catch (Exception e) {
+                throw new CacheException("Can't parse config", e);
             }
         }
         return null;

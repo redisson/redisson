@@ -33,7 +33,6 @@ import org.redisson.config.Config;
 import org.redisson.hibernate.region.*;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
 import java.util.Properties;
@@ -118,14 +117,8 @@ import java.util.concurrent.atomic.AtomicLong;
     private Config loadConfig(String configPath) {
         try {
             return Config.fromYAML(new File(configPath));
-        } catch (IOException e) {
-            // trying next format
-            try {
-                return Config.fromJSON(new File(configPath));
-            } catch (IOException e1) {
-                e1.addSuppressed(e);
-                throw new CacheException("Can't parse default config", e1);
-            }
+        } catch (Exception e) {
+            throw new CacheException("Can't parse default config", e);
         }
     }
     
@@ -134,14 +127,8 @@ import java.util.concurrent.atomic.AtomicLong;
         if (is != null) {
             try {
                 return Config.fromYAML(is);
-            } catch (IOException e) {
-                try {
-                    is = classLoader.getResourceAsStream(fileName);
-                    return Config.fromJSON(is);
-                } catch (IOException e1) {
-                    e1.addSuppressed(e);
-                    throw new CacheException("Can't parse config", e1);
-                }
+            } catch (Exception e) {
+                throw new CacheException("Can't parse config", e);
             }
         }
         return null;

@@ -19,7 +19,6 @@ import org.redisson.Redisson;
 import org.redisson.config.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.yaml.snakeyaml.error.YAMLException;
 
 import javax.cache.CacheException;
 import javax.cache.CacheManager;
@@ -95,7 +94,6 @@ public class JCachingProvider implements CachingProvider {
     }
 
     private Config loadConfig(URI uri) {
-        Config config = null;
         try {
             URL yamlUrl = null;
             if (DEFAULT_URI_PATH.equals(uri.getPath())) {
@@ -104,28 +102,13 @@ public class JCachingProvider implements CachingProvider {
                 yamlUrl = uri.toURL();
             }
             if (yamlUrl != null) {
-                config = Config.fromYAML(yamlUrl);
+                return Config.fromYAML(yamlUrl);
             } else {
                 throw new FileNotFoundException("/redisson-jcache.yaml");
             }
-        } catch (YAMLException e) {
-            throw new CacheException(e);
         } catch (IOException e) {
-            try {
-                URL jsonUrl = null;
-                if (DEFAULT_URI_PATH.equals(uri.getPath())) {
-                    jsonUrl = JCachingProvider.class.getResource("/redisson-jcache.json");
-                } else {
-                    jsonUrl = uri.toURL();
-                }
-                if (jsonUrl != null) {
-                    config = Config.fromJSON(jsonUrl);
-                }
-            } catch (IOException ex) {
-                // skip
-            }
+            throw new CacheException(e);
         }
-        return config;
     }
 
     @Override

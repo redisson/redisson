@@ -30,7 +30,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.HashSet;
 import java.util.Map.Entry;
@@ -96,14 +95,8 @@ public final class RedissonNode {
         RedissonNodeFileConfig config = null;
         try {
             config = RedissonNodeFileConfig.fromYAML(new File(configPath));
-        } catch (IOException e) {
-            // trying next format
-            try {
-                config = RedissonNodeFileConfig.fromJSON(new File(configPath));
-            } catch (IOException e1) {
-                e1.addSuppressed(e);
-                throw new IllegalArgumentException("Can't parse config " + configPath, e1);
-            }
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Can't parse config " + configPath, e);
         }
         
         final RedissonNode node = RedissonNode.create(config);

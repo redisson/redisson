@@ -35,7 +35,6 @@ import org.redisson.client.codec.LongCodec;
 import org.redisson.config.Config;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Map;
@@ -119,14 +118,8 @@ public class RedissonRegionFactory extends RegionFactoryTemplate {
     private Config loadConfig(String configPath) {
         try {
             return Config.fromYAML(new File(configPath));
-        } catch (IOException e) {
-            // trying next format
-            try {
-                return Config.fromJSON(new File(configPath));
-            } catch (IOException e1) {
-                e1.addSuppressed(e);
-                throw new CacheException("Can't parse default config", e1);
-            }
+        } catch (Exception e) {
+            throw new CacheException("Can't parse default config", e);
         }
     }
     
@@ -135,14 +128,8 @@ public class RedissonRegionFactory extends RegionFactoryTemplate {
         if (is != null) {
             try {
                 return Config.fromYAML(is);
-            } catch (IOException e) {
-                try {
-                    is = classLoader.getResourceAsStream(fileName);
-                    return Config.fromJSON(is);
-                } catch (IOException e1) {
-                    e1.addSuppressed(e);
-                    throw new CacheException("Can't parse config", e1);
-                }
+            } catch (Exception e) {
+                throw new CacheException("Can't parse config", e);
             }
         }
         return null;

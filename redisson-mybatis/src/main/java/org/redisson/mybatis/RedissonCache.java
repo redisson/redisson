@@ -21,7 +21,6 @@ import org.redisson.api.RMapCache;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -104,7 +103,7 @@ public class RedissonCache implements Cache {
         try {
             InputStream is = getClass().getClassLoader().getResourceAsStream(config);
             cfg = Config.fromYAML(is);
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new IllegalArgumentException("Can't parse config", e);
         }
 
