@@ -1871,7 +1871,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         } else if (returnType == ReturnType.INTEGER) {
             c = org.redisson.api.RScript.ReturnType.INTEGER.getCommand();
         } else if (returnType == ReturnType.MULTI) {
-            c = org.redisson.api.RScript.ReturnType.MULTI.getCommand();
+            c = org.redisson.api.RScript.ReturnType.LIST.getCommand();
             return new RedisCommand(c, name, new BinaryConvertor());
         } else if (returnType == ReturnType.STATUS) {
             c = org.redisson.api.RScript.ReturnType.STATUS.getCommand();

@@ -175,7 +175,7 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
                         "table.insert(result, timeouts[i+1]); " +
                         "end; " +
                         "return result; ",
-                RScript.ReturnType.MULTI,
+                RScript.ReturnType.LIST,
                 Collections.singletonList("redisson_lock_timeout:{test-fair-lock}"));
 
         int i = 0;
@@ -267,7 +267,7 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
                         "table.insert(result, timeouts[i+1]); " +
                         "end; " +
                         "return result; ",
-                RScript.ReturnType.MULTI,
+                RScript.ReturnType.LIST,
                 Collections.singletonList("redisson_lock_timeout:{test-fair-lock}"));
 
         int i = 0;
@@ -600,7 +600,7 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
                         "table.insert(result, timeouts[i+1]); " +
                         "end; " +
                         "return result; ",
-                RScript.ReturnType.MULTI,
+                RScript.ReturnType.LIST,
                 Collections.singletonList("redisson_lock_timeout:{test-fair-lock}"));
 
         for (int i = 0; i < queue.size(); i++) {

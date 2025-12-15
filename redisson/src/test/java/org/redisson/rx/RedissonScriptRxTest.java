@@ -9,7 +9,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RScript;
 import org.redisson.api.RScriptRx;
-import org.redisson.client.RedisException;
 import org.redisson.client.RedisNoScriptException;
 import org.redisson.client.codec.StringCodec;
 
@@ -18,7 +17,7 @@ public class RedissonScriptRxTest extends BaseRxTest {
     @Test
     public void testEval() {
         RScriptRx script = redisson.getScript(StringCodec.INSTANCE);
-        List<Object> res = sync(script.eval(RScript.Mode.READ_ONLY, "return {'1','2','3.3333','foo',nil,'bar'}", RScript.ReturnType.MULTI, Collections.emptyList()));
+        List<Object> res = sync(script.eval(RScript.Mode.READ_ONLY, "return {'1','2','3.3333','foo',nil,'bar'}", RScript.ReturnType.LIST, Collections.emptyList()));
         assertThat(res).containsExactly("1", "2", "3.3333", "foo");
     }
 

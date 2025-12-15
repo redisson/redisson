@@ -26,7 +26,6 @@ import org.redisson.api.RFuture;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.RedisClient;
 import org.redisson.client.codec.*;
-import org.redisson.client.handler.State;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
@@ -59,7 +58,6 @@ import org.springframework.util.ReflectionUtils;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
@@ -68,7 +66,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static org.redisson.client.protocol.RedisCommands.HPERSIST;
 import static org.redisson.client.protocol.RedisCommands.LRANGE;
 
 /**
@@ -1884,7 +1881,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         } else if (returnType == ReturnType.INTEGER) {
             c = org.redisson.api.RScript.ReturnType.INTEGER.getCommand();
         } else if (returnType == ReturnType.MULTI) {
-            c = org.redisson.api.RScript.ReturnType.MULTI.getCommand();
+            c = org.redisson.api.RScript.ReturnType.LIST.getCommand();
             return new RedisCommand(c, name, new BinaryConvertor());
         } else if (returnType == ReturnType.STATUS) {
             c = org.redisson.api.RScript.ReturnType.STATUS.getCommand();

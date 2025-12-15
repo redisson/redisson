@@ -4,7 +4,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.*;
 import org.redisson.api.RScript.Mode;
-import org.redisson.client.RedisException;
 import org.redisson.client.RedisNoScriptException;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.config.CommandMapper;
@@ -93,7 +92,7 @@ public class RedissonScriptTest extends RedisDockerTest {
      
          List<List<Object>> objs = redisson.getScript(StringCodec.INSTANCE).eval(RScript.Mode.READ_ONLY,
                 luaScript1,
-                RScript.ReturnType.MULTI, Collections.emptyList());            
+                RScript.ReturnType.LIST, Collections.emptyList());
         
         assertThat(objs).hasSize(3);
         assertThat(objs.get(0)).hasSize(5);
@@ -111,14 +110,14 @@ public class RedissonScriptTest extends RedisDockerTest {
     @Test
     public void testEval() {
         RScript script = redisson.getScript(StringCodec.INSTANCE);
-        List<Object> res = script.eval(RScript.Mode.READ_ONLY, "return {'1','2','3.3333','foo',nil,'bar'}", RScript.ReturnType.MULTI, Collections.emptyList());
+        List<Object> res = script.eval(RScript.Mode.READ_ONLY, "return {'1','2','3.3333','foo',nil,'bar'}", RScript.ReturnType.LIST, Collections.emptyList());
         assertThat(res).containsExactly("1", "2", "3.3333", "foo");
     }
 
     @Test
     public void testEvalAsync() {
         RScript script = redisson.getScript(StringCodec.INSTANCE);
-        RFuture<List<Object>> res = script.evalAsync(RScript.Mode.READ_ONLY, "return {'1','2','3.3333','foo',nil,'bar'}", RScript.ReturnType.MULTI, Collections.emptyList());
+        RFuture<List<Object>> res = script.evalAsync(RScript.Mode.READ_ONLY, "return {'1','2','3.3333','foo',nil,'bar'}", RScript.ReturnType.LIST, Collections.emptyList());
         assertThat(res.toCompletableFuture().join()).containsExactly("1", "2", "3.3333", "foo");
     }
 

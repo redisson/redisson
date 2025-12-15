@@ -45,7 +45,7 @@ public interface RScript extends RScriptAsync {
     enum ReturnType {
         BOOLEAN(RedisCommands.EVAL_BOOLEAN_SAFE),
         INTEGER(RedisCommands.EVAL_LONG),
-        MULTI(RedisCommands.EVAL_LIST),
+        LIST(RedisCommands.EVAL_LIST),
         STATUS(RedisCommands.EVAL_STRING),
         VALUE(RedisCommands.EVAL_OBJECT),
         MAPVALUE(RedisCommands.EVAL_MAP_VALUE),
