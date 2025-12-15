@@ -43,6 +43,8 @@ import java.util.function.BiConsumer;
  */
 public class RedissonSubscription extends AbstractSubscription {
 
+    private static final CompletableFuture<Void> COMPLETED = new CompletableFuture<>();
+
     private final Map<ChannelName, CompletableFuture<Void>> subscribed = new ConcurrentHashMap<>();
     private final Map<ChannelName, CompletableFuture<Void>> psubscribed = new ConcurrentHashMap<>();
 
@@ -87,7 +89,7 @@ public class RedissonSubscription extends AbstractSubscription {
 
                     if (getListener() instanceof SubscriptionListener
                             && type == PubSubType.SUBSCRIBE) {
-                        CompletableFuture<Void> callback = subscribed.get(channel);
+                        CompletableFuture<Void> callback = subscribed.getOrDefault(channel, COMPLETED);
                         callback.complete(null);
                     }
                     super.onStatus(type, ch);
@@ -202,7 +204,7 @@ public class RedissonSubscription extends AbstractSubscription {
 
                     if (getListener() instanceof SubscriptionListener
                             && type == PubSubType.PSUBSCRIBE) {
-                        CompletableFuture<Void> callback = psubscribed.get(channel);
+                        CompletableFuture<Void> callback = psubscribed.getOrDefault(channel, COMPLETED);
                         callback.complete(null);
                     }
                     super.onStatus(type, pattern);
