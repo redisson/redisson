@@ -44,11 +44,13 @@
             <groupId>io.netty</groupId>
             <artifactId>netty-transport-native-kqueue</artifactId>
             <scope>provided</scope>
+            <classifier>osx-x86_64</classifier>
         </dependency>
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-transport-native-epoll</artifactId>
             <scope>provided</scope>
+            <classifier>linux-x86_64</classifier>
         </dependency>
         <dependency>
             <groupId>io.netty.incubator</groupId>
