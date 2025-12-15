@@ -288,7 +288,7 @@
         <dependency>
             <groupId>io.projectreactor</groupId>
             <artifactId>reactor-test</artifactId>
-            <version>3.6.11</version>
+            <version>3.8.1</version>
             <scope>test</scope>
         </dependency>
 
@@ -330,14 +330,14 @@
         <dependency>
             <groupId>org.xerial.snappy</groupId>
             <artifactId>snappy-java</artifactId>
-            <version>1.1.10.7</version>
+            <version>1.1.10.8</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>com.github.luben</groupId>
             <artifactId>zstd-jni</artifactId>
-            <version>1.5.6-7</version>
+            <version>1.5.7-6</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
@@ -431,7 +431,7 @@
         <dependency>
             <groupId>net.bytebuddy</groupId>
             <artifactId>byte-buddy</artifactId>
-            <version>1.17.7</version>
+            <version>1.18.2</version>
         </dependency>
         <dependency>
             <groupId>org.jodd</groupId>
