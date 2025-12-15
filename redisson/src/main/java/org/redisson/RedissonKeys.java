@@ -15,6 +15,9 @@
  */
 package org.redisson;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.util.concurrent.CompletionStage;
 import org.redisson.api.*;
 import org.redisson.api.listener.FlushListener;
 import org.redisson.api.listener.NewObjectListener;
@@ -537,6 +540,16 @@ public final class RedissonKeys implements RKeys {
     }
 
     @Override
+    public long expireAt(Instant instant, String... names) {
+        return commandExecutor.get(expireAtAsync(instant, names));
+    }
+
+    @Override
+    public RFuture<Long> expireAtAsync(Instant instant, String... names) {
+        return expireAsyncInternal(RedisCommands.PEXPIREAT, instant.toEpochMilli(), names);
+    }
+
+    @Override
     public boolean expire(String name, long timeToLive, TimeUnit timeUnit) {
         return commandExecutor.get(expireAsync(name, timeToLive, timeUnit));
     }
@@ -545,6 +558,40 @@ public final class RedissonKeys implements RKeys {
     public RFuture<Boolean> expireAsync(String name, long timeToLive, TimeUnit timeUnit) {
         return commandExecutor.writeAsync(map(name), StringCodec.INSTANCE, RedisCommands.PEXPIRE, map(name),
                 timeUnit.toMillis(timeToLive));
+    }
+
+    @Override
+    public long expire(Duration duration, String... names) {
+        return commandExecutor.get(expireAsync(duration, names));
+    }
+
+    @Override
+    public RFuture<Long> expireAsync(Duration duration, String... names) {
+        return expireAsyncInternal(RedisCommands.PEXPIRE, duration.toMillis(), names);
+    }
+
+    private RFuture<Long> expireAsyncInternal(RedisCommand<?> command, long arg, String... names) {
+        if (names.length == 0) {
+            return new CompletableFutureWrapper<>(0L);
+        }
+
+        CommandBatchService executorService = new CommandBatchService(commandExecutor);
+        for (String name : names) {
+            String key = map(name);
+            executorService.writeAsync(key, StringCodec.INSTANCE, command, key, arg);
+        }
+
+        CompletionStage<Long> result = executorService.executeAsync().thenApply(r -> {
+            long success = 0;
+            for (Object response : r.getResponses()) {
+                if (response instanceof Boolean && (Boolean) response) {
+                    success++;
+                }
+            }
+            return success;
+        });
+
+        return new CompletableFutureWrapper<>(result);
     }
 
     @Override

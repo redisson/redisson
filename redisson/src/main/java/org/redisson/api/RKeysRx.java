@@ -19,6 +19,8 @@ import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Single;
+import java.time.Duration;
+import java.time.Instant;
 import org.redisson.api.options.KeysScanOptions;
 import org.redisson.api.keys.MigrateArgs;
 
@@ -83,7 +85,17 @@ public interface RKeysRx {
      * @return <code>true</code> if the timeout was set and <code>false</code> if not
      */
     Single<Boolean> expire(String name, long timeToLive, TimeUnit timeUnit);
-    
+
+    /**
+     * Set a timeout for multiple objects. After the timeout has expired,
+     * the keys will automatically be deleted.
+     *
+     * @param duration timeout before keys will be deleted
+     * @param names object names
+     * @return number of keys for which the timeout was set successfully
+     */
+    Single<Long> expire(Duration duration, String... names);
+
     /**
      * Set an expire date for object. When expire date comes
      * the key will automatically be deleted.
@@ -93,7 +105,17 @@ public interface RKeysRx {
      * @return <code>true</code> if the timeout was set and <code>false</code> if not
      */
     Single<Boolean> expireAt(String name, long timestamp);
-    
+
+    /**
+     * Set a timeout for multiple objects. After the timeout has expired,
+     * the keys will automatically be deleted.
+     *
+     * @param instant expiration date/time (Unix timestamp in milliseconds)
+     * @param names object names
+     * @return number of keys for which the timeout was set successfully
+     */
+    Single<Long> expireAt(Instant instant, String... names);
+
     /**
      * Clear an expire timeout or expire date for object.
      * 
