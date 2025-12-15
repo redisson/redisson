@@ -116,23 +116,6 @@ public class RedissonSpringCacheShortTTLTest extends RedisDockerTest {
     @Configuration
     @ComponentScan
     @EnableCaching
-    public static class JsonConfigApplication {
-
-        @Bean(destroyMethod = "shutdown")
-        RedissonClient redisson() {
-            return createRedisson();
-        }
-
-        @Bean
-        CacheManager cacheManager(RedissonClient redissonClient) {
-            return new RedissonSpringCacheManager(redissonClient, "classpath:/org/redisson/spring/cache/cache-config-shortTTL.json");
-        }
-
-    }
-    
-    @Configuration
-    @ComponentScan
-    @EnableCaching
     public static class YamlConfigApplication {
 
         @Bean(destroyMethod = "shutdown")
@@ -170,7 +153,7 @@ public class RedissonSpringCacheShortTTLTest extends RedisDockerTest {
     private static final Map<String, AtomicInteger> counter = new HashMap<>();
 
     public static List<Class<?>> data() {
-        return Arrays.asList(Application.class, JsonConfigApplication.class, YamlConfigApplication.class);
+        return Arrays.asList(Application.class, YamlConfigApplication.class);
     }
 
     @BeforeAll

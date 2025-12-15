@@ -119,7 +119,7 @@ public class RedissonSpringCacheTest extends RedisDockerTest {
     @Configuration
     @ComponentScan
     @EnableCaching
-    public static class JsonConfigApplication {
+    public static class YAMLConfigApplication {
 
         @Bean(destroyMethod = "shutdown")
         RedissonClient redisson() {
@@ -128,7 +128,7 @@ public class RedissonSpringCacheTest extends RedisDockerTest {
 
         @Bean
         CacheManager cacheManager(RedissonClient redissonClient) throws IOException {
-            return new RedissonSpringCacheManager(redissonClient, "classpath:/org/redisson/spring/cache/cache-config.json");
+            return new RedissonSpringCacheManager(redissonClient, "classpath:/org/redisson/spring/cache/cache-config.yaml");
         }
 
     }
@@ -136,7 +136,7 @@ public class RedissonSpringCacheTest extends RedisDockerTest {
     private static Map<Class<?>, AnnotationConfigApplicationContext> contexts;
 
     public static List<Class<?>> data() {
-        return Arrays.asList(Application.class, JsonConfigApplication.class);
+        return Arrays.asList(Application.class, YAMLConfigApplication.class);
     }
 
     @BeforeAll
