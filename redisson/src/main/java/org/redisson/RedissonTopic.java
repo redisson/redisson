@@ -15,7 +15,7 @@
  */
 package org.redisson;
 
-import org.redisson.api.NameMapper;
+import org.redisson.config.NameMapper;
 import org.redisson.api.RFuture;
 import org.redisson.api.RTopic;
 import org.redisson.api.listener.MessageListener;

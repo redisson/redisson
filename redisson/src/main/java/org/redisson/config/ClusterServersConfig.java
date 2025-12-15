@@ -17,7 +17,6 @@ package org.redisson.config;
 
 import org.redisson.api.HostNatMapper;
 import org.redisson.api.HostPortNatMapper;
-import org.redisson.api.NatMapper;
 
 import java.util.ArrayList;
 import java.util.Arrays;

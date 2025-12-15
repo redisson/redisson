@@ -15,6 +15,7 @@
  */
 package org.redisson.api;
 
+import org.redisson.config.NatMapper;
 import org.redisson.misc.RedisURI;
 
 /**

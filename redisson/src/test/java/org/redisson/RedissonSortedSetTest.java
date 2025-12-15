@@ -25,6 +25,7 @@ import org.redisson.api.*;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.config.Config;
+import org.redisson.config.NameMapper;
 
 public class RedissonSortedSetTest extends RedisDockerTest {
 

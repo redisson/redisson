@@ -17,6 +17,7 @@ import org.redisson.api.executor.TaskStartedListener;
 import org.redisson.api.listener.MessageListener;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.config.Config;
+import org.redisson.config.NameMapper;
 import org.redisson.config.RedissonNodeConfig;
 
 import java.io.Serializable;

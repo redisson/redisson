@@ -1,7 +1,7 @@
 package org.redisson;
 
 import org.junit.jupiter.api.Test;
-import org.redisson.api.NameMapper;
+import org.redisson.config.NameMapper;
 import org.redisson.api.RBucket;
 import org.redisson.api.RBuckets;
 import org.redisson.api.RedissonClient;

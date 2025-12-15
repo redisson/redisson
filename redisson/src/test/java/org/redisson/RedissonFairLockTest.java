@@ -3,7 +3,7 @@ package org.redisson;
 import org.joor.Reflect;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.redisson.api.NameMapper;
+import org.redisson.config.NameMapper;
 import org.redisson.api.RLock;
 import org.redisson.api.RScript;
 import org.redisson.api.RedissonClient;

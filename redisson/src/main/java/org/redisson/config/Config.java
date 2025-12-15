@@ -16,7 +16,6 @@
 package org.redisson.config;
 
 import io.netty.channel.EventLoopGroup;
-import org.redisson.api.NameMapper;
 import org.redisson.client.DefaultCredentialsResolver;
 import org.redisson.client.DefaultNettyHook;
 import org.redisson.client.NettyHook;

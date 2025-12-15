@@ -16,7 +16,6 @@
 package org.redisson.config;
 
 import org.redisson.api.DefaultNameMapper;
-import org.redisson.api.NameMapper;
 import org.redisson.client.DefaultCredentialsResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

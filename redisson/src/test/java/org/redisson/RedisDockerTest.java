@@ -11,7 +11,7 @@ import io.netty.resolver.AddressResolverGroup;
 import io.netty.resolver.dns.DnsServerAddressStreamProvider;
 import io.netty.resolver.dns.DnsServerAddresses;
 import org.junit.jupiter.api.BeforeEach;
-import org.redisson.api.NatMapper;
+import org.redisson.config.NatMapper;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
 import org.redisson.config.Protocol;
@@ -20,7 +20,6 @@ import org.redisson.misc.RedisURI;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.*;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
-import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
 import org.testcontainers.lifecycle.Startable;
 
 import java.io.File;

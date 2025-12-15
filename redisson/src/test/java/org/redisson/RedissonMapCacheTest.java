@@ -14,6 +14,7 @@ import org.redisson.client.codec.*;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.codec.CompositeCodec;
 import org.redisson.config.Config;
+import org.redisson.config.NameMapper;
 import org.redisson.eviction.EvictionScheduler;
 
 import java.time.Duration;

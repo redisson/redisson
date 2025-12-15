@@ -7,7 +7,7 @@ import com.github.dockerjava.api.model.Ports;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.redisson.api.NatMapper;
+import org.redisson.config.NatMapper;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
 import org.redisson.misc.RedisURI;

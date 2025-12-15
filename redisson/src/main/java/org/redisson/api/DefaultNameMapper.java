@@ -15,6 +15,8 @@
  */
 package org.redisson.api;
 
+import org.redisson.config.NameMapper;
+
 /**
  *
  * @author Nikita Koksharov

@@ -6,6 +6,7 @@ import org.redisson.RedisDockerTest;
 import org.redisson.Redisson;
 import org.redisson.api.*;
 import org.redisson.config.Config;
+import org.redisson.config.NameMapper;
 
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;

@@ -16,8 +16,6 @@
 package org.redisson.config;
 
 import io.netty.channel.EventLoopGroup;
-import org.redisson.api.NameMapper;
-import org.redisson.api.NatMapper;
 import org.redisson.api.RedissonNodeInitializer;
 import org.redisson.client.FailedNodeDetector;
 import org.redisson.client.NettyHook;

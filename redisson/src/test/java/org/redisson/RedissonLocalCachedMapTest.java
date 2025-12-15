@@ -26,6 +26,7 @@ import org.redisson.codec.CompositeCodec;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.codec.TypedJsonJacksonCodec;
 import org.redisson.config.Config;
+import org.redisson.config.NameMapper;
 
 import java.time.Duration;
 import java.util.*;

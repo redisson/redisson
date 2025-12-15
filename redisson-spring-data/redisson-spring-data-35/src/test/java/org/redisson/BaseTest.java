@@ -6,7 +6,7 @@ import com.github.dockerjava.api.model.PortBinding;
 import com.github.dockerjava.api.model.Ports;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.redisson.api.NatMapper;
+import org.redisson.config.NatMapper;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
 import org.redisson.config.Protocol;
