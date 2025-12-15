@@ -67,7 +67,7 @@ public class RedissonScriptTest extends RedisDockerTest {
         RedissonClient r = Redisson.create(cfg);
         String script = "redis.call('set','test','value','ex',60);redis.call('ttl','test');return redis.call('ttl','test');";
         RScript rScript = r.getScript();
-        int eval = rScript.eval(Mode.READ_WRITE, script, RScript.ReturnType.INTEGER);
+        int eval = rScript.eval(Mode.READ_WRITE, script, RScript.ReturnType.LONG);
         assert eval == 60000;
     }
 
@@ -125,7 +125,7 @@ public class RedissonScriptTest extends RedisDockerTest {
     public void testEvalResultMapping() {
         testInCluster(redissonClient -> {
             RScript script = redissonClient.getScript(StringCodec.INSTANCE);
-            Long res = script.eval(RScript.Mode.READ_ONLY, "return 1;", RScript.ReturnType.INTEGER,
+            Long res = script.eval(RScript.Mode.READ_ONLY, "return 1;", RScript.ReturnType.LONG,
                     integers -> integers.stream().mapToLong(r -> r).sum());
             assertThat(res).isEqualTo(3);
         });

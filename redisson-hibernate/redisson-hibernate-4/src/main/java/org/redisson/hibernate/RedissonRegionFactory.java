@@ -155,7 +155,7 @@ public class RedissonRegionFactory implements RegionFactory {
                             + "local nextValue = math.max(tonumber(ARGV[1]), tonumber(currentTime) + 1); "
                             + "redis.call('set', KEYS[1], nextValue); "
                             + "return nextValue;",
-                            RScript.ReturnType.INTEGER, Collections.singletonList("redisson-hibernate-timestamp"), time);
+                            RScript.ReturnType.LONG, Collections.singletonList("redisson-hibernate-timestamp"), time);
         } catch (Exception e) {
             if (fallback) {
                 while (true) {

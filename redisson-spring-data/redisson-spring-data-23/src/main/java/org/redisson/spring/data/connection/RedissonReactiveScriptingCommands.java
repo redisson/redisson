@@ -92,7 +92,7 @@ public class RedissonReactiveScriptingCommands extends RedissonBaseReactive impl
         if (returnType == ReturnType.BOOLEAN) {
             c = org.redisson.api.RScript.ReturnType.BOOLEAN.getCommand();
         } else if (returnType == ReturnType.INTEGER) {
-            c = org.redisson.api.RScript.ReturnType.INTEGER.getCommand();
+            c = org.redisson.api.RScript.ReturnType.LONG.getCommand();
         } else if (returnType == ReturnType.MULTI) {
             c = org.redisson.api.RScript.ReturnType.LIST.getCommand();
             return new RedisCommand(c, name, new BinaryConvertor());
