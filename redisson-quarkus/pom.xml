@@ -17,6 +17,7 @@
         <module>redisson-quarkus-16</module>
         <module>redisson-quarkus-20</module>
         <module>redisson-quarkus-30</module>
+        <module>redisson-quarkus-33</module>
     </modules>
 
      <properties>
