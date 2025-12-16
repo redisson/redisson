@@ -2,7 +2,7 @@
 
 Integrates Redisson with Spring Boot library. Depends on [Spring Data Redis](#spring-data-redis) module.
 
-Supports Spring Boot 1.3.x - 3.5.x
+Supports Spring Boot 1.3.x - 4.0.x
 
 ### Usage
 
@@ -64,12 +64,13 @@ Supports Spring Boot 1.3.x - 3.5.x
      |redisson-spring-data-18     |1.5.y              |
      |redisson-spring-data-2x     |2.x.y              |
      |redisson-spring-data-3x     |3.x.y              |
+	 |redisson-spring-data-4x     |4.x.y              |
     
      For Gradle, you can downgrade to `redisson-spring-data-27` this way:
     
      ```groovy
      implementation ("org.redisson:redisson-spring-boot-starter:xVERSIONx") {
-        exclude group: 'org.redisson', module: 'redisson-spring-data-34'
+        exclude group: 'org.redisson', module: 'redisson-spring-data-40'
      }
      implementation "org.redisson:redisson-spring-data-27:xVERSIONx"
      ```
@@ -85,7 +86,7 @@ Supports Spring Boot 1.3.x - 3.5.x
              <exclusions>
                  <exclusion>
                      <groupId>org.redisson</groupId>
-                     <artifactId>redisson-spring-data-34</artifactId>
+                     <artifactId>redisson-spring-data-40</artifactId>
                  </exclusion>
              </exclusions>
          </dependency>
@@ -225,7 +226,7 @@ You need to define netty version in properties section of your Maven project.
 
 ```xml
     <properties>
-          <netty.version>4.1.107.Final</netty.version> 
+          <netty.version>4.2.9.Final</netty.version> 
     </properties>
 ```
 
@@ -234,6 +235,18 @@ You need to define netty version in properties section of your Maven project.
 You may not have Redis or Valkey in some environments. In this case Redisson can be disabled:  
 
 - Using Annotations  
+Spring Boot 4.0+
+```java
+@SpringBootApplication
+@EnableAutoConfiguration(exclude = {
+    RedissonAutoConfigurationV4.class})
+public class Application {
+   
+    public static void main(String[] args) {
+        SpringApplication.run(MyApplication.class, args);
+    }
+}
+
 Spring Boot 2.7+
 ```java
 @SpringBootApplication
@@ -259,6 +272,13 @@ public class Application {
 }
 ```
 - Using application.yml file  
+Spring Boot 4.0+
+```yaml
+spring:
+  autoconfigure:
+    exclude:
+      - org.redisson.spring.starter.RedissonAutoConfigurationV4
+```
 Spring Boot 2.7+
 ```yaml
 spring:
@@ -290,12 +310,12 @@ Ensure you have Spring Session library in your classpath, add it if necessary:
     <dependency>
       <groupId>org.springframework.session</groupId>
       <artifactId>spring-session-data-redis</artifactId>
-      <version>3.5.1</version>
+      <version>4.0.0</version>
     </dependency>
     ```
     Gradle:
     ```gradle
-    compile 'org.springframework.session:spring-session-data-redis:3.5.1'  
+    compile 'org.springframework.session:spring-session-data-redis:4.0.0'  
     ```
 2. Add [Redisson Spring Data Redis](#spring-data-redis) library in classpath:  
 
@@ -308,7 +328,7 @@ Ensure you have Spring Session library in your classpath, add it if necessary:
         ```xml  
         <dependency>
            <groupId>pro.redisson</groupId>
-           <artifactId>redisson-spring-data-34</artifactId>
+           <artifactId>redisson-spring-data-40</artifactId>
            <version>xVERSIONx</version>
         </dependency>
         ```
@@ -316,7 +336,7 @@ Ensure you have Spring Session library in your classpath, add it if necessary:
         Gradle
 
         ```groovy
-        compile 'pro.redisson:redisson-spring-data-34:xVERSIONx'
+        compile 'pro.redisson:redisson-spring-data-40:xVERSIONx'
         ```
 
         [License key configuration](configuration.md/#license-key-configuration)
@@ -329,7 +349,7 @@ Ensure you have Spring Session library in your classpath, add it if necessary:
         ```xml  
         <dependency>
            <groupId>org.redisson</groupId>
-           <artifactId>redisson-spring-data-34</artifactId>
+           <artifactId>redisson-spring-data-40</artifactId>
            <version>xVERSIONx</version>
         </dependency>
         ```
@@ -337,7 +357,7 @@ Ensure you have Spring Session library in your classpath, add it if necessary:
         Gradle
 
         ```groovy
-        compile 'org.redisson:redisson-spring-data-34:xVERSIONx'
+        compile 'org.redisson:redisson-spring-data-40:xVERSIONx'
         ```
 
     </div>
@@ -498,6 +518,7 @@ Compatible with Spring versions below.
 
 Spring Cloud Stream | Spring Cloud | Spring Boot
 -- | -- | --
+5.0.x | 2025.1.x | 4.0.x
 4.3.x | 2025.0.x | 3.5.x
 4.2.x | 2024.0.x | 3.4.x
 4.1.x | 2023.0.x | 3.0.x - 3.3.x
@@ -664,6 +685,8 @@ Redisson implements `RedisConnectionFactory` and `ReactiveRedisConnectionFactory
             <artifactId>redisson-spring-data-34</artifactId>
             <!-- for Spring Data Redis v.3.5.x -->
             <artifactId>redisson-spring-data-35</artifactId>
+            <!-- for Spring Data Redis v.4.0.x -->
+            <artifactId>redisson-spring-data-40</artifactId>
             <version>xVERSIONx</version>
         </dependency>
         ```
@@ -705,6 +728,8 @@ Redisson implements `RedisConnectionFactory` and `ReactiveRedisConnectionFactory
         compile 'pro.redisson:redisson-spring-data-34:xVERSIONx'
         // for Spring Data Redis v.3.5.x
         compile 'pro.redisson:redisson-spring-data-35:xVERSIONx'
+        // for Spring Data Redis v.4.0.x
+        compile 'pro.redisson:redisson-spring-data-40:xVERSIONx'
         ```
 
         [License key configuration](configuration.md/#license-key-configuration)
@@ -751,6 +776,8 @@ Redisson implements `RedisConnectionFactory` and `ReactiveRedisConnectionFactory
             <artifactId>redisson-spring-data-34</artifactId>
             <!-- for Spring Data Redis v.3.5.x -->
             <artifactId>redisson-spring-data-35</artifactId>
+            <!-- for Spring Data Redis v.4.0.x -->
+            <artifactId>redisson-spring-data-40</artifactId>
             <version>xVERSIONx</version>
         </dependency>
         ```
@@ -792,6 +819,8 @@ Redisson implements `RedisConnectionFactory` and `ReactiveRedisConnectionFactory
         compile 'org.redisson:redisson-spring-data-34:xVERSIONx'
         // for Spring Data Redis v.3.5.x
         compile 'org.redisson:redisson-spring-data-35:xVERSIONx'
+        // for Spring Data Redis v.4.0.x
+        compile 'org.redisson:redisson-spring-data-40:xVERSIONx'
         ```
 
     </div>

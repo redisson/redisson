@@ -280,8 +280,7 @@ Each `RReliableTopic` object instance (subscriber) has own watchdog which is sta
 
 Topic listeners are resubscribed automatically after reconnection to a server or failover.
 
-!!! note
-    For applications requiring advanced message processing capabilities beyond simple reliable delivery, consider using [Reliable PubSub Topic](#reliable-pubsub).
+__Superseded by [Reliable PubSub Topic](#reliable-pubsub).__
 
 Code example:
 

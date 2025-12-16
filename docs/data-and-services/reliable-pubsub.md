@@ -352,9 +352,10 @@ Code example of subscription creation:
 
 #### Consumer
 
-Consumers process messages from a subscription. Two types are available:
-- **Pull Consumer**: On-demand message retrieval with manual control
-- **Push Consumer**: Event-driven message processing via registered listeners
+Consumers process messages from a subscription. Two types are available:  
+
+   - **Pull Consumer**: On-demand message retrieval with manual control
+   - **Push Consumer**: Event-driven message processing via registered listeners
 
 Each consumer allows to specify settings below.
 
@@ -621,7 +622,10 @@ PullConsumer<OrderEvent> consumer = subscription.createPullConsumer(
         .groupIdClaimTimeout(Duration.ofMinutes(5)));
 ```
 
-When a consumer is inactive for longer than the timeout and has pending messages for a group ID, ownership is reassigned to another active consumer.
+Message group ownership is reassigned to a new consumer when __both__ conditions are met:
+
+   * The current owner has not received the current pending message for this group id within the timeout period.
+   * The current owner has been inactive (no `acknowledge()`, `negativeAcknowledge()`, `pull()`, or push listener invocations) for longer than this timeout.
 
 ### Acknowledging Messages
 
@@ -986,11 +990,11 @@ RFuture<ConsumerStatistics> consumerStatsFuture = consumer.getStatisticsAsync();
 
 ### Durability and Synchronous Replication
 
-The synchronization mechanism allows queue modification operations to be propagated to replica nodes in a controlled manner, ensuring data consistency across Valkey or Redis cluster. Additionally, Valkey and Redis persistence options, such as append-only files (AOF), and RDB snapshots, significantly increase queue reliability by preventing data loss during server restarts or failures, allowing for recovery of queued messages that would otherwise be lost when using only in-memory storage. 
+The synchronization mechanism allows PubSub modification operations to be propagated to replica nodes in a controlled manner, ensuring data consistency across Valkey or Redis cluster. Additionally, Valkey and Redis persistence options, such as append-only files (AOF), and RDB snapshots, significantly increase PubSub reliability by preventing data loss during server restarts or failures, allowing for recovery of queued messages that would otherwise be lost when using only in-memory storage. 
 
 Valkey and Redis use asynchronous replication. Reliable PubSub introduces synchronous replication modes per operation to address the limitations of asynchronous replication. This capability with proper configuration of Valkey and Redis persistence transforms storage from a purely volatile memory store into a more robust message broker suitable for applications where message delivery guarantees are critical. This is particularly important for mission-critical applications where data loss is unacceptable.
 
-Each queue modification operation can be configured with specific synchronization parameters:
+Each PubSub modification operation can be configured with specific synchronization parameters:
 
 - `syncMode` - Sets the synchronization mode to be used for current operation. Default value is `AUTO`.
 
