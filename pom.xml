@@ -210,7 +210,7 @@
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-bom</artifactId>
-                <version>4.2.7.Final</version>
+                <version>4.2.9.Final</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
