@@ -5,15 +5,18 @@ Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
 
 ### -Dec-2025 - 4.0.0 released
 
+Feature - full-featured [Reliable Pub/Sub](https://redisson.pro/docs/data-and-services/publish-subscribe/#reliable-pubsub) implemented. Provides topic-subscription-consumer model with message acknowledgment, grouping, seek/replay, Dead Letter Topic, and pull/push consumers  
 Feature - Quarkus 3.30.x integration  
 Feature - Spring Boot 4.0 integration  
 Feature - Spring Data Redis 4.0 module added  
-Feature - `GEOSHAPE` field type added in `RSearch#createIndex()` method (thanks to @seakider)  
-Feature - `compute(key, ttl, func)` and `computeIfAbsent(key, ttl, func)` methods added to `RMapCacheNative` object  
 Feature - database setting added for Valkey Cluster Mode  
-Feature - `RSearch.aggregate()` method with Iterable result added (thanks to @seakider)  
 Feature - `RSemaphore.releaseIfExists()` method added  
+Feature - `RBatch.getClusteredMapCacheNative()` method added  
+Feature - `RSearch.aggregate()` method with Iterable result added (thanks to @seakider)  
+Feature - `GEOSHAPE` field type added in `RSearch#createIndex()` method (thanks to @seakider)  
 Feature - `expire(Duration, names)` and `expireAt(Instant, names)` methods added (thanks to @bandalgomsu)  
+Feature - `compute(key, ttl, func)` and `computeIfAbsent(key, ttl, func)` methods added to `RMapCacheNative` object  
+Feature - `RClusteredLocalCachedMapCacheNativeV2`, `RMapCacheNativeV2`, `RClusteredMapCacheNativeV2`, `RLocalCachedMapCacheNativeV2` objects added with `maxSize` setting  
 
 __Breaking change__ - dropped support of deprecated JSON config format  
 __Breaking change__ - removed deprecated `getNodesGroup()` and `getClusterNodesGroup()` methods of `RedissonClient` object  
