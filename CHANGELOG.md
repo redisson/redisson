@@ -32,8 +32,8 @@ __Breaking change__ - `GeoUnit`, `GeoPosition`, `GeoOrder`, `GeoEntry` classes m
 __Breaking change__ - `StreamConsumer`, `StreamGroup`, `StreamInfo`, `StreamMessageId`, `PendingEntry`, `PendingResult`, `AutoClaimResult`, `FastAutoClaimResult` classes moved to `org.redisson.api.stream` package  
 
 Improvement - move auth parameters at Config object level (thanks to @seakider)  
-improvement - move nameMapper/commandMapper parameters at Config object level (thanks to @seakider)  
-improvement - move ssl parameters to Config object level (thanks to @seakider)  
+Improvement - move nameMapper/commandMapper parameters at Config object level (thanks to @seakider)  
+Improvement - move ssl parameters to Config object level (thanks to @seakider)  
 Improvement - use SnakeYAML library directly for Config parsing  
 Improvement - lz4-java lib updated  
 Improvement - netty lib updated to 4.2.9  
