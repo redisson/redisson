@@ -3,6 +3,59 @@ Redisson Releases History
 
 Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
 
+### -Dec-2025 - 4.0.0 released
+
+Feature - Quarkus 3.30.x integration  
+Feature - Spring Boot 4.0 integration  
+Feature - Spring Data Redis 4.0 module added  
+Feature - `GEOSHAPE` field type added in `RSearch#createIndex()` method (thanks to @seakider)  
+Feature - `compute(key, ttl, func)` and `computeIfAbsent(key, ttl, func)` methods added to `RMapCacheNative` object  
+Feature - database setting added for Valkey Cluster Mode  
+Feature - `RSearch.aggregate()` method with Iterable result added (thanks to @seakider)  
+Feature - `RSemaphore.releaseIfExists()` method added  
+Feature - `expire(Duration, names)` and `expireAt(Instant, names)` methods added (thanks to @bandalgomsu)  
+
+__Breaking change__ - dropped support of deprecated JSON config format  
+__Breaking change__ - removed deprecated `getNodesGroup()` and `getClusterNodesGroup()` methods of `RedissonClient` object  
+__Breaking change__ - removed deprecated methods of `RGeo` object  
+__Breaking change__ - removed deprecated methods of `RFuture` object  
+__Breaking change__ - removed deprecated support of Spring XML configuration  
+__Breaking change__ - removed support of deprecated custom implementation of Spring Session  
+__Breaking change__ - `RScript.ReturnType.MULTI` renamed to `LIST`  
+__Breaking change__ - `RScript.ReturnType.STATUS` renamed to `STRING`  
+__Breaking change__ - `RScript.ReturnType.INTEGER` renamed to `LONG`  
+__Breaking change__ - `NameMapper`, `NatMapper` classes moved to `org.redisson.config` package  
+__Breaking change__ - `GeoUnit`, `GeoPosition`, `GeoOrder`, `GeoEntry` classes moved to `org.redisson.api.geo` package  
+__Breaking change__ - `StreamConsumer`, `StreamGroup`, `StreamInfo`, `StreamMessageId`, `PendingEntry`, `PendingResult`, `AutoClaimResult`, `FastAutoClaimResult` classes moved to `org.redisson.api.stream` package  
+
+Improvement - move auth parameters at Config object level (thanks to @seakider)  
+improvement - move nameMapper/commandMapper parameters at Config object level (thanks to @seakider)  
+improvement - move ssl parameters to Config object level (thanks to @seakider)  
+Improvement - use SnakeYAML library directly for Config parsing  
+Improvement - lz4-java lib updated  
+Improvement - netty lib updated to 4.2.9  
+Improvement - Jackson library is now optional  
+Improvement - move tcp and keepAlive parameters at Config object level (thanks to @seakider)  
+
+Fixed - `ObjectParams.retryAttempts()` setting is 0 by default  
+Fixed - Spring Data `RedissonSubscription` object doesn't handle cluster failover  
+Fixed - locks extension process in LockTask and ReadLockTask (thanks to @Aleksandr-Kiriushkin-Miro)  
+Fixed - `CROSSSLOT` Errors with Proxy Mode Redis Cluster and Locks usage  
+Fixed - `XREAD` blocking call may cause `ClassCastException`  
+Fixed - an extra key is retained after `RLocalCachedMap.clearLocalCache()` method invocation  
+Fixed - `RedissonNode.start()` method throws `AutowiredAnnotationBeanPostProcessor requires a ConfigurableListableBeanFactory` error  
+Fixed - invalid JSON in resource-config.json (thanks to @Anubhavagnihotrii)  
+Fixed - `RSemaphore` and `RLock` objects may wait too long if AOF enabled on Valkey or Redis side  
+Fixed - `EqualJitterDelay` and `FullJitterDelay` throw IllegalArgumentException if attempt > 62  
+Fixed - `RClientSideCaching` doesn't clear parent Redisson instance local cache synchronously  
+Fixed - if prefix is configured, some hibernate caching configurations do not take effect (thanks to @seakider)  
+Fixed - `CommandPubSubDecoder` may throw NPE  
+Fixed - replicated node timeout handling in Replicated mode (thanks to @johnou)  
+Fixed - `RBucket.setIfAbsent()` is not rolling back on transaction (thanks to @seakider)  
+Fixed - `get()` method of `RListMultimapCacheReactive` and `RSetMultimapCacheReactive` object doesn't work  
+Fixed - docs: Correct default value for `useScriptCache` setting (thanks to @lunakv)  
+Fixed - javadocs: Rename method create to createIndex in RSearch (thanks to @senocak)  
+
 ### 25-Sep-2025 - 3.52.0 released
 
 Feature - `loadCoalescingConcurrency` setting added to `RClusteredLocalCachedMapCache` object  
