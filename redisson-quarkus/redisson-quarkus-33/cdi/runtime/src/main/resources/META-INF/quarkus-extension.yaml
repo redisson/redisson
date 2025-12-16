@@ -1,0 +1,13 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: Quarkus Redisson extension
+metadata:
+  keywords:
+    - "redis"
+    - "redis-client"
+  guide: "https://github.com/redisson/redisson/tree/master/redisson-quarkus"
+  categories:
+    - "data"
+  status: "stable"
+  config:
+    - "quarkus.redisson"

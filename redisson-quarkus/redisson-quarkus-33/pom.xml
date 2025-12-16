@@ -1,0 +1,49 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.redisson</groupId>
+        <artifactId>redisson-quarkus</artifactId>
+        <version>3.52.1-SNAPSHOT</version>
+        <relativePath>../</relativePath>
+    </parent>
+
+    <artifactId>redisson-quarkus-33-parent</artifactId>
+    <packaging>pom</packaging>
+
+    <name>Redisson Quarkus v3.30.x+ integration with Redis</name>
+
+    <modules>
+        <module>cdi</module>
+        <module>cache</module>
+    </modules>
+
+     <properties>
+       <quarkus.version>3.30.3</quarkus.version>
+       <quarkus.plugin.version>3.30.3</quarkus.plugin.version>
+       <maven.compiler.source>11</maven.compiler.source>
+       <maven.compiler.target>11</maven.compiler.target>
+       <maven.compiler.release>11</maven.compiler.release>
+     </properties>
+
+     <dependencyManagement>
+       <dependencies>
+         <dependency>
+           <groupId>io.quarkus</groupId>
+           <artifactId>quarkus-bom</artifactId>
+           <version>${quarkus.version}</version>
+           <type>pom</type>
+           <scope>import</scope>
+         </dependency>
+
+            <dependency>
+                <groupId>org.junit</groupId>
+                <artifactId>junit-bom</artifactId>
+                <version>5.13.2</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+     </dependencyManagement>
+
+</project>

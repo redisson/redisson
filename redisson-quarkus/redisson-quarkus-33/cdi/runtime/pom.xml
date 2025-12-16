@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>org.redisson</groupId>
+        <artifactId>redisson-quarkus-33-cdi-parent</artifactId>
+        <version>3.52.1-SNAPSHOT</version>
+        <relativePath>../</relativePath>
+    </parent>
+
+    <artifactId>redisson-quarkus-33</artifactId>
+
+    <name>Redisson/Quarkus v3.30.x+ runtime</name>
+
+    <dependencies>
+      <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-arc</artifactId>
+      </dependency>
+
+      <dependency>
+          <groupId>io.quarkus</groupId>
+          <artifactId>quarkus-netty</artifactId>
+      </dependency>
+      <dependency>
+          <groupId>io.netty</groupId>
+          <artifactId>netty-transport-native-epoll</artifactId>
+          <classifier>linux-x86_64</classifier>
+      </dependency>
+      <dependency>
+          <groupId>io.netty</groupId>
+          <artifactId>netty-transport-native-kqueue</artifactId>
+          <classifier>osx-x86_64</classifier>
+      </dependency>
+      <dependency>
+          <groupId>io.netty.incubator</groupId>
+          <artifactId>netty-incubator-transport-native-io_uring</artifactId>
+          <version>0.0.25.Final</version>
+          <classifier>linux-x86_64</classifier>
+      </dependency>
+
+      <dependency>
+          <groupId>org.redisson</groupId>
+          <artifactId>redisson</artifactId>
+          <version>${project.version}</version>
+      </dependency>
+
+          <dependency>
+              <groupId>jakarta.enterprise</groupId>
+              <artifactId>jakarta.enterprise.cdi-api</artifactId>
+          </dependency>
+
+          <dependency>
+              <groupId>jakarta.inject</groupId>
+              <artifactId>jakarta.inject-api</artifactId>
+          </dependency>
+
+          <dependency>
+              <groupId>org.graalvm.nativeimage</groupId>
+              <artifactId>svm</artifactId>
+              <scope>provided</scope>
+              <version>23.0.1</version>
+          </dependency>
+
+          <dependency>
+              <groupId>com.github.ben-manes.caffeine</groupId>
+              <artifactId>caffeine</artifactId>
+              <version>3.1.8</version>
+          </dependency>
+
+    </dependencies>
+
+    <build>
+      <plugins>
+        <plugin>
+            <groupId>com.mycila</groupId>
+            <artifactId>license-maven-plugin</artifactId>
+            <version>4.5</version>
+            <configuration>
+                <basedir>${basedir}</basedir>
+                <header>${basedir}/../../../../header.txt</header>
+                <quiet>false</quiet>
+                <failIfMissing>true</failIfMissing>
+                <aggregate>false</aggregate>
+                <includes>
+                    <include>src/main/java/</include>
+                </includes>
+                <excludes>
+                    <exclude>target/**</exclude>
+                </excludes>
+                <useDefaultExcludes>true</useDefaultExcludes>
+                <mapping>
+                    <java>JAVADOC_STYLE</java>
+                </mapping>
+                <strictCheck>true</strictCheck>
+                <useDefaultMapping>true</useDefaultMapping>
+                <encoding>UTF-8</encoding>
+            </configuration>
+            <executions>
+                <execution>
+                    <goals>
+                        <goal>check</goal>
+                    </goals>
+                </execution>
+            </executions>
+        </plugin>
+
+        <plugin>
+           <groupId>io.quarkus</groupId>
+           <artifactId>quarkus-extension-maven-plugin</artifactId>
+            <executions>
+                <execution>
+                    <goals>
+                        <goal>extension-descriptor</goal>
+                    </goals>
+                    <configuration>
+                        <deployment>${project.groupId}:${project.artifactId}-deployment:${project.version}</deployment>
+                    </configuration>
+                </execution>
+            </executions>
+        </plugin>
+        <plugin>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <configuration>
+            <annotationProcessorPaths>
+              <path>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-extension-processor</artifactId>
+                <version>${quarkus.plugin.version}</version>
+              </path>
+            </annotationProcessorPaths>
+          </configuration>
+        </plugin>
+      </plugins>
+    </build>
+</project>

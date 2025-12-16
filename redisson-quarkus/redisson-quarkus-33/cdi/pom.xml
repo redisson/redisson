@@ -1,0 +1,34 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.redisson</groupId>
+        <artifactId>redisson-quarkus-33-parent</artifactId>
+        <version>3.52.1-SNAPSHOT</version>
+        <relativePath>../</relativePath>
+    </parent>
+
+    <artifactId>redisson-quarkus-33-cdi-parent</artifactId>
+    <packaging>pom</packaging>
+
+    <name>Redisson/Quarkus v3.30.x+ integration</name>
+
+     <modules>
+       <module>runtime</module>
+       <module>deployment</module>
+       <module>integration-tests</module>
+     </modules>
+
+     <build>
+       <pluginManagement>
+         <plugins>
+           <plugin>
+             <groupId>io.quarkus</groupId>
+             <artifactId>quarkus-maven-plugin</artifactId>
+             <version>${quarkus.plugin.version}</version>
+           </plugin>
+         </plugins>
+       </pluginManagement>
+     </build>
+
+</project>
