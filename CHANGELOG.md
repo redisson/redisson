@@ -9,7 +9,7 @@ Feature - full-featured [Reliable Pub/Sub](https://redisson.pro/docs/data-and-se
 Feature - Quarkus 3.30.x integration  
 Feature - Spring Boot 4.0 integration  
 Feature - Spring Data Redis 4.0 module added  
-Feature - database setting added for Valkey Cluster Mode  
+Feature - `database` setting added for Valkey Cluster Mode  
 Feature - `RSemaphore.releaseIfExists()` method added  
 Feature - `RBatch.getClusteredMapCacheNative()` method added  
 Feature - `RSearch.aggregate()` method with Iterable result added (thanks to @seakider)  
