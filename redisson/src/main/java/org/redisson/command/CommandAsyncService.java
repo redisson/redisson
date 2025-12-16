@@ -107,7 +107,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         this.objectBuilder = service.objectBuilder;
         this.referenceType = service.referenceType;
 
-        if (objectParams.getRetryAttempts() >= 0) {
+        if (objectParams.getRetryAttempts() > 0) {
             this.retryAttempts = objectParams.getRetryAttempts();
         } else {
             this.retryAttempts = connectionManager.getServiceManager().getConfig().getRetryAttempts();
