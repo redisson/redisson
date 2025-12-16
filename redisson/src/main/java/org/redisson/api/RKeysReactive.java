@@ -75,14 +75,14 @@ public interface RKeysReactive {
     Mono<Void> copy(String name, String host, int port, int database, long timeout);
     
     /**
-     * Set a timeout for object. After the timeout has expired,
-     * the key will automatically be deleted.
+     * Use {@link #expire(Duration, String...)} instead.
      *
      * @param name of object
      * @param timeToLive - timeout before object will be deleted
      * @param timeUnit - timeout time unit
      * @return <code>true</code> if the timeout was set and <code>false</code> if not
      */
+    @Deprecated
     Mono<Boolean> expire(String name, long timeToLive, TimeUnit timeUnit);
 
 
@@ -97,13 +97,13 @@ public interface RKeysReactive {
     Mono<Long> expire(Duration duration, String... names);
 
     /**
-     * Set an expire date for object. When expire date comes
-     * the key will automatically be deleted.
+     * Use {@link #expireAt(Instant, String...)} instead.
      * 
      * @param name of object
      * @param timestamp - expire date in milliseconds (Unix timestamp)
      * @return <code>true</code> if the timeout was set and <code>false</code> if not
      */
+    @Deprecated
     Mono<Boolean> expireAt(String name, long timestamp);
 
     /**

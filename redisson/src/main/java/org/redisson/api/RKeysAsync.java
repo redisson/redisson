@@ -75,14 +75,14 @@ public interface RKeysAsync {
     RFuture<Void> copyAsync(String name, String host, int port, int database, long timeout);
     
     /**
-     * Set a timeout for object. After the timeout has expired,
-     * the key will automatically be deleted.
+     * Use {@link #expireAsync(Duration, String...)} instead.
      *
      * @param name of object
      * @param timeToLive - timeout before object will be deleted
      * @param timeUnit - timeout time unit
      * @return <code>true</code> if the timeout was set and <code>false</code> if not
      */
+    @Deprecated
     RFuture<Boolean> expireAsync(String name, long timeToLive, TimeUnit timeUnit);
 
     /**
@@ -94,14 +94,15 @@ public interface RKeysAsync {
      * @return number of keys for which the timeout was set successfully
      */
     RFuture<Long> expireAsync(Duration duration, String... names);
+
     /**
-     * Set an expire date for object. When expire date comes
-     * the key will automatically be deleted.
+     * Use {@link #expireAtAsync(Instant, String...)} instead.
      * 
      * @param name of object
      * @param timestamp - expire date in milliseconds (Unix timestamp)
      * @return <code>true</code> if the timeout was set and <code>false</code> if not
      */
+    @Deprecated
     RFuture<Boolean> expireAtAsync(String name, long timestamp);
 
     /**
