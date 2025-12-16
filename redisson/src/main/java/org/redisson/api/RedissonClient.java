@@ -1239,6 +1239,49 @@ public interface RedissonClient {
     RReliableTopic getReliableTopic(PlainOptions options);
 
     /**
+     * Returns reliable pubsub topic instance by name.
+     * <p>
+     * Reliable pubsub topics provide advanced messaging features including managed subscriptions,
+     * seek operation, pull/push consumers, message acknowledgment and many more.
+     * <p>
+     * Requires <b>Redis 5.0.0 and higher or any Valkey version.</b>
+     *
+     * @param <V> the type of message values
+     * @param name name of the topic
+     * @return RReliablePubSubTopic object
+     */
+    <V> RReliablePubSubTopic<V> getReliablePubSubTopic(String name);
+
+    /**
+     * Returns reliable pubsub topic instance by name using the provided codec for messages.
+     * <p>
+     * Reliable pubsub topics provide advanced messaging features including managed subscriptions,
+     * seek operation, pull/push consumers, message acknowledgment and many more.
+     * <p>
+     * Requires <b>Redis 5.0.0 and higher or any Valkey version.</b>
+     *
+     * @param <V> the type of message values
+     * @param name name of the topic
+     * @param codec codec for message serialization and deserialization
+     * @return RReliablePubSubTopic object
+     */
+    <V> RReliablePubSubTopic<V> getReliablePubSubTopic(String name, Codec codec);
+
+    /**
+     * Returns reliable pubsub topic instance with the specified options.
+     * <p>
+     * Reliable pubsub topics provide advanced messaging features including managed subscriptions,
+     * seek operation, pull/push consumers, message acknowledgment and many more.
+     * <p>
+     * Requires <b>Redis 5.0.0 and higher or any Valkey version.</b>
+     *
+     * @param <V> the type of message values
+     * @param options instance options including name and codec configuration
+     * @return RReliablePubSubTopic object
+     */
+    <V> RReliablePubSubTopic<V> getReliablePubSubTopic(PlainOptions options);
+
+    /**
      * Returns topic instance satisfies by pattern name.
      *
      *  Supported glob-style patterns:

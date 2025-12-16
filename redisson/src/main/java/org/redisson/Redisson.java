@@ -927,6 +927,21 @@ public final class Redisson implements RedissonClient {
     }
 
     @Override
+    public <V> RReliablePubSubTopic<V> getReliablePubSubTopic(String name) {
+        throw new UnsupportedOperationException("This feature is implemented in the Redisson PRO version. Please refer to https://redisson.pro/feature-comparison.html");
+    }
+
+    @Override
+    public <V> RReliablePubSubTopic<V> getReliablePubSubTopic(String name, Codec codec) {
+        throw new UnsupportedOperationException("This feature is implemented in the Redisson PRO version. Please refer to https://redisson.pro/feature-comparison.html");
+    }
+
+    @Override
+    public <V> RReliablePubSubTopic<V> getReliablePubSubTopic(PlainOptions options) {
+        throw new UnsupportedOperationException("This feature is implemented in the Redisson PRO version. Please refer to https://redisson.pro/feature-comparison.html");
+    }
+
+    @Override
     public RPatternTopic getPatternTopic(String pattern) {
         return new RedissonPatternTopic(commandExecutor, pattern);
     }
