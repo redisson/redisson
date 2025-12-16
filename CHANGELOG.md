@@ -3,7 +3,7 @@ Redisson Releases History
 
 Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
 
-### -Dec-2025 - 4.0.0 released
+### 16-Dec-2025 - 4.0.0 released
 
 Feature - full-featured [Reliable Pub/Sub](https://redisson.pro/docs/data-and-services/publish-subscribe/#reliable-pubsub) implemented. Provides topic-subscription-consumer model with message acknowledgment, grouping, seek/replay, Dead Letter Topic, and pull/push consumers  
 Feature - Quarkus 3.30.x integration  
