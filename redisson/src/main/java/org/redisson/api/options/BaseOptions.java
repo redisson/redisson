@@ -29,7 +29,7 @@ class BaseOptions<T extends InvocationOptions<T>, C> implements CodecOptions<T, 
 
     private C codec;
     private int timeout;
-    private int retryAttempts;
+    private int retryAttempts = -1;
     private DelayStrategy retryDelay;
 
     @Override
