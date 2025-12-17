@@ -60,6 +60,8 @@ public class RedissonCacheTest {
 
     @Test
     public void testCacheYaml() throws InterruptedException {
+        System.setProperty("port", REDIS.getFirstMappedPort().toString());
+
         ApplicationContext ac = ApplicationContext.run();
 
         RedissonClient client = ac.getBean(RedissonClient.class);

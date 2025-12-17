@@ -4,7 +4,7 @@ micronaut:
 redisson:
   threads: 10
   single-server-config:
-    address: "redis://127.0.0.1:6379"
+    address: "redis://127.0.0.1:${port}"
   caches:
     test:
       expire-after-write: 10s
