@@ -12,7 +12,8 @@
     <packaging>jar</packaging>
 
     <properties>
-        <micronaut.version>4.9.0</micronaut.version>
+        <micronaut.version>4.10.0</micronaut.version>
+        <micronaut.plugin.version>4.10.0</micronaut.plugin.version>
         <main.basedir>${project.parent.parent.basedir}</main.basedir>
     </properties>
 
@@ -42,7 +43,7 @@
                   <path>
                     <groupId>io.micronaut.validation</groupId>
                     <artifactId>micronaut-validation-processor</artifactId>
-                    <version>${micronaut.version}</version>
+                    <version>${micronaut.plugin.version}</version>
                   </path>
             </annotationProcessorPaths>
           </configuration>
@@ -70,7 +71,7 @@
                   <path>
                     <groupId>io.micronaut.validation</groupId>
                     <artifactId>micronaut-validation-processor</artifactId>
-                    <version>${micronaut.version}</version>
+                    <version>${micronaut.plugin.version}</version>
                   </path>
                 </annotationProcessorPaths>
               </configuration>
@@ -91,14 +92,14 @@
         <dependency>
             <groupId>io.micronaut.cache</groupId>
             <artifactId>micronaut-cache-core</artifactId>
-            <version>5.2.0</version>
+            <version>5.3.0</version>
             <optional>true</optional>
         </dependency>
 
         <dependency>
             <groupId>io.micronaut.session</groupId>
             <artifactId>micronaut-session</artifactId>
-            <version>4.7.0</version>
+            <version>4.8.0</version>
             <optional>true</optional>
         </dependency>
 
@@ -141,7 +142,7 @@
         <dependency>
           <groupId>io.micronaut.test</groupId>
           <artifactId>micronaut-test-junit5</artifactId>
-          <version>4.7.0</version>
+          <version>${micronaut.plugin.version}</version>
           <scope>test</scope>
         </dependency>
         <dependency>
