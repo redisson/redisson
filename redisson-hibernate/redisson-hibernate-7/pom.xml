@@ -52,21 +52,6 @@
 
     <build>
         <plugins>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                    <configuration>
-                        <redirectTestOutputToFile>true</redirectTestOutputToFile>
-                        <reuseForks>true</reuseForks>
-                        <argLine>
-                           ${argLine}
-                           --add-opens=java.base/java.util=ALL-UNNAMED
-                           -javaagent:"${settings.localRepository}"/org/jmockit/jmockit/1.49/jmockit-1.49.jar
-                        </argLine>
-                    </configuration>
-            </plugin>
-
             <plugin>
                 <artifactId>maven-jar-plugin</artifactId>
                 <version>3.4.1</version>
