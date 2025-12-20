@@ -567,44 +567,23 @@ public class RedisExecutor<V, R> {
                 }
             }
 
-            if (cause instanceof RedisMovedException && !ignoreRedirect) {
-                RedisMovedException ex = (RedisMovedException) cause;
+            if (cause instanceof RedisRedirectException && !ignoreRedirect) {
+                RedisRedirectException ex = (RedisRedirectException) cause;
                 if (source.getRedirect() == Redirect.MOVED
                         && source.getAddr().equals(ex.getUrl())) {
                     mainPromise.completeExceptionally(new RedisException("MOVED redirection loop detected. Node " + source.getAddr() + " has further redirect to " + ex.getUrl()));
                     return;
                 }
 
-                onException();
+                Redirect reason = Redirect.REDIRECT;
+                if (cause instanceof RedisMovedException) {
+                    reason = Redirect.MOVED;
+                }
+                if (cause instanceof RedisAskException) {
+                    reason = Redirect.ASK;
+                }
 
-                CompletableFuture<RedisURI> ipAddrFuture = connectionManager.getServiceManager().resolveIP(ex.getUrl());
-                ipAddrFuture.whenComplete((ip, e) -> {
-                    if (e != null) {
-                        free();
-                        handleError(connectionFuture, e);
-                        return;
-                    }
-                    source = new NodeSource(ex.getSlot(), ip, Redirect.MOVED);
-                    execute();
-                });
-                return;
-            }
-
-            if (cause instanceof RedisAskException && !ignoreRedirect) {
-                RedisAskException ex = (RedisAskException) cause;
-
-                onException();
-
-                CompletableFuture<RedisURI> ipAddrFuture = connectionManager.getServiceManager().resolveIP(ex.getUrl());
-                ipAddrFuture.whenComplete((ip, e) -> {
-                    if (e != null) {
-                        free();
-                        handleError(connectionFuture, e);
-                        return;
-                    }
-                    source = new NodeSource(ex.getSlot(), ip, Redirect.ASK);
-                    execute();
-                });
+                handleRedirect(ex, connectionFuture, reason);
                 return;
             }
 
@@ -641,6 +620,21 @@ public class RedisExecutor<V, R> {
         } catch (Exception e) {
             handleError(connectionFuture, e);
         }
+    }
+
+    private void handleRedirect(RedisRedirectException ex, CompletableFuture<RedisConnection> connectionFuture, Redirect reason) {
+        onException();
+
+        CompletableFuture<RedisURI> ipAddrFuture = connectionManager.getServiceManager().resolveIP(ex.getUrl());
+        ipAddrFuture.whenComplete((ip, e) -> {
+            if (e != null) {
+                free();
+                handleError(connectionFuture, e);
+                return;
+            }
+            source = new NodeSource(ex.getSlot(), ip, reason);
+            execute();
+        });
     }
 
     protected void handleResult(CompletableFuture<R> attemptPromise, CompletableFuture<RedisConnection> connectionFuture) throws ReflectiveOperationException {

@@ -375,7 +375,13 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         } else if (code == '-') {
             String error = readString(in, StandardCharsets.US_ASCII);
 
-            if (error.startsWith("MOVED")) {
+            if (error.startsWith("REDIRECT")) {
+                String[] errorParts = error.split(" ");
+                String addr = errorParts[1];
+                if (data != null) {
+                    data.tryFailure(new RedisRedirectException(new RedisURI(scheme + "://" + addr)));
+                }
+            } else if (error.startsWith("MOVED")) {
                 String[] errorParts = error.split(" ");
                 int slot = Integer.valueOf(errorParts[1]);
                 String addr = errorParts[2];

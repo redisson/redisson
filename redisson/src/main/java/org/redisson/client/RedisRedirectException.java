@@ -26,15 +26,20 @@ public class RedisRedirectException extends RedisException {
 
     private static final long serialVersionUID = 181505625075250011L;
 
-    private final int slot;
+    private final Integer slot;
     private final RedisURI url;
 
-    public RedisRedirectException(int slot, RedisURI url) {
+    public RedisRedirectException(RedisURI url) {
+        slot = null;
+        this.url = url;
+    }
+
+    public RedisRedirectException(Integer slot, RedisURI url) {
         this.slot = slot;
         this.url = url;
     }
 
-    public int getSlot() {
+    public Integer getSlot() {
         return slot;
     }
 

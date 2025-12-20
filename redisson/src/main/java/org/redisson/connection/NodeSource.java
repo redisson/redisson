@@ -27,7 +27,7 @@ import java.util.Objects;
  */
 public class NodeSource {
 
-    public enum Redirect {MOVED, ASK}
+    public enum Redirect {MOVED, ASK, REDIRECT}
 
     private Integer slot;
     private RedisURI addr;
