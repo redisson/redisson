@@ -1,4 +1,4 @@
-package org.redisson.spring.transaction;
+package transaction;
 
 import org.redisson.RedisDockerTest;
 import org.redisson.api.RedissonReactiveClient;

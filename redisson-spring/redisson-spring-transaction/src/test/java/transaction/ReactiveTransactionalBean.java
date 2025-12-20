@@ -1,4 +1,4 @@
-package org.redisson.spring.transaction;
+package transaction;
 
 import org.redisson.api.RMapReactive;
 import org.redisson.api.RTransactionReactive;

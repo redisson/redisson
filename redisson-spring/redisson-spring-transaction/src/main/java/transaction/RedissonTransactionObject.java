@@ -13,35 +13,40 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.spring.transaction;
+package transaction;
 
 import org.springframework.transaction.support.SmartTransactionObject;
 
 /**
+ * 
  * @author Nikita Koksharov
+ *
  */
-public class ReactiveRedissonTransactionObject implements SmartTransactionObject {
+public class RedissonTransactionObject implements SmartTransactionObject {
 
-    private ReactiveRedissonResourceHolder resourceHolder;
+    private boolean isRollbackOnly;
+    private RedissonTransactionHolder transactionHolder;
 
-    public ReactiveRedissonResourceHolder getResourceHolder() {
-        return resourceHolder;
+    public RedissonTransactionHolder getTransactionHolder() {
+        return transactionHolder;
     }
 
-    public void setResourceHolder(ReactiveRedissonResourceHolder resourceHolder) {
-        this.resourceHolder = resourceHolder;
+    public void setTransactionHolder(RedissonTransactionHolder transaction) {
+        this.transactionHolder = transaction;
     }
 
+    public void setRollbackOnly(boolean isRollbackOnly) {
+        this.isRollbackOnly = isRollbackOnly;
+    }
+    
     @Override
     public boolean isRollbackOnly() {
-        if (resourceHolder != null) {
-            return resourceHolder.isRollbackOnly();
-        }
-        return false;
+        return isRollbackOnly;
     }
 
     @Override
     public void flush() {
         // skip
     }
+
 }
