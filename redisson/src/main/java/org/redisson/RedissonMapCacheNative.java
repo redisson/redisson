@@ -15,6 +15,7 @@
  */
 package org.redisson;
 
+import java.time.Instant;
 import org.redisson.api.*;
 import org.redisson.api.listener.MapExpiredListener;
 import org.redisson.client.codec.Codec;
@@ -63,18 +64,32 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
     }
 
     @Override
+    public V put(K key, V value, Instant time) {
+        return get(putAsync(key, value, time));
+    }
+
+    @Override
     public RFuture<V> putAsync(K key, V value, Duration ttl) {
+        return putAsyncInternal(key, value, ttl.toMillis(), true);
+    }
+
+    @Override
+    public RFuture<V> putAsync(K key, V value, Instant time) {
+        return putAsyncInternal(key, value, time.toEpochMilli(), false);
+    }
+
+    private RFuture<V> putAsyncInternal(K key, V value, long ms, boolean isDuration) {
         checkKey(key);
         checkValue(value);
 
-        if (ttl.toMillis() < 0) {
+        if (ms < 0) {
             throw new IllegalArgumentException("ttl can't be negative");
         }
-        if (ttl.toMillis() == 0) {
+        if (ms == 0) {
             return putAsync(key, value);
         }
 
-        RFuture<V> future = putOperationAsync(key, value, ttl);
+        RFuture<V> future = putOperationAsync(key, value, ms, isDuration);
         future = new CompletableFutureWrapper<>(future);
         if (hasNoWriter()) {
             return future;
@@ -84,16 +99,16 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
         return mapWriterFuture(future, listener);
     }
 
-    protected RFuture<V> putOperationAsync(K key, V value, Duration ttl) {
+    protected RFuture<V> putOperationAsync(K key, V value, long ms, boolean isDuration) {
         String name = getRawName(key);
 
         return commandExecutor.evalWriteAsync(name, codec, RedisCommands.EVAL_OBJECT,
-                    "local currValue = redis.call('hget', KEYS[1], ARGV[2]); "
+                "local currValue = redis.call('hget', KEYS[1], ARGV[2]); "
                         + "redis.call('hset', KEYS[1], ARGV[2], ARGV[3]); "
-                        + "redis.call('hpexpire', KEYS[1], ARGV[1], 'fields', 1, ARGV[2]); "
+                        + "redis.call(ARGV[4], KEYS[1], ARGV[1], 'fields', 1, ARGV[2]); "
                         + "return currValue; ",
                 Collections.singletonList(name),
-                ttl.toMillis(), encodeMapKey(key), encodeMapValue(value));
+                ms, encodeMapKey(key), encodeMapValue(value), getExpireCommand(isDuration));
     }
 
     @Override
@@ -102,18 +117,32 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
     }
 
     @Override
+    public boolean fastPut(K key, V value, Instant time) {
+        return get(fastPutAsync(key, value, time));
+    }
+
+    @Override
     public RFuture<Boolean> fastPutAsync(K key, V value, Duration ttl) {
+        return fastPutAsyncInternal(key, value, ttl.toMillis(), true);
+    }
+
+    @Override
+    public RFuture<Boolean> fastPutAsync(K key, V value, Instant time) {
+        return fastPutAsyncInternal(key, value, time.toEpochMilli(), false);
+    }
+
+    private RFuture<Boolean> fastPutAsyncInternal(K key, V value, long ms, boolean isDuration) {
         checkKey(key);
         checkValue(value);
 
-        if (ttl.toMillis() < 0) {
+        if (ms < 0) {
             throw new IllegalArgumentException("ttl can't be negative");
         }
-        if (ttl.toMillis() == 0) {
+        if (ms == 0) {
             return fastPutAsync(key, value);
         }
 
-        RFuture<Boolean> future = fastPutOperationAsync(key, value, ttl);
+        RFuture<Boolean> future = fastPutOperationAsync(key, value, ms, isDuration);
         future = new CompletableFutureWrapper<>(future);
         if (hasNoWriter()) {
             return future;
@@ -122,15 +151,15 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
         return mapWriterFuture(future, new MapWriterTask.Add(key, value));
     }
 
-    protected RFuture<Boolean> fastPutOperationAsync(K key, V value, Duration ttl) {
+    protected RFuture<Boolean> fastPutOperationAsync(K key, V value, long ms, boolean isDuration) {
         String name = getRawName(key);
 
         return commandExecutor.evalWriteAsync(name, StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
-          "local added = redis.call('hset', KEYS[1], ARGV[2], ARGV[3]); " +
-                "redis.call('hpexpire', KEYS[1], ARGV[1], 'fields', 1, ARGV[2]); " +
-                "return added;",
-             Collections.singletonList(name),
-                ttl.toMillis(), encodeMapKey(key), encodeMapValue(value));
+                "local added = redis.call('hset', KEYS[1], ARGV[2], ARGV[3]); " +
+                        "redis.call(ARGV[4], KEYS[1], ARGV[1], 'fields', 1, ARGV[2]); " +
+                        "return added;",
+                Collections.singletonList(name),
+                ms, encodeMapKey(key), encodeMapValue(value), getExpireCommand(isDuration));
     }
 
     @Override
@@ -139,18 +168,32 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
     }
 
     @Override
+    public V putIfAbsent(K key, V value, Instant time) {
+        return get(putIfAbsentAsync(key, value, time));
+    }
+
+    @Override
     public RFuture<V> putIfAbsentAsync(K key, V value, Duration ttl) {
+        return  putIfAbsentAsyncInternal(key, value, ttl.toMillis(), true);
+    }
+
+    @Override
+    public RFuture<V> putIfAbsentAsync(K key, V value, Instant time) {
+        return putIfAbsentAsyncInternal(key, value, time.toEpochMilli(), false);
+    }
+
+    private RFuture<V> putIfAbsentAsyncInternal(K key, V value, long ms, boolean isDuration) {
         checkKey(key);
         checkValue(value);
 
-        if (ttl.toMillis() < 0) {
-            throw new IllegalArgumentException("ttl can't be negative");
+        if (ms < 0) {
+            throw new IllegalArgumentException("ms can't be negative");
         }
-        if (ttl.toMillis() == 0) {
+        if (ms == 0) {
             return putIfAbsentAsync(key, value);
         }
 
-        RFuture<V> future = putIfAbsentOperationAsync(key, value, ttl);
+        RFuture<V> future = putIfAbsentOperationAsync(key, value, ms, isDuration);
         future = new CompletableFutureWrapper<>(future);
         if (hasNoWriter()) {
             return future;
@@ -159,7 +202,7 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
         return mapWriterFuture(future, task, r -> r == null);
     }
 
-    protected RFuture<V> putIfAbsentOperationAsync(K key, V value, Duration ttl) {
+    protected RFuture<V> putIfAbsentOperationAsync(K key, V value, long ms, boolean isDuration) {
         String name = getRawName(key);
 
         if (value == null) {
@@ -179,10 +222,10 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
                             "return currValue;" +
                         "end;" +
                         "redis.call('hset', KEYS[1], ARGV[2], ARGV[3]); " +
-                        "redis.call('hpexpire', KEYS[1], ARGV[1], 'fields', 1, ARGV[2]); " +
+                        "redis.call(ARGV[4], KEYS[1], ARGV[1], 'fields', 1, ARGV[2]); " +
                         "return nil; ",
                 Collections.singletonList(name),
-                ttl.toMillis(), encodeMapKey(key), encodeMapValue(value));
+                ms, encodeMapKey(key), encodeMapValue(value), getExpireCommand(isDuration));
     }
 
     @Override
@@ -191,18 +234,32 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
     }
 
     @Override
+    public boolean fastPutIfAbsent(K key, V value, Instant time) {
+        return get(fastPutIfAbsentAsync(key, value, time));
+    }
+
+    @Override
     public RFuture<Boolean> fastPutIfAbsentAsync(K key, V value, Duration ttl) {
+        return fastPutIfAbsentAsyncInternal(key, value, ttl.toMillis(), true);
+    }
+
+    @Override
+    public RFuture<Boolean> fastPutIfAbsentAsync(K key, V value, Instant time) {
+        return fastPutIfAbsentAsyncInternal(key, value, time.toEpochMilli(), false);
+    }
+
+    private RFuture<Boolean> fastPutIfAbsentAsyncInternal(K key, V value, long ms, boolean isDuration) {
         checkKey(key);
         checkValue(value);
 
-        if (ttl.toMillis() < 0) {
+        if (ms < 0) {
             throw new IllegalArgumentException("ttl can't be negative");
         }
-        if (ttl.toMillis() == 0) {
+        if (ms == 0) {
             return fastPutIfAbsentAsync(key, value);
         }
 
-        RFuture<Boolean> future = fastPutIfAbsentOperationAsync(key, value, ttl);
+        RFuture<Boolean> future = fastPutIfAbsentOperationAsync(key, value, ms, isDuration);
         future = new CompletableFutureWrapper<>(future);
         if (hasNoWriter()) {
             return future;
@@ -211,8 +268,9 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
         return mapWriterFuture(future, task, Function.identity());
     }
 
-    protected RFuture<Boolean> fastPutIfAbsentOperationAsync(K key, V value, Duration ttl) {
+    protected RFuture<Boolean> fastPutIfAbsentOperationAsync(K key, V value, long ms, boolean isDuration) {
         String name = getRawName(key);
+
 
         if (value == null) {
             return commandExecutor.evalWriteAsync(name, StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
@@ -231,10 +289,10 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
                             "return 0;" +
                         "end;" +
                         "redis.call('hset', KEYS[1], ARGV[2], ARGV[3]); " +
-                        "redis.call('hpexpire', KEYS[1], ARGV[1], 'fields', 1, ARGV[2]); " +
+                        "redis.call(ARGV[4], KEYS[1], ARGV[1], 'fields', 1, ARGV[2]); " +
                         "return 1; ",
                 Collections.singletonList(name),
-                ttl.toMillis(), encodeMapKey(key), encodeMapValue(value));
+                ms, encodeMapKey(key), encodeMapValue(value), getExpireCommand(isDuration));
     }
 
     @Override
@@ -276,12 +334,26 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
     }
 
     @Override
+    public void putAll(Map<? extends K, ? extends V> map, Instant time) {
+        get(putAllAsync(map, time));
+    }
+
+    @Override
     public RFuture<Void> putAllAsync(Map<? extends K, ? extends V> map, Duration ttl) {
+        return putAllAsyncInternal(map, ttl.toMillis(), true);
+    }
+
+    @Override
+    public RFuture<Void> putAllAsync(Map<? extends K, ? extends V> map, Instant time) {
+        return putAllAsyncInternal(map, time.toEpochMilli(), false);
+    }
+
+    private RFuture<Void> putAllAsyncInternal(Map<? extends K, ? extends V> map, long ms, boolean isDuration) {
         if (map.isEmpty()) {
             return new CompletableFutureWrapper<>((Void) null);
         }
 
-        RFuture<Void> future = putAllOperationAsync(map, ttl);
+        RFuture<Void> future = putAllOperationAsync(map, ms, isDuration);
         if (hasNoWriter()) {
             return future;
         }
@@ -290,16 +362,17 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
         return mapWriterFuture(future, listener);
     }
 
-    protected RFuture<Void> putAllOperationAsync(Map<? extends K, ? extends V> map, Duration ttl) {
+    protected RFuture<Void> putAllOperationAsync(Map<? extends K, ? extends V> map, long ms, boolean isDuration) {
         List<Object> args = new ArrayList<>();
-        args.add(ttl.toMillis());
+        args.add(ms);
+        args.add(getExpireCommand(isDuration));
         encodeMapKeys(args, map);
 
         return commandExecutor.evalWriteAsync(name, StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
-              "for i = 2, #ARGV, 2 do " +
+                "for i = 3, #ARGV, 2 do " +
                         "redis.call('hset', KEYS[1], ARGV[i], ARGV[i + 1]); " +
-                        "redis.call('hpexpire', KEYS[1], ARGV[1], 'fields', 1, ARGV[i]); " +
-                    "end; ",
+                        "redis.call(ARGV[2], KEYS[1], ARGV[1], 'fields', 1, ARGV[i]); " +
+                        "end; ",
                 Collections.singletonList(name), args.toArray());
     }
 
@@ -309,16 +382,31 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
     }
 
     @Override
+    public boolean expireEntry(K key, Instant time) {
+        return get(expireEntryAsync(key, time));
+    }
+
+    @Override
     public RFuture<Boolean> expireEntryAsync(K key, Duration ttl) {
+        return expireEntryAsyncInternal(key, ttl.toMillis(), true);
+    }
+
+    @Override
+    public RFuture<Boolean> expireEntryAsync(K key, Instant time) {
+        return expireEntryAsyncInternal(key, time.toEpochMilli(), false);
+    }
+
+    private RFuture<Boolean> expireEntryAsyncInternal(K key, long ms, boolean isDuration) {
         String name = getRawName(key);
+
         return commandExecutor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
-            "local expireSet = redis.call('hpexpire', KEYS[1], ARGV[1], 'fields', 1, ARGV[2]); "
-                + "if #expireSet > 0 and expireSet[1] >= 1 then "
-                    + "return 1;"
-                + "end; "
-                + "return 0; ",
+                "local expireSet = redis.call(ARGV[3], KEYS[1], ARGV[1], 'fields', 1, ARGV[2]); "
+                        + "if #expireSet > 0 and expireSet[1] >= 1 then "
+                        + "return 1;"
+                        + "end; "
+                        + "return 0; ",
                 Arrays.asList(name),
-                ttl.toMillis(), encodeMapKey(key));
+                ms, encodeMapKey(key), getExpireCommand(isDuration));
     }
 
     @Override
@@ -327,20 +415,31 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
     }
 
     @Override
-    public RFuture<Boolean> expireEntryIfNotSetAsync(K key, Duration ttl) {
-        return expireEntryAsync("NX", key, ttl);
+    public boolean expireEntryIfNotSet(K key, Instant time) {
+        return get(expireEntryIfNotSetAsync(key, time));
     }
 
-    private RFuture<Boolean> expireEntryAsync(String param, K key, Duration ttl) {
+    @Override
+    public RFuture<Boolean> expireEntryIfNotSetAsync(K key, Duration ttl) {
+        return expireEntryAsync("NX", key, ttl.toMillis(), true);
+    }
+
+    @Override
+    public RFuture<Boolean> expireEntryIfNotSetAsync(K key, Instant time) {
+        return expireEntryAsync("NX", key, time.toEpochMilli(), false);
+    }
+
+    private RFuture<Boolean> expireEntryAsync(String param, K key, long ms, boolean isDuration) {
         String name = getRawName(key);
+
         return commandExecutor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
-            "local expireSet = redis.call('hpexpire', KEYS[1], ARGV[1], ARGV[3], 'fields', 1, ARGV[2]); "
+            "local expireSet = redis.call(ARGV[4], KEYS[1], ARGV[1], ARGV[3], 'fields', 1, ARGV[2]); "
                 + "if #expireSet > 0 and expireSet[1] >= 1 then "
                     + "return 1;"
                 + "end; "
                 + "return 0; ",
                 Arrays.asList(name),
-                ttl.toMillis(), encodeMapKey(key), param);
+                ms, encodeMapKey(key), param, getExpireCommand(isDuration));
     }
 
     @Override
@@ -349,20 +448,35 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
     }
 
     @Override
+    public int expireEntries(Set<K> keys, Instant time) {
+        return get(expireEntriesAsync(keys, time));
+    }
+
+    @Override
     public RFuture<Integer> expireEntriesAsync(Set<K> keys, Duration ttl) {
+        return expireEntriesAsyncInternal(keys, ttl.toMillis(), true);
+    }
+
+    @Override
+    public RFuture<Integer> expireEntriesAsync(Set<K> keys, Instant time) {
+        return expireEntriesAsyncInternal(keys, time.toEpochMilli(), false);
+    }
+
+    private RFuture<Integer> expireEntriesAsyncInternal(Set<K> keys, long ms, boolean isDuration) {
         List<Object> args = new ArrayList<>();
-        args.add(ttl.toMillis());
+        args.add(ms);
+        args.add(getExpireCommand(isDuration));
         encodeMapKeys(args, keys);
 
         return commandExecutor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
-            "local result = 0;"
-                + "for j = 2, #ARGV, 1 do "
-                    + "local expireSet = redis.call('hpexpire', KEYS[1], ARGV[1], 'fields', 1, ARGV[j]); "
-                    + "if #expireSet > 0 and expireSet[1] >= 1 then "
+                "local result = 0;"
+                        + "for j = 3, #ARGV, 1 do "
+                        + "local expireSet = redis.call(ARGV[2], KEYS[1], ARGV[1], 'fields', 1, ARGV[j]); "
+                        + "if #expireSet > 0 and expireSet[1] >= 1 then "
                         + "result = result + 1;"
-                    + "end; "
-                + "end; "
-                + "return result; ",
+                        + "end; "
+                        + "end; "
+                        + "return result; ",
                 Arrays.asList(name),
                 args.toArray());
     }
@@ -373,20 +487,31 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
     }
 
     @Override
-    public RFuture<Integer> expireEntriesIfNotSetAsync(Set<K> keys, Duration ttl) {
-        return expireEntriesAsync("NX", keys, ttl);
+    public int expireEntriesIfNotSet(Set<K> keys, Instant time) {
+        return get(expireEntriesIfNotSetAsync(keys, time));
     }
 
-    private RFuture<Integer> expireEntriesAsync(String param, Set<K> keys, Duration ttl) {
+    @Override
+    public RFuture<Integer> expireEntriesIfNotSetAsync(Set<K> keys, Duration ttl) {
+        return expireEntriesAsyncInternal("NX", keys, ttl.toMillis(), true);
+    }
+
+    @Override
+    public RFuture<Integer> expireEntriesIfNotSetAsync(Set<K> keys, Instant time) {
+        return expireEntriesAsyncInternal("NX", keys, time.toEpochMilli(), false);
+    }
+
+    private RFuture<Integer> expireEntriesAsyncInternal(String param, Set<K> keys, long ms, boolean isDuration) {
         List<Object> args = new ArrayList<>();
         args.add(param);
-        args.add(ttl.toMillis());
+        args.add(ms);
+        args.add(getExpireCommand(isDuration));
         encodeMapKeys(args, keys);
 
         return commandExecutor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
             "local result = 0;"
-                + "for j = 3, #ARGV, 1 do "
-                    + "local expireSet = redis.call('hpexpire', KEYS[1], ARGV[2], ARGV[1], 'fields', 1, ARGV[j]); "
+                + "for j = 4, #ARGV, 1 do "
+                    + "local expireSet = redis.call(ARGV[3], KEYS[1], ARGV[2], ARGV[1], 'fields', 1, ARGV[j]); "
                     + "if #expireSet > 0 and expireSet[1] >= 1 then "
                         + "result = result + 1;"
                     + "end; "
@@ -402,8 +527,18 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
     }
 
     @Override
+    public boolean expireEntryIfGreater(K key, Instant time) {
+        return get(expireEntryIfGreaterAsync(key, time));
+    }
+
+    @Override
     public boolean expireEntryIfLess(K key, Duration ttl) {
         return get(expireEntryIfLessAsync(key, ttl));
+    }
+
+    @Override
+    public boolean expireEntryIfLess(K key, Instant time) {
+        return get(expireEntryIfLessAsync(key, time));
     }
 
     @Override
@@ -412,28 +547,58 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
     }
 
     @Override
+    public int expireEntriesIfGreater(Set<K> keys, Instant time) {
+        return get(expireEntriesIfGreaterAsync(keys, time));
+    }
+
+    @Override
     public int expireEntriesIfLess(Set<K> keys, Duration ttl) {
         return get(expireEntriesIfLessAsync(keys, ttl));
     }
 
     @Override
+    public int expireEntriesIfLess(Set<K> keys, Instant time) {
+        return get(expireEntriesIfLessAsync(keys, time));
+    }
+
+    @Override
     public RFuture<Boolean> expireEntryIfGreaterAsync(K key, Duration ttl) {
-        return expireEntryAsync("GT", key, ttl);
+        return expireEntryAsync("GT", key, ttl.toMillis(), true);
+    }
+
+    @Override
+    public RFuture<Boolean> expireEntryIfGreaterAsync(K key, Instant time) {
+        return expireEntryAsync("GT", key, time.toEpochMilli(), false);
     }
 
     @Override
     public RFuture<Boolean> expireEntryIfLessAsync(K key, Duration ttl) {
-        return expireEntryAsync("LT", key, ttl);
+        return expireEntryAsync("LT", key, ttl.toMillis(), true);
+    }
+
+    @Override
+    public RFuture<Boolean> expireEntryIfLessAsync(K key, Instant time) {
+        return expireEntryAsync("LT", key, time.toEpochMilli(), false);
     }
 
     @Override
     public RFuture<Integer> expireEntriesIfGreaterAsync(Set<K> keys, Duration ttl) {
-        return expireEntriesAsync("GT", keys, ttl);
+        return expireEntriesAsyncInternal("GT", keys, ttl.toMillis(), true);
+    }
+
+    @Override
+    public RFuture<Integer> expireEntriesIfGreaterAsync(Set<K> keys, Instant time) {
+        return expireEntriesAsyncInternal("GT", keys, time.toEpochMilli(), false);
     }
 
     @Override
     public RFuture<Integer> expireEntriesIfLessAsync(Set<K> keys, Duration ttl) {
-        return expireEntriesAsync("LT", keys, ttl);
+        return expireEntriesAsyncInternal("LT", keys, ttl.toMillis(), true);
+    }
+
+    @Override
+    public RFuture<Integer> expireEntriesIfLessAsync(Set<K> keys, Instant time) {
+        return expireEntriesAsyncInternal("LT", keys, time.toEpochMilli(), false);
     }
 
     @Override
@@ -498,6 +663,16 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
 
     @Override
     public V compute(K key, Duration ttl, BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
+        return computeInternal(key, ttl.toMillis(), true, remappingFunction);
+    }
+
+    @Override
+    public V compute(K key, Instant time, BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
+        return computeInternal(key, time.toEpochMilli(), false, remappingFunction);
+    }
+
+
+    private V computeInternal(K key, long ms, boolean isDuration, BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
         checkNotBatch();
 
         checkKey(key);
@@ -514,7 +689,7 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
                     fastRemove(key);
                 }
             } else {
-                fastPut(key, newValue, ttl);
+                get(fastPutAsyncInternal(key, newValue, ms, isDuration));
             }
             return newValue;
         } finally {
@@ -524,6 +699,17 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
 
     @Override
     public RFuture<V> computeAsync(K key, Duration ttl, BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
+        return computeAsyncInternal(key, ttl.toMillis(), true, remappingFunction);
+    }
+
+    @Override
+    public RFuture<V> computeAsync(K key, Instant time,
+                                   BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
+        return computeAsyncInternal(key, time.toEpochMilli(), false, remappingFunction);
+    }
+
+    private RFuture<V> computeAsyncInternal(K key, long ms, boolean isDuration,
+                                   BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
         checkNotBatch();
         checkKey(key);
         Objects.requireNonNull(remappingFunction);
@@ -543,19 +729,28 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
                                         }
                                         return CompletableFuture.completedFuture(newValue);
                                     }
-                                    return fastPutAsync(key, newValue, ttl)
+                                    return fastPutAsyncInternal(key, newValue, ms, isDuration)
                                             .thenApply(rr -> newValue);
                                 });
                     }).whenComplete((c, e) -> {
                         lock.unlockAsync(threadId);
                     });
                 });
-        return new CompletableFutureWrapper<>(f);
 
+        return new CompletableFutureWrapper<>(f);
     }
 
     @Override
     public V computeIfAbsent(K key, Duration ttl, Function<? super K, ? extends V> mappingFunction) {
+        return computeIfAbsentInternal(key, ttl.toMillis(), true, mappingFunction);
+    }
+
+    @Override
+    public V computeIfAbsent(K key, Instant time, Function<? super K, ? extends V> mappingFunction) {
+        return computeIfAbsentInternal(key, time.toEpochMilli(), false, mappingFunction);
+    }
+
+    private V computeIfAbsentInternal(K key, long ms, boolean isDuration, Function<? super K, ? extends V> mappingFunction) {
         checkNotBatch();
 
         checkKey(key);
@@ -572,7 +767,7 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
             if (value == null) {
                 V newValue = mappingFunction.apply(key);
                 if (newValue != null) {
-                    V r = putIfAbsent(key, newValue, ttl);
+                    V r = get(putIfAbsentAsyncInternal(key, newValue, ms, isDuration));
                     if (r != null) {
                         return r;
                     }
@@ -588,6 +783,15 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
 
     @Override
     public RFuture<V> computeIfAbsentAsync(K key, Duration ttl, Function<? super K, ? extends V> mappingFunction) {
+        return computeIfAbsentAsyncInternal(key, ttl.toMillis(), true, mappingFunction);
+    }
+
+    @Override
+    public RFuture<V> computeIfAbsentAsync(K key, Instant time, Function<? super K, ? extends V> mappingFunction) {
+        return computeIfAbsentAsyncInternal(key, time.toEpochMilli(), false, mappingFunction);
+    }
+
+    public RFuture<V> computeIfAbsentAsyncInternal(K key, long ms, boolean isDuration, Function<? super K, ? extends V> mappingFunction) {
         checkNotBatch();
 
         checkKey(key);
@@ -606,7 +810,7 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
                         return CompletableFuture.supplyAsync(() -> mappingFunction.apply(key), getServiceManager().getExecutor())
                                 .thenCompose(newValue -> {
                                     if (newValue != null) {
-                                        return putIfAbsentAsync(key, newValue, ttl).thenApply(rr -> {
+                                        return putIfAbsentAsyncInternal(key, newValue, ms, isDuration).thenApply(rr -> {
                                             if (rr != null) {
                                                 return rr;
                                             }
@@ -623,5 +827,11 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
         return new CompletableFutureWrapper<>(f);
     }
 
+    private String getExpireCommand(boolean isDuration) {
+        if (isDuration) {
+            return "hpexpire";
+        }
 
+        return "hpexpireat";
+    }
 }
