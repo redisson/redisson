@@ -37,58 +37,6 @@ public class CacheConfigSupportTest {
     }
 
     @Test
-    void testFromJSON() throws IOException {
-        String json = "{\"testMap\":{\"ttl\":1440000,\"maxIdleTime\":720000}}";
-
-        Map<String, CacheConfig> result = cacheConfigSupport.fromJSON(json);
-
-        assertThat(result)
-                .hasSize(1)
-                .containsKey("testMap");
-
-        CacheConfig config = result.get("testMap");
-        assertThat(config)
-                .isNotNull()
-                .isInstanceOf(CacheConfig.class);
-        assertThat(config.getTTL()).isEqualTo(1440000);
-        assertThat(config.getMaxIdleTime()).isEqualTo(720000);
-        assertThat(config.getMaxSize()).isEqualTo(0);
-    }
-
-    @Test
-    void testFromJSONListeners() throws IOException {
-        String json = "{\"testMap\":{\"ttl\":1440000,\"maxIdleTime\":720000, \"listeners\": [{\"class\":\"org.redisson.spring.cache.CacheConfigSupportTest$MapListener\"}]}}";
-
-        Map<String, CacheConfig> result = cacheConfigSupport.fromJSON(json);
-
-        assertThat(result)
-                .hasSize(1)
-                .containsKey("testMap");
-
-        CacheConfig config = result.get("testMap");
-        assertThat(config)
-                .isNotNull()
-                .isInstanceOf(CacheConfig.class);
-        assertThat(config.getTTL()).isEqualTo(1440000);
-        assertThat(config.getMaxIdleTime()).isEqualTo(720000);
-        assertThat(config.getMaxSize()).isEqualTo(0);
-        assertThat(config.getListeners()).hasSize(1);
-        for (MapEntryListener listener : config.getListeners()) {
-            assertThat(listener).isInstanceOf(MapListener.class);
-        }
-    }
-
-    @Test
-    void testToJSON() throws IOException {
-        String inputJson = "{\"testMap\":{\"ttl\":1440000,\"maxIdleTime\":720000}}";
-        Map<String, CacheConfig> configs = cacheConfigSupport.fromJSON(inputJson);
-
-        String result = cacheConfigSupport.toJSON(configs);
-
-        assertThat(result.trim()).isEqualTo("{\"testMap\": {\"ttl\": 1440000, \"evictionMode\": \"LRU\", \"maxIdleTime\": 720000, \"maxSize\": 0}}");
-    }
-
-    @Test
     void testFromYAML() throws IOException {
         String yaml = "testMap:\n" +
                 "  ttl: 1450000\n" +
@@ -156,10 +104,14 @@ public class CacheConfigSupportTest {
 
     @Test
     void testMultipleCacheConfigs() throws IOException {
-        String json = "{\"cache1\":{\"ttl\":1000000,\"maxIdleTime\":500000}," +
-                "\"cache2\":{\"ttl\":2000000,\"maxIdleTime\":1000000}}";
+        String yaml = "cache1:\n" +
+                "  ttl: 1000000\n" +
+                "  maxIdleTime: 500000\n" +
+                "cache2:\n" +
+                "  ttl: 2000000\n" +
+                "  maxIdleTime: 1000000";
 
-        Map<String, CacheConfig> result = cacheConfigSupport.fromJSON(json);
+        Map<String, CacheConfig> result = cacheConfigSupport.fromYAML(yaml);
 
         assertThat(result)
                 .hasSize(2)

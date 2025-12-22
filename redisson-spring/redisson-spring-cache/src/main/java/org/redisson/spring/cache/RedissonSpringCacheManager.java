@@ -15,19 +15,11 @@
  */
 package org.redisson.spring.cache;
 
-import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Map;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ConcurrentHashMap;
-
 import org.redisson.api.RMap;
 import org.redisson.api.RMapCache;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.map.event.MapEntryListener;
 import org.redisson.client.codec.Codec;
-import org.springframework.beans.factory.BeanDefinitionStoreException;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
@@ -35,6 +27,12 @@ import org.springframework.cache.transaction.TransactionAwareCacheDecorator;
 import org.springframework.context.ResourceLoaderAware;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
+
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * A {@link org.springframework.cache.CacheManager} implementation
@@ -301,18 +299,7 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
         }
 
         Resource resource = resourceLoader.getResource(configLocation);
-        try {
-            this.configMap = (Map<String, CacheConfig>) CacheConfig.fromYAML(resource.getInputStream());
-        } catch (IOException e) {
-            // try to read yaml
-            try {
-                this.configMap = (Map<String, CacheConfig>) CacheConfig.fromJSON(resource.getInputStream());
-            } catch (IOException e1) {
-                e1.addSuppressed(e);
-                throw new BeanDefinitionStoreException(
-                        "Could not parse cache configuration at [" + configLocation + "]", e1);
-            }
-        }
+        this.configMap = (Map<String, CacheConfig>) CacheConfig.fromYAML(resource.getInputStream());
     }
     
 }

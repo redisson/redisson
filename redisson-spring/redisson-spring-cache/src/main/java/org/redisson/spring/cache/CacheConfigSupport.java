@@ -38,7 +38,6 @@ import java.util.*;
 public class CacheConfigSupport {
 
     private final Yaml yamlParser;
-    private final Yaml jsonParser;
 
     public CacheConfigSupport() {
         LoaderOptions yamlLoaderOptions = new LoaderOptions();
@@ -52,16 +51,6 @@ public class CacheConfigSupport {
 
         CustomConstructor yamlConstructor = new CustomConstructor(yamlLoaderOptions);
         this.yamlParser = new Yaml(yamlConstructor, new Representer(yamlDumperOptions), yamlDumperOptions, yamlLoaderOptions);
-
-        DumperOptions jsonDumperOptions = new DumperOptions();
-        jsonDumperOptions.setDefaultFlowStyle(DumperOptions.FlowStyle.FLOW);
-        jsonDumperOptions.setPrettyFlow(false);
-        jsonDumperOptions.setDefaultScalarStyle(DumperOptions.ScalarStyle.DOUBLE_QUOTED);
-
-        Representer representer = new Representer(jsonDumperOptions);
-        representer.setDefaultFlowStyle(DumperOptions.FlowStyle.FLOW);
-
-        this.jsonParser = new Yaml(representer, jsonDumperOptions);
     }
 
     private static class CustomConstructor extends Constructor {
@@ -101,41 +90,6 @@ public class CacheConfigSupport {
 
             return tagValue;
         }
-    }
-
-    public Map<String, CacheConfig> fromJSON(String content) throws IOException {
-        Map<String, Map<String, Object>> m = jsonParser.loadAs(content, Map.class);
-        return fromMap(m, CacheConfig.class);
-    }
-
-    public Map<String, CacheConfig> fromJSON(File file) throws IOException {
-        try (FileReader reader = new FileReader(file)) {
-            Map<String, Map<String, Object>> m = jsonParser.loadAs(reader, Map.class);
-            return fromMap(m, CacheConfig.class);
-        }
-    }
-
-    public Map<String, CacheConfig> fromJSON(URL url) throws IOException {
-        try (InputStream is = url.openStream()) {
-            Map<String, Map<String, Object>> m = jsonParser.loadAs(is, Map.class);
-            return fromMap(m, CacheConfig.class);
-        }
-    }
-
-    public Map<String, CacheConfig> fromJSON(Reader reader) throws IOException {
-        Map<String, Map<String, Object>> m = jsonParser.loadAs(reader, Map.class);
-        return fromMap(m, CacheConfig.class);
-    }
-
-    public Map<String, CacheConfig> fromJSON(InputStream inputStream) throws IOException {
-        Map<String, Map<String, Object>> m = jsonParser.loadAs(inputStream, Map.class);
-        return fromMap(m, CacheConfig.class);
-    }
-
-    public String toJSON(Map<String, ? extends CacheConfig> configs) throws IOException {
-        Map<String, Map<String, String>> plainMap = toPlainMap(configs);
-        String value = jsonParser.dump(plainMap);
-        return formatJson(value);
     }
 
     public Map<String, CacheConfig> fromYAML(String content) throws IOException {
@@ -222,17 +176,17 @@ public class CacheConfigSupport {
         }
     }
 
-    public Map<String, CacheConfig> fromYAML(Reader reader) throws IOException {
+    public Map<String, CacheConfig> fromYAML(Reader reader) {
         Map<String, Map<String, Object>> m = yamlParser.loadAs(reader, Map.class);
         return fromMap(m, CacheConfig.class);
     }
 
-    public Map<String, CacheConfig> fromYAML(InputStream inputStream) throws IOException {
+    public Map<String, CacheConfig> fromYAML(InputStream inputStream) {
         Map<String, Map<String, Object>> m = yamlParser.loadAs(inputStream, Map.class);
         return fromMap(m, CacheConfig.class);
     }
 
-    public String toYAML(Map<String, ? extends CacheConfig> configs) throws IOException {
+    public String toYAML(Map<String, ? extends CacheConfig> configs) {
         Map<String, Map<String, String>> plainMap = toPlainMap(configs);
         return yamlParser.dump(plainMap);
     }
@@ -266,34 +220,6 @@ public class CacheConfigSupport {
         }
 
         return result;
-    }
-
-    private String formatJson(String json) {
-        json = json.trim();
-
-        json = json.replaceAll("!!int\\s+", "");
-        json = json.replaceAll("!!long\\s+", "");
-        json = json.replaceAll("!!float\\s+", "");
-        json = json.replaceAll("!!double\\s+", "");
-        json = json.replaceAll("!!bool\\s+", "");
-
-        // Replace newlines and multiple spaces with single space
-        json = json.replaceAll("\\s*\\n\\s*", " ");
-
-        // Add space after colons if not present
-        json = json.replaceAll(":\\s*([^\\s])", ": $1");
-
-        // Add space after commas if not present
-        json = json.replaceAll(",\\s*([^\\s])", ", $1");
-
-        // Fix spaces around braces
-        json = json.replaceAll("\\{\\s+", "{");
-        json = json.replaceAll("\\s+\\}", "}");
-
-        // Remove quotes around numbers
-        json = json.replaceAll("\"(\\d+)\"", "$1");
-
-        return json;
     }
 
 }
