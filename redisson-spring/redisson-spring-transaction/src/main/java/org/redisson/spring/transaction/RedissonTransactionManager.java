@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package transaction;
+package org.redisson.spring.transaction;
 
 import org.redisson.api.RTransaction;
 import org.redisson.api.RedissonClient;

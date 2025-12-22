@@ -1,4 +1,4 @@
-package transaction;
+package org.redisson.spring.transaction;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

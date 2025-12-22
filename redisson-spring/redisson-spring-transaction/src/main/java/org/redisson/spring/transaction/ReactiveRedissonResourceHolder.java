@@ -13,25 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package transaction;
+package org.redisson.spring.transaction;
 
-import org.redisson.api.RTransaction;
+import org.redisson.api.RTransactionReactive;
+import org.springframework.transaction.support.ResourceHolderSupport;
 
 /**
- * 
+ *
  * @author Nikita Koksharov
  *
  */
-public class RedissonTransactionHolder {
+public class ReactiveRedissonResourceHolder extends ResourceHolderSupport {
 
-    private RTransaction transaction;
+    private RTransactionReactive transaction;
 
-    public RTransaction getTransaction() {
+    public RTransactionReactive getTransaction() {
         return transaction;
     }
 
-    public void setTransaction(RTransaction transaction) {
+    public void setTransaction(RTransactionReactive transaction) {
         this.transaction = transaction;
     }
-    
+
 }

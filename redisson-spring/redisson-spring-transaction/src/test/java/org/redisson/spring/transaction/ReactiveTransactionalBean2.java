@@ -1,4 +1,4 @@
-package transaction;
+package org.redisson.spring.transaction;
 
 import org.redisson.api.RTransactionReactive;
 import org.springframework.beans.factory.annotation.Autowired;
