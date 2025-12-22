@@ -67,7 +67,7 @@
                                 <artifactItem>
                                     <groupId>org.springframework.boot</groupId>
                                     <artifactId>spring-boot-autoconfigure</artifactId>
-                                    <version>3.5.8</version>
+                                    <version>4.0.1</version>
                                     <includes>
                                         org/springframework/boot/autoconfigure/data/redis/RedisAutoConfiguration.class,
                                         org/springframework/boot/autoconfigure/data/redis/RedisConnectionDetails*.class,
