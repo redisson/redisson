@@ -1,4 +1,4 @@
-package org.redisson.spring.transaction;
+package transaction;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
