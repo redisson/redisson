@@ -3,13 +3,14 @@
 
     <parent>
         <groupId>org.redisson</groupId>
-        <artifactId>redisson-parent</artifactId>
+        <artifactId>redisson-spring</artifactId>
         <version>4.0.1-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
 
     <properties>
         <spring-boot.version>4.0.1</spring-boot.version>
+        <main.basedir>${project.parent.parent.basedir}</main.basedir>
     </properties>
 
     <artifactId>redisson-spring-boot-starter</artifactId>
@@ -101,11 +102,6 @@
                     </execution>
                 </executions>
             </plugin>
-
-            <plugin>
-                <groupId>com.mycila</groupId>
-                <artifactId>license-maven-plugin</artifactId>
-            </plugin>
         </plugins>
     </build>
 
@@ -135,6 +131,18 @@
                  <artifactId>lettuce-core</artifactId>
               </exclusion>
             </exclusions> 
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context-support</artifactId>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -189,6 +197,11 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-resttestclient</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-restclient</artifactId>
             <scope>test</scope>
         </dependency>
 

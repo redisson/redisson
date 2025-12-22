@@ -31,6 +31,76 @@
                     </archive>
                 </configuration>
             </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>unpack-specific-classes</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>unpack</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>org.springframework.boot</groupId>
+                                    <artifactId>spring-boot-autoconfigure</artifactId>
+                                    <version>3.5.8</version>
+                                    <includes>
+                                        org/springframework/boot/autoconfigure/cache/CacheAutoConfiguration.class
+                                    </includes>
+                                    <outputDirectory>${project.build.outputDirectory}</outputDirectory>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>org.springframework.boot</groupId>
+                                    <artifactId>spring-boot-actuator</artifactId>
+                                    <version>3.5.8</version>
+                                    <includes>
+                                        org/springframework/boot/actuate/metrics/cache/CacheMeterBinderProvider.class
+                                    </includes>
+                                    <outputDirectory>${project.build.outputDirectory}</outputDirectory>
+                                </artifactItem>
+                            </artifactItems>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-clean-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>remove-spring-classes</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                        <configuration>
+                            <excludeDefaultDirectories>true</excludeDefaultDirectories>
+                            <filesets>
+                                <fileset>
+                                    <directory>${project.build.outputDirectory}/org/springframework</directory>
+                                </fileset>
+                            </filesets>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
         </plugins>
     </build>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-cache</artifactId>
+            <version>4.0.1</version>
+            <scope>provided</scope>
+            <optional>true</optional>
+        </dependency>
+    </dependencies>
+
 </project>

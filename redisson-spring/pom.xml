@@ -17,14 +17,15 @@
         <module>redisson-spring-cache</module>
         <module>redisson-spring-transaction</module>
         <module>redisson-spring-data</module>
+        <module>redisson-spring-boot-starter</module>
     </modules>
 
     <properties>
         <!-- Spring Framework version -->
         <spring.version>6.2.11</spring.version>
         <!-- Spring Boot versions -->
-        <spring-boot-actuator.version>3.2.5</spring-boot-actuator.version>
-        <spring-boot-autoconfigure.version>3.3.1</spring-boot-autoconfigure.version>
+        <spring-boot-actuator.version>4.0.1</spring-boot-actuator.version>
+        <spring-boot-autoconfigure.version>4.0.1</spring-boot-autoconfigure.version>
     </properties>
 
     <build>
