@@ -1,0 +1,134 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.redisson</groupId>
+        <artifactId>redisson-spring</artifactId>
+        <version>4.0.1-SNAPSHOT</version>
+        <relativePath>../</relativePath>
+    </parent>
+
+    <artifactId>redisson-spring-data</artifactId>
+    <packaging>pom</packaging>
+
+    <name>Redisson/Spring Data Redis integration</name>
+
+    <modules>
+        <module>redisson-spring-data-16</module>
+        <module>redisson-spring-data-17</module>
+        <module>redisson-spring-data-18</module>
+        <module>redisson-spring-data-20</module>
+        <module>redisson-spring-data-21</module>
+        <module>redisson-spring-data-22</module>
+        <module>redisson-spring-data-23</module>
+        <module>redisson-spring-data-24</module>
+        <module>redisson-spring-data-25</module>
+        <module>redisson-spring-data-26</module>
+        <module>redisson-spring-data-27</module>
+        <module>redisson-spring-data-30</module>
+        <module>redisson-spring-data-31</module>
+        <module>redisson-spring-data-32</module>
+        <module>redisson-spring-data-33</module>
+        <module>redisson-spring-data-34</module>
+        <module>redisson-spring-data-35</module>
+        <module>redisson-spring-data-40</module>
+    </modules>
+
+    <properties>
+        <main.basedir>${project.parent.parent.basedir}</main.basedir>
+    </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+         	<artifactId>maven-javadoc-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.redisson</groupId>
+            <artifactId>redisson</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <version>3.26.0</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
+            <version>4.2.2</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.13.1</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers-junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.5.18</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-test</artifactId>
+            <version>[4.1,6.0)</version>
+            <scope>test</scope>
+        </dependency>
+
+      	<dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>2.23.4</version>
+            <scope>test</scope>
+      	</dependency>
+
+	<dependency>
+  		<groupId>org.projectlombok</groupId>
+	  	<artifactId>lombok</artifactId>
+	  	<version>1.18.4</version>
+                <scope>test</scope>
+	</dependency>
+
+      	<dependency>
+      		<groupId>io.projectreactor</groupId>
+      		<artifactId>reactor-test</artifactId>
+                <version>3.6.11</version>
+      		<scope>test</scope>
+      	</dependency>
+<!--
+      	<dependency>
+      		<groupId>redis.clients</groupId>
+      		<artifactId>jedis</artifactId>
+      		<version>5.1.0</version>
+            <scope>test</scope>
+      	</dependency>
+
+       	<dependency>
+       		<groupId>io.lettuce</groupId>
+       		<artifactId>lettuce-core</artifactId>
+       		<version>6.3.2.RELEASE</version>
+            <scope>test</scope>
+       	</dependency>
+-->
+    </dependencies>
+
+</project>

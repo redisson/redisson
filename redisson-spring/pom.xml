@@ -16,6 +16,7 @@
     <modules>
         <module>redisson-spring-cache</module>
         <module>redisson-spring-transaction</module>
+        <module>redisson-spring-data</module>
     </modules>
 
     <properties>
