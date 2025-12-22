@@ -29,6 +29,14 @@ import java.util.Map;
 public interface StreamMultiReadGroupArgs {
 
     /**
+     * Defines claim messages which have been pending for at least the minimal idle time.
+     *
+     * @param duration minimal idle time
+     * @return arguments object
+     */
+    StreamMultiReadGroupArgs claim(Duration duration);
+
+    /**
      * Defines avoid of adding messages to Pending Entries List.
      *
      * @return arguments object

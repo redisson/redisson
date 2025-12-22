@@ -26,6 +26,14 @@ import java.time.Duration;
 public interface StreamReadGroupArgs {
 
     /**
+     * Defines claim messages which have been pending for at least the minimal idle time.
+     *
+     * @param minIdle minimal idle time
+     * @return arguments object
+     */
+    StreamReadGroupArgs claim(Duration minIdle);
+
+    /**
      * Defines avoid of adding messages to Pending Entries List.
      *
      * @return arguments object

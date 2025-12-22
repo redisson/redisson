@@ -276,6 +276,11 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
             params.add(rp.getTimeout().toMillis());
         }
 
+        if (rp.getMinIdleTime() != null) {
+            params.add("CLAIM");
+            params.add(rp.getMinIdleTime().toMillis());
+        }
+
         if (rp.isNoAck()) {
             params.add("NOACK");
         }
@@ -317,6 +322,11 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         if (rp.getTimeout() != null) {
             params.add("BLOCK");
             params.add(rp.getTimeout().toMillis());
+        }
+
+        if (rp.getMinIdleTime() != null) {
+            params.add("CLAIM");
+            params.add(rp.getMinIdleTime().toMillis());
         }
 
         if (rp.isNoAck()) {

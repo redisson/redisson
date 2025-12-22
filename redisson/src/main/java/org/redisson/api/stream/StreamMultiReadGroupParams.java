@@ -35,6 +35,12 @@ public final class StreamMultiReadGroupParams implements StreamMultiReadGroupArg
     }
 
     @Override
+    public StreamMultiReadGroupArgs claim(Duration duration) {
+        params.claim(duration);
+        return this;
+    }
+
+    @Override
     public StreamMultiReadGroupArgs noAck() {
         params.noAck();
         return this;
@@ -72,4 +78,7 @@ public final class StreamMultiReadGroupParams implements StreamMultiReadGroupArg
         return params.getTimeout();
     }
 
+    public Duration getMinIdleTime() {
+        return params.getMinIdleTime();
+    }
 }

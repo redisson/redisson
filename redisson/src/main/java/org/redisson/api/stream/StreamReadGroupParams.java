@@ -24,6 +24,7 @@ import java.time.Duration;
  */
 public final class StreamReadGroupParams implements StreamReadGroupArgs {
 
+    private Duration minIdleTime;
     private boolean noAck;
     private final StreamMessageId id1;
     private int count;
@@ -31,6 +32,12 @@ public final class StreamReadGroupParams implements StreamReadGroupArgs {
 
     StreamReadGroupParams(StreamMessageId id1) {
         this.id1 = id1;
+    }
+
+    @Override
+    public StreamReadGroupArgs claim(Duration minIdle) {
+        this.minIdleTime = minIdle;
+        return this;
     }
 
     @Override
@@ -65,5 +72,9 @@ public final class StreamReadGroupParams implements StreamReadGroupArgs {
 
     public Duration getTimeout() {
         return timeout;
+    }
+
+    public Duration getMinIdleTime() {
+        return minIdleTime;
     }
 }
