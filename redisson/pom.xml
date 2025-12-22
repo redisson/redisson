@@ -232,20 +232,6 @@
             <optional>true</optional>
         </dependency>
         <dependency>
-            <groupId>org.jboss.marshalling</groupId>
-            <artifactId>jboss-marshalling</artifactId>
-            <version>2.0.11.Final</version>
-            <scope>provided</scope>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.marshalling</groupId>
-            <artifactId>jboss-marshalling-river</artifactId>
-            <version>2.0.11.Final</version>
-            <scope>provided</scope>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
             <groupId>org.msgpack</groupId>
             <artifactId>jackson-dataformat-msgpack</artifactId>
             <version>0.9.9</version>
@@ -267,19 +253,6 @@
             <optional>true</optional>
         </dependency>
         <dependency>
-            <groupId>de.ruedigermoeller</groupId>
-            <artifactId>fst</artifactId>
-            <version>2.57</version>
-            <scope>provided</scope>
-            <optional>true</optional>
-            <exclusions>
-              <exclusion>
-                 <groupId>org.objenesis</groupId>
-                 <artifactId>objenesis</artifactId>
-              </exclusion>
-            </exclusions> 
-        </dependency>
-        <dependency>
             <groupId>com.esotericsoftware</groupId>
             <artifactId>kryo</artifactId>
             <version>5.6.2</version>
@@ -290,13 +263,6 @@
             <version>0.12.2</version>
             <scope>provided</scope>
             <optional>true</optional>
-        </dependency>
-        <dependency>
-          <groupId>org.apache.fury</groupId>
-          <artifactId>fury-core</artifactId>
-          <version>0.10.3</version>
-          <scope>provided</scope>
-          <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -484,7 +450,7 @@
                     <instructions>
                         <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
                         <DynamicImport-Package>*</DynamicImport-Package>
-                        <Import-Package>jdk.net;resolution:=optional,javax.cache.*;resolution:=optional,io.reactivex.rxjava3.*;resolution:=optional,net.bytebuddy.*;resolution:=optional,org.jboss.marshalling.*;resolution:=optional,org.springframework.*;resolution:=optional,io.projectreactor.*;resolution:=optional,*</Import-Package>
+                        <Import-Package>jdk.net;resolution:=optional,javax.cache.*;resolution:=optional,io.reactivex.rxjava3.*;resolution:=optional,net.bytebuddy.*;resolution:=optional,org.springframework.*;resolution:=optional,io.projectreactor.*;resolution:=optional,*</Import-Package>
                     </instructions>
                 </configuration>
             </plugin>
