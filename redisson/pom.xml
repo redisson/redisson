@@ -23,9 +23,6 @@
     <properties>
         <!-- Spring Framework version -->
         <spring.version>6.2.11</spring.version>
-        <!-- Spring Boot versions -->
-        <spring-boot-actuator.version>3.2.5</spring-boot-actuator.version>
-        <spring-boot-autoconfigure.version>3.3.1</spring-boot-autoconfigure.version>
     </properties>
 
     <profiles>
