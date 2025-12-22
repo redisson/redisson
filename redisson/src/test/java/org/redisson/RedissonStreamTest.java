@@ -149,7 +149,7 @@ public class RedissonStreamTest extends RedisDockerTest {
         for (PendingEntry pendingEntry : list) {
             assertThat(pendingEntry.getId()).isIn(id1, id2, id3, id4);
             assertThat(pendingEntry.getConsumerName()).isIn("consumer1", "consumer2");
-            assertThat(pendingEntry.getLastTimeDelivered()).isOne();
+            assertThat(pendingEntry.getDeliveryCount()).isOne();
         }
 
         List<PendingEntry> list2 = stream.listPending("testGroup", "consumer1", StreamMessageId.MIN, StreamMessageId.MAX, 1, TimeUnit.MILLISECONDS,10);
@@ -157,7 +157,7 @@ public class RedissonStreamTest extends RedisDockerTest {
         for (PendingEntry pendingEntry : list2) {
             assertThat(pendingEntry.getId()).isIn(id1, id2);
             assertThat(pendingEntry.getConsumerName()).isEqualTo("consumer1");
-            assertThat(pendingEntry.getLastTimeDelivered()).isOne();
+            assertThat(pendingEntry.getDeliveryCount()).isOne();
         }
     }
 
@@ -192,7 +192,7 @@ public class RedissonStreamTest extends RedisDockerTest {
         for (PendingEntry pendingEntry : list) {
             assertThat(pendingEntry.getId()).isIn(id1, id2, id3, id4);
             assertThat(pendingEntry.getConsumerName()).isIn("consumer1", "consumer2");
-            assertThat(pendingEntry.getLastTimeDelivered()).isOne();
+            assertThat(pendingEntry.getDeliveryCount()).isOne();
         }
 
         List<PendingEntry> list2 = stream.listPending(StreamPendingRangeArgs.groupName("testGroup")
@@ -205,7 +205,7 @@ public class RedissonStreamTest extends RedisDockerTest {
         for (PendingEntry pendingEntry : list2) {
             assertThat(pendingEntry.getId()).isIn(id1, id2);
             assertThat(pendingEntry.getConsumerName()).isEqualTo("consumer1");
-            assertThat(pendingEntry.getLastTimeDelivered()).isOne();
+            assertThat(pendingEntry.getDeliveryCount()).isOne();
         }
     }
 
@@ -512,7 +512,7 @@ public class RedissonStreamTest extends RedisDockerTest {
         for (PendingEntry pendingEntry : list) {
             assertThat(pendingEntry.getId()).isIn(id1, id2, id3, id4);
             assertThat(pendingEntry.getConsumerName()).isIn("consumer1", "consumer2");
-            assertThat(pendingEntry.getLastTimeDelivered()).isOne();
+            assertThat(pendingEntry.getDeliveryCount()).isOne();
         }
         
         List<PendingEntry> list2 = stream.listPending("testGroup", "consumer1", StreamMessageId.MIN, StreamMessageId.MAX, 10);
@@ -520,7 +520,7 @@ public class RedissonStreamTest extends RedisDockerTest {
         for (PendingEntry pendingEntry : list2) {
             assertThat(pendingEntry.getId()).isIn(id1, id2);
             assertThat(pendingEntry.getConsumerName()).isEqualTo("consumer1");
-            assertThat(pendingEntry.getLastTimeDelivered()).isOne();
+            assertThat(pendingEntry.getDeliveryCount()).isOne();
         }
     }
 
@@ -558,7 +558,7 @@ public class RedissonStreamTest extends RedisDockerTest {
         for (PendingEntry pendingEntry : list) {
             assertThat(pendingEntry.getId()).isIn(id1, id2, id3, id4);
             assertThat(pendingEntry.getConsumerName()).isIn("consumer1", "consumer2");
-            assertThat(pendingEntry.getLastTimeDelivered()).isOne();
+            assertThat(pendingEntry.getDeliveryCount()).isOne();
         }
 
         List<PendingEntry> list2 = stream.listPending(StreamPendingRangeArgs.groupName("testGroup")
@@ -570,7 +570,7 @@ public class RedissonStreamTest extends RedisDockerTest {
         for (PendingEntry pendingEntry : list2) {
             assertThat(pendingEntry.getId()).isIn(id1, id2);
             assertThat(pendingEntry.getConsumerName()).isEqualTo("consumer1");
-            assertThat(pendingEntry.getLastTimeDelivered()).isOne();
+            assertThat(pendingEntry.getDeliveryCount()).isOne();
         }
     }
 

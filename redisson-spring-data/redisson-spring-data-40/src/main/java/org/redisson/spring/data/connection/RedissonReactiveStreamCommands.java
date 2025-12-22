@@ -167,7 +167,7 @@ public class RedissonReactiveStreamCommands extends RedissonBaseReactive impleme
                 List<PendingMessage> msgs = list.stream().map(v -> new PendingMessage(RecordId.of(v.getId().toString()),
                         Consumer.from(command.getGroupName(), v.getConsumerName()),
                         Duration.of(v.getIdleTime(), ChronoUnit.MILLIS),
-                        v.getLastTimeDelivered())).collect(Collectors.toList());
+                        v.getDeliveryCount())).collect(Collectors.toList());
                 PendingMessages s = new PendingMessages(command.getGroupName(), command.getRange(), msgs);
                 return new ReactiveRedisConnection.CommandResponse<>(command, s);
             });

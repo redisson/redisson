@@ -26,14 +26,14 @@ public class PendingEntry {
     private StreamMessageId id;
     private String consumerName;
     private long idleTime;
-    private long lastTimeDelivered;
+    private long deliveryCount;
     
     public PendingEntry(StreamMessageId id, String consumerName, long idleTime, long lastTimeDelivered) {
         super();
         this.id = id;
         this.consumerName = consumerName;
         this.idleTime = idleTime;
-        this.lastTimeDelivered = lastTimeDelivered;
+        this.deliveryCount = lastTimeDelivered;
     }
     
     /**
@@ -69,8 +69,8 @@ public class PendingEntry {
      * 
      * @return number
      */
-    public long getLastTimeDelivered() {
-        return lastTimeDelivered;
+    public long getDeliveryCount() {
+        return deliveryCount;
     }
 
     @Override
@@ -79,7 +79,7 @@ public class PendingEntry {
                 "id=" + id +
                 ", consumerName='" + consumerName + '\'' +
                 ", idleTime=" + idleTime +
-                ", lastTimeDelivered=" + lastTimeDelivered +
+                ", lastTimeDelivered=" + deliveryCount +
                 '}';
     }
 }
