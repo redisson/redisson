@@ -34,6 +34,25 @@
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <configuration>
+                    <additionalDependencies>
+                        <additionalDependency>
+                            <groupId>org.springframework.boot</groupId>
+                            <artifactId>spring-boot-autoconfigure</artifactId>
+                            <version>3.5.8</version>
+                        </additionalDependency>
+                        <additionalDependency>
+                            <groupId>org.springframework.boot</groupId>
+                            <artifactId>spring-boot-actuator</artifactId>
+                            <version>3.5.8</version>
+                        </additionalDependency>
+                    </additionalDependencies>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
                 <executions>
                     <execution>
@@ -89,7 +108,6 @@
                     </execution>
                 </executions>
             </plugin>
-
         </plugins>
     </build>
 
