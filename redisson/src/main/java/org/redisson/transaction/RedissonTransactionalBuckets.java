@@ -21,11 +21,14 @@ import org.redisson.RedissonMultiLock;
 import org.redisson.api.RFuture;
 import org.redisson.api.RKeys;
 import org.redisson.api.RLock;
+import org.redisson.api.keys.BucketsSetArgsParams;
+import org.redisson.api.keys.SetArgs;
 import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.transaction.operation.TransactionalOperation;
 import org.redisson.transaction.operation.bucket.BucketSetOperation;
+import org.redisson.transaction.operation.bucket.BucketsSetIfAllKeysExistOperation;
 import org.redisson.transaction.operation.bucket.BucketsTrySetOperation;
 
 import java.util.*;
@@ -199,6 +202,47 @@ public class RedissonTransactionalBuckets extends RedissonBuckets {
             return keys.countExistsAsync(ks).thenApply(res -> {
                 operations.add(new BucketsTrySetOperation(codec, (Map<String, Object>) buckets, transactionId));
                 if (res == 0) {
+                    state.putAll(buckets);
+                    return true;
+                } else {
+                    return false;
+                }
+            });
+        }, buckets.keySet());
+    }
+
+    @Override
+    public RFuture<Boolean> setIfAllKeysExistAsync(SetArgs args) {
+        checkState();
+
+        BucketsSetArgsParams pps = (BucketsSetArgsParams) args;
+        Map<String, ?> buckets = pps.getEntries();
+
+        return executeLocked(() -> {
+            Set<String> keysToSet = new HashSet<>();
+            for (String key : buckets.keySet()) {
+                Object value = state.get(key);
+                if (value != null) {
+                    if (value == NULL) {
+                        operations.add(new BucketsSetIfAllKeysExistOperation(codec, args, transactionId));
+                        return CompletableFuture.completedFuture(false);
+                    }
+                } else {
+                    keysToSet.add(key);
+                }
+            }
+
+            if (keysToSet.isEmpty()) {
+                operations.add(new BucketsSetIfAllKeysExistOperation(codec, args, transactionId));
+                state.putAll(buckets);
+                return CompletableFuture.completedFuture(true);
+            }
+
+            RKeys keys = new RedissonKeys(commandExecutor);
+            String[] ks = keysToSet.toArray(new String[keysToSet.size()]);
+            return keys.countExistsAsync(ks).thenApply(res -> {
+                operations.add(new BucketsSetIfAllKeysExistOperation(codec, args, transactionId));
+                if (Objects.equals(res, (long) keysToSet.size())) {
                     state.putAll(buckets);
                     return true;
                 } else {

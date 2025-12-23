@@ -610,6 +610,7 @@ public interface RedisCommands {
     RedisCommand<List<Object>> MGET = new RedisCommand<List<Object>>("MGET", new ObjectListReplayDecoder<Object>());
     RedisStrictCommand<Void> MSET = new RedisStrictCommand<Void>("MSET", new VoidReplayConvertor());
     RedisStrictCommand<Boolean> MSETNX = new RedisStrictCommand<Boolean>("MSETNX", new BooleanReplayConvertor());
+    RedisStrictCommand<Boolean> MSETEX = new RedisStrictCommand<Boolean>("MSETEX", new BooleanReplayConvertor());
 
     RedisCommand<Boolean> HPEXPIRE = new RedisCommand("HPEXPIRE", new ListFirstObjectDecoder(), new Convertor<Boolean>() {
         @Override
