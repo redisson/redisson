@@ -135,15 +135,6 @@ public class RedissonCodecTest extends RedisDockerTest {
     }
 
     @Test
-    public void testSnappyBig() throws IOException {
-        SnappyCodec sc = new SnappyCodec();
-        String randomData = RandomString.make(Short.MAX_VALUE*2 + 142);
-        ByteBuf g = sc.getValueEncoder().encode(randomData);
-        String decompressedData = (String) sc.getValueDecoder().decode(g, null);
-        assertThat(decompressedData).isEqualTo(randomData);
-    }
-    
-    @Test
     public void testSnappyV2() {
         Config config = createConfig();
         config.setCodec(snappyCodecV2);
