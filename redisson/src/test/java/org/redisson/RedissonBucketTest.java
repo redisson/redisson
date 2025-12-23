@@ -827,7 +827,7 @@ public class RedissonBucketTest extends RedisDockerTest {
         String digest = bucket.getDigest();
 
         assertThat(digest).isNotNull();
-        assertThat(digest).matches("[0-9a-f]+");
+        assertThat(digest).matches("[0-9a-f]+").hasSize(16);
 
         bucket.delete();
 
