@@ -18,6 +18,8 @@ package org.redisson;
 import org.redisson.api.JsonType;
 import org.redisson.api.RFuture;
 import org.redisson.api.RJsonBucket;
+import org.redisson.api.bucket.CompareAndSetArgs;
+import org.redisson.api.bucket.CompareAndSetParams;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
@@ -37,10 +39,7 @@ import org.redisson.command.CommandAsyncExecutor;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -967,4 +966,69 @@ public class RedissonJsonBucket<V> extends RedissonExpirable implements RJsonBuc
     public RFuture<String> getDigestAsync() {
         throw new UnsupportedOperationException();
     }
+
+    @Override
+    public boolean compareAndSet(CompareAndSetArgs<V> args) {
+        return get(compareAndSetAsync(args));
+    }
+
+    @Override
+    public RFuture<Boolean> compareAndSetAsync(CompareAndSetArgs<V> args) {
+        CompareAndSetParams<V> params = (CompareAndSetParams<V>) args;
+
+        Objects.requireNonNull(params.getNewValue(), "New value is null");
+
+        CompareAndSetParams.ConditionType conditionType = params.getConditionType();
+
+        switch (conditionType) {
+            case EXPECTED:
+                return compareAndSetAsync(params, params.getExpectedValue(), "E");
+            case UNEXPECTED:
+                return compareAndSetAsync(params, params.getUnexpectedValue(), "U");
+            case EXPECTED_DIGEST:
+                throw new IllegalStateException("Digest is unsupported for JSON type");
+            case UNEXPECTED_DIGEST:
+                throw new IllegalStateException("Digest is unsupported for JSON type");
+            default:
+                throw new IllegalStateException("Unknown condition type: " + conditionType);
+        }
+    }
+
+    private RFuture<Boolean> compareAndSetAsync(CompareAndSetParams<V> args, V value, String cond) {
+        List<Object> params = new ArrayList<>();
+        if (value == null) {
+            cond += "N";
+        }
+        params.add(cond);
+        params.add(encode(value));
+        params.add(encode(args.getNewValue()));
+        if (args.getTimeToLive() != null) {
+            params.add("pexpire");
+            params.add(args.getTimeToLive().toMillis());
+        } else if (args.getExpireAt() != null) {
+            params.add("pexpireat");
+            params.add(args.getExpireAt().toEpochMilli());
+        } else {
+            params.add("");
+        }
+
+        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
+                  "local cv = redis.call('get', KEYS[1]) " +
+                        "if (ARGV[1] == 'E' and cv == ARGV[2]) " +
+                            "or (ARGV[1] == 'EN' and cv == false) " +
+                            "or (ARGV[1] == 'UN' and cv ~= false) " +
+                            "or (ARGV[1] == 'U' and cv ~= ARGV[2]) then " +
+
+                            "redis.call('set', KEYS[1], ARGV[3]) " +
+
+                            "if #ARGV[4] > 0 then " +
+                                "redis.call(ARGV[4], KEYS[1], ARGV[5]) " +
+                            "end " +
+                            "return 1 " +
+                        "end " +
+                        "return 0 ",
+                Collections.singletonList(getName()),
+                params.toArray());
+    }
+
 }

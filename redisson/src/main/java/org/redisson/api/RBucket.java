@@ -15,6 +15,8 @@
  */
 package org.redisson.api;
 
+import org.redisson.api.bucket.CompareAndSetArgs;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
@@ -132,6 +134,38 @@ public interface RBucket<V> extends RExpirable, RBucketAsync<V> {
      *         was not equal to the expected value.
      */
     boolean compareAndSet(V expect, V update);
+
+    /**
+     * Atomically sets the value if the condition specified in args is met.
+     * <p>
+     * Supports multiple comparison modes:
+     * <ul>
+     *   <li>{@link CompareAndSetArgs#expected(Object)} - compatible with any Redis/Valkey version</li>
+     *   <li>{@link CompareAndSetArgs#unexpected(Object)} - compatible with any Redis/Valkey version</li>
+     *   <li>{@link CompareAndSetArgs#expectedDigest(String)} - requires Redis 8.4+, uses SET IFDEQ</li>
+     *   <li>{@link CompareAndSetArgs#unexpectedDigest(String)} - requires Redis 8.4+, uses SET IFDNE</li>
+     * </ul>
+     * <p>
+     * Example usage:
+     * <pre>
+     * // Set new value if current value equals expected value
+     * bucket.compareAndSet(CompareAndSetArgs.&lt;String&gt;expected("oldValue").set("newValue"));
+     *
+     * // Set new value with TTL if current value does not equal unexpected value
+     * bucket.compareAndSet(CompareAndSetArgs.&lt;String&gt;unexpected("badValue")
+     *     .set("newValue")
+     *     .timeToLive(Duration.ofMinutes(5)));
+     *
+     * // Set new value if hash digest matches (Redis 8.4+)
+     * bucket.compareAndSet(CompareAndSetArgs.&lt;String&gt;expectedDigest("b6acb9d84a38ff74")
+     *     .set("newValue")
+     *     .expireAt(Instant.now().plusSeconds(3600)));
+     * </pre>
+     *
+     * @param args compare-and-set arguments containing condition and new value
+     * @return {@code true} if successful, {@code false} if condition was not met
+     */
+    boolean compareAndSet(CompareAndSetArgs<V> args);
 
     /**
      * Retrieves current element in the holder and replaces it with <code>newValue</code>. 

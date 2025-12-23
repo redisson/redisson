@@ -244,7 +244,7 @@ public class RedissonBucketTest extends RedisDockerTest {
 
         RedissonClient r = Redisson.create(c);
 
-        String val = RandomString.make(1048 * 30000);
+        String val = RandomString.make(1048 * 40000);
         Assertions.assertThrows(RedisResponseTimeoutException.class, () -> {
             RBucket<String> al = r.getBucket("test");
             al.set(val);

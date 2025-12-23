@@ -15,6 +15,7 @@
  */
 package org.redisson.api;
 
+import org.redisson.api.bucket.CompareAndSetArgs;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
@@ -121,6 +122,22 @@ public interface RBucketReactive<V> extends RExpirableReactive {
      *         was not equal to the expected value.
      */
     Mono<Boolean> compareAndSet(V expect, V update);
+
+    /**
+     * Atomically sets the value if the condition specified in args is met.
+     * <p>
+     * Supports multiple comparison modes:
+     * <ul>
+     *   <li>{@link CompareAndSetArgs#expected(Object)} - compatible with any Redis/Valkey version</li>
+     *   <li>{@link CompareAndSetArgs#unexpected(Object)} - compatible with any Redis/Valkey version</li>
+     *   <li>{@link CompareAndSetArgs#expectedDigest(String)} - requires Redis 8.4+, uses SET IFDEQ</li>
+     *   <li>{@link CompareAndSetArgs#unexpectedDigest(String)} - requires Redis 8.4+, uses SET IFDNE</li>
+     * </ul>
+     *
+     * @param args compare-and-set arguments containing condition and new value
+     * @return {@code true} if successful, {@code false} if condition was not met
+     */
+    Mono<Boolean> compareAndSet(CompareAndSetArgs<V> args);
 
     /**
      * Retrieves current element in the holder and replaces it with <code>newValue</code>. 
