@@ -15,6 +15,7 @@
  */
 package org.redisson.api;
 
+import org.redisson.api.keys.SetArgs;
 import reactor.core.publisher.Mono;
 
 import java.util.Map;
@@ -54,5 +55,14 @@ public interface RBucketsReactive {
      * @return void
      */
     Mono<Void> set(Map<String, ?> buckets);
+
+    /**
+     * Saves objects mapped by Redis key.
+     * If all of them is already exist
+     *
+     * @param args - args
+     * @return <code>true</code> if object has been set overwise <code>false</code>
+     */
+    Mono<Boolean> setIfAllKeysExist(SetArgs args);
     
 }

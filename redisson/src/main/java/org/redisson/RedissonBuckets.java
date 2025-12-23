@@ -17,6 +17,8 @@ package org.redisson;
 
 import org.redisson.api.RBuckets;
 import org.redisson.api.RFuture;
+import org.redisson.api.keys.BucketsSetArgsParams;
+import org.redisson.api.keys.SetArgs;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
@@ -157,4 +159,58 @@ public class RedissonBuckets implements RBuckets {
         }, mappedBuckets.keySet().toArray(new Object[0]));
     }
 
+    @Override
+    public boolean setIfAllKeysExist(SetArgs args) {
+        return commandExecutor.get(setIfAllKeysExistAsync(args));
+    }
+
+    @Override
+    public RFuture<Boolean> setIfAllKeysExistAsync(SetArgs args) {
+        return setAsyncInternal("XX", args);
+    }
+
+    private RFuture<Boolean> setAsyncInternal(String subCommand, SetArgs args) {
+
+        BucketsSetArgsParams pps = (BucketsSetArgsParams) args;
+        if (pps.getEntries().isEmpty()) {
+            return new CompletableFutureWrapper<>(false);
+        }
+
+        Map<String, ?> mappedBuckets = map(pps.getEntries());
+        return commandExecutor.writeBatchedAsync(codec, RedisCommands.MSETEX, new BooleanSlotCallback() {
+            @Override
+            public Object[] createParams(List<Object> keys) {
+                List<Object> params = new ArrayList<>(keys.size());
+                params.add(keys.size());
+                for (Object key : keys) {
+                    params.add(key);
+                    try {
+                        params.add(codec.getValueEncoder().encode(mappedBuckets.get(key)));
+                    } catch (IOException e) {
+                        throw new IllegalArgumentException(e);
+                    }
+                }
+
+                if (!subCommand.isEmpty()) {
+                    params.add(subCommand);
+                }
+
+                if (pps.getTimeToLive() != null) {
+                    params.add("PX");
+                    params.add(pps.getTimeToLive().toMillis());
+                }
+
+                if (pps.getExpireAt() != null) {
+                    params.add("PXAT");
+                    params.add(pps.getExpireAt().toEpochMilli());
+                }
+
+                if (pps.isKeepTTL()) {
+                    params.add("KEEPTTL");
+                }
+
+                return params.toArray();
+            }
+        }, mappedBuckets.keySet().toArray(new Object[0]));
+    }
 }
