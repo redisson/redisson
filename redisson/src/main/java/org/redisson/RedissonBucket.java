@@ -18,8 +18,7 @@ package org.redisson;
 import org.redisson.api.ObjectListener;
 import org.redisson.api.RBucket;
 import org.redisson.api.RFuture;
-import org.redisson.api.bucket.CompareAndSetArgs;
-import org.redisson.api.bucket.CompareAndSetParams;
+import org.redisson.api.bucket.*;
 import org.redisson.api.listener.SetObjectListener;
 import org.redisson.api.listener.TrackingListener;
 import org.redisson.client.codec.Codec;
@@ -33,6 +32,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -439,11 +439,10 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
     public RFuture<Boolean> compareAndSetAsync(CompareAndSetArgs<V> args) {
         CompareAndSetParams<V> params = (CompareAndSetParams<V>) args;
 
-        if (params.getNewValue() == null) {
-            throw new NullPointerException("New value must be set using set() method");
-        }
+        Objects.requireNonNull(params, "Args can't be null");
+        Objects.requireNonNull(params.getNewValue(), "New value must be set");
 
-        CompareAndSetParams.ConditionType conditionType = params.getConditionType();
+        ConditionType conditionType = params.getConditionType();
 
         switch (conditionType) {
             case EXPECTED:
@@ -514,6 +513,59 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
         }
 
         return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.SET_BOOLEAN, params.toArray());
+    }
+
+    @Override
+    public boolean compareAndDelete(CompareAndDeleteArgs<V> args) {
+        return get(compareAndDeleteAsync(args));
+    }
+
+    @Override
+    public RFuture<Boolean> compareAndDeleteAsync(CompareAndDeleteArgs<V> args) {
+        CompareAndDeleteParams<V> params = (CompareAndDeleteParams<V>) args;
+
+        Objects.requireNonNull(params, "Args can't be null");
+
+        ConditionType conditionType = params.getConditionType();
+
+        switch (conditionType) {
+            case EXPECTED:
+                return compareAndDeleteExpectedAsync(params.getValue());
+            case UNEXPECTED:
+                return compareAndDeleteUnexpectedAsync(params.getValue());
+            case EXPECTED_DIGEST:
+                return commandExecutor.writeAsync(getName(), codec, RedisCommands.DELEX, getName(), "IFDEQ", params.getDigest());
+            case UNEXPECTED_DIGEST:
+                return commandExecutor.writeAsync(getName(), codec, RedisCommands.DELEX, getName(), "IFDNE", params.getDigest());
+            default:
+                throw new IllegalArgumentException("Unknown mode: " + params.getConditionType());
+        }
+    }
+
+    private RFuture<Boolean> compareAndDeleteExpectedAsync(V expected) {
+        String script =
+                "local currValue = redis.call('get', KEYS[1]) " +
+                "if currValue == ARGV[1] then " +
+                    "redis.call('del', KEYS[1]) " +
+                    "return 1 " +
+                "end " +
+                "return 0 ";
+        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
+                script,
+                Collections.singletonList(getName()), encode(expected));
+    }
+
+    private RFuture<Boolean> compareAndDeleteUnexpectedAsync(V unexpected) {
+        String script =
+                "local currValue = redis.call('get', KEYS[1]) " +
+                "if currValue ~= false and currValue ~= ARGV[1] then " +
+                    "redis.call('del', KEYS[1]) " +
+                    "return 1 " +
+                "end " +
+                "return 0 ";
+        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
+                script,
+                Collections.singletonList(getName()), encode(unexpected));
     }
 
 }

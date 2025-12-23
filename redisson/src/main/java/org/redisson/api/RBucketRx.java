@@ -18,6 +18,7 @@ package org.redisson.api;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Single;
+import org.redisson.api.bucket.CompareAndDeleteArgs;
 import org.redisson.api.bucket.CompareAndSetArgs;
 
 import java.time.Duration;
@@ -132,14 +133,29 @@ public interface RBucketRx<V> extends RExpirableRx {
      * <ul>
      *   <li>{@link CompareAndSetArgs#expected(Object)} - compatible with any Redis/Valkey version</li>
      *   <li>{@link CompareAndSetArgs#unexpected(Object)} - compatible with any Redis/Valkey version</li>
-     *   <li>{@link CompareAndSetArgs#expectedDigest(String)} - requires Redis 8.4+, uses SET IFDEQ</li>
-     *   <li>{@link CompareAndSetArgs#unexpectedDigest(String)} - requires Redis 8.4+, uses SET IFDNE</li>
+     *   <li>{@link CompareAndSetArgs#expectedDigest(String)} - requires Redis 8.4+</li>
+     *   <li>{@link CompareAndSetArgs#unexpectedDigest(String)} - requires Redis 8.4+</li>
      * </ul>
      *
      * @param args compare-and-set arguments containing condition and new value
      * @return {@code true} if successful, {@code false} if condition was not met
      */
     Single<Boolean> compareAndSet(CompareAndSetArgs<V> args);
+
+    /**
+     * Conditionally deletes the bucket based on value comparison.
+     * <p>
+     * <ul>
+     *    <li> {@link CompareAndDeleteArgs#expected(Object)} - compatible with any Redis/Valkey version</li>
+     *    <li> {@link CompareAndDeleteArgs#unexpected(Object)} - compatible with any Redis/Valkey version</li>
+     *    <li> {@link CompareAndDeleteArgs#expectedDigest(String)} - requires Redis 8.4+</li>
+     *    <li> {@link CompareAndDeleteArgs#unexpectedDigest(String)} - requires Redis 8.4+</li>
+     * </ul>
+     *
+     * @param args comparison arguments
+     * @return {@code true} if bucket was deleted, {@code false} otherwise
+     */
+    Single<Boolean> compareAndDelete(CompareAndDeleteArgs<V> args);
 
     /**
      * Retrieves current element in the holder and replaces it with <code>newValue</code>. 

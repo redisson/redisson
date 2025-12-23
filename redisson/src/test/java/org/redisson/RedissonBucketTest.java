@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.redisson.api.*;
+import org.redisson.api.bucket.CompareAndDeleteArgs;
 import org.redisson.api.listener.SetObjectListener;
 import org.redisson.api.listener.TrackingListener;
 import org.redisson.api.options.PlainOptions;
@@ -30,6 +31,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class RedissonBucketTest extends RedisDockerTest {
 
@@ -833,6 +835,67 @@ public class RedissonBucketTest extends RedisDockerTest {
 
         String emptyDigest = bucket.getDigest();
         assertThat(emptyDigest).isNull();
+    }
+
+    @Test
+    public void testCompareAndDeleteExpected() {
+        RBucket<String> bucket = redisson.getBucket("testCompareAndDeleteExpected");
+
+        bucket.set("value1");
+        assertThat(bucket.compareAndDelete(CompareAndDeleteArgs.expected("value1"))).isTrue();
+        assertThat(bucket.isExists()).isFalse();
+
+        bucket.set("value2");
+        assertThat(bucket.compareAndDelete(CompareAndDeleteArgs.expected("wrongValue"))).isFalse();
+        assertThat(bucket.isExists()).isTrue();
+        assertThat(bucket.get()).isEqualTo("value2");
+
+        bucket.delete();
+        assertThat(bucket.compareAndDelete(CompareAndDeleteArgs.expected("anyValue"))).isFalse();
+    }
+
+    @Test
+    public void testCompareAndDeleteUnexpected() {
+        RBucket<String> bucket = redisson.getBucket("testCompareAndDeleteUnexpected");
+
+        bucket.set("value1");
+        assertThat(bucket.compareAndDelete(CompareAndDeleteArgs.unexpected("differentValue"))).isTrue();
+        assertThat(bucket.isExists()).isFalse();
+
+        bucket.set("value2");
+        assertThat(bucket.compareAndDelete(CompareAndDeleteArgs.unexpected("value2"))).isFalse();
+        assertThat(bucket.isExists()).isTrue();
+        assertThat(bucket.get()).isEqualTo("value2");
+
+        bucket.delete();
+        assertThat(bucket.compareAndDelete(CompareAndDeleteArgs.unexpected("anyValue"))).isFalse();
+    }
+
+    @Test
+    public void testCompareAndDeleteAsync() throws Exception {
+        RBucket<String> bucket = redisson.getBucket("testCompareAndDeleteAsync");
+
+        bucket.set("value1");
+        assertThat(bucket.compareAndDeleteAsync(CompareAndDeleteArgs.expected("value1")).get()).isTrue();
+        assertThat(bucket.isExists()).isFalse();
+
+        bucket.set("value2");
+        assertThat(bucket.compareAndDeleteAsync(CompareAndDeleteArgs.unexpected("differentValue")).get()).isTrue();
+        assertThat(bucket.isExists()).isFalse();
+    }
+
+    @Test
+    public void testCompareAndDeleteArgsValidation() {
+        RBucket<String> bucket = redisson.getBucket("testCompareAndDeleteValidation");
+
+        assertThatThrownBy(() -> bucket.compareAndDelete(null))
+                .isInstanceOf(NullPointerException.class);
+
+        assertThatThrownBy(() -> CompareAndDeleteArgs.expectedDigest(null))
+                .isInstanceOf(NullPointerException.class);
+
+        assertThatThrownBy(() -> CompareAndDeleteArgs.unexpectedDigest(null))
+                .isInstanceOf(NullPointerException.class);
     }
 
 }

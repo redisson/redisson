@@ -18,8 +18,7 @@ package org.redisson;
 import org.redisson.api.JsonType;
 import org.redisson.api.RFuture;
 import org.redisson.api.RJsonBucket;
-import org.redisson.api.bucket.CompareAndSetArgs;
-import org.redisson.api.bucket.CompareAndSetParams;
+import org.redisson.api.bucket.*;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
@@ -978,7 +977,7 @@ public class RedissonJsonBucket<V> extends RedissonExpirable implements RJsonBuc
 
         Objects.requireNonNull(params.getNewValue(), "New value is null");
 
-        CompareAndSetParams.ConditionType conditionType = params.getConditionType();
+        ConditionType conditionType = params.getConditionType();
 
         switch (conditionType) {
             case EXPECTED:
@@ -1029,6 +1028,57 @@ public class RedissonJsonBucket<V> extends RedissonExpirable implements RJsonBuc
                         "return 0 ",
                 Collections.singletonList(getName()),
                 params.toArray());
+    }
+
+    @Override
+    public boolean compareAndDelete(CompareAndDeleteArgs<V> args) {
+        return get(compareAndDeleteAsync(args));
+    }
+
+    @Override
+    public RFuture<Boolean> compareAndDeleteAsync(CompareAndDeleteArgs<V> args) {
+        CompareAndDeleteParams<V> params = (CompareAndDeleteParams<V>) args;
+
+        ConditionType conditionType = params.getConditionType();
+
+        switch (conditionType) {
+            case EXPECTED:
+                return compareAndDeleteExpectedAsync(params.getValue());
+            case UNEXPECTED:
+                return compareAndDeleteUnexpectedAsync(params.getValue());
+            case EXPECTED_DIGEST:
+                throw new IllegalStateException("Digest is unsupported for JSON type");
+            case UNEXPECTED_DIGEST:
+                throw new IllegalStateException("Digest is unsupported for JSON type");
+            default:
+                throw new IllegalArgumentException("Unknown mode: " + params.getConditionType());
+        }
+    }
+
+    private RFuture<Boolean> compareAndDeleteExpectedAsync(V expected) {
+        String script =
+                "local currValue = redis.call('get', KEYS[1]) " +
+                        "if currValue == ARGV[1] then " +
+                        "redis.call('del', KEYS[1]) " +
+                        "return 1 " +
+                        "end " +
+                        "return 0 ";
+        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
+                script,
+                Collections.singletonList(getName()), encode(expected));
+    }
+
+    private RFuture<Boolean> compareAndDeleteUnexpectedAsync(V unexpected) {
+        String script =
+                "local currValue = redis.call('get', KEYS[1]) " +
+                        "if currValue ~= false and currValue ~= ARGV[1] then " +
+                        "redis.call('del', KEYS[1]) " +
+                        "return 1 " +
+                        "end " +
+                        "return 0 ";
+        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
+                script,
+                Collections.singletonList(getName()), encode(unexpected));
     }
 
 }

@@ -15,6 +15,7 @@
  */
 package org.redisson.api;
 
+import org.redisson.api.bucket.CompareAndDeleteArgs;
 import org.redisson.api.bucket.CompareAndSetArgs;
 import reactor.core.publisher.Mono;
 
@@ -138,6 +139,21 @@ public interface RBucketReactive<V> extends RExpirableReactive {
      * @return {@code true} if successful, {@code false} if condition was not met
      */
     Mono<Boolean> compareAndSet(CompareAndSetArgs<V> args);
+
+    /**
+     * Conditionally deletes the bucket based on value comparison.
+     * <p>
+     * <ul>
+     *    <li> {@link CompareAndDeleteArgs#expected(Object)} - compatible with any Redis/Valkey version</li>
+     *    <li> {@link CompareAndDeleteArgs#unexpected(Object)} - compatible with any Redis/Valkey version</li>
+     *    <li> {@link CompareAndDeleteArgs#expectedDigest(String)} - requires Redis 8.4+</li>
+     *    <li> {@link CompareAndDeleteArgs#unexpectedDigest(String)} - requires Redis 8.4+</li>
+     * </ul>
+     *
+     * @param args comparison arguments
+     * @return {@code true} if bucket was deleted, {@code false} otherwise
+     */
+    Mono<Boolean> compareAndDelete(CompareAndDeleteArgs<V> args);
 
     /**
      * Retrieves current element in the holder and replaces it with <code>newValue</code>. 

@@ -25,16 +25,9 @@ import java.time.Instant;
  *
  * @param <V> value type
  */
-public class CompareAndSetParams<V> implements CompareAndSetStep<V>, CompareAndSetArgs<V> {
+public final class CompareAndSetParams<V> implements CompareAndSetStep<V>, CompareAndSetArgs<V> {
 
-    public enum ConditionType {
-        EXPECTED,
-        UNEXPECTED,
-        EXPECTED_DIGEST,
-        UNEXPECTED_DIGEST
-    }
-
-    private ConditionType conditionType;
+    private final ConditionType conditionType;
     private V expectedValue;
     private V unexpectedValue;
     private String expectedDigest;
@@ -43,31 +36,24 @@ public class CompareAndSetParams<V> implements CompareAndSetStep<V>, CompareAndS
     private Duration timeToLive;
     private Instant expireAt;
 
-    CompareAndSetParams() {
+    CompareAndSetParams(ConditionType conditionType, V object) {
+        this.conditionType = conditionType;
+        if (conditionType == ConditionType.EXPECTED) {
+            this.expectedValue = object;
+        }
+        if (conditionType == ConditionType.UNEXPECTED) {
+            this.unexpectedValue = object;
+        }
     }
 
-    CompareAndSetStep<V> expected(V object) {
-        this.conditionType = ConditionType.EXPECTED;
-        this.expectedValue = object;
-        return this;
-    }
-
-    CompareAndSetStep<V> unexpected(V object) {
-        this.conditionType = ConditionType.UNEXPECTED;
-        this.unexpectedValue = object;
-        return this;
-    }
-
-    CompareAndSetStep<V> expectedDigest(String value) {
-        this.conditionType = ConditionType.EXPECTED_DIGEST;
-        this.expectedDigest = value;
-        return this;
-    }
-
-    CompareAndSetStep<V> unexpectedDigest(String value) {
-        this.conditionType = ConditionType.UNEXPECTED_DIGEST;
-        this.unexpectedDigest = value;
-        return this;
+    CompareAndSetParams(ConditionType conditionType, String digest) {
+        this.conditionType = conditionType;
+        if (conditionType == ConditionType.EXPECTED_DIGEST) {
+            this.expectedDigest = digest;
+        }
+        if (conditionType == ConditionType.UNEXPECTED_DIGEST) {
+            this.unexpectedDigest = digest;
+        }
     }
 
     @Override

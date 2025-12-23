@@ -17,6 +17,7 @@ package org.redisson.api.bucket;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Objects;
 
 /**
  * Arguments for compare-and-set operation on RBucket.
@@ -49,7 +50,7 @@ public interface CompareAndSetArgs<V> {
      * @return condition builder requiring {@code set()} to be called
      */
     static <V> CompareAndSetStep<V> expected(V object) {
-        return new CompareAndSetParams<V>().expected(object);
+        return new CompareAndSetParams<>(ConditionType.EXPECTED, object);
     }
 
     /**
@@ -62,7 +63,7 @@ public interface CompareAndSetArgs<V> {
      * @return condition builder requiring {@code set()} to be called
      */
     static <V> CompareAndSetStep<V> unexpected(V object) {
-        return new CompareAndSetParams<V>().unexpected(object);
+        return new CompareAndSetParams<>(ConditionType.UNEXPECTED, object);
     }
 
     /**
@@ -76,7 +77,8 @@ public interface CompareAndSetArgs<V> {
      * @return condition builder requiring {@code set()} to be called
      */
     static <V> CompareAndSetStep<V> expectedDigest(String value) {
-        return new CompareAndSetParams<V>().expectedDigest(value);
+        Objects.requireNonNull(value, "Digest value can't be null");
+        return new CompareAndSetParams<V>(ConditionType.EXPECTED_DIGEST, value);
     }
 
     /**
@@ -90,7 +92,8 @@ public interface CompareAndSetArgs<V> {
      * @return condition builder requiring {@code set()} to be called
      */
     static <V> CompareAndSetStep<V> unexpectedDigest(String value) {
-        return new CompareAndSetParams<V>().unexpectedDigest(value);
+        Objects.requireNonNull(value, "Digest value can't be null");
+        return new CompareAndSetParams<V>(ConditionType.UNEXPECTED_DIGEST, value);
     }
 
     /**

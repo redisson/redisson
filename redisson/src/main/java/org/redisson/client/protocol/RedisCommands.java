@@ -675,7 +675,8 @@ public interface RedisCommands {
     RedisStrictCommand<Boolean> DEL_BOOL = new RedisStrictCommand<Boolean>("DEL", new BooleanNullSafeReplayConvertor());
     RedisStrictCommand<Boolean> DEL_OBJECTS = new RedisStrictCommand<Boolean>("DEL", new BooleanAmountReplayConvertor());
     RedisStrictCommand<Void> DEL_VOID = new RedisStrictCommand<Void>("DEL", new VoidReplayConvertor());
-    
+    RedisCommand<Boolean> DELEX = new RedisCommand<>("DELEX", new BooleanReplayConvertor());
+
     RedisStrictCommand<Long> UNLINK = new RedisStrictCommand<Long>("UNLINK");
     RedisStrictCommand<Boolean> UNLINK_BOOL = new RedisStrictCommand<Boolean>("UNLINK", new BooleanNullSafeReplayConvertor());
 
