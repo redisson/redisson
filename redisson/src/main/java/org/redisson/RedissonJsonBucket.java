@@ -957,4 +957,14 @@ public class RedissonJsonBucket<V> extends RedissonExpirable implements RJsonBuc
     public RFuture<Long> findCommonLengthAsync(String name) {
         throw new UnsupportedOperationException();
     }
+
+    @Override
+    public String getDigest() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public RFuture<String> getDigestAsync() {
+        throw new UnsupportedOperationException();
+    }
 }

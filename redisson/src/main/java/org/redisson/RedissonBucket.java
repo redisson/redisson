@@ -21,6 +21,7 @@ import org.redisson.api.RFuture;
 import org.redisson.api.listener.SetObjectListener;
 import org.redisson.api.listener.TrackingListener;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.CompletableFutureWrapper;
@@ -414,4 +415,15 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
     public RFuture<Long> findCommonLengthAsync(String name) {
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.LCS, getRawName(), mapName(name), "LEN");
     }
+
+    @Override
+    public String getDigest() {
+        return get(getDigestAsync());
+    }
+
+    @Override
+    public RFuture<String> getDigestAsync() {
+        return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.DIGEST, getRawName());
+    }
+
 }

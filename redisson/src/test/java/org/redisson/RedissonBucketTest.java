@@ -819,4 +819,20 @@ public class RedissonBucketTest extends RedisDockerTest {
         assertThat(bucket1.findCommonLength("test2")).isEqualTo(0);
     }
 
+    @Test
+    public void testGetDigest() {
+        RBucket<String> bucket = redisson.getBucket("testDigest");
+        bucket.set("Hello world");
+
+        String digest = bucket.getDigest();
+
+        assertThat(digest).isNotNull();
+        assertThat(digest).matches("[0-9a-f]+");
+
+        bucket.delete();
+
+        String emptyDigest = bucket.getDigest();
+        assertThat(emptyDigest).isNull();
+    }
+
 }

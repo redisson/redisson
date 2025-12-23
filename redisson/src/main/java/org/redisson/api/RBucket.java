@@ -256,4 +256,13 @@ public interface RBucket<V> extends RExpirable, RBucketAsync<V> {
      */
     long findCommonLength(String name);
 
+    /**
+     * Returns the hash digest of the value stored in this bucket as a hexadecimal string.
+     * The digest is computed using the XXH3 hash algorithm.
+     * <p>
+     * Requires <b>Redis 8.4.0 or higher</b>.
+     *
+     * @return hash digest as hexadecimal string, or {@code null} if the bucket doesn't exist
+     */
+    String getDigest();
 }

@@ -262,4 +262,14 @@ public interface RBucketReactive<V> extends RExpirableReactive {
      */
     Mono<Long> findCommonLength(String name);
 
+    /**
+     * Returns the hash digest of the value stored in this bucket as a hexadecimal string.
+     * The digest is computed using the XXH3 hash algorithm.
+     * <p>
+     * Requires <b>Redis 8.4.0 or higher</b>.
+     *
+     * @return hash digest as hexadecimal string, or empty Mono if the bucket doesn't exist
+     */
+    Mono<String> getDigest();
+
 }

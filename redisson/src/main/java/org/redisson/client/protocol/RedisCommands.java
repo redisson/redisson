@@ -198,6 +198,8 @@ public interface RedisCommands {
     RedisCommand<List<Object>> ZPOPMIN = new RedisCommand<List<Object>>("ZPOPMIN", new ObjectListReplayDecoder<Object>());
     RedisCommand<List<Object>> ZPOPMAX = new RedisCommand<List<Object>>("ZPOPMAX", new ObjectListReplayDecoder<Object>());
 
+    RedisCommand<String> DIGEST = new RedisCommand<>("DIGEST");
+
     RedisCommand<List<ScoredEntry>> BZMPOP_ENTRIES = new RedisCommand<>("BZMPOP",
             new ListMultiDecoder2(
                     new ObjectDecoder(StringCodec.INSTANCE.getValueDecoder()) {
