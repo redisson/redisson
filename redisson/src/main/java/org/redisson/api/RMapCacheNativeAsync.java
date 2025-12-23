@@ -137,6 +137,34 @@ public interface RMapCacheNativeAsync<K, V> extends RMapAsync<K, V> {
     RFuture<V> putIfAbsentAsync(K key, V value, Instant time);
 
     /**
+     * Stores the specified {@code value} mapped by {@code key}
+     * only if mapping already exists.
+     * <p>
+     * Specified time to live starts from the moment this method call was completed.
+     *
+     * @param key - map key
+     * @param value - map value
+     * @param ttl - time to live
+     * @return previous associated value
+     *         or {@code null} if key doesn't exist
+     */
+    RFuture<V> putIfExistAsync(K key, V value, Duration ttl);
+
+    /**
+     * Stores the specified {@code value} mapped by {@code key}
+     * only if mapping already exists.
+     * <p>
+     * Entry expires at specified instant.
+     *
+     * @param key - map key
+     * @param value - map value
+     * @param time - expiration instant
+     * @return previous associated value
+     *         or {@code null} if key doesn't exist
+     */
+    RFuture<V> putIfExistAsync(K key, V value, Instant time);
+
+    /**
      * If the specified key is not already associated
      * with a value, associate it with the given value.
      * <p>

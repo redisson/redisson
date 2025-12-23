@@ -1141,5 +1141,103 @@ public class RedissonMapCacheNativeTest extends BaseMapTest {
         assertThat(map.fastPutIfAbsent(key2, new SimpleValue("8"), Instant.now().plusSeconds(1))).isTrue();
         map.destroy();
     }
+
+    @Test
+    public void testPutIfExistWithDuration() {
+        RMapCacheNative<String, String> map = redisson.getMapCacheNative("test");
+
+        assertThat(map.putIfExist("key1", "value1", Duration.ofSeconds(10))).isNull();
+        assertThat(map.get("key1")).isNull();
+
+        map.put("key2", "value2", Duration.ofSeconds(30));
+
+        assertThat(map.putIfExist("key2", "newValue2", Duration.ofSeconds(10))).isEqualTo("value2");
+        assertThat(map.get("key2")).isEqualTo("newValue2");
+
+        map.destroy();
+    }
+
+    @Test
+    public void testPutIfExistWithInstant() {
+        RMapCacheNative<String, String> map = redisson.getMapCacheNative("test");
+
+        Instant futureTime = Instant.now().plusSeconds(60);
+
+        assertThat(map.putIfExist("key1", "value1", futureTime)).isNull();
+        assertThat(map.get("key1")).isNull();
+
+        map.put("key2", "value2", Duration.ofSeconds(30));
+
+        assertThat(map.putIfExist("key2", "newValue2", futureTime)).isEqualTo("value2");
+        assertThat(map.get("key2")).isEqualTo("newValue2");
+
+        map.destroy();
+    }
+
+    @Test
+    public void testPutIfExistWithDurationExpiration() throws InterruptedException {
+        RMapCacheNative<String, String> map = redisson.getMapCacheNative("test");
+
+        map.put("key", "value", Duration.ofSeconds(30));
+
+        assertThat(map.putIfExist("key", "newValue", Duration.ofSeconds(1))).isEqualTo("value");
+        assertThat(map.get("key")).isEqualTo("newValue");
+
+        Thread.sleep(1500);
+
+        assertThat(map.get("key")).isNull();
+
+        map.destroy();
+    }
+
+    @Test
+    public void testPutIfExistWithInstantExpiration() throws InterruptedException {
+        RMapCacheNative<String, String> map = redisson.getMapCacheNative("test");
+
+        map.put("key", "value", Duration.ofSeconds(30));
+
+        Instant expirationTime = Instant.now().plusSeconds(1);
+        assertThat(map.putIfExist("key", "newValue", expirationTime)).isEqualTo("value");
+        assertThat(map.get("key")).isEqualTo("newValue");
+
+        Thread.sleep(1500);
+
+        assertThat(map.get("key")).isNull();
+
+        map.destroy();
+    }
+
+    @Test
+    public void testPutIfExistWithNullValueDuration() {
+        RMapCacheNative<String, String> map = redisson.getMapCacheNative("test");
+
+        assertThat(map.putIfExist("key1", null, Duration.ofSeconds(10))).isNull();
+        assertThat(map.containsKey("key1")).isFalse();
+
+        map.put("key2", "value2", Duration.ofSeconds(30));
+
+        assertThat(map.putIfExist("key2", null, Duration.ofSeconds(10))).isEqualTo("value2");
+        assertThat(map.containsKey("key2")).isFalse();
+
+        map.destroy();
+    }
+
+    @Test
+    public void testPutIfExistWithNullValueInstant() {
+        RMapCacheNative<String, String> map = redisson.getMapCacheNative("test");
+
+        Instant futureTime = Instant.now().plusSeconds(60);
+
+        assertThat(map.putIfExist("key1", null, futureTime)).isNull();
+        assertThat(map.containsKey("key1")).isFalse();
+
+        map.put("key2", "value2", Duration.ofSeconds(30));
+
+        assertThat(map.putIfExist("key2", null, futureTime)).isEqualTo("value2");
+        assertThat(map.containsKey("key2")).isFalse();
+
+        map.destroy();
+    }
+
 }
 

@@ -206,14 +206,7 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
         String name = getRawName(key);
 
         if (value == null) {
-            return commandExecutor.evalWriteAsync(name, codec, RedisCommands.EVAL_MAP_VALUE,
-                      "local currValue = redis.call('hget', KEYS[1], ARGV[1]); " +
-                            "if currValue ~= false then " +
-                                "return currValue;" +
-                            "end;" +
-                            "redis.call('hdel', KEYS[1], ARGV[1]); " +
-                            "return nil; ",
-                    Collections.singletonList(name), encodeMapKey(key));
+            return commandExecutor.readAsync(name, codec, RedisCommands.HGET, name, encodeMapKey(key));
         }
 
         return commandExecutor.evalWriteAsync(name, codec, RedisCommands.EVAL_MAP_VALUE,
@@ -273,12 +266,11 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
 
 
         if (value == null) {
-            return commandExecutor.evalWriteAsync(name, StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+            return commandExecutor.evalReadAsync(name, StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                       "local currValue = redis.call('hget', KEYS[1], ARGV[1]); " +
                             "if currValue ~= false then " +
                                 "return 0;" +
                             "end;" +
-                            "redis.call('hdel', KEYS[1], ARGV[1]); " +
                             "return 1; ",
                     Collections.singletonList(name), encodeMapKey(key));
         }
@@ -834,4 +826,70 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
 
         return "hpexpireat";
     }
+
+    @Override
+    public V putIfExist(K key, V value, Duration ttl) {
+        return get(putIfExistAsync(key, value, ttl));
+    }
+
+    @Override
+    public V putIfExist(K key, V value, Instant time) {
+        return get(putIfExistAsync(key, value, time));
+    }
+
+    @Override
+    public RFuture<V> putIfExistAsync(K key, V value, Duration ttl) {
+        return putIfExistAsyncInternal(key, value, ttl.toMillis(), true);
+    }
+
+    @Override
+    public RFuture<V> putIfExistAsync(K key, V value, Instant time) {
+        return putIfExistAsyncInternal(key, value, time.toEpochMilli(), false);
+    }
+
+    private RFuture<V> putIfExistAsyncInternal(K key, V value, long ms, boolean isDuration) {
+        checkKey(key);
+
+        if (ms < 0) {
+            throw new IllegalArgumentException("ms can't be negative");
+        }
+        if (ms == 0) {
+            return putIfExistsAsync(key, value);
+        }
+
+        RFuture<V> future = putIfExistOperationAsync(key, value, ms, isDuration);
+        future = new CompletableFutureWrapper<>(future);
+        if (hasNoWriter()) {
+            return future;
+        }
+        MapWriterTask.Add task = new MapWriterTask.Add(key, value);
+        return mapWriterFuture(future, task, r -> r != null);
+    }
+
+    protected RFuture<V> putIfExistOperationAsync(K key, V value, long ms, boolean isDuration) {
+        String name = getRawName(key);
+
+        if (value == null) {
+            return commandExecutor.evalWriteAsync(name, codec, RedisCommands.EVAL_MAP_VALUE,
+                      "local currValue = redis.call('hget', KEYS[1], ARGV[1]); " +
+                            "if currValue == false then " +
+                                "return nil;" +
+                            "end;" +
+                            "redis.call('hdel', KEYS[1], ARGV[1]); " +
+                            "return currValue; ",
+                    Collections.singletonList(name), encodeMapKey(key));
+        }
+
+        return commandExecutor.evalWriteAsync(name, codec, RedisCommands.EVAL_MAP_VALUE,
+                  "local currValue = redis.call('hget', KEYS[1], ARGV[2]); " +
+                        "if currValue == false then " +
+                            "return nil;" +
+                        "end;" +
+                        "redis.call('hset', KEYS[1], ARGV[2], ARGV[3]); " +
+                        "redis.call(ARGV[4], KEYS[1], ARGV[1], 'fields', 1, ARGV[2]); " +
+                        "return currValue; ",
+                Collections.singletonList(name),
+                ms, encodeMapKey(key), encodeMapValue(value), getExpireCommand(isDuration));
+    }
+
 }
