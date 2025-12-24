@@ -65,4 +65,13 @@ public interface RBucketsRx {
      * @return <code>true</code> if object has been set overwise <code>false</code>
      */
     Single<Boolean> setIfAllKeysExist(SetArgs args);
+
+    /**
+     * Saves objects mapped by Redis key.
+     * If none of the specified keys exist
+     *
+     * @param args - args
+     * @return <code>true</code> if object has been set overwise <code>false</code>
+     */
+    Single<Boolean> setIfAllKeysAbsent(SetArgs args);
 }
