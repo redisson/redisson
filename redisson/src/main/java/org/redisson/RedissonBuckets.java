@@ -169,6 +169,16 @@ public class RedissonBuckets implements RBuckets {
         return setAsyncInternal("XX", args);
     }
 
+    @Override
+    public boolean setIfAllKeysAbsent(SetArgs args) {
+        return commandExecutor.get(setIfAllKeysAbsentAsync(args));
+    }
+
+    @Override
+    public RFuture<Boolean> setIfAllKeysAbsentAsync(SetArgs args) {
+        return setAsyncInternal("NX", args);
+    }
+
     private RFuture<Boolean> setAsyncInternal(String subCommand, SetArgs args) {
 
         SetParams pps = (SetParams) args;

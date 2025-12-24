@@ -24,14 +24,14 @@ import org.redisson.client.codec.Codec;
  * @author seakider
  *
  */
-public class BucketsSetIfAllKeysExistOperation extends BucketsSetOperation {
+public class BucketsSetIfAllKeysAbsentOperation extends BucketsSetOperation {
 
-    public BucketsSetIfAllKeysExistOperation(Codec codec, SetArgs setArgs, String transactionId) {
+    public BucketsSetIfAllKeysAbsentOperation(Codec codec, SetArgs setArgs, String transactionId) {
         super(codec, setArgs, transactionId);
     }
 
     @Override
     protected void commit(RBuckets bucket, SetArgs setArgs) {
-        bucket.setIfAllKeysExistAsync(setArgs);
+        bucket.setIfAllKeysAbsentAsync(setArgs);
     }
 }

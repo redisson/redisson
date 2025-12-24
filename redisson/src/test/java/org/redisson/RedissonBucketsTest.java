@@ -222,7 +222,43 @@ public class RedissonBucketsTest extends RedisDockerTest {
         assertThat(redisson.getBuckets().setIfAllKeysExist(SetArgs.entries(buckets2)
                 .keepTTL())).isTrue();
         assertThat(redisson.getBucket("12").get()).isEqualTo(5);
+    }
 
+    @Test
+    public void testSetIfAllKeysAbsent() {
+        redisson.getBucket("12").set("341");
+
+        Map<String, Integer> buckets = new HashMap<>();
+        buckets.put("12", 1);
+        buckets.put("41", 2);
+        assertThat(redisson.getBuckets().setIfAllKeysAbsent(SetArgs.entries(buckets))).isFalse();
+
+        Map<String, Integer> buckets2 = new HashMap<>();
+        buckets2.put("41", 3);
+        buckets2.put("23", 4);
+        assertThat(redisson.getBuckets().setIfAllKeysAbsent(SetArgs.entries(buckets2)
+                .timeToLive(Duration.ofSeconds(2)))).isTrue();
+
+        Map<String, Integer> buckets3 = new HashMap<>();
+        buckets3.put("34", 5);
+        buckets3.put("45", 6);
+
+        Instant s = Instant.now().plusSeconds(10);
+        assertThat(redisson.getBuckets().setIfAllKeysAbsent(SetArgs.entries(buckets3)
+                .expireAt(s))).isTrue();
+
+        assertThat(redisson.getBucket("12").remainTimeToLive()).isEqualTo(-1);
+        assertThat(redisson.getBucket("41").remainTimeToLive()).isLessThan(2000);
+        assertThat(redisson.getBucket("34").getExpireTime()).isEqualTo(s.toEpochMilli());
+
+        assertThat(redisson.getBucket("41").get()).isEqualTo(3);
+        assertThat(redisson.getBucket("34").get()).isEqualTo(5);
+
+        Map<String, Integer> buckets4 = new HashMap<>();
+        buckets4.put("56", 5);
+        assertThat(redisson.getBuckets().setIfAllKeysAbsent(SetArgs.entries(buckets4)
+                .keepTTL())).isTrue();
+        assertThat(redisson.getBucket("56").get()).isEqualTo(5);
     }
 
     
