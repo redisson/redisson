@@ -24,14 +24,14 @@ import java.util.Map;
  * @author seakider
  *
  */
-public final class BucketsSetArgsParams implements SetArgs, BucketsSetArgs {
+public final class SetParams implements SetArgs {
     private boolean keepTTL;
     private Duration timeToLive;
     private Instant expireAt;
 
     private final Map<String, ?> entries;
 
-    public BucketsSetArgsParams(Map<String, ?> values) {
+    public SetParams(Map<String, ?> values) {
         this.entries = values;
     }
 

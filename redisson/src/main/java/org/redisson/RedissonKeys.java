@@ -25,7 +25,7 @@ import org.redisson.api.listener.SetObjectListener;
 import org.redisson.api.options.KeysScanOptions;
 import org.redisson.api.options.KeysScanParams;
 import org.redisson.api.keys.MigrateArgs;
-import org.redisson.api.keys.MigrateArgsParams;
+import org.redisson.api.keys.MigrateParams;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisException;
 import org.redisson.client.codec.ByteArrayCodec;
@@ -611,7 +611,7 @@ public final class RedissonKeys implements RKeys {
 
     @Override
     public RFuture<Void> migrateAsync(MigrateArgs migrateArgs) {
-        MigrateArgsParams migrateArgsParams = (MigrateArgsParams) migrateArgs;
+        MigrateParams migrateArgsParams = (MigrateParams) migrateArgs;
         List<Object> params = new ArrayList<>();
         params.add(migrateArgsParams.getHost());
         params.add(migrateArgsParams.getPort());

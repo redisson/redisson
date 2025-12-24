@@ -17,7 +17,7 @@ package org.redisson;
 
 import org.redisson.api.RBuckets;
 import org.redisson.api.RFuture;
-import org.redisson.api.keys.BucketsSetArgsParams;
+import org.redisson.api.keys.SetParams;
 import org.redisson.api.keys.SetArgs;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
@@ -171,7 +171,7 @@ public class RedissonBuckets implements RBuckets {
 
     private RFuture<Boolean> setAsyncInternal(String subCommand, SetArgs args) {
 
-        BucketsSetArgsParams pps = (BucketsSetArgsParams) args;
+        SetParams pps = (SetParams) args;
         if (pps.getEntries().isEmpty()) {
             return new CompletableFutureWrapper<>(false);
         }

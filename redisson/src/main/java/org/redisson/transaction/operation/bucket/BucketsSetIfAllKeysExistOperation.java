@@ -18,7 +18,7 @@ package org.redisson.transaction.operation.bucket;
 import org.redisson.RedissonBuckets;
 import org.redisson.api.RBuckets;
 import org.redisson.api.RLock;
-import org.redisson.api.keys.BucketsSetArgsParams;
+import org.redisson.api.keys.SetParams;
 import org.redisson.api.keys.SetArgs;
 import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandAsyncExecutor;
@@ -50,7 +50,7 @@ public class BucketsSetIfAllKeysExistOperation extends TransactionalOperation {
     }
 
     protected void unlock(CommandAsyncExecutor commandExecutor) {
-        BucketsSetArgsParams pps = (BucketsSetArgsParams) setArgs;
+        SetParams pps = (SetParams) setArgs;
         for (String key : pps.getEntries().keySet()) {
             RLock lock = new RedissonTransactionalLock(commandExecutor, getLockName(key), transactionId);
             lock.unlockAsync();

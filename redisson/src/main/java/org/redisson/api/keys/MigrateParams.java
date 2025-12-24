@@ -22,7 +22,7 @@ import org.redisson.api.MigrateMode;
  *
  * @author lyrric
  */
-public class MigrateArgsParams implements MigrateArgs, HostMigrateArgs, PortMigrateArgs, DatabaseMigrateArgs, TimeoutMigrateArgs, OptionalMigrateArgs {
+public class MigrateParams implements MigrateArgs, HostMigrateArgs, PortMigrateArgs, DatabaseMigrateArgs, TimeoutMigrateArgs, OptionalMigrateArgs {
     /**
      * keys to transfer Redis version >= 3.0.6
      */
@@ -56,7 +56,7 @@ public class MigrateArgsParams implements MigrateArgs, HostMigrateArgs, PortMigr
      */
     private String password;
 
-    public MigrateArgsParams(String[] keys) {
+    public MigrateParams(String[] keys) {
         this.keys = keys;
     }
 

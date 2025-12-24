@@ -21,7 +21,7 @@ import org.redisson.RedissonMultiLock;
 import org.redisson.api.RFuture;
 import org.redisson.api.RKeys;
 import org.redisson.api.RLock;
-import org.redisson.api.keys.BucketsSetArgsParams;
+import org.redisson.api.keys.SetParams;
 import org.redisson.api.keys.SetArgs;
 import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandAsyncExecutor;
@@ -215,7 +215,7 @@ public class RedissonTransactionalBuckets extends RedissonBuckets {
     public RFuture<Boolean> setIfAllKeysExistAsync(SetArgs args) {
         checkState();
 
-        BucketsSetArgsParams pps = (BucketsSetArgsParams) args;
+        SetParams pps = (SetParams) args;
         Map<String, ?> buckets = pps.getEntries();
 
         return executeLocked(() -> {

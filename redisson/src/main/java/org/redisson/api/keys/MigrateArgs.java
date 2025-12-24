@@ -30,6 +30,6 @@ public interface MigrateArgs {
      * @return migrate conditions object
      */
     static HostMigrateArgs keys(String... keys){
-        return new MigrateArgsParams(keys);
+        return new MigrateParams(keys);
     }
 }

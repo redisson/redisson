@@ -15,12 +15,16 @@
  */
 package org.redisson.api.keys;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Map;
 
 /**
  * Arguments object.
  *
  * @author seakider
+ * @author Nikita Koksharov
+ *
  */
 public interface SetArgs {
 
@@ -30,7 +34,31 @@ public interface SetArgs {
      * @param values entries map to set
      * @return arguments object
      */
-    static BucketsSetArgs entries(Map<String, ?> values) {
-        return new BucketsSetArgsParams(values);
+    static SetArgs entries(Map<String, ?> values) {
+        return new SetParams(values);
     }
+
+    /**
+     * Defines retain the time to live associated with the keys
+     *
+     * @return SetArgs object
+     */
+    SetArgs keepTTL();
+
+    /**
+     * Defines the specified expiration time.
+     *
+     * @param ttl
+     * @return SetArgs object
+     */
+    SetArgs timeToLive(Duration ttl);
+
+    /**
+     * Defines the specified Unix time at which the key(s) will expire.
+     *
+     * @param time expire date
+     * @return SetArgs object
+     */
+    SetArgs expireAt(Instant time);
+
 }
