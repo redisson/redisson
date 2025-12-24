@@ -17,8 +17,8 @@ package org.redisson;
 
 import org.redisson.api.RBuckets;
 import org.redisson.api.RFuture;
-import org.redisson.api.SetParams;
-import org.redisson.api.SetArgs;
+import org.redisson.api.bucket.SetParams;
+import org.redisson.api.bucket.SetArgs;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;

@@ -6,7 +6,7 @@ import org.redisson.api.RBucket;
 import org.redisson.api.RBuckets;
 import org.redisson.api.RTransaction;
 import org.redisson.api.TransactionOptions;
-import org.redisson.api.SetArgs;
+import org.redisson.api.bucket.SetArgs;
 
 import java.util.LinkedHashMap;
 import java.util.Map;

@@ -15,6 +15,8 @@
  */
 package org.redisson.api;
 
+import org.redisson.api.bucket.SetArgs;
+
 import java.util.Map;
 
 /**
