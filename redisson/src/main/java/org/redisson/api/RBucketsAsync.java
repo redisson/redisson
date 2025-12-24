@@ -15,8 +15,6 @@
  */
 package org.redisson.api;
 
-import org.redisson.api.keys.SetArgs;
-
 import java.util.Map;
 
 /**

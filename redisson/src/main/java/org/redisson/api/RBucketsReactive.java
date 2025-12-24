@@ -15,7 +15,6 @@
  */
 package org.redisson.api;
 
-import org.redisson.api.keys.SetArgs;
 import reactor.core.publisher.Mono;
 
 import java.util.Map;

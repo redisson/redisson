@@ -17,7 +17,6 @@ package org.redisson.api;
 
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Single;
-import org.redisson.api.keys.SetArgs;
 
 import java.util.Map;
 

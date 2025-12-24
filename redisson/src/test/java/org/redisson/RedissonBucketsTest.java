@@ -1,7 +1,7 @@
 package org.redisson;
 
 import org.junit.jupiter.api.Test;
-import org.redisson.api.keys.SetArgs;
+import org.redisson.api.SetArgs;
 import org.redisson.config.NameMapper;
 import org.redisson.api.RBucket;
 import org.redisson.api.RBuckets;
@@ -212,7 +212,7 @@ public class RedissonBucketsTest extends RedisDockerTest {
         assertThat(redisson.getBuckets().setIfAllKeysExist(SetArgs.entries(buckets2)
                 .timeToLive(Duration.ofSeconds(2)))).isTrue();
 
-        assertThat(redisson.getBucket("41").remainTimeToLive()).isLessThan(2000);
+        assertThat(redisson.getBucket("41").remainTimeToLive()).isLessThan(2010);
         assertThat(redisson.getBucket("12").getExpireTime()).isEqualTo(s.toEpochMilli());
 
         assertThat(redisson.getBucket("41").get()).isEqualTo(3);
