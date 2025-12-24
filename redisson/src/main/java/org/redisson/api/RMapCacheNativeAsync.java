@@ -217,27 +217,25 @@ public interface RMapCacheNativeAsync<K, V> extends RMapAsync<K, V> {
     RFuture<Map<K, Long>> remainTimeToLiveAsync(Set<K> keys);
 
     /**
-     * Associates the specified <code>value</code> with the specified <code>key</code>
-     * in batch.
-     * <p>
-     * If {@link MapWriter} is defined then new map entries will be stored in write-through mode.
+     * Use {@link #putAllAsync(PutArgs)} method instead.
      *
      * @param map - mappings to be stored in this map
      * @param ttl - time to live for all key\value entries.
      *              If <code>0</code> then stores infinitely.
      */
+    @Deprecated
     RFuture<Void> putAllAsync(java.util.Map<? extends K, ? extends V> map, Duration ttl);
 
     /**
-     * Associates the specified <code>value</code> with the specified <code>key</code>
-     * in batch.
+     * Stores map entries specified in the {@code args} parameter.
+     * <p>
+     * Requires <b>Redis 8.0.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
      * <p>
      * If {@link MapWriter} is defined then new map entries will be stored in write-through mode.
      *
-     * @param map - mappings to be stored in this map
-     * @param time expire date
+     * @param args put arguments
      */
-    RFuture<Void> putAllAsync(java.util.Map<? extends K, ? extends V> map, Instant time);
+    RFuture<Void> putAllAsync(PutArgs<K, V> args);
 
     /**
      * Stores the specified entries only if all specified keys already exist.

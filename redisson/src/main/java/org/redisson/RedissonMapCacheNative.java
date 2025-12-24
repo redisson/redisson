@@ -323,31 +323,67 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
     }
 
     @Override
+    public void putAll(PutArgs<K, V> args) {
+        get(putAllAsync(args));
+    }
+
+    @Override
+    public RFuture<Void> putAllAsync(PutArgs<K, V> args) {
+        return putAllAsyncInternal(args);
+    }
+
+    private RFuture<Void> putAllAsyncInternal(PutArgs<K, V> args) {
+        PutParams<K, V> params = (PutParams<K, V>) args;
+        if (params.getEntries().isEmpty()) {
+            return new CompletableFutureWrapper<>((Void) null);
+        }
+
+        RFuture<Void> future = putAllOperationAsync(params);
+        if (hasNoWriter()) {
+            return future;
+        }
+
+        MapWriterTask listener = new MapWriterTask.Add(params.getEntries());
+        return mapWriterFuture(future, listener);
+    }
+
+    protected RFuture<Void> putAllOperationAsync(PutParams<K, V> params) {
+        List<Object> cmdParams = new ArrayList<>(params.getEntries().size() * 2 + 4);
+        cmdParams.add(getRawName());
+
+        if (params.isKeepTTL()) {
+            cmdParams.add("KEEPTTL");
+        } else if (params.getTimeToLive() != null) {
+            cmdParams.add("PX");
+            cmdParams.add(params.getTimeToLive().toMillis());
+        } else if (params.getExpireAt() != null) {
+            cmdParams.add("PXAT");
+            cmdParams.add(params.getExpireAt().toEpochMilli());
+        }
+
+        cmdParams.add("FIELDS");
+        cmdParams.add(params.getEntries().size());
+        encodeMapKeys(cmdParams, params.getEntries());
+
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.HSETEX_VOID, cmdParams.toArray());
+    }
+
+    @Override
     public void putAll(Map<? extends K, ? extends V> map, Duration ttl) {
         get(putAllAsync(map, ttl));
     }
 
     @Override
-    public void putAll(Map<? extends K, ? extends V> map, Instant time) {
-        get(putAllAsync(map, time));
-    }
-
-    @Override
     public RFuture<Void> putAllAsync(Map<? extends K, ? extends V> map, Duration ttl) {
-        return putAllAsyncInternal(map, ttl.toMillis(), true);
+        return putAllAsyncInternal(map, ttl.toMillis());
     }
 
-    @Override
-    public RFuture<Void> putAllAsync(Map<? extends K, ? extends V> map, Instant time) {
-        return putAllAsyncInternal(map, time.toEpochMilli(), false);
-    }
-
-    private RFuture<Void> putAllAsyncInternal(Map<? extends K, ? extends V> map, long ms, boolean isDuration) {
+    private RFuture<Void> putAllAsyncInternal(Map<? extends K, ? extends V> map, long ms) {
         if (map.isEmpty()) {
             return new CompletableFutureWrapper<>((Void) null);
         }
 
-        RFuture<Void> future = putAllOperationAsync(map, ms, isDuration);
+        RFuture<Void> future = putAllOperationAsync(map, ms);
         if (hasNoWriter()) {
             return future;
         }
@@ -356,16 +392,15 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
         return mapWriterFuture(future, listener);
     }
 
-    protected RFuture<Void> putAllOperationAsync(Map<? extends K, ? extends V> map, long ms, boolean isDuration) {
+    protected RFuture<Void> putAllOperationAsync(Map<? extends K, ? extends V> map, long ms) {
         List<Object> args = new ArrayList<>();
         args.add(ms);
-        args.add(getExpireCommand(isDuration));
         encodeMapKeys(args, map);
 
         return commandExecutor.evalWriteAsync(name, StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
-                "for i = 3, #ARGV, 2 do " +
+                "for i = 2, #ARGV, 2 do " +
                         "redis.call('hset', KEYS[1], ARGV[i], ARGV[i + 1]); " +
-                        "redis.call(ARGV[2], KEYS[1], ARGV[1], 'fields', 1, ARGV[i]); " +
+                        "redis.call('hpexpire', KEYS[1], ARGV[1], 'fields', 1, ARGV[i]); " +
                         "end; ",
                 Collections.singletonList(name), args.toArray());
     }
@@ -904,7 +939,21 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
         return putAllKeysAsync((PutParams<K, V>) args, "FXX");
     }
 
-    private RFuture<Boolean> putAllKeysAsync(PutParams<K, V> params, String condition) {
+    protected RFuture<Boolean> putAllKeysAsync(PutParams<K, V> params, String condition) {
+        if (params.getEntries().isEmpty()) {
+            return new CompletableFutureWrapper<>(false);
+        }
+
+        RFuture<Boolean> future = putAllKeysOperationAsync(params, condition);
+        if (hasNoWriter()) {
+            return future;
+        }
+
+        MapWriterTask listener = new MapWriterTask.Add(params.getEntries());
+        return mapWriterFuture(future, listener, n -> n);
+    }
+
+    protected RFuture<Boolean> putAllKeysOperationAsync(PutParams<K, V> params, String condition) {
         Map<K, V> map = params.getEntries();
         if (map.isEmpty()) {
             return new CompletableFutureWrapper<>(false);
@@ -926,10 +975,7 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
 
         cmdParams.add("FIELDS");
         cmdParams.add(map.size());
-        for (Map.Entry<K, V> entry : map.entrySet()) {
-            cmdParams.add(encodeMapKey(entry.getKey()));
-            cmdParams.add(encodeMapValue(entry.getValue()));
-        }
+        encodeMapKeys(cmdParams, params.getEntries());
 
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.HSETEX, cmdParams.toArray());
     }

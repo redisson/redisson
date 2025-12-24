@@ -226,32 +226,32 @@ public interface RMapCacheNativeReactive<K, V> extends RMapReactive<K, V>, RDest
     Mono<Map<K, Long>> remainTimeToLive(Set<K> keys);
 
     /**
-     * Associates the specified <code>value</code> with the specified <code>key</code>
-     * in batch.
-     * <p>
-     * If {@link MapWriter} is defined then new map entries will be stored in write-through mode.
+     * Use {@link #putAll(PutArgs)} method instead.
      *
      * @param map - mappings to be stored in this map
      * @param ttl - time to live for all key\value entries.
      *              If <code>0</code> then stores infinitely.
      */
+    @Deprecated
     Mono<Void> putAll(java.util.Map<? extends K, ? extends V> map, Duration ttl);
 
     /**
-     * Associates the specified <code>value</code> with the specified <code>key</code>
-     * in batch.
+     * Stores map entries specified in the {@code args} parameter.
+     * <p>
+     * Requires <b>Redis 8.0.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
      * <p>
      * If {@link MapWriter} is defined then new map entries will be stored in write-through mode.
      *
-     * @param map - mappings to be stored in this map
-     * @param time - time expire date for all key\value entries
+     * @param args put arguments
      */
-    Mono<Void> putAll(java.util.Map<? extends K, ? extends V> map, Instant time);
+    Mono<Void> putAll(PutArgs<K, V> args);
 
     /**
      * Stores the specified entries only if all specified keys already exist.
      * <p>
      * Requires <b>Redis 8.0.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
+     * <p>
+     * If {@link MapWriter} is defined then new map entries will be stored in write-through mode.
      *
      * @param args put arguments
      * @return {@code true} if all entries were set, {@code false} otherwise
@@ -262,6 +262,8 @@ public interface RMapCacheNativeReactive<K, V> extends RMapReactive<K, V>, RDest
      * Stores the specified entries only if none of the specified keys exist.
      * <p>
      * Requires <b>Redis 8.0.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
+     * <p>
+     * If {@link MapWriter} is defined then new map entries will be stored in write-through mode.
      *
      * @param args put arguments
      * @return {@code true} if all entries were set, {@code false} otherwise
