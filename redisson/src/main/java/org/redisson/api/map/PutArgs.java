@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.api.bucket;
+package org.redisson.api.map;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -22,11 +22,10 @@ import java.util.Map;
 /**
  * Arguments object.
  *
- * @author seakider
  * @author Nikita Koksharov
  *
  */
-public interface SetArgs {
+public interface PutArgs<K, V> {
 
     /**
      * Defines entries to set
@@ -34,8 +33,8 @@ public interface SetArgs {
      * @param values entries map to set
      * @return arguments object
      */
-    static SetArgs entries(Map<String, ?> values) {
-        return new SetParams(values);
+    static <K, V> PutArgs<K, V> entries(Map<K, V> values) {
+        return new PutParams<>(values);
     }
 
     /**
@@ -43,15 +42,15 @@ public interface SetArgs {
      *
      * @return SetArgs object
      */
-    SetArgs keepTTL();
+    PutArgs<K, V> keepTTL();
 
     /**
      * Defines the specified expiration time.
      *
-     * @param ttl time to live duration
+     * @param ttl
      * @return SetArgs object
      */
-    SetArgs timeToLive(Duration ttl);
+    PutArgs<K, V> timeToLive(Duration ttl);
 
     /**
      * Defines the specified Unix time at which the key(s) will expire.
@@ -59,6 +58,6 @@ public interface SetArgs {
      * @param time expire date
      * @return SetArgs object
      */
-    SetArgs expireAt(Instant time);
+    PutArgs<K, V> expireAt(Instant time);
 
 }

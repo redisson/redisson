@@ -9,6 +9,7 @@ import org.redisson.api.RMap;
 import org.redisson.api.RMapCacheNative;
 import org.redisson.api.listener.MapExpiredListener;
 import org.redisson.api.listener.MapRemoveListener;
+import org.redisson.api.map.PutArgs;
 import org.redisson.api.map.WriteMode;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.DoubleCodec;
@@ -299,7 +300,7 @@ public class RedissonMapCacheNativeTest extends BaseMapTest {
         map.fastPut(new SimpleKey("1"), new SimpleValue("3"), Duration.ofSeconds(5));
         map.fastPut(new SimpleKey("2"), new SimpleValue("6"), Instant.now().plusSeconds(5));
 
-        Thread.sleep(5000);
+        Thread.sleep(5010);
         assertThat(map.get(new SimpleKey("1"))).isNull();
         assertThat(map.get(new SimpleKey("2"))).isNull();
 
@@ -1237,6 +1238,109 @@ public class RedissonMapCacheNativeTest extends BaseMapTest {
         assertThat(map.containsKey("key2")).isFalse();
 
         map.destroy();
+    }
+
+    @Test
+    public void testPutIfAllKeysExistWithTimeToLive() {
+        RMapCacheNative<String, String> map = redisson.getMapCacheNative("test");
+
+        Map<String, String> entries = new HashMap<>();
+        entries.put("key1", "value1");
+        entries.put("key2", "value2");
+
+        boolean result = map.putIfAllKeysExist(PutArgs.entries(entries)
+                .timeToLive(Duration.ofSeconds(10)));
+        assertThat(result).isFalse();
+        assertThat(map.get("key1")).isNull();
+        assertThat(map.get("key2")).isNull();
+
+        map.put("key1", "oldValue1", Duration.ofSeconds(30));
+        map.put("key2", "oldValue2", Duration.ofSeconds(30));
+
+        result = map.putIfAllKeysExist(PutArgs.entries(entries)
+                .timeToLive(Duration.ofSeconds(10)));
+        assertThat(result).isTrue();
+        assertThat(map.get("key1")).isEqualTo("value1");
+        assertThat(map.get("key2")).isEqualTo("value2");
+
+        map.delete();
+        map.put("key1", "oldValue1", Duration.ofSeconds(30));
+
+        result = map.putIfAllKeysExist(PutArgs.entries(entries)
+                .timeToLive(Duration.ofSeconds(10)));
+        assertThat(result).isFalse();
+        assertThat(map.get("key1")).isEqualTo("oldValue1");
+        assertThat(map.get("key2")).isNull();
+
+        map.delete();
+    }
+
+    @Test
+    public void testPutIfAllKeysExistWithExpireAt() {
+        RMapCacheNative<String, String> map = redisson.getMapCacheNative("test");
+
+        Map<String, String> entries = new HashMap<>();
+        entries.put("key1", "value1");
+        entries.put("key2", "value2");
+
+        Instant expireTime = Instant.now().plusSeconds(10);
+        boolean result = map.putIfAllKeysExist(PutArgs.entries(entries)
+                .expireAt(expireTime));
+        assertThat(result).isFalse();
+        assertThat(map.get("key1")).isNull();
+        assertThat(map.get("key2")).isNull();
+
+        map.put("key1", "oldValue1", Duration.ofSeconds(30));
+        map.put("key2", "oldValue2", Duration.ofSeconds(30));
+
+        expireTime = Instant.now().plusSeconds(10);
+        result = map.putIfAllKeysExist(PutArgs.<String, String>entries(entries)
+                .expireAt(expireTime));
+        assertThat(result).isTrue();
+        assertThat(map.get("key1")).isEqualTo("value1");
+        assertThat(map.get("key2")).isEqualTo("value2");
+
+        map.delete();
+        map.put("key1", "oldValue1", Duration.ofSeconds(30));
+
+        expireTime = Instant.now().plusSeconds(10);
+        result = map.putIfAllKeysExist(PutArgs.entries(entries)
+                .expireAt(expireTime));
+        assertThat(result).isFalse();
+        assertThat(map.get("key1")).isEqualTo("oldValue1");
+        assertThat(map.get("key2")).isNull();
+
+        map.delete();
+    }
+
+    @Test
+    public void testPutIfAllKeysExistWithKeepTTL() {
+        RMapCacheNative<String, String> map = redisson.getMapCacheNative("test");
+
+        map.put("key1", "oldValue1", Duration.ofSeconds(30));
+        map.put("key2", "oldValue2", Duration.ofSeconds(30));
+
+        long originalTtl1 = map.remainTimeToLive("key1");
+        long originalTtl2 = map.remainTimeToLive("key2");
+
+        Map<String, String> entries = new HashMap<>();
+        entries.put("key1", "value1");
+        entries.put("key2", "value2");
+
+        boolean result = map.putIfAllKeysExist(PutArgs.entries(entries)
+                .keepTTL());
+        assertThat(result).isTrue();
+        assertThat(map.get("key1")).isEqualTo("value1");
+        assertThat(map.get("key2")).isEqualTo("value2");
+
+        long newTtl1 = map.remainTimeToLive("key1");
+        long newTtl2 = map.remainTimeToLive("key2");
+        assertThat(newTtl1).isGreaterThan(0);
+        assertThat(newTtl2).isGreaterThan(0);
+        assertThat(newTtl1).isLessThanOrEqualTo(originalTtl1);
+        assertThat(newTtl2).isLessThanOrEqualTo(originalTtl2);
+
+        map.delete();
     }
 
 }

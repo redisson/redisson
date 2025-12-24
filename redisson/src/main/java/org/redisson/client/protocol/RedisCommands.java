@@ -638,6 +638,8 @@ public interface RedisCommands {
     RedisStrictCommand<Boolean> HSETNX = new RedisStrictCommand<Boolean>("HSETNX", new BooleanReplayConvertor());
     RedisStrictCommand<Boolean> HSET = new RedisStrictCommand<Boolean>("HSET", new BooleanReplayConvertor());
     RedisStrictCommand<Void> HSET_VOID = new RedisStrictCommand<Void>("HSET", new VoidReplayConvertor());
+    RedisStrictCommand<Boolean> HSETEX = new RedisStrictCommand<>("HSETEX", new BooleanAmountReplayConvertor());
+
     RedisCommand<MapScanResult<Object, Object>> HSCAN =
             new RedisCommand<MapScanResult<Object, Object>>("HSCAN",
                         new ListMultiDecoder2(new MapScanResultReplayDecoder(),

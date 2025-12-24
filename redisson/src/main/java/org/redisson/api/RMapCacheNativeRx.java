@@ -20,6 +20,7 @@ import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Single;
 import java.time.Instant;
 import org.redisson.api.map.MapWriter;
+import org.redisson.api.map.PutArgs;
 
 import java.time.Duration;
 import java.util.Map;
@@ -249,6 +250,16 @@ public interface RMapCacheNativeRx<K, V> extends RMapRx<K, V>, RDestroyable {
      * @param time - time expire date for all key\value entries
      */
     Completable putAll(java.util.Map<? extends K, ? extends V> map, Instant time);
+
+    /**
+     * Stores the specified entries only if all specified keys already exist.
+     * <p>
+     * Requires <b>Redis 8.0.0 and higher.</b> or <b>Valkey 8.0.0 and higher.</b>
+     *
+     * @param args put arguments
+     * @return {@code true} if all entries were set, {@code false} otherwise
+     */
+    Single<Boolean> putIfAllKeysExist(PutArgs<K, V> args);
 
     /**
      * Clears an expiration timeout or date of specified entry by key.

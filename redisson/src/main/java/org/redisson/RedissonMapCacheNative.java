@@ -18,6 +18,8 @@ package org.redisson;
 import java.time.Instant;
 import org.redisson.api.*;
 import org.redisson.api.listener.MapExpiredListener;
+import org.redisson.api.map.PutArgs;
+import org.redisson.api.map.PutParams;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
@@ -890,6 +892,46 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
                         "return currValue; ",
                 Collections.singletonList(name),
                 ms, encodeMapKey(key), encodeMapValue(value), getExpireCommand(isDuration));
+    }
+
+    @Override
+    public boolean putIfAllKeysExist(PutArgs<K, V> args) {
+        return get(putIfAllKeysExistAsync(args));
+    }
+
+    @Override
+    public RFuture<Boolean> putIfAllKeysExistAsync(PutArgs<K, V> args) {
+        return putAllKeysAsync((PutParams<K, V>) args, "FXX");
+    }
+
+    private RFuture<Boolean> putAllKeysAsync(PutParams<K, V> params, String condition) {
+        Map<K, V> map = params.getEntries();
+        if (map.isEmpty()) {
+            return new CompletableFutureWrapper<>(false);
+        }
+
+        List<Object> cmdParams = new ArrayList<>(map.size() * 2 + 6);
+        cmdParams.add(getRawName());
+        cmdParams.add(condition);
+
+        if (params.isKeepTTL()) {
+            cmdParams.add("KEEPTTL");
+        } else if (params.getTimeToLive() != null) {
+            cmdParams.add("PX");
+            cmdParams.add(params.getTimeToLive().toMillis());
+        } else if (params.getExpireAt() != null) {
+            cmdParams.add("PXAT");
+            cmdParams.add(params.getExpireAt().toEpochMilli());
+        }
+
+        cmdParams.add("FIELDS");
+        cmdParams.add(map.size());
+        for (Map.Entry<K, V> entry : map.entrySet()) {
+            cmdParams.add(encodeMapKey(entry.getKey()));
+            cmdParams.add(encodeMapValue(entry.getValue()));
+        }
+
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.HSETEX, cmdParams.toArray());
     }
 
 }

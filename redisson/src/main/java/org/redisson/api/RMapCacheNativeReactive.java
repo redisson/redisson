@@ -17,6 +17,7 @@ package org.redisson.api;
 
 import java.time.Instant;
 import org.redisson.api.map.MapWriter;
+import org.redisson.api.map.PutArgs;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
@@ -246,6 +247,16 @@ public interface RMapCacheNativeReactive<K, V> extends RMapReactive<K, V>, RDest
      * @param time - time expire date for all key\value entries
      */
     Mono<Void> putAll(java.util.Map<? extends K, ? extends V> map, Instant time);
+
+    /**
+     * Stores the specified entries only if all specified keys already exist.
+     * <p>
+     * Requires <b>Redis 8.0.0 and higher.</b> or <b>Valkey 8.0.0 and higher.</b>
+     *
+     * @param args put arguments
+     * @return {@code true} if all entries were set, {@code false} otherwise
+     */
+    Mono<Boolean> putIfAllKeysExist(PutArgs<K, V> args);
 
     /**
      * Clears an expiration timeout or date of specified entry by key.
