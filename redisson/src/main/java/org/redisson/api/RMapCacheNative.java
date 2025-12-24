@@ -260,6 +260,16 @@ public interface RMapCacheNative<K, V> extends RMap<K, V>, RMapCacheNativeAsync<
     boolean putIfAllKeysExist(PutArgs<K, V> args);
 
     /**
+     * Stores the specified entries only if none of the specified keys exist.
+     * <p>
+     * Requires <b>Redis 8.0.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
+     *
+     * @param args put arguments
+     * @return {@code true} if all entries were set, {@code false} otherwise
+     */
+    boolean putIfAllKeysAbsent(PutArgs<K, V> args);
+
+    /**
      * Clears an expiration timeout or date of specified entry by key.
      *
      * @param key map key

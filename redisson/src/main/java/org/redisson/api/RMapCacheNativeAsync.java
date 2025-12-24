@@ -250,6 +250,16 @@ public interface RMapCacheNativeAsync<K, V> extends RMapAsync<K, V> {
     RFuture<Boolean> putIfAllKeysExistAsync(PutArgs<K, V> args);
 
     /**
+     * Stores the specified entries only if none of the specified keys exist.
+     * <p>
+     * Requires <b>Redis 8.0.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
+     *
+     * @param args put arguments
+     * @return {@code true} if all entries were set, {@code false} otherwise
+     */
+    RFuture<Boolean> putIfAllKeysAbsentAsync(PutArgs<K, V> args);
+
+    /**
      * Clears an expiration timeout or date of specified entry by key.
      *
      * @param key map key

@@ -934,4 +934,14 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.HSETEX, cmdParams.toArray());
     }
 
+    @Override
+    public boolean putIfAllKeysAbsent(PutArgs<K, V> args) {
+        return get(putIfAllKeysAbsentAsync(args));
+    }
+
+    @Override
+    public RFuture<Boolean> putIfAllKeysAbsentAsync(PutArgs<K, V> args) {
+        return putAllKeysAsync((PutParams<K, V>) args, "FNX");
+    }
+
 }

@@ -297,16 +297,16 @@ public class RedissonMapCacheNativeTest extends BaseMapTest {
     @Test
     public void testFastPutTTL() throws InterruptedException {
         RMapCacheNative<SimpleKey, SimpleValue> map = redisson.getMapCacheNative("getAll");
-        map.fastPut(new SimpleKey("1"), new SimpleValue("3"), Duration.ofSeconds(5));
-        map.fastPut(new SimpleKey("2"), new SimpleValue("6"), Instant.now().plusSeconds(5));
+        map.fastPut(new SimpleKey("1"), new SimpleValue("3"), Duration.ofSeconds(2));
+        map.fastPut(new SimpleKey("2"), new SimpleValue("6"), Instant.now().plusSeconds(2));
 
-        Thread.sleep(5010);
+        Thread.sleep(2010);
         assertThat(map.get(new SimpleKey("1"))).isNull();
         assertThat(map.get(new SimpleKey("2"))).isNull();
 
-        map.fastPut(new SimpleKey("1"), new SimpleValue("4"), Duration.ofSeconds(5));
-        map.fastPut(new SimpleKey("2"), new SimpleValue("5"), Instant.now().plusSeconds(5));
-        Thread.sleep(10000);
+        map.fastPut(new SimpleKey("1"), new SimpleValue("4"), Duration.ofSeconds(2));
+        map.fastPut(new SimpleKey("2"), new SimpleValue("5"), Instant.now().plusSeconds(2));
+        Thread.sleep(4010);
         assertThat(map.get(new SimpleKey("1"))).isNull();
         assertThat(map.get(new SimpleKey("2"))).isNull();
     }
@@ -529,7 +529,7 @@ public class RedissonMapCacheNativeTest extends BaseMapTest {
         cache.put("0", "8", Duration.ofSeconds(1));
         cache.put("1", "8", Instant.now().plusSeconds(1));
 
-        cache.expireAt(System.currentTimeMillis() + 100);
+        cache.expire(Instant.now().plusMillis(100));
 
         cache.clearExpire();
 
@@ -1339,6 +1339,109 @@ public class RedissonMapCacheNativeTest extends BaseMapTest {
         assertThat(newTtl2).isGreaterThan(0);
         assertThat(newTtl1).isLessThanOrEqualTo(originalTtl1);
         assertThat(newTtl2).isLessThanOrEqualTo(originalTtl2);
+
+        map.delete();
+    }
+
+    @Test
+    public void testPutIfAllKeysAbsentWithTimeToLive() {
+        RMapCacheNative<String, String> map = redisson.getMapCacheNative("test");
+
+        Map<String, String> entries = new HashMap<>();
+        entries.put("key1", "value1");
+        entries.put("key2", "value2");
+
+        boolean result = map.putIfAllKeysAbsent(PutArgs.entries(entries)
+                .timeToLive(Duration.ofSeconds(10)));
+        assertThat(result).isTrue();
+        assertThat(map.get("key1")).isEqualTo("value1");
+        assertThat(map.get("key2")).isEqualTo("value2");
+
+        Map<String, String> newEntries = new HashMap<>();
+        newEntries.put("key1", "newValue1");
+        newEntries.put("key2", "newValue2");
+
+        result = map.putIfAllKeysAbsent(PutArgs.entries(newEntries)
+                .timeToLive(Duration.ofSeconds(10)));
+        assertThat(result).isFalse();
+        assertThat(map.get("key1")).isEqualTo("value1");
+        assertThat(map.get("key2")).isEqualTo("value2");
+
+        map.delete();
+        map.put("key1", "existingValue1", Duration.ofSeconds(30));
+
+        result = map.putIfAllKeysAbsent(PutArgs.entries(entries)
+                .timeToLive(Duration.ofSeconds(10)));
+        assertThat(result).isFalse();
+        assertThat(map.get("key1")).isEqualTo("existingValue1");
+        assertThat(map.get("key2")).isNull();
+
+        map.delete();
+    }
+
+    @Test
+    public void testPutIfAllKeysAbsentWithExpireAt() {
+        RMapCacheNative<String, String> map = redisson.getMapCacheNative("test");
+
+        Map<String, String> entries = new HashMap<>();
+        entries.put("key1", "value1");
+        entries.put("key2", "value2");
+
+        Instant expireTime = Instant.now().plusSeconds(10);
+        boolean result = map.putIfAllKeysAbsent(PutArgs.entries(entries)
+                .expireAt(expireTime));
+        assertThat(result).isTrue();
+        assertThat(map.get("key1")).isEqualTo("value1");
+        assertThat(map.get("key2")).isEqualTo("value2");
+
+        Map<String, String> newEntries = new HashMap<>();
+        newEntries.put("key1", "newValue1");
+        newEntries.put("key2", "newValue2");
+
+        expireTime = Instant.now().plusSeconds(10);
+        result = map.putIfAllKeysAbsent(PutArgs.entries(newEntries)
+                .expireAt(expireTime));
+        assertThat(result).isFalse();
+        assertThat(map.get("key1")).isEqualTo("value1");
+        assertThat(map.get("key2")).isEqualTo("value2");
+
+        map.delete();
+    }
+
+    @Test
+    public void testPutIfAllKeysAbsentWithEmptyMap() {
+        RMapCacheNative<String, String> map = redisson.getMapCacheNative("test");
+
+        Map<String, String> emptyEntries = new HashMap<>();
+
+        boolean result = map.putIfAllKeysAbsent(PutArgs.entries(emptyEntries)
+                .timeToLive(Duration.ofSeconds(10)));
+        assertThat(result).isFalse();
+
+        result = map.putIfAllKeysAbsent(PutArgs.entries(emptyEntries)
+                .expireAt(Instant.now().plusSeconds(10)));
+        assertThat(result).isFalse();
+
+        map.delete();
+    }
+
+    @Test
+    public void testPutIfAllKeysAbsentExpiration() throws InterruptedException {
+        RMapCacheNative<String, String> map = redisson.getMapCacheNative("test");
+
+        Map<String, String> entries = new HashMap<>();
+        entries.put("key1", "value1");
+        entries.put("key2", "value2");
+
+        boolean result = map.putIfAllKeysAbsent(PutArgs.entries(entries)
+                .timeToLive(Duration.ofSeconds(1)));
+        assertThat(result).isTrue();
+        assertThat(map.get("key1")).isEqualTo("value1");
+
+        Thread.sleep(1100);
+
+        assertThat(map.get("key1")).isNull();
+        assertThat(map.get("key2")).isNull();
 
         map.delete();
     }
