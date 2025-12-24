@@ -672,8 +672,8 @@ Defines NAT mapper interface, which maps Valkey or Redis URI objects and applies
 
 Available implementations:
 
-* `org.redisson.config.HostPortNatMapper`
-* `org.redisson.config.HostNatMapper`
+* `org.redisson.api.HostPortNatMapper`
+* `org.redisson.api.HostNatMapper`
 
 **nameMapper**
 
@@ -1750,8 +1750,8 @@ Defines NAT mapper interface which maps Valkey or Redis URI object and applied t
 
 Available implementations:  
 
-* `org.redisson.config.HostPortNatMapper`  
-* `org.redisson.config.HostNatMapper`  
+* `org.redisson.api.HostPortNatMapper`  
+* `org.redisson.api.HostNatMapper`  
 
 **nameMapper**
 
@@ -2891,8 +2891,8 @@ Default value: no mapper
 
 Defines NAT mapper interface which maps Valkey or Redis URI object and applied to all connections. Can be used to map internal Redis server IPs to external ones. Available implementations:  
 
-* `org.redisson.config.HostPortNatMapper`  
-* `org.redisson.config.HostNatMapper`  
+* `org.redisson.api.HostPortNatMapper`  
+* `org.redisson.api.HostNatMapper`  
 
 **nameMapper**
 
@@ -3310,8 +3310,8 @@ Default value: no mapper
 
 Defines NAT mapper interface which maps Valkey or Redis URI object and applied to all connections. Can be used to map internal Valkey or Redis server IPs to external ones. Available implementations:  
 
-* `org.redisson.config.HostPortNatMapper`  
-* `org.redisson.config.HostNatMapper`  
+* `org.redisson.api.HostPortNatMapper`  
+* `org.redisson.api.HostNatMapper`  
 
 **nameMapper**
 

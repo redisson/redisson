@@ -111,14 +111,17 @@ Each object implements [RMapCacheNative](https://static.javadoc.io/org.redisson/
 
 Available implementations:
 
-|RedissonClient<br/>method name | Local<br/>cache | Data<br/>partitioning | Ultra-fast<br/>read/write |
-| ------------- | :-----------: | :-----------:| :---------:|
-|getMapCacheNative()<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ❌ |
-|getMapCacheNative()<br/><sub><i>[Redisson PRO](https://redisson.pro/feature-comparison.html) version</i></sub> | ❌ | ❌ | ✔️ |
-|getLocalCachedMapCacheNative()<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ✔️ | ❌ | ✔️ |
-|getClusteredMapCacheNative()<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ❌ | ✔️ | ✔️ |
-|getClusteredLocalCachedMapCacheNative()<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ✔️ | ✔️ | ✔️ |
-<br/>
+|RedissonClient<br/>method name | Local<br/>cache | Data<br/>partitioning | Ultra-fast<br/>read/write | Size limit |
+| ------------- | :-----------: | :-----------:| :---------:| :---------:|
+|getMapCacheNative()<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ❌ | ❌ | ❌ |
+|getMapCacheNative()<br/><sub><i>[Redisson PRO](https://redisson.pro/feature-comparison.html) version</i></sub> | ❌ | ❌ | ✔️ | ❌ | ❌ |
+|getLocalCachedMapCacheNative()<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ✔️ | ❌ | ✔️ | ❌ | ❌ |
+|getClusteredMapCacheNative()<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ❌ | ✔️ | ✔️ | ❌ | ❌ |
+|getClusteredLocalCachedMapCacheNative()<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ✔️ | ✔️ | ✔️ | ❌ | ❌ |
+|getMapCacheNativeV2()<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ❌ | ❌ | ✔️ | ✔️ | ✔️ |
+|getLocalCachedMapCacheNativeV2()<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ✔️ | ❌ | ✔️ | ✔️ | ✔️ |
+|getClusteredMapCacheNativeV2()<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ❌ | ✔️ | ✔️ | ✔️ | ✔️ |
+|getClusteredLocalCachedMapCacheNativeV2()<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ |
 
 Redisson also provides various [Cache API](../cache-API-implementations.md) implementations.
 
@@ -573,22 +576,44 @@ map.removeListener(listenerId);
 ```
 
 ### LRU/LFU bounded Map
-Map object which implements `RMapCache` interface could be bounded using [Least Recently Used (LRU)](https://en.wikipedia.org/wiki/Cache_replacement_policies#LRU) or [Least Frequently Used (LFU)](https://en.wikipedia.org/wiki/Least_frequently_used) order. Bounded Map allows to store map entries within defined limit and retire entries in defined order. 
+Map object which implements `RMapCache` or `RMapCacheNativeV2` interface can be bounded using [Least Recently Used (LRU)](https://en.wikipedia.org/wiki/Cache_replacement_policies#LRU) or [Least Frequently Used (LFU)](https://en.wikipedia.org/wiki/Least_frequently_used) order. Bounded Map allows to store map entries within defined limit and retire entries in defined order. 
+
+The size limit is applied either by the number of entries or the number of bytes stored in the Map object.
+
+Available implementations:
+
+|RedissonClient<br/>method name | Local<br/>cache | Data<br/>partitioning | Ultra-fast<br/>read/write | Size limit | Native eviction |
+| ------------- | :-----------: | :-----------:| :---------:| :---------:| :---------:|
+|getMapCache()<br/><sub><i>open-source version</i></sub> | ❌ | ❌ | ❌ | ✔️ | ❌ |
+|getMapCache()<br/><sub><i>[Redisson PRO](https://redisson.pro/feature-comparison.html) version</i></sub> | ❌ | ❌ | ✔️ | ✔️ | ❌ |
+|getLocalCachedMapCache()<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ✔️ | ❌ | ✔️ | ✔️ | ❌ |
+|getClusteredMapCache()<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ❌ | ✔️ | ✔️ | ✔️ | ❌ |
+|getClusteredLocalCachedMapCache()<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ✔️ | ✔️ | ✔️ | ✔️ | ❌ |
+|getMapCacheNativeV2()<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ❌ | ❌ | ✔️ | ✔️ | ✔️ |
+|getLocalCachedMapCacheNativeV2()<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ✔️ | ❌ | ✔️ | ✔️ | ✔️ |
+|getClusteredMapCacheNativeV2()<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ❌ | ✔️ | ✔️ | ✔️ | ✔️ |
+|getClusteredLocalCachedMapCacheNativeV2()<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ |
+
 
 Use cases: limited Valkey or Redis memory.
 
 ```java
 RMapCache<String, SomeObject> map = redisson.getMapCache("anyMap");
 // or
-RMapCache<String, SomeObject> map = redisson.getMapCache("anyMap", MapCacheOptions.defaults());
-// or
 RMapCache<String, SomeObject> map = redisson.getLocalCachedMapCache("anyMap", LocalCachedMapOptions.defaults());
 // or
 RMapCache<String, SomeObject> map = redisson.getClusteredLocalCachedMapCache("anyMap", LocalCachedMapOptions.defaults());
 // or
 RMapCache<String, SomeObject> map = redisson.getClusteredMapCache("anyMap");
+
+
+RMapCacheNativeV2<String, SomeObject> map = redisson.getMapCacheNativeV2("anyMap");
 // or
-RMapCache<String, SomeObject> map = redisson.getClusteredMapCache("anyMap", MapCacheOptions.defaults());
+RMapCacheNativeV2<String, SomeObject> map = redisson.getLocalCachedMapCacheNativeV2("anyMap", LocalCachedMapOptions.defaults());
+// or
+RMapCacheNativeV2<String, SomeObject> map = redisson.getClusteredLocalCachedMapCacheNativeV2("anyMap", LocalCachedMapOptions.defaults());
+// or
+RMapCacheNativeV2<String, SomeObject> map = redisson.getClusteredMapCacheNativeV2("anyMap");
 
 
 // tries to set limit map to 10 entries using LRU eviction algorithm
@@ -1290,258 +1315,1815 @@ set.removeListener(listenerId);
 ```
 
 ## List
-Valkey or Redis based distributed [List](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RList.html) object for Java implements `java.util.List` interface. It keeps elements in insertion order. 
 
-It has [Async](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RListAsync.html), [Reactive](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RListReactive.html) and [RxJava3](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RListRx.html) interfaces. List size is limited to `4 294 967 295` elements.
-```java
-RList<SomeObject> list = redisson.getList("anyList");
-list.add(new SomeObject());
-list.get(0);
-list.remove(new SomeObject());
-```
+Redisson's `RList` object implements the [List](https://docs.oracle.com/javase/8/docs/api/java/util/List.html) interface, providing a distributed and concurrent list backed by Valkey or Redis. This allows multiple applications or servers to share and manipulate list data seamlessly.
+
+### Basic Operations
+
+`RList` provides all standard Java List operations including adding, removing, and checking for elements.
+
+Code example of creating and adding elements:
+
+=== "Sync"
+    ```java
+    RList<String> list = redisson.getList("myList");
+    
+    // Add elements to the end
+    list.add("element1");
+    list.add("element2");
+    
+    // Add multiple elements at once
+    list.addAll(Arrays.asList("element3", "element4", "element5"));
+    
+    // Add element at specific position
+    list.add(0, "firstElement");
+    
+    // Add element before another element
+    list.addBefore("element2", "beforeElement2");
+    
+    // Add element after another element
+    list.addAfter("element2", "afterElement2");
+    ```
+=== "Async"
+    ```java
+    RList<String> list = redisson.getList("myList");
+    
+    // Add elements to the end
+    RFuture<Boolean> future1 = list.addAsync("element1");
+    RFuture<Boolean> future2 = list.addAsync("element2");
+    
+    // Add multiple elements at once
+    RFuture<Boolean> future3 = list.addAllAsync(Arrays.asList("element3", "element4", "element5"));
+    
+    // Add element at specific position
+    RFuture<Void> future4 = list.addAsync(0, "firstElement");
+    
+    // Add element before another element
+    RFuture<Integer> future5 = list.addBeforeAsync("element2", "beforeElement2");
+    
+    // Add element after another element
+    RFuture<Integer> future6 = list.addAfterAsync("element2", "afterElement2");
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RListReactive<String> list = redisson.getList("myList");
+    
+    // Add elements to the end
+    Mono<Boolean> mono1 = list.add("element1");
+    Mono<Boolean> mono2 = list.add("element2");
+    
+    // Add multiple elements at once
+    Mono<Boolean> mono3 = list.addAll(Arrays.asList("element3", "element4", "element5"));
+    
+    // Add element at specific position
+    Mono<Void> mono4 = list.add(0, "firstElement");
+    
+    // Add element before another element
+    Mono<Integer> mono5 = list.addBefore("element2", "beforeElement2");
+    
+    // Add element after another element
+    Mono<Integer> mono6 = list.addAfter("element2", "afterElement2");
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RListRx<String> list = redisson.getList("myList");
+    
+    // Add elements to the end
+    Single<Boolean> single1 = list.add("element1");
+    Single<Boolean> single2 = list.add("element2");
+    
+    // Add multiple elements at once
+    Single<Boolean> single3 = list.addAll(Arrays.asList("element3", "element4", "element5"));
+    
+    // Add element at specific position
+    Completable completable = list.add(0, "firstElement");
+    
+    // Add element before another element
+    Single<Integer> single4 = list.addBefore("element2", "beforeElement2");
+    
+    // Add element after another element
+    Single<Integer> single5 = list.addAfter("element2", "afterElement2");
+    ```
+
+Code example of removing elements:
+
+=== "Sync"
+    ```java
+    RList<String> list = redisson.getList("myList");
+    
+    // Remove by object
+    boolean removed = list.remove("element1");
+    
+    // Remove by index
+    String removedElement = list.remove(0);
+    
+    // Remove multiple elements
+    list.removeAll(Arrays.asList("element2", "element3"));
+    
+    // Remove elements not in the specified collection
+    list.retainAll(Arrays.asList("element4", "element5"));
+    
+    // Remove first occurrence of element
+    list.fastRemove(0);
+    
+    // Clear all elements
+    list.clear();
+    ```
+=== "Async"
+    ```java
+    RList<String> list = redisson.getList("myList");
+    
+    // Remove by object
+    RFuture<Boolean> future1 = list.removeAsync("element1");
+    
+    // Remove by index
+    RFuture<String> future2 = list.removeAsync(0);
+    
+    // Remove multiple elements
+    RFuture<Boolean> future3 = list.removeAllAsync(Arrays.asList("element2", "element3"));
+    
+    // Remove elements not in the specified collection
+    RFuture<Boolean> future4 = list.retainAllAsync(Arrays.asList("element4", "element5"));
+    
+    // Remove first occurrence at index
+    RFuture<Void> future5 = list.fastRemoveAsync(0);
+    
+    // Clear all elements
+    RFuture<Boolean> future6 = list.deleteAsync();
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RListReactive<String> list = redisson.getList("myList");
+    
+    // Remove by object
+    Mono<Boolean> mono1 = list.remove("element1");
+    
+    // Remove by index
+    Mono<String> mono2 = list.remove(0);
+    
+    // Remove multiple elements
+    Mono<Boolean> mono3 = list.removeAll(Arrays.asList("element2", "element3"));
+    
+    // Remove elements not in the specified collection
+    Mono<Boolean> mono4 = list.retainAll(Arrays.asList("element4", "element5"));
+    
+    // Remove first occurrence at index
+    Mono<Void> mono5 = list.fastRemove(0);
+    
+    // Clear all elements
+    Mono<Boolean> mono6 = list.delete();
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RListRx<String> list = redisson.getList("myList");
+    
+    // Remove by object
+    Single<Boolean> single1 = list.remove("element1");
+    
+    // Remove by index
+    Single<String> single2 = list.remove(0);
+    
+    // Remove multiple elements
+    Single<Boolean> single3 = list.removeAll(Arrays.asList("element2", "element3"));
+    
+    // Remove elements not in the specified collection
+    Single<Boolean> single4 = list.retainAll(Arrays.asList("element4", "element5"));
+    
+    // Remove first occurrence at index
+    Completable completable = list.fastRemove(0);
+    
+    // Clear all elements
+    Single<Boolean> single5 = list.delete();
+    ```
+
+Code example of checking and searching:
+
+=== "Sync"
+    ```java
+    RList<String> list = redisson.getList("myList");
+    
+    // Check if element exists
+    boolean contains = list.contains("element1");
+    
+    // Check if all elements exist
+    boolean containsAll = list.containsAll(Arrays.asList("element1", "element2"));
+    
+    // Check if list is empty
+    boolean isEmpty = list.isEmpty();
+    
+    // Get list size
+    int size = list.size();
+    
+    // Find index of element
+    int index = list.indexOf("element1");
+    int lastIndex = list.lastIndexOf("element1");
+    ```
+=== "Async"
+    ```java
+    RList<String> list = redisson.getList("myList");
+    
+    // Check if element exists
+    RFuture<Boolean> future1 = list.containsAsync("element1");
+    
+    // Check if all elements exist
+    RFuture<Boolean> future2 = list.containsAllAsync(Arrays.asList("element1", "element2"));
+    
+    // Get list size
+    RFuture<Integer> future3 = list.sizeAsync();
+    
+    // Find index of element
+    RFuture<Integer> future4 = list.indexOfAsync("element1");
+    RFuture<Integer> future5 = list.lastIndexOfAsync("element1");
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RListReactive<String> list = redisson.getList("myList");
+    
+    // Check if element exists
+    Mono<Boolean> mono1 = list.contains("element1");
+    
+    // Check if all elements exist
+    Mono<Boolean> mono2 = list.containsAll(Arrays.asList("element1", "element2"));
+    
+    // Get list size
+    Mono<Integer> mono3 = list.size();
+    
+    // Find index of element
+    Mono<Integer> mono4 = list.indexOf("element1");
+    Mono<Integer> mono5 = list.lastIndexOf("element1");
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RListRx<String> list = redisson.getList("myList");
+    
+    // Check if element exists
+    Single<Boolean> single1 = list.contains("element1");
+    
+    // Check if all elements exist
+    Single<Boolean> single2 = list.containsAll(Arrays.asList("element1", "element2"));
+    
+    // Get list size
+    Single<Integer> single3 = list.size();
+    
+    // Find index of element
+    Single<Integer> single4 = list.indexOf("element1");
+    Single<Integer> single5 = list.lastIndexOf("element1");
+    ```
+
+### Indexing and Access Patterns
+
+`RList` provides multiple ways to access elements by index, including bulk operations for efficient data retrieval.
+
+Code example of single element access:
+
+=== "Sync"
+    ```java
+    RList<String> list = redisson.getList("myList");
+    
+    // Get element at index (0-based)
+    String element = list.get(0);
+    
+    // Set element at index
+    String oldValue = list.set(0, "newElement");
+    
+    // Fast set without returning old value
+    list.fastSet(0, "anotherElement");
+    ```
+=== "Async"
+    ```java
+    RList<String> list = redisson.getList("myList");
+    
+    // Get element at index (0-based)
+    RFuture<String> future1 = list.getAsync(0);
+    
+    // Set element at index
+    RFuture<String> future2 = list.setAsync(0, "newElement");
+    
+    // Fast set without returning old value
+    RFuture<Void> future3 = list.fastSetAsync(0, "anotherElement");
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RListReactive<String> list = redisson.getList("myList");
+    
+    // Get element at index (0-based)
+    Mono<String> mono1 = list.get(0);
+    
+    // Set element at index
+    Mono<String> mono2 = list.set(0, "newElement");
+    
+    // Fast set without returning old value
+    Mono<Void> mono3 = list.fastSet(0, "anotherElement");
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RListRx<String> list = redisson.getList("myList");
+    
+    // Get element at index (0-based)
+    Single<String> single1 = list.get(0);
+    
+    // Set element at index
+    Single<String> single2 = list.set(0, "newElement");
+    
+    // Fast set without returning old value
+    Completable completable = list.fastSet(0, "anotherElement");
+    ```
+
+Code example of bulk element access:
+
+=== "Sync"
+    ```java
+    RList<String> list = redisson.getList("myList");
+    
+    // Get elements at multiple indexes
+    List<String> elements = list.get(0, 2, 4, 6);
+    
+    // Read all elements at once
+    List<String> allElements = list.readAll();
+    
+    // Get range of elements (inclusive indexes)
+    // Negative indexes supported: -1 = last element, -2 = second to last, etc.
+    List<String> rangeEnd = list.range(5);         // Elements from index 0 to 5
+    List<String> rangeFromTo = list.range(2, 8);   // Elements from index 2 to 8
+    ```
+=== "Async"
+    ```java
+    RList<String> list = redisson.getList("myList");
+    
+    // Get elements at multiple indexes
+    RFuture<List<String>> future1 = list.getAsync(0, 2, 4, 6);
+    
+    // Read all elements at once
+    RFuture<List<String>> future2 = list.readAllAsync();
+    
+    // Get range of elements (inclusive indexes)
+    RFuture<List<String>> future3 = list.rangeAsync(5);        // Elements from index 0 to 5
+    RFuture<List<String>> future4 = list.rangeAsync(2, 8);     // Elements from index 2 to 8
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RListReactive<String> list = redisson.getList("myList");
+    
+    // Get elements at multiple indexes
+    Mono<List<String>> mono1 = list.get(0, 2, 4, 6);
+    
+    // Read all elements at once
+    Mono<List<String>> mono2 = list.readAll();
+    
+    // Get range of elements (inclusive indexes)
+    Mono<List<String>> mono3 = list.range(5);       // Elements from index 0 to 5
+    Mono<List<String>> mono4 = list.range(2, 8);    // Elements from index 2 to 8
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RListRx<String> list = redisson.getList("myList");
+    
+    // Get elements at multiple indexes
+    Single<List<String>> single1 = list.get(0, 2, 4, 6);
+    
+    // Read all elements at once
+    Single<List<String>> single2 = list.readAll();
+    
+    // Get range of elements (inclusive indexes)
+    Single<List<String>> single3 = list.range(5);       // Elements from index 0 to 5
+    Single<List<String>> single4 = list.range(2, 8);    // Elements from index 2 to 8
+    ```
+
+Code example of subList and trimming:
+
+=== "Sync"
+    ```java
+    RList<String> list = redisson.getList("myList");
+    
+    // Get a sublist (returns a view backed by the original list)
+    RList<String> subList = list.subList(2, 5);
+    
+    // Trim list to keep only elements in specified range (inclusive)
+    // All other elements are removed
+    list.trim(0, 9);    // Keep only first 10 elements
+    ```
+=== "Async"
+    ```java
+    RList<String> list = redisson.getList("myList");
+    
+    // Trim list to keep only elements in specified range (inclusive)
+    RFuture<Void> future = list.trimAsync(0, 9);    // Keep only first 10 elements
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RListReactive<String> list = redisson.getList("myList");
+    
+    // Trim list to keep only elements in specified range (inclusive)
+    Mono<Void> mono = list.trim(0, 9);    // Keep only first 10 elements
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RListRx<String> list = redisson.getList("myList");
+    
+    // Trim list to keep only elements in specified range (inclusive)
+    Completable completable = list.trim(0, 9);    // Keep only first 10 elements
+    ```
+
+Code example of iteration:
+
+=== "Sync"
+    ```java
+    RList<String> list = redisson.getList("myList");
+    
+    // Standard iteration (bulk-loaded for efficiency)
+    for (String element : list) {
+        System.out.println(element);
+    }
+    
+    // Using ListIterator
+    ListIterator<String> iterator = list.listIterator();
+    while (iterator.hasNext()) {
+        String element = iterator.next();
+        // Can also use iterator.previous(), iterator.set(), etc.
+    }
+    
+    // Distributed iterator (shared across multiple applications)
+    Iterator<String> distIterator = list.distributedIterator("iteratorName", 100);
+    while (distIterator.hasNext()) {
+        String element = distIterator.next();
+    }
+    ```
+=== "Async"
+    ```java
+    RList<String> list = redisson.getList("myList");
+    
+    // Read all and iterate
+    RFuture<List<String>> future = list.readAllAsync();
+    future.whenComplete((elements, exception) -> {
+        if (exception == null) {
+            for (String element : elements) {
+                System.out.println(element);
+            }
+        }
+    });
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RListReactive<String> list = redisson.getList("myList");
+    
+    // Iterate using Flux
+    Flux<String> flux = list.iterator();
+    flux.subscribe(element -> System.out.println(element));
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RListRx<String> list = redisson.getList("myList");
+    
+    // Iterate using Flowable
+    Flowable<String> flowable = list.iterator();
+    flowable.subscribe(element -> System.out.println(element));
+    ```
 
 ### Listeners
 
-Redisson allows binding listeners per `RList` object. This requires the `notify-keyspace-events` setting to be enabled on Valkey or Redis side.
+Redisson allows binding listeners to `RList` objects to receive notifications on list modifications. 
+This requires the `notify-keyspace-events` setting to be enabled on Valkey or Redis side.
 
-|Listener class name|Event description | Valkey or Redis<br/>`notify-keyspace-events` value|
-|:--:|:--:|:--:|
-|org.redisson.api.listener.TrackingListener|Element created/removed/updated after read operation|-|
-|org.redisson.api.listener.ListAddListener|Element created|El|
-|org.redisson.api.listener.ListInsertListener|Element inserted|El|
-|org.redisson.api.listener.ListSetListener|Element set/updated|El|
-|org.redisson.api.listener.ListRemoveListener|Element removed|El|
-|org.redisson.api.listener.ListTrimListener|List trimmed|El|
-|org.redisson.api.ExpiredObjectListener|`RList` object expired|Ex|
-|org.redisson.api.DeletedObjectListener|`RList` object deleted|Eg|
+Available Listener Types:
 
-Usage example:
+| Listener | Event | Description | Valkey or Redis <br/> `notify-keyspace-events` value |
+|----------|:------:|:-----------:|:------------:|
+| `ListAddListener` | `onListAdd` | Triggered when an element is added to the list | El |
+| `ListInsertListener` | `onListInsert` | Triggered when an element is inserted into the list | El |
+| `ListSetListener` | `onListSet` | Triggered when an element value is changed | El |
+| `ListRemoveListener` | `onListRemove` | Triggered when an element is removed from the list | El |
+| `ListTrimListener` | `onListTrim` | Triggered when the list is trimmed | El |
+| `ExpiredObjectListener` | `onExpired` | Triggered when the list expires | Ex |
+| `DeletedObjectListener` | `onDeleted` | Triggered when the list is deleted | Eg |
 
-```java
-RList<String> list = redisson.getList("anyList");
+Code example of adding Listeners:
 
-int listenerId = list.addListener(new DeletedObjectListener() {
-     @Override
-     public void onDeleted(String name) {
-        // ...
-     }
-});
-
-// ...
-
-list.removeListener(listenerId);
-```
-
+=== "Sync"
+    ```java
+    RList<String> list = redisson.getList("myList");
+    
+    // Add listener for element additions
+    int addListenerId = list.addListener(new ListAddListener() {
+        @Override
+        public void onListAdd(String name) {
+            System.out.println("Element added to list: " + name);
+        }
+    });
+    
+    // Add listener for element insertions
+    int insertListenerId = list.addListener(new ListInsertListener() {
+        @Override
+        public void onListInsert(String name) {
+            System.out.println("Element inserted into list: " + name);
+        }
+    });
+    
+    // Add listener for element value changes
+    int setListenerId = list.addListener(new ListSetListener() {
+        @Override
+        public void onListSet(String name) {
+            System.out.println("Element value changed in list: " + name);
+        }
+    });
+    
+    // Add listener for element removals
+    int removeListenerId = list.addListener(new ListRemoveListener() {
+        @Override
+        public void onListRemove(String name) {
+            System.out.println("Element removed from list: " + name);
+        }
+    });
+    
+    // Add listener for list trimming
+    int trimListenerId = list.addListener(new ListTrimListener() {
+        @Override
+        public void onListTrim(String name) {
+            System.out.println("List trimmed: " + name);
+        }
+    });
+    
+    // Add listener for list expiration
+    int expireListenerId = list.addListener(new ExpiredObjectListener() {
+        @Override
+        public void onExpired(String name) {
+            System.out.println("List expired: " + name);
+        }
+    });
+    
+    // Add listener for list deletion
+    int deleteListenerId = list.addListener(new DeletedObjectListener() {
+        @Override
+        public void onDeleted(String name) {
+            System.out.println("List deleted: " + name);
+        }
+    });
+    
+    // Remove listeners when no longer needed
+    list.removeListener(addListenerId);
+    list.removeListener(insertListenerId);
+    list.removeListener(setListenerId);
+    list.removeListener(removeListenerId);
+    list.removeListener(trimListenerId);
+    list.removeListener(expireListenerId);
+    list.removeListener(deleteListenerId);
+    ```
+=== "Async"
+    ```java
+    RList<String> list = redisson.getList("myList");
+    
+    // Add listener for element additions
+    RFuture<Integer> addListenerFuture = list.addListenerAsync(new ListAddListener() {
+        @Override
+        public void onListAdd(String name) {
+            System.out.println("Element added to list: " + name);
+        }
+    });
+    
+    // Add listener for element removals
+    RFuture<Integer> removeListenerFuture = list.addListenerAsync(new ListRemoveListener() {
+        @Override
+        public void onListRemove(String name) {
+            System.out.println("Element removed from list: " + name);
+        }
+    });
+    
+    // Add listener for list expiration
+    RFuture<Integer> expireListenerFuture = list.addListenerAsync(new ExpiredObjectListener() {
+        @Override
+        public void onExpired(String name) {
+            System.out.println("List expired: " + name);
+        }
+    });
+    
+    // Add listener for list deletion
+    RFuture<Integer> deleteListenerFuture = list.addListenerAsync(new DeletedObjectListener() {
+        @Override
+        public void onDeleted(String name) {
+            System.out.println("List deleted: " + name);
+        }
+    });
+    
+    // Remove listeners
+    addListenerFuture.thenAccept(listenerId -> {
+        list.removeListenerAsync(listenerId);
+    });
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RListReactive<String> list = redisson.getList("myList");
+    
+    // Add listener for element additions
+    Mono<Integer> addListenerMono = list.addListener(new ListAddListener() {
+        @Override
+        public void onListAdd(String name) {
+            System.out.println("Element added to list: " + name);
+        }
+    });
+    
+    // Add listener for element removals
+    Mono<Integer> removeListenerMono = list.addListener(new ListRemoveListener() {
+        @Override
+        public void onListRemove(String name) {
+            System.out.println("Element removed from list: " + name);
+        }
+    });
+    
+    // Add listener for list expiration
+    Mono<Integer> expireListenerMono = list.addListener(new ExpiredObjectListener() {
+        @Override
+        public void onExpired(String name) {
+            System.out.println("List expired: " + name);
+        }
+    });
+    
+    // Add listener for list deletion
+    Mono<Integer> deleteListenerMono = list.addListener(new DeletedObjectListener() {
+        @Override
+        public void onDeleted(String name) {
+            System.out.println("List deleted: " + name);
+        }
+    });
+    
+    // Remove listener
+    addListenerMono
+        .flatMap(listenerId -> list.removeListener(listenerId))
+        .subscribe();
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RListRx<String> list = redisson.getList("myList");
+    
+    // Add listener for element additions
+    Single<Integer> addListenerSingle = list.addListener(new ListAddListener() {
+        @Override
+        public void onListAdd(String name) {
+            System.out.println("Element added to list: " + name);
+        }
+    });
+    
+    // Add listener for element removals
+    Single<Integer> removeListenerSingle = list.addListener(new ListRemoveListener() {
+        @Override
+        public void onListRemove(String name) {
+            System.out.println("Element removed from list: " + name);
+        }
+    });
+    
+    // Add listener for list expiration
+    Single<Integer> expireListenerSingle = list.addListener(new ExpiredObjectListener() {
+        @Override
+        public void onExpired(String name) {
+            System.out.println("List expired: " + name);
+        }
+    });
+    
+    // Add listener for list deletion
+    Single<Integer> deleteListenerSingle = list.addListener(new DeletedObjectListener() {
+        @Override
+        public void onDeleted(String name) {
+            System.out.println("List deleted: " + name);
+        }
+    });
+    
+    // Remove listener
+    addListenerSingle
+        .flatMapCompletable(listenerId -> list.removeListener(listenerId))
+        .subscribe();
+    ```
 
 ## Time Series
-Java implementation of Valkey or Redis based [TimeSeries](https://www.javadoc.io/doc/org.redisson/redisson/latest/org/redisson/api/RTimeSeries.html) object allows to store value by timestamp and define TTL(time-to-live) per entry. Values are ordered by timestamp. This object is thread-safe.  
 
-Code example:
-```java
-RTimeSeries<String> ts = redisson.getTimeSeries("myTimeSeries");
+Java implementation of Valkey or Redis based [RTimeSeries](https://www.javadoc.io/doc/org.redisson/redisson/latest/org/redisson/api/RTimeSeries.html) object is a specialized data structure for storing and querying time-stamped data. It allows storing values indexed by timestamp with optional TTL (time-to-live) per entry. Values are automatically ordered by timestamp, making it ideal for metrics, sensor data, financial data, and event logging. 
 
-ts.add(201908110501, "10%");
-ts.add(201908110502, "30%");
-ts.add(201908110504, "10%");
-ts.add(201908110508, "75%");
+This object is thread-safe.
 
-// entry time-to-live is 10 hours
-ts.add(201908110510, "85%", 10, TimeUnit.HOURS);
-ts.add(201908110510, "95%", 10, TimeUnit.HOURS);
+### Timestamp-based storage
 
-String value = ts.get(201908110508);
-ts.remove(201908110508);
+Time Series stores entries as value-timestamp pairs where each value is associated with a unique timestamp. Timestamps serve as keys for data retrieval and ordering. If an entry with the same timestamp already exists, it will be overwritten with the new value.
 
-Collection<String> values = ts.pollFirst(2);
-Collection<String> range = ts.range(201908110501, 201908110508);
-```
+=== "Sync"
+    ```java
+    RTimeSeries<String> ts = redisson.getTimeSeries("myTimeSeries");
+    
+    // Add entries with timestamps
+    ts.add(201908110501, "10%");
+    ts.add(201908110502, "30%");
+    ts.add(201908110504, "10%");
+    ts.add(201908110508, "75%");
+    
+    // Add multiple entries at once
+    ts.addAll(Map.of(201908110601L, "15%", 
+                     201908110602L, "25%",
+                     201908110603L, "35%"));
+    
+    // Retrieve value by timestamp
+    String value = ts.get(201908110508);
+    
+    // Retrieve entry (value with timestamp) by timestamp
+    TimeSeriesEntry<String> entry = ts.getEntry(201908110508);
+    
+    // Remove entry by timestamp
+    ts.remove(201908110508);
+    ```
+=== "Async"
+    ```java
+    RTimeSeries<String> ts = redisson.getTimeSeries("myTimeSeries");
+    
+    // Add entries with timestamps
+    RFuture<Void> f1 = ts.addAsync(201908110501, "10%");
+    RFuture<Void> f2 = ts.addAsync(201908110502, "30%");
+    RFuture<Void> f3 = ts.addAsync(201908110504, "10%");
+    RFuture<Void> f4 = ts.addAsync(201908110508, "75%");
+    
+    // Add multiple entries at once
+    RFuture<Void> f5 = ts.addAllAsync(Map.of(201908110601L, "15%", 
+                                              201908110602L, "25%",
+                                              201908110603L, "35%"));
+    
+    // Retrieve value by timestamp
+    RFuture<String> value = ts.getAsync(201908110508);
+    
+    // Retrieve entry (value with timestamp) by timestamp
+    RFuture<TimeSeriesEntry<String>> entry = ts.getEntryAsync(201908110508);
+    
+    // Remove entry by timestamp
+    RFuture<Boolean> removed = ts.removeAsync(201908110508);
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RTimeSeriesReactive<String> ts = redisson.getTimeSeries("myTimeSeries");
+    
+    // Add entries with timestamps
+    Mono<Void> m1 = ts.add(201908110501, "10%");
+    Mono<Void> m2 = ts.add(201908110502, "30%");
+    Mono<Void> m3 = ts.add(201908110504, "10%");
+    Mono<Void> m4 = ts.add(201908110508, "75%");
+    
+    // Add multiple entries at once
+    Mono<Void> m5 = ts.addAll(Map.of(201908110601L, "15%", 
+                                      201908110602L, "25%",
+                                      201908110603L, "35%"));
+    
+    // Retrieve value by timestamp
+    Mono<String> value = ts.get(201908110508);
+    
+    // Retrieve entry (value with timestamp) by timestamp
+    Mono<TimeSeriesEntry<String>> entry = ts.getEntry(201908110508);
+    
+    // Remove entry by timestamp
+    Mono<Boolean> removed = ts.remove(201908110508);
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RTimeSeriesRx<String> ts = redisson.getTimeSeries("myTimeSeries");
+    
+    // Add entries with timestamps
+    Completable c1 = ts.add(201908110501, "10%");
+    Completable c2 = ts.add(201908110502, "30%");
+    Completable c3 = ts.add(201908110504, "10%");
+    Completable c4 = ts.add(201908110508, "75%");
+    
+    // Add multiple entries at once
+    Completable c5 = ts.addAll(Map.of(201908110601L, "15%", 
+                                       201908110602L, "25%",
+                                       201908110603L, "35%"));
+    
+    // Retrieve value by timestamp
+    Maybe<String> value = ts.get(201908110508);
+    
+    // Retrieve entry (value with timestamp) by timestamp
+    Maybe<TimeSeriesEntry<String>> entry = ts.getEntry(201908110508);
+    
+    // Remove entry by timestamp
+    Single<Boolean> removed = ts.remove(201908110508);
+    ```
 
-Code example of **[Async interface](https://www.javadoc.io/doc/org.redisson/redisson/latest/org/redisson/api/RTimeSeriesAsync.html)** usage:
-```java
-RTimeSeries<String> ts = redisson.getTimeSeries("myTimeSeries");
+### TTL per entry
 
-RFuture<Void> future = ts.addAsync(201908110501, "10%");
-RFuture<Void> future = ts.addAsync(201908110502, "30%");
-RFuture<Void> future = ts.addAsync(201908110504, "10%");
-RFuture<Void> future = ts.addAsync(201908110508, "75%");
+Time Series supports defining time-to-live (TTL) for each entry individually. Expired entries are automatically removed by Valkey or Redis. This is useful for implementing data retention policies where older data should be automatically cleaned up.
 
-// entry time-to-live is 10 hours
-RFuture<Void> future = ts.addAsync(201908110510, "85%", 10, TimeUnit.HOURS);
-RFuture<Void> future = ts.addAsync(201908110510, "95%", 10, TimeUnit.HOURS);
+=== "Sync"
+    ```java
+    RTimeSeries<String> ts = redisson.getTimeSeries("myTimeSeries");
+    
+    // Add entry with TTL of 10 hours
+    ts.add(201908110510, "85%", 10, TimeUnit.HOURS);
+    
+    // Add entry with TTL of 30 minutes
+    ts.add(201908110520, "90%", 30, TimeUnit.MINUTES);
+    
+    // Add entry with TTL as Duration
+    ts.add(201908110530, "95%", Duration.ofDays(1));
+    
+    // Add multiple entries with the same TTL
+    ts.addAll(Map.of(201908110601L, "15%", 
+                     201908110602L, "25%"), 1, TimeUnit.HOURS);
+    ```
+=== "Async"
+    ```java
+    RTimeSeries<String> ts = redisson.getTimeSeries("myTimeSeries");
+    
+    // Add entry with TTL of 10 hours
+    RFuture<Void> f1 = ts.addAsync(201908110510, "85%", 10, TimeUnit.HOURS);
+    
+    // Add entry with TTL of 30 minutes
+    RFuture<Void> f2 = ts.addAsync(201908110520, "90%", 30, TimeUnit.MINUTES);
+    
+    // Add entry with TTL as Duration
+    RFuture<Void> f3 = ts.addAsync(201908110530, "95%", Duration.ofDays(1));
+    
+    // Add multiple entries with the same TTL
+    RFuture<Void> f4 = ts.addAllAsync(Map.of(201908110601L, "15%", 
+                                              201908110602L, "25%"), 1, TimeUnit.HOURS);
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RTimeSeriesReactive<String> ts = redisson.getTimeSeries("myTimeSeries");
+    
+    // Add entry with TTL of 10 hours
+    Mono<Void> m1 = ts.add(201908110510, "85%", 10, TimeUnit.HOURS);
+    
+    // Add entry with TTL of 30 minutes
+    Mono<Void> m2 = ts.add(201908110520, "90%", 30, TimeUnit.MINUTES);
+    
+    // Add entry with TTL as Duration
+    Mono<Void> m3 = ts.add(201908110530, "95%", Duration.ofDays(1));
+    
+    // Add multiple entries with the same TTL
+    Mono<Void> m4 = ts.addAll(Map.of(201908110601L, "15%", 
+                                      201908110602L, "25%"), 1, TimeUnit.HOURS);
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RTimeSeriesRx<String> ts = redisson.getTimeSeries("myTimeSeries");
+    
+    // Add entry with TTL of 10 hours
+    Completable c1 = ts.add(201908110510, "85%", 10, TimeUnit.HOURS);
+    
+    // Add entry with TTL of 30 minutes
+    Completable c2 = ts.add(201908110520, "90%", 30, TimeUnit.MINUTES);
+    
+    // Add entry with TTL as Duration
+    Completable c3 = ts.add(201908110530, "95%", Duration.ofDays(1));
+    
+    // Add multiple entries with the same TTL
+    Completable c4 = ts.addAll(Map.of(201908110601L, "15%", 
+                                       201908110602L, "25%"), 1, TimeUnit.HOURS);
+    ```
 
-RFuture<String> future = ts.getAsync(201908110508);
-RFuture<Boolean> future = ts.removeAsync(201908110508);
+### Range queries
 
-RFuture<Collection<String>> future = t.pollFirstAsync(2);
-RFuture<Collection<String>> future = t.rangeAsync(201908110501, 201908110508);
+Time Series provides powerful range query capabilities for retrieving entries within a specified timestamp range. You can also poll entries (retrieve and remove) from the beginning or end of the series, making it suitable for queue-like processing of time-ordered data.
 
-future.whenComplete((res, exception) -> {
-    // ...
-});
-```
-
-Code example of **[Reactive interface](https://www.javadoc.io/doc/org.redisson/redisson/latest/org/redisson/api/RTimeSeriesReactive.html)** usage:
-```java
-RedissonReactiveClient redisson = redissonClient.reactive();
-RTimeSeriesReactive<String> ts = redisson.getTimeSeries("myTimeSeries");
-
-Mono<Void> mono = ts.add(201908110501, "10%");
-Mono<Void> mono = ts.add(201908110502, "30%");
-Mono<Void> mono = ts.add(201908110504, "10%");
-Mono<Void> mono = ts.add(201908110508, "75%");
-
-// entry time-to-live is 10 hours
-Mono<Void> mono = ts.add(201908110510, "85%", 10, TimeUnit.HOURS);
-Mono<Void> mono = ts.add(201908110510, "95%", 10, TimeUnit.HOURS);
-
-Mono<String> mono = ts.get(201908110508);
-Mono<Boolean> mono = ts.remove(201908110508);
-
-Mono<Collection<String>> mono = ts.pollFirst(2);
-Mono<Collection<String>> mono = ts.range(201908110501, 201908110508);
-
-mono.doOnNext(res -> {
-   // ...
-}).subscribe();
-```
-
-Code example of **[RxJava3 interface](https://www.javadoc.io/doc/org.redisson/redisson/latest/org/redisson/api/RTimeSeriesRx.html)** usage:
-```java
-RedissonRxClient redisson = redissonClient.rxJava();
-RTimeSeriesRx<String> ts = redisson.getTimeSeries("myTimeSeries");
-
-Completable rx = ts.add(201908110501, "10%");
-Completable rx = ts.add(201908110502, "30%");
-Completable rx = ts.add(201908110504, "10%");
-Completable rx = ts.add(201908110508, "75%");
-
-// entry time-to-live is 10 hours
-Completable rx = ts.add(201908110510, "85%", 10, TimeUnit.HOURS);
-Completable rx = ts.add(201908110510, "95%", 10, TimeUnit.HOURS);
-
-Maybe<String> rx = ts.get(201908110508);
-Single<Boolean> rx = ts.remove(201908110508);
-
-Single<Collection<String>> rx = ts.pollFirst(2);
-Single<Collection<String>> rx = ts.range(201908110501, 201908110508);
-
-rx.doOnSuccess(res -> {
-   // ...
-}).subscribe();
-```
+=== "Sync"
+    ```java
+    RTimeSeries<String> ts = redisson.getTimeSeries("myTimeSeries");
+    
+    // Get values within timestamp range (inclusive)
+    Collection<String> values = ts.range(201908110501, 201908110508);
+    
+    // Get entries (values with timestamps) within range
+    Collection<TimeSeriesEntry<String>> entries = ts.entryRange(201908110501, 201908110508);
+    
+    // Get entries in reverse order within range
+    Collection<TimeSeriesEntry<String>> reversed = ts.entryRangeReversed(201908110501, 201908110508);
+    
+    // Poll (get and remove) first N entries
+    Collection<String> firstValues = ts.pollFirst(2);
+    Collection<TimeSeriesEntry<String>> firstEntries = ts.pollFirstEntries(2);
+    
+    // Poll (get and remove) last N entries
+    Collection<String> lastValues = ts.pollLast(2);
+    Collection<TimeSeriesEntry<String>> lastEntries = ts.pollLastEntries(2);
+    
+    // Poll entries within timestamp range with a limit
+    Collection<TimeSeriesEntry<String>> polled = ts.pollEntries(201908110501, 201908110508, 10);
+    
+    // Get first and last entries
+    TimeSeriesEntry<String> first = ts.first();
+    TimeSeriesEntry<String> last = ts.last();
+    
+    // Get first and last timestamps
+    Long firstTimestamp = ts.firstTimestamp();
+    Long lastTimestamp = ts.lastTimestamp();
+    ```
+=== "Async"
+    ```java
+    RTimeSeries<String> ts = redisson.getTimeSeries("myTimeSeries");
+    
+    // Get values within timestamp range (inclusive)
+    RFuture<Collection<String>> values = ts.rangeAsync(201908110501, 201908110508);
+    
+    // Get entries (values with timestamps) within range
+    RFuture<Collection<TimeSeriesEntry<String>>> entries = ts.entryRangeAsync(201908110501, 201908110508);
+    
+    // Get entries in reverse order within range
+    RFuture<Collection<TimeSeriesEntry<String>>> reversed = ts.entryRangeReversedAsync(201908110501, 201908110508);
+    
+    // Poll (get and remove) first N entries
+    RFuture<Collection<String>> firstValues = ts.pollFirstAsync(2);
+    RFuture<Collection<TimeSeriesEntry<String>>> firstEntries = ts.pollFirstEntriesAsync(2);
+    
+    // Poll (get and remove) last N entries
+    RFuture<Collection<String>> lastValues = ts.pollLastAsync(2);
+    RFuture<Collection<TimeSeriesEntry<String>>> lastEntries = ts.pollLastEntriesAsync(2);
+    
+    // Poll entries within timestamp range with a limit
+    RFuture<Collection<TimeSeriesEntry<String>>> polled = ts.pollEntriesAsync(201908110501, 201908110508, 10);
+    
+    // Get first and last entries
+    RFuture<TimeSeriesEntry<String>> first = ts.firstAsync();
+    RFuture<TimeSeriesEntry<String>> last = ts.lastAsync();
+    
+    // Get first and last timestamps
+    RFuture<Long> firstTimestamp = ts.firstTimestampAsync();
+    RFuture<Long> lastTimestamp = ts.lastTimestampAsync();
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RTimeSeriesReactive<String> ts = redisson.getTimeSeries("myTimeSeries");
+    
+    // Get values within timestamp range (inclusive)
+    Mono<Collection<String>> values = ts.range(201908110501, 201908110508);
+    
+    // Get entries (values with timestamps) within range
+    Mono<Collection<TimeSeriesEntry<String>>> entries = ts.entryRange(201908110501, 201908110508);
+    
+    // Get entries in reverse order within range
+    Mono<Collection<TimeSeriesEntry<String>>> reversed = ts.entryRangeReversed(201908110501, 201908110508);
+    
+    // Poll (get and remove) first N entries
+    Mono<Collection<String>> firstValues = ts.pollFirst(2);
+    Mono<Collection<TimeSeriesEntry<String>>> firstEntries = ts.pollFirstEntries(2);
+    
+    // Poll (get and remove) last N entries
+    Mono<Collection<String>> lastValues = ts.pollLast(2);
+    Mono<Collection<TimeSeriesEntry<String>>> lastEntries = ts.pollLastEntries(2);
+    
+    // Poll entries within timestamp range with a limit
+    Mono<Collection<TimeSeriesEntry<String>>> polled = ts.pollEntries(201908110501, 201908110508, 10);
+    
+    // Get first and last entries
+    Mono<TimeSeriesEntry<String>> first = ts.first();
+    Mono<TimeSeriesEntry<String>> last = ts.last();
+    
+    // Get first and last timestamps
+    Mono<Long> firstTimestamp = ts.firstTimestamp();
+    Mono<Long> lastTimestamp = ts.lastTimestamp();
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RTimeSeriesRx<String> ts = redisson.getTimeSeries("myTimeSeries");
+    
+    // Get values within timestamp range (inclusive)
+    Single<Collection<String>> values = ts.range(201908110501, 201908110508);
+    
+    // Get entries (values with timestamps) within range
+    Single<Collection<TimeSeriesEntry<String>>> entries = ts.entryRange(201908110501, 201908110508);
+    
+    // Get entries in reverse order within range
+    Single<Collection<TimeSeriesEntry<String>>> reversed = ts.entryRangeReversed(201908110501, 201908110508);
+    
+    // Poll (get and remove) first N entries
+    Single<Collection<String>> firstValues = ts.pollFirst(2);
+    Single<Collection<TimeSeriesEntry<String>>> firstEntries = ts.pollFirstEntries(2);
+    
+    // Poll (get and remove) last N entries
+    Single<Collection<String>> lastValues = ts.pollLast(2);
+    Single<Collection<TimeSeriesEntry<String>>> lastEntries = ts.pollLastEntries(2);
+    
+    // Poll entries within timestamp range with a limit
+    Single<Collection<TimeSeriesEntry<String>>> polled = ts.pollEntries(201908110501, 201908110508, 10);
+    
+    // Get first and last entries
+    Maybe<TimeSeriesEntry<String>> first = ts.first();
+    Maybe<TimeSeriesEntry<String>> last = ts.last();
+    
+    // Get first and last timestamps
+    Maybe<Long> firstTimestamp = ts.firstTimestamp();
+    Maybe<Long> lastTimestamp = ts.lastTimestamp();
+    ```
 
 ### Listeners
 
 Redisson allows binding listeners per `RTimeSeries` object. This requires the `notify-keyspace-events` setting to be enabled on Valkey or Redis side.
 
-|Listener class name|Event description | Valkey or Redis<br/>`notify-keyspace-events` value|
-|:--:|:--:|:--:|
-|org.redisson.api.listener.TrackingListener|Element created/removed/updated after read operation| - |
-|org.redisson.api.listener.ScoredSortedSetAddListener|Element created/updated|Ez|
-|org.redisson.api.listener.ScoredSortedSetRemoveListener|Element removed|Ez|
-|org.redisson.api.ExpiredObjectListener|`RTimeSeries` object expired|Ex|
-|org.redisson.api.DeletedObjectListener|`RTimeSeries` object deleted|Eg|
+| Listener class name | Event description | Valkey or Redis `notify-keyspace-events` value |
+| --- | --- | --- |
+| org.redisson.api.listener.TrackingListener | Element created/removed/updated after read operation | - |
+| org.redisson.api.listener.ScoredSortedSetAddListener | Entry created/updated | Ez |
+| org.redisson.api.listener.ScoredSortedSetRemoveListener | Entry removed | Ez |
+| org.redisson.api.ExpiredObjectListener | `RTimeSeries` object expired | Ex |
+| org.redisson.api.DeletedObjectListener | `RTimeSeries` object deleted | Eg |
 
-Usage example:
-
-```java
-RTimeSeries<String> set = redisson.getTimeSeries("obj");
-
-int listenerId = set.addListener(new DeletedObjectListener() {
-     @Override
-     public void onDeleted(String name) {
-        // ...
-     }
-});
-
-// ...
-
-set.removeListener(listenerId);
-```
+=== "Sync"
+    ```java
+    RTimeSeries<String> ts = redisson.getTimeSeries("myTimeSeries");
+    
+    int listenerId = ts.addListener(new ScoredSortedSetAddListener() {
+         @Override
+         public void onAdd(String name) {
+            // entry added or updated
+         }
+    });
+    
+    int listenerId = ts.addListener(new ScoredSortedSetRemoveListener() {
+         @Override
+         public void onRemove(String name) {
+            // entry removed
+         }
+    });
+    
+    int listenerId = ts.addListener(new ExpiredObjectListener() {
+         @Override
+         public void onExpired(String name) {
+            // time series expired
+         }
+    });
+    
+    int listenerId = ts.addListener(new DeletedObjectListener() {
+         @Override
+         public void onDeleted(String name) {
+            // time series deleted
+         }
+    });
+    
+    // remove listener
+    ts.removeListener(listenerId);
+    ```
+=== "Async"
+    ```java
+    RTimeSeries<String> ts = redisson.getTimeSeries("myTimeSeries");
+    
+    RFuture<Integer> listenerFuture = ts.addListenerAsync(new ScoredSortedSetAddListener() {
+         @Override
+         public void onAdd(String name) {
+            // entry added or updated
+         }
+    });
+    
+    RFuture<Integer> listenerFuture = ts.addListenerAsync(new ScoredSortedSetRemoveListener() {
+         @Override
+         public void onRemove(String name) {
+            // entry removed
+         }
+    });
+    
+    RFuture<Integer> listenerFuture = ts.addListenerAsync(new ExpiredObjectListener() {
+         @Override
+         public void onExpired(String name) {
+            // time series expired
+         }
+    });
+    
+    RFuture<Integer> listenerFuture = ts.addListenerAsync(new DeletedObjectListener() {
+         @Override
+         public void onDeleted(String name) {
+            // time series deleted
+         }
+    });
+    
+    // remove listener
+    RFuture<Void> removeFuture = ts.removeListenerAsync(listenerId);
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RTimeSeriesReactive<String> ts = redisson.getTimeSeries("myTimeSeries");
+    
+    Mono<Integer> listenerMono = ts.addListener(new ScoredSortedSetAddListener() {
+         @Override
+         public void onAdd(String name) {
+            // entry added or updated
+         }
+    });
+    
+    Mono<Integer> listenerMono = ts.addListener(new ScoredSortedSetRemoveListener() {
+         @Override
+         public void onRemove(String name) {
+            // entry removed
+         }
+    });
+    
+    Mono<Integer> listenerMono = ts.addListener(new ExpiredObjectListener() {
+         @Override
+         public void onExpired(String name) {
+            // time series expired
+         }
+    });
+    
+    Mono<Integer> listenerMono = ts.addListener(new DeletedObjectListener() {
+         @Override
+         public void onDeleted(String name) {
+            // time series deleted
+         }
+    });
+    
+    // remove listener
+    Mono<Void> removeMono = ts.removeListener(listenerId);
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RTimeSeriesRx<String> ts = redisson.getTimeSeries("myTimeSeries");
+    
+    Single<Integer> listenerSingle = ts.addListener(new ScoredSortedSetAddListener() {
+         @Override
+         public void onAdd(String name) {
+            // entry added or updated
+         }
+    });
+    
+    Single<Integer> listenerSingle = ts.addListener(new ScoredSortedSetRemoveListener() {
+         @Override
+         public void onRemove(String name) {
+            // entry removed
+         }
+    });
+    
+    Single<Integer> listenerSingle = ts.addListener(new ExpiredObjectListener() {
+         @Override
+         public void onExpired(String name) {
+            // time series expired
+         }
+    });
+    
+    Single<Integer> listenerSingle = ts.addListener(new DeletedObjectListener() {
+         @Override
+         public void onDeleted(String name) {
+            // time series deleted
+         }
+    });
+    
+    // remove listener
+    Completable removeCompletable = ts.removeListener(listenerId);
+    ```
 
 ## Vector Set 
 
-Java implementation of Valkey or Redis based [Vector Set](https://www.javadoc.io/doc/org.redisson/redisson/latest/org/redisson/api/RVectorSet.html) object is a specialized data type designed for managing high-dimensional vector data and enabling fast vector similarity search. Vector sets are similar to sorted sets but instead of a score, each element has a string representation of a vector, making them ideal for AI applications, machine learning models, and semantic search use cases.
+Java implementation of Redis based [Vector Set](https://www.javadoc.io/doc/org.redisson/redisson/latest/org/redisson/api/RVectorSet.html) object is a specialized data type designed for managing high-dimensional vector data and enabling fast vector similarity search. [Vector sets](https://redis.io/docs/latest/develop/ai/search-and-query/vectors/) are similar to sorted sets but instead of a score, each element has a string representation of a vector, making them ideal for AI applications, machine learning models, and semantic search use cases.
 
-Vector sets support the HNSW algorithm and use cosine similarity metrics for efficient vector similarity search. The data type is optimized for storing text embeddings and other high-dimensional vector representations commonly used in modern AI applications.
+Requires **Redis 8.0+**.
 
-**Features**
+### High-Dimensional Vector Data
 
-The RVectorSet interfaces provide access to essential vector set operations including:
+Vector sets are optimized for storing and querying high-dimensional vectors commonly used in modern applications. Each element in a vector set consists of an element name (string identifier), a vector (list of floating-point values representing the element in vector space), and optional JSON attributes (metadata associated with the element).
 
-- Vector Addition: Adding elements with their associated vectors to the set
-
-- Similarity Search: Retrieving elements most similar to a specified vector or existing element
-
-- Attribute Management: Setting and retrieving JSON attributes associated with vector elements
-
-- Filtered Search: Performing similarity searches with mathematical filters on element attributes
-
-- Cardinality Operations: Getting the number of elements and vector dimensions
+Vector sets support configurable dimensionality to match your embedding model output, efficient storage of dense vector representations, and automatic vector normalization for cosine similarity calculations.
 
 Usage examples:
 
 === "Sync"
     ```java
-	RVectorSet vectorSet = redisson.getVectorSet("my-vectors");
-	
-	vectorSet.add(VectorAddArgs.element("element1").vector(1.0, 1.0));
-	vectorSet.add(VectorAddArgs.element("element2").vector(-1.0, -1.0));
+	RVectorSet<String> vectorSet = redisson.getVectorSet("embeddings");
 
-    List<Double> vector1 = vectorSet.getVector("element1");
-	List<Double> vector2 = vectorSet.getVector("element2");
+	// Add text embeddings (e.g., from OpenAI, Sentence Transformers, etc.)
+	vectorSet.add(VectorAddArgs.element("doc1")
+		.vector(0.12, -0.34, 0.56, 0.78, -0.91, ...)); // 1536-dim for OpenAI
 
-    List<String> similarElements = vectorSet.getSimilar(VectorSimilarArgs.vector(1.0, 1.0));
+	vectorSet.add(VectorAddArgs.element("doc2")
+		.vector(-0.23, 0.45, -0.67, 0.89, 0.12, ...));
 
-	vectorSet.remove("element1");
-	vectorSet.remove("element2");
+	// Retrieve stored vector
+	List<Double> vector = vectorSet.getVector("doc1");
 
+	// Get vector dimensions
+	long dimensions = vectorSet.dim();
+
+	// Get total number of elements
+	long count = vectorSet.size();
 	```
 === "Async"
     ```java
-	RVectorSetAsync vectorSet = redisson.getVectorSet("my-vectors").async();
+	RVectorSet<String> vectorSet = redisson.getVectorSet("embeddings");
 
-	RFuture<Boolean> f1 = vectorSet.addAsync(VectorAddArgs.element("element1").vector(1.0, 1.0));
-	RFuture<Boolean> f2 = vectorSet.addAsync(VectorAddArgs.element("element2").vector(-1.0, -1.0));
+	// Add text embeddings
+	RFuture<Boolean> f1 = vectorSet.addAsync(VectorAddArgs.element("doc1")
+		.vector(0.12, -0.34, 0.56, 0.78, -0.91, ...));
 
-    RFuture<List<Double>> vector1 = vectorSet.getVectorAsync("element1");
-	RFuture<List<Double>> vector2 = vectorSet.getVectorAsync("element2");
+	RFuture<Boolean> f2 = vectorSet.addAsync(VectorAddArgs.element("doc2")
+		.vector(-0.23, 0.45, -0.67, 0.89, 0.12, ...));
 
-    RFuture<List<String>> similarElements = vectorSet.getSimilarAsync(VectorSimilarArgs.vector(1.0, 1.0));
+	// Retrieve stored vector
+	RFuture<List<Double>> vectorFuture = vectorSet.getVectorAsync("doc1");
 
-	RFuture<Boolean> r1 = vectorSet.removeAsync("element1");
-	RFuture<Boolean> r2 = vectorSet.removeAsync("element2");
+	// Get vector dimensions
+	RFuture<Long> dimFuture = vectorSet.dimAsync();
 
+	// Get total number of elements
+	RFuture<Integer> sizeFuture = vectorSet.sizeAsync();
+
+	vectorFuture.whenComplete((vector, exception) -> {
+		// ...
+	});	
 	```
 === "Reactive"
     ```java
-	RedissonReactiveClient redissonReactive = redisson.reactive();
-	RVectorSetReactive vectorSet = redissonReactive.getVectorSet("my-vectors");
+	RedissonReactiveClient redisson = redissonClient.reactive();
+	RVectorSetReactive<String> vectorSet = redisson.getVectorSet("embeddings");
 
-	Mono<Boolean> f1 = vectorSet.add(VectorAddArgs.element("element1").vector(1.0, 1.0));
-	Mono<Boolean> f2 = vectorSet.add(VectorAddArgs.element("element2").vector(-1.0, -1.0));
+	// Add text embeddings
+	Mono<Boolean> m1 = vectorSet.add(VectorAddArgs.element("doc1")
+		.vector(0.12, -0.34, 0.56, 0.78, -0.91, ...));
 
-    Mono<List<Double>> vector1 = vectorSet.getVector("element1");
-	Mono<List<Double>> vector2 = vectorSet.getVector("element2");
+	Mono<Boolean> m2 = vectorSet.add(VectorAddArgs.element("doc2")
+		.vector(-0.23, 0.45, -0.67, 0.89, 0.12, ...));
 
-    Mono<List<String>> similarElements = vectorSet.getSimilar(VectorSimilarArgs.vector(1.0, 1.0));
-	
-	Mono<Boolean> r1 = vectorSet.remove("element1");
-	Mono<Boolean> r2 = vectorSet.remove("element2");
+	// Retrieve stored vector
+	Mono<List<Double>> vectorMono = vectorSet.getVector("doc1");
+
+	// Get vector dimensions
+	Mono<Long> dimMono = vectorSet.dim();
+
+	// Get total number of elements
+	Mono<Integer> sizeMono = vectorSet.size();
+
+	vectorMono.doOnNext(vector -> {
+		// ...
+	}).subscribe();
     ```
 === "RxJava3"
     ```java
-	RedissonRxClient redissonRx = redisson.rxJava();
-	RVectorSetRx<float[]> vectorSetRx = redissonRx.getVectorSet("myVectorSetRx");
+	RedissonRxClient redisson = redissonClient.rxJava();
+	RVectorSetRx<String> vectorSet = redisson.getVectorSet("embeddings");
 
-	Single<Boolean> f1 = vectorSet.add(VectorAddArgs.element("element1").vector(1.0, 1.0));
-	Single<Boolean> f2 = vectorSet.add(VectorAddArgs.element("element2").vector(-1.0, -1.0));
+	// Add text embeddings
+	Single<Boolean> s1 = vectorSet.add(VectorAddArgs.element("doc1")
+		.vector(0.12, -0.34, 0.56, 0.78, -0.91, ...));
 
-    Single<List<Double>> vector1 = vectorSet.getVector("element1");
-	Single<List<Double>> vector2 = vectorSet.getVector("element2");
+	Single<Boolean> s2 = vectorSet.add(VectorAddArgs.element("doc2")
+		.vector(-0.23, 0.45, -0.67, 0.89, 0.12, ...));
 
-    Single<List<String>> similarElements = vectorSet.getSimilar(VectorSimilarArgs.vector(1.0, 1.0));
+	// Retrieve stored vector
+	Maybe<List<Double>> vectorMaybe = vectorSet.getVector("doc1");
+
+	// Get vector dimensions
+	Single<Long> dimSingle = vectorSet.dim();
+
+	// Get total number of elements
+	Single<Integer> sizeSingle = vectorSet.size();
+
+	vectorMaybe.doOnSuccess(vector -> {
+		// ...
+	}).subscribe();
+    ```
+
+### Similarity Search (HNSW Algorithm)
+
+Vector sets use the Hierarchical Navigable Small World (HNSW) algorithm for approximate nearest neighbor search. HNSW provides sub-linear query time complexity and excellent recall rates, making it suitable for large-scale similarity search applications.
+
+The similarity search returns elements ordered by their proximity to the query vector using cosine similarity metrics.
+
+Usage examples:
+
+=== "Sync"
+    ```java
+	RVectorSet<String> vectorSet = redisson.getVectorSet("embeddings");
+
+	// Find similar elements by vector
+	List<String> similar = vectorSet.getSimilar(
+		VectorSimilarArgs.vector(0.12, -0.34, 0.56, 0.78, -0.91, ...)
+			.count(10));  // Return top 10 most similar
+
+	// Find similar elements by existing element name
+	List<String> similarToDoc = vectorSet.getSimilar(
+		VectorSimilarArgs.element("doc1")
+			.count(5));
+
+	// Get similarity scores along with elements
+	List<ScoredEntry<String>> similarWithScores = vectorSet.getSimilarWithScores(
+		VectorSimilarArgs.vector(0.12, -0.34, 0.56, 0.78, -0.91, ...)
+			.count(10));
+
+	for (ScoredEntry<String> entry : similarWithScores) {
+		String element = entry.getValue();
+		Double score = entry.getScore();  // Similarity score
+	}
+	```
+=== "Async"
+    ```java
+	RVectorSet<String> vectorSet = redisson.getVectorSet("embeddings");
+
+	// Find similar elements by vector
+	RFuture<List<String>> similarFuture = vectorSet.getSimilarAsync(
+		VectorSimilarArgs.vector(0.12, -0.34, 0.56, 0.78, -0.91, ...)
+			.count(10));
+
+	// Find similar elements by existing element name
+	RFuture<List<String>> similarToDocFuture = vectorSet.getSimilarAsync(
+		VectorSimilarArgs.element("doc1")
+			.count(5));
+
+	// Get similarity scores along with elements
+	RFuture<List<ScoredEntry<String>>> scoresFeature = vectorSet.getSimilarWithScoresAsync(
+		VectorSimilarArgs.vector(0.12, -0.34, 0.56, 0.78, -0.91, ...)
+			.count(10));
+
+	scoresFeature.whenComplete((entries, exception) -> {
+		for (ScoredEntry<String> entry : entries) {
+			String element = entry.getValue();
+			Double score = entry.getScore();
+		}
+	});
+	```
+=== "Reactive"
+    ```java
+	RedissonReactiveClient redisson = redissonClient.reactive();
+	RVectorSetReactive<String> vectorSet = redisson.getVectorSet("embeddings");
+
+	// Find similar elements by vector
+	Mono<List<String>> similarMono = vectorSet.getSimilar(
+		VectorSimilarArgs.vector(0.12, -0.34, 0.56, 0.78, -0.91, ...)
+			.count(10));
+
+	// Find similar elements by existing element name
+	Mono<List<String>> similarToDocMono = vectorSet.getSimilar(
+		VectorSimilarArgs.element("doc1")
+			.count(5));
+
+	// Get similarity scores along with elements
+	Mono<List<ScoredEntry<String>>> scoresMono = vectorSet.getSimilarWithScores(
+		VectorSimilarArgs.vector(0.12, -0.34, 0.56, 0.78, -0.91, ...)
+			.count(10));
+
+	scoresMono.doOnNext(entries -> {
+		for (ScoredEntry<String> entry : entries) {
+			String element = entry.getValue();
+			Double score = entry.getScore();
+		}
+	}).subscribe();
+    ```
+=== "RxJava3"
+    ```java
+	RedissonRxClient redisson = redissonClient.rxJava();
+	RVectorSetRx<String> vectorSet = redisson.getVectorSet("embeddings");
+
+	// Find similar elements by vector
+	Single<List<String>> similarSingle = vectorSet.getSimilar(
+		VectorSimilarArgs.vector(0.12, -0.34, 0.56, 0.78, -0.91, ...)
+			.count(10));
+
+	// Find similar elements by existing element name
+	Single<List<String>> similarToDocSingle = vectorSet.getSimilar(
+		VectorSimilarArgs.element("doc1")
+			.count(5));
+
+	// Get similarity scores along with elements
+	Single<List<ScoredEntry<String>>> scoresSingle = vectorSet.getSimilarWithScores(
+		VectorSimilarArgs.vector(0.12, -0.34, 0.56, 0.78, -0.91, ...)
+			.count(10));
+
+	scoresSingle.doOnSuccess(entries -> {
+		for (ScoredEntry<String> entry : entries) {
+			String element = entry.getValue();
+			Double score = entry.getScore();
+		}
+	}).subscribe();
+    ```
+
+### Attribute Management
+
+Vector sets support attaching JSON attributes to each element, enabling rich metadata storage and filtered similarity searches. Attributes can be used to store additional information about vectors and to filter search results based on specific criteria.
+
+Usage examples:
+
+=== "Sync"
+    ```java
+	RVectorSet<String> vectorSet = redisson.getVectorSet("products");
+
+	// Add element with attributes
+	vectorSet.add(VectorAddArgs.element("product-123")
+		.vector(0.12, -0.34, 0.56, ...)
+		.attributes("{\"category\": \"electronics\", \"price\": 299.99, \"inStock\": true}"));
+
+	// Update attributes for existing element
+	vectorSet.setAttributes("product-123", 
+		"{\"category\": \"electronics\", \"price\": 249.99, \"inStock\": true, \"onSale\": true}");
+
+	// Retrieve attributes
+	String attrs = vectorSet.getAttributes("product-123");
+
+	// Filtered similarity search using attribute expressions
+	List<String> filtered = vectorSet.getSimilar(
+		VectorSimilarArgs.vector(0.12, -0.34, 0.56, ...)
+			.count(10)
+			.filter(".price < 300 and .inStock == true"));
+
+	// Complex filter expressions
+	List<String> results = vectorSet.getSimilar(
+		VectorSimilarArgs.element("query-product")
+			.count(20)
+			.filter(".category == \"electronics\" and .price >= 100 and .price <= 500"));
+	```
+=== "Async"
+    ```java
+	RVectorSet<String> vectorSet = redisson.getVectorSet("products");
+
+	// Add element with attributes
+	RFuture<Boolean> addFuture = vectorSet.addAsync(VectorAddArgs.element("product-123")
+		.vector(0.12, -0.34, 0.56, ...)
+		.attributes("{\"category\": \"electronics\", \"price\": 299.99, \"inStock\": true}"));
+
+	// Update attributes for existing element
+	RFuture<Boolean> setAttrFuture = vectorSet.setAttributesAsync("product-123", 
+		"{\"category\": \"electronics\", \"price\": 249.99, \"inStock\": true, \"onSale\": true}");
+
+	// Retrieve attributes
+	RFuture<String> attrsFuture = vectorSet.getAttributesAsync("product-123");
+
+	// Filtered similarity search using attribute expressions
+	RFuture<List<String>> filteredFuture = vectorSet.getSimilarAsync(
+		VectorSimilarArgs.vector(0.12, -0.34, 0.56, ...)
+			.count(10)
+			.filter(".price < 300 and .inStock == true"));
+
+	// Complex filter expressions
+	RFuture<List<String>> resultsFuture = vectorSet.getSimilarAsync(
+		VectorSimilarArgs.element("query-product")
+			.count(20)
+			.filter(".category == \"electronics\" and .price >= 100 and .price <= 500"));
+
+	filteredFuture.whenComplete((results, exception) -> {
+		// ...
+	});
+	```
+=== "Reactive"
+    ```java
+	RedissonReactiveClient redisson = redissonClient.reactive();
+	RVectorSetReactive<String> vectorSet = redisson.getVectorSet("products");
+
+	// Add element with attributes
+	Mono<Boolean> addMono = vectorSet.add(VectorAddArgs.element("product-123")
+		.vector(0.12, -0.34, 0.56, ...)
+		.attributes("{\"category\": \"electronics\", \"price\": 299.99, \"inStock\": true}"));
+
+	// Update attributes for existing element
+	Mono<Boolean> setAttrMono = vectorSet.setAttributes("product-123", 
+		"{\"category\": \"electronics\", \"price\": 249.99, \"inStock\": true, \"onSale\": true}");
+
+	// Retrieve attributes
+	Mono<String> attrsMono = vectorSet.getAttributes("product-123");
+
+	// Filtered similarity search using attribute expressions
+	Mono<List<String>> filteredMono = vectorSet.getSimilar(
+		VectorSimilarArgs.vector(0.12, -0.34, 0.56, ...)
+			.count(10)
+			.filter(".price < 300 and .inStock == true"));
+
+	// Complex filter expressions
+	Mono<List<String>> resultsMono = vectorSet.getSimilar(
+		VectorSimilarArgs.element("query-product")
+			.count(20)
+			.filter(".category == \"electronics\" and .price >= 100 and .price <= 500"));
+
+	filteredMono.doOnNext(results -> {
+		// ...
+	}).subscribe();
+    ```
+=== "RxJava3"
+    ```java
+	RedissonRxClient redisson = redissonClient.rxJava();
+	RVectorSetRx<String> vectorSet = redisson.getVectorSet("products");
+
+	// Add element with attributes
+	Single<Boolean> addSingle = vectorSet.add(VectorAddArgs.element("product-123")
+		.vector(0.12, -0.34, 0.56, ...)
+		.attributes("{\"category\": \"electronics\", \"price\": 299.99, \"inStock\": true}"));
+
+	// Update attributes for existing element
+	Single<Boolean> setAttrSingle = vectorSet.setAttributes("product-123", 
+		"{\"category\": \"electronics\", \"price\": 249.99, \"inStock\": true, \"onSale\": true}");
+
+	// Retrieve attributes
+	Maybe<String> attrsMaybe = vectorSet.getAttributes("product-123");
+
+	// Filtered similarity search using attribute expressions
+	Single<List<String>> filteredSingle = vectorSet.getSimilar(
+		VectorSimilarArgs.vector(0.12, -0.34, 0.56, ...)
+			.count(10)
+			.filter(".price < 300 and .inStock == true"));
+
+	// Complex filter expressions
+	Single<List<String>> resultsSingle = vectorSet.getSimilar(
+		VectorSimilarArgs.element("query-product")
+			.count(20)
+			.filter(".category == \"electronics\" and .price >= 100 and .price <= 500"));
+
+	filteredSingle.doOnSuccess(results -> {
+		// ...
+	}).subscribe();
+    ```
 	
-	Single<Boolean> r1 = vectorSet.remove("element1");
-	Single<Boolean> r2 = vectorSet.remove("element2");
+### Use Cases (AI/ML Applications)
+
+Vector sets are particularly well-suited for AI and machine learning applications that require efficient similarity search over high-dimensional embeddings.
+
+**Semantic Search**
+
+Store text embeddings from language models and find semantically similar documents, enabling natural language search that understands meaning rather than just keywords.
+
+Usage examples:
+
+=== "Sync"
+    ```java
+	RVectorSet<String> vectorSet = redisson.getVectorSet("documents");
+
+	// Store document embeddings
+	vectorSet.add(VectorAddArgs.element("doc-" + docId)
+		.vector(embeddingModel.encode(documentText))
+		.attributes("{\"title\": \"" + title + "\", \"date\": \"" + date + "\"}"));
+
+	// Search by query embedding
+	List<String> relevantDocs = vectorSet.getSimilar(
+		VectorSimilarArgs.vector(embeddingModel.encode(userQuery))
+			.count(10));
+	```
+=== "Async"
+    ```java
+	RVectorSet<String> vectorSet = redisson.getVectorSet("documents");
+
+	// Store document embeddings
+	RFuture<Boolean> addFuture = vectorSet.addAsync(VectorAddArgs.element("doc-" + docId)
+		.vector(embeddingModel.encode(documentText))
+		.attributes("{\"title\": \"" + title + "\", \"date\": \"" + date + "\"}"));
+
+	// Search by query embedding
+	RFuture<List<String>> searchFuture = vectorSet.getSimilarAsync(
+		VectorSimilarArgs.vector(embeddingModel.encode(userQuery))
+			.count(10));
+
+	searchFuture.whenComplete((relevantDocs, exception) -> {
+		// Process relevant documents
+	});
+	```
+=== "Reactive"
+    ```java
+	RedissonReactiveClient redisson = redissonClient.reactive();
+	RVectorSetReactive<String> vectorSet = redisson.getVectorSet("documents");
+
+	// Store document embeddings
+	Mono<Boolean> addMono = vectorSet.add(VectorAddArgs.element("doc-" + docId)
+		.vector(embeddingModel.encode(documentText))
+		.attributes("{\"title\": \"" + title + "\", \"date\": \"" + date + "\"}"));
+
+	// Search by query embedding
+	Mono<List<String>> searchMono = vectorSet.getSimilar(
+		VectorSimilarArgs.vector(embeddingModel.encode(userQuery))
+			.count(10));
+
+	searchMono.doOnNext(relevantDocs -> {
+		// Process relevant documents
+	}).subscribe();
+    ```
+=== "RxJava3"
+    ```java
+	RedissonRxClient redisson = redissonClient.rxJava();
+	RVectorSetRx<String> vectorSet = redisson.getVectorSet("documents");
+
+	// Store document embeddings
+	Single<Boolean> addSingle = vectorSet.add(VectorAddArgs.element("doc-" + docId)
+		.vector(embeddingModel.encode(documentText))
+		.attributes("{\"title\": \"" + title + "\", \"date\": \"" + date + "\"}"));
+
+	// Search by query embedding
+	Single<List<String>> searchSingle = vectorSet.getSimilar(
+		VectorSimilarArgs.vector(embeddingModel.encode(userQuery))
+			.count(10));
+
+	searchSingle.doOnSuccess(relevantDocs -> {
+		// Process relevant documents
+	}).subscribe();
+    ```
+	
+**Recommendation Systems**
+
+Store user and item embeddings to provide personalized recommendations based on vector similarity.
+
+Usage examples:
+
+=== "Sync"
+    ```java
+	RVectorSet<String> vectorSet = redisson.getVectorSet("products");
+
+	// Find similar products for recommendations
+	List<String> recommendations = vectorSet.getSimilar(
+		VectorSimilarArgs.element("user-" + userId + "-preferences")
+			.count(20)
+			.filter(".category == \"" + preferredCategory + "\""));
+	```
+=== "Async"
+    ```java
+	RVectorSet<String> vectorSet = redisson.getVectorSet("products");
+
+	// Find similar products for recommendations
+	RFuture<List<String>> recFuture = vectorSet.getSimilarAsync(
+		VectorSimilarArgs.element("user-" + userId + "-preferences")
+			.count(20)
+			.filter(".category == \"" + preferredCategory + "\""));
+
+	recFuture.whenComplete((recommendations, exception) -> {
+		// Process recommendations
+	});
+	```
+=== "Reactive"
+    ```java
+	RedissonReactiveClient redisson = redissonClient.reactive();
+	RVectorSetReactive<String> vectorSet = redisson.getVectorSet("products");
+
+	// Find similar products for recommendations
+	Mono<List<String>> recMono = vectorSet.getSimilar(
+		VectorSimilarArgs.element("user-" + userId + "-preferences")
+			.count(20)
+			.filter(".category == \"" + preferredCategory + "\""));
+
+	recMono.doOnNext(recommendations -> {
+		// Process recommendations
+	}).subscribe();
+    ```
+=== "RxJava3"
+    ```java
+	RedissonRxClient redisson = redissonClient.rxJava();
+	RVectorSetRx<String> vectorSet = redisson.getVectorSet("products");
+
+	// Find similar products for recommendations
+	Single<List<String>> recSingle = vectorSet.getSimilar(
+		VectorSimilarArgs.element("user-" + userId + "-preferences")
+			.count(20)
+			.filter(".category == \"" + preferredCategory + "\""));
+
+	recSingle.doOnSuccess(recommendations -> {
+		// Process recommendations
+	}).subscribe();
+    ```
+	
+**Image Similarity**
+
+Store image feature vectors extracted from computer vision models to find visually similar images.
+
+Usage examples:
+
+=== "Sync"
+    ```java
+	RVectorSet<String> vectorSet = redisson.getVectorSet("images");
+
+	// Find similar images
+	List<ScoredEntry<String>> similarImages = vectorSet.getSimilarWithScores(
+		VectorSimilarArgs.vector(imageEncoder.encode(queryImage))
+			.count(50));
+
+	for (ScoredEntry<String> entry : similarImages) {
+		String imageId = entry.getValue();
+		Double similarity = entry.getScore();
+	}
+	```
+=== "Async"
+    ```java
+	RVectorSet<String> vectorSet = redisson.getVectorSet("images");
+
+	// Find similar images
+	RFuture<List<ScoredEntry<String>>> imageFuture = vectorSet.getSimilarWithScoresAsync(
+		VectorSimilarArgs.vector(imageEncoder.encode(queryImage))
+			.count(50));
+
+	imageFuture.whenComplete((similarImages, exception) -> {
+		for (ScoredEntry<String> entry : similarImages) {
+			String imageId = entry.getValue();
+			Double similarity = entry.getScore();
+		}
+	});
+	```
+=== "Reactive"
+    ```java
+	RedissonReactiveClient redisson = redissonClient.reactive();
+	RVectorSetReactive<String> vectorSet = redisson.getVectorSet("images");
+
+	// Find similar images
+	Mono<List<ScoredEntry<String>>> imageMono = vectorSet.getSimilarWithScores(
+		VectorSimilarArgs.vector(imageEncoder.encode(queryImage))
+			.count(50));
+
+	imageMono.doOnNext(similarImages -> {
+		for (ScoredEntry<String> entry : similarImages) {
+			String imageId = entry.getValue();
+			Double similarity = entry.getScore();
+		}
+	}).subscribe();
+    ```
+=== "RxJava3"
+    ```java
+	RedissonRxClient redisson = redissonClient.rxJava();
+	RVectorSetRx<String> vectorSet = redisson.getVectorSet("images");
+
+	// Find similar images
+	Single<List<ScoredEntry<String>>> imageSingle = vectorSet.getSimilarWithScores(
+		VectorSimilarArgs.vector(imageEncoder.encode(queryImage))
+			.count(50));
+
+	imageSingle.doOnSuccess(similarImages -> {
+		for (ScoredEntry<String> entry : similarImages) {
+			String imageId = entry.getValue();
+			Double similarity = entry.getScore();
+		}
+	}).subscribe();
+    ```
+	
+**RAG (Retrieval-Augmented Generation)**
+
+Use vector sets as a knowledge base for LLM applications, retrieving relevant context based on semantic similarity.
+
+Usage examples:
+
+=== "Sync"
+    ```java
+	RVectorSet<String> vectorSet = redisson.getVectorSet("knowledge-base");
+
+	// Retrieve relevant context for RAG
+	List<String> contextChunks = vectorSet.getSimilar(
+		VectorSimilarArgs.vector(embeddingModel.encode(userQuestion))
+			.count(5));
+
+	String context = contextChunks.stream()
+		.map(chunkId -> getChunkContent(chunkId))
+		.collect(Collectors.joining("\n"));
+
+	// Pass context to LLM for answer generation
+	String answer = llm.generate(userQuestion, context);
+	```
+=== "Async"
+    ```java
+	RVectorSet<String> vectorSet = redisson.getVectorSet("knowledge-base");
+
+	// Retrieve relevant context for RAG
+	RFuture<List<String>> contextFuture = vectorSet.getSimilarAsync(
+		VectorSimilarArgs.vector(embeddingModel.encode(userQuestion))
+			.count(5));
+
+	contextFuture.thenApply(contextChunks -> {
+		String context = contextChunks.stream()
+			.map(chunkId -> getChunkContent(chunkId))
+			.collect(Collectors.joining("\n"));
+		
+		// Pass context to LLM for answer generation
+		return llm.generate(userQuestion, context);
+	});
+	```
+=== "Reactive"
+    ```java
+	RedissonReactiveClient redisson = redissonClient.reactive();
+	RVectorSetReactive<String> vectorSet = redisson.getVectorSet("knowledge-base");
+
+	// Retrieve relevant context for RAG
+	Mono<List<String>> contextMono = vectorSet.getSimilar(
+		VectorSimilarArgs.vector(embeddingModel.encode(userQuestion))
+			.count(5));
+
+	contextMono.map(contextChunks -> {
+		String context = contextChunks.stream()
+			.map(chunkId -> getChunkContent(chunkId))
+			.collect(Collectors.joining("\n"));
+		
+		// Pass context to LLM for answer generation
+		return llm.generate(userQuestion, context);
+	}).subscribe();
+    ```
+=== "RxJava3"
+    ```java
+	RedissonRxClient redisson = redissonClient.rxJava();
+	RVectorSetRx<String> vectorSet = redisson.getVectorSet("knowledge-base");
+
+	// Retrieve relevant context for RAG
+	Single<List<String>> contextSingle = vectorSet.getSimilar(
+		VectorSimilarArgs.vector(embeddingModel.encode(userQuestion))
+			.count(5));
+
+	contextSingle.map(contextChunks -> {
+		String context = contextChunks.stream()
+			.map(chunkId -> getChunkContent(chunkId))
+			.collect(Collectors.joining("\n"));
+		
+		// Pass context to LLM for answer generation
+		return llm.generate(userQuestion, context);
+	}).subscribe();
     ```
