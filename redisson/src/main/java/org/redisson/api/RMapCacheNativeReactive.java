@@ -251,7 +251,7 @@ public interface RMapCacheNativeReactive<K, V> extends RMapReactive<K, V>, RDest
     /**
      * Stores the specified entries only if all specified keys already exist.
      * <p>
-     * Requires <b>Redis 8.0.0 and higher.</b> or <b>Valkey 8.0.0 and higher.</b>
+     * Requires <b>Redis 8.0.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
      *
      * @param args put arguments
      * @return {@code true} if all entries were set, {@code false} otherwise
