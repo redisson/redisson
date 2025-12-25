@@ -16,6 +16,7 @@ import org.springframework.data.redis.serializer.RedisSerializer;
 
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 public class RedissonConnectionTest extends BaseConnectionTest {
 
@@ -182,5 +183,45 @@ public class RedissonConnectionTest extends BaseConnectionTest {
         assertThat(filteredResults.get(0)).isEqualTo("value3");
         assertThat(filteredResults.get(1)).isEqualTo("value4");
     }
-    
+
+    @Test
+    public void testPTtl() {
+        connection.set("key1".getBytes(), "value1".getBytes());
+        connection.set("key2".getBytes(), "value2".getBytes());
+        connection.expire("key1".getBytes(), 10);
+
+        assertThat(connection.pTtl("key1".getBytes(), TimeUnit.MILLISECONDS)).isGreaterThan(0L).isLessThanOrEqualTo(10000L);
+        assertThat(connection.pTtl("key1".getBytes(), TimeUnit.SECONDS)).isGreaterThan(0L).isLessThanOrEqualTo(10L);
+        assertThat(connection.pTtl("key1".getBytes(), TimeUnit.MINUTES)).isEqualTo(0L);
+        assertThat(connection.pTtl("key1".getBytes())).isGreaterThan(0L).isLessThanOrEqualTo(10000L);
+
+        assertThat(connection.pTtl("key2".getBytes(), TimeUnit.SECONDS)).isEqualTo(-1L);
+        assertThat(connection.pTtl("key2".getBytes(), TimeUnit.MINUTES)).isEqualTo(-1L);
+        assertThat(connection.pTtl("key2".getBytes())).isEqualTo(-1L);
+
+        assertThat(connection.pTtl("key3".getBytes(), TimeUnit.SECONDS)).isEqualTo(-2L);
+        assertThat(connection.pTtl("key3".getBytes(), TimeUnit.MINUTES)).isEqualTo(-2L);
+        assertThat(connection.pTtl("key3".getBytes())).isEqualTo(-2L);
+    }
+
+    @Test
+    public void testTtl() {
+        connection.set("key1".getBytes(), "value1".getBytes());
+        connection.set("key2".getBytes(), "value2".getBytes());
+        connection.expire("key1".getBytes(), 10);
+
+        assertThat(connection.ttl("key1".getBytes(), TimeUnit.MILLISECONDS)).isGreaterThan(0L).isLessThanOrEqualTo(10000L);
+        assertThat(connection.ttl("key1".getBytes(), TimeUnit.SECONDS)).isGreaterThan(0L).isLessThanOrEqualTo(10L);
+        assertThat(connection.ttl("key1".getBytes(), TimeUnit.MINUTES)).isEqualTo(0L);
+        assertThat(connection.ttl("key1".getBytes())).isGreaterThan(0L).isLessThanOrEqualTo(10000L);
+
+        assertThat(connection.ttl("key2".getBytes(), TimeUnit.SECONDS)).isEqualTo(-1L);
+        assertThat(connection.ttl("key2".getBytes(), TimeUnit.MINUTES)).isEqualTo(-1L);
+        assertThat(connection.ttl("key2".getBytes())).isEqualTo(-1L);
+
+        assertThat(connection.ttl("key3".getBytes(), TimeUnit.SECONDS)).isEqualTo(-2L);
+        assertThat(connection.ttl("key3".getBytes(), TimeUnit.MINUTES)).isEqualTo(-2L);
+        assertThat(connection.ttl("key3".getBytes())).isEqualTo(-2L);
+    }
+
 }
