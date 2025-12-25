@@ -46,6 +46,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static com.esotericsoftware.kryo.util.Util.className;
 
@@ -117,7 +118,7 @@ public class Kryo5Codec extends BaseCodec {
     }
 
     public Kryo5Codec(ClassLoader classLoader, Set<String> allowedClasses, boolean useReferences) {
-        this.allowedClasses = allowedClasses;
+        this.allowedClasses = allowedClasses.stream().sorted().collect(Collectors.toCollection(LinkedHashSet::new));
         this.useReferences = useReferences;
 
         this.kryoPool = new Pool<Kryo>(true, false, 1024) {
