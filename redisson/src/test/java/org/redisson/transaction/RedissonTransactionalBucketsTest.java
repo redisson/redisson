@@ -110,7 +110,34 @@ public class RedissonTransactionalBucketsTest extends RedisDockerTest {
 
         redisson.getKeys().deleteByPattern("*redisson_unlock_latch*");
         assertThat(redisson.getKeys().count()).isEqualTo(2);
+    }
 
+    @Test
+    public void testSetIfAllKeysAbsent() {
+        redisson.getBucket("test1").set("1");
+        redisson.getBucket("test2").set("2");
+
+        RTransaction transaction = redisson.createTransaction(TransactionOptions.defaults());
+        RBuckets buckets = transaction.getBuckets();
+        Map<String, Object> bbs1 = new LinkedHashMap<>();
+        bbs1.put("test1", "10");
+        bbs1.put("test2", "20");
+        assertThat(buckets.setIfAllKeysAbsent(SetArgs.entries(bbs1))).isFalse();
+        assertThat(redisson.getKeys().delete("test1", "test2")).isEqualTo(2);
+        Map<String, Object> bbs2 = new LinkedHashMap<>();
+        bbs2.put("test1", "11");
+        bbs2.put("test2", "22");
+        assertThat(buckets.setIfAllKeysAbsent(SetArgs.entries(bbs2))).isTrue();
+        Map<String, Object> bbs3 = new LinkedHashMap<>();
+        bbs3.put("test1", "13");
+        bbs3.put("test2", "23");
+        assertThat(buckets.setIfAllKeysAbsent(SetArgs.entries(bbs3))).isFalse();
+
+        System.out.println("commit " + Thread.currentThread().getId());
+        transaction.commit();
+
+        redisson.getKeys().deleteByPattern("*redisson_unlock_latch*");
+        assertThat(redisson.getKeys().count()).isEqualTo(2);
     }
     
 }
