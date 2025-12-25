@@ -46,16 +46,25 @@ public class FullJitterDelay implements DelayStrategy {
 
     @Override
     public Duration calcDelay(int attempt) {
-        long exponentialDelayMs = Math.min(
-                Math.max(baseDelay.toMillis() * (1L << Math.min(attempt, 62)), 1),
-                maxDelay.toMillis()
-        );
+        long baseMs = baseDelay.toMillis();
+        long maxMs = maxDelay.toMillis();
 
-        long jitteredDelayMs = 0;
-        if (exponentialDelayMs != 0) {
-            jitteredDelayMs = ThreadLocalRandom.current().nextLong(0, exponentialDelayMs + 1);
+        long exponentialDelayMs;
+        if (attempt >= 63 || baseMs <= 0) {
+            exponentialDelayMs = maxMs;
+        } else {
+            long shifted = 1L << attempt;
+
+            if (baseMs > maxMs / shifted) {
+                exponentialDelayMs = maxMs;
+            } else {
+                exponentialDelayMs = Math.min(baseMs * shifted, maxMs);
+            }
         }
 
+        exponentialDelayMs = Math.max(exponentialDelayMs, 1);
+
+        long jitteredDelayMs = ThreadLocalRandom.current().nextLong(0, exponentialDelayMs + 1);
         return Duration.ofMillis(jitteredDelayMs);
     }
 }
