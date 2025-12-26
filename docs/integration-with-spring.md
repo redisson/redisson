@@ -414,16 +414,124 @@ Add configuration class which extends `AbstractReactiveWebInitializer` class:
 
 ### Spring Boot configuration
 
-Define follow properties in spring-boot settings:  
+1. Add [Redisson Spring Boot Starter](#spring-boot-starter) module.
+
+2. Define the following properties in Spring Boot settings:  
     ```
     spring.session.store-type=redis
     spring.redis.redisson.file=classpath:redisson.yaml
     spring.session.timeout.seconds=900
     ```
 
+### Local Cache
+
+_This feature is available only in [Redisson PRO](https://redisson.pro/feature-comparison.html) edition._
+
+Redisson PRO provides local caching implementation for Spring Session.
+
+**local cache** -  a so-called near cache used to speed up read operations and avoid network roundtrips. It caches the whole Spring Session on the Redisson side and then uses the cached copy instead of loading it on each `request.getSession()` method access. The cached Session is updated/removed via pub/sub notifications.
+
+To utilize this feature follow the steps below.
+
+1. Add Redisson Spring Session library in classpath.
+
+	Maven
+
+	```xml  
+	<dependency>
+	   <groupId>pro.redisson</groupId>
+	   <!-- for Spring Session v2.x.x - v2.1.x -->
+	   <artifactId>redisson-spring-session-20</artifactId>
+	   <!-- for Spring Session v2.2.x - v2.7.x -->
+	   <artifactId>redisson-spring-session-22</artifactId>
+	   <!-- for Spring Session v3.x.x - v4.x.x -->
+	   <artifactId>redisson-spring-session-30</artifactId>
+	   <version>xVERSIONx</version>
+	</dependency>
+	```
+
+	Gradle
+
+	```groovy
+	// for Spring Session v2.x.x - v2.1.x
+	compile 'pro.redisson:redisson-spring-session-20:xVERSIONx'
+	// for Spring Session v2.2.x - v2.7.x
+	compile 'pro.redisson:redisson-spring-session-22:xVERSIONx'
+	// for Spring Session v3.x.x - v4.x.x
+	compile 'pro.redisson:redisson-spring-session-30:xVERSIONx'
+	```
+
+2. Define configuration with `@EnableLocalCachedRedisSession` annotation
+
+	```java
+    @Configuration
+    @EnableLocalCachedRedisSession
+    public class SessionConfig extends AbstractHttpSessionApplicationInitializer { 
+
+		@Bean
+		public RedissonConnectionFactory redissonConnectionFactory(RedissonClient redisson) {
+			return new RedissonConnectionFactory(redisson);
+		}
+
+		@Bean(destroyMethod = "shutdown")
+		public RedissonClient redisson(@Value("classpath:/redisson.yaml") Resource configFile) throws IOException {
+		   Config config = Config.fromYAML(configFile.getInputStream());
+		   return Redisson.create(config);
+ 		}
+
+    }
+	```
+
 ## Spring Transaction Manager
 
-Redisson provides implementation of both `org.springframework.transaction.PlatformTransactionManager` and `org.springframework.transaction.ReactiveTransactionManager` interfaces to participant in Spring transactions. See also [Transactions](Transactions.md) section.
+Redisson provides implementation of both `org.springframework.transaction.PlatformTransactionManager` and `org.springframework.transaction.ReactiveTransactionManager` interfaces to participant in Spring transactions. See also [Transactions](/transactions) section.
+
+**Add `redisson-spring-transaction` dependency into your project:**
+
+<div class="grid cards" markdown>
+
+-   **Redisson PRO**
+
+    Maven
+
+    ```xml  
+    <dependency>
+       <groupId>pro.redisson</groupId>
+       <artifactId>redisson-spring-transaction</artifactId>
+       <version>xVERSIONx</version>
+    </dependency>
+    ```
+
+    Gradle
+
+    ```groovy
+    compile 'pro.redisson:redisson-spring-transaction:xVERSIONx'
+    ```
+
+-   **Community Edition**
+
+    Maven
+
+    ```xml  
+    <dependency>
+       <groupId>org.redisson</groupId>
+       <artifactId>redisson-spring-transaction</artifactId>
+       <version>xVERSIONx</version>
+    </dependency>
+    ```
+
+    Gradle
+
+    ```groovy
+    compile 'org.redisson:redisson-spring-transaction:xVERSIONx'
+    ```
+
+</div>
+
+[Redisson PRO vs. Community Edition ➜](https://redisson.pro/feature-comparison.html)
+<br>
+<br>    
+
 
 ### Spring Transaction Management
 

@@ -124,124 +124,174 @@ LocalCachedMapOptions options = LocalCachedMapOptions.defaults()
 
 ### Usage
 
-Each Spring Cache Manager instance has two important parameters: `ttl` and `maxIdleTime` and stores data infinitely if they are not defined or equal to `0`.
+1. **Add `redisson-spring-cache` dependency into your project:**  
 
-Complete config example:
-```java
-@Configuration
-@ComponentScan
-@EnableCaching
-public static class Application {
+    <div class="grid cards" markdown>
 
-    @Bean(destroyMethod="shutdown")
-    RedissonClient redisson() throws IOException {
-        Config config = new Config();
-        config.useClusterServers()
-              .addNodeAddress("redis://127.0.0.1:7004", "redis://127.0.0.1:7001");
-        return Redisson.create(config);
-    }
+    -   **Redisson PRO**
 
-    @Bean
-    CacheManager cacheManager(RedissonClient redissonClient) {
-        Map<String, CacheConfig> config = new HashMap<String, CacheConfig>();
+        Maven
 
-        // define local cache settings for "testMap" cache.
-        // ttl = 48 minutes and maxIdleTime = 24 minutes for local cache entries
-        LocalCachedMapOptions options = LocalCachedMapOptions.defaults()
-            .evictionPolicy(EvictionPolicy.LFU)
-            .timeToLive(48, TimeUnit.MINUTES)
-            .maxIdle(24, TimeUnit.MINUTES)
-            .cacheSize(1000);
- 
-        // create "testMap" Redis or Valkey cache with ttl = 24 minutes and maxIdleTime = 12 minutes
-        LocalCachedCacheConfig cfg = new LocalCachedCacheConfig(24*60*1000, 12*60*1000, options);
-        // Max size of map stored in Redis
-        cfg.setMaxSize(2000);
-        config.put("testMap", cfg);
+        ```xml  
+        <dependency>
+        	<groupId>pro.redisson</groupId>
+        	<artifactId>redisson-spring-cache</artifactId>
+        	<version>xVERSIONx</version>
+        </dependency>
+        ```
 
-        // scripted eviction
-        return new RedissonSpringCacheManager(redissonClient, config);
+        Gradle
 
-        // native eviction
-        return new RedissonSpringCacheManager(redissonClient, config);
+        ```groovy
+        compile 'pro.redisson:redisson-spring-cache:xVERSIONx'
+        ```
 
-        // data partitioning + scripted eviction
-        return new RedissonClusteredSpringCacheManager(redissonClient, config);
+        [License key configuration](configuration.md/#license-key-configuration)
 
-        // data partitioning + advanced eviction
-        return new RedissonSpringCacheV2Manager(redissonClient, config);
 
-        // data partitioning + native eviction
-        return new RedissonClusteredSpringCacheNativeManager(redissonClient, config);
+    -   **Community Edition**
 
-        // local cache + scripted eviction
-        return new RedissonSpringLocalCachedCacheManager(redissonClient, config);
+        Maven
 
-        // local cache + native eviction
-        return new RedissonSpringLocalCachedCacheNativeManager(redissonClient, config);
+        ```xml  
+        <dependency>
+        	<groupId>org.redisson</groupId>
+        	<artifactId>redisson-spring-cache</artifactId>
+        	<version>xVERSIONx</version>
+        </dependency>
+        ```
 
-        // local cache + data partitioning + native eviction
-        return new RedissonClusteredSpringLocalCachedCacheNativeManager(redissonClient, config);
+        Gradle
 
-        // local cache + data partitioning + advanced eviction
-        return new RedissonSpringLocalCachedCacheV2Manager(redissonClient, config);
+        ```groovy
+        compile 'org.redisson:redisson-spring-cache:xVERSIONx'
+        ```
 
-        // local cache + data partitioning + scripted eviction
-        return new RedissonClusteredSpringLocalCachedCacheManager(redissonClient, config);
-    }
+    </div>
 
-}
-```
+    [Redisson PRO vs. Community Edition ➜](https://redisson.pro/feature-comparison.html)
 
-Cache configuration could be read from YAML configuration files:
 
-```java
+2. **Create Spring Cache Manager instance**
+
+    Each Spring Cache Manager instance has two important parameters: `ttl` and `maxIdleTime` and stores data infinitely if they are not defined or equal to `0`.
+
+    Complete config example:
+    ```java
     @Configuration
     @ComponentScan
     @EnableCaching
     public static class Application {
 
         @Bean(destroyMethod="shutdown")
-        RedissonClient redisson(@Value("classpath:/redisson.yaml") Resource configFile) throws IOException {
-            Config config = Config.fromYAML(configFile.getInputStream());
+        RedissonClient redisson() throws IOException {
+            Config config = new Config();
+            config.useClusterServers()
+                  .addNodeAddress("redis://127.0.0.1:7004", "redis://127.0.0.1:7001");
             return Redisson.create(config);
         }
 
         @Bean
-        CacheManager cacheManager(RedissonClient redissonClient) throws IOException {
-			// scripted eviction
-			return new RedissonSpringCacheManager(redissonClient, "classpath:/cache-config.yaml");
+        CacheManager cacheManager(RedissonClient redissonClient) {
+            Map<String, CacheConfig> config = new HashMap<String, CacheConfig>();
 
-			// native eviction
-			return new RedissonSpringCacheManager(redissonClient, "classpath:/cache-config.yaml");
+            // define local cache settings for "testMap" cache.
+            // ttl = 48 minutes and maxIdleTime = 24 minutes for local cache entries
+            LocalCachedMapOptions options = LocalCachedMapOptions.defaults()
+                .evictionPolicy(EvictionPolicy.LFU)
+                .timeToLive(48, TimeUnit.MINUTES)
+                .maxIdle(24, TimeUnit.MINUTES)
+                .cacheSize(1000);
+     
+            // create "testMap" Redis or Valkey cache with ttl = 24 minutes and maxIdleTime = 12 minutes
+            LocalCachedCacheConfig cfg = new LocalCachedCacheConfig(24*60*1000, 12*60*1000, options);
+            // Max size of map stored in Redis
+            cfg.setMaxSize(2000);
+            config.put("testMap", cfg);
 
-			// data partitioning + scripted eviction
-			return new RedissonClusteredSpringCacheManager(redissonClient, "classpath:/cache-config.yaml");
+            // scripted eviction
+            return new RedissonSpringCacheManager(redissonClient, config);
 
-			// data partitioning + advanced eviction
-			return new RedissonSpringCacheV2Manager(redissonClient, "classpath:/cache-config.yaml");
+            // native eviction
+            return new RedissonSpringCacheManager(redissonClient, config);
 
-			// data partitioning + native eviction
-			return new RedissonClusteredSpringCacheNativeManager(redissonClient, "classpath:/cache-config.yaml");
+            // data partitioning + scripted eviction
+            return new RedissonClusteredSpringCacheManager(redissonClient, config);
 
-			// local cache + scripted eviction
-			return new RedissonSpringLocalCachedCacheManager(redissonClient, "classpath:/cache-config.yaml");
+            // data partitioning + advanced eviction
+            return new RedissonSpringCacheV2Manager(redissonClient, config);
 
-			// local cache + native eviction
-			return new RedissonSpringLocalCachedCacheNativeManager(redissonClient, "classpath:/cache-config.yaml");
+            // data partitioning + native eviction
+            return new RedissonClusteredSpringCacheNativeManager(redissonClient, config);
 
-			// local cache + data partitioning + native eviction
-			return new RedissonClusteredSpringLocalCachedCacheNativeManager(redissonClient, "classpath:/cache-config.yaml");
+            // local cache + scripted eviction
+            return new RedissonSpringLocalCachedCacheManager(redissonClient, config);
 
-			// local cache + data partitioning + advanced eviction
-			return new RedissonSpringLocalCachedCacheV2Manager(redissonClient, "classpath:/cache-config.yaml");
+            // local cache + native eviction
+            return new RedissonSpringLocalCachedCacheNativeManager(redissonClient, config);
 
-			// local cache + data partitioning + scripted eviction
-			return new RedissonClusteredSpringLocalCachedCacheManager(redissonClient, "classpath:/cache-config.yaml");
+            // local cache + data partitioning + native eviction
+            return new RedissonClusteredSpringLocalCachedCacheNativeManager(redissonClient, config);
+
+            // local cache + data partitioning + advanced eviction
+            return new RedissonSpringLocalCachedCacheV2Manager(redissonClient, config);
+
+            // local cache + data partitioning + scripted eviction
+            return new RedissonClusteredSpringLocalCachedCacheManager(redissonClient, config);
         }
 
     }
-```
+    ```
+
+    Cache configuration could be read from YAML configuration files:
+
+    ```java
+        @Configuration
+        @ComponentScan
+        @EnableCaching
+        public static class Application {
+
+            @Bean(destroyMethod="shutdown")
+            RedissonClient redisson(@Value("classpath:/redisson.yaml") Resource configFile) throws IOException {
+                Config config = Config.fromYAML(configFile.getInputStream());
+                return Redisson.create(config);
+            }
+
+            @Bean
+            CacheManager cacheManager(RedissonClient redissonClient) throws IOException {
+    			// scripted eviction
+    			return new RedissonSpringCacheManager(redissonClient, "classpath:/cache-config.yaml");
+
+    			// native eviction
+    			return new RedissonSpringCacheManager(redissonClient, "classpath:/cache-config.yaml");
+
+    			// data partitioning + scripted eviction
+    			return new RedissonClusteredSpringCacheManager(redissonClient, "classpath:/cache-config.yaml");
+
+    			// data partitioning + advanced eviction
+    			return new RedissonSpringCacheV2Manager(redissonClient, "classpath:/cache-config.yaml");
+
+    			// data partitioning + native eviction
+    			return new RedissonClusteredSpringCacheNativeManager(redissonClient, "classpath:/cache-config.yaml");
+
+    			// local cache + scripted eviction
+    			return new RedissonSpringLocalCachedCacheManager(redissonClient, "classpath:/cache-config.yaml");
+
+    			// local cache + native eviction
+    			return new RedissonSpringLocalCachedCacheNativeManager(redissonClient, "classpath:/cache-config.yaml");
+
+    			// local cache + data partitioning + native eviction
+    			return new RedissonClusteredSpringLocalCachedCacheNativeManager(redissonClient, "classpath:/cache-config.yaml");
+
+    			// local cache + data partitioning + advanced eviction
+    			return new RedissonSpringLocalCachedCacheV2Manager(redissonClient, "classpath:/cache-config.yaml");
+
+    			// local cache + data partitioning + scripted eviction
+    			return new RedissonClusteredSpringLocalCachedCacheManager(redissonClient, "classpath:/cache-config.yaml");
+            }
+
+        }
+    ```
 
 ### YAML config format
 Below is the configuration of Spring Cache with name `testMap` in YAML format:
