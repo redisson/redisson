@@ -392,7 +392,15 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     @Override
     public Long ttl(byte[] key, TimeUnit timeUnit) {
-        return read(key, StringCodec.INSTANCE, new RedisStrictCommand<Long>("TTL", new SecondsConvertor(timeUnit, TimeUnit.SECONDS)), key);
+        return read(key, StringCodec.INSTANCE, new RedisStrictCommand<Long>("TTL", new SecondsConvertor(timeUnit, TimeUnit.SECONDS) {
+            @Override
+            public Long convert(Object obj) {
+                if ((Long) obj < 0) {
+                    return (Long) obj;
+                }
+                return super.convert(obj);
+            }
+        }), key);
     }
 
     @Override
@@ -402,7 +410,15 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     @Override
     public Long pTtl(byte[] key, TimeUnit timeUnit) {
-        return read(key, StringCodec.INSTANCE, new RedisStrictCommand<Long>("PTTL", new SecondsConvertor(timeUnit, TimeUnit.MILLISECONDS)), key);
+        return read(key, StringCodec.INSTANCE, new RedisStrictCommand<Long>("PTTL", new SecondsConvertor(timeUnit, TimeUnit.MILLISECONDS) {
+            @Override
+            public Long convert(Object obj) {
+                if ((Long) obj < 0) {
+                    return (Long) obj;
+                }
+                return super.convert(obj);
+            }
+        }), key);
     }
 
     @Override
