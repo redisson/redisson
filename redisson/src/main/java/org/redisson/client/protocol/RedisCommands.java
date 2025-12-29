@@ -17,6 +17,7 @@ package org.redisson.client.protocol;
 
 import org.redisson.api.*;
 import org.redisson.api.search.index.IndexInfo;
+import org.redisson.api.search.query.SearchResult;
 import org.redisson.api.stream.FastAutoClaimResult;
 import org.redisson.api.stream.StreamInfo;
 import org.redisson.api.stream.StreamMessageId;
@@ -1036,5 +1037,11 @@ public interface RedisCommands {
                     new ObjectListReplayDecoder()));
 
     RedisCommand<Void> FT_SYNUPDATE = new RedisCommand("FT.SYNUPDATE", new VoidReplayConvertor());
+
+    RedisCommand<SearchResult> HYBRID_SEARCH =
+            new RedisCommand<>("FT.HYBRID", new ListMultiDecoder2(
+                    new HybridSearchResultDecoder(),
+                    new ObjectListReplayDecoder<>(),
+                    new ObjectMapReplayDecoder()));
 
 }

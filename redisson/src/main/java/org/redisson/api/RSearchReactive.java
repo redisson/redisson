@@ -25,6 +25,8 @@ import org.redisson.api.search.index.IndexInfo;
 import org.redisson.api.search.index.IndexOptions;
 import org.redisson.api.search.query.QueryOptions;
 import org.redisson.api.search.query.SearchResult;
+import org.redisson.api.search.query.hybrid.HybridQueryArgs;
+import org.redisson.api.search.query.hybrid.HybridSearchResult;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
@@ -71,6 +73,18 @@ public interface RSearchReactive {
      * @return search result
      */
     Mono<SearchResult> search(String indexName, String query, QueryOptions options);
+
+    /**
+     * Performs hybrid search combining text search and vector similarity
+     * using the FT.HYBRID command.
+     * <p>
+     * Requires Redis Stack 8.4.0 or higher.
+     *
+     * @param indexName the name of the index
+     * @param args hybrid query arguments
+     * @return search result
+     */
+    Mono<HybridSearchResult> hybridSearch(String indexName, HybridQueryArgs args);
 
     /**
      * Executes aggregation over defined index using defined query.

@@ -21,6 +21,7 @@ import org.redisson.api.search.SpellcheckOptions;
 import org.redisson.api.search.aggregate.*;
 import org.redisson.api.search.index.*;
 import org.redisson.api.search.query.*;
+import org.redisson.api.search.query.hybrid.*;
 import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.DoubleCodec;
@@ -1089,5 +1090,208 @@ public class RedissonSearch implements RSearch {
     @Override
     public RFuture<List<String>> getIndexesAsync() {
         return commandExecutor.readAsync((String) null, StringCodec.INSTANCE, RedisCommands.FT_LIST);
+    }
+
+    @Override
+    public HybridSearchResult hybridSearch(String indexName, HybridQueryArgs args) {
+        return commandExecutor.get(hybridSearchAsync(indexName, args));
+    }
+
+    @Override
+    @SuppressWarnings("MethodLength")
+    public RFuture<HybridSearchResult> hybridSearchAsync(String indexName, HybridQueryArgs args) {
+        HybridQueryParams options = (HybridQueryParams) args;
+
+        List<Object> cmdArgs = new ArrayList<>();
+        cmdArgs.add(indexName);
+
+        cmdArgs.add("SEARCH");
+        cmdArgs.add(options.getQuery());
+
+        if (options.getScorer() != null) {
+            cmdArgs.add("SCORER");
+            cmdArgs.add(options.getScorer());
+        }
+
+        if (options.getQueryScoreAlias() != null) {
+            cmdArgs.add("YIELD_SCORE_AS");
+            cmdArgs.add(options.getQueryScoreAlias());
+        }
+
+        VectorSimilarityParams vsimParams = options.getVectorSimilarityParams();
+        if (vsimParams == null) {
+            throw new IllegalArgumentException("vectorSimilarity is required for hybrid search");
+        }
+        cmdArgs.add("VSIM");
+        cmdArgs.add(vsimParams.getField());
+        cmdArgs.add(vsimParams.getParam());
+
+        if (vsimParams.getMode() == VectorSimilarityParams.VectorSearchMode.KNN) {
+            List<Object> knnArgs = new ArrayList<>();
+            knnArgs.add("K");
+            knnArgs.add(vsimParams.getKnnK());
+            if (vsimParams.getEfRuntime() != null) {
+                knnArgs.add("EF_RUNTIME");
+                knnArgs.add(vsimParams.getEfRuntime());
+            }
+            cmdArgs.add("KNN");
+            cmdArgs.add(knnArgs.size());
+            cmdArgs.addAll(knnArgs);
+        } else if (vsimParams.getMode() == VectorSimilarityParams.VectorSearchMode.RANGE) {
+            List<Object> rangeArgs = new ArrayList<>();
+            rangeArgs.add("RADIUS");
+            rangeArgs.add(vsimParams.getRangeRadius());
+            if (vsimParams.getRangeEpsilon() != null) {
+                rangeArgs.add("EPSILON");
+                rangeArgs.add(vsimParams.getRangeEpsilon());
+            }
+            cmdArgs.add("RANGE");
+            cmdArgs.add(rangeArgs.size());
+            cmdArgs.addAll(rangeArgs);
+        }
+
+        if (vsimParams.getScoreAlias() != null) {
+            cmdArgs.add("YIELD_SCORE_AS");
+            cmdArgs.add(vsimParams.getScoreAlias());
+        }
+
+        if (vsimParams.getFilter() != null) {
+            cmdArgs.add("FILTER");
+            cmdArgs.add(vsimParams.getFilter());
+        }
+
+        Combine combine = options.getCombine();
+        if (combine != null) {
+            cmdArgs.add("COMBINE");
+            if (combine instanceof CombineRrfParams) {
+                CombineRrfParams rrfParams = (CombineRrfParams) combine;
+                List<Object> combineArgs = new ArrayList<>();
+                if (rrfParams.getConstant() != null) {
+                    combineArgs.add("CONSTANT");
+                    combineArgs.add(rrfParams.getConstant());
+                }
+                if (rrfParams.getWindow() != null) {
+                    combineArgs.add("WINDOW");
+                    combineArgs.add(rrfParams.getWindow());
+                }
+                cmdArgs.add("RRF");
+                cmdArgs.add(combineArgs.size());
+                cmdArgs.addAll(combineArgs);
+
+                if (rrfParams.getScoreAlias() != null) {
+                    cmdArgs.add("YIELD_SCORE_AS");
+                    cmdArgs.add(rrfParams.getScoreAlias());
+                }
+            } else if (combine instanceof CombineLinearParams) {
+                CombineLinearParams linearParams = (CombineLinearParams) combine;
+                List<Object> combineArgs = new ArrayList<>();
+                if (linearParams.getAlpha() != null) {
+                    combineArgs.add("ALPHA");
+                    combineArgs.add(linearParams.getAlpha());
+                }
+                if (linearParams.getBeta() != null) {
+                    combineArgs.add("BETA");
+                    combineArgs.add(linearParams.getBeta());
+                }
+                if (linearParams.getWindow() != null) {
+                    combineArgs.add("WINDOW");
+                    combineArgs.add(linearParams.getWindow());
+                }
+                cmdArgs.add("LINEAR");
+                cmdArgs.add(combineArgs.size());
+                cmdArgs.addAll(combineArgs);
+
+                // YIELD_SCORE_AS for combined score
+                if (linearParams.getScoreAlias() != null) {
+                    cmdArgs.add("YIELD_SCORE_AS");
+                    cmdArgs.add(linearParams.getScoreAlias());
+                }
+            }
+        }
+
+        if (options.getLimitOffset() != null && options.getLimitCount() != null) {
+            cmdArgs.add("LIMIT");
+            cmdArgs.add(options.getLimitOffset());
+            cmdArgs.add(options.getLimitCount());
+        }
+
+        if (options.getSortFieldName() != null) {
+            cmdArgs.add("SORTBY");
+            if (options.getSortOrder() != null) {
+                cmdArgs.add(2);
+            } else {
+                cmdArgs.add(1);
+            }
+            cmdArgs.add(options.getSortFieldName());
+            if (options.getSortOrder() != null) {
+                cmdArgs.add(options.getSortOrder().name());
+            }
+        }
+
+        if (options.isNoSort()) {
+            cmdArgs.add("NOSORT");
+        }
+
+        if (options.getLoadFields() != null && !options.getLoadFields().isEmpty()) {
+            cmdArgs.add("LOAD");
+            cmdArgs.add(options.getLoadFields().size());
+            cmdArgs.addAll(options.getLoadFields());
+        }
+
+        if (options.getGroupBy() != null) {
+            for (GroupBy groupBy : options.getGroupBy()) {
+                GroupParams groupParams = (GroupParams) groupBy;
+                cmdArgs.add("GROUPBY");
+                cmdArgs.add(groupParams.getFieldNames().size());
+                cmdArgs.addAll(groupParams.getFieldNames());
+                if (groupParams.getReducers() != null) {
+                    for (Reducer reducer : groupParams.getReducers()) {
+                        ReducerParams reducerParams = (ReducerParams) reducer;
+                        cmdArgs.add("REDUCE");
+                        cmdArgs.add(reducerParams.getFunctionName());
+                        cmdArgs.add(reducerParams.getArgs().size());
+                        if (!reducerParams.getArgs().isEmpty()) {
+                            cmdArgs.addAll(reducerParams.getArgs());
+                        }
+                        if (reducerParams.getAs() != null) {
+                            cmdArgs.add("AS");
+                            cmdArgs.add(reducerParams.getAs());
+                        }
+                    }
+                }
+            }
+        }
+
+        if (options.getExpressions() != null) {
+            for (Expression expr : options.getExpressions()) {
+                cmdArgs.add("APPLY");
+                cmdArgs.add(expr.getValue());
+                cmdArgs.add("AS");
+                cmdArgs.add(expr.getAs());
+            }
+        }
+
+        if (options.getPostFilter() != null) {
+            cmdArgs.add("FILTER");
+            cmdArgs.add(options.getPostFilter());
+        }
+
+        if (options.getParams() != null && !options.getParams().isEmpty()) {
+            List<Object> paramsArgs = new ArrayList<>();
+            for (Map.Entry<String, Object> entry : options.getParams().entrySet()) {
+                paramsArgs.add(entry.getKey());
+                paramsArgs.add(entry.getValue());
+            }
+            cmdArgs.add("PARAMS");
+            cmdArgs.add(paramsArgs.size());
+            cmdArgs.addAll(paramsArgs);
+        }
+
+        if (options.getTimeout() != null) {
+            cmdArgs.add("TIMEOUT");
+            cmdArgs.add(options.getTimeout().toMillis());
+        }
+
+        return commandExecutor.readAsync((String) null, codec, RedisCommands.HYBRID_SEARCH, cmdArgs.toArray());
     }
 }

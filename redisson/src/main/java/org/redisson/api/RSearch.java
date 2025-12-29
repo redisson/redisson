@@ -23,8 +23,10 @@ import org.redisson.api.search.aggregate.IterableAggregationOptions;
 import org.redisson.api.search.index.IndexInfo;
 import org.redisson.api.search.index.IndexOptions;
 import org.redisson.api.search.index.FieldIndex;
+import org.redisson.api.search.query.hybrid.HybridSearchResult;
 import org.redisson.api.search.query.QueryOptions;
 import org.redisson.api.search.query.SearchResult;
+import org.redisson.api.search.query.hybrid.HybridQueryArgs;
 
 import java.util.List;
 import java.util.Map;
@@ -70,6 +72,28 @@ public interface RSearch extends RSearchAsync {
      * @return search result
      */
     SearchResult search(String indexName, String query, QueryOptions options);
+
+    /**
+     * Performs hybrid search combining text search and vector similarity
+     * using the FT.HYBRID command.
+     * <p>
+     * Requires Redis Stack 8.4.0 or higher.
+     * <p>
+     * Usage example:
+     * <pre>
+     * SearchResult result = search.hybridSearch("myIndex",
+     *     HybridQueryArgs.query("laptop")
+     *         .vectorSimilarity("@embedding", "$vec")
+     *         .nearestNeighbors(10)
+     *         .params(Map.of("vec", vectorBytes))
+     *         .limit(0, 10));
+     * </pre>
+     *
+     * @param indexName the name of the index
+     * @param args hybrid query arguments
+     * @return search result
+     */
+    HybridSearchResult hybridSearch(String indexName, HybridQueryArgs args);
 
     /**
      * Executes aggregation over defined index using defined query.

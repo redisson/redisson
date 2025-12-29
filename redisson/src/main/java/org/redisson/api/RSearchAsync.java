@@ -21,8 +21,10 @@ import org.redisson.api.search.aggregate.AggregationResult;
 import org.redisson.api.search.index.FieldIndex;
 import org.redisson.api.search.index.IndexInfo;
 import org.redisson.api.search.index.IndexOptions;
+import org.redisson.api.search.query.hybrid.HybridSearchResult;
 import org.redisson.api.search.query.QueryOptions;
 import org.redisson.api.search.query.SearchResult;
+import org.redisson.api.search.query.hybrid.HybridQueryArgs;
 
 import java.util.List;
 import java.util.Map;
@@ -68,6 +70,18 @@ public interface RSearchAsync {
      * @return search result
      */
     RFuture<SearchResult> searchAsync(String indexName, String query, QueryOptions options);
+
+    /**
+     * Performs hybrid search combining text search and vector similarity
+     * using the FT.HYBRID command.
+     * <p>
+     * Requires <b>Redis 8.4.0 and higher.</b>
+     *
+     * @param indexName the name of the index
+     * @param args hybrid query arguments
+     * @return search result
+     */
+    RFuture<HybridSearchResult> hybridSearchAsync(String indexName, HybridQueryArgs args);
 
     /**
      * Executes aggregation over defined index using defined query.

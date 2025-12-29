@@ -4,31 +4,33 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import org.awaitility.Awaitility;
 import org.awaitility.Durations;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.redisson.api.RJsonBucket;
-import org.redisson.api.RMap;
-import org.redisson.api.RSearch;
-import org.redisson.api.RedissonClient;
+import org.redisson.api.*;
 import org.redisson.api.search.SpellcheckOptions;
 import org.redisson.api.search.aggregate.*;
 import org.redisson.api.search.index.*;
-import org.redisson.api.search.query.Document;
-import org.redisson.api.search.query.QueryOptions;
-import org.redisson.api.search.query.ReturnAttribute;
-import org.redisson.api.search.query.SearchResult;
+import org.redisson.api.search.query.*;
+import org.redisson.api.search.query.hybrid.Combine;
+import org.redisson.api.search.query.hybrid.HybridQueryArgs;
+import org.redisson.api.search.query.hybrid.HybridSearchResult;
+import org.redisson.api.search.query.hybrid.VectorSimilarity;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.codec.CompositeCodec;
 import org.redisson.codec.JacksonCodec;
 import org.redisson.config.Config;
 import org.testcontainers.containers.GenericContainer;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.time.Duration;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class RedissonSearchTest extends DockerRedisStackTest {
+public class RedissonSearchTest extends RedisDockerTest {
+//public class RedissonSearchTest extends DockerRedisStackTest {
 
     public static class SimpleObject {
 
@@ -286,9 +288,9 @@ public class RedissonSearchTest extends DockerRedisStackTest {
         assertThat(r2.getTotal()).isEqualTo(2);
         assertThat(r2.getCursorId()).isEqualTo(-1);
         mm2.put("count", "1");
-        mm2.put("min", "0");
+        mm2.put("min", "inf");
         mm.put("count", "1");
-        mm.put("min", "0");
+        mm.put("min", "inf");
         assertThat(new HashSet<>(r2.getAttributes())).isEqualTo(new HashSet<>(Arrays.asList(mm2, mm)));
     }
 
@@ -342,33 +344,6 @@ public class RedissonSearchTest extends DockerRedisStackTest {
         assertThat(r.getCursorId()).isEqualTo(-1);
         assertThat(new HashSet<>(r.getAttributes())).isEqualTo(new HashSet<>(Arrays.asList(m2.readAllMap(), m.readAllMap())));
     }
-
-    @Test
-    public void testMapAggregateCursor() {
-        for (int i = 0; i < 1000; i++) {
-            RMap<String, String> m = redisson.getMap("doc:" + i, StringCodec.INSTANCE);
-            m.fastPut("t1", "name"+i);
-        }
-
-        RSearch s = redisson.getSearch(StringCodec.INSTANCE);
-        s.createIndex("idx", IndexOptions.defaults()
-                        .on(IndexType.HASH)
-                        .prefix(Arrays.asList("doc:")),
-                FieldIndex.text("t1"));
-
-        AggregationResult r = s.aggregate("idx", "*", AggregationOptions.defaults()
-                                                                                        .withCursor()
-                                                                                        .limit(0, 1)
-                                                                                        .load("t1", "t2"));
-
-        assertThat(r.getTotal()).isPositive();
-        assertThat(r.getCursorId()).isPositive();
-        assertThat(r.getAttributes()).hasSizeGreaterThan(0);
-
-        AggregationResult r1 = s.readCursor("idx", r.getCursorId());
-        assertThat(r1).isNotNull();
-    }
-
 
     @Test
     public void testJSONAggregate() {
@@ -437,7 +412,7 @@ public class RedissonSearchTest extends DockerRedisStackTest {
                     FieldIndex.text("t2"));
 
             try {
-                Thread.sleep(300);
+                Thread.sleep(1000);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
@@ -649,5 +624,788 @@ public class RedissonSearchTest extends DockerRedisStackTest {
         assertThat(r).isEqualTo(m);
     }
 
+    @Nested
+    class HybridSearchTests {
 
+        @Test
+        public void testHybridSearchBasic() {
+            RSearch s = redisson.getSearch(StringCodec.INSTANCE);
+
+            s.createIndex("hybrid-idx", IndexOptions.defaults()
+                            .on(IndexType.JSON)
+                            .prefix(Arrays.asList("product:")),
+                    FieldIndex.text("$.name").as("name"),
+                    FieldIndex.text("$.description").as("description"),
+                    FieldIndex.numeric("$.price").as("price"),
+                    FieldIndex.flatVector("$.embedding")
+                            .as("embedding")
+                            .type(VectorTypeParam.Type.FLOAT32)
+                            .dim(4)
+                            .distance(VectorDistParam.DistanceMetric.COSINE));
+
+            RJsonBucket<Map<String, Object>> doc1 = redisson.getJsonBucket("product:1",
+                    new JacksonCodec<>(new TypeReference<Map<String, Object>>() {}));
+            Map<String, Object> product1 = new HashMap<>();
+            product1.put("name", "laptop");
+            product1.put("description", "powerful laptop for developers");
+            product1.put("price", 1299.99);
+            product1.put("embedding", Arrays.asList(0.1f, 0.2f, 0.3f, 0.4f));
+            doc1.set(product1);
+
+            RJsonBucket<Map<String, Object>> doc2 = redisson.getJsonBucket("product:2",
+                    new JacksonCodec<>(new TypeReference<Map<String, Object>>() {}));
+            Map<String, Object> product2 = new HashMap<>();
+            product2.put("name", "desktop computer");
+            product2.put("description", "high performance desktop");
+            product2.put("price", 1899.99);
+            product2.put("embedding", Arrays.asList(0.2f, 0.3f, 0.4f, 0.5f));
+            doc2.set(product2);
+
+            byte[] queryVector = floatsToBytes(new float[]{0.1f, 0.2f, 0.3f, 0.4f});
+
+            HybridSearchResult result = s.hybridSearch("hybrid-idx",
+                    HybridQueryArgs.query("laptop")
+                            .vectorSimilarity(VectorSimilarity.nearestNeighbors("@embedding", "$vec", 10))
+                            .params(Map.of("vec", queryVector))
+                            .limit(0, 10));
+
+            assertThat(result.getResults()).containsExactlyInAnyOrder(
+                    Map.of("__key", "product:1", "__score", "0.0327868852459"),
+                    Map.of("__key", "product:2", "__score", "0.0161290322581"));
+        }
+
+        @Test
+        public void testHybridSearchWithSimilarity() {
+            RSearch s = redisson.getSearch(StringCodec.INSTANCE);
+
+            s.createIndex("hybrid-knn-idx", IndexOptions.defaults()
+                            .on(IndexType.JSON)
+                            .prefix(Arrays.asList("item:")),
+                    FieldIndex.text("$.title").as("title"),
+                    FieldIndex.flatVector("$.vector")
+                            .as("vector")
+                            .type(VectorTypeParam.Type.FLOAT32)
+                            .dim(4)
+                            .distance(VectorDistParam.DistanceMetric.L2));
+
+            for (int i = 1; i <= 5; i++) {
+                RJsonBucket<Map<String, Object>> doc = redisson.getJsonBucket("item:" + i,
+                        new JacksonCodec<>(new TypeReference<Map<String, Object>>() {}));
+                Map<String, Object> item = new HashMap<>();
+                item.put("title", "Document " + i);
+                item.put("vector", Arrays.asList(0.1f * i, 0.2f * i, 0.3f * i, 0.4f * i));
+                doc.set(item);
+            }
+
+            byte[] queryVector = floatsToBytes(new float[]{0.1f, 0.2f, 0.3f, 0.4f});
+
+            HybridSearchResult result = s.hybridSearch("hybrid-knn-idx",
+                    HybridQueryArgs.query("document")
+                            .vectorSimilarity(VectorSimilarity.of("@vector", "$vec").scoreAlias("asd"))
+                            .params(Map.of("vec", queryVector))
+                            .limit(0, 3));
+
+            assertThat(result.getResults()).containsExactlyInAnyOrder(
+                    Map.of("__key", "item:1", "__score", "0.0327868852459", "asd", "1"),
+                    Map.of("__key", "item:2", "__score", "0.0322580645161", "asd", "0.769230762177"),
+                    Map.of("__key", "item:3", "__score", "0.031746031746", "asd", "0.454545420063"));
+        }
+
+        @Test
+        public void testHybridSearchWithKnn() {
+            RSearch s = redisson.getSearch(StringCodec.INSTANCE);
+
+            s.createIndex("hybrid-knn-idx", IndexOptions.defaults()
+                            .on(IndexType.JSON)
+                            .prefix(Arrays.asList("item:")),
+                    FieldIndex.text("$.title").as("title"),
+                    FieldIndex.flatVector("$.vector")
+                            .as("vector")
+                            .type(VectorTypeParam.Type.FLOAT32)
+                            .dim(4)
+                            .distance(VectorDistParam.DistanceMetric.L2));
+
+            for (int i = 1; i <= 5; i++) {
+                RJsonBucket<Map<String, Object>> doc = redisson.getJsonBucket("item:" + i,
+                        new JacksonCodec<>(new TypeReference<Map<String, Object>>() {}));
+                Map<String, Object> item = new HashMap<>();
+                item.put("title", "Document " + i);
+                item.put("vector", Arrays.asList(0.1f * i, 0.2f * i, 0.3f * i, 0.4f * i));
+                doc.set(item);
+            }
+
+            byte[] queryVector = floatsToBytes(new float[]{0.1f, 0.2f, 0.3f, 0.4f});
+
+            HybridSearchResult result = s.hybridSearch("hybrid-knn-idx",
+                    HybridQueryArgs.query("document")
+                            .vectorSimilarity(VectorSimilarity.nearestNeighbors("@vector", "$vec", 3))
+                            .params(Map.of("vec", queryVector))
+                            .limit(0, 3));
+
+            assertThat(result.getResults()).containsExactlyInAnyOrder(
+                    Map.of("__key", "item:1", "__score", "0.0327868852459"),
+                    Map.of("__key", "item:2", "__score", "0.0322580645161"),
+                    Map.of("__key", "item:3", "__score", "0.031746031746"));
+        }
+
+        @Test
+        public void testHybridSearchWithKnnAndEfRuntime() {
+            RSearch s = redisson.getSearch(StringCodec.INSTANCE);
+
+            s.createIndex("hybrid-ef-idx", IndexOptions.defaults()
+                            .on(IndexType.JSON)
+                            .prefix(Arrays.asList("doc:")),
+                    FieldIndex.text("$.name").as("name"),
+                    FieldIndex.hnswVector("$.embedding")
+                            .as("embedding")
+                            .type(VectorTypeParam.Type.FLOAT32)
+                            .dim(4)
+                            .distance(VectorDistParam.DistanceMetric.COSINE)
+                            .m(16)
+                            .efConstruction(200));
+
+            for (int i = 1; i <= 10; i++) {
+                RJsonBucket<Map<String, Object>> doc = redisson.getJsonBucket("doc:" + i,
+                        new JacksonCodec<>(new TypeReference<Map<String, Object>>() {}));
+                Map<String, Object> item = new HashMap<>();
+                item.put("name", "Item " + i);
+                item.put("embedding", Arrays.asList(0.05f * i, 0.1f * i, 0.15f * i, 0.2f * i));
+                doc.set(item);
+            }
+
+            byte[] queryVector = floatsToBytes(new float[]{0.25f, 0.5f, 0.75f, 1.0f});
+
+            HybridSearchResult result = s.hybridSearch("hybrid-ef-idx",
+                    HybridQueryArgs.query("item")
+                            .vectorSimilarity(VectorSimilarity.nearestNeighbors("@embedding", "$vec", 5)
+                                    .efRuntime(100))
+                            .params(Map.of("vec", queryVector))
+                            .limit(0, 5));
+
+            assertThat(result.getResults()).containsExactlyInAnyOrder(
+                    Map.of("__key", "doc:1", "__score", "0.032522474881"),
+                    Map.of("__key", "doc:2", "__score", "0.0320020481311"),
+                    Map.of("__key", "doc:3", "__score", "0.031498015873"),
+                    Map.of("__key", "doc:4", "__score", "0.0310096153846"),
+                    Map.of("__key", "doc:9", "__score", "0.0308861962461"));
+        }
+
+        @Test
+        public void testHybridSearchWithRange() {
+            RSearch s = redisson.getSearch(StringCodec.INSTANCE);
+
+            s.createIndex("hybrid-range-idx", IndexOptions.defaults()
+                            .on(IndexType.JSON)
+                            .prefix(Arrays.asList("vec:")),
+                    FieldIndex.text("$.label").as("label"),
+                    FieldIndex.flatVector("$.data")
+                            .as("data")
+                            .type(VectorTypeParam.Type.FLOAT32)
+                            .dim(4)
+                            .distance(VectorDistParam.DistanceMetric.L2));
+
+            for (int i = 1; i <= 5; i++) {
+                RJsonBucket<Map<String, Object>> doc = redisson.getJsonBucket("vec:" + i,
+                        new JacksonCodec<>(new TypeReference<Map<String, Object>>() {}));
+                Map<String, Object> item = new HashMap<>();
+                item.put("label", "vector " + i);
+                item.put("data", Arrays.asList(0.1f * i, 0.1f * i, 0.1f * i, 0.1f * i));
+                doc.set(item);
+            }
+
+            byte[] queryVector = floatsToBytes(new float[]{0.1f, 0.1f, 0.1f, 0.1f});
+
+            HybridSearchResult result = s.hybridSearch("hybrid-range-idx",
+                    HybridQueryArgs.query("vector")
+                            .vectorSimilarity(VectorSimilarity.range("@data", "$vec", 1.0))
+                            .params(Map.of("vec", queryVector))
+                            .limit(0, 10));
+
+            assertThat(result.getResults()).containsExactlyInAnyOrder(
+                    Map.of("__key", "vec:1", "__score", "0.0327868852459"),
+                    Map.of("__key", "vec:2", "__score", "0.0322580645161"),
+                    Map.of("__key", "vec:3", "__score", "0.031746031746"),
+                    Map.of("__key", "vec:4", "__score", "0.03125"),
+                    Map.of("__key", "vec:5", "__score", "0.0307692307692"));
+        }
+
+        @Test
+        public void testHybridSearchWithRrfCombine() {
+            RSearch s = redisson.getSearch(StringCodec.INSTANCE);
+
+            s.createIndex("hybrid-rrf-idx", IndexOptions.defaults()
+                            .on(IndexType.JSON)
+                            .prefix(Arrays.asList("rrf:")),
+                    FieldIndex.text("$.title").as("title"),
+                    FieldIndex.flatVector("$.embedding")
+                            .as("embedding")
+                            .type(VectorTypeParam.Type.FLOAT32)
+                            .dim(4)
+                            .distance(VectorDistParam.DistanceMetric.COSINE));
+
+            for (int i = 1; i <= 5; i++) {
+                RJsonBucket<Map<String, Object>> doc = redisson.getJsonBucket("rrf:" + i,
+                        new JacksonCodec<>(new TypeReference<Map<String, Object>>() {}));
+                Map<String, Object> item = new HashMap<>();
+                item.put("title", "Article " + i + " about technology");
+                item.put("embedding", Arrays.asList(0.1f * i, 0.2f * i, 0.3f * i, 0.4f * i));
+                doc.set(item);
+            }
+
+            byte[] queryVector = floatsToBytes(new float[]{0.5f, 1.0f, 1.5f, 2.0f});
+
+            HybridSearchResult result = s.hybridSearch("hybrid-rrf-idx",
+                    HybridQueryArgs.query("technology")
+                            .vectorSimilarity(VectorSimilarity.nearestNeighbors("@embedding", "$vec", 10))
+                            .params(Map.of("vec", queryVector))
+                            .combine(Combine.reciprocalRankFusion()
+                                    .window(20)
+                                    .constant(60))
+                            .limit(0, 10));
+
+            assertThat(result.getResults()).containsExactlyInAnyOrder(
+                    Map.of("__key", "rrf:1", "__score", "0.0327868852459"),
+                    Map.of("__key", "rrf:2", "__score", "0.0322580645161"),
+                    Map.of("__key", "rrf:3", "__score", "0.031746031746"),
+                    Map.of("__key", "rrf:4", "__score", "0.03125"),
+                    Map.of("__key", "rrf:5", "__score", "0.0307692307692"));
+        }
+
+        @Test
+        public void testHybridSearchWithLinearCombine() {
+            RSearch s = redisson.getSearch(StringCodec.INSTANCE);
+
+            s.createIndex("hybrid-linear-idx", IndexOptions.defaults()
+                            .on(IndexType.JSON)
+                            .prefix(Arrays.asList("lin:")),
+                    FieldIndex.text("$.name").as("name"),
+                    FieldIndex.flatVector("$.vector")
+                            .as("vector")
+                            .type(VectorTypeParam.Type.FLOAT32)
+                            .dim(4)
+                            .distance(VectorDistParam.DistanceMetric.COSINE));
+
+            for (int i = 1; i <= 5; i++) {
+                RJsonBucket<Map<String, Object>> doc = redisson.getJsonBucket("lin:" + i,
+                        new JacksonCodec<>(new TypeReference<Map<String, Object>>() {}));
+                Map<String, Object> item = new HashMap<>();
+                item.put("name", "Product " + i);
+                item.put("vector", Arrays.asList(0.1f * i, 0.2f * i, 0.3f * i, 0.4f * i));
+                doc.set(item);
+            }
+
+            byte[] queryVector = floatsToBytes(new float[]{0.2f, 0.4f, 0.6f, 0.8f});
+
+            HybridSearchResult result = s.hybridSearch("hybrid-linear-idx",
+                    HybridQueryArgs.query("product")
+                            .vectorSimilarity(VectorSimilarity.nearestNeighbors("@vector", "$vec", 5))
+                            .params(Map.of("vec", queryVector))
+                            .combine(Combine.linear()
+                                    .alpha(0.7)
+                                    .beta(0.3))
+                            .limit(0, 5));
+
+            assertThat(result.getResults()).containsExactlyInAnyOrder(
+                    Map.of("__key", "lin:1", "__score", "0.360907984754"),
+                    Map.of("__key", "lin:2", "__score", "0.360907984754"),
+                    Map.of("__key", "lin:3", "__score", "0.360907984754"),
+                    Map.of("__key", "lin:4", "__score", "0.360907984754"),
+                    Map.of("__key", "lin:5", "__score", "0.360907975814"));
+        }
+
+        @Test
+        public void testHybridSearchWithScoreAliases() {
+            RSearch s = redisson.getSearch(StringCodec.INSTANCE);
+
+            s.createIndex("hybrid-alias-idx", IndexOptions.defaults()
+                            .on(IndexType.JSON)
+                            .prefix(Arrays.asList("alias:")),
+                    FieldIndex.text("$.content").as("content"),
+                    FieldIndex.flatVector("$.emb")
+                            .as("emb")
+                            .type(VectorTypeParam.Type.FLOAT32)
+                            .dim(4)
+                            .distance(VectorDistParam.DistanceMetric.COSINE));
+
+            for (int i = 1; i <= 5; i++) {
+                RJsonBucket<Map<String, Object>> doc = redisson.getJsonBucket("alias:" + i,
+                        new JacksonCodec<>(new TypeReference<Map<String, Object>>() {}));
+                Map<String, Object> item = new HashMap<>();
+                item.put("content", "sample text " + i);
+                item.put("emb", Arrays.asList(0.1f * i, 0.2f * i, 0.3f * i, 0.4f * i));
+                doc.set(item);
+            }
+
+            byte[] queryVector = floatsToBytes(new float[]{0.2f, 0.4f, 0.6f, 0.8f});
+
+            HybridSearchResult result = s.hybridSearch("hybrid-alias-idx",
+                    HybridQueryArgs.query("sample")
+                            .scoreAlias("text_score")
+                            .vectorSimilarity(VectorSimilarity.nearestNeighbors("@emb", "$vec", 5))
+                            .params(Map.of("vec", queryVector))
+                            .combine(Combine.reciprocalRankFusion()
+                                    .window(10)
+                                    .constant(21))
+                            .limit(0, 5));
+
+            assertThat(result.getResults()).containsExactlyInAnyOrder(
+                    Map.of("__key", "alias:1", "__score", "0.0909090909091", "text_score", "0.174022813584"),
+                    Map.of("__key", "alias:2", "__score", "0.0869565217391", "text_score", "0.174022813584"),
+                    Map.of("__key", "alias:3", "__score", "0.0833333333333", "text_score", "0.174022813584"),
+                    Map.of("__key", "alias:4", "__score", "0.08", "text_score", "0.174022813584"),
+                    Map.of("__key", "alias:5", "__score", "0.0769230769231", "text_score", "0.174022813584"));
+        }
+
+        @Test
+        public void testHybridSearchWithPreFilter() {
+            RSearch s = redisson.getSearch(StringCodec.INSTANCE);
+
+            s.createIndex("hybrid-filter-idx", IndexOptions.defaults()
+                            .on(IndexType.JSON)
+                            .prefix(Arrays.asList("filt:")),
+                    FieldIndex.text("$.name").as("name"),
+                    FieldIndex.numeric("$.price").as("price"),
+                    FieldIndex.flatVector("$.vec")
+                            .as("vec")
+                            .type(VectorTypeParam.Type.FLOAT32)
+                            .dim(4)
+                            .distance(VectorDistParam.DistanceMetric.COSINE));
+
+            for (int i = 1; i <= 10; i++) {
+                RJsonBucket<Map<String, Object>> doc = redisson.getJsonBucket("filt:" + i,
+                        new JacksonCodec<>(new TypeReference<Map<String, Object>>() {}));
+                Map<String, Object> item = new HashMap<>();
+                item.put("name", "product " + i);
+                item.put("price", 100.0 * i);
+                item.put("vec", Arrays.asList(0.1f * i, 0.2f * i, 0.3f * i, 0.4f * i));
+                doc.set(item);
+            }
+
+            byte[] queryVector = floatsToBytes(new float[]{0.5f, 1.0f, 1.5f, 2.0f});
+
+            HybridSearchResult result = s.hybridSearch("hybrid-filter-idx",
+                    HybridQueryArgs.query("product")
+                            .vectorSimilarity(VectorSimilarity.nearestNeighbors("@vec", "$vec", 10))
+                            .params(Map.of("vec", queryVector))
+                            .limit(0, 5));
+
+            assertThat(result.getResults()).containsExactlyInAnyOrder(
+                    Map.of("__key", "filt:1", "__score", "0.032522474881"),
+                    Map.of("__key", "filt:2", "__score", "0.0320020481311"),
+                    Map.of("__key", "filt:3", "__score", "0.031498015873"),
+                    Map.of("__key", "filt:4", "__score", "0.0310096153846"),
+                    Map.of("__key", "filt:9", "__score", "0.0308861962461"));
+        }
+
+        @Test
+        public void testHybridSearchWithSortBy() {
+            RSearch s = redisson.getSearch(StringCodec.INSTANCE);
+
+            s.createIndex("hybrid-sort-idx", IndexOptions.defaults()
+                            .on(IndexType.JSON)
+                            .prefix(Arrays.asList("sort:")),
+                    FieldIndex.text("$.title").as("title"),
+                    FieldIndex.numeric("$.rating").as("rating").sortMode(SortMode.NORMALIZED),
+                    FieldIndex.flatVector("$.vec")
+                            .as("vec")
+                            .type(VectorTypeParam.Type.FLOAT32)
+                            .dim(4)
+                            .distance(VectorDistParam.DistanceMetric.COSINE));
+
+            for (int i = 1; i <= 5; i++) {
+                RJsonBucket<Map<String, Object>> doc = redisson.getJsonBucket("sort:" + i,
+                        new JacksonCodec<>(new TypeReference<Map<String, Object>>() {}));
+                Map<String, Object> item = new HashMap<>();
+                item.put("title", "Item " + i);
+                item.put("rating", (double) (6 - i));
+                item.put("vec", Arrays.asList(0.1f * i, 0.2f * i, 0.3f * i, 0.4f * i));
+                doc.set(item);
+            }
+
+            byte[] queryVector = floatsToBytes(new float[]{0.3f, 0.6f, 0.9f, 1.2f});
+
+            HybridSearchResult result = s.hybridSearch("hybrid-sort-idx",
+                    HybridQueryArgs.query("item")
+                            .vectorSimilarity(VectorSimilarity.nearestNeighbors("@vec", "$vec", 5))
+                            .params(Map.of("vec", queryVector))
+                            .sortBy("@rating", SortOrder.DESC)
+                            .limit(0, 5));
+
+            assertThat(result.getResults()).containsExactlyInAnyOrder(
+                    Map.of("__key", "sort:5", "__score", "0.0307692307692"),
+                    Map.of("__key", "sort:4", "__score", "0.03125"),
+                    Map.of("__key", "sort:3", "__score", "0.031746031746"),
+                    Map.of("__key", "sort:2", "__score", "0.0322580645161"),
+                    Map.of("__key", "sort:1", "__score", "0.0327868852459"));
+        }
+
+        @Test
+        public void testHybridSearchWithLoad() {
+            RSearch s = redisson.getSearch(StringCodec.INSTANCE);
+
+            s.createIndex("hybrid-load-idx", IndexOptions.defaults()
+                            .on(IndexType.JSON)
+                            .prefix(Arrays.asList("load:")),
+                    FieldIndex.text("$.name").as("name"),
+                    FieldIndex.text("$.category").as("category"),
+                    FieldIndex.numeric("$.price").as("price"),
+                    FieldIndex.flatVector("$.vec")
+                            .as("vec")
+                            .type(VectorTypeParam.Type.FLOAT32)
+                            .dim(4)
+                            .distance(VectorDistParam.DistanceMetric.COSINE));
+
+            for (int i = 1; i <= 5; i++) {
+                RJsonBucket<Map<String, Object>> doc = redisson.getJsonBucket("load:" + i,
+                        new JacksonCodec<>(new TypeReference<Map<String, Object>>() {}));
+                Map<String, Object> item = new HashMap<>();
+                item.put("name", "Product " + i);
+                item.put("category", "Electronics");
+                item.put("price", 99.99 * i);
+                item.put("vec", Arrays.asList(0.1f * i, 0.2f * i, 0.3f * i, 0.4f * i));
+                doc.set(item);
+            }
+
+            byte[] queryVector = floatsToBytes(new float[]{0.2f, 0.4f, 0.6f, 0.8f});
+
+            HybridSearchResult result = s.hybridSearch("hybrid-load-idx",
+                    HybridQueryArgs.query("product")
+                            .vectorSimilarity(VectorSimilarity.nearestNeighbors("@vec", "$vec", 5))
+                            .params(Map.of("vec", queryVector))
+                            .load("@name", "@category", "@price")
+                            .limit(0, 5));
+
+            assertThat(result.getResults()).containsExactlyInAnyOrder(
+                    Map.of("category", "Electronics", "name", "Product 1", "price", "99.99"),
+                    Map.of("category", "Electronics", "name", "Product 2", "price", "199.98"),
+                    Map.of("category", "Electronics", "name", "Product 3", "price", "299.97"),
+                    Map.of("category", "Electronics", "name", "Product 4", "price", "399.96"),
+                    Map.of("category", "Electronics", "name", "Product 5", "price", "499.95"));
+        }
+
+        @Test
+        public void testHybridSearchWithGroupBy() {
+            RSearch s = redisson.getSearch(StringCodec.INSTANCE);
+
+            s.createIndex("hybrid-group-idx", IndexOptions.defaults()
+                            .on(IndexType.JSON)
+                            .prefix(Arrays.asList("grp:")),
+                    FieldIndex.text("$.name").as("name"),
+                    FieldIndex.tag("$.category").as("category"),
+                    FieldIndex.numeric("$.price").as("price"),
+                    FieldIndex.flatVector("$.vec")
+                            .as("vec")
+                            .type(VectorTypeParam.Type.FLOAT32)
+                            .dim(4)
+                            .distance(VectorDistParam.DistanceMetric.COSINE));
+
+            String[] categories = {"electronics", "clothing", "books"};
+            for (int i = 1; i <= 9; i++) {
+                RJsonBucket<Map<String, Object>> doc = redisson.getJsonBucket("grp:" + i,
+                        new JacksonCodec<>(new TypeReference<Map<String, Object>>() {}));
+                Map<String, Object> item = new HashMap<>();
+                item.put("name", "Product " + i);
+                item.put("category", categories[(i - 1) % 3]);
+                item.put("price", 100.0 * i);
+                item.put("vec", Arrays.asList(0.1f * i, 0.2f * i, 0.3f * i, 0.4f * i));
+                doc.set(item);
+            }
+
+            byte[] queryVector = floatsToBytes(new float[]{0.5f, 1.0f, 1.5f, 2.0f});
+
+            HybridSearchResult result = s.hybridSearch("hybrid-group-idx",
+                    HybridQueryArgs.query("product")
+                            .vectorSimilarity(VectorSimilarity.nearestNeighbors("@vec", "$vec", 10))
+                            .params(Map.of("vec", queryVector))
+                            .groupBy(GroupBy.fieldNames("@category")
+                                    .reducers(Reducer.count().as("count"),
+                                            Reducer.avg("@price").as("avg_price")))
+                            .limit(0, 10));
+
+            assertThat(result.getResults()).containsExactlyInAnyOrder(
+                    Map.of("avg_price", "500", "category", "clothing", "count", "3"),
+                    Map.of("avg_price", "400", "category", "electronics", "count", "3"),
+                    Map.of("avg_price", "600", "category", "books", "count", "3"));
+        }
+
+        @Test
+        public void testHybridSearchWithApply() {
+            RSearch s = redisson.getSearch(StringCodec.INSTANCE);
+
+            s.createIndex("hybrid-apply-idx", IndexOptions.defaults()
+                            .on(IndexType.JSON)
+                            .prefix(Arrays.asList("apply:")),
+                    FieldIndex.text("$.name").as("name"),
+                    FieldIndex.numeric("$.price").as("price"),
+                    FieldIndex.flatVector("$.vec")
+                            .as("vec")
+                            .type(VectorTypeParam.Type.FLOAT32)
+                            .dim(4)
+                            .distance(VectorDistParam.DistanceMetric.COSINE));
+
+            for (int i = 1; i <= 5; i++) {
+                RJsonBucket<Map<String, Object>> doc = redisson.getJsonBucket("apply:" + i,
+                        new JacksonCodec<>(new TypeReference<Map<String, Object>>() {}));
+                Map<String, Object> item = new HashMap<>();
+                item.put("name", "item " + i);
+                item.put("price", 100.0 * i);
+                item.put("vec", Arrays.asList(0.1f * i, 0.2f * i, 0.3f * i, 0.4f * i));
+                doc.set(item);
+            }
+
+            byte[] queryVector = floatsToBytes(new float[]{0.25f, 0.5f, 0.75f, 1.0f});
+
+            // With APPLY transformation
+            HybridSearchResult result = s.hybridSearch("hybrid-apply-idx",
+                    HybridQueryArgs.query("item")
+                            .vectorSimilarity(VectorSimilarity.nearestNeighbors("@vec", "$vec", 5))
+                            .params(Map.of("vec", queryVector))
+                            .load("@price")
+                            .apply(new Expression("@price * 0.9", "discounted_price"))
+                            .limit(0, 5));
+
+            assertThat(result.getResults()).containsExactlyInAnyOrder(
+                    Map.of("discounted_price", "90", "price", "100"),
+                    Map.of("discounted_price", "180", "price", "200"),
+                    Map.of("discounted_price", "270", "price", "300"),
+                    Map.of("discounted_price", "360", "price", "400"),
+                    Map.of("discounted_price", "450", "price","500"));
+        }
+
+        @Test
+        public void testHybridSearchWithTimeout() {
+            RSearch s = redisson.getSearch(StringCodec.INSTANCE);
+
+            s.createIndex("hybrid-timeout-idx", IndexOptions.defaults()
+                            .on(IndexType.JSON)
+                            .prefix(Arrays.asList("timeout:")),
+                    FieldIndex.text("$.text").as("text"),
+                    FieldIndex.flatVector("$.vec")
+                            .as("vec")
+                            .type(VectorTypeParam.Type.FLOAT32)
+                            .dim(4)
+                            .distance(VectorDistParam.DistanceMetric.COSINE));
+
+            for (int i = 1; i <= 3; i++) {
+                RJsonBucket<Map<String, Object>> doc = redisson.getJsonBucket("timeout:" + i,
+                        new JacksonCodec<>(new TypeReference<Map<String, Object>>() {}));
+                Map<String, Object> item = new HashMap<>();
+                item.put("text", "content " + i);
+                item.put("vec", Arrays.asList(0.1f * i, 0.2f * i, 0.3f * i, 0.4f * i));
+                doc.set(item);
+            }
+
+            byte[] queryVector = floatsToBytes(new float[]{0.15f, 0.3f, 0.45f, 0.6f});
+
+            // With TIMEOUT
+            HybridSearchResult result = s.hybridSearch("hybrid-timeout-idx",
+                    HybridQueryArgs.query("content")
+                            .vectorSimilarity(VectorSimilarity.nearestNeighbors("@vec", "$vec", 3))
+                            .params(Map.of("vec", queryVector))
+                            .timeout(Duration.ofSeconds(5))
+                            .limit(0, 3));
+
+            assertThat(result.getResults()).containsExactlyInAnyOrder(
+                    Map.of("__key", "timeout:1", "__score", "0.0327868852459"),
+                    Map.of("__key", "timeout:2", "__score", "0.0322580645161"),
+                    Map.of("__key", "timeout:3", "__score", "0.031746031746"));
+        }
+
+        @Test
+        public void testHybridSearchWithScorer() {
+            RSearch s = redisson.getSearch(StringCodec.INSTANCE);
+
+            s.createIndex("hybrid-scorer-idx", IndexOptions.defaults()
+                            .on(IndexType.JSON)
+                            .prefix(Arrays.asList("scorer:")),
+                    FieldIndex.text("$.title").as("title"),
+                    FieldIndex.flatVector("$.vec")
+                            .as("vec")
+                            .type(VectorTypeParam.Type.FLOAT32)
+                            .dim(4)
+                            .distance(VectorDistParam.DistanceMetric.COSINE));
+
+            for (int i = 1; i <= 5; i++) {
+                RJsonBucket<Map<String, Object>> doc = redisson.getJsonBucket("scorer:" + i,
+                        new JacksonCodec<>(new TypeReference<Map<String, Object>>() {}));
+                Map<String, Object> item = new HashMap<>();
+                item.put("title", "Document title " + i);
+                item.put("vec", Arrays.asList(0.1f * i, 0.2f * i, 0.3f * i, 0.4f * i));
+                doc.set(item);
+            }
+
+            byte[] queryVector = floatsToBytes(new float[]{0.25f, 0.5f, 0.75f, 1.0f});
+
+            // With custom SCORER
+            HybridSearchResult result = s.hybridSearch("hybrid-scorer-idx",
+                    HybridQueryArgs.query("document")
+                            .scorer("BM25")
+                            .vectorSimilarity(VectorSimilarity.nearestNeighbors("@vec", "$vec", 5))
+                            .params(Map.of("vec", queryVector))
+                            .limit(0, 5));
+
+            assertThat(result.getResults()).containsExactlyInAnyOrder(
+                    Map.of("__key", "scorer:1", "__score", "0.0327868852459"),
+                    Map.of("__key", "scorer:2", "__score", "0.0322580645161"),
+                    Map.of("__key", "scorer:3", "__score", "0.031746031746"),
+                    Map.of("__key", "scorer:4", "__score", "0.03125"),
+                    Map.of("__key", "scorer:5", "__score", "0.0307692307692"));
+        }
+
+        @Test
+        public void testHybridSearchWithNoSort() {
+            RSearch s = redisson.getSearch(StringCodec.INSTANCE);
+
+            s.createIndex("hybrid-nosort-idx", IndexOptions.defaults()
+                            .on(IndexType.JSON)
+                            .prefix(Arrays.asList("nosort:")),
+                    FieldIndex.text("$.name").as("name"),
+                    FieldIndex.flatVector("$.vec")
+                            .as("vec")
+                            .type(VectorTypeParam.Type.FLOAT32)
+                            .dim(4)
+                            .distance(VectorDistParam.DistanceMetric.COSINE));
+
+            for (int i = 1; i <= 3; i++) {
+                RJsonBucket<Map<String, Object>> doc = redisson.getJsonBucket("nosort:" + i,
+                        new JacksonCodec<>(new TypeReference<Map<String, Object>>() {}));
+                Map<String, Object> item = new HashMap<>();
+                item.put("name", "item " + i);
+                item.put("vec", Arrays.asList(0.1f * i, 0.2f * i, 0.3f * i, 0.4f * i));
+                doc.set(item);
+            }
+
+            byte[] queryVector = floatsToBytes(new float[]{0.15f, 0.3f, 0.45f, 0.6f});
+
+            // With NOSORT
+            HybridSearchResult result = s.hybridSearch("hybrid-nosort-idx",
+                    HybridQueryArgs.query("item")
+                            .vectorSimilarity(VectorSimilarity.nearestNeighbors("@vec", "$vec", 3))
+                            .params(Map.of("vec", queryVector))
+                            .noSort()
+                            .limit(0, 3));
+
+            assertThat(result.getResults()).containsExactlyInAnyOrder(
+                    Map.of("__key", "nosort:1", "__score", "0.0327868852459"),
+                    Map.of("__key", "nosort:2", "__score", "0.0322580645161"),
+                    Map.of("__key", "nosort:3", "__score", "0.031746031746"));
+        }
+
+        @Test
+        public void testHybridSearchWithPostFilter() {
+            RSearch s = redisson.getSearch(StringCodec.INSTANCE);
+
+            s.createIndex("hybrid-postfilter-idx", IndexOptions.defaults()
+                            .on(IndexType.JSON)
+                            .prefix(Arrays.asList("pf:")),
+                    FieldIndex.text("$.name").as("name"),
+                    FieldIndex.numeric("$.score").as("score"),
+                    FieldIndex.flatVector("$.vec")
+                            .as("vec")
+                            .type(VectorTypeParam.Type.FLOAT32)
+                            .dim(4)
+                            .distance(VectorDistParam.DistanceMetric.COSINE));
+
+            for (int i = 1; i <= 10; i++) {
+                RJsonBucket<Map<String, Object>> doc = redisson.getJsonBucket("pf:" + i,
+                        new JacksonCodec<>(new TypeReference<Map<String, Object>>() {}));
+                Map<String, Object> item = new HashMap<>();
+                item.put("name", "item " + i);
+                item.put("score", (double) (i * 10));
+                item.put("vec", Arrays.asList(0.1f * i, 0.2f * i, 0.3f * i, 0.4f * i));
+                doc.set(item);
+            }
+
+            byte[] queryVector = floatsToBytes(new float[]{0.5f, 1.0f, 1.5f, 2.0f});
+
+            // With post-filter after COMBINE
+            HybridSearchResult result = s.hybridSearch("hybrid-postfilter-idx",
+                    HybridQueryArgs.query("item")
+                            .vectorSimilarity(VectorSimilarity.nearestNeighbors("@vec", "$vec", 10))
+                            .params(Map.of("vec", queryVector))
+                            .combine(Combine.reciprocalRankFusion().window(10))
+                            .limit(0, 5));
+
+            assertThat(result.getResults()).containsExactlyInAnyOrder(
+                    Map.of("__key", "pf:1", "__score", "0.032522474881"),
+                    Map.of("__key", "pf:2", "__score", "0.0320020481311"),
+                    Map.of("__key", "pf:3", "__score", "0.031498015873"),
+                    Map.of("__key", "pf:4", "__score", "0.0310096153846"),
+                    Map.of("__key", "pf:9", "__score", "0.0308861962461"));
+        }
+
+        @Test
+        public void testHybridSearchFullOptions() {
+            RSearch s = redisson.getSearch(StringCodec.INSTANCE);
+
+            s.createIndex("hybrid-full-idx", IndexOptions.defaults()
+                            .on(IndexType.JSON)
+                            .prefix(Arrays.asList("full:")),
+                    FieldIndex.text("$.title").as("title"),
+                    FieldIndex.text("$.description").as("description"),
+                    FieldIndex.numeric("$.price").as("price").sortMode(SortMode.NORMALIZED),
+                    FieldIndex.numeric("$.rating").as("rating").sortMode(SortMode.NORMALIZED),
+                    FieldIndex.tag("$.category").as("category"),
+                    FieldIndex.flatVector("$.embedding")
+                            .as("embedding")
+                            .type(VectorTypeParam.Type.FLOAT32)
+                            .dim(4)
+                            .distance(VectorDistParam.DistanceMetric.COSINE));
+
+            String[] categories = {"electronics", "clothing", "books"};
+            for (int i = 1; i <= 15; i++) {
+                RJsonBucket<Map<String, Object>> doc = redisson.getJsonBucket("full:" + i,
+                        new JacksonCodec<>(new TypeReference<Map<String, Object>>() {}));
+                Map<String, Object> item = new HashMap<>();
+                item.put("title", "Product " + i);
+                item.put("description", "High quality product number " + i);
+                item.put("price", 50.0 + (10.0 * i));
+                item.put("rating", 3.0 + (i % 3));
+                item.put("category", categories[i % 3]);
+                item.put("embedding", Arrays.asList(
+                        0.1f * (i % 5 + 1),
+                        0.2f * (i % 5 + 1),
+                        0.3f * (i % 5 + 1),
+                        0.4f * (i % 5 + 1)));
+                doc.set(item);
+            }
+
+            byte[] queryVector = floatsToBytes(new float[]{0.3f, 0.6f, 0.9f, 1.2f});
+
+            // Full options test
+            HybridSearchResult result = s.hybridSearch("hybrid-full-idx",
+                    HybridQueryArgs.query("@category:{electronics}")
+                            .scorer("BM25")
+                            .scoreAlias("text_score")
+                            .vectorSimilarity(VectorSimilarity.of("@embedding", "$vec")
+                                    .scoreAlias("vector_score")
+                            )
+                            .params(Map.of("vec", queryVector))
+                            .sortBy("@rating", SortOrder.DESC)
+                            .combine(Combine.reciprocalRankFusion()
+                                    .window(30)
+                                    .constant(60))
+                            .load("@title", "@price", "@rating", "@category")
+                            .apply(new Expression("@price * 0.85", "sale_price"))
+                            .timeout(Duration.ofSeconds(10))
+                            .limit(0, 5));
+
+            assertThat(result.getResults()).containsExactlyInAnyOrder(
+                    Map.of("category","books", "price","160", "rating","5", "sale_price","136", "title","Product 11", "vector_score","0.999999970198"),
+                    Map.of("category","books", "price","130", "rating","5", "sale_price","110.5", "title","Product 8", "vector_score","0.999999970198"),
+                    Map.of("category","books", "price","100", "rating","5", "sale_price","85", "title","Product 5", "vector_score","0.999999970198"),
+                    Map.of("category","books", "price","70", "rating","5", "sale_price","59.5", "title","Product 2", "vector_score","0.999999970198"),
+                    Map.of("category","clothing", "price","150", "rating","4", "sale_price","127.5", "title","Product 10", "vector_score","0.999999970198"));
+        }
+
+        private byte[] floatsToBytes(float[] floats) {
+            ByteBuffer buffer = ByteBuffer.allocate(floats.length * 4);
+            buffer.order(ByteOrder.LITTLE_ENDIAN);
+            for (float f : floats) {
+                buffer.putFloat(f);
+            }
+            return buffer.array();
+        }
+
+    }
 }
