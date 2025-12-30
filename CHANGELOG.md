@@ -3,6 +3,40 @@ Redisson Releases History
 
 Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
 
+### 30-Dec-2025 - 4.1.0 released
+
+Feature - [Local cached Spring Session](https://redisson.pro/docs/integration-with-spring/#local-cache) implemented  
+Feature - Hibernate 7.2 module added  
+Feature - support for Instant-based expiration in `RMapCacheNative` (thanks @bandalgomsu)  
+Feature - `claim()` method added to `StreamMultiReadGroupArgs` and `StreamReadGroupArgs` for `RStream` object  
+Feature - `RBucket.getDigest()` method added  
+Feature - extended `RBucket.compareAndSet()` method added  
+Feature - `RBucket.compareAndDelete()` method added  
+Feature - `RMapCacheNative.putIfExists()` methods added with ttl and time arguments  
+Feature - `RBuckets.setIfAllKeysExist()` method added (thanks to @seakider)  
+Feature - `RBuckets.setIfAllKeysAbsent()` method added (thanks to @seakider)  
+Feature - `RMapCacheNative.putIfAllKeysExist()` method added  
+Feature - `RMapCacheNative.putIfAllKeysAbsent()` method added  
+Feature - extended `RMapCacheNative.putAll()` method added  
+Feature - `JsonJackson3Codec` and `TypedJsonJackson3Codec` codecs added  
+Feature - `RSearch.hybridSearch()` method added  
+
+__Breaking change__ - Spring Cache implementation moved to `redisson-spring-cache/redisson-spring` module (thanks to @seakider)  
+__Breaking change__ - Spring Transaction implementation moved to `redisson-spring-transaction/redisson-spring` module (thanks to @seakider)  
+__Breaking change__ - `FstCodec`, `FuryCodec`, `MarshallingCodec`, `SnappyCodec` deprecated codecs have been removed  
+
+Improvement - `redisson-spring-data` is a sub-module of `redisson-spring module`  
+Improvement - `redisson-spring-boot-starter` is a sub-module of `redisson-spring`  
+Improvement - `redisson-spring-cloud-stream-binder` is a sub-module of `redisson-spring`  
+
+Fixed - Spring Data Redis ttl() method returns `0` instead of `-1` when `TimeUnit.SECONDS` is used (thanks to @seakider)  
+Fixed - incorrect delay calculations by `EqualJitterDelay` and `FullJitterDelay` after 57 attempts  
+Fixed - `Kryo5Codec` fails sometimes if `allowedClasses` specified  
+Fixed - `PendingEntry.lastTimeDelivered` renamed to `deliveryCount`  
+Fixed - `REDIRECT` response handling  
+Fixed - Spring Boot attempts to start JCache instance  
+Fixed - LEAK: ByteBuf.release() was not called before it's garbage-collected after redirect handling (thanks to @seakider)  
+
 ### 16-Dec-2025 - 4.0.0 released
 
 Feature - full-featured [Reliable Pub/Sub](https://redisson.pro/docs/data-and-services/publish-subscribe/#reliable-pubsub) implemented. Provides topic-subscription-consumer model with message acknowledgment, grouping, seek/replay, Dead Letter Topic, and pull/push consumers  
