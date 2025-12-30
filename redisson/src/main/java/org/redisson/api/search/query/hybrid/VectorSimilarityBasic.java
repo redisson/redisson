@@ -25,6 +25,22 @@ package org.redisson.api.search.query.hybrid;
 public interface VectorSimilarityBasic extends VectorSimilarity {
 
     /**
+     * Creates a range-based vector similarity search configuration.
+     *
+     * @param radius maximum distance for vector matches
+     * @return range configuration step
+     */
+    VectorSimilarityRange range(double radius);
+
+    /**
+     * Creates a K-nearest neighbors vector similarity search configuration.
+     *
+     * @param k number of nearest neighbors to find
+     * @return KNN configuration step
+     */
+    VectorSimilarityNearestNeighbors nearestNeighbors(int k);
+
+    /**
      * Assigns an alias to the vector similarity score.
      *
      * @param value score alias name

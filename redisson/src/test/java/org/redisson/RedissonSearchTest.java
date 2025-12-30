@@ -665,7 +665,8 @@ public class RedissonSearchTest extends RedisDockerTest {
 
             HybridSearchResult result = s.hybridSearch("hybrid-idx",
                     HybridQueryArgs.query("laptop")
-                            .vectorSimilarity(VectorSimilarity.nearestNeighbors("@embedding", "$vec", 10))
+                            .vectorSimilarity(VectorSimilarity.of("@embedding", "$vec")
+                                                                .nearestNeighbors(10))
                             .params(Map.of("vec", queryVector))
                             .limit(0, 10));
 
@@ -738,7 +739,8 @@ public class RedissonSearchTest extends RedisDockerTest {
 
             HybridSearchResult result = s.hybridSearch("hybrid-knn-idx",
                     HybridQueryArgs.query("document")
-                            .vectorSimilarity(VectorSimilarity.nearestNeighbors("@vector", "$vec", 3))
+                            .vectorSimilarity(VectorSimilarity.of("@vector", "$vec")
+                                                                .nearestNeighbors(3))
                             .params(Map.of("vec", queryVector))
                             .limit(0, 3));
 
@@ -777,7 +779,8 @@ public class RedissonSearchTest extends RedisDockerTest {
 
             HybridSearchResult result = s.hybridSearch("hybrid-ef-idx",
                     HybridQueryArgs.query("item")
-                            .vectorSimilarity(VectorSimilarity.nearestNeighbors("@embedding", "$vec", 5)
+                            .vectorSimilarity(VectorSimilarity.of("@embedding", "$vec").
+                                                                nearestNeighbors(5)
                                     .efRuntime(100))
                             .params(Map.of("vec", queryVector))
                             .limit(0, 5));
@@ -817,7 +820,8 @@ public class RedissonSearchTest extends RedisDockerTest {
 
             HybridSearchResult result = s.hybridSearch("hybrid-range-idx",
                     HybridQueryArgs.query("vector")
-                            .vectorSimilarity(VectorSimilarity.range("@data", "$vec", 1.0))
+                            .vectorSimilarity(VectorSimilarity.of("@data", "$vec")
+                                                                .range(1.0))
                             .params(Map.of("vec", queryVector))
                             .limit(0, 10));
 
@@ -856,7 +860,8 @@ public class RedissonSearchTest extends RedisDockerTest {
 
             HybridSearchResult result = s.hybridSearch("hybrid-rrf-idx",
                     HybridQueryArgs.query("technology")
-                            .vectorSimilarity(VectorSimilarity.nearestNeighbors("@embedding", "$vec", 10))
+                            .vectorSimilarity(VectorSimilarity.of("@embedding", "$vec")
+                                                                .nearestNeighbors(10))
                             .params(Map.of("vec", queryVector))
                             .combine(Combine.reciprocalRankFusion()
                                     .window(20)
@@ -898,7 +903,8 @@ public class RedissonSearchTest extends RedisDockerTest {
 
             HybridSearchResult result = s.hybridSearch("hybrid-linear-idx",
                     HybridQueryArgs.query("product")
-                            .vectorSimilarity(VectorSimilarity.nearestNeighbors("@vector", "$vec", 5))
+                            .vectorSimilarity(VectorSimilarity.of("@vector", "$vec")
+                                                                .nearestNeighbors(5))
                             .params(Map.of("vec", queryVector))
                             .combine(Combine.linear()
                                     .alpha(0.7)
@@ -941,7 +947,8 @@ public class RedissonSearchTest extends RedisDockerTest {
             HybridSearchResult result = s.hybridSearch("hybrid-alias-idx",
                     HybridQueryArgs.query("sample")
                             .scoreAlias("text_score")
-                            .vectorSimilarity(VectorSimilarity.nearestNeighbors("@emb", "$vec", 5))
+                            .vectorSimilarity(VectorSimilarity.of("@emb", "$vec")
+                                                                .nearestNeighbors(5))
                             .params(Map.of("vec", queryVector))
                             .combine(Combine.reciprocalRankFusion()
                                     .window(10)
@@ -985,7 +992,8 @@ public class RedissonSearchTest extends RedisDockerTest {
 
             HybridSearchResult result = s.hybridSearch("hybrid-filter-idx",
                     HybridQueryArgs.query("product")
-                            .vectorSimilarity(VectorSimilarity.nearestNeighbors("@vec", "$vec", 10))
+                            .vectorSimilarity(VectorSimilarity.of("@vec", "$vec")
+                                                                .nearestNeighbors(10))
                             .params(Map.of("vec", queryVector))
                             .limit(0, 5));
 
@@ -1026,7 +1034,8 @@ public class RedissonSearchTest extends RedisDockerTest {
 
             HybridSearchResult result = s.hybridSearch("hybrid-sort-idx",
                     HybridQueryArgs.query("item")
-                            .vectorSimilarity(VectorSimilarity.nearestNeighbors("@vec", "$vec", 5))
+                            .vectorSimilarity(VectorSimilarity.of("@vec", "$vec")
+                                                                .nearestNeighbors(5))
                             .params(Map.of("vec", queryVector))
                             .sortBy("@rating", SortOrder.DESC)
                             .limit(0, 5));
@@ -1070,7 +1079,8 @@ public class RedissonSearchTest extends RedisDockerTest {
 
             HybridSearchResult result = s.hybridSearch("hybrid-load-idx",
                     HybridQueryArgs.query("product")
-                            .vectorSimilarity(VectorSimilarity.nearestNeighbors("@vec", "$vec", 5))
+                            .vectorSimilarity(VectorSimilarity.of("@vec", "$vec")
+                                                                .nearestNeighbors(5))
                             .params(Map.of("vec", queryVector))
                             .load("@name", "@category", "@price")
                             .limit(0, 5));
@@ -1115,7 +1125,8 @@ public class RedissonSearchTest extends RedisDockerTest {
 
             HybridSearchResult result = s.hybridSearch("hybrid-group-idx",
                     HybridQueryArgs.query("product")
-                            .vectorSimilarity(VectorSimilarity.nearestNeighbors("@vec", "$vec", 10))
+                            .vectorSimilarity(VectorSimilarity.of("@vec", "$vec")
+                                                                .nearestNeighbors(10))
                             .params(Map.of("vec", queryVector))
                             .groupBy(GroupBy.fieldNames("@category")
                                     .reducers(Reducer.count().as("count"),
@@ -1158,7 +1169,8 @@ public class RedissonSearchTest extends RedisDockerTest {
             // With APPLY transformation
             HybridSearchResult result = s.hybridSearch("hybrid-apply-idx",
                     HybridQueryArgs.query("item")
-                            .vectorSimilarity(VectorSimilarity.nearestNeighbors("@vec", "$vec", 5))
+                            .vectorSimilarity(VectorSimilarity.of("@vec", "$vec")
+                                                                .nearestNeighbors(5))
                             .params(Map.of("vec", queryVector))
                             .load("@price")
                             .apply(new Expression("@price * 0.9", "discounted_price"))
@@ -1200,7 +1212,8 @@ public class RedissonSearchTest extends RedisDockerTest {
             // With TIMEOUT
             HybridSearchResult result = s.hybridSearch("hybrid-timeout-idx",
                     HybridQueryArgs.query("content")
-                            .vectorSimilarity(VectorSimilarity.nearestNeighbors("@vec", "$vec", 3))
+                            .vectorSimilarity(VectorSimilarity.of("@vec", "$vec")
+                                                                .nearestNeighbors(3))
                             .params(Map.of("vec", queryVector))
                             .timeout(Duration.ofSeconds(5))
                             .limit(0, 3));
@@ -1240,7 +1253,8 @@ public class RedissonSearchTest extends RedisDockerTest {
             HybridSearchResult result = s.hybridSearch("hybrid-scorer-idx",
                     HybridQueryArgs.query("document")
                             .scorer("BM25")
-                            .vectorSimilarity(VectorSimilarity.nearestNeighbors("@vec", "$vec", 5))
+                            .vectorSimilarity(VectorSimilarity.of("@vec", "$vec")
+                                                                .nearestNeighbors(5))
                             .params(Map.of("vec", queryVector))
                             .limit(0, 5));
 
@@ -1280,7 +1294,8 @@ public class RedissonSearchTest extends RedisDockerTest {
             // With NOSORT
             HybridSearchResult result = s.hybridSearch("hybrid-nosort-idx",
                     HybridQueryArgs.query("item")
-                            .vectorSimilarity(VectorSimilarity.nearestNeighbors("@vec", "$vec", 3))
+                            .vectorSimilarity(VectorSimilarity.of("@vec", "$vec")
+                                                                .nearestNeighbors(3))
                             .params(Map.of("vec", queryVector))
                             .noSort()
                             .limit(0, 3));
@@ -1321,7 +1336,8 @@ public class RedissonSearchTest extends RedisDockerTest {
             // With post-filter after COMBINE
             HybridSearchResult result = s.hybridSearch("hybrid-postfilter-idx",
                     HybridQueryArgs.query("item")
-                            .vectorSimilarity(VectorSimilarity.nearestNeighbors("@vec", "$vec", 10))
+                            .vectorSimilarity(VectorSimilarity.of("@vec", "$vec")
+                                                                .nearestNeighbors(10))
                             .params(Map.of("vec", queryVector))
                             .combine(Combine.reciprocalRankFusion().window(10))
                             .limit(0, 5));

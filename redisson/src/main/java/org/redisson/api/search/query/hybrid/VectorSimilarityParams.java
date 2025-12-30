@@ -29,7 +29,7 @@ public final class VectorSimilarityParams implements VectorSimilarityRange, Vect
 
     private final String field;
     private final String param;
-    private final VectorSearchMode mode;
+    private VectorSearchMode mode;
     
     private Integer knnK;
     private Integer efRuntime;
@@ -46,18 +46,18 @@ public final class VectorSimilarityParams implements VectorSimilarityRange, Vect
         this.mode = null;
     }
 
-    VectorSimilarityParams(String field, String param, VectorSearchMode mode, int k) {
-        this.field = field;
-        this.param = param;
-        this.mode = mode;
-        this.knnK = k;
+    @Override
+    public VectorSimilarityRange range(double radius) {
+        this.mode = VectorSearchMode.RANGE;
+        this.rangeRadius = radius;
+        return this;
     }
 
-    VectorSimilarityParams(String field, String param, VectorSearchMode mode, double radius) {
-        this.field = field;
-        this.param = param;
-        this.mode = mode;
-        this.rangeRadius = radius;
+    @Override
+    public VectorSimilarityNearestNeighbors nearestNeighbors(int k) {
+        this.mode = VectorSearchMode.KNN;
+        this.knnK = k;
+        return this;
     }
 
     @Override

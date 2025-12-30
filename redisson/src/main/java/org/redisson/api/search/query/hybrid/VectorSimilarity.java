@@ -28,28 +28,4 @@ public interface VectorSimilarity {
         return new VectorSimilarityParams(field, param);
     }
 
-    /**
-     * Creates a range-based vector similarity search configuration.
-     *
-     * @param field vector field name (e.g., "@embedding")
-     * @param param vector parameter reference (e.g., "$vec")
-     * @param radius maximum distance for vector matches
-     * @return range configuration step
-     */
-    static VectorSimilarityRange range(String field, String param, double radius) {
-        return new VectorSimilarityParams(field, param, VectorSimilarityParams.VectorSearchMode.RANGE, radius);
-    }
-
-    /**
-     * Creates a K-nearest neighbors vector similarity search configuration.
-     *
-     * @param field vector field name (e.g., "@embedding")
-     * @param param vector parameter reference (e.g., "$vec")
-     * @param k number of nearest neighbors to find
-     * @return KNN configuration step
-     */
-    static VectorSimilarityNearestNeighbors nearestNeighbors(String field, String param, int k) {
-        return new VectorSimilarityParams(field, param, VectorSimilarityParams.VectorSearchMode.KNN, k);
-    }
-
 }
