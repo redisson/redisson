@@ -13,6 +13,8 @@
     <artifactId>redisson-spring-transaction</artifactId>
     <packaging>jar</packaging>
 
+    <name>Redisson/Spring Transaction integration</name>
+
     <properties>
         <main.basedir>${project.parent.parent.basedir}</main.basedir>
     </properties>

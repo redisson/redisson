@@ -13,6 +13,8 @@
     <artifactId>redisson-spring</artifactId>
     <packaging>pom</packaging>
 
+    <name>Redisson/Spring integration</name>
+
     <modules>
         <module>redisson-spring-cache</module>
         <module>redisson-spring-transaction</module>

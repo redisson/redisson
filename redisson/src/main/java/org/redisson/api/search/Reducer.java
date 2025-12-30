@@ -16,7 +16,6 @@
 package org.redisson.api.search;
 
 import org.redisson.api.SortOrder;
-import org.redisson.api.search.aggregate.AggregationOptions;
 
 /**
  * Reducer object
