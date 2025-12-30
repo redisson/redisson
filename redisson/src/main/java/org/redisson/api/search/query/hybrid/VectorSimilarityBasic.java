@@ -40,20 +40,4 @@ public interface VectorSimilarityBasic extends VectorSimilarity {
      */
     VectorSimilarityNearestNeighbors nearestNeighbors(int k);
 
-    /**
-     * Assigns an alias to the vector similarity score.
-     *
-     * @param value score alias name
-     * @return this instance for further configuration
-     */
-    VectorSimilarityBasic scoreAlias(String value);
-
-    /**
-     * Applies pre-filtering to vector search results.
-     *
-     * @param value filter expression
-     * @return this instance for further configuration
-     */
-    VectorSimilarityBasic filter(String value);
-
 }

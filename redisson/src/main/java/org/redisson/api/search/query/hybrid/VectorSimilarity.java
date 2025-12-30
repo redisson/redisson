@@ -28,4 +28,20 @@ public interface VectorSimilarity {
         return new VectorSimilarityParams(field, param);
     }
 
+    /**
+     * Assigns an alias to the vector similarity score.
+     *
+     * @param value score alias name
+     * @return this instance for further configuration
+     */
+    VectorSimilarity scoreAlias(String value);
+
+    /**
+     * Applies pre-filtering to vector search results.
+     *
+     * @param value filter expression
+     * @return this instance for further configuration
+     */
+    VectorSimilarity filter(String value);
+
 }

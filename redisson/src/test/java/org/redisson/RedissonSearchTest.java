@@ -673,6 +673,29 @@ public class RedissonSearchTest extends RedisDockerTest {
             assertThat(result.getResults()).containsExactlyInAnyOrder(
                     Map.of("__key", "product:1", "__score", "0.0327868852459"),
                     Map.of("__key", "product:2", "__score", "0.0161290322581"));
+
+            HybridSearchResult result2 = s.hybridSearch("hybrid-idx",
+                    HybridQueryArgs.query("laptop")
+                            .vectorSimilarity(VectorSimilarity.of("@embedding", "$vec")
+                                    .nearestNeighbors(10).scoreAlias("test").filter("@test:"))
+                            .params(Map.of("vec", queryVector))
+                            .limit(0, 10));
+
+            assertThat(result2.getResults()).containsExactlyInAnyOrder(
+                    Map.of("__key", "product:1", "__score", "0.0327868852459", "test", "1"),
+                    Map.of("__key", "product:2", "__score", "0.0161290322581", "test", "0.996903955936"));
+
+            HybridSearchResult result3 = s.hybridSearch("hybrid-idx",
+                    HybridQueryArgs.query("laptop")
+                            .vectorSimilarity(VectorSimilarity.of("@embedding", "$vec")
+                                    .range(10).scoreAlias("test").filter("@test:"))
+                            .params(Map.of("vec", queryVector))
+                            .limit(0, 10));
+
+            assertThat(result3.getResults()).containsExactlyInAnyOrder(
+                    Map.of("__key", "product:1", "__score", "0.0327868852459", "test", "1"),
+                    Map.of("__key", "product:2", "__score", "0.0161290322581", "test", "0.996903955936"));
+
         }
 
         @Test
