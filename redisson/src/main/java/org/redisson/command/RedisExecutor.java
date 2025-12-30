@@ -470,7 +470,7 @@ public class RedisExecutor<V, R> {
 
             int pendingTasks = countPendingTasks();
             attemptPromise.completeExceptionally(
-                    new RedisResponseTimeoutException("Redis server response timeout (" + timeoutAmount + " ms) occured"
+                    new RedisResponseTimeoutException("Redis server response timeout (" + timeoutAmount + " ms) occurred"
                             + " after " + attempt + " of " + attempts + " retry attempts,"
                             + " is non-idempotent command: " + (command != null && command.isNoRetry())
                             + " Check connection with Redis node: " + connection.getRedisClient().getAddr() + " for TCP packet drops or bandwidth limits. "
