@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.redisson</groupId>
         <artifactId>redisson-quarkus-33-cdi-parent</artifactId>
-        <version>4.1.1-SNAPSHOT</version>
+        <version>4.0.1-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
 
