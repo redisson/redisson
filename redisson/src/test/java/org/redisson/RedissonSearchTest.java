@@ -1128,9 +1128,9 @@ public class RedissonSearchTest extends RedisDockerTest {
                             .vectorSimilarity(VectorSimilarity.of("@vec", "$vec")
                                                                 .nearestNeighbors(10))
                             .params(Map.of("vec", queryVector))
-                            .groupBy(GroupBy.fieldNames("@category")
-                                    .reducers(Reducer.count().as("count"),
-                                            Reducer.avg("@price").as("avg_price")))
+                            .groupBy(org.redisson.api.search.GroupBy.fieldNames("@category")
+                                    .reducers(org.redisson.api.search.Reducer.count().as("count"),
+                                            org.redisson.api.search.Reducer.avg("@price").as("avg_price")))
                             .limit(0, 10));
 
             assertThat(result.getResults()).containsExactlyInAnyOrder(
@@ -1173,7 +1173,7 @@ public class RedissonSearchTest extends RedisDockerTest {
                                                                 .nearestNeighbors(5))
                             .params(Map.of("vec", queryVector))
                             .load("@price")
-                            .apply(new Expression("@price * 0.9", "discounted_price"))
+                            .apply(new org.redisson.api.search.Expression("@price * 0.9", "discounted_price"))
                             .limit(0, 5));
 
             assertThat(result.getResults()).containsExactlyInAnyOrder(
@@ -1402,7 +1402,7 @@ public class RedissonSearchTest extends RedisDockerTest {
                                     .window(30)
                                     .constant(60))
                             .load("@title", "@price", "@rating", "@category")
-                            .apply(new Expression("@price * 0.85", "sale_price"))
+                            .apply(new org.redisson.api.search.Expression("@price * 0.85", "sale_price"))
                             .timeout(Duration.ofSeconds(10))
                             .limit(0, 5));
 

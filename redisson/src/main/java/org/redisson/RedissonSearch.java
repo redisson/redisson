@@ -1239,14 +1239,14 @@ public class RedissonSearch implements RSearch {
         }
 
         if (options.getGroupBy() != null) {
-            for (GroupBy groupBy : options.getGroupBy()) {
-                GroupParams groupParams = (GroupParams) groupBy;
+            for (org.redisson.api.search.GroupBy groupBy : options.getGroupBy()) {
+                org.redisson.api.search.GroupParams groupParams = (org.redisson.api.search.GroupParams) groupBy;
                 cmdArgs.add("GROUPBY");
                 cmdArgs.add(groupParams.getFieldNames().size());
                 cmdArgs.addAll(groupParams.getFieldNames());
                 if (groupParams.getReducers() != null) {
-                    for (Reducer reducer : groupParams.getReducers()) {
-                        ReducerParams reducerParams = (ReducerParams) reducer;
+                    for (org.redisson.api.search.Reducer reducer : groupParams.getReducers()) {
+                        org.redisson.api.search.ReducerParams reducerParams = (org.redisson.api.search.ReducerParams) reducer;
                         cmdArgs.add("REDUCE");
                         cmdArgs.add(reducerParams.getFunctionName());
                         cmdArgs.add(reducerParams.getArgs().size());
@@ -1263,7 +1263,7 @@ public class RedissonSearch implements RSearch {
         }
 
         if (options.getExpressions() != null) {
-            for (Expression expr : options.getExpressions()) {
+            for (org.redisson.api.search.Expression expr : options.getExpressions()) {
                 cmdArgs.add("APPLY");
                 cmdArgs.add(expr.getValue());
                 cmdArgs.add("AS");

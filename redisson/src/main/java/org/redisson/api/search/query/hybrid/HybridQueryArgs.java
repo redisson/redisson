@@ -15,8 +15,8 @@
  */
 package org.redisson.api.search.query.hybrid;
 
-import org.redisson.api.search.aggregate.Expression;
-import org.redisson.api.search.aggregate.GroupBy;
+import org.redisson.api.search.Expression;
+import org.redisson.api.search.GroupBy;
 
 import java.time.Duration;
 
