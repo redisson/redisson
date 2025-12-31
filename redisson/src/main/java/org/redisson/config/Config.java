@@ -894,7 +894,7 @@ public class Config {
      * <p>
      * Default is <code>100</code>.
      *
-     * @param cleanUpKeysAmount - delay in seconds
+     * @param cleanUpKeysAmount - amount
      * @return config
      */
     public Config setCleanUpKeysAmount(int cleanUpKeysAmount) {
