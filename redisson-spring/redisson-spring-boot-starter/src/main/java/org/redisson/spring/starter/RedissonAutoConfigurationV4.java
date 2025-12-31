@@ -334,6 +334,7 @@ public class RedissonAutoConfigurationV4 {
         return prefix;
     }
 
+    @SuppressWarnings("IllegalCatch")
     private String[] convertNodes(String prefix, List<?> nodesObject) {
         List<String> nodes = new ArrayList<>(nodesObject.size());
         try {
@@ -349,7 +350,7 @@ public class RedissonAutoConfigurationV4 {
 
                 nodes.add(prefix + host + ":" + port);
             }
-        } catch (Exception e) {
+        } catch (Throwable e) {
             throw new IllegalStateException("Failed to convert nodes", e);
         }
         return nodes.toArray(new String[0]);
