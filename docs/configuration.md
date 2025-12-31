@@ -76,9 +76,9 @@ Configuration YAML file example:
 singleServerConfig:
    address: "rediss://127.0.0.1:6379"
    password: "{aes}h8/9bGMTf809PxsBL4JlKAbFffaMtcr1/SFdXBcWySaxETKylJziUM23oWxGAmSZHkm+y/yTRg=="
-   sslTruststore: file:truststore
-   sslTruststorePassword: "{aes}djXKclV2zFMc/tZdnntaTx2bRD3eJ1vtJSJFcBfp/9ZPzsnUw5f7zZXzwbbg2jPCr24TiJb7bQ=="
-   secretKey: file:secret_key
+sslTruststore: file:truststore
+sslTruststorePassword: "{aes}djXKclV2zFMc/tZdnntaTx2bRD3eJ1vtJSJFcBfp/9ZPzsnUw5f7zZXzwbbg2jPCr24TiJb7bQ=="
+secretKey: file:secret_key
 ```
 ## Common settings
 
@@ -300,6 +300,147 @@ latency* mode with predefined settings set #3
 processor engine to *lower latency* mode with predefined settings set #1
 * `NORMAL` - switches command processor engine to normal mode
 
+**sslCiphers**
+
+Default value: `null`
+
+Defines SSL ciphers.  
+
+**sslProtocols**
+
+Default value: `null`
+
+Defines array of allowed SSL protocols.  
+Example values: `TLSv1.3`, `TLSv1.2`, `TLSv1.1`, `TLSv1`
+
+**sslVerificationMode**
+
+Default value: `STRICT`
+
+Defines SSL verification mode, which prevents man-in-the-middle attacks.
+
+Available values:  
+
+* `NONE` - No SSL certificate verification  
+* `CA_ONLY` - Validate the certificate chain but ignore hostname verification  
+* `STRICT` - Complete validation of the certificate chain and hostname  
+
+**sslProvider**
+
+Default value: `JDK`
+
+Defines the SSL provider (JDK or OPENSSL) used to handle SSL connections. OPENSSL is considered as a faster implementation and requires [netty-tcnative-boringssl-static](https://repo1.maven.org/maven2/io/netty/netty-tcnative-boringssl-static/) to be added to the classpath.
+
+**sslTruststore**
+
+Default value: `null`
+
+Defines the path to the SSL truststore. It stores certificates which is used to identify the server side of an SSL connection. SSL truststore is read on each new connection creation and can be dynamically reloaded. Supported formats: JKS, PKCS#12, PEM.
+
+The truststore should contain:
+
+* CA certificates - Root or intermediate Certificate Authority certificates that signed the Valkey or Redis server certificates
+* Self-signed certificates - If your Valkey or Redis servers use self-signed certificates, you'd include those directly
+* Server certificates - The actual certificates used by your Valkey or Redis instances
+
+**sslTruststorePassword**
+
+Default value: `null`
+
+Defines password for SSL truststore
+
+**sslKeystoreType**
+
+Default value: `null`
+
+Defines the SSL keystore type.
+
+**sslKeystore**
+
+Default value: `null`
+
+Defines the path to the SSL truststore. It stores certificates which are used to identify the server side of an SSL connections. The SSL truststore is read on each new connection creation and can be dynamically reloaded.
+
+**sslKeystorePassword**
+
+Default value: `null`
+
+Defines password for the SSL keystore
+
+**password**
+
+Default value: `null`
+
+Password for Valkey or Redis server authentication.
+
+**username**
+
+Default value: `null`
+
+Username for Valkey or Redis server authentication. Requires Redis 6.0 and higher.
+
+**credentialsResolver**
+
+Default value: empty
+
+Defines Credentials resolver, which is invoked during connection for Valkey or Redis server authentication. Returns Credentials object per Valkey or Redis node address, it contains `username` and `password` fields. Allows you to specify dynamically changing Valkey or Redis credentials.
+
+Available implementations:  
+
+* `org.redisson.config.EntraIdCredentialsResolver`  
+
+**nameMapper**
+
+Default value: no mapper
+
+Defines Name mapper which maps Redisson object name to a custom name.
+Applied to all Redisson objects.
+
+**commandMapper**
+
+Default value: no mapper
+
+Defines Command mapper, which maps Valkey or Redis command name to a custom name.
+Applied to all Valkey or Redis commands.
+
+**tcpKeepAlive**
+
+Default value: `false`
+
+Enables TCP keepAlive for connection. 
+
+**tcpKeepAliveCount**
+
+Default value: 0
+
+This defines the maximum number of keepalive probes TCP should send before dropping the connection. A `0` value means to use the system's default setting.
+
+
+**tcpKeepAliveIdle**
+
+Default value: 0
+
+Defines the time in seconds the connection needs to remain idle before
+TCP starts sending keepalive probes. A 0 value means use the system's default setting.
+
+**tcpKeepAliveInterval**
+
+Default value: 0
+
+Defines the time in seconds between individual keepalive probes. `0` value means use the system's default setting.
+
+**tcpUserTimeout**
+
+Default value: 0
+
+Defines the maximum amount of time in milliseconds that transmitted data may remain unacknowledged or buffered data may remain untransmitted (due to zero window size) before TCP will forcibly close the connection. A 0 value means use the system's default setting.
+
+**tcpNoDelay**
+
+Default value: `true`
+
+Enables TCP noDelay for connections.
+
 ## Cluster mode
 
 Compatible with:  
@@ -514,28 +655,6 @@ Available implementations:
 * `org.redisson.client.FailedCommandsDetector` - marks the Valkey or Redis node as failed if it has certain amount of command execution errors defined by `failedCommandsLimit` in the defined `checkInterval` interval (in milliseconds).  
 * `org.redisson.client.FailedCommandsTimeoutDetector` - marks the Valkey or Redis node as failed if it has a certain amount of command execution timeout errors defined by `failedCommandsLimit` in the defined `checkInterval` interval in milliseconds.  
 
-**password**
-
-Default value: `null`
-
-Password for Valkey or Redis server authentication.
-
-**username**
-
-Default value: `null`
-
-Username for Valkey or Redis server authentication. Requires Redis 6.0 and higher.
-
-**credentialsResolver**
-
-Default value: empty
-
-Defines Credentials resolver, which is invoked during connection for Valkey or Redis server authentication. Returns Credentials object per Valkey or Redis node address, it contains `username` and `password` fields. Allows you to specify dynamically changing Valkey or Redis credentials.
-
-Available implementations:  
-
-* `org.redisson.config.EntraIdCredentialsResolver`  
-
 **subscriptionsPerConnection**
 
 Default value: `5`
@@ -552,110 +671,11 @@ Default value: `null`
 
 Name of client connection.
 
-**sslProtocols**
-
-Default value: `null`
-
-Defines array of allowed SSL protocols.  
-Example values: `TLSv1.3`, `TLSv1.2`, `TLSv1.1`, `TLSv1`
-
-**sslVerificationMode**
-
-Default value: `STRICT`
-
-Defines SSL verification mode, which prevents man-in-the-middle attacks.
-
-Available values:  
-
-* `NONE` - No SSL certificate verification  
-* `CA_ONLY` - Validate the certificate chain but ignore hostname verification  
-* `STRICT` - Complete validation of the certificate chain and hostname  
-
-**sslProvider**
-
-Default value: `JDK`
-
-Defines the SSL provider (JDK or OPENSSL) used to handle SSL connections. OPENSSL is considered as a faster implementation and requires [netty-tcnative-boringssl-static](https://repo1.maven.org/maven2/io/netty/netty-tcnative-boringssl-static/) to be added to the classpath.
-
-**sslTruststore**
-
-Default value: `null`
-
-Defines the path to the SSL truststore. It stores certificates which is used to identify the server side of an SSL connection. SSL truststore is read on each new connection creation and can be dynamically reloaded. Supported formats: JKS, PKCS#12, PEM.
-
-The truststore should contain:
-
-* CA certificates - Root or intermediate Certificate Authority certificates that signed the Valkey or Redis server certificates
-* Self-signed certificates - If your Valkey or Redis servers use self-signed certificates, you'd include those directly
-* Server certificates - The actual certificates used by your Valkey or Redis instances
-
-**sslTruststorePassword**
-
-Default value: `null`
-
-Defines password for SSL truststore
-
-**sslKeystoreType**
-
-Default value: `null`
-
-Defines the SSL keystore type.
-
-**sslKeystore**
-
-Default value: `null`
-
-Defines the path to the SSL truststore. It stores certificates which are used to identify the server side of an SSL connections. The SSL truststore is read on each new connection creation and can be dynamically reloaded.
-
-**sslKeystorePassword**
-
-Default value: `null`
-
-Defines password for the SSL keystore
-
 **pingConnectionInterval**
 
 Default value: `30000`
 
 This setting allows for detecting and reconnecting broken connections, using the PING command. PING command send interval is defined in milliseconds. Useful in cases when the netty lib doesn’t invoke `channelInactive` method for closed connections. Set to `0` to disable.
-
-**keepAlive**
-
-Default value: `false`
-
-Enables TCP keepAlive for connection. 
-
-**tcpKeepAliveCount**
-
-Default value: 0
-
-This defines the maximum number of keepalive probes TCP should send before dropping the connection. A `0` value means to use the system's default setting.
-
-
-**tcpKeepAliveIdle**
-
-Default value: 0
-
-Defines the time in seconds the connection needs to remain idle before
-TCP starts sending keepalive probes. A 0 value means use the system's default setting.
-
-**tcpKeepAliveInterval**
-
-Default value: 0
-
-Defines the time in seconds between individual keepalive probes. `0` value means use the system's default setting.
-
-**tcpUserTimeout**
-
-Default value: 0
-
-Defines the maximum amount of time in milliseconds that transmitted data may remain unacknowledged or buffered data may remain untransmitted (due to zero window size) before TCP will forcibly close the connection. A 0 value means use the system's default setting.
-
-**tcpNoDelay**
-
-Default value: `true`
-
-Enables TCP noDelay for connections.
 
 **subscriptionTimeout**
 
@@ -675,21 +695,6 @@ Available implementations:
 * `org.redisson.api.HostPortNatMapper`
 * `org.redisson.api.HostNatMapper`
 
-**nameMapper**
-
-Default value: no mapper
-
-Defines Name mapper which maps Redisson object name to a custom name.
-Applied to all Redisson objects.
-
-**commandMapper**
-
-Default value: no mapper
-
-Defines Command mapper, which maps Valkey or Redis command name to a custom name.
-Applied to all Valkey or Redis commands.
-
-
 ### Cluster YAML config format
 Below is a cluster configuration example in YAML format. All property
 names matched with `ClusterServersConfig` and `Config` object property names.
@@ -704,7 +709,6 @@ clusterServersConfig:
   reconnectionDelay: !<org.redisson.config.EqualJitterDelay> {baseDelay: PT0.1S, maxDelay: PT10S}
   failedSlaveReconnectionInterval: 3000
   failedSlaveNodeDetector: !<org.redisson.client.FailedConnectionDetector> {}
-  password: null
   subscriptionsPerConnection: 5
   clientName: null
   loadBalancer: !<org.redisson.connection.balancer.RoundRobinLoadBalancer> {}
@@ -722,8 +726,10 @@ clusterServersConfig:
   - "redis://127.0.0.1:7000"
   scanInterval: 1000
   pingConnectionInterval: 30000
-  keepAlive: false
-  tcpNoDelay: true
+tcpKeepAlive: false
+tcpNoDelay: true
+password: null
+username: null
 threads: 16
 nettyThreads: 32
 codec: !<org.redisson.codec.Kryo5Codec> {}
@@ -932,28 +938,6 @@ Default value: `0`
 
 Database index used for Valkey or Redis connection.
 
-**password**
-
-Default value: `null`
-
-Password for Valkey or Redis server authentication. 
-
-**username**
-
-Default value: `null`
-
-Username for Valkey or Redis server authentication. Requires Redis 6.0 and higher.
-
-**credentialsResolver**
-
-Default value: empty
-
-Defines Credentials resolver, which is invoked during connection for Valkey or Redis server authentication. Returns Credentials object per Valkey or Redis node address, it contains `username` and `password` fields. Allows you to specify dynamically changing Valkey or Redis credentials.
-
-Available implementations:  
-
-* `org.redisson.config.EntraIdCredentialsResolver`  
-
 **subscriptionsPerConnection**
 
 Default value: `5`
@@ -965,68 +949,6 @@ Subscriptions per subscribe connection limit. Used by `RTopic`, `RPatternTopic`,
 Default value: `null`
 
 Name of client connection.
-
-**sslProtocols**
-
-Default value: `null`
-
-Defines array of allowed SSL protocols.  
-Example values: `TLSv1.3`, `TLSv1.2`, `TLSv1.1`, `TLSv1`
-
-**sslVerificationMode**
-
-Default value: `STRICT`
-
-Defines SSL verification mode, which prevents man-in-the-middle attacks.
-
-Available values:  
-
-* `NONE` - No SSL certificate verification  
-* `CA_ONLY` - Validate the certificate chain but ignore hostname verification  
-* `STRICT` - Complete validation of the certificate chain and hostname  
-
-
-**sslProvider**
-
-Default value: `JDK`
-
-Defines the SSL provider (JDK or OPENSSL) used to handle SSL connections. OPENSSL considered as a faster implementation and requires [netty-tcnative-boringssl-static](https://repo1.maven.org/maven2/io/netty/netty-tcnative-boringssl-static/) to be added in the classpath.
-
-**sslTruststore**
-
-Default value: `null`
-
-Defines the path to the SSL truststore. It stores certificates which are used to identify the server side of an SSL connections. The SSL truststore is read on each new connection creation and can be dynamically reloaded. Supported formats: JKS, PKCS#12, PEM.
-
-The truststore should contain:
-
-* CA certificates - Root or intermediate Certificate Authority certificates that signed the Valkey or Redis server certificates
-* Self-signed certificates - If your Valkey or Redis servers use self-signed certificates, you'd include those directly
-* Server certificates - The actual certificates used by your Valkey or Redis instances
-
-**sslTruststorePassword**
-
-Default value: `null`
-
-Defines password for SSL truststore.
-
-**sslKeystoreType**
-
-Default value: `null`
-
-Defines SSL keystore type.
-
-**sslKeystore**
-
-Default value: `null`
-
-Defines path to the SSL keystore. It stores private key and certificates corresponding to their public keys. Used if the server side of an SSL connection requires client authentication. SSL keystore is read on each new connection creation and can be dynamically reloaded.
-
-**sslKeystorePassword**
-
-Default value: `null`
-
-Defines password for SSL keystore.
 
 **pingConnectionInterval**
 
@@ -1046,18 +968,6 @@ Default value: `true`
 
 Enables TCP noDelay for connections.
 
-**nameMapper**
-
-Default value: no mapper
-
-Defines Name mapper which maps Redisson object name to a custom name. Applied to all Redisson objects.
-
-**commandMapper**
-
-Default value: no mapper
-
-Defines Command mapper which maps Valkey or Redis command name to a custom name. Applied to all commands.  
-
 ### Replicated YAML config format
 Below is a replicated configuration example in YAML format. All property
 names are matched with `ReplicatedServersConfig` and `Config` object property names.
@@ -1073,7 +983,6 @@ replicatedServersConfig:
   reconnectionDelay: !<org.redisson.config.EqualJitterDelay> {baseDelay: PT0.1S, maxDelay: PT10S}
   failedSlaveReconnectionInterval: 3000
   failedSlaveNodeDetector: !<org.redisson.client.FailedConnectionDetector> {}
-  password: null
   subscriptionsPerConnection: 5
   clientName: null
   loadBalancer: !<org.redisson.connection.balancer.RoundRobinLoadBalancer> {}
@@ -1091,6 +1000,8 @@ replicatedServersConfig:
   - "redis://redishost3:2813"
   scanInterval: 1000
   monitorIPChanges: false
+password: null
+username: null
 threads: 16
 nettyThreads: 32
 codec: !<org.redisson.codec.Kryo5Codec> {}
@@ -1226,28 +1137,6 @@ Default value: `0`
 
 Database index used for Valkey or Redis connection.
 
-**password**
-
-Default value: `null`
-
-Password for Valkey or Redis server authentication.
-
-**username**
-
-Default value: `null`
-
-Username for Valkey or Redis server authentication. Requires Redis 6.0 and higher.
-
-**credentialsResolver**
-
-Default value: empty
-
-Defines Credentials resolver, which is invoked during connection for Valkey or Redis server authentication. Returns Credentials object per Valkey or Redis node address, it contains `username` and `password` fields. Allows you to specify dynamically changing Valkey or Redis credentials.
-
-Available implementations:  
-
-* `org.redisson.config.EntraIdCredentialsResolver`  
-
 **subscriptionsPerConnection**
 
 Default value: `5`
@@ -1268,70 +1157,6 @@ Default value: `null`
 
 Name of client connection
 
-**sslProtocols**
-
-Default value: `null`
-
-Defines array of allowed SSL protocols.  
-Example values: `TLSv1.3`, `TLSv1.2`, `TLSv1.1`, `TLSv1`
-
-**sslVerificationMode**
-
-Default value: `STRICT`
-
-Defines SSL verification mode, which prevents man-in-the-middle attacks.
-
-Available values:  
-
-* `NONE` - No SSL certificate verification  
-* `CA_ONLY` - Validate the certificate chain but ignore hostname verification  
-* `STRICT` - Complete validation of the certificate chain and hostname  
-
-
-**sslProvider**
-
-Default value: `JDK`
-
-Defines SSL provider (JDK or OPENSSL) used to handle SSL connections.
-OPENSSL is considered as the faster implementation and requires  [netty-tcnative-boringssl-static](https://repo1.maven.org/maven2/io/netty/netty-tcnative-boringssl-static/) to be added in classpath.
-
-**sslTruststore**
-
-Default value: `null`
-
-Defines the path to the SSL truststore. It stores certificates which are used to identify the server side of an SSL connections. The SSL truststore is read on each new connection creation and can be dynamically reloaded. Supported formats: JKS, PKCS#12, PEM.
-
-The truststore should contain:
-
-* CA certificates - Root or intermediate Certificate Authority certificates that signed the Valkey or Redis server certificates
-* Self-signed certificates - If your Valkey or Redis servers use self-signed certificates, you'd include those directly
-* Server certificates - The actual certificates used by your Valkey or Redis instances
-
-
-**sslTruststorePassword**
-
-Default value: `null`
-
-Defines password for SSL truststore.
-
-**sslKeystoreType**
-
-Default value: `null`
-
-Defines SSL keystore type.
-
-**sslKeystore**
-
-Default value: `null`
-
-Defines the path to the SSL truststore. It stores certificates which are used to identify the server side of an SSL connections. The SSL truststore is read on each new connection creation and can be dynamically reloaded.
-
-**sslKeystorePassword**
-
-Default value: `null`
-
-Defines password for SSL keystore
-
 **pingConnectionInterval**
 
 Default value: `30000`
@@ -1351,19 +1176,6 @@ Default value: `true`
 
 Enables TCP noDelay for connections.
 
-**nameMapper**
-
-Default value: no mapper
-
-Defines Name mapper which maps Redisson object name to a custom name.
-Applied to all Redisson objects.
-
-**commandMapper**
-
-Default value: no mapper
-
-Defines Command mapper which maps Valkey or Redis command name to a custom name. Applied to all commands.
-
 ### Single YAML config format
 
 Below is a single configuration example in YAML format. All property names are matched with `SingleServerConfig` and `Config` object property names.
@@ -1376,7 +1188,6 @@ singleServerConfig:
   retryAttempts: 4
   retryDelay: !<org.redisson.config.EqualJitterDelay> {baseDelay: PT1S, maxDelay: PT2S}
   reconnectionDelay: !<org.redisson.config.EqualJitterDelay> {baseDelay: PT0.1S, maxDelay: PT10S}
-  password: null
   subscriptionsPerConnection: 5
   clientName: null
   address: "redis://127.0.0.1:6379"
@@ -1386,6 +1197,8 @@ singleServerConfig:
   connectionPoolSize: 64
   database: 0
   dnsMonitoringInterval: 5000
+password: null
+username: null
 threads: 16
 nettyThreads: 32
 codec: !<org.redisson.codec.Kryo5Codec> {}
@@ -1598,25 +1411,6 @@ Default value: `0`
 
 Database index used for Valkey or Redis connection.
 
-**password**
-
-Default value: `null`
-
-Password for Valkey or Redis servers authentication.
-
-**username**
-
-Default value: `null`
-
-Username for Valkey or Redis servers authentication. Requires Redis 6.0 and higher.
-
-**sentinelPassword**
-
-Default value: `null`
-
-Password for Valkey or Redis Sentinel servers authentication. Used only if
-Sentinel password differs from master’s and slave’s.
-
 **sentinelUsername**
 
 Default value: `null`
@@ -1659,70 +1453,6 @@ Default value: `null`
 
 Name of client connection.
 
-**sslProtocols**
-
-Default value: `null`
-
-Defines array of allowed SSL protocols.  
-Example values: `TLSv1.3`, `TLSv1.2`, `TLSv1.1`, `TLSv1`
-
-**sslVerificationMode**
-
-Default value: `STRICT`
-
-Defines SSL verification mode, which prevents man-in-the-middle attacks.
-
-Available values:  
-
-* `NONE` - No SSL certificate verification  
-* `CA_ONLY` - Validate the certificate chain but ignore hostname verification  
-* `STRICT` - Complete validation of the certificate chain and hostname  
-
-
-**sslProvider**
-
-Default value: `JDK`
-
-Defines SSL provider (JDK or OPENSSL) used to handle SSL connections.
-OPENSSL is considered as a faster implementation and requires[netty-tcnative-boringssl-static](https://repo1.maven.org/maven2/io/netty/netty-tcnative-boringssl-static/) to be added in classpath.
-
-**sslTruststore**
-
-Default value: `null`
-
-Defines path to the SSL truststore. It stores certificates which is used to identify the server side of an SSL connection. SSL truststore is read on each new connection creation and can be dynamically reloaded. Supported formats: JKS, PKCS#12, PEM.
-
-The truststore should contain:
-
-* CA certificates - Root or intermediate Certificate Authority certificates that signed the Valkey or Redis server certificates
-* Self-signed certificates - If your Valkey or Redis servers use self-signed certificates, you'd include those directly
-* Server certificates - The actual certificates used by your Valkey or Redis instances
-
-
-**sslTruststorePassword**
-
-Default value: `null`
-
-Defines password for SSL truststore.
-
-**sslKeystoreType**
-
-Default value: `null`
-
-Defines SSL keystore type.
-
-**sslKeystore**
-
-Default value: `null`
-
-Defines path to the SSL keystore. It stores private key and certificates corresponding to their public keys. Used if the server side of an SSL connection requires client authentication. SSL keystore is read on each new connection creation and can be dynamically reloaded.
-
-**sslKeystorePassword**
-
-Default value: `null`
-
-Defines password for SSL keystore.
-
 **pingConnectionInterval**
 
 Default value: `30000`
@@ -1753,19 +1483,6 @@ Available implementations:
 * `org.redisson.api.HostPortNatMapper`  
 * `org.redisson.api.HostNatMapper`  
 
-**nameMapper**
-
-Default value: no mapper
-
-Defines Name mapper which maps Redisson object name to a custom name.
-Applied to all Redisson objects.
-
-**commandMapper**
-
-Default value: no mapper
-
-Defines Command mapper which maps Valkey or Redis command name to a custom name. Applied to all commands.
-
 ### Sentinel YAML config format
 
 Below is a sentinel configuration example in YAML format. All property
@@ -1782,7 +1499,6 @@ sentinelServersConfig:
   reconnectionDelay: !<org.redisson.config.EqualJitterDelay> {baseDelay: PT0.1S, maxDelay: PT10S}
   failedSlaveReconnectionInterval: 3000
   failedSlaveNodeDetector: !<org.redisson.client.FailedConnectionDetector> {}
-  password: null
   subscriptionsPerConnection: 5
   clientName: null
   loadBalancer: !<org.redisson.connection.balancer.RoundRobinLoadBalancer> {}
@@ -1799,6 +1515,8 @@ sentinelServersConfig:
   - "redis://127.0.0.1:26389"
   masterName: "mymaster"
   database: 0
+password: null
+username: null
 threads: 16
 nettyThreads: 32
 codec: !<org.redisson.codec.Kryo5Codec> {}
@@ -1992,28 +1710,6 @@ Default value: `0`
 
 Database index used for Valkey or Redis connection.
 
-**password**
-
-Default value: `null`
-
-Password for Valkey or Redis server authentication. 
-
-**username**
-
-Default value: `null`
-
-Username for Valkey or Redis server authentication. Requires Redis 6.0 and higher.
-
-**credentialsResolver**
-
-Default value: empty
-
-Defines Credentials resolver, which is invoked during connection for Valkey or Redis server authentication. Returns Credentials object per Valkey or Redis node address, it contains `username` and `password` fields. Allows you to specify dynamically changing Valkey or Redis credentials.
-
-Available implementations:  
-
-* `org.redisson.config.EntraIdCredentialsResolver`  
-
 **subscriptionsPerConnection**
 
 Default value: `5`
@@ -2037,69 +1733,6 @@ Default value: `null`
 
 Name of client connection.
 
-**sslProtocols**
-
-Default value: `null`
-
-Defines array of allowed SSL protocols.  
-Example values: `TLSv1.3`, `TLSv1.2`, `TLSv1.1`, `TLSv1`
-
-**sslVerificationMode**
-
-Default value: `STRICT`
-
-Defines SSL verification mode, which prevents man-in-the-middle attacks.
-
-Available values:  
-
-* `NONE` - No SSL certificate verification  
-* `CA_ONLY` - Validate the certificate chain but ignore hostname verification  
-* `STRICT` - Complete validation of the certificate chain and hostname  
-
-
-**sslProvider**
-
-Default value: `JDK`
-
-Defines SSL provider (JDK or OPENSSL) used to handle SSL connections.
-OPENSSL considered as a faster implementation and requires[netty-tcnative-boringssl-static](https://repo1.maven.org/maven2/io/netty/netty-tcnative-boringssl-static/) to be added in the classpath.
-
-**sslTruststore**
-
-Default value: `null`
-
-Defines path to the SSL truststore. It stores certificates which is used to identify the server side of an SSL connection. SSL truststore is read on each new connection creation and can be dynamically reloaded. Supported formats: JKS, PKCS#12, PEM.
-
-The truststore should contain:
-
-* CA certificates - Root or intermediate Certificate Authority certificates that signed the Valkey or Redis server certificates
-* Self-signed certificates - If your Valkey or Redis servers use self-signed certificates, you'd include those directly
-* Server certificates - The actual certificates used by your Valkey or Redis instances
-
-**sslTruststorePassword**
-
-Default value: `null`
-
-Defines password for SSL truststore.
-
-**sslKeystoreType**
-
-Default value: `null`
-
-Defines SSL keystore type.
-
-**sslKeystore**
-
-Default value: `null`
-
-Defines path to the SSL keystore. It stores private key and certificates corresponding to their public keys. Used if the server side of an SSL connection requires client authentication. SSL keystore is read on each new connection creation and can be dynamically reloaded.
-
-**sslKeystorePassword**
-
-Default value: `null`
-
-Defines password for SSL keystore.
-
 **pingConnectionInterval**
 
 Default value: `30000`
@@ -2119,18 +1752,6 @@ Default value: `true`
 
 Enables TCP noDelay for connection.
 
-**nameMapper**
-
-Default value: no mapper
-
-Defines Name mapper which maps Redisson object name to a custom name. Applied to all Redisson objects.
-
-**commandMapper**
-
-Default value: no mapper
-
-Defines Command mapper which maps Valkey or Redis command name to a custom name. Applied to all commands.  
-
 ### Master slave YAML config format
 
 Below is master slave configuration example in YAML format. All property names are matched with `MasterSlaveServersConfig` and `Config` object property names.
@@ -2145,7 +1766,6 @@ masterSlaveServersConfig:
   reconnectionDelay: !<org.redisson.config.EqualJitterDelay> {baseDelay: PT0.1S, maxDelay: PT10S}
   failedSlaveReconnectionInterval: 3000
   failedSlaveNodeDetector: !<org.redisson.client.FailedConnectionDetector> {}
-  password: null
   subscriptionsPerConnection: 5
   clientName: null
   loadBalancer: !<org.redisson.connection.balancer.RoundRobinLoadBalancer> {}
@@ -2162,6 +1782,8 @@ masterSlaveServersConfig:
   - "redis://127.0.0.1:6380"
   masterAddress: "redis://127.0.0.1:6379"
   database: 0
+password: null
+username: null
 threads: 16
 nettyThreads: 32
 codec: !<org.redisson.codec.Kryo5Codec> {}
@@ -2351,28 +1973,6 @@ Available implementations:
 milliseconds.
 * `org.redisson.client.FailedCommandsTimeoutDetector` - marks the Valkey or Redis node as failed if it has certain amount of command execution timeout errors defined by `failedCommandsLimit` in defined `checkInterval` interval in milliseconds.
 
-**password**
-
-Default value: `null`
-
-Password for Valkey or Redis server authentication.
-
-**username**
-
-Default value: `null`
-
-Username for Valkey or Redis server authentication. Requires Redis 6.0 and higher.
-
-**credentialsResolver**
-
-Default value: empty
-
-Defines Credentials resolver, which is invoked during connection for Valkey or Redis server authentication. Returns Credentials object per Valkey or Redis node address, it contains `username` and `password` fields. Allows you to specify dynamically changing Valkey or Redis credentials.
-
-Available implementations:  
-
-* `org.redisson.config.EntraIdCredentialsResolver`  
-
 **subscriptionsPerConnection**
 
 Default value: `5`
@@ -2390,69 +1990,6 @@ Defines subscription timeout in milliseconds applied per channel subscription.
 Default value: `null`
 
 Name of client connection
-
-**sslProtocols**
-
-Default value: `null`
-
-Defines array of allowed SSL protocols.  
-Example values: `TLSv1.3`, `TLSv1.2`, `TLSv1.1`, `TLSv1`
-
-**sslVerificationMode**
-
-Default value: `STRICT`
-
-Defines SSL verification mode, which prevents man-in-the-middle attacks.
-
-Available values:  
-
-* `NONE` - No SSL certificate verification  
-* `CA_ONLY` - Validate the certificate chain but ignore hostname verification  
-* `STRICT` - Complete validation of the certificate chain and hostname  
-
-
-**sslProvider**
-
-Default value: `JDK`
-
-Defines SSL provider (JDK or OPENSSL) used to handle SSL connections.
-OPENSSL considered as a faster implementation and requires[netty-tcnative-boringssl-static](https://repo1.maven.org/maven2/io/netty/netty-tcnative-boringssl-static/) to be added in the classpath.
-
-**sslTruststore**
-
-Default value: `null`
-
-Defines path to the SSL truststore. It stores certificates which is used to identify the server side of an SSL connection. SSL truststore is read on each new connection creation and can be dynamically reloaded. Supported formats: JKS, PKCS#12, PEM.
-
-The truststore should contain:
-
-* CA certificates - Root or intermediate Certificate Authority certificates that signed the Valkey or Redis server certificates
-* Self-signed certificates - If your Valkey or Redis servers use self-signed certificates, you'd include those directly
-* Server certificates - The actual certificates used by your Valkey or Redis instances
-
-**sslTruststorePassword**
-
-Default value: `null`
-
-Defines password for SSL truststore.
-
-**sslKeystoreType**
-
-Default value: `null`
-
-Defines SSL keystore type.
-
-**sslKeystore**
-
-Default value: `null`
-
-Defines path to the SSL keystore. It stores private key and certificates corresponding to their public keys. Used if the server side of an SSL connection requires client authentication. SSL keystore is read on each new connection creation and can be dynamically reloaded.
-
-**sslKeystorePassword**
-
-Default value: `null`
-
-Defines password for SSL keystore.
 
 **pingConnectionInterval**
 
@@ -2484,19 +2021,6 @@ Available implementations:
 * `org.redisson.connection.balancer.RoundRobinLoadBalancer`  
 * `org.redisson.connection.balancer.RandomLoadBalancer`  
 
-**nameMapper**
-
-Default value: no mapper
-
-Defines Name mapper which maps Redisson object name to a custom name.
-Applied to all Redisson objects.
-
-**commandMapper**
-
-Default value: no mapper
-
-Defines Command mapper which maps Valkey or Redis command name to a custom name. Applied to all commands.
-
 ### Proxy mode YAML config format
 
 Below is proxy mode configuration example in YAML format. All property
@@ -2511,7 +2035,6 @@ proxyServersConfig:
   retryAttempts: 4
   retryDelay: !<org.redisson.config.EqualJitterDelay> {baseDelay: PT1S, maxDelay: PT2S}
   reconnectionDelay: !<org.redisson.config.EqualJitterDelay> {baseDelay: PT0.1S, maxDelay: PT10S}
-  password: null
   subscriptionsPerConnection: 5
   clientName: null
   addresses: "redis://127.0.0.1:6379"
@@ -2522,6 +2045,8 @@ proxyServersConfig:
   database: 0
   dnsMonitoringInterval: 5000
   loadBalancer: !<org.redisson.connection.balancer.RoundRobinLoadBalancer> {}
+password: null
+username: null
 threads: 16
 nettyThreads: 32
 codec: !<org.redisson.codec.Kryo5Codec> {}
@@ -2761,28 +2286,6 @@ Available implementations:
 * `org.redisson.client.FailedCommandsDetector` - marks the Valkey or Redis node as failed if it has certain amount of command execution errors defined by `failedCommandsLimit` in defined `checkInterval` interval in milliseconds.  
 * `org.redisson.client.FailedCommandsTimeoutDetector` - marks the Redis node as failed if it has certain amount of command execution timeout errors defined by `failedCommandsLimit` in defined `checkInterval` interval in milliseconds.  
 
-**password**
-
-Default value: `null`
-
-Password for Valkey or Redis server authentication.
-
-**username**
-
-Default value: `null`
-
-Username for Valkey or Redis server authentication. Requires Redis 6.0 and higher.
-
-**credentialsResolver**
-
-Default value: empty
-
-Defines Credentials resolver, which is invoked during connection for Valkey or Redis server authentication. Returns Credentials object per Valkey or Redis node address, it contains `username` and `password` fields. Allows you to specify dynamically changing Valkey or Redis credentials.
-
-Available implementations:  
-
-* `org.redisson.config.EntraIdCredentialsResolver`  
-
 **subscriptionsPerConnection**
 
 Default value: `5`
@@ -2800,69 +2303,6 @@ Defines subscription timeout in milliseconds applied per channel subscription.
 Default value: `null`
 
 Name of client connection.
-
-**sslProtocols**
-
-Default value: `null`
-
-Defines array of allowed SSL protocols.  
-Example values: `TLSv1.3`, `TLSv1.2`, `TLSv1.1`, `TLSv1`
-
-**sslVerificationMode**
-
-Default value: `STRICT`
-
-Defines SSL verification mode, which prevents man-in-the-middle attacks.
-
-Available values:  
-
-* `NONE` - No SSL certificate verification  
-* `CA_ONLY` - Validate the certificate chain but ignore hostname verification  
-* `STRICT` - Complete validation of the certificate chain and hostname  
-
-
-**sslProvider**
-
-Default value: `JDK`
-
-Defines SSL provider (JDK or OPENSSL) used to handle SSL connections.
-OPENSSL is considered the faster implementation and requires [netty-tcnative-boringssl-static](https://repo1.maven.org/maven2/io/netty/netty-tcnative-boringssl-static/) to be added in the classpath.
-
-**sslTruststore**
-
-Default value: `null`
-
-Defines the path to the SSL truststore. It stores certificates which are used to identify the server side of an SSL connections. The SSL truststore is read on each new connection creation and can be dynamically reloaded. Supported formats: JKS, PKCS#12, PEM.
-
-The truststore should contain:
-
-* CA certificates - Root or intermediate Certificate Authority certificates that signed the Valkey or Redis server certificates
-* Self-signed certificates - If your Valkey or Redis servers use self-signed certificates, you'd include those directly
-* Server certificates - The actual certificates used by your Valkey or Redis instances
-
-**sslTruststorePassword**
-
-Default value: `null`
-
-Defines password for SSL truststore.
-
-**sslKeystoreType**
-
-Default value: `null`
-
-Defines SSL keystore type.
-
-**sslKeystore**
-
-Default value: `null`
-
-Defines the path to the SSL truststore. It stores certificates which are used to identify the server side of an SSL connections. The SSL truststore is read on each new connection creation and can be dynamically reloaded.
-
-**sslKeystorePassword**
-
-Default value: `null`
-
-Defines password for SSL keystore.
 
 **pingConnectionInterval**
 
@@ -2894,18 +2334,6 @@ Defines NAT mapper interface which maps Valkey or Redis URI object and applied t
 * `org.redisson.api.HostPortNatMapper`  
 * `org.redisson.api.HostNatMapper`  
 
-**nameMapper**
-
-Default value: no mapper
-
-Defines Name mapper which maps Redisson object name to a custom name. Applied to all Redisson objects.  
-
-**commandMapper**
-
-Default value: no mapper
-
-Defines Command mapper which maps Valkey or Redis command name to a custom name. Applied to all commands.  
-
 ### Multi Cluster YAML config format
 
 Below is cluster configuration example in YAML format. All property
@@ -2922,7 +2350,6 @@ multiClusterServersConfig:
   reconnectionDelay: !<org.redisson.config.EqualJitterDelay> {baseDelay: PT0.1S, maxDelay: PT10S}
   failedSlaveReconnectionInterval: 3000
   failedSlaveNodeDetector: !<org.redisson.client.FailedConnectionDetector> {}
-  password: null
   subscriptionsPerConnection: 5
   clientName: null
   loadBalancer: !<org.redisson.connection.balancer.RoundRobinLoadBalancer> {}
@@ -2941,8 +2368,10 @@ multiClusterServersConfig:
   - "redis://cluster3:7000"
   scanInterval: 5000
   pingConnectionInterval: 30000
-  keepAlive: false
-  tcpNoDelay: true
+tcpKeepAlive: false
+tcpNoDelay: true
+password: null
+username: null
 threads: 16
 nettyThreads: 32
 codec: !<org.redisson.codec.Kryo5Codec> {}
@@ -3165,18 +2594,6 @@ Default value: `0`
 
 Database index used for Valkey or Redis connections.
 
-**password**
-
-Default value: `null`
-
-Password for Valkey or Redis servers authentication.
-
-**username**
-
-Default value: `null`
-
-Username for Valkey or Redis servers authentication. Requires Redis 6.0 and higher.
-
 **sentinelPassword**
 
 Default value: `null`
@@ -3188,16 +2605,6 @@ Password for Sentinel servers authentication. Used only if Sentinel password dif
 Default value: `null`
 
 Username for Sentinel servers for authentication. Used only if Sentinel username differs from master's and slave's. Requires Redis 6.0 and higher.
-
-**credentialsResolver**
-
-Default value: empty
-
-Defines Credentials resolver, which is invoked during connection for Valkey or Redis server authentication. Returns Credentials object per Valkey or Redis node address, it contains `username` and `password` fields. Allows you to specify dynamically changing Valkey or Redis credentials.
-
-Available implementations:  
-
-* `org.redisson.config.EntraIdCredentialsResolver`  
 
 **sentinelsDiscovery**
 
@@ -3222,69 +2629,6 @@ Defines subscription timeout in milliseconds applied per channel subscription.
 Default value: `null`
 
 Name of client connection.
-
-**sslProtocols**
-
-Default value: `null`
-
-Defines array of allowed SSL protocols.  
-Example values: `TLSv1.3`, `TLSv1.2`, `TLSv1.1`, `TLSv1`
-
-**sslVerificationMode**
-
-Default value: `STRICT`
-
-Defines SSL verification mode, which prevents man-in-the-middle attacks.
-
-Available values:  
-
-* `NONE` - No SSL certificate verification  
-* `CA_ONLY` - Validate the certificate chain but ignore hostname verification  
-* `STRICT` - Complete validation of the certificate chain and hostname  
-
-
-**sslProvider**
-
-Default value: `JDK`
-
-Defines SSL provider (JDK or OPENSSL) used to handle SSL connections.
-OPENSSL considered as a faster implementation and requires [netty-tcnative-boringssl-static](https://repo1.maven.org/maven2/io/netty/netty-tcnative-boringssl-static/) to be added in the classpath.
-
-**sslTruststore**
-
-Default value: `null`
-
-Defines the path to the SSL truststore. It stores certificates which are used to identify the server side of an SSL connections. The SSL truststore is read on each new connection creation and can be dynamically reloaded. Supported formats: JKS, PKCS#12, PEM.
-
-The truststore should contain:
-
-* CA certificates - Root or intermediate Certificate Authority certificates that signed the Valkey or Redis server certificates
-* Self-signed certificates - If your Valkey or Redis servers use self-signed certificates, you'd include those directly
-* Server certificates - The actual certificates used by your Valkey or Redis instances
-
-**sslTruststorePassword**
-
-Default value: `null`
-
-Defines password for SSL truststore.
-
-**sslKeystoreType**
-
-Default value: `null`
-
-Defines SSL keystore type.
-
-**sslKeystore**
-
-Default value: `null`
-
-Defines the path to the SSL keystore. It stores certificates which are used to identify the server side of an SSL connections. The SSL keystore is read on each new connection creation and can be dynamically reloaded.
-
-**sslKeystorePassword**
-
-Default value: `null`
-
-Defines password for SSL keystore.
 
 **pingConnectionInterval**
 
@@ -3313,18 +2657,6 @@ Defines NAT mapper interface which maps Valkey or Redis URI object and applied t
 * `org.redisson.api.HostPortNatMapper`  
 * `org.redisson.api.HostNatMapper`  
 
-**nameMapper**
-
-Default value: no mapper
-
-Defines Name mapper which maps Redisson object name to a custom name. Applied to all Redisson objects.
-
-**commandMapper**
-
-Default value: no mapper
-
-Defines Command mapper which maps Valkey or Redis command name to a custom name. Applied to all commands.  
-
 ### Multi Sentinel YAML config format
 
 Below is a sentinel configuration example in YAML format. All property
@@ -3343,7 +2675,6 @@ multiSentinelServersConfig:
   reconnectionDelay: !<org.redisson.config.EqualJitterDelay> {baseDelay: PT0.1S, maxDelay: PT10S}
   failedSlaveReconnectionInterval: 3000
   failedSlaveNodeDetector: !<org.redisson.client.FailedConnectionDetector> {}
-  password: null
   subscriptionsPerConnection: 5
   clientName: null
   loadBalancer: !<org.redisson.connection.balancer.RoundRobinLoadBalancer> {}
@@ -3360,6 +2691,8 @@ multiSentinelServersConfig:
   - "redis://127.0.0.1:26389"
   masterName: "mymaster"
   database: 0
+password: null
+username: null
 threads: 16
 nettyThreads: 32
 codec: !<org.redisson.codec.Kryo5Codec> {}
