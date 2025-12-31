@@ -40,7 +40,7 @@ public interface QueueAddArgs<V> extends SyncArgs<QueueAddArgs<V>> {
     QueueAddArgs<V> timeout(Duration value);
 
     /**
-     * Sets the codec to be used for encoding and decoding message headers.
+     * Sets the codec to be used for encoding and decoding values of message headers.
      *
      * @param codec the codec
      * @return arguments object

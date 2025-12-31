@@ -20,11 +20,16 @@ import org.redisson.client.codec.Codec;
 
 import java.time.Duration;
 
+/**
+ *
+ * @author Nikita Koksharov
+ *
+ */
 public final class QueuePollParams extends BaseSyncParams<QueuePollArgs> implements QueuePollArgs {
 
     private AcknowledgeMode acknowledgeMode = AcknowledgeMode.MANUAL;
     private Duration timeout;
-    private Duration visibility = Duration.ofSeconds(30);
+    private Duration visibility = Duration.ofSeconds(0);
     private int count = 1;
 
     private Codec headersCodec;

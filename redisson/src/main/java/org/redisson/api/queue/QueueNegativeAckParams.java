@@ -20,6 +20,11 @@ import org.redisson.api.BaseSyncParams;
 import java.time.Duration;
 import java.util.Objects;
 
+/**
+ *
+ * @author Nikita Koksharov
+ *
+ */
 public class QueueNegativeAckParams extends BaseSyncParams<QueueNegativeAckArgs> implements QueueNegativeAckArgs, FailedAckArgs {
 
     private final String[] ids;

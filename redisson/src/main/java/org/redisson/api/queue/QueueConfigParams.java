@@ -18,6 +18,11 @@ package org.redisson.api.queue;
 import java.time.Duration;
 import java.util.Objects;
 
+/**
+ *
+ * @author Nikita Koksharov
+ *
+ */
 public final class QueueConfigParams implements QueueConfig {
 
     private int deliveryLimit = 10;

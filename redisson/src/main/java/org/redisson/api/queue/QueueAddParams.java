@@ -21,6 +21,11 @@ import org.redisson.client.codec.Codec;
 
 import java.time.Duration;
 
+/**
+ *
+ * @author Nikita Koksharov
+ *
+ */
 public final class QueueAddParams<V> extends BaseSyncParams<QueueAddArgs<V>> implements QueueAddArgs<V> {
 
     private final MessageArgs<V>[] msgs;
