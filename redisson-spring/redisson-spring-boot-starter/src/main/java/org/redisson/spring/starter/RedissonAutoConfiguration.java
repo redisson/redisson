@@ -225,7 +225,7 @@ public class RedissonAutoConfiguration {
                 if (b != null && b.getSentinel() != null) {
                     database = b.getSentinel().getDatabase();
                     sentinelMaster = b.getSentinel().getMaster();
-                    nodes = convertNodes(prefix, (List<Object>) (Object) b.getSentinel().getNodes());
+                    nodes = convertNodes(prefix, b.getSentinel().getNodes());
                     sentinelUsername = b.getSentinel().getUsername();
                     sentinelPassword = b.getSentinel().getPassword();
                 }
@@ -265,7 +265,7 @@ public class RedissonAutoConfiguration {
                 ObjectProvider<RedisConnectionDetails> provider = ctx.getBeanProvider(RedisConnectionDetails.class);
                 RedisConnectionDetails b = provider.getIfAvailable();
                 if (b != null && b.getCluster() != null) {
-                    nodes = convertNodes(prefix, (List<Object>) (Object) b.getCluster().getNodes());
+                    nodes = convertNodes(prefix, b.getCluster().getNodes());
                 }
             }
 
@@ -365,16 +365,10 @@ public class RedissonAutoConfiguration {
         return prefix;
     }
 
-    private String[] convertNodes(String prefix, List<Object> nodesObject) {
+    private String[] convertNodes(String prefix, List<RedisConnectionDetails.Node> nodesObject) {
         List<String> nodes = new ArrayList<>(nodesObject.size());
-        for (Object node : nodesObject) {
-            Field hostField = ReflectionUtils.findField(node.getClass(), "host");
-            Field portField = ReflectionUtils.findField(node.getClass(), "port");
-            ReflectionUtils.makeAccessible(hostField);
-            ReflectionUtils.makeAccessible(portField);
-            String host = (String) ReflectionUtils.getField(hostField, node);
-            int port = (int) ReflectionUtils.getField(portField, node);
-            nodes.add(prefix + host + ":" + port);
+        for (RedisConnectionDetails.Node node : nodesObject) {
+            nodes.add(prefix + node.host() + ":" + node.port());
         }
         return nodes.toArray(new String[0]);
     }
