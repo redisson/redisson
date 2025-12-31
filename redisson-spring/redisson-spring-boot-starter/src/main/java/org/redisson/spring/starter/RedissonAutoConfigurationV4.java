@@ -48,6 +48,9 @@ import org.springframework.util.ReflectionUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.time.Duration;
@@ -332,10 +335,23 @@ public class RedissonAutoConfigurationV4 {
         return prefix;
     }
 
-    private String[] convertNodes(String prefix, List<RedisConnectionDetails.Node> nodesObject) {
+    private String[] convertNodes(String prefix, List<?> nodesObject) {
         List<String> nodes = new ArrayList<>(nodesObject.size());
-        for (RedisConnectionDetails.Node node : nodesObject) {
-            nodes.add(prefix + node.host() + ":" + node.port());
+        try {
+            MethodHandles.Lookup lookup = MethodHandles.lookup();
+            for (Object node : nodesObject) {
+                MethodType hostType = MethodType.methodType(String.class);
+                MethodHandle hostHandle = lookup.findVirtual(node.getClass(), "host", hostType);
+                String host = (String) hostHandle.invoke(node);
+
+                MethodType portType = MethodType.methodType(int.class);
+                MethodHandle portHandle = lookup.findVirtual(node.getClass(), "port", portType);
+                int port = (int) portHandle.invoke(node);
+
+                nodes.add(prefix + host + ":" + port);
+            }
+        } catch (Throwable e) {
+            throw new IllegalStateException("Failed to convert nodes", e);
         }
         return nodes.toArray(new String[0]);
     }
