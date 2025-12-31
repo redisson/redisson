@@ -124,7 +124,7 @@ public class WeightedRoundRobinBalancer implements LoadBalancer {
                 clientsCopy = findClients(clients, weightsCopy);
             }
 
-            int ind = Math.abs(index.incrementAndGet() % clientsCopy.size());
+            int ind = Math.floorMod(index.incrementAndGet(), clientsCopy.size());
             ClientConnectionsEntry entry = clientsCopy.get(ind);
             for (Entry<RedisURI, WeightEntry> weightEntry : weightsCopy.entrySet()) {
                 if (weightEntry.getKey().equals(entry.getClient().getAddr())) {

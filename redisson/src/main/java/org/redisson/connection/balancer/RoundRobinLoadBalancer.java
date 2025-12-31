@@ -36,7 +36,7 @@ public class RoundRobinLoadBalancer extends BaseLoadBalancer {
             return null;
         }
 
-        int ind = Math.abs(index.incrementAndGet() % clientsCopy.size());
+        int ind = Math.floorMod(index.incrementAndGet(), clientsCopy.size());
         return clientsCopy.get(ind);
     }
 
