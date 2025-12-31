@@ -51,7 +51,6 @@ import java.io.InputStream;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -350,7 +349,7 @@ public class RedissonAutoConfigurationV4 {
 
                 nodes.add(prefix + host + ":" + port);
             }
-        } catch (Throwable e) {
+        } catch (Exception e) {
             throw new IllegalStateException("Failed to convert nodes", e);
         }
         return nodes.toArray(new String[0]);
