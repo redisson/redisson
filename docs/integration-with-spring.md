@@ -482,6 +482,25 @@ To utilize this feature follow the steps below.
     }
 	```
 
+    **Configuration Settings**
+
+    The `@EnableLocalCachedRedisSession` annotation provides the following configuration settings:
+
+    * `maxInactiveIntervalInSeconds` - Specifies the maximum time, in seconds, that a session can remain idle before it expires. Default is `1800`.
+
+    * `redisNamespace` - Specifies a custom namespace for Redis keys to enable session isolation across multiple applications. The namespace changes the Redis key prefix from the default `spring:session:` to `<redisNamespace>:`. This allows multiple applications to share the same Redis instance while maintaining separate session storage. Default is `"spring:session"`.
+
+    * `redisFlushMode` - Specifies when session changes are written to Redis. Default is `FlushMode.ON_SAVE`.
+    Available modes:
+
+		- `FlushMode.ON_SAVE` (default) - Session changes are written to Redis only when `SessionRepository.save(Session)` is explicitly invoked. In web applications, this occurs automatically just before the HTTP response is committed. This mode offers better performance by batching updates.
+		- `FlushMode.IMMEDIATE` - Session changes are written to Redis immediately as they occur. Use this mode when session data must be immediately visible across multiple application instances, though it may impact performance.
+
+    * `cleanupCron` - Specifies the cron expression for scheduling the expired session cleanup task. Default is ``"0 * * * * *"``.
+
+    * `broadcastSessionUpdates` - Specifies whether session updates should be broadcast to other application instances. When enabled, session attribute changes are published to Redis pub/sub channels, allowing other application instances to update their local caches. This ensures session consistency across a distributed deployment. 
+    Disable this feature if you have a single application instance or do not require real-time session synchronization across instances, which can reduce Redis network traffic. Default is `true`.
+
 ## Spring Transaction Manager
 
 Redisson provides implementation of both `org.springframework.transaction.PlatformTransactionManager` and `org.springframework.transaction.ReactiveTransactionManager` interfaces to participant in Spring transactions. See also [Transactions](/transactions) section.
