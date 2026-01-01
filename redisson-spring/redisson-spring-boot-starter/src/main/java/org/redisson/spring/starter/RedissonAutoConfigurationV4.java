@@ -48,7 +48,9 @@ import org.springframework.util.ReflectionUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Field;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.Method;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -201,7 +203,7 @@ public class RedissonAutoConfigurationV4 {
             if (b != null && b.getSentinel() != null) {
                 database = b.getSentinel().getDatabase();
                 sentinelMaster = b.getSentinel().getMaster();
-                nodes = convertNodes(prefix, (List<Object>) (Object) b.getSentinel().getNodes());
+                nodes = convertNodes(prefix, b.getSentinel().getNodes());
                 sentinelUsername = b.getSentinel().getUsername();
                 sentinelPassword = b.getSentinel().getPassword();
             }
@@ -237,7 +239,7 @@ public class RedissonAutoConfigurationV4 {
             }
 
             if (b != null && b.getCluster() != null) {
-                nodes = convertNodes(prefix, (List<Object>) (Object) b.getCluster().getNodes());
+                nodes = convertNodes(prefix, b.getCluster().getNodes());
             }
 
             config = new Config()
@@ -332,16 +334,24 @@ public class RedissonAutoConfigurationV4 {
         return prefix;
     }
 
-    private String[] convertNodes(String prefix, List<Object> nodesObject) {
+    @SuppressWarnings("IllegalCatch")
+    private String[] convertNodes(String prefix, List<?> nodesObject) {
         List<String> nodes = new ArrayList<>(nodesObject.size());
-        for (Object node : nodesObject) {
-            Field hostField = ReflectionUtils.findField(node.getClass(), "host");
-            Field portField = ReflectionUtils.findField(node.getClass(), "port");
-            ReflectionUtils.makeAccessible(hostField);
-            ReflectionUtils.makeAccessible(portField);
-            String host = (String) ReflectionUtils.getField(hostField, node);
-            int port = (int) ReflectionUtils.getField(portField, node);
-            nodes.add(prefix + host + ":" + port);
+        try {
+            MethodHandles.Lookup lookup = MethodHandles.lookup();
+            for (Object node : nodesObject) {
+                MethodType hostType = MethodType.methodType(String.class);
+                MethodHandle hostHandle = lookup.findVirtual(node.getClass(), "host", hostType);
+                String host = (String) hostHandle.invoke(node);
+
+                MethodType portType = MethodType.methodType(int.class);
+                MethodHandle portHandle = lookup.findVirtual(node.getClass(), "port", portType);
+                int port = (int) portHandle.invoke(node);
+
+                nodes.add(prefix + host + ":" + port);
+            }
+        } catch (Throwable e) {
+            throw new IllegalStateException("Failed to convert nodes", e);
         }
         return nodes.toArray(new String[0]);
     }
