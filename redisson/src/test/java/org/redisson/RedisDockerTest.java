@@ -49,10 +49,12 @@ public class RedisDockerTest {
     protected static GenericContainer<?> createRedisWithVersion(String version, String... params) {
         return new GenericContainer<>(version)
                 .withCreateContainerCmdModifier(cmd -> {
-                    List<String> args = new ArrayList<>();
-                    args.add("redis-server");
-                    args.addAll(Arrays.asList(params));
-                    cmd.withCmd(args);
+                    if (params.length > 0) {
+                        List<String> args = new ArrayList<>();
+                        args.add("redis-server");
+                        args.addAll(Arrays.asList(params));
+                        cmd.withCmd(args);
+                    }
                 })
                 .withExposedPorts(6379)
                 .withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger("redis")));
@@ -60,6 +62,7 @@ public class RedisDockerTest {
 
     protected static GenericContainer<?> createRedis(String... params) {
         return createRedisWithVersion("redis:latest", params);
+//        return createRedisWithVersion("valkey/valkey-bundle:latest", params);
     }
 
     static {
