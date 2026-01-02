@@ -2,11 +2,15 @@ package org.redisson;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.redisson.api.JsonType;
 import org.redisson.api.RJsonBucket;
 import org.redisson.api.RType;
 import org.redisson.client.codec.StringCodec;
+import org.redisson.codec.Jackson3Codec;
 import org.redisson.codec.JacksonCodec;
+import org.redisson.codec.JsonCodec;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -15,6 +19,10 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonJsonBucketTest extends RedisDockerTest {
+
+    static List<JsonCodec> codecs() {
+        return Arrays.asList(new JacksonCodec<>(TestType.class), new Jackson3Codec<>(TestType.class));
+    }
 
     public static class NestedType {
 
@@ -82,9 +90,10 @@ public class RedissonJsonBucketTest extends RedisDockerTest {
         assertThat(result).isTrue();
     }
 
-    @Test
-    public void testType() {
-        RJsonBucket<TestType> al = redisson.getJsonBucket("test", new JacksonCodec<>(TestType.class));
+    @ParameterizedTest
+    @MethodSource("codecs")
+    public void testType(JsonCodec codec) {
+        RJsonBucket<TestType> al = redisson.getJsonBucket("test", codec);
         TestType t = new TestType();
         t.setName("name1");
         al.set(t);
@@ -96,14 +105,15 @@ public class RedissonJsonBucketTest extends RedisDockerTest {
         JsonType s1 = al.getType("name");
         assertThat(s1).isEqualTo(JsonType.STRING);
 
-        RJsonBucket<TestType> al2 = redisson.getJsonBucket("test2", new JacksonCodec<>(TestType.class));
+        RJsonBucket<TestType> al2 = redisson.getJsonBucket("test2", codec);
         assertThat(al2.getType()).isNull();
         assertThat(al2.getType("*")).isNull();
     }
 
-    @Test
-    public void testIncrementAndGet() {
-        RJsonBucket<TestType> al = redisson.getJsonBucket("test", new JacksonCodec<>(TestType.class));
+    @ParameterizedTest
+    @MethodSource("codecs")
+    public void testIncrementAndGet(JsonCodec codec) {
+        RJsonBucket<TestType> al = redisson.getJsonBucket("test", codec);
         TestType t = new TestType();
         NestedType nt = new NestedType();
         nt.setValue2(new BigDecimal(1));
@@ -120,9 +130,10 @@ public class RedissonJsonBucketTest extends RedisDockerTest {
         assertThat(s2).isEqualTo(new BigDecimal(2));
     }
 
-    @Test
-    public void testCountKeys() {
-        RJsonBucket<TestType> al = redisson.getJsonBucket("test", new JacksonCodec<>(TestType.class));
+    @ParameterizedTest
+    @MethodSource("codecs")
+    public void testCountKeys(JsonCodec codec) {
+        RJsonBucket<TestType> al = redisson.getJsonBucket("test", codec);
         TestType t = new TestType();
         t.setName("name1");
         al.set(t);
@@ -136,9 +147,10 @@ public class RedissonJsonBucketTest extends RedisDockerTest {
         assertThat(l.get(0)).isEqualTo(1L);
     }
 
-    @Test
-    public void testClear() {
-        RJsonBucket<TestType> al = redisson.getJsonBucket("test", new JacksonCodec<>(TestType.class));
+    @ParameterizedTest
+    @MethodSource("codecs")
+    public void testClear(JsonCodec codec) {
+        RJsonBucket<TestType> al = redisson.getJsonBucket("test", codec);
         TestType t = new TestType();
         t.setName("name1");
         al.set(t);
@@ -162,9 +174,10 @@ public class RedissonJsonBucketTest extends RedisDockerTest {
         assertThat(n2.getType().getValues()).isEmpty();
     }
 
-    @Test
-    public void testTrim() {
-        RJsonBucket<TestType> al = redisson.getJsonBucket("test", new JacksonCodec<>(TestType.class));
+    @ParameterizedTest
+    @MethodSource("codecs")
+    public void testTrim(JsonCodec codec) {
+        RJsonBucket<TestType> al = redisson.getJsonBucket("test", codec);
         TestType t = new TestType();
         NestedType nt = new NestedType();
         nt.setValues(Arrays.asList("t1", "t2", "t4", "t5", "t6"));
@@ -181,9 +194,10 @@ public class RedissonJsonBucketTest extends RedisDockerTest {
         assertThat(s2).containsExactly(2L);
     }
 
-    @Test
-    public void testArrayPoll() {
-        RJsonBucket<TestType> al = redisson.getJsonBucket("test", new JacksonCodec<>(TestType.class));
+    @ParameterizedTest
+    @MethodSource("codecs")
+    public void testArrayPoll(JsonCodec codec) {
+        RJsonBucket<TestType> al = redisson.getJsonBucket("test", codec);
         TestType t = new TestType();
         NestedType nt = new NestedType();
         nt.setValues(Arrays.asList("t1", "t2", "t4", "t5", "t6"));
@@ -211,9 +225,10 @@ public class RedissonJsonBucketTest extends RedisDockerTest {
         assertThat(s4).isEqualTo(1);
     }
 
-    @Test
-    public void testArraySize() {
-        RJsonBucket<TestType> al = redisson.getJsonBucket("test", new JacksonCodec<>(TestType.class));
+    @ParameterizedTest
+    @MethodSource("codecs")
+    public void testArraySize(JsonCodec codec) {
+        RJsonBucket<TestType> al = redisson.getJsonBucket("test", codec);
         TestType t = new TestType();
         NestedType nt = new NestedType();
         nt.setValues(Arrays.asList("t1", "t2", "t4"));
@@ -227,9 +242,10 @@ public class RedissonJsonBucketTest extends RedisDockerTest {
         assertThat(s1).containsExactly(3L);
     }
 
-    @Test
-    public void testArrayInsert() {
-        RJsonBucket<TestType> al = redisson.getJsonBucket("test", new JacksonCodec<>(TestType.class));
+    @ParameterizedTest
+    @MethodSource("codecs")
+    public void testArrayInsert(JsonCodec codec) {
+        RJsonBucket<TestType> al = redisson.getJsonBucket("test", codec);
         TestType t = new TestType();
         NestedType nt = new NestedType();
         nt.setValues(Arrays.asList("t1", "t2", "t4"));
@@ -246,9 +262,10 @@ public class RedissonJsonBucketTest extends RedisDockerTest {
         assertThat(n).containsExactly("t1", "t2", "t3", "t5", "t4");
     }
 
-    @Test
-    public void testArrayIndex() {
-        RJsonBucket<TestType> al = redisson.getJsonBucket("test", new JacksonCodec<>(TestType.class));
+    @ParameterizedTest
+    @MethodSource("codecs")
+    public void testArrayIndex(JsonCodec codec) {
+        RJsonBucket<TestType> al = redisson.getJsonBucket("test", codec);
         TestType t = new TestType();
         NestedType nt = new NestedType();
         nt.setValues(Arrays.asList("t1", "t2", "t3", "t4", "t5", "t6", "t7", "t8"));
@@ -268,9 +285,10 @@ public class RedissonJsonBucketTest extends RedisDockerTest {
         assertThat(s4).containsExactly(2L);
     }
 
-    @Test
-    public void testArrayAppend() {
-        RJsonBucket<TestType> al = redisson.getJsonBucket("test", new JacksonCodec<>(TestType.class));
+    @ParameterizedTest
+    @MethodSource("codecs")
+    public void testArrayAppend(JsonCodec codec) {
+        RJsonBucket<TestType> al = redisson.getJsonBucket("test", codec);
         TestType t = new TestType();
         NestedType nt = new NestedType();
         nt.setValues(Arrays.asList("t1", "t2"));
@@ -288,9 +306,10 @@ public class RedissonJsonBucketTest extends RedisDockerTest {
         assertThat(n2).containsExactly("t1", "t2", "t3", "t4", "t5", "t6");
     }
 
-    @Test
-    public void testStringAppend() {
-        RJsonBucket<TestType> al = redisson.getJsonBucket("test", new JacksonCodec<>(TestType.class));
+    @ParameterizedTest
+    @MethodSource("codecs")
+    public void testStringAppend(JsonCodec codec) {
+        RJsonBucket<TestType> al = redisson.getJsonBucket("test", codec);
         TestType t = new TestType();
         t.setName("name1");
         al.set(t);
@@ -307,9 +326,10 @@ public class RedissonJsonBucketTest extends RedisDockerTest {
 
     }
 
-    @Test
-    public void testStringSize() {
-        RJsonBucket<TestType> al = redisson.getJsonBucket("test", new JacksonCodec<>(TestType.class));
+    @ParameterizedTest
+    @MethodSource("codecs")
+    public void testStringSize(JsonCodec codec) {
+        RJsonBucket<TestType> al = redisson.getJsonBucket("test", codec);
         Long s3 = al.stringSize("name");
         assertThat(s3).isNull();
 
@@ -327,9 +347,10 @@ public class RedissonJsonBucketTest extends RedisDockerTest {
         assertThat(s2).containsExactly(5L);
     }
 
-    @Test
-    public void testGetAndSet() {
-        RJsonBucket<TestType> al = redisson.getJsonBucket("test", new JacksonCodec<>(TestType.class));
+    @ParameterizedTest
+    @MethodSource("codecs")
+    public void testGetAndSet(JsonCodec codec) {
+        RJsonBucket<TestType> al = redisson.getJsonBucket("test", codec);
         TestType t = new TestType();
         t.setName("name1");
         al.set(t);
@@ -366,8 +387,9 @@ public class RedissonJsonBucketTest extends RedisDockerTest {
         assertThat(keys5).isEqualTo(Arrays.asList(Arrays.asList("b", "c", "d")));
     }
 
-    @Test
-    public void testCompareAndSet() {
+    @ParameterizedTest
+    @MethodSource("codecs")
+    public void testCompareAndSet(JsonCodec codec) {
         RJsonBucket<TestType> al = redisson.getJsonBucket("test", new JacksonCodec<>(TestType.class));
         TestType t = new TestType();
         t.setName("name1");
@@ -397,9 +419,10 @@ public class RedissonJsonBucketTest extends RedisDockerTest {
         assertThat(n3.get(0)).containsExactly("t5", "t6");
     }
 
-    @Test
-    public void testSetIfExists() {
-        RJsonBucket<TestType> al = redisson.getJsonBucket("test", new JacksonCodec<>(TestType.class));
+    @ParameterizedTest
+    @MethodSource("codecs")
+    public void testSetIfExists(JsonCodec codec) {
+        RJsonBucket<TestType> al = redisson.getJsonBucket("test", codec);
         TestType t = new TestType();
         t.setName("name1");
 
@@ -424,9 +447,10 @@ public class RedissonJsonBucketTest extends RedisDockerTest {
         assertThat(n3).isEqualTo(124);
     }
 
-    @Test
-    public void testTrySet() {
-        RJsonBucket<TestType> al = redisson.getJsonBucket("test", new JacksonCodec<>(TestType.class));
+    @ParameterizedTest
+    @MethodSource("codecs")
+    public void testTrySet(JsonCodec codec) {
+        RJsonBucket<TestType> al = redisson.getJsonBucket("test", codec);
         TestType t = new TestType();
         t.setName("name1");
 
@@ -447,9 +471,10 @@ public class RedissonJsonBucketTest extends RedisDockerTest {
         assertThat(n2).isEqualTo(123);
     }
 
-    @Test
-    public void testDelete() {
-        RJsonBucket<TestType> al = redisson.getJsonBucket("test", new JacksonCodec<>(TestType.class));
+    @ParameterizedTest
+    @MethodSource("codecs")
+    public void testDelete(JsonCodec codec) {
+        RJsonBucket<TestType> al = redisson.getJsonBucket("test", codec);
         assertThat(al.delete()).isFalse();
         TestType t = new TestType();
         t.setName("name1");
@@ -457,9 +482,10 @@ public class RedissonJsonBucketTest extends RedisDockerTest {
         assertThat(al.delete()).isTrue();
     }
 
-    @Test
-    public void testMerge() {
-        RJsonBucket<TestType> al = redisson.getJsonBucket("test", new JacksonCodec<>(TestType.class));
+    @ParameterizedTest
+    @MethodSource("codecs")
+    public void testMerge(JsonCodec codec) {
+        RJsonBucket<TestType> al = redisson.getJsonBucket("test", codec);
         TestType t = new TestType();
         t.setName("name1");
         al.set(t);
@@ -469,9 +495,10 @@ public class RedissonJsonBucketTest extends RedisDockerTest {
         assertThat(t.getName()).isEqualTo("name2");
     }
 
-    @Test
-    public void testSetGet() {
-        RJsonBucket<TestType> al = redisson.getJsonBucket("test", new JacksonCodec<>(TestType.class));
+    @ParameterizedTest
+    @MethodSource("codecs")
+    public void testSetGet(JsonCodec codec) {
+        RJsonBucket<TestType> al = redisson.getJsonBucket("test", codec);
         assertThat(al.get()).isNull();
 
         TestType t = new TestType();
