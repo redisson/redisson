@@ -254,6 +254,14 @@ public interface RSearch extends RSearchAsync {
     IndexInfo info(String indexName);
 
     /**
+     * Returns boolean value indicating whether index exists
+     *
+     * @param indexName index name
+     * @return boolean value
+     */
+    boolean hasIndex(String indexName);
+
+    /**
      * Executes spell checking by defined index name and query.
      * Returns a map of misspelled terms and their score.
      *
