@@ -227,6 +227,28 @@ public class RedissonSearchTest extends RedisDockerTest {
     }
 
     @Test
+    public void testHasIndex() {
+        for (int i = 0; i < 1000; i++) {
+            RMap<String, SimpleObject> m = redisson.getMap("doc:" +i, new CompositeCodec(StringCodec.INSTANCE, redisson.getConfig().getCodec()));
+            m.put("t1", new SimpleObject("name1"));
+            m.put("t2", new SimpleObject("name2"));
+        }
+
+        RSearch s = redisson.getSearch();
+        s.createIndex("idx", IndexOptions.defaults()
+                        .on(IndexType.HASH)
+                        .prefix(Arrays.asList("doc:")),
+                FieldIndex.text("t1"),
+                FieldIndex.text("t2"));
+
+        boolean hasIdx = s.hasIndex("idx");
+        assertThat(hasIdx).isTrue();
+
+        boolean hasIdxNotExists = s.hasIndex("idx_not_exists");
+        assertThat(hasIdxNotExists).isFalse();
+    }
+
+    @Test
     public void testSort() {
         RMap<String, SimpleObject> m = redisson.getMap("doc:1", new CompositeCodec(StringCodec.INSTANCE, redisson.getConfig().getCodec()));
         m.put("t1", new SimpleObject("name1"));
