@@ -226,6 +226,13 @@ public interface RSearchAsync {
     RFuture<IndexInfo> infoAsync(String indexName);
 
     /**
+     * Returns boolean value indicating whether index exists
+     *
+     * @param indexName index name
+     * @return boolean value
+     */
+    RFuture<Boolean> hasIndexAsync(String indexName);
+    /**
      * Executes spell checking by defined index name and query.
      * Returns a map of misspelled terms and their score.
      *
