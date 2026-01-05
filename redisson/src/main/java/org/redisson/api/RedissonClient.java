@@ -1818,6 +1818,35 @@ public interface RedissonClient {
     <V> RBloomFilter<V> getBloomFilter(PlainOptions options);
 
     /**
+     * Returns bloom filter instance by name.
+     *
+     * @param <V> type of value
+     * @param name name of object
+     * @return BloomFilterNative object
+     */
+    <V> RBloomFilterNative<V> getBloomFilterNative(String name);
+
+    /**
+     * Returns bloom filter instance by name
+     * using provided codec for objects.
+     *
+     * @param <V> type of value
+     * @param name name of object
+     * @param codec codec for values
+     * @return BloomFilterNative object
+     */
+    <V> RBloomFilterNative<V> getBloomFilterNative(String name, Codec codec);
+
+    /**
+     * Returns bloom filter instance with specified <code>options</code>.
+     *
+     * @param <V> type of value
+     * @param options instance options
+     * @return BloomFilterNative object
+     */
+    <V> RBloomFilterNative<V> getBloomFilterNative(PlainOptions options);
+
+    /**
      * Returns id generator instance by name.
      *
      * @param name name of object

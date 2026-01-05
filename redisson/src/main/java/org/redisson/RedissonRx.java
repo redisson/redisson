@@ -951,6 +951,24 @@ public final class RedissonRx implements RedissonRxClient {
     }
 
     @Override
+    public <V> RBloomFilterNativeRx<V> getBloomFilterNative(String name) {
+        return RxProxyBuilder.create(commandExecutor, new RedissonBloomFilterNative<>(commandExecutor, name), RBloomFilterNativeRx.class);
+    }
+
+    @Override
+    public <V> RBloomFilterNativeRx<V> getBloomFilterNative(String name, Codec codec) {
+        return RxProxyBuilder.create(commandExecutor, new RedissonBloomFilterNative<>(codec, commandExecutor, name), RBloomFilterNativeRx.class);
+    }
+
+    @Override
+    public <V> RBloomFilterNativeRx<V> getBloomFilterNative(PlainOptions options) {
+        PlainParams params = (PlainParams) options;
+        CommandRxExecutor ce = commandExecutor.copy(params);
+        return RxProxyBuilder.create(commandExecutor,
+                new RedissonBloomFilterNative<V>(params.getCodec(), ce, params.getName()), RBloomFilterNativeRx.class);
+    }
+
+    @Override
     public RFunctionRx getFunction() {
         return RxProxyBuilder.create(commandExecutor, new RedissonFuction(commandExecutor), RFunctionRx.class);
     }

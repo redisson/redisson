@@ -1612,6 +1612,35 @@ public interface RedissonReactiveClient {
     <V> RBloomFilterReactive<V> getBloomFilter(PlainOptions options);
 
     /**
+     * Returns bloom filter instance by name.
+     *
+     * @param <V> type of value
+     * @param name name of object
+     * @return BloomFilterNative object
+     */
+    <V> RBloomFilterNativeReactive<V> getBloomFilterNative(String name);
+
+    /**
+     * Returns bloom filter instance by name
+     * using provided codec for objects.
+     *
+     * @param <V> type of value
+     * @param name name of object
+     * @param codec codec for values
+     * @return BloomFilterNative object
+     */
+    <V> RBloomFilterNativeReactive<V> getBloomFilterNative(String name, Codec codec);
+
+    /**
+     * Returns bloom filter instance with specified <code>options</code>.
+     *
+     * @param <V> type of value
+     * @param options instance options
+     * @return BloomFilterNative object
+     */
+    <V> RBloomFilterNativeReactive<V> getBloomFilterNative(PlainOptions options);
+
+    /**
      * Returns interface for Redis Function feature
      *
      * @return function object

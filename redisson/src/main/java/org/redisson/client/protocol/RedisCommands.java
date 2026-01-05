@@ -16,6 +16,9 @@
 package org.redisson.client.protocol;
 
 import org.redisson.api.*;
+import org.redisson.api.bloomfilter.BloomFilterInfo;
+import org.redisson.api.bloomfilter.BloomFilterInfoDecoder;
+import org.redisson.api.bloomfilter.BloomFilterInfoSingleDecoder;
 import org.redisson.api.search.index.IndexInfo;
 import org.redisson.api.search.query.SearchResult;
 import org.redisson.api.stream.FastAutoClaimResult;
@@ -1044,4 +1047,16 @@ public interface RedisCommands {
                     new ObjectListReplayDecoder<>(),
                     new ObjectMapReplayDecoder()));
 
+    RedisCommand<Long> BF_CARD = new RedisCommand("BF.CARD", new LongReplayConvertor());
+
+    RedisCommand<Boolean> BF_ADD = new RedisCommand("BF.ADD", new BooleanReplayConvertor());
+    RedisCommand<Boolean> BF_EXISTS = new RedisCommand("BF.EXISTS", new BooleanReplayConvertor());
+
+    RedisCommand<BloomFilterInfo> BF_INFO = new RedisCommand("BF.INFO", new BloomFilterInfoDecoder());
+    RedisCommand<Long> BF_INFO_SINGLE = new RedisCommand("BF.INFO", new BloomFilterInfoSingleDecoder());
+    RedisCommand<Void> BF_RESERVE = new RedisCommand("BF.RESERVE", new VoidReplayConvertor());
+
+    RedisCommand<List<Boolean>> BF_INSERT = new RedisCommand("BF.INSERT", new ObjectListReplayDecoder<Integer>(), new BooleanReplayConvertor());
+    RedisCommand<List<Boolean>> BF_MADD = new RedisCommand("BF.MADD", new ObjectListReplayDecoder<Integer>(), new BooleanReplayConvertor());
+    RedisCommand<List<Boolean>> BF_MEXISTS = new RedisCommand("BF.MEXISTS", new ObjectListReplayDecoder<Boolean>(), new BooleanReplayConvertor());
 }

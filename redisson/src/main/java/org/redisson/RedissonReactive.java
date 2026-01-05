@@ -1018,6 +1018,24 @@ public final class RedissonReactive implements RedissonReactiveClient {
     }
 
     @Override
+    public <V> RBloomFilterNativeReactive<V> getBloomFilterNative(String name) {
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonBloomFilterNative<>(commandExecutor, name), RBloomFilterNativeReactive.class);
+    }
+
+    @Override
+    public <V> RBloomFilterNativeReactive<V> getBloomFilterNative(String name, Codec codec) {
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonBloomFilterNative<>(codec, commandExecutor, name), RBloomFilterNativeReactive.class);
+    }
+
+    @Override
+    public <V> RBloomFilterNativeReactive<V> getBloomFilterNative(PlainOptions options) {
+        PlainParams params = (PlainParams) options;
+        CommandReactiveExecutor ca = commandExecutor.copy(params);
+        return ReactiveProxyBuilder.create(commandExecutor,
+                new RedissonBloomFilterNative<V>(params.getCodec(), ca, params.getName()), RBloomFilterNativeReactive.class);
+    }
+
+    @Override
     public RFunctionReactive getFunction() {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonFuction(commandExecutor), RFunctionReactive.class);
     }
