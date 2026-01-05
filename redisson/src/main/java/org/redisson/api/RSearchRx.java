@@ -247,6 +247,14 @@ public interface RSearchRx {
     Single<IndexInfo> info(String indexName);
 
     /**
+     * Returns boolean value indicating whether index exists
+     *
+     * @param indexName index name
+     * @return boolean value
+     */
+    Single<Boolean> hasIndex(String indexName);
+
+    /**
      * Executes spell checking by defined index name and query.
      * Returns a map of misspelled terms and their score.
      *
