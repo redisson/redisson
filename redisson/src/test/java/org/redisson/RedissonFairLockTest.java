@@ -696,6 +696,23 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
     }
 
     @Test
+    public void testForceUnlockWithNamespace() {
+        RLock lockNamespace = redisson.getFairLock("lock", "namespace");
+        lockNamespace.lock();
+
+        lockNamespace = redisson.getFairLock("lock", "namespace");
+        RLock lock = redisson.getFairLock("lock");
+        Assertions.assertTrue(lockNamespace.isLocked());
+        Assertions.assertFalse(lock.isLocked());
+
+        lockNamespace.forceUnlock();
+
+        lockNamespace = redisson.getFairLock("lock", "namespace");
+        lock = redisson.getFairLock("lock");
+        Assertions.assertFalse(lockNamespace.isLocked());
+    }
+
+    @Test
     public void testExpire() throws InterruptedException {
         RLock lock = redisson.getFairLock("lock");
         lock.lock(2, TimeUnit.SECONDS);
@@ -735,8 +752,41 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
     }
 
     @Test
+    public void testAutoExpireNamespace() throws InterruptedException {
+        final CountDownLatch latch = new CountDownLatch(1);
+        testSingleInstanceConcurrency(1, r -> {
+            RLock lock = r.getFairLock("lock", "namespace");
+            lock.lock();
+            latch.countDown();
+        });
+
+        Assertions.assertTrue(latch.await(1, TimeUnit.SECONDS));
+        RLock lock = redisson.getFairLock("lock", "namespace");
+
+        await().atMost(redisson.getConfig().getLockWatchdogTimeout() + 1000, TimeUnit.MILLISECONDS).until(() -> !lock.isLocked());
+    }
+
+    @Test
     public void testGetHoldCount() {
         RLock lock = redisson.getFairLock("lock");
+        Assertions.assertEquals(0, lock.getHoldCount());
+        lock.lock();
+        Assertions.assertEquals(1, lock.getHoldCount());
+        lock.unlock();
+        Assertions.assertEquals(0, lock.getHoldCount());
+
+        lock.lock();
+        lock.lock();
+        Assertions.assertEquals(2, lock.getHoldCount());
+        lock.unlock();
+        Assertions.assertEquals(1, lock.getHoldCount());
+        lock.unlock();
+        Assertions.assertEquals(0, lock.getHoldCount());
+    }
+
+    @Test
+    public void testGetHoldCountNamespace() {
+        RLock lock = redisson.getFairLock("lock", "namespace");
         Assertions.assertEquals(0, lock.getHoldCount());
         lock.lock();
         Assertions.assertEquals(1, lock.getHoldCount());
@@ -881,6 +931,26 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
             @Override
             public void run() {
                 RLock lock1 = redisson.getFairLock("lock1");
+                Assertions.assertFalse(lock1.tryLock());
+            }
+        };
+        thread1.start();
+        thread1.join();
+        lock.unlock();
+    }
+
+    @Test
+    public void testReentrancyNamespace() throws InterruptedException {
+        Lock lock = redisson.getFairLock("lock1", "namespace");
+        Assertions.assertTrue(lock.tryLock());
+        Assertions.assertTrue(lock.tryLock());
+        lock.unlock();
+        // next row  for test renew expiration tisk.
+        //Thread.currentThread().sleep(TimeUnit.SECONDS.toMillis(RedissonLock.LOCK_EXPIRATION_INTERVAL_SECONDS*2));
+        Thread thread1 = new Thread() {
+            @Override
+            public void run() {
+                RLock lock1 = redisson.getFairLock("lock1", "namespace");
                 Assertions.assertFalse(lock1.tryLock());
             }
         };

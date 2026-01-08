@@ -692,6 +692,11 @@ public final class Redisson implements RedissonClient {
     }
 
     @Override
+    public RLock getFairLock(String name, String namespace) {
+        return new RedissonFairLock(commandExecutor, name, namespace);
+    }
+
+    @Override
     public RLock getFairLock(CommonOptions options) {
         CommonParams params = (CommonParams) options;
         return new RedissonFairLock(commandExecutor.copy(params), params.getName());
