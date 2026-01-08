@@ -294,7 +294,7 @@ Code examples:
     ```
 
 ## RedLock
-_This object is deprecated. Refer to this [article](https://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html) for more details. Superseded by [RLock](#lock) and [RFencedLock](#fair-lock) objects._
+_This object is deprecated. Refer to this [article](https://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html) for more details. Superseded by [RLock](#lock) and [RFencedLock](#fenced-lock) objects._
 
 ## ReadWriteLock
 Valkey or Redis based distributed reentrant [ReadWriteLock](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RReadWriteLock.html) object for Java implements [ReadWriteLock](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/locks/ReadWriteLock.html) interface. Both Read and Write locks implement [RLock](#lock) interface.
