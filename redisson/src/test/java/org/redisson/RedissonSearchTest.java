@@ -561,12 +561,6 @@ public class RedissonSearchTest extends RedisDockerTest {
 
     @Test
     public void testVector2() {
-        GenericContainer<?> redis = RedisDockerTest.createRedisWithVersion("redis:8.2.0");
-        redis.start();
-
-        Config config = RedisDockerTest.createConfig(redis);
-        RedissonClient redisson = Redisson.create(config);
-
         RJsonBucket<TestClass> b = redisson.getJsonBucket("doc:1", new JacksonCodec<>(new TypeReference<TestClass>() {
         }));
         List<Float> vector = Arrays.asList(1F, 2F, 3F, 4F);
