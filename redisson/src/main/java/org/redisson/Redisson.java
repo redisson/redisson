@@ -1226,6 +1226,22 @@ public final class Redisson implements RedissonClient {
     }
 
     @Override
+    public <V> RBloomFilterNative<V> getBloomFilterNative(String name) {
+        return new RedissonBloomFilterNative<V>(commandExecutor, name);
+    }
+
+    @Override
+    public <V> RBloomFilterNative<V> getBloomFilterNative(String name, Codec codec) {
+        return new RedissonBloomFilterNative<V>(codec, commandExecutor, name);
+    }
+
+    @Override
+    public <V> RBloomFilterNative<V> getBloomFilterNative(PlainOptions options) {
+        PlainParams params = (PlainParams) options;
+        return new RedissonBloomFilterNative<V>(params.getCodec(), commandExecutor.copy(params), params.getName());
+    }
+
+    @Override
     public RIdGenerator getIdGenerator(String name) {
         return new RedissonIdGenerator(commandExecutor, name);
     }
