@@ -632,6 +632,13 @@ public final class ServiceManager {
         });
     }
 
+    public <V> void transferException(CompletionStage<V> source, CompletableFuture<V> dest) {
+        source.exceptionally(ex -> {
+            dest.completeExceptionally(ex);
+            return null;
+        });
+    }
+
     private final Random random = RandomXoshiro256PlusPlus.create();
 
     public Random getRandom() {
