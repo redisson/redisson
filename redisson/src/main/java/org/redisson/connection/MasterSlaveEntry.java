@@ -32,6 +32,7 @@ import org.redisson.connection.pool.MasterPubSubConnectionPool;
 import org.redisson.connection.pool.PubSubConnectionPool;
 import org.redisson.connection.pool.SlaveConnectionPool;
 import org.redisson.misc.RedisURI;
+import org.redisson.misc.Tuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -616,37 +617,16 @@ public class MasterSlaveEntry {
             return masterPubSubConnectionPool.get();
         }
 
-        Collection<ClientConnectionsEntry> entries = getAllEntries();
-        List<ClientConnectionsEntry> entriesCopy = new LinkedList<>(entries);
-        entriesCopy.removeIf(n -> n.isFreezed() || (n.getNodeType() == NodeType.SLAVE
-                && n.getClient().getConfig().getFailedNodeDetector().isNodeFailed()));
-
-        if (!entriesCopy.isEmpty()) {
-            ClientConnectionsEntry clientEntry = config.getLoadBalancer().getEntry(entriesCopy, RedisCommands.SUBSCRIBE);
-            if (clientEntry != null) {
-                log.debug("Entry {} selected as connection source", clientEntry);
-                return slavePubSubConnectionPool.get(clientEntry);
+        Tuple<CompletableFuture<RedisPubSubConnection>, Throwable> tuple = slavePubSubConnectionPool.getTuple();
+        if (tuple.getT2() != null) {
+            if (noPubSubSlaves.compareAndSet(false, true)) {
+                log.warn("No slaves for master: {} PubSub connections established with the master node.",
+                        masterEntry.getClient().getAddr(), tuple.getT2());
             }
+            return masterPubSubConnectionPool.get();
         }
 
-        List<InetSocketAddress> failed = new LinkedList<>();
-        List<InetSocketAddress> freezed = new LinkedList<>();
-        for (ClientConnectionsEntry clientConnectionsEntry : entries) {
-            if (clientConnectionsEntry.getClient().getConfig().getFailedNodeDetector().isNodeFailed()) {
-                failed.add(clientConnectionsEntry.getClient().getAddr());
-            } else if (clientConnectionsEntry.isFreezed()) {
-                freezed.add(clientConnectionsEntry.getClient().getAddr());
-            }
-        }
-
-        log.warn("no available Redis entries. Master entry host: {} ,entries: {} ,Disconnected hosts: {} ,Hosts disconnected by 'failedNodeDetector: {} ",
-                masterEntry.getClient().getAddr(), entries, freezed, failed);
-
-        if (noPubSubSlaves.compareAndSet(false, true)) {
-            log.warn("No slaves for master: {} PubSub connections established with the master node.",
-                    masterEntry.getClient().getAddr());
-        }
-        return masterPubSubConnectionPool.get();
+        return tuple.getT1();
     }
 
     public void returnPubSubConnection(RedisPubSubConnection connection) {

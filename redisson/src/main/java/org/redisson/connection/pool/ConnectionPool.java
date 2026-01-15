@@ -25,6 +25,7 @@ import org.redisson.connection.ClientConnectionsEntry;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.ConnectionsHolder;
 import org.redisson.connection.MasterSlaveEntry;
+import org.redisson.misc.Tuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,7 +60,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
 
     protected abstract ConnectionsHolder<T> getConnectionHolder(ClientConnectionsEntry entry, boolean trackChanges);
 
-    public CompletableFuture<T> get(RedisCommand<?> command, boolean trackChanges) {
+    public Tuple<CompletableFuture<T>, Throwable> getTuple(RedisCommand<?> command, boolean trackChanges) {
         Collection<ClientConnectionsEntry> entries = masterSlaveEntry.getAllEntries();
         List<ClientConnectionsEntry> entriesCopy = new LinkedList<>(entries);
         entriesCopy.removeIf(n -> n.isFreezed() || !isHealthy(n));
@@ -67,7 +68,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
             ClientConnectionsEntry entry = config.getLoadBalancer().getEntry(entriesCopy, command);
             if (entry != null) {
                 log.debug("Entry {} selected as connection source", entry);
-                return acquireConnection(command, entry, trackChanges);
+                return new Tuple<>(acquireConnection(command, entry, trackChanges), null);
             }
         }
         
@@ -91,9 +92,17 @@ abstract class ConnectionPool<T extends RedisConnection> {
         }
 
         RedisConnectionException exception = new RedisConnectionException(errorMsg.toString());
-        CompletableFuture<T> result = new CompletableFuture<>();
-        result.completeExceptionally(exception);
-        return result;
+        return new Tuple<>(null, exception);
+    }
+
+    public CompletableFuture<T> get(RedisCommand<?> command, boolean trackChanges) {
+        Tuple<CompletableFuture<T>, Throwable> tuple = getTuple(command, trackChanges);
+        if (tuple.getT2() != null) {
+            CompletableFuture<T> result = new CompletableFuture<>();
+            result.completeExceptionally(tuple.getT2());
+            return result;
+        }
+        return tuple.getT1();
     }
 
     public CompletableFuture<T> get(RedisCommand<?> command, ClientConnectionsEntry entry, boolean trackChanges) {
