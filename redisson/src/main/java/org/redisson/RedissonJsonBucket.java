@@ -518,7 +518,7 @@ public class RedissonJsonBucket<V> extends RedissonExpirable implements RJsonBuc
         return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_VOID,
                 "local ttl = redis.call('pttl', KEYS[1]);" +
                       "redis.call('json.set', KEYS[1], '$', ARGV[1]); " +
-                      "if ttl > 0 then" +
+                      "if ttl > 0 then " +
                         "redis.call('pexpire', KEYS[1], ttl); " +
                       "end;",
                 Collections.singletonList(getRawName()), encode(value));
