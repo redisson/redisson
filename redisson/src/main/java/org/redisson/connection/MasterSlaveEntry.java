@@ -32,6 +32,7 @@ import org.redisson.connection.pool.MasterPubSubConnectionPool;
 import org.redisson.connection.pool.PubSubConnectionPool;
 import org.redisson.connection.pool.SlaveConnectionPool;
 import org.redisson.misc.RedisURI;
+import org.redisson.misc.Tuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -616,18 +617,16 @@ public class MasterSlaveEntry {
             return masterPubSubConnectionPool.get();
         }
 
-        CompletableFuture<RedisPubSubConnection> future = slavePubSubConnectionPool.get();
-        return future.handle((r, e) -> {
-            if (e != null) {
-                if (noPubSubSlaves.compareAndSet(false, true)) {
-                    log.warn("No slaves for master: {} PubSub connections established with the master node.",
-                            masterEntry.getClient().getAddr(), e);
-                }
-                return masterPubSubConnectionPool.get();
+        Tuple<CompletableFuture<RedisPubSubConnection>, Throwable> tuple = slavePubSubConnectionPool.getTuple();
+        if (tuple.getT2() != null) {
+            if (noPubSubSlaves.compareAndSet(false, true)) {
+                log.warn("No slaves for master: {} PubSub connections established with the master node.",
+                        masterEntry.getClient().getAddr(), tuple.getT2());
             }
+            return masterPubSubConnectionPool.get();
+        }
 
-            return CompletableFuture.completedFuture(r);
-        }).thenCompose(f -> f);
+        return tuple.getT1();
     }
 
     public void returnPubSubConnection(RedisPubSubConnection connection) {
