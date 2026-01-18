@@ -1,7 +1,7 @@
 Redisson Releases History
 ================================
 
-Upgrade to __[Redisson PRO](https://redisson.pro)__ with **advanced features**.
+Upgrade to __[Redisson PRO](https://redisson.pro/feature-comparison.html)__ with **advanced features**.
 
 ### 30-Dec-2025 - 4.1.0 released
 
