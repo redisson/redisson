@@ -924,7 +924,7 @@ public class RedissonTopicTest extends RedisDockerTest {
     public void testResubscriptionAfterFailover() throws Exception {
         withSentinel((nodes, config) -> {
             config.useSentinelServers()
-                    .setRetryAttempts(8)
+                    .setRetryAttempts(10)
                     .setSubscriptionsPerConnection(20)
                     .setSubscriptionConnectionPoolSize(200);
 
@@ -977,25 +977,31 @@ public class RedissonTopicTest extends RedisDockerTest {
             nodes.get(0).stop();
 
             try {
-                TimeUnit.SECONDS.sleep(10);
+                TimeUnit.SECONDS.sleep(15);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
 
+            String newMasterIp = getContainerIp(nodes.get(1));
+
             GenericContainer<?> slave =
-                    new GenericContainer<>("bitnami/redis:7.2.4")
+                    new GenericContainer<>(IMAGE)
                             .withNetwork(nodes.get(1).getNetwork())
-                            .withEnv("REDIS_REPLICATION_MODE", "slave")
-                            .withEnv("REDIS_MASTER_HOST", nodes.get(1).getIpAddress())
-                            .withEnv("ALLOW_EMPTY_PASSWORD", "yes")
                             .withNetworkAliases("slave2")
-                            .withExposedPorts(6379);
+                            .withExposedPorts(6379)
+                            .withCommand(
+                                    "redis-server",
+                                    "--bind", "0.0.0.0",
+                                    "--protected-mode", "no",
+                                    "--replicaof", newMasterIp, "6379"
+                            );
+
             nodes.add(slave);
             slave.start();
 
             System.out.println("Failover Finished, start to see Subscribe timeouts now. Can't recover this without a refresh of redison client ");
             try {
-                TimeUnit.SECONDS.sleep(10);
+                TimeUnit.SECONDS.sleep(15);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
@@ -1055,7 +1061,7 @@ public class RedissonTopicTest extends RedisDockerTest {
             nodes.forEach(n -> n.start());
 
             try {
-                Thread.sleep(2000);
+                Thread.sleep(8000);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
@@ -1409,7 +1415,7 @@ public class RedissonTopicTest extends RedisDockerTest {
             System.out.println("master has been stopped! " + port);
 
             try {
-                TimeUnit.SECONDS.sleep(30);
+                TimeUnit.SECONDS.sleep(40);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
