@@ -1,0 +1,69 @@
+services:
+  redis:
+    image: redis:alpine
+    command: redis-server --unixsocket /data/redis.sock --unixsocketperm 777
+    volumes:
+      - redis-socket:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-s", "/data/redis.sock", "ping"]
+      interval: 1s
+      timeout: 3s
+      retries: 10
+
+  test-runner:
+    image: gradle:jdk21
+    volumes:
+      - redis-socket:/data
+      - ${TEST_SOURCE_PATH}:/app/src/test/java/org/redisson/RedissonUDSTest.java:ro
+      - gradle-cache:/home/gradle/.gradle
+    working_dir: /app
+    environment:
+      - REDIS_SOCKET=/data/redis.sock
+    command:
+      - bash
+      - -c
+      - |
+        echo "=== Checking socket ==="
+        ls -la /data/
+        echo "=== Testing redis connection ==="
+        apt-get update && apt-get install -y redis-tools > /dev/null 2>&1
+        redis-cli -s /data/redis.sock PING || echo "Redis CLI failed"
+        echo "======================"
+        
+        cat > build.gradle << 'EOF'
+        plugins {
+            id "java"
+        }
+        repositories {
+            mavenCentral()
+        }
+        dependencies {
+            testImplementation "org.redisson:redisson:4.1.0"
+            testImplementation "io.netty:netty-transport-native-epoll:4.2.9.Final:linux-x86_64"
+            testImplementation "org.junit.jupiter:junit-jupiter:5.10.2"
+            testImplementation "org.assertj:assertj-core:3.25.3"
+            testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+            testRuntimeOnly "org.slf4j:slf4j-simple:2.0.12"
+        }
+        test {
+            useJUnitPlatform()
+            outputs.upToDateWhen { false }
+            testLogging {
+                events "failed"
+                exceptionFormat "full"
+                showStackTraces true
+            }
+        }
+        EOF
+        
+        gradle clean test --no-daemon --console=plain --no-build-cache
+        GRADLE_EXIT=$$?
+        echo "BUILD_FINISHED with exit code $$GRADLE_EXIT"
+        exit $$GRADLE_EXIT
+    depends_on:
+      redis:
+        condition: service_healthy
+
+volumes:
+  redis-socket:
+  gradle-cache:
