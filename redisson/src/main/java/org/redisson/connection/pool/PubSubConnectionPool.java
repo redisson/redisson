@@ -22,6 +22,7 @@ import org.redisson.connection.ClientConnectionsEntry;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.ConnectionsHolder;
 import org.redisson.connection.MasterSlaveEntry;
+import org.redisson.misc.Tuple;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -35,6 +36,10 @@ public class PubSubConnectionPool extends ConnectionPool<RedisPubSubConnection> 
 
     public PubSubConnectionPool(MasterSlaveServersConfig config, ConnectionManager connectionManager, MasterSlaveEntry masterSlaveEntry) {
         super(config, connectionManager, masterSlaveEntry);
+    }
+
+    public Tuple<CompletableFuture<RedisPubSubConnection>, Throwable> getTuple() {
+        return getTuple(RedisCommands.SUBSCRIBE, false);
     }
 
     public CompletableFuture<RedisPubSubConnection> get() {
