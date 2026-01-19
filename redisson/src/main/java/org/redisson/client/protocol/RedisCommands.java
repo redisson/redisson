@@ -17,8 +17,8 @@ package org.redisson.client.protocol;
 
 import org.redisson.api.*;
 import org.redisson.api.bloomfilter.BloomFilterInfo;
-import org.redisson.api.bloomfilter.BloomFilterInfoDecoder;
-import org.redisson.api.bloomfilter.BloomFilterInfoSingleDecoder;
+import org.redisson.client.protocol.decoder.BloomFilterInfoDecoder;
+import org.redisson.client.protocol.decoder.BloomFilterInfoSingleDecoder;
 import org.redisson.api.search.index.IndexInfo;
 import org.redisson.api.search.query.SearchResult;
 import org.redisson.api.stream.FastAutoClaimResult;
