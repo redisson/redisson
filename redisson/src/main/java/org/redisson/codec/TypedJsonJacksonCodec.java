@@ -15,6 +15,7 @@
  */
 package org.redisson.codec;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -85,6 +86,7 @@ public class TypedJsonJacksonCodec extends JsonJacksonCodec {
     private final Class<?> mapKeyClass; 
     private final Class<?> mapValueClass;
 
+    @JsonCreator
     public TypedJsonJacksonCodec(Class<?> valueClass) {
         this(null, null, null,
                 valueClass, null, null, new ObjectMapper(), false);
