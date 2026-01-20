@@ -36,7 +36,8 @@ import org.redisson.api.RBloomFilterNative;
 import org.redisson.api.RFuture;
 import org.redisson.api.bloomfilter.BloomFilterInfo;
 import org.redisson.api.bloomfilter.BloomFilterInfoOption;
-import org.redisson.api.bloomfilter.BloomFilterInitOptions;
+import org.redisson.api.bloomfilter.BloomFilterInitArgs;
+import org.redisson.api.bloomfilter.BloomFilterInitParams;
 import org.redisson.api.bloomfilter.BloomFilterInsertOptions;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
@@ -130,13 +131,47 @@ public class RedissonBloomFilterNative<T> extends RedissonExpirable implements R
 
 
     @Override
-    public void init(BloomFilterInitOptions options) {
-        commandExecutor.get(initAsync(options));
+    public void init(BloomFilterInitArgs args) {
+        commandExecutor.get(initAsync(args));
     }
 
     @Override
-    public RFuture<Void> initAsync(BloomFilterInitOptions options) {
-        List<Object> params = options.toParams(getRawName());
+    public RFuture<Void> initAsync(BloomFilterInitArgs args) {
+        BloomFilterInitParams bloomFilterInitParams = (BloomFilterInitParams) args;
+        double errorRate = bloomFilterInitParams.getErrorRate();
+        long capacity = bloomFilterInitParams.getCapacity();
+        Long expansionRate = bloomFilterInitParams.getExpansionRate();
+        Boolean nonScaling = bloomFilterInitParams.isNonScaling();
+
+        if (errorRate <= 0 || errorRate >= 1) {
+            throw new IllegalArgumentException("BloomFilter Native errorRate must be greater than 0 and less than 1");
+        }
+
+        if (capacity <= 0) {
+            throw new IllegalArgumentException("BloomFilter Native capacity must be greater than 0");
+        }
+
+        if (expansionRate != null && nonScaling != null) {
+            throw new IllegalArgumentException("BloomFilter Native expansionRate and nonScaling are mutually exclusive");
+        }
+
+        List<Object> params = new ArrayList<>();
+        params.add(getRawName());
+        params.add(errorRate);
+        params.add(capacity);
+
+        if (expansionRate != null) {
+            if (expansionRate <= 1) {
+                throw new IllegalArgumentException("BloomFilter Native expansionRate must be greater than 1");
+            }
+
+            params.add("EXPANSION");
+            params.add(expansionRate);
+        }
+
+        if (nonScaling != null && nonScaling) {
+            params.add("NONSCALING");
+        }
 
         return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.BF_RESERVE, params.toArray());
     }

@@ -19,7 +19,7 @@ import java.util.Collection;
 import java.util.List;
 import org.redisson.api.bloomfilter.BloomFilterInfo;
 import org.redisson.api.bloomfilter.BloomFilterInfoOption;
-import org.redisson.api.bloomfilter.BloomFilterInitOptions;
+import org.redisson.api.bloomfilter.BloomFilterInitArgs;
 import org.redisson.api.bloomfilter.BloomFilterInsertOptions;
 import reactor.core.publisher.Mono;
 
@@ -74,9 +74,9 @@ public interface RBloomFilterNativeReactive<T> extends RExpirableAsync {
     /**
      * Initializes Bloom filter
      *
-     * @param options init options
+     * @param args init args
      */
-    Mono<Void> init(BloomFilterInitOptions options);
+    Mono<Void> init(BloomFilterInitArgs args);
 
     /**
      * Checks for element presence

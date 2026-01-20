@@ -8,27 +8,28 @@ import org.junit.jupiter.api.Test;
 import org.redisson.api.RBloomFilterNative;
 import org.redisson.api.bloomfilter.BloomFilterInfo;
 import org.redisson.api.bloomfilter.BloomFilterInfoOption;
-import org.redisson.api.bloomfilter.BloomFilterInitOptions;
+import org.redisson.api.bloomfilter.BloomFilterInitArgs;
+import org.redisson.api.bloomfilter.BloomFilterInitParams;
 import org.redisson.api.bloomfilter.BloomFilterInsertOptions;
 import org.redisson.client.RedisException;
 
 public class RedissonBloomFilterNativeTest extends RedisDockerTest {
 
     @Test
-    public void testTryInit() {
+    public void testInit() {
         RBloomFilterNative<Object> initFilter = redisson.getBloomFilterNative("init");
         initFilter.init(0.01, 1000);
 
         RBloomFilterNative<Object> optionFilter = redisson.getBloomFilterNative("option");
-        BloomFilterInitOptions options = new BloomFilterInitOptions(0.01, 1000, 2L);
+        BloomFilterInitParams options = (BloomFilterInitParams) BloomFilterInitArgs.create().errorRate(0.01).capacity(1000).expansionRate(2L);
         optionFilter.init(options);
         assertThat(optionFilter.delete()).isTrue();
 
-        options = new BloomFilterInitOptions(0.01, 1000, true);
+        options = (BloomFilterInitParams) BloomFilterInitArgs.create().errorRate(0.01).capacity(1000).nonScaling(true);
         optionFilter.init(options);
         assertThat(optionFilter.delete()).isTrue();
 
-        options = new BloomFilterInitOptions(0.01, 1000);
+        options = (BloomFilterInitParams) BloomFilterInitArgs.create().errorRate(0.01).capacity(1000);
         optionFilter.init(options);
         assertThat(optionFilter.delete()).isTrue();
     }
@@ -60,17 +61,17 @@ public class RedissonBloomFilterNativeTest extends RedisDockerTest {
         RBloomFilterNative<Object> optionFilter = redisson.getBloomFilterNative("option_failure");
 
         Assertions.assertThrows(IllegalArgumentException.class, () -> {
-            optionFilter.init(new BloomFilterInitOptions(0, 1000, 2L));
+            optionFilter.init((BloomFilterInitParams) BloomFilterInitArgs.create().errorRate(0).capacity(1000).expansionRate(2L));
         });
         assertThat(optionFilter.delete()).isFalse();
 
         Assertions.assertThrows(IllegalArgumentException.class, () -> {
-            optionFilter.init(new BloomFilterInitOptions(1, 1000, 2L));
+            optionFilter.init((BloomFilterInitParams) BloomFilterInitArgs.create().errorRate(1).capacity(1000).expansionRate(2L));
         });
         assertThat(optionFilter.delete()).isFalse();
 
         Assertions.assertThrows(IllegalArgumentException.class, () -> {
-            optionFilter.init(new BloomFilterInitOptions(2, 1000, 1L));
+            optionFilter.init((BloomFilterInitParams) BloomFilterInitArgs.create().errorRate(2).capacity(1000).expansionRate(1L));
         });
         assertThat(optionFilter.delete()).isFalse();
     }
@@ -78,7 +79,7 @@ public class RedissonBloomFilterNativeTest extends RedisDockerTest {
     @Test
     public void testInfo(){
         RBloomFilterNative<Object> bloomFilterNative = redisson.getBloomFilterNative("info");
-        bloomFilterNative.init(new BloomFilterInitOptions(0.1, 1000, 2L));
+        bloomFilterNative.init((BloomFilterInitParams) BloomFilterInitArgs.create().errorRate(0.1).capacity(1000).expansionRate(2L));
 
         BloomFilterInfo info = bloomFilterNative.getInfo();
 
@@ -107,7 +108,7 @@ public class RedissonBloomFilterNativeTest extends RedisDockerTest {
     public void testCount(){
         RBloomFilterNative<Object> bloomFilterNative = redisson.getBloomFilterNative("count");
         assertThat(bloomFilterNative.count()).isEqualTo(0L);
-        bloomFilterNative.init(new BloomFilterInitOptions(0.1, 1000, 2L));
+        bloomFilterNative.init((BloomFilterInitParams) BloomFilterInitArgs.create().errorRate(0.1).capacity(1000).expansionRate(2L));
         assertThat(bloomFilterNative.count()).isEqualTo(0L);
     }
 
