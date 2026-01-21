@@ -1818,7 +1818,8 @@ public interface RedissonClient {
     <V> RBloomFilter<V> getBloomFilter(PlainOptions options);
 
     /**
-     * Returns bloom filter instance by name.
+     * Returns bloom filter native instance by name.
+     * using BF.* Commands
      *
      * @param <V> type of value
      * @param name name of object
@@ -1828,6 +1829,7 @@ public interface RedissonClient {
 
     /**
      * Returns bloom filter instance by name
+     * using BF.* Commands
      * using provided codec for objects.
      *
      * @param <V> type of value
@@ -1839,6 +1841,7 @@ public interface RedissonClient {
 
     /**
      * Returns bloom filter instance with specified <code>options</code>.
+     * using BF.* Commands
      *
      * @param <V> type of value
      * @param options instance options
