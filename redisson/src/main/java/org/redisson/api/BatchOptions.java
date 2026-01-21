@@ -238,7 +238,7 @@ public final class BatchOptions {
     }
 
     /**
-     * Defines the delay strategy for a new attempt to send a command.
+     * Defines the delay strategy for a new attempt to send a batch.
      * <p>
      * Default is <code>{@link BaseConfig#getRetryDelay()}}</code>
      *
