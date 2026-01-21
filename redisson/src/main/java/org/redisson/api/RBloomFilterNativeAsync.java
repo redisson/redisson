@@ -21,6 +21,7 @@ import org.redisson.api.bloomfilter.BloomFilterInfo;
 import org.redisson.api.bloomfilter.BloomFilterInfoOption;
 import org.redisson.api.bloomfilter.BloomFilterInitArgs;
 import org.redisson.api.bloomfilter.BloomFilterInsertArgs;
+import org.redisson.api.bloomfilter.BloomFilterScanDumpInfo;
 
 /**
  * Bloom filter based on BF.* commands
@@ -116,6 +117,24 @@ public interface RBloomFilterNativeAsync<T> extends RExpirableAsync {
      * @return specific Bloom filter information value
      */
     RFuture<Long> getInfoAsync(BloomFilterInfoOption option);
+
+    /**
+     * Returns ScanDumpInfo
+     *
+     * @param iterator the iterator returned by the previous call to BF.SCANDUMP.
+     * iteration start from 0
+     *
+     * @return BloomFilterScanDumpInfo
+     */
+    RFuture<BloomFilterScanDumpInfo> scanDumpAsync(long iterator);
+
+    /**
+     * Loads chunk
+     *
+     * @param iterator the iterator returned by the previous call to BF.SCANDUMP.
+     * @param data data to load
+     */
+    RFuture<Void> loadChunkAsync(long iterator, byte[] data);
 }
 
 

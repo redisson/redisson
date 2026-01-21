@@ -11,8 +11,7 @@ import org.redisson.api.bloomfilter.BloomFilterInfoOption;
 import org.redisson.api.bloomfilter.BloomFilterInitArgs;
 import org.redisson.api.bloomfilter.BloomFilterInitParams;
 import org.redisson.api.bloomfilter.BloomFilterInsertArgs;
-import org.redisson.api.bloomfilter.BloomFilterInsertParams;
-import org.redisson.api.bloomfilter.OptionalBloomFilterInsertArgs;
+import org.redisson.api.bloomfilter.BloomFilterScanDumpInfo;
 import org.redisson.client.RedisException;
 
 public class RedissonBloomFilterNativeTest extends RedisDockerTest {
@@ -205,5 +204,26 @@ public class RedissonBloomFilterNativeTest extends RedisDockerTest {
         assertThat(bf.add("4")).isTrue();
         assertThat(bf.count()).isEqualTo(4);
         assertThat(bf.getInfo(BloomFilterInfoOption.FILTERS)).isEqualTo(2);
+    }
+
+    @Test
+    public void testScanDumpAndLoadChunk(){
+        RBloomFilterNative<String> bf = redisson.getBloomFilterNative("dump_and_chunk");
+        bf.add("item1");
+        BloomFilterScanDumpInfo bloomFilterScanDumpInfo = bf.scanDump(0);
+        assertThat(bloomFilterScanDumpInfo.getIterator()).isGreaterThanOrEqualTo(0);
+        assertThat(bloomFilterScanDumpInfo.getData()).isNotEmpty();
+
+        BloomFilterScanDumpInfo bloomFilterScanDumpInfo2 = bf.scanDump(bloomFilterScanDumpInfo.getIterator());
+        assertThat(bloomFilterScanDumpInfo2.getIterator()).isGreaterThanOrEqualTo(0);
+        assertThat(bloomFilterScanDumpInfo2.getData()).isNotEmpty();
+
+        assertThat(bf.delete()).isTrue();
+        assertThat(bf.count()).isEqualTo(0);
+
+        bf.loadChunk(bloomFilterScanDumpInfo.getIterator(), bloomFilterScanDumpInfo.getData());
+        bf.loadChunk(bloomFilterScanDumpInfo2.getIterator(), bloomFilterScanDumpInfo2.getData());
+
+        assertThat(bf.count()).isEqualTo(1);
     }
 }

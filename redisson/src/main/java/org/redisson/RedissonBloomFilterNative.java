@@ -41,6 +41,7 @@ import org.redisson.api.bloomfilter.BloomFilterInitArgs;
 import org.redisson.api.bloomfilter.BloomFilterInitParams;
 import org.redisson.api.bloomfilter.BloomFilterInsertArgs;
 import org.redisson.api.bloomfilter.BloomFilterInsertParams;
+import org.redisson.api.bloomfilter.BloomFilterScanDumpInfo;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
@@ -289,5 +290,25 @@ public class RedissonBloomFilterNative<T> extends RedissonExpirable implements R
     @Override
     public RFuture<Long> getInfoAsync(BloomFilterInfoOption option) {
         return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.BF_INFO_SINGLE, getRawName(), option.getOptionString());
+    }
+
+    @Override
+    public BloomFilterScanDumpInfo scanDump(long iterator) {
+        return commandExecutor.get(scanDumpAsync(iterator));
+    }
+
+    @Override
+    public RFuture<BloomFilterScanDumpInfo> scanDumpAsync(long iterator) {
+        return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.BF_SCANDUMP, getRawName(), iterator);
+    }
+
+    @Override
+    public void loadChunk(long iterator, byte[] data) {
+        commandExecutor.get(loadChunkAsync(iterator, data));
+    }
+
+    @Override
+    public RFuture<Void> loadChunkAsync(long iterator, byte[] data) {
+        return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.BF_LOADCHUNK, getRawName(), iterator, data);
     }
 }
