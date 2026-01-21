@@ -15,38 +15,29 @@
  */
 package org.redisson.codec;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-
-import javax.xml.datatype.XMLGregorianCalendar;
-
+import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.core.JsonGenerator.Feature;
+import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.ObjectMapper.DefaultTypeResolverBuilder;
+import com.fasterxml.jackson.databind.ObjectMapper.DefaultTyping;
+import com.fasterxml.jackson.databind.jsontype.TypeResolverBuilder;
+import com.fasterxml.jackson.databind.type.TypeFactory;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.ByteBufInputStream;
+import io.netty.buffer.ByteBufOutputStream;
 import org.redisson.client.codec.BaseCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
-import com.fasterxml.jackson.annotation.JsonIdentityInfo;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.annotation.ObjectIdGenerators;
-import com.fasterxml.jackson.core.JsonGenerator.Feature;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectMapper.DefaultTypeResolverBuilder;
-import com.fasterxml.jackson.databind.ObjectMapper.DefaultTyping;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.jsontype.TypeResolverBuilder;
-import com.fasterxml.jackson.databind.type.TypeFactory;
-
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
-import io.netty.buffer.ByteBufInputStream;
-import io.netty.buffer.ByteBufOutputStream;
+import javax.xml.datatype.XMLGregorianCalendar;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.UUID;
 
 /**
  * Json codec based on Jackson implementation.
@@ -71,6 +62,21 @@ public class JsonJacksonCodec extends BaseCodec {
                     isGetterVisibility = Visibility.NONE)
     public static class ThrowableMixIn {
         
+    }
+
+    @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS)
+    public abstract static class UuidMixin {
+
+        @JsonValue
+        public abstract String toString();
+
+        @JsonCreator
+        public static UUID fromString(String value) {
+            if (value != null) {
+                return UUID.fromString(value);
+            }
+            return null;
+        }
     }
     
     protected final ObjectMapper mapObjectMapper;
@@ -202,6 +208,7 @@ public class JsonJacksonCodec extends BaseCodec {
         objectMapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
         objectMapper.enable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY);
         objectMapper.addMixIn(Throwable.class, ThrowableMixIn.class);
+        objectMapper.addMixIn(UUID.class, UuidMixin.class);
     }
 
     @Override

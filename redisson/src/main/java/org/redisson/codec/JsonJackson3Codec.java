@@ -15,7 +15,10 @@
  */
 package org.redisson.codec;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonValue;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.ByteBufInputStream;
@@ -34,6 +37,7 @@ import tools.jackson.databind.type.TypeFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.UUID;
 
 /**
  * Jackson 3.x based JSON codec.
@@ -42,6 +46,21 @@ import java.io.OutputStream;
  *
  */
 public class JsonJackson3Codec extends BaseCodec {
+
+    @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS)
+    public abstract static class UuidMixin {
+
+        @JsonValue
+        public abstract String toString();
+
+        @JsonCreator
+        public static UUID fromString(String value) {
+            if (value != null) {
+                return UUID.fromString(value);
+            }
+            return null;
+        }
+    }
 
     public static final JsonJackson3Codec INSTANCE = new JsonJackson3Codec();
 
@@ -157,7 +176,8 @@ public class JsonJackson3Codec extends BaseCodec {
                 // Mapper settings
                 .enable(MapperFeature.PROPAGATE_TRANSIENT_MARKER)
                 // Generator settings - don't close the stream, let Redisson handle it
-                .disable(StreamWriteFeature.AUTO_CLOSE_TARGET);
+                .disable(StreamWriteFeature.AUTO_CLOSE_TARGET)
+                .addMixIn(UUID.class, UuidMixin.class);
 
         initTypeInclusion(b);
         return b.build();
