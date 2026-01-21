@@ -15,9 +15,7 @@
  */
 package org.redisson.api;
 
-import org.redisson.config.BaseConfig;
-import org.redisson.config.ConstantDelay;
-import org.redisson.config.DelayStrategy;
+import org.redisson.config.*;
 
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -126,10 +124,7 @@ public final class BatchOptions {
     }
 
     /**
-     * Defines time interval for each attempt to send Redis commands batch 
-     * if it hasn't been sent already.
-     * <p>
-     * Default is <code>{@link BaseConfig#getRetryInterval()}</code>
+     * Use {@link #retryDelay(DelayStrategy)} instead
      * 
      * @param retryInterval time interval
      * @param retryIntervalUnit time interval unit
@@ -242,6 +237,19 @@ public final class BatchOptions {
         return retryDelay;
     }
 
+    /**
+     * Defines the delay strategy for a new attempt to send a command.
+     * <p>
+     * Default is <code>{@link BaseConfig#getRetryDelay()}}</code>
+     *
+     * @see DecorrelatedJitterDelay
+     * @see EqualJitterDelay
+     * @see FullJitterDelay
+     * @see ConstantDelay
+     *
+     * @param retryDelay delay strategy implementation
+     * @return options instance
+     */
     public BatchOptions retryDelay(DelayStrategy retryDelay) {
         this.retryDelay = retryDelay;
         return this;
