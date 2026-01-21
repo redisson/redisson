@@ -1,0 +1,23 @@
+services:
+  redis:
+    image: redis:alpine
+
+  toxiproxy:
+    image: ghcr.io/shopify/toxiproxy:latest
+    ports:
+      - "6379"
+      - "8474"
+    depends_on:
+      - redis
+
+  toxiproxy-init:
+    image: curlimages/curl:latest
+    depends_on:
+      - toxiproxy
+    restart: "no"
+    entrypoint: >
+      sh -c "
+        sleep 2 &&
+        curl -s -X POST http://toxiproxy:8474/proxies -d '{\"name\":\"redis\",\"listen\":\"0.0.0.0:6379\",\"upstream\":\"redis:6379\"}' -H 'Content-Type: application/json' &&
+        curl -s -X POST http://toxiproxy:8474/proxies/redis/toxics -d '{\"name\":\"latency\",\"type\":\"latency\",\"attributes\":{\"latency\":700,\"jitter\":300}}' -H 'Content-Type: application/json' &&        echo 'Done'
+      "
