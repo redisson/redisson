@@ -29,6 +29,7 @@
 package org.redisson;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -38,7 +39,8 @@ import org.redisson.api.bloomfilter.BloomFilterInfo;
 import org.redisson.api.bloomfilter.BloomFilterInfoOption;
 import org.redisson.api.bloomfilter.BloomFilterInitArgs;
 import org.redisson.api.bloomfilter.BloomFilterInitParams;
-import org.redisson.api.bloomfilter.BloomFilterInsertOptions;
+import org.redisson.api.bloomfilter.BloomFilterInsertArgs;
+import org.redisson.api.bloomfilter.BloomFilterInsertParams;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
@@ -95,18 +97,70 @@ public class RedissonBloomFilterNative<T> extends RedissonExpirable implements R
     }
 
     @Override
-    public List<Boolean> insert(BloomFilterInsertOptions options, Collection<T> elements) {
-        return commandExecutor.get(insertAsync(options, elements));
+    public List<Boolean> insert(BloomFilterInsertArgs args) {
+        return commandExecutor.get(insertAsync(args));
     }
 
     @Override
-    public RFuture<List<Boolean>> insertAsync(BloomFilterInsertOptions options, Collection<T> elements) {
-        if (elements == null || elements.isEmpty()) {
+    public RFuture<List<Boolean>> insertAsync(BloomFilterInsertArgs args) {
+        BloomFilterInsertParams bloomFilterInsertParams = (BloomFilterInsertParams) args;
+
+        String[] items = bloomFilterInsertParams.getItems();
+
+        if (items == null || items.length == 0) {
             return new CompletableFutureWrapper<>(Collections.emptyList());
         }
 
-        List<Object> params = options.toParams(getRawName());
-        params.addAll(elements);
+        Long capacity = bloomFilterInsertParams.getCapacity();
+        Double errorRate = bloomFilterInsertParams.getErrorRate();
+        Long expansionRate = bloomFilterInsertParams.getExpansionRate();
+        Boolean nonScaling = bloomFilterInsertParams.isNonScaling();
+        Boolean noCreate = bloomFilterInsertParams.isNoCreate();
+
+        List<Object> params = new ArrayList<Object>();
+        params.add(getRawName());
+
+        if (noCreate != null && noCreate && (capacity != null || errorRate != null)) {
+            throw new IllegalArgumentException("BloomFilter Native noCreate and capacity/errorRate are mutually exclusive");
+        }
+
+        if (capacity != null) {
+            if (capacity <= 0) {
+                throw new IllegalArgumentException("BloomFilter Native capacity must be greater than 0");
+            }
+
+            params.add("CAPACITY");
+            params.add(capacity);
+        }
+
+        if (errorRate != null) {
+            if (errorRate <= 0 || errorRate >= 1) {
+                throw new IllegalArgumentException("BloomFilter Native errorRate must be greater than 0 and less than 1");
+            }
+
+            params.add("ERROR");
+            params.add(errorRate);
+        }
+
+        if (expansionRate != null) {
+            if (expansionRate <= 0) {
+                throw new IllegalArgumentException("BloomFilter Native expansionRate must be greater than 0");
+            }
+
+            params.add("EXPANSION");
+            params.add(expansionRate);
+        }
+
+        if (noCreate != null && noCreate) {
+            params.add("NOCREATE");
+        }
+
+        if (nonScaling != null && nonScaling) {
+            params.add("NONSCALING");
+        }
+
+        params.add("ITEMS");
+        params.addAll(Arrays.asList(items));
 
         return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.BF_INSERT, params.toArray());
     }

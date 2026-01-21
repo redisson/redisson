@@ -20,7 +20,7 @@ import java.util.List;
 import org.redisson.api.bloomfilter.BloomFilterInfo;
 import org.redisson.api.bloomfilter.BloomFilterInfoOption;
 import org.redisson.api.bloomfilter.BloomFilterInitArgs;
-import org.redisson.api.bloomfilter.BloomFilterInsertOptions;
+import org.redisson.api.bloomfilter.BloomFilterInsertArgs;
 
 /**
  * Bloom filter based on BF.* commands
@@ -55,12 +55,11 @@ public interface RBloomFilterNative<T> extends RExpirable, RBloomFilterNativeAsy
      * and
      * Adds elements
      *
-     * @param options insert options
-     * @param elements elements to add
+     * @param args insert args
      *
      * @return list of booleans representing whether each element has been added successfully
      */
-    List<Boolean> insert(BloomFilterInsertOptions options, Collection<T> elements);
+    List<Boolean> insert(BloomFilterInsertArgs args);
 
     /**
      * Initializes Bloom filter

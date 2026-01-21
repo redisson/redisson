@@ -10,7 +10,9 @@ import org.redisson.api.bloomfilter.BloomFilterInfo;
 import org.redisson.api.bloomfilter.BloomFilterInfoOption;
 import org.redisson.api.bloomfilter.BloomFilterInitArgs;
 import org.redisson.api.bloomfilter.BloomFilterInitParams;
-import org.redisson.api.bloomfilter.BloomFilterInsertOptions;
+import org.redisson.api.bloomfilter.BloomFilterInsertArgs;
+import org.redisson.api.bloomfilter.BloomFilterInsertParams;
+import org.redisson.api.bloomfilter.OptionalBloomFilterInsertArgs;
 import org.redisson.client.RedisException;
 
 public class RedissonBloomFilterNativeTest extends RedisDockerTest {
@@ -168,13 +170,23 @@ public class RedissonBloomFilterNativeTest extends RedisDockerTest {
     public void testInsert(){
         RBloomFilterNative<String> bf = redisson.getBloomFilterNative("insert");
         bf.init(0.001, 10);
+        BloomFilterInsertArgs args = (BloomFilterInsertArgs) BloomFilterInsertArgs
+                .items("1", "2", "3")
+                .expansionRate(2L)
+                .nonScaling(false)
+                .noCreate(false);
 
-        bf.insert(new BloomFilterInsertOptions(2L, false, false), List.of("1","2","3"));
+        bf.insert(args);
         assertThat(bf.count()).isEqualTo(3);
         assertThat(bf.getInfo(BloomFilterInfoOption.EXPANSION)).isEqualTo(2);
 
         // insert is only creating new filter if filter is not existing
-        bf.insert(new BloomFilterInsertOptions(4L, false, false), List.of("4","5","6"));
+        args = (BloomFilterInsertArgs) BloomFilterInsertArgs
+                .items("4", "5", "6")
+                .expansionRate(4L)
+                .nonScaling(false)
+                .noCreate(false);
+        bf.insert(args);
         assertThat(bf.count()).isEqualTo(6);
         assertThat(bf.getInfo(BloomFilterInfoOption.EXPANSION)).isEqualTo(2);
     }
