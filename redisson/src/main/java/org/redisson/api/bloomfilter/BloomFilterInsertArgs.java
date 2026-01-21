@@ -15,19 +15,21 @@
  */
 package org.redisson.api.bloomfilter;
 
+import java.util.Collection;
+
 /**
  * BloomFilterInsertArgs for BF.INSERT command
  *
  * @author Su Ko
  */
-public interface BloomFilterInsertArgs {
+public interface BloomFilterInsertArgs<V> {
 
     /**
      * Defines BloomFilter to BF.INSERT command
      *
      * @return ErrorRateBloomFilterInitArgs
      */
-    static OptionalBloomFilterInsertArgs items(String... items){
-        return new BloomFilterInsertParams(items);
+    static <V> OptionalBloomFilterInsertArgs<V> elements(Collection<V> elements) {
+        return new BloomFilterInsertParams<>(elements);
     }
 }

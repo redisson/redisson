@@ -135,15 +135,15 @@ public class RedissonBloomFilterNativeTest extends RedisDockerTest {
         RBloomFilterNative<String> bf = redisson.getBloomFilterNative("multi_dd");
 
         // if not initialized, it will be initialized with default filter
-        assertThat(bf.add(List.of("1","2","3"))).contains(true, true, true);
+        assertThat(bf.add(List.of("1","2","3"))).contains("1","2","3");
         assertThat(bf.count()).isEqualTo(3);
         assertThat(bf.delete()).isTrue();
         assertThat(bf.count()).isEqualTo(0);
 
         bf.init(0.01, 100);
-        assertThat(bf.add(List.of("1","2","3"))).contains(true, true, true);
+        assertThat(bf.add(List.of("1","2","3"))).contains("1","2","3");
         assertThat(bf.count()).isEqualTo(3);
-        assertThat(bf.add(List.of("4","2","6"))).contains(true, false, true);
+        assertThat(bf.add(List.of("4","2","6"))).contains("4","6").doesNotContain("2");
     }
 
     @Test
@@ -161,9 +161,9 @@ public class RedissonBloomFilterNativeTest extends RedisDockerTest {
         RBloomFilterNative<String> bf = redisson.getBloomFilterNative("multi_exists");
         bf.init(0.5, 10);
 
-        assertThat(bf.add(List.of("1","2","3"))).contains(true, true, true);
+        assertThat(bf.add(List.of("1","2","3"))).contains("1","2","3");
         assertThat(bf.count()).isEqualTo(3);
-        assertThat(bf.exists(List.of("4","2","6"))).contains(false, true, false);
+        assertThat(bf.exists(List.of("4","2","6"))).contains("2").doesNotContain("4","6");
     }
 
     @Test
@@ -171,7 +171,7 @@ public class RedissonBloomFilterNativeTest extends RedisDockerTest {
         RBloomFilterNative<String> bf = redisson.getBloomFilterNative("insert");
         bf.init(0.001, 10);
         BloomFilterInsertArgs args = (BloomFilterInsertArgs) BloomFilterInsertArgs
-                .items("1", "2", "3")
+                .elements(List.of("1", "2", "3"))
                 .expansionRate(2L)
                 .nonScaling(false)
                 .noCreate(false);
@@ -182,7 +182,7 @@ public class RedissonBloomFilterNativeTest extends RedisDockerTest {
 
         // insert is only creating new filter if filter is not existing
         args = (BloomFilterInsertArgs) BloomFilterInsertArgs
-                .items("4", "5", "6")
+                .elements(List.of("4", "5", "6"))
                 .expansionRate(4L)
                 .nonScaling(false)
                 .noCreate(false);

@@ -15,14 +15,16 @@
  */
 package org.redisson.api.bloomfilter;
 
+import java.util.Collection;
+
 /**
  * BloomFilter Params for BF.INSERT command
  *
  * @author Su Ko
  *
  */
-public class BloomFilterInsertParams implements BloomFilterInsertArgs, OptionalBloomFilterInsertArgs{
-    private final String[] items;
+public class BloomFilterInsertParams<V> implements BloomFilterInsertArgs<V>, OptionalBloomFilterInsertArgs<V> {
+    private final Collection<V> elements;
 
     private Double errorRate;
     private Long capacity;
@@ -30,8 +32,8 @@ public class BloomFilterInsertParams implements BloomFilterInsertArgs, OptionalB
     private Boolean nonScaling;
     private Boolean noCreate;
 
-    public BloomFilterInsertParams(String[] items) {
-        this.items = items;
+    public BloomFilterInsertParams(Collection<V> elements) {
+        this.elements = elements;
     }
 
     public Double getErrorRate() {
@@ -54,36 +56,36 @@ public class BloomFilterInsertParams implements BloomFilterInsertArgs, OptionalB
         return nonScaling;
     }
 
-    public String[] getItems() {
-        return items;
+    public Collection<V> getElements() {
+        return elements;
     }
 
     @Override
-    public OptionalBloomFilterInsertArgs capacity(long capacity) {
+    public OptionalBloomFilterInsertArgs<V> capacity(long capacity) {
         this.capacity = capacity;
         return this;
     }
 
     @Override
-    public OptionalBloomFilterInsertArgs errorRate(double errorRate) {
+    public OptionalBloomFilterInsertArgs<V> errorRate(double errorRate) {
         this.errorRate = errorRate;
         return this;
     }
 
     @Override
-    public OptionalBloomFilterInsertArgs expansionRate(long expansionRate) {
+    public OptionalBloomFilterInsertArgs<V> expansionRate(long expansionRate) {
         this.expansionRate = expansionRate;
         return this;
     }
 
     @Override
-    public OptionalBloomFilterInsertArgs nonScaling(boolean nonScaling) {
+    public OptionalBloomFilterInsertArgs<V> nonScaling(boolean nonScaling) {
         this.nonScaling = nonScaling;
         return this;
     }
 
     @Override
-    public OptionalBloomFilterInsertArgs noCreate(boolean noCreate) {
+    public OptionalBloomFilterInsertArgs<V> noCreate(boolean noCreate) {
         this.noCreate = noCreate;
         return this;
     }

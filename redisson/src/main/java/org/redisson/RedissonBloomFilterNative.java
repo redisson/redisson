@@ -29,10 +29,10 @@
 package org.redisson;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import org.redisson.api.RBloomFilterNative;
 import org.redisson.api.RFuture;
 import org.redisson.api.bloomfilter.BloomFilterInfo;
@@ -43,7 +43,9 @@ import org.redisson.api.bloomfilter.BloomFilterInsertArgs;
 import org.redisson.api.bloomfilter.BloomFilterInsertParams;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
+import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.decoder.ContainsSetDecoder;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.CompletableFutureWrapper;
 
@@ -79,12 +81,12 @@ public class RedissonBloomFilterNative<T> extends RedissonExpirable implements R
     }
 
     @Override
-    public List<Boolean> add(Collection<T> elements) {
+    public Set<T> add(Collection<T> elements) {
         return commandExecutor.get(addAsync(elements));
     }
 
     @Override
-    public RFuture<List<Boolean>> addAsync(Collection<T> elements) {
+    public RFuture<Set<T>> addAsync(Collection<T> elements) {
         if (elements == null || elements.isEmpty()) {
             return new CompletableFutureWrapper<>(Collections.emptyList());
         }
@@ -93,21 +95,21 @@ public class RedissonBloomFilterNative<T> extends RedissonExpirable implements R
         params.add(getRawName());
         params.addAll(elements);
 
-        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.BF_MADD, params.toArray());
+        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, new RedisCommand<>("BF.MADD", new ContainsSetDecoder<>(elements)), params.toArray());
     }
 
     @Override
-    public List<Boolean> insert(BloomFilterInsertArgs args) {
+    public Set<T> insert(BloomFilterInsertArgs<T> args) {
         return commandExecutor.get(insertAsync(args));
     }
 
     @Override
-    public RFuture<List<Boolean>> insertAsync(BloomFilterInsertArgs args) {
-        BloomFilterInsertParams bloomFilterInsertParams = (BloomFilterInsertParams) args;
+    public RFuture<Set<T>> insertAsync(BloomFilterInsertArgs<T> args) {
+        BloomFilterInsertParams<T> bloomFilterInsertParams = (BloomFilterInsertParams<T>) args;
 
-        String[] items = bloomFilterInsertParams.getItems();
+        Collection<T> elements = bloomFilterInsertParams.getElements();
 
-        if (items == null || items.length == 0) {
+        if (elements == null || elements.isEmpty()) {
             return new CompletableFutureWrapper<>(Collections.emptyList());
         }
 
@@ -117,7 +119,7 @@ public class RedissonBloomFilterNative<T> extends RedissonExpirable implements R
         Boolean nonScaling = bloomFilterInsertParams.isNonScaling();
         Boolean noCreate = bloomFilterInsertParams.isNoCreate();
 
-        List<Object> params = new ArrayList<Object>();
+        List<Object> params = new ArrayList<>();
         params.add(getRawName());
 
         if (noCreate != null && noCreate && (capacity != null || errorRate != null)) {
@@ -160,9 +162,9 @@ public class RedissonBloomFilterNative<T> extends RedissonExpirable implements R
         }
 
         params.add("ITEMS");
-        params.addAll(Arrays.asList(items));
+        params.addAll(elements);
 
-        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.BF_INSERT, params.toArray());
+        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, new RedisCommand<>("BF.INSERT", new ContainsSetDecoder<>(elements)), params.toArray());
     }
 
     @Override
@@ -241,12 +243,12 @@ public class RedissonBloomFilterNative<T> extends RedissonExpirable implements R
     }
 
     @Override
-    public List<Boolean> exists(Collection<T> elements) {
+    public Set<T> exists(Collection<T> elements) {
         return commandExecutor.get(existsAsync(elements));
     }
 
     @Override
-    public RFuture<List<Boolean>> existsAsync(Collection<T> elements) {
+    public RFuture<Set<T>> existsAsync(Collection<T> elements) {
         if (elements == null || elements.isEmpty()) {
             return new CompletableFutureWrapper<>(Collections.emptyList());
         }
@@ -255,7 +257,7 @@ public class RedissonBloomFilterNative<T> extends RedissonExpirable implements R
         params.add(getRawName());
         params.addAll(elements);
 
-        return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.BF_MEXISTS, params.toArray());
+        return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, new RedisCommand<>("BF.MEXISTS", new ContainsSetDecoder<>(elements)), params.toArray());
     }
 
 

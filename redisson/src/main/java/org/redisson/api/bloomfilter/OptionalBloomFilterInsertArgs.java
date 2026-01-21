@@ -20,7 +20,7 @@ package org.redisson.api.bloomfilter;
  *
  * @author Su Ko
  */
-public interface OptionalBloomFilterInsertArgs {
+public interface OptionalBloomFilterInsertArgs<V> {
 
     /**
      * Defines BloomFilter to BF.INSERT command
@@ -30,7 +30,7 @@ public interface OptionalBloomFilterInsertArgs {
      *
      * @return OptionalBloomFilterInsertArgs
      */
-    OptionalBloomFilterInsertArgs capacity(long capacity);
+    OptionalBloomFilterInsertArgs<V> capacity(long capacity);
 
     /**
      * Defines BloomFilter to BF.INSERT command
@@ -39,7 +39,7 @@ public interface OptionalBloomFilterInsertArgs {
      *
      * @return OptionalBloomFilterInsertArgs
      */
-    OptionalBloomFilterInsertArgs errorRate(double errorRate);
+    OptionalBloomFilterInsertArgs<V> errorRate(double errorRate);
 
     /**
      * Defines BloomFilter to BF.INSERT command
@@ -49,7 +49,7 @@ public interface OptionalBloomFilterInsertArgs {
      *
      * @return OptionalBloomFilterInsertArgs
      */
-    OptionalBloomFilterInsertArgs expansionRate(long expansionRate);
+    OptionalBloomFilterInsertArgs<V> expansionRate(long expansionRate);
 
     /**
      * Defines BloomFilter to BF.INSERT command
@@ -59,7 +59,7 @@ public interface OptionalBloomFilterInsertArgs {
      *
      * @return OptionalBloomFilterInsertArgs
      */
-    OptionalBloomFilterInsertArgs nonScaling(boolean nonScaling);
+    OptionalBloomFilterInsertArgs<V> nonScaling(boolean nonScaling);
 
     /**
      * Defines BloomFilter to BF.INSERT command
@@ -69,5 +69,5 @@ public interface OptionalBloomFilterInsertArgs {
      *
      * @return OptionalBloomFilterInsertArgs
      */
-    OptionalBloomFilterInsertArgs noCreate(boolean noCreate);
+    OptionalBloomFilterInsertArgs<V> noCreate(boolean noCreate);
 }

@@ -16,7 +16,7 @@
 package org.redisson.api;
 
 import java.util.Collection;
-import java.util.List;
+import java.util.Set;
 import org.redisson.api.bloomfilter.BloomFilterInfo;
 import org.redisson.api.bloomfilter.BloomFilterInfoOption;
 import org.redisson.api.bloomfilter.BloomFilterInitArgs;
@@ -46,9 +46,9 @@ public interface RBloomFilterNativeAsync<T> extends RExpirableAsync {
      *
      * @param elements elements to add
      *
-     * @return list of booleans representing whether each element has been added successfully
+     * @return set of elements representing whether each element has been added successfully
      */
-    RFuture<List<Boolean>> addAsync(Collection<T> elements);
+    RFuture<Set<T>> addAsync(Collection<T> elements);
 
     /**
      * create filter (if filter is not existing and not NOCREATE mode)
@@ -57,9 +57,9 @@ public interface RBloomFilterNativeAsync<T> extends RExpirableAsync {
      *
      * @param args insert args
      *
-     * @return list of booleans representing whether each element has been added successfully
+     * @return set of elements representing whether each element has been added successfully
      */
-    RFuture<List<Boolean>> insertAsync(BloomFilterInsertArgs args);
+    RFuture<Set<T>> insertAsync(BloomFilterInsertArgs<T> args);
 
     /**
      * Initializes Bloom filter
@@ -91,9 +91,9 @@ public interface RBloomFilterNativeAsync<T> extends RExpirableAsync {
      *
      * @param elements elements to check presence
      *
-     * @return list of booleans representing whether each element is present
+     * @return set of elements representing whether each element is present
      */
-    RFuture<List<Boolean>> existsAsync(Collection<T> elements);
+    RFuture<Set<T>> existsAsync(Collection<T> elements);
 
     /**
      * Returns count of present elements
