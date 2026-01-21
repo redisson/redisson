@@ -42,6 +42,54 @@ public class RedissonBatchTest extends RedisDockerTest {
 
     @ParameterizedTest
     @MethodSource("data")
+    public void testOrder(BatchOptions batchOptions) throws InterruptedException {
+        Assumptions.assumeTrue(batchOptions.getExecutionMode() == ExecutionMode.REDIS_WRITE_ATOMIC);
+
+        Config config = createConfig();
+        config.useSingleServer()
+                .setConnectionMinimumIdleSize(1)
+                .setConnectionPoolSize(1);
+        RedissonClient redisson = Redisson.create(config);
+
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+
+        AtomicReference<Throwable> exceptionRef = new AtomicReference<>();
+
+        final AtomicInteger counter = new AtomicInteger();
+        for(int j=0;j<2;j++){
+            int finalJ = j;
+            executor.submit(new Runnable() {
+                @Override
+                public void run() {
+                    try{
+                        RBatch batch = redisson.createBatch(batchOptions);
+
+                        batch.getScoredSortedSet(finalJ+"").removeAsync("aaa");
+                        batch.getBucket(finalJ +"name").getAsync();
+
+                        BatchResult<?> s = batch.execute();
+                        assertThat(s.getResponses().size()).isGreaterThan(2);
+
+                    }catch (Exception e){
+                        exceptionRef.set(e);
+                    }finally {
+                        counter.incrementAndGet();
+                    }
+
+                }
+            });
+        }
+
+        executor.shutdown();
+        assertThat(executor.awaitTermination(1, TimeUnit.SECONDS)).isTrue();
+        assertThat(exceptionRef.get()).doesNotThrowAnyException();
+        assertThat(counter.get()).isEqualTo(2);
+
+        redisson.shutdown();
+    }
+
+    @ParameterizedTest
+    @MethodSource("data")
     public void testMemoryAtomicInCluster(BatchOptions batchOptions) {
         Assumptions.assumeTrue(batchOptions.getExecutionMode() == ExecutionMode.IN_MEMORY);
 

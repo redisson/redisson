@@ -233,6 +233,7 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
                 }
             }
 
+            connectionFuture = new OrderedCompletableFuture<>(connectionFuture);
             ConnectionEntry ce = new ConnectionEntry(connectionFuture);
             ce.setCancelCallback(() -> {
                 handleError(connectionFuture, new CancellationException());
