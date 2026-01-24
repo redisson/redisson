@@ -448,7 +448,9 @@ public class RedissonStreamCommands implements RedisStreamCommands {
     String toLowerBound(Range range) {
         StringBuilder s = new StringBuilder();
         if (!range.getLowerBound().isInclusive()) {
-            s.append("(");
+            if (!(range.getLowerBound().getValue().isPresent() && range.getLowerBound().getValue().get().equals("-"))) {
+                s.append("(");
+            }
         }
         if (!range.getLowerBound().getValue().isPresent() || range.getLowerBound().getValue().get().toString()
                 .isEmpty()) {
@@ -462,7 +464,9 @@ public class RedissonStreamCommands implements RedisStreamCommands {
     String toUpperBound(Range range) {
         StringBuilder s = new StringBuilder();
         if (!range.getUpperBound().isInclusive()) {
-            s.append("(");
+            if (!(range.getUpperBound().getValue().isPresent() && range.getUpperBound().getValue().get().equals("+"))) {
+                s.append("(");
+            }
         }
         if (!range.getUpperBound().getValue().isPresent() || range.getUpperBound().getValue().get().toString()
                 .isEmpty()) {
