@@ -119,47 +119,9 @@ public final class Redisson implements RedissonClient {
         return new Redisson(config);
     }
 
-    /*
-     * Use Redisson.create().rxJava() method instead
-     */
-    @Deprecated
-    public static RedissonRxClient createRx() {
-        Config config = new Config();
-        config.useSingleServer().setAddress("redis://127.0.0.1:6379");
-        return createRx(config);
-    }
-
-    /*
-     * Use Redisson.create(config).rxJava() method instead
-     */
-    @Deprecated
-    public static RedissonRxClient createRx(Config config) {
-        RedissonClient redisson = create(config);
-        return redisson.rxJava();
-    }
-
     @Override
     public RedissonRxClient rxJava() {
         return new RedissonRx(connectionManager, evictionScheduler, writeBehindService);
-    }
-
-    /*
-     * Use Redisson.create().reactive() method instead
-     */
-    @Deprecated
-    public static RedissonReactiveClient createReactive() {
-        Config config = new Config();
-        config.useSingleServer().setAddress("redis://127.0.0.1:6379");
-        return createReactive(config);
-    }
-
-    /*
-     * Use Redisson.create(config).reactive() method instead
-     */
-    @Deprecated
-    public static RedissonReactiveClient createReactive(Config config) {
-        RedissonClient redisson = create(config);
-        return redisson.reactive();
     }
 
     @Override
