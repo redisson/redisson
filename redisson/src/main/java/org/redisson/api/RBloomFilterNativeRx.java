@@ -26,6 +26,7 @@ import org.redisson.api.bloomfilter.BloomFilterScanDumpInfo;
 
 /**
  * Bloom filter based on BF.* commands
+ * Requires <b>Redis Bloom 2.4.4 and higher.</b>
  *
  * @author Su Ko
  *
