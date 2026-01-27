@@ -23,6 +23,7 @@ import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.reactive.CommandReactiveExecutor;
+import org.springframework.data.domain.Range;
 import org.springframework.data.redis.connection.ReactiveRedisConnection;
 import org.springframework.data.redis.connection.ReactiveStreamCommands;
 import org.springframework.data.redis.connection.stream.ByteBufferRecord;
@@ -145,14 +146,13 @@ public class RedissonReactiveStreamCommands extends RedissonBaseReactive impleme
             List<Object> params = new LinkedList<>();
             params.add(k);
 
-            if (rangeCommand == RedisCommands.XRANGE) {
-                params.add(command.getRange().getLowerBound().getValue().orElse("-"));
-                params.add(command.getRange().getUpperBound().getValue().orElse("+"));
+            if (rangeCommand.getName().equals(RedisCommands.XRANGE.getName())) {
+                params.add(toLowerBound(command.getRange()));
+                params.add(toUpperBound(command.getRange()));
             } else {
-                params.add(command.getRange().getUpperBound().getValue().orElse("+"));
-                params.add(command.getRange().getLowerBound().getValue().orElse("-"));
+                params.add(toUpperBound(command.getRange()));
+                params.add(toLowerBound(command.getRange()));
             }
-
 
             if (command.getLimit().getCount() > 0) {
                 params.add("COUNT");
@@ -170,6 +170,34 @@ public class RedissonReactiveStreamCommands extends RedissonBaseReactive impleme
                         .ofBuffer(map);
             })));
         });
+    }
+
+    String toLowerBound(Range range) {
+        StringBuilder s = new StringBuilder();
+        if (!range.getLowerBound().isInclusive()) {
+            s.append("(");
+        }
+        if (!range.getLowerBound().getValue().isPresent() || range.getLowerBound().getValue().get().toString()
+                .isEmpty()) {
+            s.append("-");
+        } else {
+            s.append(range.getLowerBound().getValue().get());
+        }
+        return s.toString();
+    }
+
+    String toUpperBound(Range range) {
+        StringBuilder s = new StringBuilder();
+        if (!range.getUpperBound().isInclusive()) {
+            s.append("(");
+        }
+        if (!range.getUpperBound().getValue().isPresent() || range.getUpperBound().getValue().get().toString()
+                .isEmpty()) {
+            s.append("+");
+        } else {
+            s.append(range.getUpperBound().getValue().get());
+        }
+        return s.toString();
     }
 
     @Override
