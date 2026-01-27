@@ -20,7 +20,7 @@ package org.redisson.api.bloomfilter;
  *
  * @author Su Ko
  */
-public interface OptionalBloomFilterInsertArgs<V> {
+public interface OptionalBloomFilterInsertArgs<V> extends BloomFilterInsertArgs<V> {
 
     /**
      * Defines BloomFilter to BF.INSERT command

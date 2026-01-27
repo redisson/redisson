@@ -20,7 +20,7 @@ package org.redisson.api.bloomfilter;
  *
  * @author Su Ko
  */
-public interface OptionalBloomFilterInitArgs {
+public interface OptionalBloomFilterInitArgs extends BloomFilterInitArgs{
 
     /**
      * Defines BloomFilter to BF.INIT command

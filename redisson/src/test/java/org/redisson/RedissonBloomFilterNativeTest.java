@@ -62,17 +62,17 @@ public class RedissonBloomFilterNativeTest extends RedisDockerTest {
         RBloomFilterNative<Object> optionFilter = redisson.getBloomFilterNative("option_failure");
 
         Assertions.assertThrows(IllegalArgumentException.class, () -> {
-            optionFilter.init((BloomFilterInitParams) BloomFilterInitArgs.create().errorRate(0).capacity(1000).expansionRate(2L));
+            optionFilter.init(BloomFilterInitArgs.create().errorRate(0).capacity(1000).expansionRate(2L));
         });
         assertThat(optionFilter.delete()).isFalse();
 
         Assertions.assertThrows(IllegalArgumentException.class, () -> {
-            optionFilter.init((BloomFilterInitParams) BloomFilterInitArgs.create().errorRate(1).capacity(1000).expansionRate(2L));
+            optionFilter.init(BloomFilterInitArgs.create().errorRate(1).capacity(1000).expansionRate(2L));
         });
         assertThat(optionFilter.delete()).isFalse();
 
         Assertions.assertThrows(IllegalArgumentException.class, () -> {
-            optionFilter.init((BloomFilterInitParams) BloomFilterInitArgs.create().errorRate(2).capacity(1000).expansionRate(1L));
+            optionFilter.init((BloomFilterInitArgs.create().errorRate(2).capacity(1000).expansionRate(1L)));
         });
         assertThat(optionFilter.delete()).isFalse();
     }
@@ -80,7 +80,7 @@ public class RedissonBloomFilterNativeTest extends RedisDockerTest {
     @Test
     public void testInfo(){
         RBloomFilterNative<Object> bloomFilterNative = redisson.getBloomFilterNative("info");
-        bloomFilterNative.init((BloomFilterInitParams) BloomFilterInitArgs.create().errorRate(0.1).capacity(1000).expansionRate(2L));
+        bloomFilterNative.init(BloomFilterInitArgs.create().errorRate(0.1).capacity(1000).expansionRate(2L));
 
         BloomFilterInfo info = bloomFilterNative.getInfo();
 
@@ -109,7 +109,7 @@ public class RedissonBloomFilterNativeTest extends RedisDockerTest {
     public void testCount(){
         RBloomFilterNative<Object> bloomFilterNative = redisson.getBloomFilterNative("count");
         assertThat(bloomFilterNative.count()).isEqualTo(0L);
-        bloomFilterNative.init((BloomFilterInitParams) BloomFilterInitArgs.create().errorRate(0.1).capacity(1000).expansionRate(2L));
+        bloomFilterNative.init(BloomFilterInitArgs.create().errorRate(0.1).capacity(1000).expansionRate(2L));
         assertThat(bloomFilterNative.count()).isEqualTo(0L);
     }
 
@@ -169,7 +169,7 @@ public class RedissonBloomFilterNativeTest extends RedisDockerTest {
     public void testInsert(){
         RBloomFilterNative<String> bf = redisson.getBloomFilterNative("insert");
         bf.init(0.001, 10);
-        BloomFilterInsertArgs args = (BloomFilterInsertArgs) BloomFilterInsertArgs
+        BloomFilterInsertArgs<String> args = BloomFilterInsertArgs
                 .elements(List.of("1", "2", "3"))
                 .expansionRate(2L)
                 .nonScaling(false)
@@ -180,7 +180,7 @@ public class RedissonBloomFilterNativeTest extends RedisDockerTest {
         assertThat(bf.getInfo(BloomFilterInfoOption.EXPANSION)).isEqualTo(2);
 
         // insert is only creating new filter if filter is not existing
-        args = (BloomFilterInsertArgs) BloomFilterInsertArgs
+        args = BloomFilterInsertArgs
                 .elements(List.of("4", "5", "6"))
                 .expansionRate(4L)
                 .nonScaling(false)
