@@ -420,7 +420,8 @@ public class RedissonStreamCommands implements RedisStreamCommands {
         return connection.write(key, StringCodec.INSTANCE, RedisCommands.XLEN, key);
     }
 
-    private List<ByteRecord>  range(RedisCommand<?> rangeCommand, byte[] key, Range<String> range, RedisZSetCommands.Limit limit) {
+    private List<ByteRecord> range(RedisCommand<?> rangeCommand, byte[] key, Range<String> range,
+                                   RedisZSetCommands.Limit limit) {
         Assert.notNull(key, "Key must not be null!");
         Assert.notNull(range, "Range must not be null!");
         Assert.notNull(limit, "Limit must not be null!");
@@ -429,11 +430,11 @@ public class RedissonStreamCommands implements RedisStreamCommands {
         params.add(key);
 
         if (rangeCommand.getName().equals(RedisCommands.XRANGE.getName())) {
-            params.add(range.getLowerBound().getValue().orElse("-"));
-            params.add(range.getUpperBound().getValue().orElse("+"));
+            params.add(toLowerBound(range));
+            params.add(toUpperBound(range));
         } else {
-            params.add(range.getUpperBound().getValue().orElse("+"));
-            params.add(range.getLowerBound().getValue().orElse("-"));
+            params.add(toUpperBound(range));
+            params.add(toLowerBound(range));
         }
 
         if (limit.getCount() > 0) {
@@ -442,6 +443,38 @@ public class RedissonStreamCommands implements RedisStreamCommands {
         }
 
         return connection.write(key, ByteArrayCodec.INSTANCE, rangeCommand, params.toArray());
+    }
+
+    String toLowerBound(Range range) {
+        StringBuilder s = new StringBuilder();
+        if (!range.getLowerBound().isInclusive()) {
+            if (!(range.getLowerBound().getValue().isPresent() && range.getLowerBound().getValue().get().equals("-"))) {
+                s.append("(");
+            }
+        }
+        if (!range.getLowerBound().getValue().isPresent() || range.getLowerBound().getValue().get().toString()
+                .isEmpty()) {
+            s.append("-");
+        } else {
+            s.append(range.getLowerBound().getValue().get());
+        }
+        return s.toString();
+    }
+
+    String toUpperBound(Range range) {
+        StringBuilder s = new StringBuilder();
+        if (!range.getUpperBound().isInclusive()) {
+            if (!(range.getUpperBound().getValue().isPresent() && range.getUpperBound().getValue().get().equals("+"))) {
+                s.append("(");
+            }
+        }
+        if (!range.getUpperBound().getValue().isPresent() || range.getUpperBound().getValue().get().toString()
+                .isEmpty()) {
+            s.append("+");
+        } else {
+            s.append(range.getUpperBound().getValue().get());
+        }
+        return s.toString();
     }
 
     private static class ByteRecordReplayDecoder implements MultiDecoder<List<ByteRecord>> {

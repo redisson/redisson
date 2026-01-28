@@ -1,6 +1,7 @@
 package org.redisson.spring.data.connection;
 
 import org.junit.Test;
+import org.springframework.data.domain.Range;
 import org.springframework.data.redis.connection.stream.*;
 
 import java.util.Collections;
@@ -73,4 +74,48 @@ public class RedissonStreamTest extends BaseConnectionTest {
         assertThat(s1.get(0).groupName()).isEqualTo("testGroup");
     }
 
+    @Test
+    public void testLeftOpenRange() {
+        RecordId id1 = connection.streamCommands()
+                .xAdd("test".getBytes(), Collections.singletonMap("1".getBytes(), "1".getBytes()));
+        RecordId id2 = connection.streamCommands()
+                .xAdd("test".getBytes(), Collections.singletonMap("2".getBytes(), "2".getBytes()));
+        RecordId id3 = connection.streamCommands()
+                .xAdd("test".getBytes(), Collections.singletonMap("3".getBytes(), "3".getBytes()));
+
+        List<ByteRecord> records = connection.streamCommands()
+                .xRange("test".getBytes(), Range.leftOpen(id1.getValue(), "+"));
+
+        assertThat(records).extracting(ByteRecord::getId).containsExactly(id2, id3);
+    }
+
+    @Test
+    public void testRightOpenRange() {
+        RecordId id1 = connection.streamCommands()
+                .xAdd("test".getBytes(), Collections.singletonMap("1".getBytes(), "1".getBytes()));
+        RecordId id2 = connection.streamCommands()
+                .xAdd("test".getBytes(), Collections.singletonMap("2".getBytes(), "2".getBytes()));
+        RecordId id3 = connection.streamCommands()
+                .xAdd("test".getBytes(), Collections.singletonMap("3".getBytes(), "3".getBytes()));
+
+        List<ByteRecord> records = connection.streamCommands()
+                .xRange("test".getBytes(), Range.rightOpen("-", id3.getValue()));
+
+        assertThat(records).extracting(ByteRecord::getId).containsExactly(id1, id2);
+    }
+
+    @Test
+    public void testOpenRange() {
+        RecordId id1 = connection.streamCommands()
+                .xAdd("test".getBytes(), Collections.singletonMap("1".getBytes(), "1".getBytes()));
+        RecordId id2 = connection.streamCommands()
+                .xAdd("test".getBytes(), Collections.singletonMap("2".getBytes(), "2".getBytes()));
+        RecordId id3 = connection.streamCommands()
+                .xAdd("test".getBytes(), Collections.singletonMap("3".getBytes(), "3".getBytes()));
+
+        List<ByteRecord> records = connection.streamCommands()
+                .xRange("test".getBytes(), Range.open(id1.getValue(), id3.getValue()));
+
+        assertThat(records).extracting(ByteRecord::getId).containsExactly(id2);
+    }
 }
