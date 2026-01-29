@@ -1599,4 +1599,22 @@ public class RedissonTopicTest extends RedisDockerTest {
         });
     }
 
+    @Test
+    public void testRepeatedlyExecuteInFixedLateInCluster() {
+        AtomicInteger counter = new AtomicInteger();
+        withNewCluster((node1, redisson) -> {
+            var es = redisson.getExecutorService("1231231");
+            es.registerWorkers(WorkerOptions.defaults());
+            es.scheduleAtFixedRate((Runnable & Serializable) counter::incrementAndGet, 1, 1, TimeUnit.SECONDS);
+
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+
+            assertThat(counter.get()).isGreaterThanOrEqualTo(2);
+        });
+    }
+
 }

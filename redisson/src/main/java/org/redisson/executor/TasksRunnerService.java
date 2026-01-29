@@ -67,7 +67,8 @@ public class TasksRunnerService implements RemoteExecutorService {
     private String tasksCounterName;
     private String statusName;
     private String terminationTopicName;
-    private String tasksName; 
+    private String tasksName;
+    private String tasksLatchName;
     private String schedulerQueueName;
     private String schedulerChannelName;
     private String tasksRetryIntervalName;
@@ -118,6 +119,10 @@ public class TasksRunnerService implements RemoteExecutorService {
         this.terminationTopicName = terminationTopicName;
     }
 
+    public void setTasksLatchName(String tasksLatchName) {
+        this.tasksLatchName = tasksLatchName;
+    }
+
     @Override
     public void scheduleAtFixedRate(ScheduledAtFixedRateParameters params) {
         long start = System.nanoTime();
@@ -166,6 +171,7 @@ public class TasksRunnerService implements RemoteExecutorService {
         scheduledRemoteService.setSchedulerQueueName(schedulerQueueName);
         scheduledRemoteService.setSchedulerChannelName(schedulerChannelName);
         scheduledRemoteService.setTasksName(tasksName);
+        scheduledRemoteService.setTasksLatchName(tasksLatchName);
         scheduledRemoteService.setRequestId(requestId);
         scheduledRemoteService.setTasksExpirationTimeName(tasksExpirationTimeName);
         scheduledRemoteService.setTasksRetryIntervalName(tasksRetryIntervalName);

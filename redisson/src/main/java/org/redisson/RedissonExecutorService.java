@@ -298,6 +298,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         service.setStatusName(statusName);
         service.setTasksCounterName(tasksCounterName);
         service.setTasksName(tasksName);
+        service.setTasksLatchName(tasksLatchName);
         service.setTerminationTopicName(terminationTopic.getChannelNames().get(0));
         service.setSchedulerChannelName(schedulerChannelName);
         service.setSchedulerQueueName(schedulerQueueName);
