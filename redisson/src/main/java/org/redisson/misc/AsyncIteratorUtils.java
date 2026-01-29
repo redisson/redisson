@@ -25,7 +25,7 @@ import java.util.function.Function;
  * Utility for iterating over elements asynchronously without stack overflow.
  * Uses trampoline pattern to prevent StackOverflowError with large iterators.
  *
- * @author Nikita Koksharov
+ * @author Konstantin Subbotin
  */
 public final class AsyncIteratorUtils {
 

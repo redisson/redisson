@@ -26,7 +26,7 @@ import java.util.function.Consumer;
  * Utility for processing chunks from an iterator asynchronously without stack overflow.
  * Uses trampoline pattern to prevent StackOverflowError with large iterators.
  *
- * @author Nikita Koksharov
+ * @author Konstantin Subbotin
  */
 public final class AsyncChunkProcessor {
 
