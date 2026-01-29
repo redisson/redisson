@@ -18,6 +18,7 @@ package org.redisson.renewal;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.misc.AsyncIteratorUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -87,12 +88,8 @@ abstract class RenewalTask implements TimerTask {
     }
 
     private CompletionStage<Void> renewSlots(Iterator<Set<String>> iter, int chunkSize) {
-        if (!iter.hasNext()) {
-            return CompletableFuture.completedFuture(null);
-        }
-
-        CompletionStage<Void> c = renew(iter.next().iterator(), chunkSize);
-        return c.thenCompose(r -> renewSlots(iter, chunkSize));
+        return AsyncIteratorUtils.forEachAsync(iter,
+                names -> renew(names.iterator(), chunkSize));
     }
 
     abstract CompletionStage<Void> renew(Iterator<String> iter, int chunkSize);
