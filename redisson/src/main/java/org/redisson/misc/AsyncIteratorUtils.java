@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2026 Nikita Koksharov
+ * Copyright (c) 2013-2024 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,7 +68,11 @@ public final class AsyncIteratorUtils {
                     try {
                         cf.join();
                     } catch (CompletionException e) {
-                        result.completeExceptionally(e.getCause() != null ? e.getCause() : e);
+                        Throwable cause = e.getCause();
+                        if (cause == null) {
+                            cause = e;
+                        }
+                        result.completeExceptionally(cause);
                     } catch (Exception e) {
                         result.completeExceptionally(e);
                     }
