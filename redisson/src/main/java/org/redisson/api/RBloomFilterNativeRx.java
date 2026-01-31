@@ -15,6 +15,7 @@
  */
 package org.redisson.api;
 
+import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Single;
 import java.util.Collection;
 import java.util.Set;
@@ -70,14 +71,14 @@ public interface RBloomFilterNativeRx<T> extends RExpirableAsync {
      * @param errorRate acceptable false positive rate
      * @param capacity expected number of elements to be added
      */
-    Single<Void> init(double errorRate, long capacity);
+    Completable init(double errorRate, long capacity);
 
     /**
      * Initializes Bloom filter
      *
      * @param args init args
      */
-    Single<Void> init(BloomFilterInitArgs args);
+    Completable init(BloomFilterInitArgs args);
 
     /**
      * Checks for element presence
@@ -136,7 +137,7 @@ public interface RBloomFilterNativeRx<T> extends RExpirableAsync {
      * @param iterator the iterator returned by the previous call to BF.SCANDUMP.
      * @param data data to load
      */
-    Single<Void> loadChunk(long iterator, byte[] data);
+    Completable loadChunk(long iterator, byte[] data);
 }
 
 
