@@ -52,7 +52,7 @@ public class RedissonSetTest extends RedisDockerTest {
                 .containsOnly(0, 1);
 
         assertThat(set.containsEach(Arrays.asList(0, 1, 0, 2)))
-                .hasSize(3)
+                .hasSize(2)
                 .containsOnly(0, 1, 0);
 
         assertThat(set.containsEach(Arrays.asList(2, 3, 4)))

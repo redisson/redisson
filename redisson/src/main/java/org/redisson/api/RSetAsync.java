@@ -16,7 +16,6 @@
 package org.redisson.api;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -189,7 +188,7 @@ public interface RSetAsync<V> extends RCollectionAsync<V>, RSortableAsync<Set<V>
      * @param c - collection to check
      * @return contained elements
      */
-    RFuture<List<V>> containsEachAsync(Collection<V> c);
+    RFuture<Set<V>> containsEachAsync(Collection<V> c);
 
     /**
      * Adds object event listener

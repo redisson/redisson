@@ -19,7 +19,6 @@ import org.redisson.api.mapreduce.RCollectionMapReduce;
 
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -334,7 +333,7 @@ public interface RSet<V> extends Set<V>, RExpirable, RSetAsync<V>, RSortable<Set
      * @param c - collection to check
      * @return contained elements
      */
-    List<V> containsEach(Collection<V> c);
+    Set<V> containsEach(Collection<V> c);
 
     /**
      * Adds object event listener

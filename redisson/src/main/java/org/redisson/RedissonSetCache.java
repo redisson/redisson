@@ -624,7 +624,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
     }
 
     @Override
-    public List<V> containsEach(Collection<V> c) {
+    public Set<V> containsEach(Collection<V> c) {
         throw new UnsupportedOperationException();
     }
 
@@ -906,7 +906,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
     }
 
     @Override
-    public RFuture<List<V>> containsEachAsync(Collection<V> c) {
+    public RFuture<Set<V>> containsEachAsync(Collection<V> c) {
         throw new UnsupportedOperationException();
     }
 
