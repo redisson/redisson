@@ -16,7 +16,6 @@
 package org.redisson.api;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Set;
 
 import io.reactivex.rxjava3.core.Flowable;
@@ -260,7 +259,7 @@ public interface RSetRx<V> extends RCollectionRx<V>, RSortableRx<Set<V>> {
      * @param c - collection to check
      * @return contained elements
      */
-    Single<List<V>> containsEach(Collection<V> c);
+    Single<Set<V>> containsEach(Collection<V> c);
 
     /**
      * Adds object event listener

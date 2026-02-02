@@ -26,7 +26,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.client.protocol.decoder.ContainsDecoder;
+import org.redisson.client.protocol.decoder.ContainsSetDecoder;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.iterator.BaseAsyncIterator;
 import org.redisson.iterator.RedissonBaseIterator;
@@ -421,9 +421,9 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
     }
 
     @Override
-    public RFuture<List<V>> containsEachAsync(Collection<V> c) {
+    public RFuture<Set<V>> containsEachAsync(Collection<V> c) {
         if (c.isEmpty()) {
-            return new CompletableFutureWrapper<>(Collections.<V>emptyList());
+            return new CompletableFutureWrapper<>(Collections.<V>emptySet());
         }
 
         List<Object> args = new ArrayList<>(c.size() + 1);
@@ -431,7 +431,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
         encode(args, c);
 
         return commandExecutor.readAsync(getRawName(), LongCodec.INSTANCE,
-                new RedisCommand<>("SMISMEMBER", new ContainsDecoder<>(c)), args.toArray());
+                new RedisCommand<>("SMISMEMBER", new ContainsSetDecoder<>(c)), args.toArray());
     }
 
     @Override
@@ -777,7 +777,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
     }
 
     @Override
-    public List<V> containsEach(Collection<V> c) {
+    public Set<V> containsEach(Collection<V> c) {
         return get(containsEachAsync(c));
     }
 

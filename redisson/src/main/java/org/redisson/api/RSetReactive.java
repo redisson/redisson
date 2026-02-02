@@ -19,7 +19,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -258,7 +257,7 @@ public interface RSetReactive<V> extends RCollectionReactive<V>, RSortableReacti
      * @param c - collection to check
      * @return contained elements
      */
-    Mono<List<V>> containsEach(Collection<V> c);
+    Mono<Set<V>> containsEach(Collection<V> c);
 
     /**
      * Adds object event listener
