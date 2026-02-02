@@ -26,7 +26,6 @@ import reactor.core.publisher.Mono;
 
 /**
  * Bloom filter based on BF.* commands
- * Requires <b>Redis Bloom 2.4.4 and higher.</b>
  *
  * @author Su Ko
  *
@@ -122,6 +121,7 @@ public interface RBloomFilterNativeReactive<T> extends RExpirableAsync {
 
     /**
      * Returns ScanDumpInfo
+     * Requires <b>Redis Bloom 1.0.0 and higher.</b>
      *
      * @param iterator the iterator returned by the previous call to BF.SCANDUMP.
      * iteration start from 0
@@ -132,6 +132,7 @@ public interface RBloomFilterNativeReactive<T> extends RExpirableAsync {
 
     /**
      * Loads chunk
+     * Requires <b>Redis Bloom 1.0.0 and higher.</b>
      *
      * @param iterator the iterator returned by the previous call to BF.SCANDUMP.
      * @param data data to load
