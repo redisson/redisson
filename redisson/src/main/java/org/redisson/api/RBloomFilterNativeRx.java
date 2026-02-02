@@ -32,7 +32,7 @@ import org.redisson.api.bloomfilter.BloomFilterScanDumpInfo;
  *
  * @param <T> - type of object
  */
-public interface RBloomFilterNativeRx<T> extends RExpirableAsync {
+public interface RBloomFilterNativeRx<T> extends RExpirableRx {
 
     /**
      * Adds element

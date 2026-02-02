@@ -31,7 +31,7 @@ import reactor.core.publisher.Mono;
  *
  * @param <T> - type of object
  */
-public interface RBloomFilterNativeReactive<T> extends RExpirableAsync {
+public interface RBloomFilterNativeReactive<T> extends RExpirableReactive {
 
     /**
      * Adds element
