@@ -1,0 +1,142 @@
+/**
+ * Copyright (c) 2013-2024 Nikita Koksharov
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.redisson.api;
+
+import java.util.Collection;
+import java.util.Set;
+import org.redisson.api.bloomfilter.BloomFilterInfo;
+import org.redisson.api.bloomfilter.BloomFilterInfoOption;
+import org.redisson.api.bloomfilter.BloomFilterInitArgs;
+import org.redisson.api.bloomfilter.BloomFilterInsertArgs;
+import org.redisson.api.bloomfilter.BloomFilterScanDumpInfo;
+
+/**
+ * Bloom filter based on BF.* commands
+ *
+ * @author Su Ko
+ *
+ * @param <T> - type of object
+ */
+public interface RBloomFilterNativeAsync<T> extends RExpirableAsync {
+
+    /**
+     * Adds element
+     *
+     * @param element - element to add
+     *
+     * @return <code>true</code> if element has been added successfully
+     *         <code>false</code> if element is already present
+     */
+    RFuture<Boolean> addAsync(T element);
+
+    /**
+     * Adds elements
+     *
+     * @param elements elements to add
+     *
+     * @return set of elements representing whether each element has been added successfully
+     */
+    RFuture<Set<T>> addAsync(Collection<T> elements);
+
+    /**
+     * create filter (if filter is not existing and not NOCREATE mode)
+     * and
+     * Adds elements
+     *
+     * @param args insert args
+     *
+     * @return set of elements representing whether each element has been added successfully
+     */
+    RFuture<Set<T>> insertAsync(BloomFilterInsertArgs<T> args);
+
+    /**
+     * Initializes Bloom filter
+     *
+     * @param errorRate acceptable false positive rate
+     * @param capacity expected number of elements to be added
+     */
+    RFuture<Void> initAsync(double errorRate, long capacity);
+
+    /**
+     * Initializes Bloom filter
+     *
+     * @param args init args
+     */
+    RFuture<Void> initAsync(BloomFilterInitArgs args);
+
+    /**
+     * Checks for element presence
+     *
+     * @param element element
+     *
+     * @return <code>true</code> if element is present
+     *         <code>false</code> if element is not present
+     */
+    RFuture<Boolean> existsAsync(T element);
+
+    /**
+     * Checks for elements presence
+     *
+     * @param elements elements to check presence
+     *
+     * @return set of elements representing whether each element is present
+     */
+    RFuture<Set<T>> existsAsync(Collection<T> elements);
+
+    /**
+     * Returns count of present elements
+     *
+     * @return count of present elements
+     */
+    RFuture<Long> countAsync();
+
+    /**
+     * Returns Bloom filter information
+     *
+     * @return Bloom filter information
+     */
+    RFuture<BloomFilterInfo> getInfoAsync();
+
+    /**
+     * Returns specific Bloom filter information
+     *
+     * @param option information option
+     * @return specific Bloom filter information value
+     */
+    RFuture<Long> getInfoAsync(BloomFilterInfoOption option);
+
+    /**
+     * Returns ScanDumpInfo
+     * Requires <b>Redis Bloom 1.0.0 and higher.</b>
+     *
+     * @param iterator the iterator returned by the previous call to BF.SCANDUMP.
+     * iteration start from 0
+     *
+     * @return BloomFilterScanDumpInfo
+     */
+    RFuture<BloomFilterScanDumpInfo> scanDumpAsync(long iterator);
+
+    /**
+     * Loads chunk
+     * Requires <b>Redis Bloom 1.0.0 and higher.</b>
+     *
+     * @param iterator the iterator returned by the previous call to BF.SCANDUMP.
+     * @param data data to load
+     */
+    RFuture<Void> loadChunkAsync(long iterator, byte[] data);
+}
+
+
