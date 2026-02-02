@@ -757,4 +757,24 @@ public class RedissonExecutorServiceTest extends RedisDockerTest {
         assertThat(redissonES.getTaskCount()).isEqualTo(0);
     }
 
+    @Test
+    public void testRepeatedlyExecuteInFixedLateInCluster() {
+        withNewCluster(
+                (node1, redisson) -> {
+                    RScheduledExecutorService es = redisson.getExecutorService("1231231");
+
+                    es.registerWorkers(WorkerOptions.defaults());
+                    es.scheduleAtFixedRate(new IncrementRunnableTask("fixed_late_int_cluster_test"), 1, 1,
+                            TimeUnit.SECONDS);
+
+                    try {
+                        Thread.sleep(3000);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+
+                    assertThat(redisson.getAtomicLong("fixed_late_int_cluster_test").get()).isGreaterThanOrEqualTo(2);
+                }
+        );
+    }
 }
