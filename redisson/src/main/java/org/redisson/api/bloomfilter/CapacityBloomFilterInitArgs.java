@@ -16,14 +16,14 @@
 package org.redisson.api.bloomfilter;
 
 /**
- * CapacityBloomFilterInitArgs for BF.INIT command
+ * CapacityBloomFilterInitArgs for BF.RESERVE command
  *
  * @author Su Ko
  */
 public interface CapacityBloomFilterInitArgs {
 
     /**
-     * Defines BloomFilter to BF.INIT command
+     * Defines BloomFilter to BF.RESERVE command
      *
      * @param capacity is number of entries intended to be added to the filter. must be greater than 0
      * When the number of entries reaches capacity, a new subfilter is created.

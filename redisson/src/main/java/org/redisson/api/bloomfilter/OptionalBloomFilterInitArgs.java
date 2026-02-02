@@ -16,14 +16,14 @@
 package org.redisson.api.bloomfilter;
 
 /**
- * OptionalBloomFilterInitArgs for BF.INIT command
+ * OptionalBloomFilterInitArgs for BF.RESERVE command
  *
  * @author Su Ko
  */
 public interface OptionalBloomFilterInitArgs extends BloomFilterInitArgs{
 
     /**
-     * Defines BloomFilter to BF.INIT command
+     * Defines BloomFilter to BF.RESERVE command
      *
      * @param expansionRate is the value that is multiplied by the size of the last subfilter when a new subfilter is created when capacity is reached.
      * expansionRate and nonScaling are mutually exclusive
@@ -33,7 +33,7 @@ public interface OptionalBloomFilterInitArgs extends BloomFilterInitArgs{
     OptionalBloomFilterInitArgs expansionRate(long expansionRate);
 
     /**
-     * Defines BloomFilter to BF.INIT command
+     * Defines BloomFilter to BF.RESERVE command
      *
      * @param nonScaling is option that prevents subfliters from being created even when fcapacity is reached.
      * expansionRate and nonScaling are mutually exclusive

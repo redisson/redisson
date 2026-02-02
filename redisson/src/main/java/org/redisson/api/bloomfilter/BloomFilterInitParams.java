@@ -16,7 +16,7 @@
 package org.redisson.api.bloomfilter;
 
 /**
- * BloomFilterInitParams for BF.INIT command
+ * BloomFilterInitParams for BF.RESERVE command
  *
  * @author Su Ko
  *

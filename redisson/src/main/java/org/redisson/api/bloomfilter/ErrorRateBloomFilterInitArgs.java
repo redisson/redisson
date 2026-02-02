@@ -16,14 +16,14 @@
 package org.redisson.api.bloomfilter;
 
 /**
- * ErrorRateBloomFilterInitArgs for BF.INIT command
+ * ErrorRateBloomFilterInitArgs for BF.RESERVE command
  *
  * @author Su Ko
  */
 public interface ErrorRateBloomFilterInitArgs {
 
     /**
-     * Defines BloomFilter to BF.INIT command
+     * Defines BloomFilter to BF.RESERVE command
      *
      * @param errorRate is desired probability for false positives. must be greater than 0 and less than 1
      *

@@ -16,14 +16,14 @@
 package org.redisson.api.bloomfilter;
 
 /**
- * BloomFilterInitArgs for BF.INIT command
+ * BloomFilterInitArgs for BF.RESERVE command
  *
  * @author Su Ko
  */
 public interface BloomFilterInitArgs {
 
     /**
-     * Defines BloomFilter to BF.INIT command
+     * Defines BloomFilter to BF.RESERVE command
      *
      * @return ErrorRateBloomFilterInitArgs
      */
