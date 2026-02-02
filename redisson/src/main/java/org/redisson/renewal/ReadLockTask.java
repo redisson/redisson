@@ -19,9 +19,10 @@ import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.decoder.ContainsDecoder;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.misc.AsyncChunkProcessor;
+import org.redisson.misc.AsyncChunkProcessor.ChunkExecution;
 
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -37,17 +38,19 @@ public class ReadLockTask extends LockTask {
 
     @Override
     CompletionStage<Void> renew(Iterator<String> iter, int chunkSize) {
-        if (!iter.hasNext()) {
-            return CompletableFuture.completedFuture(null);
-        }
+        return AsyncChunkProcessor.processAll(iter, chunkSize, this::buildChunk);
+    }
 
+    private ChunkExecution<List<Object>> buildChunk(Iterator<String> iter, int chunkSize) {
         Map<String, Long> name2lockName = new HashMap<>();
         List<Object> args = new ArrayList<>();
         args.add(internalLockLeaseTime);
 
         List<Object> keys = new ArrayList<>(chunkSize);
         List<Object> keysArgs = new ArrayList<>(chunkSize);
-        while (iter.hasNext()) {
+
+        // Build chunk, skipping invalid entries
+        while (iter.hasNext() && keys.size() < chunkSize) {
             String key = iter.next();
 
             ReadLockEntry entry = (ReadLockEntry) name2entry.get(key);
@@ -72,14 +75,11 @@ public class ReadLockTask extends LockTask {
             keysArgs.add(keyPrefix);
             args.add(lockName);
             name2lockName.put(key, threadId);
-
-            if (keys.size() == chunkSize) {
-                break;
-            }
         }
 
+        // No valid entries found - signal completion
         if (keys.isEmpty()) {
-            return CompletableFuture.completedFuture(null);
+            return null;
         }
 
         String firstName = keys.get(0).toString();
@@ -114,13 +114,12 @@ public class ReadLockTask extends LockTask {
                 keysArgs,
                 args.toArray());
 
-        return f.thenCompose(existingNames -> {
+        return new ChunkExecution<>(f, existingNames -> {
             keys.removeAll(existingNames);
             for (Object k : keys) {
                 String key = k.toString();
                 cancelExpirationRenewal(key, name2lockName.get(key));
             }
-            return renew(iter, chunkSize);
         });
     }
 
