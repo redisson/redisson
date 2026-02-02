@@ -309,6 +309,7 @@ public class RedissonBloomFilterNative<T> extends RedissonExpirable implements R
 
     @Override
     public RFuture<Void> loadChunkAsync(long iterator, byte[] data) {
-        return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.BF_LOADCHUNK, getRawName(), iterator, data);
+        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.BF_LOADCHUNK, getRawName(),
+                iterator, data);
     }
 }
