@@ -33,7 +33,7 @@ public class ContainsSetDecoder<T> implements MultiDecoder<Set<T>> {
     private final List<T> args;
 
     public ContainsSetDecoder(Collection<T> args) {
-        if (args instanceof Set) {
+        if (args instanceof List) {
             this.args = (List<T>) args;
         } else {
             this.args = new ArrayList<>(args);
