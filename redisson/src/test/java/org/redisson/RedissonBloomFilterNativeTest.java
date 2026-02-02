@@ -22,15 +22,15 @@ public class RedissonBloomFilterNativeTest extends RedisDockerTest {
         initFilter.init(0.01, 1000);
 
         RBloomFilterNative<Object> optionFilter = redisson.getBloomFilterNative("option");
-        BloomFilterInitParams options = (BloomFilterInitParams) BloomFilterInitArgs.create().errorRate(0.01).capacity(1000).expansionRate(2L);
+        BloomFilterInitArgs options = BloomFilterInitArgs.create().errorRate(0.01).capacity(1000).expansionRate(2L);
         optionFilter.init(options);
         assertThat(optionFilter.delete()).isTrue();
 
-        options = (BloomFilterInitParams) BloomFilterInitArgs.create().errorRate(0.01).capacity(1000).nonScaling(true);
+        options = BloomFilterInitArgs.create().errorRate(0.01).capacity(1000).nonScaling(true);
         optionFilter.init(options);
         assertThat(optionFilter.delete()).isTrue();
 
-        options = (BloomFilterInitParams) BloomFilterInitArgs.create().errorRate(0.01).capacity(1000);
+        options = BloomFilterInitArgs.create().errorRate(0.01).capacity(1000);
         optionFilter.init(options);
         assertThat(optionFilter.delete()).isTrue();
     }
