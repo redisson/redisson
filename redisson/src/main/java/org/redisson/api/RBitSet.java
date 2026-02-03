@@ -16,6 +16,8 @@
 package org.redisson.api;
 
 import java.util.BitSet;
+import java.util.List;
+import org.redisson.api.bitset.BitFieldArgs;
 
 /**
  * Vector of bits that grows as needed.
@@ -92,6 +94,15 @@ public interface RBitSet extends RExpirable, RBitSetAsync {
      * @return result value
      */
     long incrementAndGetUnsigned(int size, long offset, long increment);
+
+    /**
+     * Executes BITFIELD command with multiple subcommands
+     * and returns result list in the same order.
+     *
+     * @param args - bitfield arguments
+     * @return result values
+     */
+    List<Long> bitField(BitFieldArgs args);
 
     /**
      * Returns byte number at specified <code>offset</code>

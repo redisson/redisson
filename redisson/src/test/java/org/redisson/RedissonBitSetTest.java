@@ -1,11 +1,12 @@
 package org.redisson;
 
 import org.junit.jupiter.api.Test;
+import org.redisson.api.bitset.BitFieldArgs;
+import org.redisson.api.bitset.BitFieldOverflow;
 import org.redisson.api.RBitSet;
-import org.springframework.util.StopWatch;
 
 import java.util.BitSet;
-import java.util.Random;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -25,6 +26,45 @@ public class RedissonBitSetTest extends RedisDockerTest {
         assertThat(bs.setSigned(8, 1, -120)).isZero();
         assertThat(bs.incrementAndGetSigned(8, 1, 1)).isEqualTo(-119);
         assertThat(bs.getSigned(8, 1)).isEqualTo(-119);
+    }
+
+    @Test
+    public void testBitFieldMultipleOperations() {
+        RBitSet bs = redisson.getBitSet("testBitFieldMultipleOperations");
+
+        List<Long> result = bs.bitField(BitFieldArgs.create()
+                                                    .incrementUnsignedBy(32, 32, 1)
+                                                    .incrementUnsignedBy(32, 64, 1)
+                                                    .getUnsigned(32, 32));
+        assertThat(result).containsExactly(1L, 1L, 1L);
+
+        result = bs.bitField(BitFieldArgs.create()
+                                        .incrementSignedBy(8, 0, -1)
+                                        .incrementUnsignedBy(8, 8, 2));
+        assertThat(result).containsExactly(-1L, 2L);
+    }
+
+    @Test
+    public void testBitFieldIndexedOffsets() {
+        RBitSet bs = redisson.getBitSet("testBitFieldIndexedOffsets");
+
+        List<Long> result = bs.bitField(BitFieldArgs.create()
+                                                    .setSigned(8, "#0", 100)
+                                                    .setSigned(8, "#1", 200)
+                                                    .getUnsigned(8, 0)
+                                                    .getUnsigned(8, 8));
+        assertThat(result).containsExactly(0L, 0L, 100L, 200L);
+    }
+
+    @Test
+    public void testBitFieldOverflowFail() {
+        RBitSet bs = redisson.getBitSet("testBitFieldOverflowFail");
+
+        List<Long> result = bs.bitField(BitFieldArgs.create()
+                                                    .setUnsigned(2, 102, 3)
+                                                    .overflow(BitFieldOverflow.FAIL)
+                                                    .incrementUnsignedBy(2, 102, 1));
+        assertThat(result).containsExactly(0L, null);
     }
 
     @Test
