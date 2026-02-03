@@ -163,7 +163,11 @@ public class RedissonRingBuffer<V> extends RedissonQueue<V> implements RRingBuff
 
     @Override
     public RFuture<Boolean> deleteAsync() {
-        return deleteAsync(getRawName(), settingsName);
+        return super.deleteAsync(getRawName(), settingsName);
     }
-    
+
+    @Override
+    public void clear() {
+        get(super.deleteAsync());
+    }
 }
