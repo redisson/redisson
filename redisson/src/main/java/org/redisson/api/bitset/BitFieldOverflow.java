@@ -22,7 +22,20 @@ package org.redisson.api.bitset;
  *
  */
 public enum BitFieldOverflow {
+    /**
+     * Wrap around on overflow/underflow. Uses modular arithmetic for unsigned and wraps signed ranges (default).
+     */
     WRAP,
+
+    /**
+     * Saturate to min/max on overflow/underflow.
+     * Clamps to the closest boundary instead of wrapping.
+     */
     SAT,
+
+    /**
+     * Return null on overflow/underflow.
+     * No change is applied when overflow/underflow is detected.
+     */
     FAIL
 }

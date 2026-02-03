@@ -28,9 +28,30 @@ import java.util.List;
 public final class BitFieldParams implements BitFieldArgs {
 
     public enum OperationType {
+        /**
+         * GET subcommand.
+         * Returns the value stored at the given encoding/offset.
+         */
         GET,
+
+        /**
+         * SET subcommand.
+         * Sets the value and returns the previous value
+         * may return null if OVERFLOW FAIL is set.
+         */
         SET,
+
+        /**
+         * INCRBY subcommand.
+         * Increments by the given amount and returns the new value
+         * may return null if OVERFLOW FAIL is set.
+         */
         INCRBY,
+
+        /**
+         * OVERFLOW subcommand.
+         * Sets overflow behavior for subsequent SET/INCRBY operations until the next OVERFLOW.
+         */
         OVERFLOW
     }
 
