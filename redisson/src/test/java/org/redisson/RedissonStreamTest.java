@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.redisson.api.*;
 import org.redisson.api.listener.StreamAddListener;
 import org.redisson.api.stream.*;
+import org.redisson.client.RedisBusyException;
 import org.redisson.client.RedisException;
 import org.redisson.client.protocol.StreamEntryStatus;
 
@@ -62,6 +63,19 @@ public class RedissonStreamTest extends RedisDockerTest {
         Map<StreamMessageId, Map<Object, Object>> result = stream.readGroup("group", "consumer",
                 StreamReadGroupArgs.greaterThan(StreamMessageId.ALL).timeout(Duration.ofSeconds(1)).count(1));
         assertThat(result).hasSize(1);
+    }
+
+    @Test
+    public void testBusyGroupIsNotRetryException() {
+        RStream<String, String> stream = redisson.getStream("test");
+        stream.createGroup(StreamCreateGroupArgs.name("group").makeStream());
+
+        RedisException ex = Assertions.assertThrows(RedisException.class, () -> {
+            stream.createGroup(StreamCreateGroupArgs.name("group").makeStream());
+        });
+
+        assertThat(ex).isNotInstanceOf(RedisBusyException.class);
+        assertThat(ex.getMessage()).startsWith("BUSYGROUP");
     }
 
     @Test

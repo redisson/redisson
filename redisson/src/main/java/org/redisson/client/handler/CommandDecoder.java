@@ -419,7 +419,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             } else if (error.startsWith("MASTERDOWN")) {
                 data.tryFailure(new RedisMasterDownException(error
                         + ". channel: " + channel + " data: " + data));
-            } else if (error.startsWith("BUSY")) {
+            } else if (error.startsWith("BUSY ")) {
                 data.tryFailure(new RedisBusyException(error
                         + ". channel: " + channel + " data: " + data));
             } else if (error.startsWith("WAIT") || error.startsWith("ERR WAIT")) {
