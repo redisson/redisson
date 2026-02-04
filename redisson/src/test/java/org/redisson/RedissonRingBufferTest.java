@@ -115,5 +115,22 @@ public class RedissonRingBufferTest extends RedisDockerTest {
         assertThat(buffer.capacity()).isEqualTo(10);
         assertThat(buffer.remainingCapacity()).isEqualTo(3);
     }
-    
+
+    @Test
+    public void testClear() {
+        RRingBuffer<Integer> buffer = redisson.getRingBuffer("clear_test");
+        buffer.trySetCapacity(10);
+        for (int i = 0; i < 10; i++) {
+            buffer.add(i);
+        }
+        assertThat(buffer).containsExactly(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+
+        buffer.clear(); // clear() is only clearing elements, not capacity
+
+        for (int i = 0; i < 10; i++) {
+            buffer.add(i);
+        }
+        assertThat(buffer).containsExactly(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+        assertThat(buffer.capacity()).isEqualTo(10);
+    }
 }
