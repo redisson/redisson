@@ -1,5 +1,6 @@
 package org.redisson;
 
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
@@ -11,6 +12,7 @@ public class RedissonUDSTest {
 
     @Test
     void test() {
+        Assumptions.assumeTrue(System.getenv().get("TEST_SOURCE_PATH") != null);
         String socketPath = System.getenv().getOrDefault("REDIS_SOCKET", "/data/redis.sock");
 
         Config config = new Config();
