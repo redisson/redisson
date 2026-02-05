@@ -3,6 +3,34 @@ Redisson Releases History
 
 Upgrade to __[Redisson PRO](https://redisson.pro/feature-comparison.html)__ with **advanced features**.
 
+### 5-Feb-2025 - 4.2.0 released
+
+Feature - [Spring AI Vector Store](https://redisson.pro/docs/integration-with-spring/#spring-ai-vector-store) implemented  
+Feature - `AvroJackson3Codec`, `CborJackson3Codec`, `IonJackson3Codec`, `SmileJackson3Codec` codecs added  
+Feature - `RBloomFilterNative` object added which covers `BF.*` commands (thanks to @bandalgomsu)  
+Feature - `RSearch.hasIndex()` method added (thanks @bandalgomsu)  
+Feature - Jackson3Codec added for `RJsonBucket` and `RJsonStore` objects  
+
+__Breaking change__ - `RSet.containsEach()` returns `Set` (thanks to @bandalgomsu)  
+
+Fixed - `RRingBuffer.clear()` method shouldn't clear capacity (thanks to @bandalgomsu)  
+Fixed - unnecessary attempts for BUSYGROUP error (thanks to @bandalgomsu)  
+Fixed - `RenewalTask.renewSlots()` throws StackOverflowError with many locks (thanks to @subbotinkv)  
+Fixed - `RExecutorService.scheduleAtFixedRate()` method can only be executed once (thanks to @bandalgomsu)  
+Fixed - Stream ranges in Spring Data Redis module don't handle bounds (thanks to @bandalgomsu)  
+Fixed - UUID serialization by Jackson codecs  
+Fixed - `RBatch` with `ExecutionMode.REDIS_WRITE_ATOMIC` throws NPEs  
+Fixed - `RJsonBucket.setAndKeepTTLAsync()` doesn't work (thanks to @jigneshcoder)  
+Fixed - possible `RedisTimeoutException` and memory Growth after upgrading to Redisson 3.47.0 (thanks to @seakider)  
+Fixed - missed `redisson-spring-cache` and `redisson-spring-transaction` dependencies for `redisson-spring-boot-starter` module  
+Fixed - `RSearch` `VectorSimilarity` param doesn't allow to specify scoreAlias and filter params  
+Fixed - javadocs: `Config.setCleanUpKeysAmount()` description (thanks to @MuriloMarquesSantos)  
+Fixed - errors logging improvement (thanks to @GaoSSR)  
+Fixed - potential negative index in load balancers (thanks to @GaoSSR)  
+Fixed - GraalVM reflection issue in Spring Native (thanks to @GaoSSR)  
+Fixed - docs: update deprecation note for RedLock object (thanks to @mykronetix)  
+Fixed - passwords encryption JDK 8 compatibility  
+
 ### 30-Dec-2025 - 4.1.0 released
 
 Feature - [Local cached Spring Session](https://redisson.pro/docs/integration-with-spring/#local-cache) implemented  
