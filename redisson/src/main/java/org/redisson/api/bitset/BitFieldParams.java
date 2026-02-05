@@ -25,7 +25,7 @@ import java.util.List;
  * @author Su Ko
  *
  */
-public final class BitFieldParams implements BitFieldArgs {
+public final class BitFieldParams implements BitFieldArgs, BitFieldInitArgs {
 
     public enum OperationType {
         /**
