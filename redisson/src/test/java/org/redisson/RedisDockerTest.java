@@ -198,10 +198,6 @@ public class RedisDockerTest {
                     .setScanInterval(1000)
                     .setNatMapper(address -> {
                         for (GenericContainer<?> node : nodes) {
-                            if (!node.isRunning()) {
-                                continue;
-                            }
-
                             try {
                                 // Check by IP address
                                 String nodeIp = getContainerIp(node);
