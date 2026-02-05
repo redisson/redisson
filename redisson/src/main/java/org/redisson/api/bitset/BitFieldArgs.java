@@ -34,6 +34,7 @@ public interface BitFieldArgs {
 
     /**
      * Adds OVERFLOW subcommand.
+     * Sets overflow behavior for subsequent SET/INCRBY operations until the next OVERFLOW.
      *
      * @param overflow overflow behavior
      * @return arguments object
@@ -42,6 +43,7 @@ public interface BitFieldArgs {
 
     /**
      * Adds GET subcommand for signed value.
+     * Returns the value stored at the given encoding/offset.
      *
      * @param size size of signed number up to 64 bits
      * @param offset bit offset
@@ -51,6 +53,7 @@ public interface BitFieldArgs {
 
     /**
      * Adds GET subcommand for signed value.
+     * Returns the value stored at the given encoding/offset.
      *
      * @param size size of signed number up to 64 bits
      * @param offset bit offset or indexed offset like "#1"
@@ -60,6 +63,7 @@ public interface BitFieldArgs {
 
     /**
      * Adds GET subcommand for unsigned value.
+     * Returns the value stored at the given encoding/offset.
      *
      * @param size size of unsigned number up to 63 bits
      * @param offset bit offset
@@ -69,6 +73,7 @@ public interface BitFieldArgs {
 
     /**
      * Adds GET subcommand for unsigned value.
+     * Returns the value stored at the given encoding/offset.
      *
      * @param size size of unsigned number up to 63 bits
      * @param offset bit offset or indexed offset like "#1"
@@ -78,6 +83,8 @@ public interface BitFieldArgs {
 
     /**
      * Adds SET subcommand for signed value.
+     * Sets the value and returns the previous value
+     * may return null if OVERFLOW FAIL is set.
      *
      * @param size size of signed number up to 64 bits
      * @param offset bit offset
@@ -88,6 +95,8 @@ public interface BitFieldArgs {
 
     /**
      * Adds SET subcommand for signed value.
+     * Sets the value and returns the previous value
+     * may return null if OVERFLOW FAIL is set.
      *
      * @param size size of signed number up to 64 bits
      * @param offset bit offset or indexed offset like "#1"
@@ -98,6 +107,8 @@ public interface BitFieldArgs {
 
     /**
      * Adds SET subcommand for unsigned value.
+     * Sets the value and returns the previous value
+     * may return null if OVERFLOW FAIL is set.
      *
      * @param size size of unsigned number up to 63 bits
      * @param offset bit offset
@@ -108,6 +119,8 @@ public interface BitFieldArgs {
 
     /**
      * Adds SET subcommand for unsigned value.
+     * Sets the value and returns the previous value
+     * may return null if OVERFLOW FAIL is set.
      *
      * @param size size of unsigned number up to 63 bits
      * @param offset bit offset or indexed offset like "#1"
@@ -118,6 +131,8 @@ public interface BitFieldArgs {
 
     /**
      * Adds INCRBY subcommand for signed value.
+     * Increments by the given amount and returns the new value
+     * may return null if OVERFLOW FAIL is set.
      *
      * @param size size of signed number up to 64 bits
      * @param offset bit offset
@@ -128,6 +143,8 @@ public interface BitFieldArgs {
 
     /**
      * Adds INCRBY subcommand for signed value.
+     * Increments by the given amount and returns the new value
+     * may return null if OVERFLOW FAIL is set.
      *
      * @param size size of signed number up to 64 bits
      * @param offset bit offset or indexed offset like "#1"
@@ -138,6 +155,8 @@ public interface BitFieldArgs {
 
     /**
      * Adds INCRBY subcommand for unsigned value.
+     * Increments by the given amount and returns the new value
+     * may return null if OVERFLOW FAIL is set.
      *
      * @param size size of unsigned number up to 63 bits
      * @param offset bit offset
@@ -148,6 +167,8 @@ public interface BitFieldArgs {
 
     /**
      * Adds INCRBY subcommand for unsigned value.
+     * Increments by the given amount and returns the new value
+     * may return null if OVERFLOW FAIL is set.
      *
      * @param size size of unsigned number up to 63 bits
      * @param offset bit offset or indexed offset like "#1"
