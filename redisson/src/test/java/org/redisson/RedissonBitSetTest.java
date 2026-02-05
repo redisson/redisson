@@ -3,6 +3,7 @@ package org.redisson;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.bitset.BitFieldArgs;
 import org.redisson.api.bitset.BitFieldOverflow;
+import org.redisson.api.bitset.BitOffset;
 import org.redisson.api.RBitSet;
 
 import java.util.BitSet;
@@ -33,14 +34,14 @@ public class RedissonBitSetTest extends RedisDockerTest {
         RBitSet bs = redisson.getBitSet("testBitFieldMultipleOperations");
 
         List<Long> result = bs.bitField(BitFieldArgs.create()
-                                                    .incrementUnsignedBy(32, 32, 1)
-                                                    .incrementUnsignedBy(32, 64, 1)
-                                                    .getUnsigned(32, 32));
+                .incrementUnsignedBy(32, BitOffset.bit(32), 1)
+                .incrementUnsignedBy(32, BitOffset.bit(64), 1)
+                .getUnsigned(32, BitOffset.bit(32)));
         assertThat(result).containsExactly(1L, 1L, 1L);
 
         result = bs.bitField(BitFieldArgs.create()
-                                        .incrementSignedBy(8, 0, -1)
-                                        .incrementUnsignedBy(8, 8, 2));
+                .incrementSignedBy(8, BitOffset.bit(0), -1)
+                .incrementUnsignedBy(8, BitOffset.bit(8), 2));
         assertThat(result).containsExactly(-1L, 2L);
     }
 
@@ -49,10 +50,10 @@ public class RedissonBitSetTest extends RedisDockerTest {
         RBitSet bs = redisson.getBitSet("testBitFieldIndexedOffsets");
 
         List<Long> result = bs.bitField(BitFieldArgs.create()
-                                                    .setSigned(8, "#0", 100)
-                                                    .setSigned(8, "#1", 200)
-                                                    .getUnsigned(8, 0)
-                                                    .getUnsigned(8, 8));
+                .setSigned(8, BitOffset.index(0), 100)
+                .setSigned(8, BitOffset.index(1), 200)
+                .getUnsigned(8, BitOffset.bit(0))
+                .getUnsigned(8, BitOffset.bit(8)));
         assertThat(result).containsExactly(0L, 0L, 100L, 200L);
     }
 
@@ -61,9 +62,9 @@ public class RedissonBitSetTest extends RedisDockerTest {
         RBitSet bs = redisson.getBitSet("testBitFieldOverflowFail");
 
         List<Long> result = bs.bitField(BitFieldArgs.create()
-                                                    .setUnsigned(2, 102, 3)
+                .setUnsigned(2, BitOffset.bit(102), 3)
                                                     .overflow(BitFieldOverflow.FAIL)
-                                                    .incrementUnsignedBy(2, 102, 1));
+                .incrementUnsignedBy(2, BitOffset.bit(102), 1));
         assertThat(result).containsExactly(0L, null);
     }
 

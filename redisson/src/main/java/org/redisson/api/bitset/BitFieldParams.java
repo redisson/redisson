@@ -58,11 +58,11 @@ public final class BitFieldParams implements BitFieldArgs, BitFieldInitArgs {
     public static final class Operation {
         private final OperationType type;
         private final String encoding;
-        private final Object offset;
+        private final BitOffset offset;
         private final Long value;
         private final BitFieldOverflow overflow;
 
-        Operation(OperationType type, String encoding, Object offset, Long value, BitFieldOverflow overflow) {
+        Operation(OperationType type, String encoding, BitOffset offset, Long value, BitFieldOverflow overflow) {
             this.type = type;
             this.encoding = encoding;
             this.offset = offset;
@@ -78,7 +78,7 @@ public final class BitFieldParams implements BitFieldArgs, BitFieldInitArgs {
             return encoding;
         }
 
-        public Object getOffset() {
+        public BitOffset getOffset() {
             return offset;
         }
 
@@ -100,91 +100,37 @@ public final class BitFieldParams implements BitFieldArgs, BitFieldInitArgs {
     }
 
     @Override
-    public BitFieldArgs getSigned(int size, long offset) {
-        return getSigned(size, Long.valueOf(offset));
-    }
-
-    @Override
-    public BitFieldArgs getSigned(int size, String offset) {
-        return getSigned(size, (Object) offset);
-    }
-
-    private BitFieldArgs getSigned(int size, Object offset) {
+    public BitFieldArgs getSigned(int size, BitOffset offset) {
         operations.add(new Operation(OperationType.GET, "i" + size, offset, null, null));
         return this;
     }
 
     @Override
-    public BitFieldArgs getUnsigned(int size, long offset) {
-        return getUnsigned(size, Long.valueOf(offset));
-    }
-
-    @Override
-    public BitFieldArgs getUnsigned(int size, String offset) {
-        return getUnsigned(size, (Object) offset);
-    }
-
-    private BitFieldArgs getUnsigned(int size, Object offset) {
+    public BitFieldArgs getUnsigned(int size, BitOffset offset) {
         operations.add(new Operation(OperationType.GET, "u" + size, offset, null, null));
         return this;
     }
 
     @Override
-    public BitFieldArgs setSigned(int size, long offset, long value) {
-        return setSigned(size, Long.valueOf(offset), value);
-    }
-
-    @Override
-    public BitFieldArgs setSigned(int size, String offset, long value) {
-        return setSigned(size, (Object) offset, value);
-    }
-
-    private BitFieldArgs setSigned(int size, Object offset, long value) {
+    public BitFieldArgs setSigned(int size, BitOffset offset, long value) {
         operations.add(new Operation(OperationType.SET, "i" + size, offset, value, null));
         return this;
     }
 
     @Override
-    public BitFieldArgs setUnsigned(int size, long offset, long value) {
-        return setUnsigned(size, Long.valueOf(offset), value);
-    }
-
-    @Override
-    public BitFieldArgs setUnsigned(int size, String offset, long value) {
-        return setUnsigned(size, (Object) offset, value);
-    }
-
-    private BitFieldArgs setUnsigned(int size, Object offset, long value) {
+    public BitFieldArgs setUnsigned(int size, BitOffset offset, long value) {
         operations.add(new Operation(OperationType.SET, "u" + size, offset, value, null));
         return this;
     }
 
     @Override
-    public BitFieldArgs incrementSignedBy(int size, long offset, long increment) {
-        return incrementSignedBy(size, Long.valueOf(offset), increment);
-    }
-
-    @Override
-    public BitFieldArgs incrementSignedBy(int size, String offset, long increment) {
-        return incrementSignedBy(size, (Object) offset, increment);
-    }
-
-    private BitFieldArgs incrementSignedBy(int size, Object offset, long increment) {
+    public BitFieldArgs incrementSignedBy(int size, BitOffset offset, long increment) {
         operations.add(new Operation(OperationType.INCRBY, "i" + size, offset, increment, null));
         return this;
     }
 
     @Override
-    public BitFieldArgs incrementUnsignedBy(int size, long offset, long increment) {
-        return incrementUnsignedBy(size, Long.valueOf(offset), increment);
-    }
-
-    @Override
-    public BitFieldArgs incrementUnsignedBy(int size, String offset, long increment) {
-        return incrementUnsignedBy(size, (Object) offset, increment);
-    }
-
-    private BitFieldArgs incrementUnsignedBy(int size, Object offset, long increment) {
+    public BitFieldArgs incrementUnsignedBy(int size, BitOffset offset, long increment) {
         operations.add(new Operation(OperationType.INCRBY, "u" + size, offset, increment, null));
         return this;
     }

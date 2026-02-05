@@ -20,6 +20,7 @@ import org.redisson.api.bitset.BitFieldOverflow;
 import org.redisson.api.bitset.BitFieldParams;
 import org.redisson.api.RBitSet;
 import org.redisson.api.RFuture;
+import org.redisson.api.bitset.BitOffset;
 import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
@@ -162,7 +163,7 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
                     validateOffset(operation.getOffset());
                     commandArgs.add("GET");
                     commandArgs.add(operation.getEncoding());
-                    commandArgs.add(operation.getOffset());
+                    commandArgs.add(operation.getOffset().getValue());
                     break;
                 case SET:
                     validateEncoding(operation.getEncoding());
@@ -172,7 +173,7 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
                     }
                     commandArgs.add("SET");
                     commandArgs.add(operation.getEncoding());
-                    commandArgs.add(operation.getOffset());
+                    commandArgs.add(operation.getOffset().getValue());
                     commandArgs.add(operation.getValue());
                     break;
                 case INCRBY:
@@ -183,7 +184,7 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
                     }
                     commandArgs.add("INCRBY");
                     commandArgs.add(operation.getEncoding());
-                    commandArgs.add(operation.getOffset());
+                    commandArgs.add(operation.getOffset().getValue());
                     commandArgs.add(operation.getValue());
                     break;
                 default:
@@ -215,7 +216,7 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
         }
     }
 
-    private void validateOffset(Object offset) {
+    private void validateOffset(BitOffset offset) {
         if (offset == null) {
             throw new IllegalArgumentException("Offset can't be null");
         }
