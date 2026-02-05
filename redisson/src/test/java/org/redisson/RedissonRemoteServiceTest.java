@@ -699,6 +699,8 @@ public class RedissonRemoteServiceTest extends RedisDockerTest {
 
         RemoteInterface service = redisson.getRemoteService().get(RemoteInterface.class);
         assertThat(service.resultMethod(21L)).isEqualTo(42L);
+
+        redisson.shutdown();
     }
 
     @Test
@@ -946,5 +948,6 @@ public class RedissonRemoteServiceTest extends RedisDockerTest {
         RFuture<Void> future = r1.get(RemoteInterfaceAsync.class, options).timeoutMethod();
         Thread.sleep(3000);
         assertThat(future.isDone()).isEqualTo(true);
+        client.shutdown();
     }
 }
