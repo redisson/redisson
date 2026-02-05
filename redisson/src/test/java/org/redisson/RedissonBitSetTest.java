@@ -1,6 +1,11 @@
 package org.redisson;
 
+import java.time.Duration;
+import java.util.concurrent.atomic.AtomicReference;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
+import org.redisson.api.RBucket;
+import org.redisson.api.RedissonClient;
 import org.redisson.api.bitset.BitFieldArgs;
 import org.redisson.api.bitset.BitFieldOverflow;
 import org.redisson.api.bitset.BitOffset;
@@ -8,6 +13,11 @@ import org.redisson.api.RBitSet;
 
 import java.util.BitSet;
 import java.util.List;
+import org.redisson.api.listener.TrackingListener;
+import org.redisson.config.Config;
+import org.redisson.config.Protocol;
+import org.redisson.config.ReadMode;
+import org.redisson.config.SubscriptionMode;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -66,6 +76,35 @@ public class RedissonBitSetTest extends RedisDockerTest {
                                                     .overflow(BitFieldOverflow.FAIL)
                 .incrementUnsignedBy(2, BitOffset.bit(102), 1));
         assertThat(result).containsExactly(0L, null);
+    }
+
+    @Test
+    public void testBitFieldReadOnly() {
+        testInCluster(rc -> {
+            Config c = rc.getConfig();
+            c.useClusterServers().setReadMode(ReadMode.SLAVE);
+            RedissonClient redissonClient = Redisson.create(c);
+
+            RBitSet bs = redissonClient.getBitSet("testBitFieldReadOnly");
+            List<Long> set = bs.bitField(BitFieldArgs.create()
+                    .setSigned(8, BitOffset.index(0), 100)
+                    .setSigned(8, BitOffset.index(1), 200));
+            assertThat(set).containsExactly(0L, 0L);
+
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+
+            List<Long> result = bs.bitField(BitFieldArgs.create()
+                    .getUnsigned(8, BitOffset.bit(0))
+                    .getUnsigned(8, BitOffset.bit(8)));
+
+            assertThat(result).containsExactly(100L, 200L);
+
+            redissonClient.shutdown();
+        });
     }
 
     @Test

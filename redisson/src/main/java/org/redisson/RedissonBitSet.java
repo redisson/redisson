@@ -29,6 +29,7 @@ import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandBatchService;
 
 import java.util.*;
+import org.redisson.config.ReadMode;
 
 /**
  * 
@@ -148,6 +149,7 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
         List<Object> commandArgs = new ArrayList<>();
         commandArgs.add(getRawName());
 
+        boolean isReadOnly = true;
         for (BitFieldParams.Operation operation : params.getOperations()) {
             switch (operation.getType()) {
                 case OVERFLOW:
@@ -175,6 +177,7 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
                     commandArgs.add(operation.getEncoding());
                     commandArgs.add(operation.getOffset().getValue());
                     commandArgs.add(operation.getValue());
+                    isReadOnly = false;
                     break;
                 case INCRBY:
                     validateEncoding(operation.getEncoding());
@@ -186,10 +189,16 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
                     commandArgs.add(operation.getEncoding());
                     commandArgs.add(operation.getOffset().getValue());
                     commandArgs.add(operation.getValue());
+                    isReadOnly = false;
                     break;
                 default:
                     throw new IllegalArgumentException("Unknown bitfield operation");
             }
+        }
+
+        if (commandExecutor.getServiceManager().getConfig().getReadMode() == ReadMode.SLAVE && isReadOnly) {
+            return commandExecutor.readAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_RO_LONG_LIST,
+                    commandArgs.toArray());
         }
 
         return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_LONG_LIST,

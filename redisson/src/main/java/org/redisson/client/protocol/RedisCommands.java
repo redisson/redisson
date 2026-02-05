@@ -212,6 +212,8 @@ public interface RedisCommands {
                                                     new ListFirstObjectDecoder(), new LongReplayConvertor());
     RedisStrictCommand<List<Long>> BITFIELD_LONG_LIST = new RedisStrictCommand<>("BITFIELD", null,
                                                     new ObjectListReplayDecoder<Long>(), new LongNullReplayConvertor());
+    RedisStrictCommand<List<Long>> BITFIELD_RO_LONG_LIST = new RedisStrictCommand<>("BITFIELD_RO", null,
+            new ObjectListReplayDecoder<Long>(), new LongNullReplayConvertor());
     RedisStrictCommand<Object> BITFIELD_INT = new RedisStrictCommand<>("BITFIELD", null,
                                                     new ListFirstObjectDecoder(), new IntegerReplayConvertor(0));
     RedisStrictCommand<Object> BITFIELD_BYTE = new RedisStrictCommand<>("BITFIELD", null,
