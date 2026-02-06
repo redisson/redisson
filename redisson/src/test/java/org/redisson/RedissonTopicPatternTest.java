@@ -14,7 +14,9 @@ import org.redisson.api.listener.PatternMessageListener;
 import org.redisson.api.listener.PatternStatusListener;
 import org.redisson.api.redisnode.*;
 import org.redisson.api.redisnode.RedisNodes;
+import org.redisson.client.RedisConnection;
 import org.redisson.client.codec.StringCodec;
+import org.redisson.client.protocol.RedisCommands;
 import org.redisson.config.Config;
 import org.redisson.config.SubscriptionMode;
 import org.redisson.connection.balancer.RandomLoadBalancer;
@@ -465,7 +467,8 @@ public class RedissonTopicPatternTest extends RedisDockerTest {
 
             RedisSentinelMasterSlave runningNodes = redisson.getRedisNodes(RedisNodes.SENTINEL_MASTER_SLAVE);
             for (RedisSlave slave : runningNodes.getSlaves()) {
-                slave.setConfig("notify-keyspace-events", "KgE$");
+                RedisConnection conn = ((org.redisson.redisnode.RedisNode)slave).getClient().connect();
+                conn.sync(RedisCommands.CONFIG_SET,"notify-keyspace-events", "KgE$");
             }
             runningNodes.getMaster().setConfig("notify-keyspace-events", "KgE$");
 
