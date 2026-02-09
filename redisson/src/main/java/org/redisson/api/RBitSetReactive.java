@@ -15,9 +15,11 @@
  */
 package org.redisson.api;
 
+import org.redisson.api.bitset.BitFieldArgs;
 import reactor.core.publisher.Mono;
 
 import java.util.BitSet;
+import java.util.List;
 
 /**
  * Reactive interface for BitSet object
@@ -94,6 +96,17 @@ public interface RBitSetReactive extends RExpirableReactive {
      * @return result value
      */
     Mono<Long> incrementAndGetUnsigned(int size, long offset, long increment);
+
+    /**
+     * Executes BITFIELD command with multiple subcommands
+     * and returns result list in the same order.
+     * if ReadMode is Slave And Args is only get commands,
+     * then BITFIELD_RO command will be executed
+     *
+     * @param args - bitfield arguments
+     * @return result values
+     */
+    Mono<List<Long>> bitField(BitFieldArgs args);
 
     /**
      * Returns byte number at specified <code>offset</code>

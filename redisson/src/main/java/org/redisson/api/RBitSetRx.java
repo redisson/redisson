@@ -19,6 +19,8 @@ import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Single;
 
 import java.util.BitSet;
+import java.util.List;
+import org.redisson.api.bitset.BitFieldArgs;
 
 
 /**
@@ -96,6 +98,17 @@ public interface RBitSetRx extends RExpirableRx {
      * @return result value
      */
     Single<Long> incrementAndGetUnsigned(int size, long offset, long increment);
+
+    /**
+     * Executes BITFIELD command with multiple subcommands
+     * and returns result list in the same order.
+     * if ReadMode is Slave And Args is only get commands,
+     * then BITFIELD_RO command will be executed
+     *
+     * @param args - bitfield arguments
+     * @return result values
+     */
+    Single<List<Long>> bitField(BitFieldArgs args);
 
     /**
      * Returns byte number at specified <code>offset</code>
