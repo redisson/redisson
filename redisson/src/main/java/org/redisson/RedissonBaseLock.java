@@ -223,6 +223,7 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
         long timeout = (config.getTimeout() + config.getRetryDelay().calcDelay(config.getRetryAttempts()).toMillis()) * config.getRetryAttempts();
         timeout = Math.max(timeout, 1);
         RFuture<Boolean> r = unlockInnerAsync(threadId, requestId, (int) timeout);
+        String id = requestId;
         CompletionStage<Boolean> ff = r.thenApply(v -> {
             CommandAsyncExecutor ce = commandExecutor;
             if (ce instanceof CommandBatchService) {

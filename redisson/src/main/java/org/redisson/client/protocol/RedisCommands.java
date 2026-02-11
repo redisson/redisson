@@ -63,6 +63,7 @@ import org.redisson.client.protocol.convertor.EmptySetConvertor;
 import org.redisson.client.protocol.convertor.InstantReplyConvertor;
 import org.redisson.client.protocol.convertor.IntegerReplayConvertor;
 import org.redisson.client.protocol.convertor.JsonTypeConvertor;
+import org.redisson.client.protocol.convertor.LongNullReplayConvertor;
 import org.redisson.client.protocol.convertor.LongReplayConvertor;
 import org.redisson.client.protocol.convertor.ShortReplayConvertor;
 import org.redisson.client.protocol.convertor.StreamIdConvertor;
@@ -209,6 +210,10 @@ public interface RedisCommands {
 
     RedisStrictCommand<Object> BITFIELD_LONG = new RedisStrictCommand<>("BITFIELD", null,
                                                     new ListFirstObjectDecoder(), new LongReplayConvertor());
+    RedisStrictCommand<List<Long>> BITFIELD_LONG_LIST = new RedisStrictCommand<>("BITFIELD", null,
+                                                    new ObjectListReplayDecoder<Long>(), new LongNullReplayConvertor());
+    RedisStrictCommand<List<Long>> BITFIELD_RO_LONG_LIST = new RedisStrictCommand<>("BITFIELD_RO", null,
+            new ObjectListReplayDecoder<Long>(), new LongNullReplayConvertor());
     RedisStrictCommand<Object> BITFIELD_INT = new RedisStrictCommand<>("BITFIELD", null,
                                                     new ListFirstObjectDecoder(), new IntegerReplayConvertor(0));
     RedisStrictCommand<Object> BITFIELD_BYTE = new RedisStrictCommand<>("BITFIELD", null,
