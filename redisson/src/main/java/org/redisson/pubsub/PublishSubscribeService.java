@@ -1007,7 +1007,8 @@ public class PublishSubscribeService {
         if (isMultiEntity(channelName)) {
             entry = connectionManager.getEntrySet()
                     .stream()
-                    .filter(e -> !name2PubSubConnection.containsKey(new PubSubKey(channelName, e)) && e != oldEntry)
+                    .filter(e -> !name2PubSubConnection.containsKey(new PubSubKey(channelName, e))
+                            && (!connectionManager.getServiceManager().getCfg().isClusterConfig() || e != oldEntry))
                     .findFirst()
                     .orElse(null);
         }

@@ -462,7 +462,7 @@ public class RedisDockerTest {
         }).collect(Collectors.toList());
     }
 
-    protected List<ContainerState> getMasterNodes(List<ContainerState> nodes) {
+    protected <C extends ContainerState> List<C> getMasterNodes(List<C> nodes) {
         return nodes.stream().filter(node -> {
             if (!node.isRunning()) {
                 return false;

@@ -12,14 +12,16 @@ import org.redisson.api.RedissonClient;
 import org.redisson.api.listener.BasePatternStatusListener;
 import org.redisson.api.listener.PatternMessageListener;
 import org.redisson.api.listener.PatternStatusListener;
-import org.redisson.api.redisnode.RedisCluster;
-import org.redisson.api.redisnode.RedisClusterMaster;
-import org.redisson.api.redisnode.RedisClusterSlave;
+import org.redisson.api.redisnode.*;
 import org.redisson.api.redisnode.RedisNodes;
+import org.redisson.client.RedisConnection;
 import org.redisson.client.codec.StringCodec;
+import org.redisson.client.protocol.RedisCommands;
 import org.redisson.config.Config;
 import org.redisson.config.SubscriptionMode;
 import org.redisson.connection.balancer.RandomLoadBalancer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.ContainerState;
 import org.testcontainers.containers.GenericContainer;
 
@@ -35,6 +37,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 public class RedissonTopicPatternTest extends RedisDockerTest {
+
+    private static final Logger log = LoggerFactory.getLogger(RedissonTopicPatternTest.class);
 
     public static class Message implements Serializable {
 
@@ -450,5 +454,58 @@ public class RedissonTopicPatternTest extends RedisDockerTest {
         redisson.shutdown();
         redis.stop();
     }
-    
+
+    @Test
+    public void testResubscribeInSentinel() throws InterruptedException {
+        withSentinel((nodes, config) -> {
+            config.useSentinelServers()
+                    .setRetryAttempts(8)
+                    .setSubscriptionsPerConnection(20)
+                    .setSubscriptionConnectionPoolSize(200);
+
+            RedissonClient redisson = Redisson.create(config);
+
+            RedisSentinelMasterSlave runningNodes = redisson.getRedisNodes(RedisNodes.SENTINEL_MASTER_SLAVE);
+            for (RedisSlave slave : runningNodes.getSlaves()) {
+                RedisConnection conn = ((org.redisson.redisnode.RedisNode)slave).getClient().connect();
+                conn.sync(RedisCommands.CONFIG_SET,"notify-keyspace-events", "KgE$");
+            }
+            runningNodes.getMaster().setConfig("notify-keyspace-events", "KgE$");
+
+            AtomicInteger counter = new AtomicInteger(0);
+
+            RPatternTopic topic = redisson.getPatternTopic("__keyspace@0__:test.bucket.*", StringCodec.INSTANCE);
+            topic.addListener(String.class,
+                    (pattern, channel, msg) -> counter.incrementAndGet());
+
+            // ensure everything works before failover
+            for (int i=0; i<10; i++) {
+                redisson.getBucket(String.format("test.bucket.%d", i+1)).set("value");
+            }
+
+            await().atMost(5, TimeUnit.SECONDS).until(() -> counter.get() == 10);
+
+            nodes.getFirst().stop(); // withSentinel() puts the initial master first
+
+            await().atMost(1, TimeUnit.MINUTES).until(() -> {
+                // wait for sentinel to do its thing
+                try {
+                    redisson.getBucket("other.bucket").set("value");
+                    return true;
+                } catch (Exception e) {
+                    return false;
+                }
+            });
+
+            runningNodes.getMaster().setConfig("notify-keyspace-events", "KgE$");
+            log.info("notify-keyspace-events @ master = {}",
+                redisson.getRedisNodes(RedisNodes.SENTINEL_MASTER_SLAVE).getMaster().getConfig("notify-keyspace-events"));
+
+            for (int i=0; i<10; i++) {
+                redisson.getBucket(String.format("test.bucket.%d", i+1)).set("value");
+            }
+
+            await().atMost(5, TimeUnit.SECONDS).until(() -> counter.get() == 20);
+        }, 2);
+    }
 }
