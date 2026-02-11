@@ -33,6 +33,28 @@ import org.redisson.codec.JsonCodec;
 public interface RBatch {
 
     /**
+     * Returns bloom filter native instance by <code>name</code>.
+     * Covers BF.* commands.
+     *
+     * @param <T> type of object
+     * @param name - name of object
+     * @return RBloomFilterNative object
+     */
+    <T> RBloomFilterNativeAsync<T> getBloomFilterNative(String name);
+
+    /**
+     * Returns bloom filter native instance by <code>name</code>
+     * using provided <code>codec</code> for objects.
+     * Covers BF.* commands.
+     *
+     * @param <T> type of object
+     * @param name - name of object
+     * @param codec - codec for values
+     * @return RBloomFilterNative object
+     */
+    <T> RBloomFilterNativeAsync<T> getBloomFilterNative(String name, Codec codec);
+
+    /**
      * Returns stream instance by <code>name</code>
      * 
      * @param <K> type of key

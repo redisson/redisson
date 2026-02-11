@@ -416,4 +416,16 @@ public class RedissonBatchRx implements RBatchRx {
                 new RedissonListRx<V>(deque), RBlockingDequeRx.class);
     }
 
+    @Override
+    public <T> RBloomFilterNativeRx<T> getBloomFilterNative(String name) {
+        return RxProxyBuilder.create(executorService,
+                new RedissonBloomFilterNative<>(executorService, name), RBloomFilterNativeRx.class);
+    }
+
+    @Override
+    public <T> RBloomFilterNativeRx<T> getBloomFilterNative(String name, Codec codec) {
+        return RxProxyBuilder.create(executorService,
+                new RedissonBloomFilterNative<>(codec, executorService, name), RBloomFilterNativeRx.class);
+    }
+
 }

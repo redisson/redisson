@@ -61,12 +61,12 @@ public class RedissonBloomFilterNative<T> extends RedissonExpirable implements R
 
     final CommandAsyncExecutor commandExecutor;
 
-    protected RedissonBloomFilterNative(CommandAsyncExecutor commandExecutor, String name) {
+    public RedissonBloomFilterNative(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
         this.commandExecutor = commandExecutor;
     }
 
-    protected RedissonBloomFilterNative(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
+    public RedissonBloomFilterNative(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
         super(codec, commandExecutor, name);
         this.commandExecutor = commandExecutor;
     }

@@ -397,4 +397,16 @@ public class RedissonBatchReactive implements RBatchReactive {
                 new RedissonListReactive<V>(codec, executorService, name), RBlockingDequeReactive.class);
     }
 
+    @Override
+    public <T> RBloomFilterNativeReactive<T> getBloomFilterNative(String name) {
+        return ReactiveProxyBuilder.create(executorService,
+                new RedissonBloomFilterNative<>(executorService, name), RBloomFilterNativeReactive.class);
+    }
+
+    @Override
+    public <T> RBloomFilterNativeReactive<T> getBloomFilterNative(String name, Codec codec) {
+        return ReactiveProxyBuilder.create(executorService,
+                new RedissonBloomFilterNative<>(codec, executorService, name), RBloomFilterNativeReactive.class);
+    }
+
 }
