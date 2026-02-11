@@ -51,14 +51,20 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
 
     final String id;
     final String entryName;
+    final String namespace;
 
     final LockRenewalScheduler renewalScheduler;
 
-    public RedissonBaseLock(CommandAsyncExecutor commandExecutor, String name) {
-        super(commandExecutor, name);
+    public RedissonBaseLock(CommandAsyncExecutor commandExecutor, String name, String namespace) {
+        super(commandExecutor, addNamespaceIfExist(namespace, name));
         this.id = getServiceManager().getId();
         this.entryName = id + ":" + name;
         this.renewalScheduler = getServiceManager().getRenewalScheduler();
+        this.namespace = namespace;
+    }
+
+    public RedissonBaseLock(CommandAsyncExecutor commandExecutor, String name) {
+        this(commandExecutor, name, null);
     }
 
     protected String getEntryName() {
@@ -210,7 +216,16 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
     }
 
     String getUnlockLatchName(String requestId) {
-        return prefixName("redisson_unlock_latch", getRawName()) + ":" + requestId;
+        String prefix = addNamespaceIfExist(this.namespace, "redisson_unlock_latch");
+        return prefixName(prefix, getRawName()) + ":" + requestId;
+    }
+
+    static String addNamespaceIfExist(String namespace, String name) {
+        if (namespace == null || namespace.trim().isEmpty()) {
+            return name;
+        } else {
+            return prefixName(namespace, name);
+        }
     }
 
     protected abstract RFuture<Boolean> unlockInnerAsync(long threadId, String requestId, int timeout);
