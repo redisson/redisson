@@ -1850,6 +1850,35 @@ public interface RedissonClient {
     <V> RBloomFilterNative<V> getBloomFilterNative(PlainOptions options);
 
     /**
+     * Returns cuckoo filter instance by <code>name</code>.
+     *
+     * @param <V> type of value
+     * @param name name of object
+     * @return CuckooFilter object
+     */
+    <V> RCuckooFilter<V> getCuckooFilter(String name);
+
+    /**
+     * Returns cuckoo filter instance by <code>name</code>
+     * using provided <code>codec</code> for values.
+     *
+     * @param <V> type of value
+     * @param name name of object
+     * @param codec codec for values
+     * @return CuckooFilter object
+     */
+    <V> RCuckooFilter<V> getCuckooFilter(String name, Codec codec);
+
+    /**
+     * Returns cuckoo filter instance with specified <code>options</code>.
+     *
+     * @param <V> type of value
+     * @param options instance options
+     * @return CuckooFilter object
+     */
+    <V> RCuckooFilter<V> getCuckooFilter(PlainOptions options);
+
+    /**
      * Returns id generator instance by name.
      *
      * @param name name of object

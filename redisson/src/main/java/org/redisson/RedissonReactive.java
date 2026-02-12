@@ -1036,6 +1036,27 @@ public final class RedissonReactive implements RedissonReactiveClient {
     }
 
     @Override
+    public <V> RCuckooFilterReactive<V> getCuckooFilter(String name) {
+        return getCuckooFilter(name, null);
+    }
+
+    @Override
+    public <V> RCuckooFilterReactive<V> getCuckooFilter(String name, Codec codec) {
+        return ReactiveProxyBuilder.create(commandExecutor,
+                new RedissonCuckooFilter<V>(codec, commandExecutor, name),
+                RCuckooFilterReactive.class);
+    }
+
+    @Override
+    public <V> RCuckooFilterReactive<V> getCuckooFilter(PlainOptions options) {
+        PlainParams params = (PlainParams) options;
+        CommandReactiveExecutor ca = commandExecutor.copy(params);
+        return ReactiveProxyBuilder.create(commandExecutor,
+                new RedissonCuckooFilter<V>(params.getCodec(), ca, params.getName()),
+                RCuckooFilterReactive.class);
+    }
+
+    @Override
     public RFunctionReactive getFunction() {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonFuction(commandExecutor), RFunctionReactive.class);
     }

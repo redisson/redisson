@@ -1198,6 +1198,24 @@ public final class Redisson implements RedissonClient {
     }
 
     @Override
+    public <V> RCuckooFilter<V> getCuckooFilter(String name) {
+        return getCuckooFilter(name, null);
+    }
+
+    @Override
+    public <V> RCuckooFilter<V> getCuckooFilter(String name, Codec codec) {
+        return new RedissonCuckooFilter<V>(codec, commandExecutor, name);
+    }
+
+    @Override
+    public <V> RCuckooFilter<V> getCuckooFilter(PlainOptions options) {
+        PlainParams params = (PlainParams) options;
+        return new RedissonCuckooFilter<V>(params.getCodec(),
+                commandExecutor.copy(params), params.getName());
+    }
+
+
+    @Override
     public <V> RBloomFilterNative<V> getBloomFilterNative(PlainOptions options) {
         PlainParams params = (PlainParams) options;
         return new RedissonBloomFilterNative<V>(params.getCodec(), commandExecutor.copy(params), params.getName());

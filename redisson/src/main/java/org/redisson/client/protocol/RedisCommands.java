@@ -29,11 +29,8 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.redisson.api.FunctionLibrary;
-import org.redisson.api.FunctionStats;
-import org.redisson.api.JsonType;
-import org.redisson.api.ObjectEncoding;
-import org.redisson.api.RType;
+
+import org.redisson.api.*;
 import org.redisson.api.bloomfilter.BloomFilterInfo;
 import org.redisson.api.bloomfilter.BloomFilterScanDumpInfo;
 import org.redisson.api.search.index.IndexInfo;
@@ -46,88 +43,8 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.DoubleCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.handler.State;
-import org.redisson.client.protocol.convertor.BitsSizeReplayConvertor;
-import org.redisson.client.protocol.convertor.BooleanAmountReplayConvertor;
-import org.redisson.client.protocol.convertor.BooleanNotNullReplayConvertor;
-import org.redisson.client.protocol.convertor.BooleanNullReplayConvertor;
-import org.redisson.client.protocol.convertor.BooleanNullSafeReplayConvertor;
-import org.redisson.client.protocol.convertor.BooleanNumberReplayConvertor;
-import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
-import org.redisson.client.protocol.convertor.ByteReplayConvertor;
-import org.redisson.client.protocol.convertor.Convertor;
-import org.redisson.client.protocol.convertor.DoubleNullSafeReplayConvertor;
-import org.redisson.client.protocol.convertor.DoubleReplayConvertor;
-import org.redisson.client.protocol.convertor.EmptyListConvertor;
-import org.redisson.client.protocol.convertor.EmptyMapConvertor;
-import org.redisson.client.protocol.convertor.EmptySetConvertor;
-import org.redisson.client.protocol.convertor.InstantReplyConvertor;
-import org.redisson.client.protocol.convertor.IntegerReplayConvertor;
-import org.redisson.client.protocol.convertor.JsonTypeConvertor;
-import org.redisson.client.protocol.convertor.LongNullReplayConvertor;
-import org.redisson.client.protocol.convertor.LongReplayConvertor;
-import org.redisson.client.protocol.convertor.ShortReplayConvertor;
-import org.redisson.client.protocol.convertor.StreamIdConvertor;
-import org.redisson.client.protocol.convertor.StringToListConvertor;
-import org.redisson.client.protocol.convertor.TimeObjectDecoder;
-import org.redisson.client.protocol.convertor.TrueReplayConvertor;
-import org.redisson.client.protocol.convertor.TypeConvertor;
-import org.redisson.client.protocol.convertor.VoidReplayConvertor;
-import org.redisson.client.protocol.decoder.ArrayBooleanDecoder;
-import org.redisson.client.protocol.decoder.AutoClaimDecoder;
-import org.redisson.client.protocol.decoder.AutoClaimMapReplayDecoder;
-import org.redisson.client.protocol.decoder.BloomFilterInfoDecoder;
-import org.redisson.client.protocol.decoder.BloomFilterInfoSingleDecoder;
-import org.redisson.client.protocol.decoder.BloomFilterScanDumpInfoDecoder;
-import org.redisson.client.protocol.decoder.ClusterNodesDecoder;
-import org.redisson.client.protocol.decoder.CodecDecoder;
-import org.redisson.client.protocol.decoder.FastAutoClaimDecoder;
-import org.redisson.client.protocol.decoder.HybridSearchResultDecoder;
-import org.redisson.client.protocol.decoder.IndexInfoDecoder;
-import org.redisson.client.protocol.decoder.ListFirstObjectDecoder;
-import org.redisson.client.protocol.decoder.ListMultiDecoder2;
-import org.redisson.client.protocol.decoder.ListObjectDecoder;
-import org.redisson.client.protocol.decoder.ListResultReplayDecoder;
-import org.redisson.client.protocol.decoder.ListScanResult;
-import org.redisson.client.protocol.decoder.ListScanResultReplayDecoder;
-import org.redisson.client.protocol.decoder.Long2MultiDecoder;
-import org.redisson.client.protocol.decoder.MapKeyDecoder;
-import org.redisson.client.protocol.decoder.MapMergeDecoder;
-import org.redisson.client.protocol.decoder.MapScanResult;
-import org.redisson.client.protocol.decoder.MapScanResultReplayDecoder;
-import org.redisson.client.protocol.decoder.MapValueDecoder;
-import org.redisson.client.protocol.decoder.ObjectDecoder;
-import org.redisson.client.protocol.decoder.ObjectFirstScoreReplayDecoder;
-import org.redisson.client.protocol.decoder.ObjectListReplayDecoder;
-import org.redisson.client.protocol.decoder.ObjectMapEntryReplayDecoder;
-import org.redisson.client.protocol.decoder.ObjectMapReplayDecoder;
-import org.redisson.client.protocol.decoder.ObjectMapReplayDecoder2;
-import org.redisson.client.protocol.decoder.ObjectSetReplayDecoder;
-import org.redisson.client.protocol.decoder.PendingEntryDecoder;
-import org.redisson.client.protocol.decoder.PendingResultDecoder;
-import org.redisson.client.protocol.decoder.RankedEntryDecoder;
-import org.redisson.client.protocol.decoder.ScoredAttributesReplayDecoder;
-import org.redisson.client.protocol.decoder.ScoredAttributesReplayDecoderV2;
-import org.redisson.client.protocol.decoder.ScoredEntryScanDecoder;
-import org.redisson.client.protocol.decoder.ScoredSortedSetPolledObjectDecoder;
-import org.redisson.client.protocol.decoder.ScoredSortedSetRandomMapDecoder;
-import org.redisson.client.protocol.decoder.ScoredSortedSetReplayDecoder;
-import org.redisson.client.protocol.decoder.ScoredSortedSetReplayDecoderV2;
-import org.redisson.client.protocol.decoder.ScoredSortedSetScanDecoder;
-import org.redisson.client.protocol.decoder.ScoredSortedSetScanReplayDecoder;
-import org.redisson.client.protocol.decoder.SlotsDecoder;
-import org.redisson.client.protocol.decoder.StreamConsumerInfoDecoder;
-import org.redisson.client.protocol.decoder.StreamGroupInfoDecoder;
-import org.redisson.client.protocol.decoder.StreamIdDecoder;
-import org.redisson.client.protocol.decoder.StreamObjectMapReplayDecoder;
-import org.redisson.client.protocol.decoder.StreamResultDecoder;
-import org.redisson.client.protocol.decoder.StreamResultDecoderV2;
-import org.redisson.client.protocol.decoder.StringDataDecoder;
-import org.redisson.client.protocol.decoder.StringListListReplayDecoder;
-import org.redisson.client.protocol.decoder.StringListReplayDecoder;
-import org.redisson.client.protocol.decoder.StringMapDataDecoder;
-import org.redisson.client.protocol.decoder.StringMapReplayDecoder;
-import org.redisson.client.protocol.decoder.TimeLongObjectDecoder;
-import org.redisson.client.protocol.decoder.VectorInfoDecoder;
+import org.redisson.client.protocol.convertor.*;
+import org.redisson.client.protocol.decoder.*;
 import org.redisson.client.protocol.pubsub.PubSubStatusDecoder;
 import org.redisson.cluster.ClusterNodeInfo;
 import org.redisson.codec.CompositeCodec;
@@ -1151,5 +1068,21 @@ public interface RedisCommands {
     RedisCommand<Long> BF_INFO_SINGLE = new RedisCommand("BF.INFO", new BloomFilterInfoSingleDecoder());
     RedisCommand<Void> BF_RESERVE = new RedisCommand("BF.RESERVE", new VoidReplayConvertor());
     RedisCommand<Void> BF_LOADCHUNK = new RedisCommand("BF.LOADCHUNK", new VoidReplayConvertor());
+
+    RedisCommand<Boolean> CF_RESERVE = new RedisCommand<>("CF.RESERVE", new BooleanReplayConvertor());
+
+    RedisCommand<Boolean> CF_ADD = new RedisCommand<>("CF.ADD", new BooleanReplayConvertor());
+
+    RedisCommand<Boolean> CF_ADDNX = new RedisCommand<>("CF.ADDNX", new BooleanReplayConvertor());
+
+    RedisCommand<Boolean> CF_EXISTS = new RedisCommand<>("CF.EXISTS", new BooleanReplayConvertor());
+
+    RedisCommand<Boolean> CF_DEL = new RedisCommand<>("CF.DEL", new BooleanReplayConvertor());
+
+    RedisCommand<Long> CF_COUNT = new RedisCommand<>("CF.COUNT", new LongReplayConvertor());
+
+    RedisCommand<CuckooFilterInfo> CF_INFO = new RedisCommand<>("CF.INFO",
+                        new ListMultiDecoder2(new CuckooFilterInfoDecoder(), new ObjectListReplayDecoder<>()));
+
 
 }

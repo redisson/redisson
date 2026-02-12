@@ -428,4 +428,16 @@ public class RedissonBatchRx implements RBatchRx {
                 new RedissonBloomFilterNative<>(codec, executorService, name), RBloomFilterNativeRx.class);
     }
 
+    @Override
+    public <V> RCuckooFilterRx<V> getCuckooFilter(String name) {
+        return getCuckooFilter(name, null);
+    }
+
+    @Override
+    public <V> RCuckooFilterRx<V> getCuckooFilter(String name, Codec codec) {
+        return RxProxyBuilder.create(executorService,
+                new RedissonCuckooFilter<V>(codec, executorService, name),
+                RCuckooFilterRx.class);
+    }
+
 }

@@ -409,4 +409,16 @@ public class RedissonBatchReactive implements RBatchReactive {
                 new RedissonBloomFilterNative<>(codec, executorService, name), RBloomFilterNativeReactive.class);
     }
 
+    @Override
+    public <V> RCuckooFilterReactive<V> getCuckooFilter(String name) {
+        return getCuckooFilter(name, null);
+    }
+
+    @Override
+    public <V> RCuckooFilterReactive<V> getCuckooFilter(String name, Codec codec) {
+        return ReactiveProxyBuilder.create(executorService,
+                new RedissonCuckooFilter<V>(codec, executorService, name),
+                RCuckooFilterReactive.class);
+    }
+
 }

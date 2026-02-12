@@ -358,4 +358,15 @@ public class RedissonBatch implements RBatch {
         return new RedissonBloomFilterNative<>(codec, executorService, name);
     }
 
+    @Override
+    public <V> RCuckooFilterAsync<V> getCuckooFilter(String name) {
+        return getCuckooFilter(name, null);
+    }
+
+    @Override
+    public <V> RCuckooFilterAsync<V> getCuckooFilter(String name, Codec codec) {
+        return new RedissonCuckooFilter<V>(codec, executorService, name);
+    }
+
+
 }

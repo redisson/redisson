@@ -34,6 +34,26 @@ import org.redisson.codec.JsonCodec;
 public interface RBatchRx {
 
     /**
+     * Returns cuckoo filter instance by <code>name</code>.
+     *
+     * @param <V> type of value
+     * @param name name of object
+     * @return CuckooFilter object
+     */
+    <V> RCuckooFilterRx<V> getCuckooFilter(String name);
+
+    /**
+     * Returns cuckoo filter instance by <code>name</code>
+     * using provided <code>codec</code> for values.
+     *
+     * @param <V> type of value
+     * @param name name of object
+     * @param codec codec for values
+     * @return CuckooFilter object
+     */
+    <V> RCuckooFilterRx<V> getCuckooFilter(String name, Codec codec);
+
+    /**
      * Returns bloom filter native instance by <code>name</code>.
      * Covers BF.* commands.
      *

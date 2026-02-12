@@ -969,6 +969,27 @@ public final class RedissonRx implements RedissonRxClient {
     }
 
     @Override
+    public <V> RCuckooFilterRx<V> getCuckooFilter(String name) {
+        return getCuckooFilter(name, null);
+    }
+
+    @Override
+    public <V> RCuckooFilterRx<V> getCuckooFilter(String name, Codec codec) {
+        return RxProxyBuilder.create(commandExecutor,
+                new RedissonCuckooFilter<V>(codec, commandExecutor, name),
+                RCuckooFilterRx.class);
+    }
+
+    @Override
+    public <V> RCuckooFilterRx<V> getCuckooFilter(PlainOptions options) {
+        PlainParams params = (PlainParams) options;
+        CommandRxExecutor ca = commandExecutor.copy(params);
+        return RxProxyBuilder.create(commandExecutor,
+                new RedissonCuckooFilter<V>(params.getCodec(), ca, params.getName()),
+                RCuckooFilterRx.class);
+    }
+
+    @Override
     public RFunctionRx getFunction() {
         return RxProxyBuilder.create(commandExecutor, new RedissonFuction(commandExecutor), RFunctionRx.class);
     }
