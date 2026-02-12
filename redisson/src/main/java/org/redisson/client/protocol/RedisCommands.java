@@ -1152,7 +1152,4 @@ public interface RedisCommands {
     RedisCommand<Void> BF_RESERVE = new RedisCommand("BF.RESERVE", new VoidReplayConvertor());
     RedisCommand<Void> BF_LOADCHUNK = new RedisCommand("BF.LOADCHUNK", new VoidReplayConvertor());
 
-    RedisCommand<List<Boolean>> BF_INSERT = new RedisCommand("BF.INSERT", new ObjectListReplayDecoder<Integer>(), new BooleanReplayConvertor());
-    RedisCommand<List<Boolean>> BF_MADD = new RedisCommand("BF.MADD", new ObjectListReplayDecoder<Integer>(), new BooleanReplayConvertor());
-    RedisCommand<List<Boolean>> BF_MEXISTS = new RedisCommand("BF.MEXISTS", new ObjectListReplayDecoder<Boolean>(), new BooleanReplayConvertor());
 }
