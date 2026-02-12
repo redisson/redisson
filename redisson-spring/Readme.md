@@ -6,5 +6,6 @@ Documentation:
 - [Spring Session](https://redisson.pro/docs/integration-with-spring/#spring-session)
 - [Spring Data Redis](https://redisson.pro/docs/integration-with-spring/#spring-data-redis)
 
+&nbsp;
 - [Spring AI Vector Store](https://redisson.pro/docs/integration-with-spring/#spring-ai-vector-store)
 - [Spring Cloud Stream](https://redisson.pro/docs/integration-with-spring/#spring-cloud-stream)  
