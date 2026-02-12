@@ -72,7 +72,7 @@ public class RedissonBloomFilterNative<T> extends RedissonExpirable implements R
     }
 
     @Override
-    public Boolean add(T element) {
+    public boolean add(T element) {
         return commandExecutor.get(addAsync(element));
     }
 
@@ -234,7 +234,7 @@ public class RedissonBloomFilterNative<T> extends RedissonExpirable implements R
     }
 
     @Override
-    public Boolean exists(T element) {
+    public boolean exists(T element) {
         return commandExecutor.get(existsAsync(element));
     }
 
@@ -263,7 +263,7 @@ public class RedissonBloomFilterNative<T> extends RedissonExpirable implements R
 
 
     @Override
-    public Long count() {
+    public long count() {
         return commandExecutor.get(countAsync());
     }
 

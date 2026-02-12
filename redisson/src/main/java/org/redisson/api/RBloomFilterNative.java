@@ -40,7 +40,7 @@ public interface RBloomFilterNative<T> extends RExpirable, RBloomFilterNativeAsy
      * @return <code>true</code> if element has been added successfully
      *         <code>false</code> if element is already present
      */
-    Boolean add(T element);
+    boolean add(T element);
 
     /**
      * Adds elements
@@ -85,7 +85,7 @@ public interface RBloomFilterNative<T> extends RExpirable, RBloomFilterNativeAsy
      * @return <code>true</code> if element is present
      *         <code>false</code> if element is not present
      */
-    Boolean exists(T element);
+    boolean exists(T element);
 
     /**
      * Checks for elements presence
@@ -101,7 +101,7 @@ public interface RBloomFilterNative<T> extends RExpirable, RBloomFilterNativeAsy
      *
      * @return count of present elements
      */
-    Long count();
+    long count();
 
     /**
      * Returns Bloom filter information
