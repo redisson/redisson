@@ -54,8 +54,6 @@ public class RedissonCuckooFilter<V> extends RedissonExpirable implements RCucko
         this.codec = codec;
     }
 
-    // ─── CF.RESERVE ──────────────────────────────────────────────
-
     @Override
     public void init(long capacity) {
         get(initAsync(capacity));
@@ -101,8 +99,6 @@ public class RedissonCuckooFilter<V> extends RedissonExpirable implements RCucko
                 params.toArray());
     }
 
-    // ─── CF.ADD ──────────────────────────────────────────────────
-
     @Override
     public boolean add(V element) {
         return get(addAsync(element));
@@ -115,8 +111,6 @@ public class RedissonCuckooFilter<V> extends RedissonExpirable implements RCucko
                 RedisCommands.CF_ADD,
                 getRawName(), encode(element));
     }
-
-    // ─── CF.INSERT ───────────────────────────────────────────────
 
     @Override
     public Set<V> add(CuckooFilterAddArgs<V> args) {
@@ -137,8 +131,6 @@ public class RedissonCuckooFilter<V> extends RedissonExpirable implements RCucko
                 params.toArray());
     }
 
-    // ─── CF.ADDNX ───────────────────────────────────────────────
-
     @Override
     public boolean addIfAbsent(V element) {
         return get(addIfAbsentAsync(element));
@@ -151,8 +143,6 @@ public class RedissonCuckooFilter<V> extends RedissonExpirable implements RCucko
                 RedisCommands.CF_ADDNX,
                 getRawName(), encode(element));
     }
-
-    // ─── CF.INSERTNX ────────────────────────────────────────────
 
     @Override
     public Set<V> addIfAbsent(CuckooFilterAddArgs<V> args) {
@@ -173,8 +163,6 @@ public class RedissonCuckooFilter<V> extends RedissonExpirable implements RCucko
                 params.toArray());
     }
 
-    // ─── CF.EXISTS ───────────────────────────────────────────────
-
     @Override
     public boolean exists(V element) {
         return get(existsAsync(element));
@@ -187,8 +175,6 @@ public class RedissonCuckooFilter<V> extends RedissonExpirable implements RCucko
                 RedisCommands.CF_EXISTS,
                 getRawName(), encode(element));
     }
-
-    // ─── CF.MEXISTS ──────────────────────────────────────────────
 
     @Override
     public Set<V> exists(Collection<V> elements) {
@@ -212,8 +198,6 @@ public class RedissonCuckooFilter<V> extends RedissonExpirable implements RCucko
                 params.toArray());
     }
 
-    // ─── CF.DEL ──────────────────────────────────────────────────
-
     @Override
     public boolean remove(V element) {
         return get(removeAsync(element));
@@ -226,8 +210,6 @@ public class RedissonCuckooFilter<V> extends RedissonExpirable implements RCucko
                 RedisCommands.CF_DEL,
                 getRawName(), encode(element));
     }
-
-    // ─── CF.COUNT ────────────────────────────────────────────────
 
     @Override
     public long count(V element) {
@@ -242,8 +224,6 @@ public class RedissonCuckooFilter<V> extends RedissonExpirable implements RCucko
                 getRawName(), encode(element));
     }
 
-    // ─── CF.INFO ─────────────────────────────────────────────────
-
     @Override
     public CuckooFilterInfo getInfo() {
         return get(getInfoAsync());
@@ -256,8 +236,6 @@ public class RedissonCuckooFilter<V> extends RedissonExpirable implements RCucko
                 RedisCommands.CF_INFO,
                 getRawName());
     }
-
-    // ─── helpers ─────────────────────────────────────────────────
 
     private List<Object> buildInsertParams(CuckooFilterAddArgsImpl<V> a,
                                             List<V> itemList) {
