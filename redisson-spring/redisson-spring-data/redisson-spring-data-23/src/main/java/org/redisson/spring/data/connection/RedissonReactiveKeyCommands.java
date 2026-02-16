@@ -111,7 +111,10 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
     @Override
     public Flux<ByteBuffer> scan(ScanOptions options) {
         RedissonKeysReactive reactive = new RedissonKeysReactive(executorService);
-        return reactive.getKeysByPattern(options.getPattern(), options.getCount().intValue()).map(t -> ByteBuffer.wrap(t.getBytes()));
+        if (options.getCount() != null) {
+            return reactive.getKeysByPattern(options.getPattern(), options.getCount().intValue()).map(t -> ByteBuffer.wrap(t.getBytes()));
+        }
+        return reactive.getKeysByPattern(options.getPattern()).map(t -> ByteBuffer.wrap(t.getBytes()));
     }
 
     @Override
