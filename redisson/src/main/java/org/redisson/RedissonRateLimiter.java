@@ -142,48 +142,55 @@ public final class RedissonRateLimiter extends RedissonExpirable implements RRat
     }
     
     private CompletableFuture<Boolean> tryAcquireAsync(long permits, long timeoutInMillis) {
-        long s = System.currentTimeMillis();
+        CompletableFuture<Boolean> promise = new CompletableFuture<>();
+        long startTime = System.currentTimeMillis();
+        tryAcquireAsync(permits, timeoutInMillis, startTime, promise);
+        return promise;
+    }
+
+    private void tryAcquireAsync(long permits, long timeoutInMillis, long startTime, CompletableFuture<Boolean> promise) {
         RFuture<Long> future = tryAcquireAsync(RedisCommands.EVAL_LONG, permits);
-        return future.thenCompose(delay -> {
-            if (delay == null) {
-                return CompletableFuture.completedFuture(true);
-            }
-            
-            if (timeoutInMillis == -1) {
-                CompletableFuture<Boolean> f = new CompletableFuture<>();
-                getServiceManager().newTimeout(t -> {
-                    CompletableFuture<Boolean> r = tryAcquireAsync(permits, timeoutInMillis);
-                    commandExecutor.transfer(r, f);
-                }, delay, TimeUnit.MILLISECONDS);
-                return f;
-            }
-            
-            long el = System.currentTimeMillis() - s;
-            long remains = timeoutInMillis - el;
-            if (remains <= 0) {
-                return CompletableFuture.completedFuture(false);
+        future.whenComplete((delay, ex) -> {
+            if (ex != null) {
+                promise.completeExceptionally(ex);
+                return;
             }
 
-            CompletableFuture<Boolean> f = new CompletableFuture<>();
+            if (delay == null) {
+                promise.complete(true);
+                return;
+            }
+
+            if (timeoutInMillis == -1) {
+                getServiceManager().newTimeout(t -> {
+                    tryAcquireAsync(permits, timeoutInMillis, startTime, promise);
+                }, delay, TimeUnit.MILLISECONDS);
+                return;
+            }
+
+            long elapsed = System.currentTimeMillis() - startTime;
+            long remains = timeoutInMillis - elapsed;
+            if (remains <= 0) {
+                promise.complete(false);
+                return;
+            }
+
             if (remains < delay) {
                 getServiceManager().newTimeout(t -> {
-                    f.complete(false);
+                    promise.complete(false);
                 }, remains, TimeUnit.MILLISECONDS);
             } else {
-                long start = System.currentTimeMillis();
                 getServiceManager().newTimeout(t -> {
-                    long elapsed = System.currentTimeMillis() - start;
-                    if (remains <= elapsed) {
-                        f.complete(false);
+                    long newElapsed = System.currentTimeMillis() - startTime;
+                    if (timeoutInMillis <= newElapsed) {
+                        promise.complete(false);
                         return;
                     }
 
-                    CompletableFuture<Boolean> r = tryAcquireAsync(permits, remains - elapsed);
-                    commandExecutor.transfer(r, f);
+                    tryAcquireAsync(permits, timeoutInMillis, startTime, promise);
                 }, delay, TimeUnit.MILLISECONDS);
             }
-            return f;
-        }).toCompletableFuture();
+        });
     }
     
     private <T> RFuture<T> tryAcquireAsync(RedisCommand<T> command, Long value) {
