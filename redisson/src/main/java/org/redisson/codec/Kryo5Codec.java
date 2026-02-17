@@ -135,7 +135,15 @@ public class Kryo5Codec extends BaseCodec {
         this.inputPool = new Pool<Input>(true, false, 512) {
             @Override
             protected Input create() {
-                return new Input(8192);
+                return new Input(8192) {
+                    @Override
+                    public void reset() {
+                        super.reset();
+                        if (chars != null && chars.length > capacity) {
+                            chars = new char[capacity];
+                        }
+                    }
+                };
             }
         };
 
@@ -187,12 +195,17 @@ public class Kryo5Codec extends BaseCodec {
         public Object decode(ByteBuf buf, State state) throws IOException {
             Kryo kryo = kryoPool.obtain();
             Input input = inputPool.obtain();
+            boolean success = false;
             try {
                 input.setInputStream(new ByteBufInputStream(buf));
-                return kryo.readClassAndObject(input);
+                Object result = kryo.readClassAndObject(input);
+                success = true;
+                return result;
             } finally {
                 kryoPool.free(kryo);
-                inputPool.free(input);
+                if (success) {
+                    inputPool.free(input);
+                }
             }
         }
     };
