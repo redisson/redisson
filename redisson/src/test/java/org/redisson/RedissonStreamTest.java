@@ -20,6 +20,51 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class RedissonStreamTest extends RedisDockerTest {
 
     @Test
+    public void testAddIdempotentAuto() {
+        RStream<String, String> stream = redisson.getStream("test");
+
+        StreamMessageId id1 = stream.add(StreamAddArgs.entry("1", "1")
+                .idempotentProducerId("producer-1").autoId());
+        assertThat(id1).isNotNull();
+        assertThat(stream.size()).isEqualTo(1);
+
+        StreamMessageId id2 = stream.add(StreamAddArgs.entry("1", "1")
+                .idempotentProducerId("producer-1").autoId());
+        assertThat(id2).isEqualTo(id1);
+        assertThat(stream.size()).isEqualTo(1);
+
+        StreamMessageId id3 = stream.add(StreamAddArgs.entry("2", "2")
+                .idempotentProducerId("producer-1").autoId());
+        assertThat(id3).isNotEqualTo(id1);
+        assertThat(stream.size()).isEqualTo(2);
+    }
+
+    @Test
+    public void testAddIdempotent() {
+        RStream<String, String> stream = redisson.getStream("test");
+
+        StreamMessageId id1 = stream.add(StreamAddArgs.entry("1", "1")
+                .idempotentProducerId("producer-1").idempotentId("iid-1"));
+        assertThat(id1).isNotNull();
+        assertThat(stream.size()).isEqualTo(1);
+
+        StreamMessageId id2 = stream.add(StreamAddArgs.entry("1", "1")
+                .idempotentProducerId("producer-1").idempotentId("iid-1"));
+        assertThat(id2).isEqualTo(id1);
+        assertThat(stream.size()).isEqualTo(1);
+
+        StreamMessageId id3 = stream.add(StreamAddArgs.entry("1", "1")
+                .idempotentProducerId("producer-1").idempotentId("iid-2"));
+        assertThat(id3).isNotEqualTo(id1);
+        assertThat(stream.size()).isEqualTo(2);
+
+        StreamMessageId id4 = stream.add(StreamAddArgs.entry("1", "1")
+                .idempotentProducerId("producer-2").idempotentId("iid-1"));
+        assertThat(id4).isNotEqualTo(id1);
+        assertThat(stream.size()).isEqualTo(3);
+    }
+
+    @Test
     public void testAddListener() {
         testWithParams(redisson -> {
             RStream<String, String> ss = redisson.getStream("test");

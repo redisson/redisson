@@ -23,9 +23,10 @@ import java.util.Map;
  *
  */
 public final class StreamAddParams<K, V> extends BaseReferencesParams<StreamTrimLimitArgs<StreamAddArgs<K, V>>>
-                                        implements StreamAddArgs<K, V>,
-                                              StreamTrimStrategyArgs<StreamAddArgs<K, V>>,
-                                              StreamTrimReferencesArgs<StreamAddArgs<K, V>>  {
+                                                    implements StreamAddArgs<K, V>,
+                                                    StreamTrimStrategyArgs<StreamAddArgs<K, V>>,
+                                                    StreamTrimReferencesArgs<StreamAddArgs<K, V>>,
+                                                    StreamIdempotentArgs<StreamAddArgs<K, V>>  {
 
     private final Map<K, V> entries;
     private boolean noMakeStream;
@@ -34,6 +35,9 @@ public final class StreamAddParams<K, V> extends BaseReferencesParams<StreamTrim
     private int maxLen;
     private StreamMessageId minId;
     private int limit;
+
+    private String producerId;
+    private String idempotentId;
 
     StreamAddParams(Map<K, V> entries) {
         this.entries = entries;
@@ -54,6 +58,23 @@ public final class StreamAddParams<K, V> extends BaseReferencesParams<StreamTrim
     @Override
     public StreamTrimStrategyArgs<StreamAddArgs<K, V>> trimNonStrict() {
         this.trimStrict = false;
+        return this;
+    }
+
+    @Override
+    public StreamIdempotentArgs<StreamAddArgs<K, V>> idempotentProducerId(String producerId) {
+        this.producerId = producerId;
+        return this;
+    }
+
+    @Override
+    public StreamAddArgs<K, V> autoId() {
+        return this;
+    }
+
+    @Override
+    public StreamAddArgs<K, V> idempotentId(String idempotentId) {
+        this.idempotentId = idempotentId;
         return this;
     }
 
@@ -103,5 +124,13 @@ public final class StreamAddParams<K, V> extends BaseReferencesParams<StreamTrim
 
     public int getLimit() {
         return limit;
+    }
+
+    public String getProducerId() {
+        return producerId;
+    }
+
+    public String getIdempotentId() {
+        return idempotentId;
     }
 }

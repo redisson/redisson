@@ -49,6 +49,18 @@ public interface StreamAddArgs<K, V> {
     StreamTrimStrategyArgs<StreamAddArgs<K, V>> trimNonStrict();
 
     /**
+     * Defines idempotent message production for the given producer.
+     * Prevents duplicate entries when a producer resends a message
+     * after a network error or crash.
+     * <p>
+     * Requires <b>Redis 8.6.0 and higher.</b>
+     *
+     * @param producerId - unique producer identifier
+     * @return arguments object
+     */
+    StreamIdempotentArgs<StreamAddArgs<K, V>> idempotentProducerId(String producerId);
+
+    /**
      * Defines entry to add
      *
      * @param k1 key to add
