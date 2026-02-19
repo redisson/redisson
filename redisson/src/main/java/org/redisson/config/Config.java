@@ -140,7 +140,7 @@ public class Config {
     
     private KeyManagerFactory sslKeyManagerFactory;
     
-    private boolean tcpKeepAlive;
+    private boolean tcpKeepAlive = true;
     
     private int tcpKeepAliveCount;
     
@@ -1257,7 +1257,7 @@ public class Config {
     /**
      * Enables TCP keepAlive for connection
      * <p>
-     * Default is <code>false</code>
+     * Default is <code>true</code>
      *
      * @param tcpKeepAlive boolean value
      * @return config
