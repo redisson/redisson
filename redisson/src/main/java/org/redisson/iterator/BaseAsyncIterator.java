@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2026 Nikita Koksharov
+ * Copyright (c) 2013-2024 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,9 +32,17 @@ import java.util.concurrent.CompletionStage;
  */
 public abstract class BaseAsyncIterator<V, E> implements AsyncIterator<V> {
     private Iterator<E> lastIt;
-    protected String nextItPos = "0";
+    protected String nextItPos;
     protected RedisClient client;
-    
+
+    protected BaseAsyncIterator() {
+        nextItPos = initValue();
+    }
+
+    protected String initValue() {
+        return "0";
+    }
+
     @Override
     public CompletionStage<Boolean> hasNext() {
         CompletableFuture<Boolean> result = new CompletableFuture<>();
@@ -52,7 +60,7 @@ public abstract class BaseAsyncIterator<V, E> implements AsyncIterator<V> {
                     client = v.getRedisClient();
                     nextItPos = v.getPos();
                     lastIt = v.getValues().iterator();
-                    if ("0".equals(nextItPos)) {
+                    if (initValue().equals(nextItPos)) {
                         nextItPos = null;
                     }
                     result.complete(lastIt.hasNext());

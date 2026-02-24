@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2026 Nikita Koksharov
+ * Copyright (c) 2013-2024 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,12 +32,20 @@ import org.redisson.client.RedisNodeNotFoundException;
 public abstract class BaseIterator<V, E> implements Iterator<V> {
 
     private Iterator<E> lastIter;
-    protected String nextIterPos = "0";
+    protected String nextIterPos;
     protected RedisClient client;
 
     private boolean finished;
     private boolean currentElementRemoved;
     protected E value;
+
+    protected BaseIterator() {
+        nextIterPos = initValue();
+    }
+
+    protected String initValue() {
+        return "0";
+    }
 
     protected void reset() {
     }
@@ -48,7 +56,7 @@ public abstract class BaseIterator<V, E> implements Iterator<V> {
             if (finished) {
                 currentElementRemoved = false;
                 client = null;
-                nextIterPos = "0";
+                nextIterPos = initValue();
 
                 if (!tryAgain()) {
                     return false;
@@ -62,7 +70,7 @@ public abstract class BaseIterator<V, E> implements Iterator<V> {
                 } catch (RedisNodeNotFoundException e) {
                     if (client != null) {
                         client = null;
-                        nextIterPos = "0";
+                        nextIterPos = initValue();
                     }
                     reset();
                     res = iterator(client, nextIterPos);
@@ -73,13 +81,13 @@ public abstract class BaseIterator<V, E> implements Iterator<V> {
                 lastIter = res.getValues().iterator();
                 nextIterPos = res.getPos();
 
-                if ("0".equals(res.getPos())) {
+                if (initValue().equals(res.getPos())) {
                     finished = true;
                     if (res.getValues().isEmpty()) {
                         currentElementRemoved = false;
                         
                         client = null;
-                        nextIterPos = "0";
+                        nextIterPos = initValue();
                         if (tryAgain()) {
                             continue;
                         }
