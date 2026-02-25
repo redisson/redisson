@@ -15,6 +15,8 @@
  */
 package org.redisson.api.stream;
 
+import java.util.Objects;
+
 /**
  *
  * @author seakider
@@ -69,5 +71,22 @@ public final class StreamRangeParams implements StreamRangeArgs, StreamEndIdArgs
 
     public int getCount() {
         return count;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        StreamRangeParams that = (StreamRangeParams) o;
+        return startIdExclusive == that.startIdExclusive
+                && endIdExclusive == that.endIdExclusive
+                && count == that.count
+                && Objects.equals(startId, that.startId)
+                && Objects.equals(endId, that.endId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(startId, endId, startIdExclusive, endIdExclusive, count);
     }
 }
