@@ -16,6 +16,7 @@
 package org.redisson.api.stream;
 
 import java.time.Duration;
+import java.util.Objects;
 
 /**
  *
@@ -112,5 +113,25 @@ public class StreamPendingRangeParams implements StreamPendingRangeArgs,
 
     public Duration getIdleTime() {
         return idleTime;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        StreamPendingRangeParams that = (StreamPendingRangeParams) o;
+        return startIdExclusive == that.startIdExclusive
+                && endIdExclusive == that.endIdExclusive
+                && count == that.count
+                && Objects.equals(groupName, that.groupName)
+                && Objects.equals(consumerName, that.consumerName)
+                && Objects.equals(startId, that.startId)
+                && Objects.equals(endId, that.endId)
+                && Objects.equals(idleTime, that.idleTime);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(groupName, consumerName, startId, endId, startIdExclusive, endIdExclusive, count, idleTime);
     }
 }
