@@ -160,7 +160,8 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
         long hash = hash1;
         for (int i = 0; i < iterations; i++) {
             indexes[i] = (hash & Long.MAX_VALUE) % size;
-            if (i % 2 == 0) {
+            /*maybe use a shift operation*/
+            if ((i & 1) == 0) {
                 hash += hash2;
             } else {
                 hash += hash1;
