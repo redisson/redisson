@@ -54,11 +54,15 @@ public class RedissonLock extends RedissonBaseLock {
 
     final CommandAsyncExecutor commandExecutor;
 
-    public RedissonLock(CommandAsyncExecutor commandExecutor, String name) {
-        super(commandExecutor, name);
+    public RedissonLock(CommandAsyncExecutor commandExecutor, String name, String namespace) {
+        super(commandExecutor, name, namespace);
         this.commandExecutor = commandExecutor;
         this.internalLockLeaseTime = getServiceManager().getCfg().getLockWatchdogTimeout();
         this.pubSub = commandExecutor.getConnectionManager().getSubscribeService().getLockPubSub();
+    }
+
+    public RedissonLock(CommandAsyncExecutor commandExecutor, String name) {
+        this(commandExecutor, name, null);
     }
 
     public RedissonLock(String name, CommandAsyncExecutor commandExecutor) {
@@ -67,7 +71,8 @@ public class RedissonLock extends RedissonBaseLock {
     }
 
     String getChannelName() {
-        return prefixName("redisson_lock__channel", getRawName());
+        String prefixName = addNamespaceIfExist(this.namespace, "redisson_lock__channel");
+        return prefixName(prefixName, getRawName());
     }
 
     @Override
