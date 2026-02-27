@@ -28,13 +28,14 @@ Redisson greatly extends the capabilities of Valkey and Redis by providing addit
 * Supports SSL  
 * Asynchronous connection pool  
 * Lua scripting  
-* [RediSearch](https://redisson.org/docs/data-and-services/services/#redisearch-service)
-* [JSON datatype](https://redisson.org/docs/data-and-services/objects/#json-object-holder)
-* [JSON Store](https://redisson.org/docs/data-and-services/collections/#json-store) 
 * [Reactive Streams](https://redisson.org/docs/api-models/#reactive-api) API  
 * [RxJava3](https://redisson.org/docs/api-models/#rxjava-api) API  
 * [Asynchronous](https://redisson.org/docs/api-models/#synchronous-and-asynchronous-api) API  
 * Local cache support including [Caffeine](https://github.com/ben-manes/caffeine)-based implementation
+* [RediSearch](https://redisson.org/docs/data-and-services/services/#redisearch-service)
+* [JSON datatype](https://redisson.org/docs/data-and-services/objects/#json-object-holder)
+* [JSON Store](https://redisson.org/docs/data-and-services/collections/#json-store)
+* [JMS API implementation](https://redisson.pro/docs/messaging/#jms-api-implementation)
 * [Cache API implementations](https://redisson.org/docs/cache-api-implementations)  
     Spring Cache, JCache API (JSR-107), Hibernate Cache, MyBatis Cache, Quarkus Cache, Micronaut Cache
 * [Distributed Objects](https://redisson.org/docs/data-and-services/objects)  
