@@ -444,8 +444,10 @@ To utilize this feature follow the steps below.
 	   <artifactId>redisson-spring-session-20</artifactId>
 	   <!-- for Spring Session v2.2.x - v2.7.x -->
 	   <artifactId>redisson-spring-session-22</artifactId>
-	   <!-- for Spring Session v3.x.x - v4.x.x -->
+	   <!-- for Spring Session v3.x.x - v3.2.x -->
 	   <artifactId>redisson-spring-session-30</artifactId>
+	   <!-- for Spring Session v3.3.x - v4.x.x -->
+	   <artifactId>redisson-spring-session-33</artifactId>
 	   <version>xVERSIONx</version>
 	</dependency>
 	```
@@ -457,15 +459,22 @@ To utilize this feature follow the steps below.
 	compile 'pro.redisson:redisson-spring-session-20:xVERSIONx'
 	// for Spring Session v2.2.x - v2.7.x
 	compile 'pro.redisson:redisson-spring-session-22:xVERSIONx'
-	// for Spring Session v3.x.x - v4.x.x
+	// for Spring Session v3.x.x - v3.2.x
 	compile 'pro.redisson:redisson-spring-session-30:xVERSIONx'
+	// for Spring Session v3.3.x - v4.x.x
+	compile 'pro.redisson:redisson-spring-session-33:xVERSIONx'
 	```
 
-2. Define configuration with `@EnableLocalCachedRedisSession` annotation
+2. Define configuration
+
+    Use `@EnableLocalCachedRedisSession` annotation for Redis-backed HTTP session management with local caching.  
+    Use `@EnableLocalCachedRedisWebSession` annotation for Redis-backed Spring WebFlux’s WebSession management with local caching.
 
 	```java
     @Configuration
-    @EnableLocalCachedRedisSession
+    @EnableLocalCachedRedisSession 
+	// or 
+	@EnableLocalCachedRedisWebSession
     public class SessionConfig extends AbstractHttpSessionApplicationInitializer { 
 
 		@Bean
@@ -488,18 +497,33 @@ To utilize this feature follow the steps below.
 
     * `maxInactiveIntervalInSeconds` - Specifies the maximum time, in seconds, that a session can remain idle before it expires. Default is `1800`.
 
-    * `redisNamespace` - Specifies a custom namespace for Redis keys to enable session isolation across multiple applications. The namespace changes the Redis key prefix from the default `spring:session:` to `<redisNamespace>:`. This allows multiple applications to share the same Redis instance while maintaining separate session storage. Default is `"spring:session"`.
+    * `namespace` - Specifies a custom namespace for Redis keys to enable session isolation across multiple applications. The namespace changes the Redis key prefix from the default `spring:session:` to `<redisNamespace>:`. This allows multiple applications to share the same Redis instance while maintaining separate session storage. Default is `"spring:session"`.
 
-    * `redisFlushMode` - Specifies when session changes are written to Redis. Default is `FlushMode.ON_SAVE`.
+    * `flushMode` - Specifies when session changes are written to Redis. Default is `FlushMode.ON_SAVE`.
     Available modes:
 
 		- `FlushMode.ON_SAVE` (default) - Session changes are written to Redis only when `SessionRepository.save(Session)` is explicitly invoked. In web applications, this occurs automatically just before the HTTP response is committed. This mode offers better performance by batching updates.
 		- `FlushMode.IMMEDIATE` - Session changes are written to Redis immediately as they occur. Use this mode when session data must be immediately visible across multiple application instances, though it may impact performance.
 
+    * `saveMode` - Save mode for the session. Default is `SaveMode.ON_SET_ATTRIBUTE`.
+	
     * `cleanupCron` - Specifies the cron expression for scheduling the expired session cleanup task. Default is ``"0 * * * * *"``.
 
     * `broadcastSessionUpdates` - Specifies whether session updates should be broadcast to other application instances. When enabled, session attribute changes are published to Redis pub/sub channels, allowing other application instances to update their local caches. This ensures session consistency across a distributed deployment. 
     Disable this feature if you have a single application instance or do not require real-time session synchronization across instances, which can reduce Redis network traffic. Default is `true`.
+	
+	<br/>
+	Use `@EnableLocalCachedRedisWebSession` annotation provides the following configuration settings:
+	
+    * `maxInactiveIntervalInSeconds` - Specifies the maximum time, in seconds, that a session can remain idle before it expires. Default is `1800`.
+
+    * `namespace` - Specifies a custom namespace for Redis keys to enable session isolation across multiple applications. The namespace changes the Redis key prefix from the default `spring:session:` to `<redisNamespace>:`. This allows multiple applications to share the same Redis instance while maintaining separate session storage. Default is `"spring:session"`.
+
+    * `saveMode` - Save mode for the session. Default is `SaveMode.ON_SET_ATTRIBUTE`.
+	
+    * `broadcastSessionUpdates` - Specifies whether session updates should be broadcast to other application instances. When enabled, session attribute changes are published to Redis pub/sub channels, allowing other application instances to update their local caches. This ensures session consistency across a distributed deployment. 
+    Disable this feature if you have a single application instance or do not require real-time session synchronization across instances, which can reduce Redis network traffic. Default is `true`.
+	
 
 ## Spring Transaction Manager
 
@@ -975,3 +999,5 @@ Redisson implements `RedisConnectionFactory` and `ReactiveRedisConnectionFactory
    
    }
    ```
+
+{% include 'spring-ai-vector-store.md' %}

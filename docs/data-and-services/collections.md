@@ -1270,49 +1270,7 @@ int listenerId = set.addListener(new DeletedObjectListener() {
 set.removeListener(listenerId);
 ```
 
-## LexSortedSet
-Valkey or Redis based distributed [Set](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RLexSortedSet.html) object for Java allows String objects only and implements `java.util.Set<String>` interface. It keeps elements in lexicographical order and maintain elements uniqueness via element state comparison. 
-
-It has [Async](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RLexSortedSetAsync.html), [Reactive](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RLexSortedSetReactive.html) and [RxJava3](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RLexSortedSetRx.html) interfaces.
-```java
-RLexSortedSet set = redisson.getLexSortedSet("simple");
-set.add("d");
-set.addAsync("e");
-set.add("f");
-
-set.rangeTail("d", false);
-set.countHead("e");
-set.range("d", true, "z", false);
-```
-
-### Listeners
-
-Redisson allows binding listeners per `RLexSortedSet` object. This requires the `notify-keyspace-events` setting to be enabled on Valkey or Redis side.
-
-|Listener class name|Event description | Valkey or Redis<br/>`notify-keyspace-events` value|
-|:--:|:--:|:--:|
-|org.redisson.api.listener.TrackingListener|Element created/removed/updated after read operation|-|
-|org.redisson.api.listener.ScoredSortedSetAddListener|Element created/updated|Ez|
-|org.redisson.api.listener.ScoredSortedSetRemoveListener|Element removed|Ez|
-|org.redisson.api.ExpiredObjectListener|`RScoredSortedSet` object expired|Ex|
-|org.redisson.api.DeletedObjectListener|`RScoredSortedSet` object deleted|Eg|
-
-Usage example:
-
-```java
-RLexSortedSet<String> set = redisson.getLexSortedSet("anySet");
-
-int listenerId = set.addListener(new DeletedObjectListener() {
-     @Override
-     public void onDeleted(String name) {
-        // ...
-     }
-});
-
-// ...
-
-set.removeListener(listenerId);
-```
+{% include 'data-and-services/lexsortedset.md' %}
 
 ## List
 

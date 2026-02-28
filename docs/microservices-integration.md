@@ -198,7 +198,7 @@ Supports Quarkus 1.6.x - 3.x.x
         // for Quarkus v3.x.x - v3.29.x
         compile 'pro.redisson:redisson-quarkus-30:xVERSIONx'
         // for Quarkus v3.30.x+
-        compile 'pro.redisson:redisson-quarkus-30:xVERSIONx'
+        compile 'pro.redisson:redisson-quarkus-33:xVERSIONx'
         ```
 
         [License key configuration](configuration.md/#license-key-configuration)
@@ -215,8 +215,10 @@ Supports Quarkus 1.6.x - 3.x.x
             <artifactId>redisson-quarkus-16</artifactId>
             <!-- for Quarkus v2.x.x -->
             <artifactId>redisson-quarkus-20</artifactId>
-            <!-- for Quarkus v3.x.x -->
+            <!-- for Quarkus v3.x.x - v3.29.x -->
             <artifactId>redisson-quarkus-30</artifactId>
+            <!-- for Quarkus v3.30.x+ -->
+            <artifactId>redisson-quarkus-33</artifactId>
             <version>xVERSIONx</version>
         </dependency>
         ```
@@ -228,8 +230,10 @@ Supports Quarkus 1.6.x - 3.x.x
         compile 'org.redisson:redisson-quarkus-16:xVERSIONx'
         // for Quarkus v2.x.x
         compile 'org.redisson:redisson-quarkus-20:xVERSIONx'
-        // for Quarkus v3.x.x
-        compile 'org.redisson:redisson-quarkus-33:xVERSIONx'
+        // for Quarkus v3.x.x - v3.29.x
+        compile 'pro.redisson:redisson-quarkus-30:xVERSIONx'
+        // for Quarkus v3.30.x+
+        compile 'pro.redisson:redisson-quarkus-33:xVERSIONx'
         ```
 
     </div>

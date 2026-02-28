@@ -710,6 +710,10 @@ bloomFilter.add(new SomeObject("field5Value", "field8Value"));
 bloomFilter.contains(new SomeObject("field1Value", "field8Value"));
 ```
 
+{% include 'data-and-services/bloom-filter-native.md' %}
+
+{% include 'data-and-services/cuckoo-filter.md' %}
+
 
 ## HyperLogLog
 

@@ -1,12 +1,9 @@
-{% include 'data-and-services/reliable-pubsub.md' %}
-
 ## Topic
 Java [RTopic](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RTopic.html) object implements Publish / Subscribe mechanism based on [Redis Pub/Sub](https://redis.io/docs/latest/develop/interact/pubsub/) or [Valkey Pub/Sub](https://valkey.io/topics/pubsub/). It allows to subscribe on events published with multiple instances of `RTopic` object with the same name. 
 
 Listeners are re-subscribed automatically after reconnection or failover. All messages sent during absence of connection are lost. 
 
-!!! note
-    For applications requiring reliable delivery and advanced processing capabilities, consider using [Reliable PubSub Topic](#reliable-pubsub).
+**For applications requiring reliable delivery and advanced processing capabilities, consider using [Reliable PubSub](#reliable-pubsub).**
 
 Code example:
 
@@ -169,7 +166,9 @@ Code example:
 ## Sharded topic
 Java implementation of Redis or Valkey based [RShardedTopic](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RShardedTopic.html) object implements Sharded Publish / Subscribe mechanism. It allows to subscribe on events published with multiple instances of `RShardedTopic` object with the same name. Subscribe/publish operations are executed only on Redis or Valkey node in Cluster which is bounded to specific topic name. Published messages via `RShardedTopic` aren't broadcasted across all nodes as for `RTopic` object. Which reduces network bandwidth usage between Redis and Valkey nodes and their CPU load, as well as their CPU load.
 
-Listeners are re-subscribed automatically after reconnection to a server or failover. All messages sent during absence of connection are lost. Use [Reliable Topic](#reliable-topic) for reliable delivery.
+Listeners are re-subscribed automatically after reconnection to a server or failover. All messages sent during absence of connection are lost. 
+
+**For applications requiring reliable delivery and advanced processing capabilities, consider using [Reliable PubSub](#reliable-pubsub).**
 
 Code example:
 
@@ -272,116 +271,4 @@ RClusteredTopic topic = redisson.getClusteredTopic("myTopic");
 long clientsReceivedMessage = topic.publish(new MyObject());
 ```
 
-
-## Reliable Topic
-Java implementation of Redis or Valkey based [RReliableTopic](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RReliableTopic.html) object implements Publish / Subscribe mechanism with reliable delivery of messages. In case of Redis or Valkey connection interruption all missed messages are delivered after reconnection to Redis. Message considered as delivered when it was received by Redisson and submited for processing by topic listeners.
-
-Each `RReliableTopic` object instance (subscriber) has own watchdog which is started when the first listener was registered. Subscriber expires after `org.redisson.config.Config#reliableTopicWatchdogTimeout` timeout if watchdog didn't extend it to the next timeout time interval. This prevents against infinity grow of stored messages in topic due to Redisson client crash or any other reason when subscriber unable to consume messages.
-
-Topic listeners are resubscribed automatically after reconnection to a server or failover.
-
-__Superseded by [Reliable PubSub Topic](#reliable-pubsub).__
-
-Code example:
-
-=== "Sync"
-    ```java
-    RReliableTopic topic = redisson.getReliableTopic("anyTopic");
-    topic.addListener(SomeObject.class, new MessageListener<SomeObject>() {
-        @Override
-        public void onMessage(CharSequence channel, SomeObject message) {
-            //...
-        }
-    });
-    
-    // in other thread or JVM
-    RReliableTopic topic = redisson.getReliableTopic("anyTopic");
-    long subscribersReceivedMessage = topic.publish(new SomeObject());
-    ```
-=== "Async"
-    ```java
-    RReliableTopicAsync topic = redisson.getReliableTopic("anyTopic");
-    RFuture<String> listenerFuture = topic.addListenerAsync(SomeObject.class, new MessageListener<SomeObject>() {
-        @Override
-        public void onMessage(CharSequence channel, SomeObject message) {
-            //...
-        }
-    });
-    
-    // in other thread or JVM
-    RReliableTopicAsync topic = redisson.getReliableTopic("anyTopic");
-    RFuture<Long> future = topic.publishAsync(new SomeObject());
-    ```
-=== "Reactive"
-    ```java
-    RedissonReactiveClient redisson = redissonClient.reactive();
-    
-    RReliableTopicReactive topic = redisson.getReliableTopic("anyTopic");
-    Mono<String> listenerMono = topic.addListener(SomeObject.class, new MessageListener<SomeObject>() {
-        @Override
-        public void onMessage(CharSequence channel, SomeObject message) {
-            //...
-        }
-    });
-    
-    // in other thread or JVM
-    RReliableTopicReactive topic = redisson.getReliableTopic("anyTopic");
-    Mono<Long> publishMono = topic.publish(new SomeObject());
-    ```
-=== "RxJava3"
-    ```java
-    RedissonRxClient redisson = redissonClient.rxJava();
-    
-    RReliableTopicRx topic = redisson.getReliableTopic("anyTopic");
-    Single<String> listenerRx = topic.addListener(SomeObject.class, new MessageListener<SomeObject>() {
-        @Override
-        public void onMessage(CharSequence channel, SomeObject message) {
-            //...
-        }
-    });
-    
-    // in other thread or JVM
-    RReliableTopicRx topic = redisson.getReliableTopic("anyTopic");
-    Single<Long> publisRx = topic.publish(new SomeObject());
-    ```
-
-### Partitioning
-
-_This feature is available only in [Redisson PRO](https://redisson.pro/feature-comparison.html) edition._
-
-Although each ReliableTopic instance is cluster-compatible, it can be connected only to a single Redis or Valkey node which owns the topic name. That may cause the following issues:
-
-* CPU overload on a single node. 
-* Overload of network or data traffic to a single node.
-* Full interruption of the message flow during failover.
-
-ReliableTopic partitioning addresses these challenges by enabling connections to all nodes in cluster and distributing messages effectively. It brings the following benefits:
-
-* Increases throughput of the topic.
-* Minimizes interruptions during failover.
-* Lowers CPU and network load on Valkey or Redis nodes.
-* Scales the message flow to multiple Valkey or Redis nodes.
-
-Partitions amount is defined through the global [topicSlots](../configuration.md) setting or per instance through `ClusteredTopicOptions.slots()` setting, which overrides the global setting.
-
-Slots definition per instance:
-```java
-RClusteredReliableTopic topic 
-    = redisson.getClusteredReliableTopic(ClusteredTopicOptions.name("myTopic").slots(15));
-```
-
-Usage example:
-
-```java
-RClusteredReliableTopic topic = redisson.getClusteredReliableTopic("myTopic");
-int listenerId = topic.addListener(MyObject.class, new MessageListener<MyObject>() {
-    @Override
-    public void onMessage(CharSequence channel, MyObject message) {
-        //...
-    }
-});
-
-// in other thread or JVM
-RClusteredReliableTopic topic = redisson.getClusteredReliableTopic("myTopic");
-long clientsReceivedMessage = topic.publish(new MyObject());
-```
+{% include 'data-and-services/reliable-pubsub.md' %}

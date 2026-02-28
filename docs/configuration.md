@@ -55,18 +55,34 @@ Redisson supports Advanced Encryption Standard (AES) encryption for passwords de
 
 The `org.redisson.config.PasswordCipher` class is used to encrypt passwords. The secret key file may contain any characters. The encrypted password has the `{aes}` prefix.
 
-Syntax:
-```
-java -cp redisson-all.jar org.redisson.config.PasswordCipher encode <unencrypted password> <path to secret key file>
-```
-Usage example:
-```
-java -cp redisson-all.jar org.redisson.config.PasswordCipher encode pass123 secret_key.txt
-```
-Output:
-```
-{aes}AuWmZDUXBTHBSaBXjqgsL4rXF+c2XcCmXwBr/pyLy9K651I0syX7FFkLEkuq1/rJHvZAyeeEIw==
-```
+- Password encryption.
+
+	Syntax:
+	```
+	java -cp redisson-all.jar org.redisson.config.PasswordCipher encode <unencrypted password> <path to secret key file>
+	```
+	
+	Usage example:
+	```
+	java -cp redisson-all.jar org.redisson.config.PasswordCipher encode pass123 secret_key.txt
+	```
+	Output:
+	```
+	{aes}AuWmZDUXBTHBSaBXjqgsL4rXF+c2XcCmXwBr/pyLy9K651I0syX7FFkLEkuq1/rJHvZAyeeEIw==
+	```
+
+- Password decryption.
+
+	Syntax:
+	```
+	java -cp redisson-all.jar org.redisson.config.PasswordCipher decode <encrypted password> <path to secret key file>
+	```
+
+	Usage example:
+	```
+	java -cp redisson-all.jar org.redisson.config.PasswordCipher encode {aes}AuWmZDUXBTHBSaBXjqgsL4rXF+c2XcCmXwBrJHvZAyeeEIw== secret_key.txt
+	```
+
 
 The secret key file is defined through the `secretKey` setting in the Redisson configuration YAML file and applied to all encrypted passwords.
 
@@ -75,7 +91,7 @@ Configuration YAML file example:
 ```yaml
 singleServerConfig:
    address: "rediss://127.0.0.1:6379"
-   password: "{aes}h8/9bGMTf809PxsBL4JlKAbFffaMtcr1/SFdXBcWySaxETKylJziUM23oWxGAmSZHkm+y/yTRg=="
+password: "{aes}h8/9bGMTf809PxsBL4JlKAbFffaMtcr1/SFdXBcWySaxETKylJziUM23oWxGAmSZHkm+y/yTRg=="
 sslTruststore: file:truststore
 sslTruststorePassword: "{aes}djXKclV2zFMc/tZdnntaTx2bRD3eJ1vtJSJFcBfp/9ZPzsnUw5f7zZXzwbbg2jPCr24TiJb7bQ=="
 secretKey: file:secret_key
@@ -451,7 +467,7 @@ Compatible with:
 * [AWS ElastiCache Cluster](https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/designing-elasticache-cluster.html)  
 * [Amazon MemoryDB](https://aws.amazon.com/memorydb)  
 * [Azure Redis Cache](https://azure.microsoft.com/en-us/services/cache/)  
-* [Azure Managed Redis (OSS clustering)](https://learn.microsoft.com/en-us/azure/redis/)  
+* [Azure Managed Redis (OSS clustering)](https://learn.microsoft.com/en-us/azure/redis/architecture#cluster-policies)  
 * [Google Cloud Memorystore for Redis Cluster](https://cloud.google.com/memorystore/docs/cluster)
 * [Oracle OCI Cache](https://docs.oracle.com/en-us/iaas/Content/ocicache/managingclusters.htm)
 
@@ -1015,7 +1031,8 @@ Single mode can be utilized for a single instance of either a Valkey or Redis no
 Compatible with: 
 
  * [Azure Redis Cache](https://azure.microsoft.com/en-us/services/cache/)  
- * [Azure Managed Redis (Non-Clustered)](https://learn.microsoft.com/en-us/azure/redis/)  
+ * [Azure Managed Redis (Non-Clustered)](https://learn.microsoft.com/en-us/azure/redis/architecture#cluster-policies)  
+ * [Azure Managed Redis (Enterprise clustering)](https://learn.microsoft.com/en-us/azure/redis/architecture#cluster-policies)  
  * [Google Cloud Memorystore for Redis](https://cloud.google.com/memorystore/docs/redis/)  
  * [Google Cloud Memorystore for Valkey](https://cloud.google.com/memorystore/docs/valkey/)  
  * [Redis on SAP BTP](https://www.sap.com/products/technology-platform/redis-on-sap-btp-hyperscaler-option.html)  
@@ -1806,7 +1823,6 @@ Failed nodes detection is managed by `scanMode` setting.
 Compatible with:  
 
 * [AWS ElastiCache Serverless](https://aws.amazon.com/elasticache/features/#Serverless)  
-* [Azure Managed Redis (Enterprise clustering)](https://learn.microsoft.com/en-us/azure/redis/)  
 * [Azure Redis Cache Active-Active replication](https://learn.microsoft.com/en-us/azure/azure-cache-for-redis/cache-how-to-active-geo-replication)  
 * [Redis Enterprise Active-Active databases](https://redis.io/docs/latest/operate/rs/databases/active-active/get-started/)  
 * [Redis Enterprise All primary shards / All nodes](https://redis.io/docs/latest/operate/rs/databases/configure/proxy-policy/)  
