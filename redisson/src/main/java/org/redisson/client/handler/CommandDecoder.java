@@ -553,6 +553,17 @@ public class CommandDecoder extends ReplayingDecoder<State> {
 
     protected void completeResponse(CommandData<Object, Object> data, Object result) {
         if (data != null) {
+            // Fix for: https://github.com/redisson/redisson/issues/6992
+            // CLUSTER NODES expects List<ClusterNodeInfo>, not String
+            // This prevents queue-based response binding errors from causing
+            // ClassCastException in CompletableFuture handlers
+            if (data.getCommand() != null
+                    && "CLUSTER".equals(data.getCommand().getName())
+                    && "NODES".equals(data.getCommand().getSubName())
+                    && !(result instanceof List)) {
+                data.tryFailure(new RedisException("Response type mismatch for command: CLUSTER NODES"));
+                return;
+            }
             data.getPromise().complete(result);
         }
     }
