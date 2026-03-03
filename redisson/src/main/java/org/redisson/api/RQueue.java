@@ -65,4 +65,13 @@ public interface RQueue<V> extends Queue<V>, RExpirable, RQueueAsync<V> {
      */
     int addListener(ObjectListener listener);
 
+    /**
+     * Returns index of <code>element</code> or
+     * -1 if element isn't found
+     *
+     * @param element to find
+     * @return index of -1 if element isn't found
+     */
+    int indexOf(V element);
+
 }
