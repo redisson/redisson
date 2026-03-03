@@ -513,6 +513,16 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
     }
 
     @Override
+    public int indexOf(V e) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public RFuture<Integer> indexOfAsync(V e) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public RFuture<Integer> sizeAsync() {
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.LLEN_INT, queueName);
     }

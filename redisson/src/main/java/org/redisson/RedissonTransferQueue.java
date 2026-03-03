@@ -744,4 +744,14 @@ public class RedissonTransferQueue<V> extends RedissonExpirable implements RTran
     public RFuture<Boolean> addAllAsync(Collection<? extends V> c) {
         throw new UnsupportedOperationException();
     }
+
+    @Override
+    public int indexOf(V e)  {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public RFuture<Integer> indexOfAsync(V e)  {
+        throw new UnsupportedOperationException();
+    }
 }

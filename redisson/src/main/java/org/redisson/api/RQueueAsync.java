@@ -92,4 +92,13 @@ public interface RQueueAsync<V> extends RCollectionAsync<V> {
      */
     RFuture<Integer> addListenerAsync(ObjectListener listener);
 
+    /**
+     * Returns index of <code>element</code> or
+     * -1 if element isn't found
+     *
+     * @param element to find
+     * @return index of -1 if element isn't found
+     */
+    RFuture<Integer> indexOfAsync(V element);
+
 }

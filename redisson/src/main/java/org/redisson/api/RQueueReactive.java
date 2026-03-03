@@ -91,4 +91,13 @@ public interface RQueueReactive<V> extends RCollectionReactive<V> {
      */
     Mono<Integer> addListener(ObjectListener listener);
 
+    /**
+     * Returns index of <code>element</code> or
+     * -1 if element isn't found
+     *
+     * @param element to find
+     * @return index of -1 if element isn't found
+     */
+    Mono<Integer> indexOf(V element);
+
 }
