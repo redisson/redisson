@@ -150,6 +150,61 @@ public class RedisDockerTest {
     protected static final int REDIS_PORT = 6379;
     protected static final int SENTINEL_PORT = 26379;
 
+    protected void withReplicated(BiConsumer<List<GenericContainer<?>>, Config> callback, int slaves)
+            throws InterruptedException {
+        withReplicated(callback, slaves, null);
+    }
+
+    protected void withReplicated(BiConsumer<List<GenericContainer<?>>, Config> callback, int slaves, String password)
+            throws InterruptedException {
+        Network network = Network.newNetwork();
+        List<GenericContainer<?>> nodes = new ArrayList<>();
+
+        try {
+            GenericContainer<?> master = createMasterContainer(network, password);
+            master.start();
+            preservePortBindings(master);
+            nodes.add(master);
+
+            String masterIp = getContainerIp(master);
+            Thread.sleep(1000);
+
+            for (int i = 0; i < slaves; i++) {
+                GenericContainer<?> slave = createSlaveContainer(network, i, password, masterIp);
+                slave.start();
+                preservePortBindings(slave);
+                nodes.add(slave);
+            }
+
+            Thread.sleep(3000);
+
+            Config config = new Config();
+            for (GenericContainer<?> node : nodes) {
+                config.useReplicatedServers()
+                        .addNodeAddress("redis://127.0.0.1:" + node.getMappedPort(REDIS_PORT));
+            }
+
+            if (password != null && !password.isEmpty()) {
+                config.setPassword(password);
+            }
+
+            callback.accept(nodes, config);
+        } finally {
+            for (int i = nodes.size() - 1; i >= 0; i--) {
+                try {
+                    nodes.get(i).stop();
+                } catch (Exception e) {
+                    // ignore
+                }
+            }
+            try {
+                network.close();
+            } catch (Exception e) {
+                // ignore
+            }
+        }
+    }
+
     protected void withSentinel(BiConsumer<List<GenericContainer<?>>, Config> callback, int slaves) throws InterruptedException {
         withSentinel(callback, slaves, null);
     }
@@ -452,7 +507,7 @@ public class RedisDockerTest {
         }
     }
 
-    protected List<ContainerState> getSlaveNodes(List<ContainerState> nodes) {
+    protected <C extends ContainerState> List<C> getSlaveNodes(List<C> nodes) {
         return nodes.stream().filter(node -> {
             if (!node.isRunning()) {
                 return false;
