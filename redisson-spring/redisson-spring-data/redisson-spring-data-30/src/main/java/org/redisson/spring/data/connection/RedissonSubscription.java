@@ -28,8 +28,6 @@ import org.springframework.data.redis.connection.MessageListener;
 import org.springframework.data.redis.connection.SubscriptionListener;
 import org.springframework.data.redis.connection.util.AbstractSubscription;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -59,6 +57,8 @@ public class RedissonSubscription extends AbstractSubscription {
 
     @Override
     protected void doSubscribe(byte[]... channels) {
+        boolean hasSubscriptionsBefore = !(subscribed.isEmpty() & psubscribed.isEmpty());
+
         Map<ChannelName, CompletableFuture<Void>> tosubscribe = getNonSubscribed(channels, subscribed, (l, ch) -> {
             ((SubscriptionListener) getListener()).onChannelSubscribed(ch, 1);
         });
@@ -96,7 +96,9 @@ public class RedissonSubscription extends AbstractSubscription {
 
                     if (type == PubSubType.UNSUBSCRIBE) {
                         subscribed.remove(channel);
-                        latch.countDown();
+                        if (subscribed.isEmpty()) {
+                            latch.countDown();
+                        }
                     }
                 }
 
@@ -112,15 +114,12 @@ public class RedissonSubscription extends AbstractSubscription {
             }
         }
 
-        // hack for RedisMessageListenerContainer
-        if (getListener().getClass().getName().equals("org.springframework.data.redis.listener.SynchronizingMessageListener")) {
-            StringWriter sw = new StringWriter();
-            new Exception().printStackTrace(new PrintWriter(sw));
-            String[] r = sw.toString().split("\n");
-            if (r.length != 7) {
-                return;
-            }
+        if (hasSubscriptionsBefore) {
+            return;
+        }
 
+        // fix for RedisMessageListenerContainer
+        if (getListener().getClass().getName().equals("org.springframework.data.redis.listener.SynchronizingMessageListener")) {
             try {
                 latch.await();
             } catch (InterruptedException e) {
@@ -173,6 +172,8 @@ public class RedissonSubscription extends AbstractSubscription {
 
     @Override
     protected void doPsubscribe(byte[]... patterns) {
+        boolean hasSubscriptionsBefore = !(subscribed.isEmpty() & psubscribed.isEmpty());
+
         Map<ChannelName, CompletableFuture<Void>> tosubscribe = getNonSubscribed(patterns, psubscribed, (l, ch) -> {
             ((SubscriptionListener) getListener()).onPatternSubscribed(ch, 1);
         });
@@ -225,15 +226,12 @@ public class RedissonSubscription extends AbstractSubscription {
             }
         }
 
-        // hack for RedisMessageListenerContainer
-        if (getListener().getClass().getName().equals("org.springframework.data.redis.listener.SynchronizingMessageListener")) {
-            StringWriter sw = new StringWriter();
-            new Exception().printStackTrace(new PrintWriter(sw));
-            String[] r = sw.toString().split("\n");
-            if (r.length != 7) {
-                return;
-            }
+        if (hasSubscriptionsBefore) {
+            return;
+        }
 
+        // fix for RedisMessageListenerContainer
+        if (getListener().getClass().getName().equals("org.springframework.data.redis.listener.SynchronizingMessageListener")) {
             try {
                 latch.await();
             } catch (InterruptedException e) {

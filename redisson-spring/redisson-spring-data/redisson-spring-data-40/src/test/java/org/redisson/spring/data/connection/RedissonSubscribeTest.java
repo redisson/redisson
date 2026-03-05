@@ -18,6 +18,7 @@ import org.springframework.data.redis.listener.PatternTopic;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -25,6 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 public class RedissonSubscribeTest extends BaseConnectionTest {
 
@@ -74,6 +76,32 @@ public class RedissonSubscribeTest extends BaseConnectionTest {
             }, PatternTopic.of("*"));
         }
         container.stop();
+    }
+
+    @Test
+    public void testContainerListeners() {
+        RedissonConnectionFactory f = new RedissonConnectionFactory(redisson);
+        RedisMessageListenerContainer container = new RedisMessageListenerContainer();
+        container.setConnectionFactory(f);
+        container.afterPropertiesSet();
+        container.start();
+
+        assertTimeoutPreemptively(Duration.ofSeconds(1), () -> runConcurrentSubscribeUnsubscribeTest(container));
+    }
+
+    private void runConcurrentSubscribeUnsubscribeTest(RedisMessageListenerContainer container) {
+        MessageListener listenerA = (a, b) -> {};
+        MessageListener listenerB = (a, b) -> {};
+
+        ChannelTopic topicA = new ChannelTopic("topic1");
+        ChannelTopic topicB = new ChannelTopic("topic2");
+
+        for (int i = 0; i < 100; i++) {
+            container.addMessageListener(listenerB, topicB);
+            container.removeMessageListener(listenerA);
+            container.addMessageListener(listenerA, topicA);
+            container.removeMessageListener(listenerB);
+        }
     }
 
     @Test
