@@ -1,6 +1,6 @@
 package org.redisson.spring.data.connection;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.Range;
 import org.springframework.data.geo.Circle;
 import org.springframework.data.geo.GeoResults;

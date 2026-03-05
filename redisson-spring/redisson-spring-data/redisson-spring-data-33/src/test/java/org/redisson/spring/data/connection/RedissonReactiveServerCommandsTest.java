@@ -1,6 +1,6 @@
 package org.redisson.spring.data.connection;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.data.redis.connection.ReactiveRedisConnection;
 import org.springframework.data.redis.core.types.RedisClientInfo;
 import reactor.core.publisher.Flux;
@@ -16,5 +16,6 @@ public class RedissonReactiveServerCommandsTest extends BaseConnectionTest {
         Flux<RedisClientInfo> flux = reactiveConnection.serverCommands().getClientList();
         Mono<Long> count = flux.count();
         count.subscribe(s -> assertThat(s).isGreaterThan(10));
+
     }
 }

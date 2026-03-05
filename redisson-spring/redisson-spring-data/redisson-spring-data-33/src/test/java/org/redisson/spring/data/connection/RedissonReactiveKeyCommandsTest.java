@@ -1,6 +1,6 @@
 package org.redisson.spring.data.connection;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.Range;
 import org.springframework.data.redis.connection.stream.Consumer;
 import org.springframework.data.redis.connection.stream.PendingMessages;
@@ -39,4 +39,5 @@ public class RedissonReactiveKeyCommandsTest extends BaseConnectionTest {
         PendingMessages msg = t.opsForStream().pending("test", "testGroup", Range.unbounded(), 10).block();
         assertThat(msg.size()).isEqualTo(1);
     }
+
 }
