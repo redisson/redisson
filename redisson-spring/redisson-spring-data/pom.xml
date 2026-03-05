@@ -100,6 +100,12 @@
                 <version>3.6.11</version>
       		<scope>test</scope>
       	</dependency>
+
+      	<dependency>
+                <groupId>org.awaitility</groupId>
+                <artifactId>awaitility</artifactId>
+      	</dependency>
+
 <!--
       	<dependency>
       		<groupId>redis.clients</groupId>
