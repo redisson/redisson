@@ -76,6 +76,10 @@ public class RedissonClientProducer {
             }, false);
         }
 
+        if (config.trim().isEmpty()) {
+            throw new IllegalStateException("Redisson settings aren't defined.");
+        }
+
         ConfigSupport support = new ConfigSupport(true);
         Config c = support.fromYAML(config, Config.class);
         redisson = Redisson.create(c);
