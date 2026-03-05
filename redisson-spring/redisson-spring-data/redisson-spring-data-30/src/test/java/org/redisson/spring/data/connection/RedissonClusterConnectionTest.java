@@ -86,7 +86,7 @@ public class RedissonClusterConnectionTest extends RedisDockerTest {
             connection.mSet(map);
 
             try {
-                Thread.sleep(100);
+                Thread.sleep(200);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
