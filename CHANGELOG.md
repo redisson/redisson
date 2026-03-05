@@ -3,6 +3,29 @@ Redisson Releases History
 
 Upgrade to __[Redisson PRO](https://redisson.pro/feature-comparison.html)__ with **advanced features**.
 
+### 2-Mar-2025 - 4.3.0 released
+
+Feature - [JMS API](https://redisson.pro/docs/messaging/#jms-api-implementation) implemented  
+Feature - [RCuckooFilter](https://redisson.pro/docs/data-and-services/objects/#cuckoo-filter) object added  
+Feature - Local cached Reactive Spring Session implemented  
+Feature - `RBitSet.bitField()` method added (thanks to @bandalgomsu)  
+Feature - `RBatch.getBloomFilterNative()` method added  
+Feature - `StreamAddArgs.idempotentProducerId()` method added  
+Feature - `hashCode()/equlas() methods added to `StreamRangeParams` object (thanks to @bandalgomsu)  
+Feature - `Message.getDeliveries()` method added  
+
+Improvement - `tcpKeepAlive` setting is `true` by default  
+
+Fixed - `RReliablePubSubTopic.setConfigIfAbsent()` throws NPE  
+Fixed - `Message.getCreationTime()` returns `null` for messages stored in `RReliableQueue`  
+Fixed - corrupted `Input` object shouldn't be returned to the pool in `Kryo5Codec`  
+Fixed - increased char array in `Kryo5Codec` isn't cleared when the `Input.reset()` method is invoked  
+Fixed - traffic burst may block `RRateLimiter` indefinitely  
+Fixed - attempt to unlock lock, not locked by current thread by node id error (thanks to @seakider)  
+Fixed - `RTopicPattern` resubscription after failover (thanks to @peterhalicky)  
+Fixed - `RBloomFilterNative`'s `add()`, `exists()`, `count()` return type  
+Fixed - Spring Data `ReactiveKeyCommands.scan()` method throws NPE if `count` setting isn't defined  
+
 ### 5-Feb-2025 - 4.2.0 released
 
 Feature - [Spring AI Vector Store](https://redisson.pro/docs/integration-with-spring/#spring-ai-vector-store) implemented  

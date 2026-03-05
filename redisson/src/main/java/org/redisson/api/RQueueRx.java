@@ -92,4 +92,14 @@ public interface RQueueRx<V> extends RCollectionRx<V> {
      */
     Single<Integer> addListener(ObjectListener listener);
 
+    /**
+     * Returns index of <code>element</code> or
+     * -1 if element isn't found
+     *
+     * @param element to find
+     * @return index of -1 if element isn't found
+     */
+    Single<Integer> indexOf(V element);
+
+
 }

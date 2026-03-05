@@ -95,4 +95,14 @@ public class RedissonQueueTest extends RedisDockerTest {
         });
     }
 
+    @Test
+    public void testIndexOf() {
+        RQueue<Integer> queue = getQueue();
+        queue.add(1);
+        queue.add(2);
+        queue.add(3);
+        queue.add(4);
+
+        assertThat(queue.indexOf(4)).isEqualTo(3);
+    }
 }
