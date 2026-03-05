@@ -64,6 +64,7 @@
         <plugin>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-extension-maven-plugin</artifactId>
+            <version>${quarkus.plugin.version}</version>
             <executions>
                 <execution>
                     <phase>compile</phase>
