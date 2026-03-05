@@ -1,6 +1,6 @@
 package org.redisson.spring.data.connection;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.data.redis.connection.ReactiveRedisConnection;
 import org.springframework.data.redis.connection.ReturnType;
 import reactor.core.publisher.Flux;

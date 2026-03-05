@@ -4,7 +4,7 @@ import mockit.Invocation;
 import mockit.Mock;
 import mockit.MockUp;
 import org.assertj.core.api.Assertions;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.protocol.CommandData;

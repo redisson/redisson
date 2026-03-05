@@ -1,26 +1,16 @@
 package org.redisson.spring.data.connection;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.redisson.*;
-import org.redisson.ClusterRunner.ClusterProcesses;
-import org.redisson.RedisRunner.FailedToStartRedisException;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.config.Config;
-import org.redisson.config.SubscriptionMode;
-import org.redisson.connection.balancer.RandomLoadBalancer;
-import org.redisson.reactive.CommandReactiveService;
 import org.springframework.data.redis.RedisSystemException;
 import org.springframework.data.redis.connection.ReactiveRedisClusterConnection;
 
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.Arrays;
@@ -30,10 +20,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.redisson.connection.MasterSlaveConnectionManager.MAX_SLOT;
 
-@RunWith(Parameterized.class)
-public class RedissonReactiveClusterKeyCommandsTest extends BaseTest {
+public class RedissonReactiveClusterKeyCommandsTest extends RedisDockerTest {
 
-    @Parameterized.Parameters(name= "{index} - same slot = {0}; has ttl = {1}")
     public static Iterable<Object[]> data() {
         return Arrays.asList(new Object[][] {
                 {false, false},
@@ -42,12 +30,6 @@ public class RedissonReactiveClusterKeyCommandsTest extends BaseTest {
                 {true, true}
         });
     }
-
-    @Parameterized.Parameter(0)
-    public boolean sameSlot;
-
-    @Parameterized.Parameter(1)
-    public boolean hasTtl;
 
     ByteBuffer originalKey = ByteBuffer.wrap("key".getBytes());
     ByteBuffer newKey = ByteBuffer.wrap("unset".getBytes());
@@ -61,8 +43,9 @@ public class RedissonReactiveClusterKeyCommandsTest extends BaseTest {
         });
     }
 
-    @Test
-    public void testRename() {
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testRename(boolean sameSlot, boolean hasTtl) {
         testInClusterReactive(connection -> {
             connection.stringCommands().set(originalKey, value).block();
 
@@ -71,7 +54,7 @@ public class RedissonReactiveClusterKeyCommandsTest extends BaseTest {
             }
 
             Integer originalSlot = getSlotForKey(originalKey, (RedissonReactiveRedisClusterConnection) connection);
-            newKey = getNewKeyForSlot(new String(originalKey.array()), getTargetSlot(originalSlot), connection);
+            newKey = getNewKeyForSlot(new String(originalKey.array()), getTargetSlot(sameSlot, originalSlot), connection);
 
             Boolean response = connection.keyCommands().rename(originalKey, newKey).block();
 
@@ -87,11 +70,12 @@ public class RedissonReactiveClusterKeyCommandsTest extends BaseTest {
         });
     }
 
-    @Test
-    public void testRename_keyNotExist() {
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testRename_keyNotExist(boolean sameSlot, boolean hasTtl) {
         testInClusterReactive(connection -> {
             Integer originalSlot = getSlotForKey(originalKey, (RedissonReactiveRedisClusterConnection) connection);
-            newKey = getNewKeyForSlot(new String(originalKey.array()), getTargetSlot(originalSlot), connection);
+            newKey = getNewKeyForSlot(new String(originalKey.array()), getTargetSlot(sameSlot, originalSlot), connection);
 
             if (sameSlot) {
                 // This is a quirk of the implementation - since same-slot renames use the non-cluster version,
@@ -126,8 +110,9 @@ public class RedissonReactiveClusterKeyCommandsTest extends BaseTest {
         return newKey;
     }
 
-    @Test
-    public void testRenameNX() {
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testRenameNX(boolean sameSlot, boolean hasTtl) {
         testInClusterReactive(connection -> {
             connection.stringCommands().set(originalKey, value).block();
             if (hasTtl) {
@@ -135,7 +120,7 @@ public class RedissonReactiveClusterKeyCommandsTest extends BaseTest {
             }
 
             Integer originalSlot = getSlotForKey(originalKey, (RedissonReactiveRedisClusterConnection) connection);
-            newKey = getNewKeyForSlot(new String(originalKey.array()), getTargetSlot(originalSlot), connection);
+            newKey = getNewKeyForSlot(new String(originalKey.array()), getTargetSlot(sameSlot, originalSlot), connection);
 
             Boolean result = connection.keyCommands().renameNX(originalKey, newKey).block();
 
@@ -155,7 +140,7 @@ public class RedissonReactiveClusterKeyCommandsTest extends BaseTest {
         });
     }
 
-    private Integer getTargetSlot(Integer originalSlot) {
+    private Integer getTargetSlot(boolean sameSlot, Integer originalSlot) {
         return sameSlot ? originalSlot : MAX_SLOT - originalSlot - 1;
     }
     

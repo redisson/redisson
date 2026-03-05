@@ -4,8 +4,7 @@ import static org.assertj.core.api.Assertions.*;
 
 import java.util.List;
 
-import org.junit.Test;
-import org.redisson.BaseTest;
+import org.junit.jupiter.api.Test;
 
 public class RedissonPipelineConnectionTest extends BaseConnectionTest {
 
@@ -45,7 +44,7 @@ public class RedissonPipelineConnectionTest extends BaseConnectionTest {
         
         List<Object> result = connection.closePipeline();
         assertThat(connection.isPipelined()).isFalse();
-        assertThat(result.get(0)).isEqualTo("value".getBytes());
+        assertThat(result.get(1)).isEqualTo("value".getBytes());
     }
 
     @Test
