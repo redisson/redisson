@@ -1,9 +1,8 @@
 package org.redisson.spring.data.connection;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.redisson.BaseTest;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.redisson.RedisDockerTest;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
 
 import java.util.Arrays;
@@ -12,10 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.redisson.connection.MasterSlaveConnectionManager.MAX_SLOT;
 
-@RunWith(Parameterized.class)
-public class RedissonClusterConnectionRenameTest extends BaseTest {
+public class RedissonClusterConnectionRenameTest extends RedisDockerTest {
 
-    @Parameterized.Parameters(name= "{index} - same slot = {0}")
     public static Iterable<Object[]> data() {
         return Arrays.asList(new Object[][] {
                 {false},
@@ -23,21 +20,19 @@ public class RedissonClusterConnectionRenameTest extends BaseTest {
         });
     }
 
-    @Parameterized.Parameter(0)
-    public boolean sameSlot;
-
     byte[] originalKey = "key".getBytes();
     byte[] newKey = "unset".getBytes();
     byte[] value = "value".getBytes();
 
-    @Test
-    public void testRename() {
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testRename(boolean sameSlot) {
         testInCluster(connection -> {
             connection.set(originalKey, value);
             connection.expire(originalKey, 1000);
 
             Integer originalSlot = connection.clusterGetSlotForKey(originalKey);
-            newKey = getNewKeyForSlot(originalKey, getTargetSlot(originalSlot), connection);
+            newKey = getNewKeyForSlot(originalKey, getTargetSlot(sameSlot, originalSlot), connection);
 
             connection.rename(originalKey, newKey);
 
@@ -46,13 +41,14 @@ public class RedissonClusterConnectionRenameTest extends BaseTest {
         });
     }
 
-    @Test
-    public void testRename_pipeline() {
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testRename_pipeline(boolean sameSlot) {
         testInCluster(connection -> {
             connection.set(originalKey, value);
 
             Integer originalSlot = connection.clusterGetSlotForKey(originalKey);
-            newKey = getNewKeyForSlot(originalKey, getTargetSlot(originalSlot), connection);
+            newKey = getNewKeyForSlot(originalKey, getTargetSlot(sameSlot, originalSlot), connection);
 
             connection.openPipeline();
             assertThatThrownBy(() -> connection.rename(originalKey, newKey)).isInstanceOf(InvalidDataAccessResourceUsageException.class);
@@ -76,14 +72,15 @@ public class RedissonClusterConnectionRenameTest extends BaseTest {
         return newKey;
     }
 
-    @Test
-    public void testRenameNX() {
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testRenameNX(boolean sameSlot) {
         testInCluster(connection -> {
             connection.set(originalKey, value);
             connection.expire(originalKey, 1000);
 
             Integer originalSlot = connection.clusterGetSlotForKey(originalKey);
-            newKey = getNewKeyForSlot(originalKey, getTargetSlot(originalSlot), connection);
+            newKey = getNewKeyForSlot(originalKey, getTargetSlot(sameSlot, originalSlot), connection);
 
             Boolean result = connection.renameNX(originalKey, newKey);
 
@@ -99,13 +96,14 @@ public class RedissonClusterConnectionRenameTest extends BaseTest {
         });
     }
 
-    @Test
-    public void testRenameNX_pipeline() {
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testRenameNX_pipeline(boolean sameSlot) {
         testInCluster(connection -> {
             connection.set(originalKey, value);
 
             Integer originalSlot = connection.clusterGetSlotForKey(originalKey);
-            newKey = getNewKeyForSlot(originalKey, getTargetSlot(originalSlot), connection);
+            newKey = getNewKeyForSlot(originalKey, getTargetSlot(sameSlot, originalSlot), connection);
 
             connection.openPipeline();
             assertThatThrownBy(() -> connection.renameNX(originalKey, newKey)).isInstanceOf(InvalidDataAccessResourceUsageException.class);
@@ -113,7 +111,7 @@ public class RedissonClusterConnectionRenameTest extends BaseTest {
         });
     }
 
-    private Integer getTargetSlot(Integer originalSlot) {
+    private Integer getTargetSlot(boolean sameSlot, Integer originalSlot) {
         return sameSlot ? originalSlot : MAX_SLOT - originalSlot - 1;
     }
 
