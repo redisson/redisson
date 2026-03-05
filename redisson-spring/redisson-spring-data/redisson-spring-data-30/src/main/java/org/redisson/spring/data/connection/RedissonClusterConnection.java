@@ -56,9 +56,6 @@ import java.util.stream.Collectors;
  */
 public class RedissonClusterConnection extends RedissonConnection implements RedisClusterConnection, DefaultedRedisClusterConnection {
 
-    private static final RedisStrictCommand<List<RedisClusterNode>> CLUSTER_NODES = 
-                            new RedisStrictCommand<List<RedisClusterNode>>("CLUSTER", "NODES", new ObjectDecoder(new RedisClusterNodeDecoder()));
-    
     public RedissonClusterConnection(RedissonClient redisson) {
         super(redisson);
     }
@@ -69,7 +66,10 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
 
     @Override
     public Iterable<RedisClusterNode> clusterGetNodes() {
-        return read(null, StringCodec.INSTANCE, CLUSTER_NODES);
+        RedisStrictCommand<List<RedisClusterNode>> cluster
+                = new RedisStrictCommand<List<RedisClusterNode>>("CLUSTER", "NODES",
+                new ObjectDecoder(new RedisClusterNodeDecoder(executorService.getServiceManager())));
+        return read(null, StringCodec.INSTANCE, cluster);
     }
 
     @Override
@@ -403,9 +403,6 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
                 }
 
                 List<Object> args = new ArrayList<Object>();
-                if (cursorId == 101010101010101010L) {
-                    cursorId = 0;
-                }
                 args.add(Long.toUnsignedString(cursorId));
                 if (options.getPattern() != null) {
                     args.add("MATCH");
