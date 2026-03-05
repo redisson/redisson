@@ -1,8 +1,8 @@
 package org.redisson.spring.data.connection;
 
 import net.bytebuddy.utility.RandomString;
-import org.junit.Test;
-import org.redisson.BaseTest;
+import org.junit.jupiter.api.Test;
+import org.redisson.RedisDockerTest;
 import org.redisson.api.RedissonClient;
 import org.redisson.connection.MasterSlaveConnectionManager;
 import org.springframework.data.redis.connection.ClusterInfo;
@@ -19,7 +19,7 @@ import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class RedissonClusterConnectionTest extends BaseTest {
+public class RedissonClusterConnectionTest extends RedisDockerTest {
 
     @Test
     public void testRandomKey() {
@@ -31,6 +31,12 @@ public class RedissonClusterConnectionTest extends BaseTest {
 
             for (int i = 0; i < 10; i++) {
                 redisTemplate.opsForValue().set("i" + i, "i" + i);
+            }
+
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
             }
 
             for (RedisClusterNode clusterNode : redisTemplate.getConnectionFactory().getClusterConnection().clusterGetNodes()) {
@@ -83,6 +89,13 @@ public class RedissonClusterConnectionTest extends BaseTest {
                 map.put(("test" + i).getBytes(), ("test" + i*100).getBytes());
             }
             connection.mSet(map);
+
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+
             for (Map.Entry<byte[], byte[]> entry : map.entrySet()) {
                 assertThat(connection.get(entry.getKey())).isEqualTo(entry.getValue());
             }
@@ -97,6 +110,13 @@ public class RedissonClusterConnectionTest extends BaseTest {
                 map.put(("test" + i).getBytes(), ("test" + i*100).getBytes());
             }
             connection.mSet(map);
+
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+
             List<byte[]> r = connection.mGet(map.keySet().toArray(new byte[0][]));
             assertThat(r).containsExactly(map.values().toArray(new byte[0][]));
         });

@@ -8,8 +8,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.junit.Test;
-import org.redisson.BaseTest;
+import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.SessionCallback;
@@ -78,7 +77,7 @@ public class RedissonMultiConnectionTest extends BaseConnectionTest {
         
         List<Object> result = connection.exec();
         assertThat(connection.isQueueing()).isFalse();
-        assertThat(result.get(0)).isEqualTo("value".getBytes());
+        assertThat(result.get(1)).isEqualTo("value".getBytes());
     }
     
     @Test
