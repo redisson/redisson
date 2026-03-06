@@ -33,9 +33,7 @@ import org.redisson.command.CommandBatchService;
 import org.redisson.connection.ClientConnectionsEntry;
 import org.redisson.connection.MasterSlaveEntry;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
-import org.springframework.data.redis.connection.ClusterInfo;
-import org.springframework.data.redis.connection.DefaultedRedisClusterConnection;
-import org.springframework.data.redis.connection.RedisClusterNode;
+import org.springframework.data.redis.connection.*;
 import org.springframework.data.redis.connection.RedisClusterNode.SlotRange;
 import org.springframework.data.redis.connection.convert.Converters;
 import org.springframework.data.redis.connection.convert.StringToRedisClientInfoConverter;
@@ -56,11 +54,8 @@ import java.util.stream.Collectors;
  * @author Nikita Koksharov
  *
  */
-public class RedissonClusterConnection extends RedissonConnection implements DefaultedRedisClusterConnection {
+public class RedissonClusterConnection extends RedissonConnection implements RedisClusterConnection, DefaultedRedisClusterConnection {
 
-    private static final RedisStrictCommand<List<RedisClusterNode>> CLUSTER_NODES = 
-                            new RedisStrictCommand<List<RedisClusterNode>>("CLUSTER", "NODES", new ObjectDecoder(new RedisClusterNodeDecoder()));
-    
     public RedissonClusterConnection(RedissonClient redisson) {
         super(redisson);
     }
@@ -71,7 +66,10 @@ public class RedissonClusterConnection extends RedissonConnection implements Def
 
     @Override
     public Iterable<RedisClusterNode> clusterGetNodes() {
-        return read(null, StringCodec.INSTANCE, CLUSTER_NODES);
+        RedisStrictCommand<List<RedisClusterNode>> cluster
+                = new RedisStrictCommand<List<RedisClusterNode>>("CLUSTER", "NODES",
+                new ObjectDecoder(new RedisClusterNodeDecoder(executorService.getServiceManager())));
+        return read(null, StringCodec.INSTANCE, cluster);
     }
 
     @Override
@@ -247,10 +245,10 @@ public class RedissonClusterConnection extends RedissonConnection implements Def
         syncFuture(f);
     }
 
-    @Override
-    public String ping(RedisClusterNode node) {
-        return execute(node, RedisCommands.PING);
-    }
+//    @Override
+//    public String ping(RedisClusterNode node) {
+//        return execute(node, RedisCommands.PING);
+//    }
 
     @Override
     public void bgReWriteAof(RedisClusterNode node) {
@@ -405,9 +403,6 @@ public class RedissonClusterConnection extends RedissonConnection implements Def
                 }
 
                 List<Object> args = new ArrayList<Object>();
-                if (cursorId == 101010101010101010L) {
-                    cursorId = 0;
-                }
                 args.add(Long.toUnsignedString(cursorId));
                 if (options.getPattern() != null) {
                     args.add("MATCH");
@@ -417,7 +412,7 @@ public class RedissonClusterConnection extends RedissonConnection implements Def
                     args.add("COUNT");
                     args.add(options.getCount());
                 }
-
+                
                 RFuture<ListScanResult<byte[]>> f = executorService.readAsync(client, ByteArrayCodec.INSTANCE, RedisCommands.SCAN, args.toArray());
                 ListScanResult<byte[]> res = syncFuture(f);
                 String pos = res.getPos();
@@ -425,7 +420,7 @@ public class RedissonClusterConnection extends RedissonConnection implements Def
                 if ("0".equals(pos)) {
                     client = null;
                 }
-
+                
                 return new ScanIteration<byte[]>(Long.parseUnsignedLong(pos), res.getValues());
             }
         }.open();
@@ -544,5 +539,18 @@ public class RedissonClusterConnection extends RedissonConnection implements Def
         es.execute();
         return true;
     }
+
+    @Override
+    public RedisClusterServerCommands serverCommands() {
+        return this;
+    }
+
+    @Override
+    public String ping(RedisClusterNode node) {
+        RedisClient entry = getEntry(node);
+        RFuture<String> f = executorService.readAsync(entry, LongCodec.INSTANCE, RedisCommands.PING);
+        return syncFuture(f);
+    }
+
 
 }
