@@ -54,13 +54,6 @@
         </dependency>
 
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.13.1</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>testcontainers-junit-jupiter</artifactId>
             <scope>test</scope>
@@ -79,20 +72,6 @@
             <version>[4.1,6.0)</version>
             <scope>test</scope>
         </dependency>
-
-      	<dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-core</artifactId>
-            <version>2.23.4</version>
-            <scope>test</scope>
-      	</dependency>
-
-	<dependency>
-  		<groupId>org.projectlombok</groupId>
-	  	<artifactId>lombok</artifactId>
-	  	<version>1.18.4</version>
-                <scope>test</scope>
-	</dependency>
 
       	<dependency>
       		<groupId>io.projectreactor</groupId>

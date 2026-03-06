@@ -32,13 +32,6 @@
         </dependency>
 
         <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>1.18.36</version>
-            <scope>provided</scope>
-        </dependency>
-
-        <dependency>
             <groupId>com.github.hazendaz.jmockit</groupId>
             <artifactId>jmockit</artifactId>
             <scope>test</scope>
