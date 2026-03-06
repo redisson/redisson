@@ -1,13 +1,15 @@
 package org.redisson.spring.data.connection;
 
+import org.awaitility.Awaitility;
+import org.awaitility.Durations;
+import org.junit.jupiter.api.Test;
+import org.springframework.data.redis.connection.Message;
+import org.springframework.data.redis.connection.MessageListener;
+
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.awaitility.Awaitility;
-import org.awaitility.Durations;
-import org.junit.Test;
-import org.springframework.data.redis.connection.Message;
-import org.springframework.data.redis.connection.MessageListener;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonSubscribeTest extends BaseConnectionTest {
 
