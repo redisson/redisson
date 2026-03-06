@@ -3,11 +3,7 @@ package org.redisson.spring.data.connection;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.awaitility.Durations;
-import org.junit.Test;
-import org.redisson.RedisRunner;
-import org.redisson.Redisson;
-import org.redisson.api.RedissonClient;
-import org.redisson.config.Config;
+import org.junit.jupiter.api.Test;
 import org.springframework.data.redis.connection.Message;
 import org.springframework.data.redis.connection.MessageListener;
 import org.springframework.data.redis.connection.RedisConnection;
@@ -113,53 +109,37 @@ public class RedissonSubscribeTest extends BaseConnectionTest {
     }
 
     @Test
-    public void testPatterTopic() throws IOException, InterruptedException {
-        RedisRunner.RedisProcess instance = new RedisRunner()
-                .nosave()
-                .randomPort()
-                .randomDir()
-                .notifyKeyspaceEvents(
-                        RedisRunner.KEYSPACE_EVENTS_OPTIONS.K,
-                                    RedisRunner.KEYSPACE_EVENTS_OPTIONS.g,
-                                    RedisRunner.KEYSPACE_EVENTS_OPTIONS.E,
-                                    RedisRunner.KEYSPACE_EVENTS_OPTIONS.$)
-                .run();
+    public void testPatterTopic() {
+        testWithParams(redisson -> {
+            RedissonConnectionFactory factory = new RedissonConnectionFactory(redisson);
 
-        Config config = new Config();
-        config.useSingleServer().setAddress(instance.getRedisServerAddressAndPort()).setPingConnectionInterval(0);
-        RedissonClient redisson = Redisson.create(config);
+            RedisMessageListenerContainer container = new RedisMessageListenerContainer();
+            container.setConnectionFactory(factory);
+            AtomicInteger counterTest = new AtomicInteger();
+            container.addMessageListener(new MessageListener() {
+                @Override
+                public void onMessage(Message message, byte[] pattern) {
+                    counterTest.incrementAndGet();
+                }
+            }, new PatternTopic("__keyspace@0__:mykey"));
+            container.addMessageListener(new MessageListener() {
+                @Override
+                public void onMessage(Message message, byte[] pattern) {
+                    counterTest.incrementAndGet();
+                }
+            }, new PatternTopic("__keyevent@0__:del"));
+            container.afterPropertiesSet();
+            container.start();
+            Assertions.assertThat(container.isRunning()).isTrue();
 
-        RedissonConnectionFactory factory = new RedissonConnectionFactory(redisson);
+            RedisConnection c = factory.getConnection();
+            c.set("mykey".getBytes(), "2".getBytes());
+            c.del("mykey".getBytes());
 
-        RedisMessageListenerContainer container = new RedisMessageListenerContainer();
-        container.setConnectionFactory(factory);
-        AtomicInteger counterTest = new AtomicInteger();
-        container.addMessageListener(new MessageListener() {
-            @Override
-            public void onMessage(Message message, byte[] pattern) {
-                counterTest.incrementAndGet();
-            }
-        }, new PatternTopic("__keyspace@0__:mykey"));
-        container.addMessageListener(new MessageListener() {
-            @Override
-            public void onMessage(Message message, byte[] pattern) {
-                counterTest.incrementAndGet();
-            }
-        }, new PatternTopic("__keyevent@0__:del"));
-        container.afterPropertiesSet();
-        container.start();
-        Assertions.assertThat(container.isRunning()).isTrue();
-
-        RedisConnection c = factory.getConnection();
-        c.set("mykey".getBytes(), "2".getBytes());
-        c.del("mykey".getBytes());
-
-        Awaitility.await().atMost(Durations.FIVE_SECONDS).until(() -> {
-            return counterTest.get() == 3;
-        });
-
-        container.stop();
-        redisson.shutdown();
+            Awaitility.await().atMost(Durations.FIVE_SECONDS).until(() -> {
+                return counterTest.get() == 3;
+            });
+        }, NOTIFY_KEYSPACE_EVENTS, "KgE$");
     }
 
     @Test
