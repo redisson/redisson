@@ -2,7 +2,7 @@ package org.redisson.spring.data.connection;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.data.redis.core.types.RedisClientInfo;
 
 import java.util.List;
