@@ -8,7 +8,7 @@ import java.util.function.Consumer;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.awaitility.Durations;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.data.redis.connection.Message;
 import org.springframework.data.redis.connection.MessageListener;
 import org.springframework.data.redis.connection.RedisConnection;
