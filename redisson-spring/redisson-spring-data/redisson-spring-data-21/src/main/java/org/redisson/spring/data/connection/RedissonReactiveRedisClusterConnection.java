@@ -17,19 +17,7 @@ package org.redisson.spring.data.connection;
 
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.reactive.CommandReactiveExecutor;
-import org.springframework.data.redis.connection.ReactiveClusterGeoCommands;
-import org.springframework.data.redis.connection.ReactiveClusterHashCommands;
-import org.springframework.data.redis.connection.ReactiveClusterHyperLogLogCommands;
-import org.springframework.data.redis.connection.ReactiveClusterKeyCommands;
-import org.springframework.data.redis.connection.ReactiveClusterListCommands;
-import org.springframework.data.redis.connection.ReactiveClusterNumberCommands;
-import org.springframework.data.redis.connection.ReactiveClusterServerCommands;
-import org.springframework.data.redis.connection.ReactiveClusterSetCommands;
-import org.springframework.data.redis.connection.ReactiveClusterStringCommands;
-import org.springframework.data.redis.connection.ReactiveClusterZSetCommands;
-import org.springframework.data.redis.connection.ReactiveRedisClusterConnection;
-import org.springframework.data.redis.connection.RedisClusterNode;
-
+import org.springframework.data.redis.connection.*;
 import reactor.core.publisher.Mono;
 
 /**
