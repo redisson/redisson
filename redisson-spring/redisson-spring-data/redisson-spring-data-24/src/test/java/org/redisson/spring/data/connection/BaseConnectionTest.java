@@ -1,15 +1,15 @@
 package org.redisson.spring.data.connection;
 
-import org.junit.Before;
-import org.redisson.BaseTest;
+import org.junit.jupiter.api.BeforeAll;
+import org.redisson.RedisDockerTest;
 import org.springframework.data.redis.connection.RedisConnection;
 
-public abstract class BaseConnectionTest extends BaseTest {
+public abstract class BaseConnectionTest extends RedisDockerTest {
 
-    RedisConnection connection;
+    static RedisConnection connection;
     
-    @Before
-    public void init() {
+    @BeforeAll
+    public static void init() {
         connection = new RedissonConnection(redisson);
     }
     

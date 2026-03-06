@@ -2,7 +2,7 @@ package org.redisson.spring.data.connection;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.data.geo.Circle;
 import org.springframework.data.geo.GeoResults;
 import org.springframework.data.geo.Point;
@@ -161,5 +161,5 @@ public class RedissonConnectionTest extends BaseConnectionTest {
         assertThat(connection.ttl("key3".getBytes(), TimeUnit.MINUTES)).isEqualTo(-2L);
         assertThat(connection.ttl("key3".getBytes())).isEqualTo(-2L);
     }
-    
+
 }
