@@ -21,6 +21,7 @@ import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.misc.ReclosableLatch;
 import org.redisson.pubsub.PubSubConnectionEntry;
 import org.redisson.pubsub.PublishSubscribeService;
 import org.springframework.data.redis.connection.DefaultMessage;
@@ -31,7 +32,6 @@ import org.springframework.data.redis.connection.util.AbstractSubscription;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
 import java.util.function.BiConsumer;
 
 /**
@@ -42,6 +42,8 @@ import java.util.function.BiConsumer;
 public class RedissonSubscription extends AbstractSubscription {
 
     private static final CompletableFuture<Void> COMPLETED = new CompletableFuture<>();
+
+    private final ReclosableLatch latch = new ReclosableLatch();
 
     private final Map<ChannelName, CompletableFuture<Void>> subscribed = new ConcurrentHashMap<>();
     private final Map<ChannelName, CompletableFuture<Void>> psubscribed = new ConcurrentHashMap<>();
@@ -67,7 +69,6 @@ public class RedissonSubscription extends AbstractSubscription {
         }
 
         List<CompletableFuture<?>> list = new ArrayList<>();
-        CountDownLatch latch = new CountDownLatch(1);
         for (ChannelName channel : tosubscribe.keySet()) {
             CompletableFuture<List<PubSubConnectionEntry>> f = subscribeService.subscribe(ByteArrayCodec.INSTANCE, channel, new BaseRedisPubSubListener() {
                 @Override
@@ -96,8 +97,8 @@ public class RedissonSubscription extends AbstractSubscription {
 
                     if (type == PubSubType.UNSUBSCRIBE) {
                         subscribed.remove(channel);
-                        if (subscribed.isEmpty()) {
-                            latch.countDown();
+                        if (subscribed.isEmpty() && psubscribed.isEmpty()) {
+                            latch.open();
                         }
                     }
                 }
@@ -122,6 +123,7 @@ public class RedissonSubscription extends AbstractSubscription {
         if (getListener().getClass().getName().equals("org.springframework.data.redis.listener.SynchronizingMessageListener")) {
             try {
                 latch.await();
+                latch.close();
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
@@ -183,7 +185,6 @@ public class RedissonSubscription extends AbstractSubscription {
         }
 
         List<CompletableFuture<?>> list = new ArrayList<>();
-        CountDownLatch latch = new CountDownLatch(1);
         for (ChannelName channel : tosubscribe.keySet()) {
             CompletableFuture<Collection<PubSubConnectionEntry>> f = subscribeService.psubscribe(channel, ByteArrayCodec.INSTANCE, new BaseRedisPubSubListener() {
                 @Override
@@ -211,7 +212,9 @@ public class RedissonSubscription extends AbstractSubscription {
                     super.onStatus(type, pattern);
                     if (type == PubSubType.PUNSUBSCRIBE) {
                         psubscribed.remove(channel);
-                        latch.countDown();
+                        if (subscribed.isEmpty() && psubscribed.isEmpty()) {
+                            latch.open();
+                        }
                     }
                 }
             });
@@ -234,6 +237,7 @@ public class RedissonSubscription extends AbstractSubscription {
         if (getListener().getClass().getName().equals("org.springframework.data.redis.listener.SynchronizingMessageListener")) {
             try {
                 latch.await();
+                latch.close();
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
