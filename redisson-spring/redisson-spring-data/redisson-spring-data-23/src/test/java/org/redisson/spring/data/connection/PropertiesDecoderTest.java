@@ -3,8 +3,8 @@ package org.redisson.spring.data.connection;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 
@@ -27,9 +27,9 @@ public class PropertiesDecoderTest {
     @Test
     public void testDecode() {
         Properties p = decoder.decode(Unpooled.copiedBuffer(info, StandardCharsets.UTF_8), null);
-        Assert.assertEquals(p.getProperty("redis_version"), "5.0.10");
-        Assert.assertEquals(p.getProperty("redis_mode"), "standalone");
-        Assert.assertNull(p.getProperty("config_file"));
+        Assertions.assertEquals(p.getProperty("redis_version"), "5.0.10");
+        Assertions.assertEquals(p.getProperty("redis_mode"), "standalone");
+        Assertions.assertNull(p.getProperty("config_file"));
     }
 
 

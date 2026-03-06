@@ -1,7 +1,7 @@
 package org.redisson.spring.data.connection;
 
 import org.assertj.core.api.Assertions;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 
 public class RedissonReactiveTest extends BaseConnectionTest {
