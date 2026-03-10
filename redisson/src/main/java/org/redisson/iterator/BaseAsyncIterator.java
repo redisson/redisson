@@ -55,7 +55,11 @@ public abstract class BaseAsyncIterator<V, E> implements AsyncIterator<V> {
                 if (e != null || v == null) {
                     client = null;
                     nextItPos = null;
-                    result.complete(false);
+                    if (e != null) {
+                        result.completeExceptionally(e);
+                    } else {
+                        result.complete(false);
+                    }
                 } else {
                     client = v.getRedisClient();
                     nextItPos = v.getPos();
@@ -75,7 +79,11 @@ public abstract class BaseAsyncIterator<V, E> implements AsyncIterator<V> {
     @Override
     public CompletionStage<V> next() {
         CompletableFuture<V> result = new CompletableFuture<>();
-        hasNext().thenAccept(v -> {
+        hasNext().whenComplete((v, e) -> {
+            if (e != null) {
+                result.completeExceptionally(e);
+                return;
+            }
             if (!v) {
                 result.completeExceptionally(new NoSuchElementException());
                 return;

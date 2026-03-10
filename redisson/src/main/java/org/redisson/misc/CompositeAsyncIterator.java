@@ -66,7 +66,11 @@ public class CompositeAsyncIterator<T> implements AsyncIterator<T> {
     @Override
     public CompletionStage<T> next() {
         CompletableFuture<T> result = new CompletableFuture<>();
-        hasNext().thenAccept(v1 -> {
+        hasNext().whenComplete((v1, e) -> {
+            if (e != null) {
+                result.completeExceptionally(e);
+                return;
+            }
             if (!v1) {
                 result.completeExceptionally(new NoSuchElementException());
                 return;
