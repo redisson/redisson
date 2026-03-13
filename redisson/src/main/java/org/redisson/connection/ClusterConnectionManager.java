@@ -469,19 +469,19 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     private void updateClusterState(ClusterServersConfig cfg, RedisConnection connection,
             Iterator<RedisURI> iterator, RedisURI uri, AtomicReference<Throwable> lastException, List<RedisURI> allNodes) {
         RFuture<List<ClusterNodeInfo>> future = connection.async(StringCodec.INSTANCE, clusterNodesCommand);
-        future.whenComplete((nodes, e) -> {
+        future.handle((nodes, e) -> {
                 if (e != null) {
                     if (!lastException.compareAndSet(null, e)) {
                         lastException.get().addSuppressed(e);
                     }
                     checkClusterState(cfg, iterator, lastException, allNodes);
-                    return;
+                    return null;
                 }
 
                 if (nodes.isEmpty()) {
                     log.debug("cluster nodes state got from {}: doesn't contain any nodes", connection.getRedisClient().getAddr());
                     checkClusterState(cfg, iterator, lastException, allNodes);
-                    return;
+                    return null;
                 }
 
                 lastClusterNode = uri;
@@ -532,6 +532,11 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
                             scheduleClusterChangeCheck(cfg);
                         });
+                return null;
+        }).exceptionally(ex -> {
+                log.error("Unable to update cluster state", ex);
+                scheduleClusterChangeCheck(cfg);
+                return null;
         });
     }
 
