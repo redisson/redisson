@@ -51,6 +51,11 @@ public class RedissonTransactionalLocalCachedMap<K, V> extends RedissonTransacti
     }
 
     @Override
+    public void reloadCache() {
+        throw new UnsupportedOperationException("reloadCache method is not supported in transaction");
+    }
+
+    @Override
     public void preloadCache(int count) {
         throw new UnsupportedOperationException("preloadCache method is not supported in transaction");
     }
