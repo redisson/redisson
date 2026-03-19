@@ -593,6 +593,7 @@ public class RedisExecutor<V, R> {
                 if (connection != null) {
                     ClientConnectionsEntry ce = entry.getEntry(connection.getRedisClient());
                     if (ce != null && ce.getNodeType() == NodeType.SLAVE) {
+                        onException();
                         source = new NodeSource(entry.getClient());
                         execute();
                         return;
