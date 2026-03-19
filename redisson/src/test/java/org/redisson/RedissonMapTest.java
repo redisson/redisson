@@ -1,21 +1,25 @@
 package org.redisson;
 
-import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.awaitility.Durations;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.AsyncIterator;
 import org.redisson.api.MapOptions;
 import org.redisson.api.MapOptions.WriteMode;
 import org.redisson.api.RMap;
+import org.redisson.api.RedissonClient;
 import org.redisson.api.map.MapLoader;
 import org.redisson.api.map.MapWriter;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
+import org.redisson.config.Config;
+import org.testcontainers.containers.GenericContainer;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 
@@ -349,4 +353,29 @@ public class RedissonMapTest extends BaseMapTest {
         assertThat(keys.size()).isEqualTo(0);
     }
 
+    @Test
+    public void testAsyncIteratorException() {
+        GenericContainer<?> redis = createRedis();
+        redis.start();
+
+        Config config = createConfig(redis);
+        RedissonClient rc = Redisson.create(config);
+
+        RMap<Integer, String> map = rc.getMap("simple12");
+        map.put(1, "12");
+        map.put(2, "33");
+        map.put(3, "43");
+
+        List<java.util.Map.Entry<Integer, String>> list = new ArrayList<>();
+        AsyncIterator<java.util.Map.Entry<Integer, String>> iterator = map.entrySetAsync(2);
+
+        redis.stop();
+
+        CompletionStage<Void> f = iterateAll(iterator, list);
+        Assertions.assertThrows(CompletionException.class, () -> {
+            f.toCompletableFuture().join();
+        });
+
+        rc.shutdown();
+    }
             }

@@ -189,16 +189,24 @@ public class MasterSlaveEntry {
 
     public boolean slaveDown(InetSocketAddress address) {
         ClientConnectionsEntry connectionEntry = getEntry(address);
+        if (connectionEntry != null && connectionEntry == masterEntry) {
+            log.warn("slaveDown called with master address {}, ignoring to prevent master freeze", address);
+            return false;
+        }
         ClientConnectionsEntry entry = freeze(connectionEntry, FreezeReason.MANAGER);
         if (entry == null) {
             return false;
         }
-        
+
         return slaveDown(entry);
     }
 
     public boolean slaveDown(RedisURI address) {
         ClientConnectionsEntry connectionEntry = getEntry(address);
+        if (connectionEntry != null && connectionEntry == masterEntry) {
+            log.warn("slaveDown called with master address {}, ignoring to prevent master freeze", address);
+            return false;
+        }
         ClientConnectionsEntry entry = freeze(connectionEntry, FreezeReason.MANAGER);
         if (entry == null) {
             return false;
