@@ -119,7 +119,42 @@ public class RedissonSearchTest extends RedisDockerTest {
         
         s.search("idx:1", "*", QueryOptions.defaults().noContent(true));
     }
-    
+
+    @Test
+    public void testAggregateCursorReadReturnsRows() {
+        RSearch s = redisson.getSearch(StringCodec.INSTANCE);
+
+        int distinctOrgs = 5;
+        for (int i = 0; i < distinctOrgs * 2; i++) {
+            RMap<String, Object> m = redisson.getMap("doc:" + i, StringCodec.INSTANCE);
+            m.put("org",   "org_" + (i % distinctOrgs));
+            m.put("value", String.valueOf(i));
+        }
+
+        s.createIndex("idx-cursor-bug", IndexOptions.defaults()
+                        .on(IndexType.HASH)
+                        .prefix(Arrays.asList("doc:")),
+                FieldIndex.tag("org"),
+                FieldIndex.numeric("value"));
+
+        AggregationResult first = s.aggregate("idx-cursor-bug", "*",
+                AggregationOptions.defaults()
+                        .groupBy(GroupBy.fieldNames("@org").reducers(Reducer.count().as("cnt"),
+                                        Reducer.sum("@value").as("total")))
+                        .withCursor(1));
+
+        List<Map<String, Object>> allRows = new ArrayList<>(first.getAttributes());
+        long cursorId = first.getCursorId();
+
+        while (cursorId != 0) {
+            AggregationResult page = s.readCursor("idx-cursor-bug", cursorId, 1);
+            cursorId = page.getCursorId();
+            allRows.addAll(page.getAttributes());
+        }
+
+        assertThat(allRows).hasSize(distinctOrgs);
+    }
+
     @Test
     public void testMapAggregateWithCursor() {
         RMap<String, Object> m = redisson.getMap("doc:1", new CompositeCodec(StringCodec.INSTANCE, redisson.getConfig().getCodec()));

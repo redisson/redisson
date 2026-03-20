@@ -37,15 +37,13 @@ public class AggregationCursorResultDecoder implements MultiDecoder<Object> {
         }
 
         List<Object> list = (List<Object>) parts.get(0);
-        long total = (long) list.get(0);
         List<Map<String, Object>> docs = new ArrayList<>();
-        if (total > 0) {
-            for (int i = 1; i < list.size(); i++) {
-                Map<String, Object> attrs = (Map<String, Object>) list.get(i);
-                docs.add(attrs);
-            }
+        for (int i = 1; i < list.size(); i++) {
+            Map<String, Object> attrs = (Map<String, Object>) list.get(i);
+            docs.add(attrs);
         }
 
+        long total = (long) list.get(0);
         long cursorId = (long) parts.get(1);
         return new AggregationResult(total, docs, cursorId);
     }
