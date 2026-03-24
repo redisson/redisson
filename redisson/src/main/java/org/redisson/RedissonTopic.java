@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package org.redisson;
 
-import org.redisson.api.NameMapper;
+import org.redisson.config.NameMapper;
 import org.redisson.api.RFuture;
 import org.redisson.api.RTopic;
 import org.redisson.api.listener.MessageListener;
@@ -62,7 +62,7 @@ public class RedissonTopic implements RTopic {
     }
 
     public RedissonTopic(Codec codec, CommandAsyncExecutor commandExecutor, String... names) {
-        this(codec, commandExecutor, commandExecutor.getServiceManager().getConfig().getNameMapper(), names);
+        this(codec, commandExecutor, commandExecutor.getServiceManager().getNameMapper(), names);
     }
 
     public RedissonTopic(Codec codec, CommandAsyncExecutor commandExecutor, NameMapper nameMapper, String... names) {

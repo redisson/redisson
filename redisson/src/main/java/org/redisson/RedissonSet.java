@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,11 +26,13 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.client.protocol.decoder.ContainsDecoder;
+import org.redisson.client.protocol.decoder.ContainsSetDecoder;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.iterator.BaseAsyncIterator;
 import org.redisson.iterator.RedissonBaseIterator;
 import org.redisson.mapreduce.RedissonCollectionMapReduce;
 import org.redisson.misc.CompletableFutureWrapper;
+import org.redisson.misc.CompositeAsyncIterator;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -118,6 +120,24 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
             }
             
         };
+    }
+
+    @Override
+    public AsyncIterator<V> iteratorAsync() {
+        return iteratorAsync(10);
+    }
+
+    @Override
+    public AsyncIterator<V> iteratorAsync(int count) {
+        AsyncIterator<V> asyncIterator = new BaseAsyncIterator<V, Object>() {
+
+            @Override
+            protected RFuture<ScanResult<Object>> iterator(RedisClient client, String nextItPos) {
+                return scanIteratorAsync(name, client, nextItPos, null, count);
+            }
+
+        };
+        return new CompositeAsyncIterator<>(Arrays.asList(asyncIterator), 0);
     }
 
     @Override
@@ -401,9 +421,9 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
     }
 
     @Override
-    public RFuture<List<V>> containsEachAsync(Collection<V> c) {
+    public RFuture<Set<V>> containsEachAsync(Collection<V> c) {
         if (c.isEmpty()) {
-            return new CompletableFutureWrapper<>(Collections.<V>emptyList());
+            return new CompletableFutureWrapper<>(Collections.<V>emptySet());
         }
 
         List<Object> args = new ArrayList<>(c.size() + 1);
@@ -411,7 +431,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
         encode(args, c);
 
         return commandExecutor.readAsync(getRawName(), LongCodec.INSTANCE,
-                new RedisCommand<>("SMISMEMBER", new ContainsDecoder<>(c)), args.toArray());
+                new RedisCommand<>("SMISMEMBER", new ContainsSetDecoder<>(c)), args.toArray());
     }
 
     @Override
@@ -757,7 +777,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
     }
 
     @Override
-    public List<V> containsEach(Collection<V> c) {
+    public Set<V> containsEach(Collection<V> c) {
         return get(containsEachAsync(c));
     }
 

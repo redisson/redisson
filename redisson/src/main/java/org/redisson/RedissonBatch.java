@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -340,12 +340,33 @@ public class RedissonBatch implements RBatch {
 
     @Override
     public <K, V> RStreamAsync<K, V> getStream(String name) {
-        return new RedissonStream<K, V>(executorService, name);
+        return new RedissonStream<>(executorService, name);
     }
 
     @Override
     public <K, V> RStreamAsync<K, V> getStream(String name, Codec codec) {  
-        return new RedissonStream<K, V>(codec, executorService, name);
+        return new RedissonStream<>(codec, executorService, name);
     }
+
+    @Override
+    public <T> RBloomFilterNativeAsync<T> getBloomFilterNative(String name) {
+        return new RedissonBloomFilterNative<>(executorService, name);
+    }
+
+    @Override
+    public <T> RBloomFilterNativeAsync<T> getBloomFilterNative(String name, Codec codec) {
+        return new RedissonBloomFilterNative<>(codec, executorService, name);
+    }
+
+    @Override
+    public <V> RCuckooFilterAsync<V> getCuckooFilter(String name) {
+        return getCuckooFilter(name, null);
+    }
+
+    @Override
+    public <V> RCuckooFilterAsync<V> getCuckooFilter(String name, Codec codec) {
+        return new RedissonCuckooFilter<V>(codec, executorService, name);
+    }
+
 
 }

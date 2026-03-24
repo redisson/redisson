@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -492,7 +492,7 @@ public interface RedissonRxClient {
      * Returns map instance by name.
      * Supports entry eviction with a given TTL.
      * <p>
-     * Requires <b>Redis 7.4.0 and higher.</b>
+     * Requires <b>Redis 7.4.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
      *
      * @param <K> type of key
      * @param <V> type of value
@@ -506,7 +506,7 @@ public interface RedissonRxClient {
      * using provided codec for both map keys and values.
      * Supports entry eviction with a given TTL.
      * <p>
-     * Requires <b>Redis 7.4.0 and higher.</b>
+     * Requires <b>Redis 7.4.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
      *
      * @param <K> type of key
      * @param <V> type of value
@@ -521,7 +521,7 @@ public interface RedissonRxClient {
      * Supports entry eviction with a given TTL.
      * Configured by the parameters of the options-object.
      * <p>
-     * Requires <b>Redis 7.4.0 and higher.</b>
+     * Requires <b>Redis 7.4.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
      *
      * @param <K> type of key
      * @param <V> type of value
@@ -762,7 +762,7 @@ public interface RedissonRxClient {
      * <p>
      * Uses Redis native commands for entry expiration and not a scheduled eviction task.
      * <p>
-     * Requires <b>Redis 7.4.0 and higher.</b>
+     * Requires <b>Redis 7.4.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
      *
      * @param <K> type of key
      * @param <V> type of value
@@ -779,7 +779,7 @@ public interface RedissonRxClient {
      * <p>
      * Uses Redis native commands for entry expiration and not a scheduled eviction task.
      * <p>
-     * Requires <b>Redis 7.4.0 and higher.</b>
+     * Requires <b>Redis 7.4.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
      *
      * @param <K> type of key
      * @param <V> type of value
@@ -796,7 +796,7 @@ public interface RedissonRxClient {
      * <p>
      * Uses Redis native commands for entry expiration and not a scheduled eviction task.
      * <p>
-     * Requires <b>Redis 7.4.0 and higher.</b>
+     * Requires <b>Redis 7.4.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
      *
      * @param <K> type of key
      * @param <V> type of value
@@ -882,7 +882,7 @@ public interface RedissonRxClient {
      * <p>
      * Uses Redis native commands for entry expiration and not a scheduled eviction task.
      * <p>
-     * Requires <b>Redis 7.4.0 and higher.</b>
+     * Requires <b>Redis 7.4.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
      *
      * @param <K> type of key
      * @param <V> type of value
@@ -899,7 +899,7 @@ public interface RedissonRxClient {
      * <p>
      * Uses Redis native commands for entry expiration and not a scheduled eviction task.
      * <p>
-     * Requires <b>Redis 7.4.0 and higher.</b>
+     * Requires <b>Redis 7.4.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
      *
      * @param <K> type of key
      * @param <V> type of value
@@ -916,7 +916,7 @@ public interface RedissonRxClient {
      * <p>
      * Uses Redis native commands for entry expiration and not a scheduled eviction task.
      * <p>
-     * Requires <b>Redis 7.4.0 and higher.</b>
+     * Requires <b>Redis 7.4.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
      *
      * @param <K> type of key
      * @param <V> type of value
@@ -1301,6 +1301,43 @@ public interface RedissonRxClient {
     <V> RQueueRx<V> getQueue(PlainOptions options);
 
     /**
+     * Returns a reliable queue instance by name.
+     * <p>
+     * The reliable queue provides guaranteed message delivery through acknowledgment mechanisms
+     * and synchronous replication.
+     *
+     * @param name the name of the queue
+     * @param <V> the type of elements in this queue
+     * @return Reliable queue instance
+     */
+    <V> RReliableQueueRx<V> getReliableQueue(String name);
+
+    /**
+     * Returns a reliable queue instance by name and provided codec.
+     * <p>
+     * The reliable queue provides guaranteed message delivery through acknowledgment mechanisms
+     * and synchronous replication.
+     *
+     * @param name the name of the queue
+     * @param codec the codec used for message serialization and deserialization
+     * @param <V> the type of elements in this queue
+     * @return Reliable queue instance
+     */
+    <V> RReliableQueueRx<V> getReliableQueue(String name, Codec codec);
+
+    /**
+     * Returns a reliable queue instance with the specified configuration options.
+     * <p>
+     * The reliable queue provides guaranteed message delivery through acknowledgment mechanisms
+     * and synchronous replication.
+     *
+     * @param options configuration options for the reliable queue
+     * @param <V> the type of elements in this queue
+     * @return Reliable queue instance
+     */
+    <V> RReliableQueueRx<V> getReliableQueue(PlainOptions options);
+
+    /**
      * Returns RingBuffer based queue.
      * 
      * @param <V> value type
@@ -1566,6 +1603,67 @@ public interface RedissonRxClient {
     <V> RBloomFilterRx<V> getBloomFilter(PlainOptions options);
 
     /**
+     * Returns bloom filter native instance by name.
+     * using BF.* Commands
+     *
+     * @param <V> type of value
+     * @param name name of object
+     * @return BloomFilterNative object
+     */
+    <V> RBloomFilterNativeRx<V> getBloomFilterNative(String name);
+
+    /**
+     * Returns bloom filter native instance by name
+     * using BF.* Commands
+     * using provided codec for objects.
+     *
+     * @param <V> type of value
+     * @param name name of object
+     * @param codec codec for values
+     * @return BloomFilterNative object
+     */
+    <V> RBloomFilterNativeRx<V> getBloomFilterNative(String name, Codec codec);
+
+    /**
+     * Returns bloom filter native instance with specified <code>options</code>.
+     * using BF.* Commands
+     *
+     * @param <V> type of value
+     * @param options instance options
+     * @return BloomFilterNative object
+     */
+    <V> RBloomFilterNativeRx<V> getBloomFilterNative(PlainOptions options);
+
+    /**
+     * Returns cuckoo filter instance by <code>name</code>.
+     *
+     * @param <V> type of value
+     * @param name name of object
+     * @return CuckooFilter object
+     */
+    <V> RCuckooFilterRx<V> getCuckooFilter(String name);
+
+    /**
+     * Returns cuckoo filter instance by <code>name</code>
+     * using provided <code>codec</code> for values.
+     *
+     * @param <V> type of value
+     * @param name name of object
+     * @param codec codec for values
+     * @return CuckooFilter object
+     */
+    <V> RCuckooFilterRx<V> getCuckooFilter(String name, Codec codec);
+
+    /**
+     * Returns cuckoo filter instance with specified <code>options</code>.
+     *
+     * @param <V> type of value
+     * @param options instance options
+     * @return CuckooFilter object
+     */
+    <V> RCuckooFilterRx<V> getCuckooFilter(PlainOptions options);
+
+    /**
      * Returns interface for Redis Function feature
      *
      * @return function object
@@ -1610,6 +1708,26 @@ public interface RedissonRxClient {
      * @return Script object
      */
     RScriptRx getScript(OptionalOptions options);
+
+    /**
+     * Returns vector set instance by name.
+     * <p>
+     * Requires <b>Redis 8.0.0 and higher.</b>
+     *
+     * @param name - name of vector set
+     * @return vector set instance
+     */
+    RVectorSetRx getVectorSet(String name);
+
+    /**
+     * Returns vector set instance by name with specified <code>options</code>.
+     * <p>
+     * Requires <b>Redis 8.0.0 and higher.</b>
+     *
+     * @param options instance options
+     * @return vector set instance
+     */
+    RVectorSetRx getVectorSet(CommonOptions options);
 
     /**
      * Creates transaction with <b>READ_COMMITTED</b> isolation level.
@@ -1671,22 +1789,6 @@ public interface RedissonRxClient {
      */
     Config getConfig();
     
-    /**
-     * Use {@link org.redisson.api.RedissonClient#getRedisNodes(org.redisson.api.redisnode.RedisNodes)} instead
-     *
-     * @return NodesGroup object
-     */
-    @Deprecated
-    NodesGroup<Node> getNodesGroup();
-
-    /**
-     * Use {@link org.redisson.api.RedissonClient#getRedisNodes(org.redisson.api.redisnode.RedisNodes)} instead
-     *
-     * @return NodesGroup object
-     */
-    @Deprecated
-    NodesGroup<ClusterNode> getClusterNodesGroup();
-
     /**
      * Returns {@code true} if this Redisson instance has been shut down.
      *

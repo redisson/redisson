@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 package org.redisson.api.stream;
-
-import org.redisson.api.StreamMessageId;
 
 /**
  * Arguments object for Stream trim method.
@@ -32,7 +30,7 @@ public interface StreamTrimArgs {
      * @param threshold - trim threshold
      * @return arguments object
      */
-    static StreamTrimLimitArgs<StreamTrimArgs> maxLen(int threshold) {
+    static StreamTrimReferencesArgs<StreamTrimArgs> maxLen(int threshold) {
         return new StreamTrimParams(threshold);
     }
 
@@ -43,7 +41,7 @@ public interface StreamTrimArgs {
      * @param messageId - stream Id
      * @return arguments object
      */
-    static StreamTrimLimitArgs<StreamTrimArgs> minId(StreamMessageId messageId) {
+    static StreamTrimReferencesArgs<StreamTrimArgs> minId(StreamMessageId messageId) {
         return new StreamTrimParams(messageId);
     }
 

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 package org.redisson.mybatis;
 
 import org.redisson.MapCacheNativeWrapper;
-import org.redisson.Redisson;
 import org.redisson.api.RMapCache;
 import org.redisson.api.RMapCacheNative;
 import org.redisson.api.RedissonClient;
@@ -45,7 +44,7 @@ public class RedissonCacheNative extends RedissonCache {
     @Override
     protected RMapCache<Object, Object> getMapCache(String id, RedissonClient redisson) {
         RMapCacheNative<Object, Object> cache = redisson.getMapCacheNative(id);
-        return new MapCacheNativeWrapper<>(cache, (Redisson) redisson);
+        return new MapCacheNativeWrapper<>(cache);
     }
 
 }

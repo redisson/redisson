@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.redisson</groupId>
         <artifactId>redisson-quarkus</artifactId>
-        <version>3.45.2-SNAPSHOT</version>
+        <version>4.3.1-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
 
@@ -35,6 +35,46 @@
            <type>pom</type>
            <scope>import</scope>
          </dependency>
+
+         <dependency>
+           <groupId>org.yaml</groupId>
+           <artifactId>snakeyaml</artifactId>
+           <version>2.5</version>
+         </dependency>
+
+         <dependency>
+             <groupId>org.testcontainers</groupId>
+             <artifactId>junit-jupiter</artifactId>
+             <version>1.12.4</version>
+         </dependency>
+
+         <dependency>
+             <groupId>org.testcontainers</groupId>
+             <artifactId>testcontainers</artifactId>
+             <version>2.0.3</version>
+         </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+            <version>2.15.4</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.github.docker-java</groupId>
+            <artifactId>docker-java-api</artifactId>
+            <version>3.4.1</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.docker-java</groupId>
+            <artifactId>docker-java-transport-zerodep</artifactId>
+            <version>3.4.1</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.docker-java</groupId>
+            <artifactId>docker-java-transport</artifactId>
+            <version>3.4.1</version>
+        </dependency>
        </dependencies>
      </dependencyManagement>
 

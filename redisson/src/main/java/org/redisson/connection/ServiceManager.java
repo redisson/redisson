@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,19 +46,16 @@ import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.internal.PlatformDependent;
 import org.redisson.ElementsSubscribeService;
 import org.redisson.QueueTransferService;
+import org.redisson.RedissonClientSideCaching;
 import org.redisson.RedissonShutdownException;
-import org.redisson.api.NatMapper;
-import org.redisson.api.RFuture;
-import org.redisson.api.RLock;
+import org.redisson.api.*;
 import org.redisson.cache.LRUCacheMap;
 import org.redisson.client.RedisNodeNotFoundException;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.config.Config;
-import org.redisson.config.MasterSlaveServersConfig;
-import org.redisson.config.Protocol;
-import org.redisson.config.TransportMode;
+import org.redisson.command.NoSyncedSlavesException;
+import org.redisson.config.*;
 import org.redisson.liveobject.resolver.MapResolver;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.FastRemovalQueue;
@@ -77,6 +74,7 @@ import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -279,16 +277,20 @@ public final class ServiceManager {
     }
 
     private void initTimer() {
-        int minTimeout = Math.min(config.getRetryInterval(), config.getTimeout());
-        if (minTimeout % 100 != 0) {
-            minTimeout = (minTimeout % 100) / 2;
+        Duration testdelay = config.getRetryDelay().calcDelay(0);
+        int minTimeout = Math.min((int) testdelay.toMillis(), config.getTimeout());
+        if (minTimeout <= 0) {
+            minTimeout = 10;
+        } else if (minTimeout % 100 != 0) {
+            minTimeout = Math.max(10, (minTimeout % 100) / 2);
         } else if (minTimeout == 100) {
             minTimeout = 50;
         } else {
             minTimeout = 100;
         }
 
-        timer = new HashedWheelTimer(new DefaultThreadFactory("redisson-timer"), minTimeout, TimeUnit.MILLISECONDS, 1024, false);
+        timer = new HashedWheelTimer(new DefaultThreadFactory("redisson-timer"),
+                minTimeout, TimeUnit.MILLISECONDS, 1024, false);
 
         connectionWatcher = new IdleConnectionWatcher(group, config);
     }
@@ -349,6 +351,15 @@ public final class ServiceManager {
             List<RedisURI> nodes = future.getNow().stream().map(addr -> {
                 return toURI(uri.getScheme(), addr.getAddress().getHostAddress(), "" + addr.getPort());
             }).collect(Collectors.toList());
+
+            long loopbackCount = future.getNow().stream()
+                    .filter(addr -> addr.getAddress().isLoopbackAddress())
+                    .count();
+            if (loopbackCount > 1) {
+                nodes.sort(Comparator.comparing(RedisURI::getHost));
+                nodes = nodes.subList(0, 1);
+            }
+
             result.complete(nodes);
         });
         return result;
@@ -416,7 +427,7 @@ public final class ServiceManager {
     public <T> CompletableFuture<T> createNodeNotFoundFuture(String channelName, int slot) {
         RedisNodeNotFoundException ex = new RedisNodeNotFoundException("Node for name: " + channelName + " slot: " + slot
                 + " hasn't been discovered yet. Check cluster slots coverage using CLUSTER NODES command. " +
-                "Increase value of retryAttempts and/or retryInterval settings. Last cluster nodes topology: " + lastClusterNodes);
+                "Try to increase 'retryDelay' and/or 'retryAttempts' settings. Last cluster nodes topology: " + lastClusterNodes);
         CompletableFuture<T> promise = new CompletableFuture<>();
         promise.completeExceptionally(ex);
         return promise;
@@ -428,15 +439,29 @@ public final class ServiceManager {
                 && source.getSlot() != null
                     && source.getAddr() == null
                         && source.getRedisClient() == null) {
-            ex = new RedisNodeNotFoundException("Node for slot: " + source.getSlot() + " hasn't been discovered yet. Increase value of retryAttempts and/or retryInterval settings. Last cluster nodes topology: " + lastClusterNodes);
+            ex = new RedisNodeNotFoundException("Node for slot: " + source.getSlot() + " hasn't been discovered yet. Increase 'retryAttempts' setting. Last cluster nodes topology: " + lastClusterNodes);
         } else {
-            ex = new RedisNodeNotFoundException("Node: " + source + " hasn't been discovered yet. Increase value of retryAttempts and/or retryInterval settings. Last cluster nodes topology: " + lastClusterNodes);
+            ex = new RedisNodeNotFoundException("Node: " + source + " hasn't been discovered yet. Increase 'retryAttempts' setting. Last cluster nodes topology: " + lastClusterNodes);
         }
         return ex;
     }
 
     public MasterSlaveServersConfig getConfig() {
         return config;
+    }
+
+    public NameMapper getNameMapper() {
+        if (!(cfg.getNameMapper() instanceof DefaultNameMapper)) {
+            return cfg.getNameMapper();
+        }
+        return config.getNameMapper();
+    }
+
+    public CommandMapper getCommandMapper() {
+        if (!(cfg.getCommandMapper() instanceof DefaultCommandMapper)) {
+            return cfg.getCommandMapper();
+        }
+        return config.getCommandMapper();
     }
 
     public ElementsSubscribeService getElementsSubscribeService() {
@@ -562,8 +587,7 @@ public final class ServiceManager {
 
     public <T> RFuture<T> execute(Supplier<CompletionStage<T>> supplier) {
         CompletableFuture<T> result = new CompletableFuture<>();
-        int retryAttempts = config.getRetryAttempts();
-        AtomicInteger attempts = new AtomicInteger(retryAttempts);
+        AtomicInteger attempts = new AtomicInteger();
         execute(attempts, result, supplier);
         return new CompletableFutureWrapper<>(result);
     }
@@ -572,16 +596,20 @@ public final class ServiceManager {
         CompletionStage<T> future = supplier.get();
         future.whenComplete((r, e) -> {
             if (e != null) {
-                if (e.getCause() != null
-                        && e.getCause().getMessage() != null
-                            && e.getCause().getMessage().equals("None of slaves were synced")) {
-                    if (attempts.decrementAndGet() < 0) {
+                if (e.getCause() instanceof NoSyncedSlavesException) {
+                    if (attempts.get() >= config.getRetryAttempts()) {
                         result.completeExceptionally(e);
                         return;
                     }
 
+                    attempts.incrementAndGet();
+                    if (log.isDebugEnabled()) {
+                        log.debug("None of slaves were synced. new attempt {} ", attempts.get());
+                    }
+
+                    Duration timeout = config.getRetryDelay().calcDelay(attempts.get());
                     newTimeout(t -> execute(attempts, result, supplier),
-                            config.getRetryInterval(), TimeUnit.MILLISECONDS);
+                                                timeout.toMillis(), TimeUnit.MILLISECONDS);
                     return;
                 }
 
@@ -604,7 +632,18 @@ public final class ServiceManager {
         });
     }
 
+    public <V> void transferException(CompletionStage<V> source, CompletableFuture<V> dest) {
+        source.exceptionally(ex -> {
+            dest.completeExceptionally(ex);
+            return null;
+        });
+    }
+
     private final Random random = RandomXoshiro256PlusPlus.create();
+
+    public Random getRandom() {
+        return random;
+    }
 
     public Long generateValue() {
         return random.nextLong();
@@ -646,6 +685,16 @@ public final class ServiceManager {
         RESP3MAPPING.put(RedisCommands.XREAD_BLOCKING, RedisCommands.XREAD_BLOCKING_V2);
         RESP3MAPPING.put(RedisCommands.XREAD, RedisCommands.XREAD_V2);
         RESP3MAPPING.put(RedisCommands.HRANDFIELD, RedisCommands.HRANDFIELD_V2);
+      
+        RESP3MAPPING.put(RedisCommands.VSIM_WITHSCORESATTRIBS, RedisCommands.VSIM_WITHSCORESATTRIBS_V2);
+        RESP3MAPPING.put(RedisCommands.ZRANGE_SINGLE_ENTRY, RedisCommands.ZRANGE_SINGLE_ENTRY_V2);
+        RESP3MAPPING.put(RedisCommands.ZRANGE_ENTRY, RedisCommands.ZRANGE_ENTRY_V2);
+        RESP3MAPPING.put(RedisCommands.ZREVRANGE_ENTRY, RedisCommands.ZREVRANGE_ENTRY_V2);
+        RESP3MAPPING.put(RedisCommands.ZRANGEBYSCORE_ENTRY, RedisCommands.ZRANGEBYSCORE_ENTRY_V2);
+        RESP3MAPPING.put(RedisCommands.ZREVRANGEBYSCORE_ENTRY, RedisCommands.ZREVRANGEBYSCORE_ENTRY_V2);
+        RESP3MAPPING.put(RedisCommands.ZINITER_ENTRY, RedisCommands.ZINITER_ENTRY_V2);
+        RESP3MAPPING.put(RedisCommands.ZUNION_ENTRY, RedisCommands.ZUNION_ENTRY_V2);
+        RESP3MAPPING.put(RedisCommands.ZDIFF_ENTRY, RedisCommands.ZDIFF_ENTRY_V2);
     }
 
     public <R> RedisCommand<R> resp3(RedisCommand<R> command) {
@@ -705,4 +754,35 @@ public final class ServiceManager {
     public LockRenewalScheduler getRenewalScheduler() {
         return renewalScheduler;
     }
+
+    private final Set<RedissonClientSideCaching> cachingInstances = Collections.newSetFromMap(new ConcurrentHashMap<>());
+
+    public void addClientSideCaching(RedissonClientSideCaching cachingInstance) {
+        cachingInstances.add(cachingInstance);
+    }
+
+    public void removeClientSideCaching(RedissonClientSideCaching cachingInstance) {
+        cachingInstances.remove(cachingInstance);
+    }
+
+    public boolean hasCachingInstances() {
+        return !cachingInstances.isEmpty();
+    }
+
+    public void evictClientSideCaching(String name) {
+        for (RedissonClientSideCaching cachingInstance : cachingInstances) {
+            cachingInstance.clearCache(name);
+        }
+    }
+
+    private boolean clusterDetected;
+
+    public void setClusterDetected(boolean clusterDetected) {
+        this.clusterDetected = clusterDetected;
+    }
+
+    public boolean isClusterSetup() {
+        return cfg.isClusterConfig() || clusterDetected;
+    }
+
 }

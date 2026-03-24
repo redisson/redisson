@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.redisson</groupId>
         <artifactId>redisson-parent</artifactId>
-        <version>3.45.2-SNAPSHOT</version>
+        <version>4.3.1-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
 
@@ -19,6 +19,8 @@
         <module>redisson-hibernate-52</module>
         <module>redisson-hibernate-53</module>
         <module>redisson-hibernate-6</module>
+        <module>redisson-hibernate-7</module>
+        <module>redisson-hibernate-72</module>
     </modules>
 
     <build>
@@ -41,12 +43,6 @@
             <version>${project.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>org.assertj</groupId>
-            <artifactId>assertj-core</artifactId>
-            <version>3.26.0</version>
-            <scope>test</scope>
-        </dependency>
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>

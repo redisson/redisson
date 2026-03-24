@@ -1,7 +1,9 @@
 package org.redisson;
 
+import org.joor.Reflect;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.redisson.config.NameMapper;
 import org.redisson.api.RLock;
 import org.redisson.api.RScript;
 import org.redisson.api.RedissonClient;
@@ -173,7 +175,7 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
                         "table.insert(result, timeouts[i+1]); " +
                         "end; " +
                         "return result; ",
-                RScript.ReturnType.MULTI,
+                RScript.ReturnType.LIST,
                 Collections.singletonList("redisson_lock_timeout:{test-fair-lock}"));
 
         int i = 0;
@@ -265,7 +267,7 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
                         "table.insert(result, timeouts[i+1]); " +
                         "end; " +
                         "return result; ",
-                RScript.ReturnType.MULTI,
+                RScript.ReturnType.LIST,
                 Collections.singletonList("redisson_lock_timeout:{test-fair-lock}"));
 
         int i = 0;
@@ -340,7 +342,7 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
         Assertions.assertTrue(fourthTTL >= 29900 && fourthTTL <= 30100, "Expected 40000 +/- 100 but was " + fourthTTL);
 
         // unlock the original lock holder
-        Boolean unlocked = lock.unlockInnerAsync(threadInit).toCompletableFuture().join();;
+        Boolean unlocked = lock.unlockInnerAsync(threadInit, null).toCompletableFuture().join();
         Assertions.assertNotNull(unlocked);
         Assertions.assertTrue(unlocked);
 
@@ -393,7 +395,7 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
         Assertions.assertFalse(locked);
 
         // unlock the original lock holder
-        Boolean unlocked = lock.unlockInnerAsync(threadInit).toCompletableFuture().join();;
+        Boolean unlocked = lock.unlockInnerAsync(threadInit, null).toCompletableFuture().join();
         Assertions.assertTrue(unlocked);
 
         // get the lock
@@ -450,7 +452,7 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
         Assertions.assertNotNull(secondTTL);
 
         // unlock the original lock holder
-        Boolean unlocked = lock.unlockInnerAsync(threadInit).toCompletableFuture().join();;
+        Boolean unlocked = lock.unlockInnerAsync(threadInit, null).toCompletableFuture().join();
         Assertions.assertNotNull(unlocked);
         Assertions.assertTrue(unlocked);
 
@@ -598,7 +600,7 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
                         "table.insert(result, timeouts[i+1]); " +
                         "end; " +
                         "return result; ",
-                RScript.ReturnType.MULTI,
+                RScript.ReturnType.LIST,
                 Collections.singletonList("redisson_lock_timeout:{test-fair-lock}"));
 
         for (int i = 0; i < queue.size(); i++) {
@@ -965,6 +967,35 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
         }
 
         await().atMost(45, TimeUnit.SECONDS).until(() -> lockedCounter.get() == totalThreads);
+    }
+
+    @Test
+    public void testNameMapper() {
+        Config config = redisson.getConfig();
+        config.useSingleServer()
+                .setNameMapper(new NameMapper() {
+                    @Override
+                    public String map(String name) {
+                        return "test::" + name;
+                    }
+
+                    @Override
+                    public String unmap(String name) {
+                        return name.replace("test::", "");
+                    }
+                });
+
+        RedissonClient redisson = Redisson.create(config);
+
+        RLock lock = redisson.getFairLock("lock");
+        String threadsQueueName = Reflect.on(lock).get("threadsQueueName");
+        Assertions.assertTrue(threadsQueueName.contains("test::lock"));
+
+        Assertions.assertFalse(lock.isLocked());
+        lock.lock();
+        Assertions.assertTrue(lock.isLocked());
+        lock.unlock();
+        Assertions.assertFalse(lock.isLocked());
     }
 
 

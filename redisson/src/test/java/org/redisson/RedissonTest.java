@@ -1,41 +1,42 @@
 package org.redisson;
 
+import com.github.dockerjava.api.command.InspectContainerResponse;
+import com.github.dockerjava.api.model.ContainerNetwork;
+import com.github.dockerjava.api.model.ExposedPort;
+import com.github.dockerjava.api.model.Ports;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.resolver.AddressResolverGroup;
-import io.netty.resolver.dns.DnsServerAddressStreamProvider;
-import io.netty.resolver.dns.DnsServerAddresses;
+import io.netty.resolver.ResolvedAddressTypes;
+import io.netty.resolver.dns.*;
 import io.netty.util.CharsetUtil;
 import net.bytebuddy.utility.RandomString;
 import nl.altindag.log.LogCaptor;
 import org.awaitility.Awaitility;
+import org.joor.Reflect;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.*;
-import org.redisson.api.redisnode.RedisMaster;
+import org.redisson.api.redisnode.*;
 import org.redisson.api.redisnode.RedisNodes;
-import org.redisson.api.redisnode.RedisSingle;
 import org.redisson.api.stream.StreamCreateGroupArgs;
-import org.redisson.client.RedisConnectionException;
-import org.redisson.client.RedisException;
-import org.redisson.client.RedisOutOfMemoryException;
+import org.redisson.client.*;
 import org.redisson.client.codec.BaseCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
+import org.redisson.client.protocol.RedisCommands;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.codec.SerializationCodec;
 import org.redisson.config.*;
-import org.redisson.connection.CRC16;
-import org.redisson.connection.ConnectionListener;
-import org.redisson.connection.MasterSlaveConnectionManager;
-import org.redisson.connection.SequentialDnsAddressResolverFactory;
+import org.redisson.connection.*;
 import org.redisson.connection.pool.SlaveConnectionPool;
 import org.redisson.misc.RedisURI;
 import org.testcontainers.containers.ContainerState;
+import org.testcontainers.containers.DockerComposeContainer;
 import org.testcontainers.containers.FixedHostPortGenericContainer;
 import org.testcontainers.containers.GenericContainer;
 
@@ -43,10 +44,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -55,6 +53,22 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 public class RedissonTest extends RedisDockerTest {
+
+    @Test
+    public void testValkeyCapabilities() {
+        GenericContainer<?> redis = createRedisWithVersion("valkey/valkey:latest");
+        redis.start();
+
+        Config config = createConfig(redis);
+        config.setValkeyCapabilities(Collections.singleton(ValkeyCapability.REDIRECT));
+        RedissonClient r = Redisson.create(config);
+
+        RBucket<String> b = r.getBucket("test");
+        b.set("1");
+        assertThat(b.get()).isEqualTo("1");
+
+        r.shutdown();
+    }
 
     @Test
     public void testZeroMinimumIdleSize() {
@@ -78,17 +92,20 @@ public class RedissonTest extends RedisDockerTest {
     }
 
     @Test
-    public void testStopThreads() throws IOException {
+    public void testStopThreads() {
         Set<Thread> threads = Thread.getAllStackTraces().keySet();
 
-        List<String> cfgs = Arrays.asList("{\"clusterServersConfig\":{\"nodeAddresses\": []}}",
-                                          "{\"singleServerConfig\":{\"address\": \"\"}}",
-                                          "{\"replicatedServersConfig\":{\"nodeAddresses\": []}}",
-                                          "{\"sentinelServersConfig\":{\"sentinelAddresses\": []}}",
-                                          "{\"masterSlaveServersConfig\":{\"masterAddress\": \"\"}}");
+        List<String> cfgs = Arrays.asList(
+                "clusterServersConfig:\n  nodeAddresses: []",
+                "singleServerConfig:\n  address: \"\"",
+                "replicatedServersConfig:\n  nodeAddresses: []",
+                "sentinelServersConfig:\n  sentinelAddresses: []",
+                "masterSlaveServersConfig:\n  masterAddress: \"\""
+        );
+
         for (String cfg : cfgs) {
             ConfigSupport support = new ConfigSupport();
-            Config config = support.fromJSON(cfg, Config.class);
+            Config config = support.fromYAML(cfg, Config.class);
 
             Assertions.assertThrows(IllegalArgumentException.class, () -> {
                 Redisson.create(config);
@@ -631,6 +648,30 @@ public class RedissonTest extends RedisDockerTest {
         b.set("123");
 
         redisson.shutdown();
+
+        config.setCredentialsResolver(new CredentialsResolver() {
+            @Override
+            public CompletionStage<Credentials> resolve(InetSocketAddress address) {
+                return CompletableFuture.completedFuture(new Credentials(null, "12345"));
+            }
+        });
+
+        Assertions.assertThrows(RedisConnectionException.class, () -> {
+            Redisson.create(config);
+        });
+
+        config.setCredentialsResolver(new CredentialsResolver() {
+            @Override
+            public CompletionStage<Credentials> resolve(InetSocketAddress address) {
+                return CompletableFuture.completedFuture(new Credentials(null, "1234"));
+            }
+        });
+
+        RedissonClient r = Redisson.create(config);
+        b = r.getBucket("test");
+        b.set("123");
+
+        r.shutdown();
         redis.stop();
     }
 
@@ -645,13 +686,18 @@ public class RedissonTest extends RedisDockerTest {
         config.useSingleServer()
                 .setConnectionMinimumIdleSize(1)
                 .setConnectionPoolSize(1)
-                .setCredentialsReapplyInterval(5000)
                 .setCredentialsResolver(new CredentialsResolver() {
                     @Override
                     public CompletionStage<Credentials> resolve(InetSocketAddress address) {
                         latch.countDown();
                         return CompletableFuture.completedFuture(new Credentials(null, "1234"));
                     }
+
+                    @Override
+                    public CompletionStage<Void> nextRenewal() {
+                        return CompletableFuture.supplyAsync(() -> null, CompletableFuture.delayedExecutor(5, TimeUnit.SECONDS));
+                    }
+
                 });
 
         RedissonClient rc = Redisson.create(config);
@@ -667,6 +713,7 @@ public class RedissonTest extends RedisDockerTest {
     @Test
     public void testCommandMapper() {
         Config c = createConfig();
+        c.setUseScriptCache(false);
         c.useSingleServer().setCommandMapper(n -> {
             if (n.equals("EVAL")) {
                 return "EVAL_111";
@@ -681,6 +728,63 @@ public class RedissonTest extends RedisDockerTest {
         assertThat(e.getMessage()).startsWith("ERR unknown command 'EVAL_111'");
 
         redisson.shutdown();
+
+        c.setCommandMapper(n -> {
+            if (n.equals("EVAL")) {
+                return "EVAL_222";
+            }
+            return n;
+        });
+
+        RedissonClient redisson2 = Redisson.create(c);
+        RBucket<String> b2 = redisson2.getBucket("test");
+        RedisException e2 = Assertions.assertThrows(RedisException.class, () -> {
+            b2.compareAndSet("test", "v1");
+        });
+        assertThat(e2.getMessage()).startsWith("ERR unknown command 'EVAL_222'");
+
+        redisson2.shutdown();
+    }
+
+    @Test
+    public void testNameMapper() {
+        Config config = redisson.getConfig();
+        config.setNameMapper(new NameMapper() {
+            @Override
+            public String map(String name) {
+                return "test2::" + name;
+            }
+
+            @Override
+            public String unmap(String name) {
+                return name.replace("test2::", "");
+            }
+        });
+        config.useSingleServer()
+                .setNameMapper(new NameMapper() {
+                    @Override
+                    public String map(String name) {
+                        return "test::" + name;
+                    }
+
+                    @Override
+                    public String unmap(String name) {
+                        return name.replace("test::", "");
+                    }
+                });
+
+        RedissonClient redisson = Redisson.create(config);
+        RBucket bucket = redisson.getBucket("k1",StringCodec.INSTANCE);
+        bucket.set("v1");
+
+        RedisClientConfig cc = new RedisClientConfig();
+        cc.setAddress(redisson.getConfig().useSingleServer().getAddress());
+        RedisClient c = RedisClient.create(cc);
+        RedisConnection ccc = c.connect();
+        assertThat(ccc.sync(RedisCommands.GET, "test2::k1")).isEqualTo("v1");
+
+        redisson.shutdown();
+        c.shutdown();
     }
 
     @Test
@@ -724,6 +828,7 @@ public class RedissonTest extends RedisDockerTest {
     public void testSingleConfigYAML() throws IOException {
         RedissonClient r = createInstance();
         String t = r.getConfig().toYAML();
+        assertThat(t).hasSizeGreaterThan(1900);
         Config c = Config.fromYAML(t);
         assertThat(c.toYAML()).isEqualTo(t);
     }
@@ -733,7 +838,7 @@ public class RedissonTest extends RedisDockerTest {
         Config c2 = new Config();
         c2.useSentinelServers().addSentinelAddress("redis://123.1.1.1:1231").setMasterName("mymaster");
         String t = c2.toYAML();
-        System.out.println(t);
+        assertThat(t).hasSizeGreaterThan(2200);
         Config c = Config.fromYAML(t);
         assertThat(c.toYAML()).isEqualTo(t);
     }
@@ -767,8 +872,30 @@ public class RedissonTest extends RedisDockerTest {
     @Test
     public void testMasterSlaveConfigYAML() throws IOException {
         Config c2 = new Config();
+        c2.setUsername("tester");
         c2.useMasterSlaveServers().setMasterAddress("redis://123.1.1.1:1231").addSlaveAddress("redis://82.12.47.12:1028", "redis://82.12.47.14:1028");
         String t = c2.toYAML();
+        assertThat(t).hasSizeGreaterThan(2200);
+        Config c = Config.fromYAML(t);
+        assertThat(c.toYAML()).isEqualTo(t);
+    }
+
+    @Test
+    public void testClusterConfigYAML() throws IOException {
+        Config c2 = new Config();
+        c2.useClusterServers().addNodeAddress("redis://82.12.47.12:1028", "redis://82.12.47.14:1028");
+        String t = c2.toYAML();
+        assertThat(t).hasSizeGreaterThan(2200);
+        Config c = Config.fromYAML(t);
+        assertThat(c.toYAML()).isEqualTo(t);
+    }
+
+    @Test
+    public void testReplicatedConfigYAML() throws IOException {
+        Config c2 = new Config();
+        c2.useReplicatedServers().addNodeAddress("redis://82.12.47.12:1028", "redis://82.12.47.14:1028");
+        String t = c2.toYAML();
+        assertThat(t).hasSizeGreaterThan(2200);
         Config c = Config.fromYAML(t);
         assertThat(c.toYAML()).isEqualTo(t);
     }
@@ -996,6 +1123,121 @@ public class RedissonTest extends RedisDockerTest {
         for (RFuture<Integer> future : futures) {
             assertThat(future.exceptionNow().getMessage()).isEqualTo("Redisson is shutdown");
         }
+    }
+
+    @Test
+    public void testRetryAttempts() {
+        Assertions.assertThrows(IllegalArgumentException.class, () -> {
+            Config redissonConfig = createConfig();
+            redissonConfig.useSingleServer()
+                    .setRetryAttempts(Integer.MAX_VALUE);
+        });
+    }
+
+    @Test
+    public void testResolveLocalhost() throws Exception {
+        SimpleDnsServer s = new SimpleDnsServer();
+
+        Config config = createConfig();
+        config.setAddressResolverGroupFactory(new DnsAddressResolverGroupFactory() {
+            @Override
+            public DnsAddressResolverGroup create(Class<? extends DatagramChannel> channelType,
+                                                  Class<? extends SocketChannel> socketChannelType,
+                                                  DnsServerAddressStreamProvider nameServerProvider) {
+                DnsNameResolverBuilder dnsResolverBuilder = new DnsNameResolverBuilder();
+                try {
+                    dnsResolverBuilder.getClass().getMethod("socketChannelType", Class.class, boolean.class);
+                    dnsResolverBuilder.socketChannelType(socketChannelType, true);
+                } catch (NoSuchMethodException e) {
+                    //log.warn("DNS TCP fallback on UDP query timeout disabled. Upgrade Netty to 4.1.105 or higher.");
+                    dnsResolverBuilder.socketChannelType(socketChannelType);
+                }
+                dnsResolverBuilder.channelType(channelType)
+                        .nameServerProvider(hostname -> DnsServerAddresses.singleton(s.getAddr()).stream())
+                        .resolveCache(new DefaultDnsCache())
+                        .resolvedAddressTypes(ResolvedAddressTypes.IPV4_PREFERRED)
+                        .cnameCache(new DefaultDnsCnameCache());
+
+                return new DnsAddressResolverGroup(dnsResolverBuilder);
+            }
+        });
+        config.useSingleServer()
+                .setDnsMonitoringInterval(1000)
+                .setAddress("redis://localhost:" + REDIS.getFirstMappedPort());
+        RedissonClient redisson = Redisson.create(config);
+
+        RedisURI addr = new RedisURI(redisson.getConfig().useSingleServer().getAddress());
+        ConnectionManager connectionManager = Reflect.on(redisson).get("connectionManager");
+        ServiceManager serviceManager = Reflect.on(connectionManager).get("serviceManager");
+        List<RedisURI> address = serviceManager.resolveAll(addr).get();
+        assertThat(address.size()).isEqualTo(1);
+
+        redisson.shutdown();
+        s.stop();
+    }
+
+    @Test
+    public void testClusterWithPasswordInURL() {
+        withNewCluster(data -> {
+            RedisCluster rc = data.redisson().getRedisNodes(RedisNodes.CLUSTER);
+            for (RedisClusterMaster master : rc.getMasters()) {
+                master.setConfig("requirepass", "yes");
+                master.setConfig("masterauth", "yes");
+            }
+            for (RedisClusterSlave slave : rc.getSlaves()) {
+                slave.setConfig("requirepass", "yes");
+                slave.setConfig("masterauth", "yes");
+            }
+            data.redisson().shutdown();
+
+            DockerComposeContainer environment = (DockerComposeContainer) data.container();
+            List<ContainerState> nodes = new ArrayList<>();
+            for (int i = 1; i <= 6; i++) {
+                Optional<ContainerState> cc = environment.getContainerByServiceName("redis-node-" + i);
+                nodes.add(cc.get());
+            }
+
+            Optional<ContainerState> cc2 = environment.getContainerByServiceName("redis-node-1");
+            Ports.Binding[] mp = cc2.get().getContainerInfo().getNetworkSettings()
+                    .getPorts().getBindings().get(new ExposedPort(cc2.get().getExposedPorts().get(0)));
+
+            Config config = new Config();
+            config.useClusterServers()
+                    .setNatMapper(new NatMapper() {
+
+                        @Override
+                        public RedisURI map(RedisURI uri) {
+                            for (ContainerState state : nodes) {
+                                if (state.getContainerInfo() == null) {
+                                    continue;
+                                }
+
+                                InspectContainerResponse node = state.getContainerInfo();
+                                Ports.Binding[] mappedPort = node.getNetworkSettings()
+                                        .getPorts().getBindings().get(new ExposedPort(uri.getPort()));
+
+                                Map<String, ContainerNetwork> ss = node.getNetworkSettings().getNetworks();
+                                ContainerNetwork s = ss.values().iterator().next();
+
+                                if (mappedPort != null
+                                        && s.getIpAddress().equals(uri.getHost())) {
+                                    return new RedisURI("redis://127.0.0.1:" + mappedPort[0].getHostPortSpec());
+                                }
+                            }
+                            return uri;
+                        }
+                    })
+                    .addNodeAddress("redis://yes@localhost:" + mp[0].getHostPortSpec());
+
+            RedissonClient redisson = Redisson.create(config);
+
+            for (int i = 0; i < 10; i++) {
+                redisson.getBucket("test" + i).set(i);
+                redisson.getBucket("test" + i).get();
+            }
+
+            redisson.shutdown();
+        });
     }
 
 }

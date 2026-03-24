@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,6 @@
  * limitations under the License.
  */
 package org.redisson.config;
-
-import org.redisson.api.HostNatMapper;
-import org.redisson.api.HostPortNatMapper;
-import org.redisson.api.NatMapper;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -45,7 +41,11 @@ public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterSe
 
     private boolean checkSlotsCoverage = true;
 
+    private boolean checkMasterLinkStatus = false;
+
     private ShardedSubscriptionMode shardedSubscriptionMode = ShardedSubscriptionMode.AUTO;
+
+    private int database = 0;
 
     public ClusterServersConfig() {
     }
@@ -56,7 +56,9 @@ public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterSe
         setScanInterval(config.getScanInterval());
         setNatMapper(config.getNatMapper());
         setCheckSlotsCoverage(config.isCheckSlotsCoverage());
+        setCheckMasterLinkStatus(config.isCheckMasterLinkStatus());
         setShardedSubscriptionMode(config.getShardedSubscriptionMode());
+        setDatabase(config.getDatabase());
     }
 
     /**
@@ -109,6 +111,23 @@ public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterSe
         return this;
     }
 
+    public boolean isCheckMasterLinkStatus() {
+        return checkMasterLinkStatus;
+    }
+
+    /**
+     * Enable checking the 'master-link-status' of a slave from the INFO REPLICATION command.
+     * <p>
+     * Default is <code>false</code>
+     *
+     * @param checkMasterLinkStatus boolean value
+     * @return config
+     */
+    public ClusterServersConfig setCheckMasterLinkStatus(boolean checkMasterLinkStatus) {
+        this.checkMasterLinkStatus = checkMasterLinkStatus;
+        return this;
+    }
+
     /*
      * Use {@link #setNatMapper(NatMapper)}
      */
@@ -158,4 +177,23 @@ public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterSe
         this.shardedSubscriptionMode = shardedSubscriptionMode;
         return this;
     }
+
+    /**
+     * Database index used for Valkey connection.
+     * <p>
+     * Default is <code>0</code>
+     * <p>
+     * <b>Requires <b>Valkey 9.0.0 and higher.</b>
+     *
+     * @param database number
+     * @return config
+     */
+    public ClusterServersConfig setDatabase(int database) {
+        this.database = database;
+        return this;
+    }
+    public int getDatabase() {
+        return database;
+    }
+
 }

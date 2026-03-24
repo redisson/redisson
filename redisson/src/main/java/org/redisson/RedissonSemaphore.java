@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -262,7 +262,7 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
 
         return commandExecutor.getServiceManager().execute(() -> {
             RFuture<Boolean> future = tryAcquireAsync0(permits);
-            return commandExecutor.handleNoSync(future, () -> releaseAsync(permits));
+            return commandExecutor.handleNoSync(future, e -> releaseAsync(permits));
         });
     }
 
@@ -462,6 +462,37 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
         RFuture<Void> future = commandExecutor.syncedEvalNoRetry(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
                 "local value = redis.call('incrby', KEYS[1], ARGV[1]); " +
                         "redis.call(ARGV[2], KEYS[2], value); ",
+                Arrays.asList(getRawName(), getChannelName()), permits, getSubscribeService().getPublishCommand());
+        if (LOGGER.isDebugEnabled()) {
+            future.thenAccept(o -> {
+                LOGGER.debug("released, permits: {}, name: {}", permits, getName());
+            });
+        }
+        return future;
+    }
+
+    @Override
+    public boolean releaseIfExists(int permits) {
+        return get(releaseIfExistsAsync(permits));
+    }
+
+    @Override
+    public RFuture<Boolean> releaseIfExistsAsync(int permits) {
+        if (permits < 0) {
+            throw new IllegalArgumentException("Permits amount can't be negative");
+        }
+        if (permits == 0) {
+            return new CompletableFutureWrapper<>(false);
+        }
+
+        RFuture<Boolean> future = commandExecutor.syncedEvalNoRetry(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                  "if redis.call('exists', KEYS[1]) == 0 then " +
+                           "return 0 " +
+                        "end " +
+
+                        "local value = redis.call('incrby', KEYS[1], ARGV[1]) " +
+                        "redis.call(ARGV[2], KEYS[2], value) " +
+                        "return 1 ",
                 Arrays.asList(getRawName(), getChannelName()), permits, getSubscribeService().getPublishCommand());
         if (LOGGER.isDebugEnabled()) {
             future.thenAccept(o -> {

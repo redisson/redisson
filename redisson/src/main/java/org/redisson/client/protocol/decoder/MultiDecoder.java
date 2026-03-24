@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,11 @@ import org.redisson.client.protocol.Decoder;
  */
 public interface MultiDecoder<T> {
 
+    default Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size, List<Object> parts) {
+        return getDecoder(codec, paramNum, state, size);
+    }
+
+    @Deprecated
     default Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         if (codec == null) {
             codec = StringCodec.INSTANCE;

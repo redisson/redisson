@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package org.redisson.api;
 
-import org.redisson.config.BaseConfig;
+import org.redisson.config.*;
 
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -71,7 +71,7 @@ public final class BatchOptions {
     
     private long responseTimeout;
     private int retryAttempts = -1;
-    private long retryInterval;
+    private DelayStrategy retryDelay;
 
     private long syncTimeout;
     private int syncSlaves;
@@ -123,22 +123,16 @@ public final class BatchOptions {
         return this;
     }
 
-    public long getRetryInterval() {
-        return retryInterval;
-    }
-    
     /**
-     * Defines time interval for each attempt to send Redis commands batch 
-     * if it hasn't been sent already.
-     * <p>
-     * Default is <code>{@link BaseConfig#getRetryInterval()}</code>
+     * Use {@link #retryDelay(DelayStrategy)} instead
      * 
      * @param retryInterval time interval
      * @param retryIntervalUnit time interval unit
      * @return self instance
      */
+    @Deprecated
     public BatchOptions retryInterval(long retryInterval, TimeUnit retryIntervalUnit) {
-        this.retryInterval = retryIntervalUnit.toMillis(retryInterval);
+        this.retryDelay = new ConstantDelay(Duration.ofMillis(retryIntervalUnit.toMillis(retryInterval)));
         return this;
     }
 
@@ -238,7 +232,26 @@ public final class BatchOptions {
     public String toString() {
         return "BatchOptions [queueStore=" + executionMode + "]";
     }
-    
-    
-    
+
+    public DelayStrategy getRetryDelay() {
+        return retryDelay;
+    }
+
+    /**
+     * Defines the delay strategy for a new attempt to send a batch.
+     * <p>
+     * Default is <code>{@link BaseConfig#getRetryDelay()}}</code>
+     *
+     * @see DecorrelatedJitterDelay
+     * @see EqualJitterDelay
+     * @see FullJitterDelay
+     * @see ConstantDelay
+     *
+     * @param retryDelay delay strategy implementation
+     * @return options instance
+     */
+    public BatchOptions retryDelay(DelayStrategy retryDelay) {
+        this.retryDelay = retryDelay;
+        return this;
+    }
 }

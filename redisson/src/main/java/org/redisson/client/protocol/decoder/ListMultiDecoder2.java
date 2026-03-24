@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,13 @@ public class ListMultiDecoder2<T> implements MultiDecoder<Object> {
     public ListMultiDecoder2(MultiDecoder<?>... decoders) {
         this.decoders = decoders;
     }
-    
+
+    @Override
+    public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size, List<Object> parts) {
+        int index = state.getLevel();
+        return decoders[index].getDecoder(codec, paramNum, state, size, parts);
+    }
+
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
         int index = state.getLevel();

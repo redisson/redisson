@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 package org.redisson.api;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -189,7 +188,7 @@ public interface RSetAsync<V> extends RCollectionAsync<V>, RSortableAsync<Set<V>
      * @param c - collection to check
      * @return contained elements
      */
-    RFuture<List<V>> containsEachAsync(Collection<V> c);
+    RFuture<Set<V>> containsEachAsync(Collection<V> c);
 
     /**
      * Adds object event listener
@@ -205,5 +204,22 @@ public interface RSetAsync<V> extends RCollectionAsync<V>, RSortableAsync<Set<V>
      * @return listener id
      */
     RFuture<Integer> addListenerAsync(ObjectListener listener);
+
+    /**
+     * Returns elements iterator fetches elements in a batch.
+     * Batch size is defined by <code>count</code> param.
+     *
+     * @return Asynchronous Iterable object
+     */
+    AsyncIterator<V> iteratorAsync();
+
+    /**
+     * Returns elements iterator fetches elements in a batch.
+     * Batch size is defined by <code>count</code> param.
+     *
+     * @param count - size of elements batch
+     * @return Asynchronous Iterable object
+     */
+    AsyncIterator<V> iteratorAsync(int count);
 
 }

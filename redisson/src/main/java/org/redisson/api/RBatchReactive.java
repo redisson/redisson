@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,48 @@ import reactor.core.publisher.Mono;
  *
  */
 public interface RBatchReactive {
+
+    /**
+     * Returns cuckoo filter instance by <code>name</code>.
+     *
+     * @param <V> type of value
+     * @param name name of object
+     * @return CuckooFilter object
+     */
+    <V> RCuckooFilterReactive<V> getCuckooFilter(String name);
+
+    /**
+     * Returns cuckoo filter instance by <code>name</code>
+     * using provided <code>codec</code> for values.
+     *
+     * @param <V> type of value
+     * @param name name of object
+     * @param codec codec for values
+     * @return CuckooFilter object
+     */
+    <V> RCuckooFilterReactive<V> getCuckooFilter(String name, Codec codec);
+
+    /**
+     * Returns bloom filter native instance by <code>name</code>.
+     * Covers BF.* commands.
+     *
+     * @param <T> type of object
+     * @param name - name of object
+     * @return RBloomFilterNative object
+     */
+    <T> RBloomFilterNativeReactive<T> getBloomFilterNative(String name);
+
+    /**
+     * Returns bloom filter native instance by <code>name</code>
+     * using provided <code>codec</code> for objects.
+     * Covers BF.* commands.
+     *
+     * @param <T> type of object
+     * @param name - name of object
+     * @param codec - codec for values
+     * @return RBloomFilterNative object
+     */
+    <T> RBloomFilterNativeReactive<T> getBloomFilterNative(String name, Codec codec);
 
     /**
      * Returns stream instance by <code>name</code>
@@ -185,7 +227,7 @@ public interface RBatchReactive {
      * Returns map instance by name.
      * Supports entry eviction with a given TTL.
      * <p>
-     * Requires <b>Redis 7.4.0 and higher.</b>
+     * Requires <b>Redis 7.4.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
      *
      * @param <K> type of key
      * @param <V> type of value
@@ -199,7 +241,7 @@ public interface RBatchReactive {
      * using provided codec for both map keys and values.
      * Supports entry eviction with a given TTL.
      * <p>
-     * Requires <b>Redis 7.4.0 and higher.</b>
+     * Requires <b>Redis 7.4.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
      *
      * @param <K> type of key
      * @param <V> type of value
@@ -216,7 +258,7 @@ public interface RBatchReactive {
      * <p>
      * Uses Redis native commands for entry expiration and not a scheduled eviction task.
      * <p>
-     * Requires <b>Redis 7.4.0 and higher.</b>
+     * Requires <b>Redis 7.4.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
      *
      * @param <K> type of key
      * @param <V> type of value
@@ -233,7 +275,7 @@ public interface RBatchReactive {
      * <p>
      * Uses Redis native commands for entry expiration and not a scheduled eviction task.
      * <p>
-     * Requires <b>Redis 7.4.0 and higher.</b>
+     * Requires <b>Redis 7.4.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
      *
      * @param <K> type of key
      * @param <V> type of value
@@ -250,7 +292,7 @@ public interface RBatchReactive {
      * <p>
      * Uses Redis native commands for entry expiration and not a scheduled eviction task.
      * <p>
-     * Requires <b>Redis 7.4.0 and higher.</b>
+     * Requires <b>Redis 7.4.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
      *
      * @param <K> type of key
      * @param <V> type of value
@@ -267,7 +309,7 @@ public interface RBatchReactive {
      * <p>
      * Uses Redis native commands for entry expiration and not a scheduled eviction task.
      * <p>
-     * Requires <b>Redis 7.4.0 and higher.</b>
+     * Requires <b>Redis 7.4.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
      *
      * @param <K> type of key
      * @param <V> type of value

@@ -1,0 +1,222 @@
+package org.redisson.spring.data.connection;
+
+import org.junit.jupiter.api.Test;
+import org.redisson.RedisDockerTest;
+import org.redisson.api.RedissonClient;
+import org.redisson.connection.MasterSlaveConnectionManager;
+import org.springframework.data.redis.connection.ClusterInfo;
+import org.springframework.data.redis.connection.RedisClusterNode;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.connection.RedisNode.NodeType;
+import org.springframework.data.redis.core.types.RedisClientInfo;
+
+import java.util.*;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+public class RedissonClusterConnectionTest extends RedisDockerTest {
+
+    @Test
+    public void testClusterGetNodes() {
+        testInCluster(connection -> {
+            Iterable<RedisClusterNode> nodes = connection.clusterGetNodes();
+            assertThat(nodes).hasSize(6);
+            for (RedisClusterNode redisClusterNode : nodes) {
+                assertThat(redisClusterNode.getLinkState()).isNotNull();
+                assertThat(redisClusterNode.getFlags()).isNotEmpty();
+                assertThat(redisClusterNode.getHost()).isNotNull();
+                assertThat(redisClusterNode.getPort()).isNotNull();
+                assertThat(redisClusterNode.getId()).isNotNull();
+                assertThat(redisClusterNode.getType()).isNotNull();
+                if (redisClusterNode.getType() == NodeType.MASTER) {
+                    assertThat(redisClusterNode.getSlotRange().getSlots()).isNotEmpty();
+                } else {
+                    assertThat(redisClusterNode.getMasterId()).isNotNull();
+                }
+            }
+        });
+    }
+
+    @Test
+    public void testClusterGetNodesMaster() {
+        testInCluster(connection -> {
+            Iterable<RedisClusterNode> nodes = connection.clusterGetNodes();
+            for (RedisClusterNode redisClusterNode : nodes) {
+                if (redisClusterNode.getType() == NodeType.MASTER) {
+                    Collection<RedisClusterNode> slaves = connection.clusterGetSlaves(redisClusterNode);
+                    assertThat(slaves).hasSize(1);
+                }
+            }
+        });
+    }
+
+    @Test
+    public void testClusterGetMasterSlaveMap() {
+        testInCluster(connection -> {
+            Map<RedisClusterNode, Collection<RedisClusterNode>> map = connection.clusterGetMasterSlaveMap();
+            assertThat(map).hasSize(3);
+            for (Collection<RedisClusterNode> slaves : map.values()) {
+                assertThat(slaves).hasSize(1);
+            }
+        });
+    }
+
+    @Test
+    public void testClusterGetSlotForKey() {
+        testInCluster(connection -> {
+            Integer slot = connection.clusterGetSlotForKey("123".getBytes());
+            assertThat(slot).isNotNull();
+        });
+    }
+
+    @Test
+    public void testClusterGetNodeForSlot() {
+        testInCluster(connection -> {
+            RedisClusterNode node1 = connection.clusterGetNodeForSlot(1);
+            RedisClusterNode node2 = connection.clusterGetNodeForSlot(16000);
+            assertThat(node1.getId()).isNotEqualTo(node2.getId());
+        });
+    }
+
+    @Test
+    public void testClusterGetNodeForKey() {
+        testInCluster(connection -> {
+            RedisClusterNode node = connection.clusterGetNodeForKey("123".getBytes());
+            assertThat(node).isNotNull();
+        });
+    }
+
+    @Test
+    public void testClusterGetClusterInfo() {
+        testInCluster(connection -> {
+            ClusterInfo info = connection.clusterGetClusterInfo();
+            assertThat(info.getSlotsFail()).isEqualTo(0);
+            assertThat(info.getSlotsOk()).isEqualTo(MasterSlaveConnectionManager.MAX_SLOT);
+            assertThat(info.getSlotsAssigned()).isEqualTo(MasterSlaveConnectionManager.MAX_SLOT);
+        });
+    }
+
+    @Test
+    public void testClusterAddRemoveSlots() {
+        testInCluster(connection -> {
+            RedisClusterNode master = getFirstMaster(connection);
+            Integer slot = master.getSlotRange().getSlots().iterator().next();
+            connection.clusterDeleteSlots(master, slot);
+            connection.clusterAddSlots(master, slot);
+        });
+    }
+
+    @Test
+    public void testClusterMeetForget() {
+        testInCluster(connection -> {
+            RedisClusterNode master = getFirstMaster(connection);
+            connection.clusterForget(master);
+            connection.clusterMeet(master);
+        });
+    }
+
+    @Test
+    public void testClusterCountKeysInSlot() {
+        testInCluster(connection -> {
+            Long t = connection.clusterCountKeysInSlot(1);
+            assertThat(t).isZero();
+        });
+    }
+
+    @Test
+    public void testClusterGetKeysInSlot() {
+        testInCluster(connection -> {
+            connection.flushAll();
+            List<byte[]> keys = connection.clusterGetKeysInSlot(12, 10);
+            assertThat(keys).isEmpty();
+        });
+    }
+
+    @Test
+    public void testClusterPing() {
+        testInCluster(connection -> {
+            RedisClusterNode master = getFirstMaster(connection);
+            String res = connection.ping(master);
+            assertThat(res).isEqualTo("PONG");
+        });
+    }
+
+    @Test
+    public void testDbSize() {
+        testInCluster(connection -> {
+            connection.flushAll();
+            RedisClusterNode master = getFirstMaster(connection);
+            Long size = connection.dbSize(master);
+            assertThat(size).isZero();
+        });
+    }
+
+    @Test
+    public void testInfo() {
+        testInCluster(connection -> {
+            RedisClusterNode master = getFirstMaster(connection);
+            Properties info = connection.info(master);
+            assertThat(info.size()).isGreaterThan(10);
+        });
+    }
+
+    @Test
+    public void testResetConfigStats() {
+        testInCluster(connection -> {
+            RedisClusterNode master = getFirstMaster(connection);
+            connection.resetConfigStats(master);
+        });
+    }
+
+    @Test
+    public void testTime() {
+        testInCluster(connection -> {
+            RedisClusterNode master = getFirstMaster(connection);
+            Long time = connection.time(master);
+            assertThat(time).isGreaterThan(1000);
+        });
+    }
+
+    @Test
+    public void testGetClientList() {
+        testInCluster(connection -> {
+            RedisClusterNode master = getFirstMaster(connection);
+            List<RedisClientInfo> list = connection.getClientList(master);
+            assertThat(list.size()).isGreaterThan(10);
+        });
+    }
+
+    @Test
+    public void testSetConfig() {
+        testInCluster(connection -> {
+            RedisClusterNode master = getFirstMaster(connection);
+            connection.setConfig(master, "timeout", "10");
+        });
+    }
+
+    @Test
+    public void testGetConfig() {
+        testInCluster(connection -> {
+            RedisClusterNode master = getFirstMaster(connection);
+            List<String> config = connection.getConfig(master, "*");
+            assertThat(config.size()).isGreaterThan(20);
+        });
+    }
+    
+    protected RedisClusterNode getFirstMaster(RedissonClusterConnection connection) {
+        Map<RedisClusterNode, Collection<RedisClusterNode>> map = connection.clusterGetMasterSlaveMap();
+        RedisClusterNode master = map.keySet().iterator().next();
+        return master;
+    }
+
+    @Test
+    public void testConnectionFactoryReturnsClusterConnection() {
+        testInCluster(connection -> {
+            RedissonClient redisson = (RedissonClient) connection.getNativeConnection();
+            RedisConnectionFactory connectionFactory = new RedissonConnectionFactory(redisson);
+
+            assertThat(connectionFactory.getConnection()).isInstanceOf(RedissonClusterConnection.class);
+        });
+    }
+
+}

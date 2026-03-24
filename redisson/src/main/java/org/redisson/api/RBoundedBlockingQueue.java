@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +15,13 @@
  */
 package org.redisson.api;
 
-import java.util.concurrent.BlockingQueue;
-
 /**
- * Distributed implementation of bounded {@link BlockingQueue}
+ * Instead, use the {@link RReliableQueue} object with the queue size limit feature.
  *
  * @author Nikita Koksharov
  * @param <V> the type of elements held in this collection
  */
+@Deprecated
 public interface RBoundedBlockingQueue<V> extends RBlockingQueue<V>, RBoundedBlockingQueueAsync<V> {
 
     /**

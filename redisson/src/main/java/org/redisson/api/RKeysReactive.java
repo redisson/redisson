@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,10 @@
  */
 package org.redisson.api;
 
+import java.time.Duration;
+import java.time.Instant;
 import org.redisson.api.options.KeysScanOptions;
+import org.redisson.api.keys.MigrateArgs;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -39,6 +42,7 @@ public interface RKeysReactive {
     
     /**
      * Transfer object from source Redis instance to destination Redis instance
+     * @deprecated use {@link #migrate(MigrateArgs)}  instead
      *
      * @param name of object
      * @param host - destination host
@@ -47,10 +51,18 @@ public interface RKeysReactive {
      * @param timeout - maximum idle time in any moment of the communication with the destination instance in milliseconds
      * @return void
      */
+    @Deprecated
     Mono<Void> migrate(String name, String host, int port, int database, long timeout);
-    
+    /**
+     * Transfer object from source Redis instance to destination Redis instance
+     *
+     * @param migrateArgs migrateArgs
+     */
+    Mono<Void> migrate(MigrateArgs migrateArgs);
+
     /**
      * Copy object from source Redis instance to destination Redis instance
+     * @deprecated use {@link #migrate(MigrateArgs)}  instead
      *
      * @param name of object
      * @param host - destination host
@@ -59,29 +71,51 @@ public interface RKeysReactive {
      * @param timeout - maximum idle time in any moment of the communication with the destination instance in milliseconds
      * @return void
      */
+    @Deprecated
     Mono<Void> copy(String name, String host, int port, int database, long timeout);
     
     /**
-     * Set a timeout for object. After the timeout has expired,
-     * the key will automatically be deleted.
+     * Use {@link #expire(Duration, String...)} instead.
      *
      * @param name of object
      * @param timeToLive - timeout before object will be deleted
      * @param timeUnit - timeout time unit
      * @return <code>true</code> if the timeout was set and <code>false</code> if not
      */
+    @Deprecated
     Mono<Boolean> expire(String name, long timeToLive, TimeUnit timeUnit);
-    
+
+
     /**
-     * Set an expire date for object. When expire date comes
-     * the key will automatically be deleted.
+     * Set a timeout for multiple objects. After the timeout has expired,
+     * the keys will automatically be deleted.
+     *
+     * @param duration timeout before keys will be deleted
+     * @param names object names
+     * @return number of keys for which the timeout was set successfully
+     */
+    Mono<Long> expire(Duration duration, String... names);
+
+    /**
+     * Use {@link #expireAt(Instant, String...)} instead.
      * 
      * @param name of object
      * @param timestamp - expire date in milliseconds (Unix timestamp)
      * @return <code>true</code> if the timeout was set and <code>false</code> if not
      */
+    @Deprecated
     Mono<Boolean> expireAt(String name, long timestamp);
-    
+
+    /**
+     * Set a timeout for multiple objects. After the timeout has expired,
+     * the keys will automatically be deleted.
+     *
+     * @param instant expiration date/time (Unix timestamp in milliseconds)
+     * @param names object names
+     * @return number of keys for which the timeout was set successfully
+     */
+    Mono<Long> expireAt(Instant instant, String... names);
+
     /**
      * Clear an expire timeout or expire date for object.
      * 

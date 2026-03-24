@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,6 +47,18 @@ public interface StreamAddArgs<K, V> {
      * @return arguments object
      */
     StreamTrimStrategyArgs<StreamAddArgs<K, V>> trimNonStrict();
+
+    /**
+     * Defines idempotent message production for the given producer.
+     * Prevents duplicate entries when a producer resends a message
+     * after a network error or crash.
+     * <p>
+     * Requires <b>Redis 8.6.0 and higher.</b>
+     *
+     * @param producerId - unique producer identifier
+     * @return arguments object
+     */
+    StreamIdempotentArgs<StreamAddArgs<K, V>> idempotentProducerId(String producerId);
 
     /**
      * Defines entry to add

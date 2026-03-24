@@ -2,7 +2,7 @@
 
 Integrates Redisson with Spring Boot library. Depends on [Spring Data Redis](#spring-data-redis) module.
 
-Supports Spring Boot 1.3.x - 3.4.x
+Supports Spring Boot 1.3.x - 4.0.x
 
 ### Usage
 
@@ -27,6 +27,9 @@ Supports Spring Boot 1.3.x - 3.4.x
         ```groovy
         compile 'pro.redisson:redisson-spring-boot-starter:xVERSIONx'
         ```
+
+        [License key configuration](configuration.md/#license-key-configuration)
+
 
     -   **Community Edition**
 
@@ -61,12 +64,13 @@ Supports Spring Boot 1.3.x - 3.4.x
      |redisson-spring-data-18     |1.5.y              |
      |redisson-spring-data-2x     |2.x.y              |
      |redisson-spring-data-3x     |3.x.y              |
+	 |redisson-spring-data-4x     |4.x.y              |
     
      For Gradle, you can downgrade to `redisson-spring-data-27` this way:
     
      ```groovy
      implementation ("org.redisson:redisson-spring-boot-starter:xVERSIONx") {
-        exclude group: 'org.redisson', module: 'redisson-spring-data-34'
+        exclude group: 'org.redisson', module: 'redisson-spring-data-40'
      }
      implementation "org.redisson:redisson-spring-data-27:xVERSIONx"
      ```
@@ -82,7 +86,7 @@ Supports Spring Boot 1.3.x - 3.4.x
              <exclusions>
                  <exclusion>
                      <groupId>org.redisson</groupId>
-                     <artifactId>redisson-spring-data-34</artifactId>
+                     <artifactId>redisson-spring-data-40</artifactId>
                  </exclusion>
              </exclusions>
          </dependency>
@@ -222,7 +226,7 @@ You need to define netty version in properties section of your Maven project.
 
 ```xml
     <properties>
-          <netty.version>4.1.107.Final</netty.version> 
+          <netty.version>4.2.9.Final</netty.version> 
     </properties>
 ```
 
@@ -231,6 +235,18 @@ You need to define netty version in properties section of your Maven project.
 You may not have Redis or Valkey in some environments. In this case Redisson can be disabled:  
 
 - Using Annotations  
+Spring Boot 4.0+
+```java
+@SpringBootApplication
+@EnableAutoConfiguration(exclude = {
+    RedissonAutoConfigurationV4.class})
+public class Application {
+   
+    public static void main(String[] args) {
+        SpringApplication.run(MyApplication.class, args);
+    }
+}
+
 Spring Boot 2.7+
 ```java
 @SpringBootApplication
@@ -256,6 +272,13 @@ public class Application {
 }
 ```
 - Using application.yml file  
+Spring Boot 4.0+
+```yaml
+spring:
+  autoconfigure:
+    exclude:
+      - org.redisson.spring.starter.RedissonAutoConfigurationV4
+```
 Spring Boot 2.7+
 ```yaml
 spring:
@@ -274,33 +297,77 @@ spring:
 {% include 'cache/Spring-cache.md' %}
 
 ## Spring Session
-Please note that Redis or Valkey `notify-keyspace-events` setting should contain `Exg` letters to make Spring Session integration work.
+
+Redisson integrates with [Spring Session](https://docs.spring.io/spring-session/reference/index.html) by providing `RedissonConnectionFactory`, which implements Spring Data Redis's `RedisConnectionFactory` and `ReactiveRedisConnectionFactory` interfaces. This allows Spring Session to use Redisson as the underlying Valkey or Redis client for session storage and retrieval.
+
+### Dependencies
 
 Ensure you have Spring Session library in your classpath, add it if necessary:  
 
-**Maven**
+1. Add Spring Session Data Redis library in classpath:  
+    Maven:
+    ```xml
+    <dependency>
+      <groupId>org.springframework.session</groupId>
+      <artifactId>spring-session-data-redis</artifactId>
+      <version>4.0.0</version>
+    </dependency>
+    ```
+    Gradle:
+    ```gradle
+    compile 'org.springframework.session:spring-session-data-redis:4.0.0'  
+    ```
+2. Add [Redisson Spring Data Redis](#spring-data-redis) library in classpath:  
 
-```xml
-<dependency>
-    <groupId>org.springframework.session</groupId>
-    <artifactId>spring-session-core</artifactId>
-    <version>3.4.1</version>
-</dependency>
+    <div class="grid cards" markdown>
 
-<dependency>
-   <groupId>org.redisson</groupId>
-   <artifactId>redisson-spring-data-34</artifactId>
-   <version>xVERSIONx</version>
-</dependency>
-```
+    -   **Redisson PRO**
 
-**Gradle**
+        Maven
 
-```gradle
-compile 'org.springframework.session:spring-session-core:3.4.1'
+        ```xml  
+        <dependency>
+           <groupId>pro.redisson</groupId>
+           <artifactId>redisson-spring-data-40</artifactId>
+           <version>xVERSIONx</version>
+        </dependency>
+        ```
 
-compile 'org.redisson:redisson-spring-data-34:xVERSIONx'
-```
+        Gradle
+
+        ```groovy
+        compile 'pro.redisson:redisson-spring-data-40:xVERSIONx'
+        ```
+
+        [License key configuration](configuration.md/#license-key-configuration)
+
+
+    -   **Community Edition**
+
+        Maven
+
+        ```xml  
+        <dependency>
+           <groupId>org.redisson</groupId>
+           <artifactId>redisson-spring-data-40</artifactId>
+           <version>xVERSIONx</version>
+        </dependency>
+        ```
+
+        Gradle
+
+        ```groovy
+        compile 'org.redisson:redisson-spring-data-40:xVERSIONx'
+        ```
+
+    </div>
+
+    [Redisson PRO vs. Community Edition ➜](https://redisson.pro/feature-comparison.html)
+    <br>
+    <br>    
+
+!!! note
+	Valkey or Redis `notify-keyspace-events` setting should contain `Exg` letters to make Spring Session integration work.
 
 ### Spring Http Session configuration
 
@@ -347,75 +414,167 @@ Add configuration class which extends `AbstractReactiveWebInitializer` class:
 
 ### Spring Boot configuration
 
-1. Add Spring Session Data Redis library in classpath:  
-    Maven:
-    ```xml
-    <dependency>
-      <groupId>org.springframework.session</groupId>
-      <artifactId>spring-session-data-redis</artifactId>
-      <version>3.2.1</version>
-    </dependency>
-    ```
-    Gradle:
-    ```gradle
-    compile 'org.springframework.session:spring-session-data-redis:3.4.1'  
-    ```
-2. Add Redisson Spring Data Redis library in classpath:  
+1. Add [Redisson Spring Boot Starter](#spring-boot-starter) module.
 
-    <div class="grid cards" markdown>
-
-    -   **Redisson PRO**
-
-        Maven
-
-        ```xml  
-        <dependency>
-           <groupId>pro.redisson</groupId>
-           <artifactId>redisson-spring-data-34</artifactId>
-           <version>xVERSIONx</version>
-        </dependency>
-        ```
-
-        Gradle
-
-        ```groovy
-        compile 'pro.redisson:redisson-spring-data-34:xVERSIONx'
-        ```
-
-    -   **Community Edition**
-
-        Maven
-
-        ```xml  
-        <dependency>
-           <groupId>org.redisson</groupId>
-           <artifactId>redisson-spring-data-34</artifactId>
-           <version>xVERSIONx</version>
-        </dependency>
-        ```
-
-        Gradle
-
-        ```groovy
-        compile 'org.redisson:redisson-spring-data-34:xVERSIONx'
-        ```
-
-    </div>
-
-    [Redisson PRO vs. Community Edition ➜](https://redisson.pro/feature-comparison.html)
-    <br>
-    <br>    
-
-3. Define follow properties in spring-boot settings  
+2. Define the following properties in Spring Boot settings:  
     ```
     spring.session.store-type=redis
     spring.redis.redisson.file=classpath:redisson.yaml
     spring.session.timeout.seconds=900
     ```
 
+### Local Cache
+
+_This feature is available only in [Redisson PRO](https://redisson.pro/feature-comparison.html) edition._
+
+Redisson PRO provides local caching implementation for Spring Session.
+
+**local cache** -  a so-called near cache used to speed up read operations and avoid network roundtrips. It caches the whole Spring Session on the Redisson side and then uses the cached copy instead of loading it on each `request.getSession()` method access. The cached Session is updated/removed via pub/sub notifications.
+
+To utilize this feature follow the steps below.
+
+1. Add Redisson Spring Session library in classpath.
+
+	Maven
+
+	```xml  
+	<dependency>
+	   <groupId>pro.redisson</groupId>
+	   <!-- for Spring Session v2.x.x - v2.1.x -->
+	   <artifactId>redisson-spring-session-20</artifactId>
+	   <!-- for Spring Session v2.2.x - v2.7.x -->
+	   <artifactId>redisson-spring-session-22</artifactId>
+	   <!-- for Spring Session v3.x.x - v3.2.x -->
+	   <artifactId>redisson-spring-session-30</artifactId>
+	   <!-- for Spring Session v3.3.x - v4.x.x -->
+	   <artifactId>redisson-spring-session-33</artifactId>
+	   <version>xVERSIONx</version>
+	</dependency>
+	```
+
+	Gradle
+
+	```groovy
+	// for Spring Session v2.x.x - v2.1.x
+	compile 'pro.redisson:redisson-spring-session-20:xVERSIONx'
+	// for Spring Session v2.2.x - v2.7.x
+	compile 'pro.redisson:redisson-spring-session-22:xVERSIONx'
+	// for Spring Session v3.x.x - v3.2.x
+	compile 'pro.redisson:redisson-spring-session-30:xVERSIONx'
+	// for Spring Session v3.3.x - v4.x.x
+	compile 'pro.redisson:redisson-spring-session-33:xVERSIONx'
+	```
+
+2. Define configuration
+
+    Use `@EnableLocalCachedRedisSession` annotation for Redis-backed HTTP session management with local caching.  
+    Use `@EnableLocalCachedRedisWebSession` annotation for Redis-backed Spring WebFlux’s WebSession management with local caching.
+
+	```java
+    @Configuration
+    @EnableLocalCachedRedisSession 
+	// or 
+	@EnableLocalCachedRedisWebSession
+    public class SessionConfig extends AbstractHttpSessionApplicationInitializer { 
+
+		@Bean
+		public RedissonConnectionFactory redissonConnectionFactory(RedissonClient redisson) {
+			return new RedissonConnectionFactory(redisson);
+		}
+
+		@Bean(destroyMethod = "shutdown")
+		public RedissonClient redisson(@Value("classpath:/redisson.yaml") Resource configFile) throws IOException {
+		   Config config = Config.fromYAML(configFile.getInputStream());
+		   return Redisson.create(config);
+ 		}
+
+    }
+	```
+
+    **Configuration Settings**
+
+    The `@EnableLocalCachedRedisSession` annotation provides the following configuration settings:
+
+    * `maxInactiveIntervalInSeconds` - Specifies the maximum time, in seconds, that a session can remain idle before it expires. Default is `1800`.
+
+    * `namespace` - Specifies a custom namespace for Redis keys to enable session isolation across multiple applications. The namespace changes the Redis key prefix from the default `spring:session:` to `<redisNamespace>:`. This allows multiple applications to share the same Redis instance while maintaining separate session storage. Default is `"spring:session"`.
+
+    * `flushMode` - Specifies when session changes are written to Redis. Default is `FlushMode.ON_SAVE`.
+    Available modes:
+
+		- `FlushMode.ON_SAVE` (default) - Session changes are written to Redis only when `SessionRepository.save(Session)` is explicitly invoked. In web applications, this occurs automatically just before the HTTP response is committed. This mode offers better performance by batching updates.
+		- `FlushMode.IMMEDIATE` - Session changes are written to Redis immediately as they occur. Use this mode when session data must be immediately visible across multiple application instances, though it may impact performance.
+
+    * `saveMode` - Save mode for the session. Default is `SaveMode.ON_SET_ATTRIBUTE`.
+	
+    * `cleanupCron` - Specifies the cron expression for scheduling the expired session cleanup task. Default is ``"0 * * * * *"``.
+
+    * `broadcastSessionUpdates` - Specifies whether session updates should be broadcast to other application instances. When enabled, session attribute changes are published to Redis pub/sub channels, allowing other application instances to update their local caches. This ensures session consistency across a distributed deployment. 
+    Disable this feature if you have a single application instance or do not require real-time session synchronization across instances, which can reduce Redis network traffic. Default is `true`.
+	
+	<br/>
+	Use `@EnableLocalCachedRedisWebSession` annotation provides the following configuration settings:
+	
+    * `maxInactiveIntervalInSeconds` - Specifies the maximum time, in seconds, that a session can remain idle before it expires. Default is `1800`.
+
+    * `namespace` - Specifies a custom namespace for Redis keys to enable session isolation across multiple applications. The namespace changes the Redis key prefix from the default `spring:session:` to `<redisNamespace>:`. This allows multiple applications to share the same Redis instance while maintaining separate session storage. Default is `"spring:session"`.
+
+    * `saveMode` - Save mode for the session. Default is `SaveMode.ON_SET_ATTRIBUTE`.
+	
+    * `broadcastSessionUpdates` - Specifies whether session updates should be broadcast to other application instances. When enabled, session attribute changes are published to Redis pub/sub channels, allowing other application instances to update their local caches. This ensures session consistency across a distributed deployment. 
+    Disable this feature if you have a single application instance or do not require real-time session synchronization across instances, which can reduce Redis network traffic. Default is `true`.
+	
+
 ## Spring Transaction Manager
 
-Redisson provides implementation of both `org.springframework.transaction.PlatformTransactionManager` and `org.springframework.transaction.ReactiveTransactionManager` interfaces to participant in Spring transactions. See also [Transactions](Transactions.md) section.
+Redisson provides implementation of both `org.springframework.transaction.PlatformTransactionManager` and `org.springframework.transaction.ReactiveTransactionManager` interfaces to participant in Spring transactions. See also [Transactions](/transactions) section.
+
+**Add `redisson-spring-transaction` dependency into your project:**
+
+<div class="grid cards" markdown>
+
+-   **Redisson PRO**
+
+    Maven
+
+    ```xml  
+    <dependency>
+       <groupId>pro.redisson</groupId>
+       <artifactId>redisson-spring-transaction</artifactId>
+       <version>xVERSIONx</version>
+    </dependency>
+    ```
+
+    Gradle
+
+    ```groovy
+    compile 'pro.redisson:redisson-spring-transaction:xVERSIONx'
+    ```
+
+-   **Community Edition**
+
+    Maven
+
+    ```xml  
+    <dependency>
+       <groupId>org.redisson</groupId>
+       <artifactId>redisson-spring-transaction</artifactId>
+       <version>xVERSIONx</version>
+    </dependency>
+    ```
+
+    Gradle
+
+    ```groovy
+    compile 'org.redisson:redisson-spring-transaction:xVERSIONx'
+    ```
+
+</div>
+
+[Redisson PRO vs. Community Edition ➜](https://redisson.pro/feature-comparison.html)
+<br>
+<br>    
+
 
 ### Spring Transaction Management
 
@@ -504,7 +663,22 @@ public class TransactionalBean {
 
 _This feature is available only in [Redisson PRO](https://redisson.pro/feature-comparison.html) edition._
 
-Redisson implements Spring Cloud Stream integration based on the reliable Stream structure for message delivery. To use Redis or Valkey binder with Redisson you need to add [Spring Cloud Stream](https://spring.io/projects/spring-cloud-stream) Binder library in classpath:  
+Redisson implements [Spring Cloud Stream](https://spring.io/projects/spring-cloud-stream) Binder based on Valkey or Redis using the [Reliable Queue](data-and-services/queues.md/#reliable-queue) for messages delivery. 
+
+Compatible with Spring versions below.
+
+Spring Cloud Stream | Spring Cloud | Spring Boot
+-- | -- | --
+5.0.x | 2025.1.x | 4.0.x
+4.3.x | 2025.0.x | 3.5.x
+4.2.x | 2024.0.x | 3.4.x
+4.1.x | 2023.0.x | 3.0.x - 3.3.x
+4.0.x | 2022.0.x | 3.0.x - 3.3.x
+3.2.x | 2021.0.x | 2.6.x, 2.7.x (Starting with 2021.0.3 of Spring Cloud)
+3.1.x | 2020.0.x | 2.4.x, 2.5.x (Starting with 2020.0.3 of Spring Cloud)
+
+
+To use binder with Redisson you need to add Spring Cloud Stream Binder library in classpath:  
 
 Maven:
 ```xml
@@ -519,16 +693,6 @@ Gradle:
 compile 'pro.redisson:spring-cloud-stream-binder-redisson:xVERSIONx'  
 ```
 
-Compatible with Spring versions below.
-
-Spring Cloud Stream | Spring Cloud | Spring Boot
--- | -- | --
-4.2.x | 2024.0.x | 3.4.x
-4.1.x | 2023.0.x | 3.0.x - 3.3.x
-4.0.x | 2022.0.x | 3.0.x - 3.3.x
-3.2.x | 2021.0.x | 2.6.x, 2.7.x (Starting with 2021.0.3 of Spring Cloud)
-3.1.x | 2020.0.x | 2.4.x, 2.5.x (Starting with 2020.0.3 of Spring Cloud)
-
 ### Receiving messages
 
 Register the input binder (an event sink) for receiving messages as follows:
@@ -542,25 +706,64 @@ public Consumer<MyObject> receiveMessage() {
 }
 ```
 
-Define channel id in the configuration file `application.properties`. Example for `receiveMessage` bean defined above connected to `my-channel` channel:
+Define channel id in the configuration file `application.properties`. 
+
+Consumer settings:
+
+- `pollBatchSize` - Sets the maximum number of messages to retrieve in a single poll operation. Default value is `10`.
+	
+- `visibilityTimeout` - Sets the visibility timeout for retrieved messages. The time period during which a message is invisible to other consumers after being retrieved. This prevents duplicate processing and allows the message to reappear in the queue if it wasn't acknowledged during that timeout. Default value is `30 seconds`.
+
+- `negativeAcknowledgeDelay` - Specifies the delay duration before a message handled with an exception is eligible for redelivery. Default value is `15 seconds`.
+
+Example for `receiveMessage` bean defined above connected to `my-channel` channel:
 
 ```
 spring.cloud.stream.bindings.receiveMessage-in-0.destination=my-channel
+spring.cloud.stream.redisson.bindings.receiveMessage-in-0.consumer.pollBatchSize=15
+spring.cloud.stream.redisson.bindings.receiveMessage-in-0.consumer.visibilityTimeout=60s
+```
+
+YAML configuration:
+
+```
+spring:
+  cloud:
+    stream:
+      bindings:
+        receiveMessage-in-0:
+          destination: my-channel
+      redisson:
+        bindings:
+          receiveMessage-in-0:
+            consumer:
+              pollBatchSize: 15
+              visibilityTimeout: 60s
 ```
 
 ### Publishing messages
 
-Register the output binder (an event source) for publishing messages as follows:
+- Publish messages using an output binder
 
-```java
-@Bean
-public Supplier<MyObject> feedSupplier() {
-	return () -> {
-           // ...
-           return new MyObject();
-	};
-}
-```
+    Register the output binder (an event source) for publishing messages as follows:
+
+    ```java
+    @Bean
+    public Supplier<MyObject> feedSupplier() {
+        return () -> {
+               // ...
+               return new MyObject();
+        };
+    }
+    ```
+
+- Publish messages using `org.springframework.cloud.stream.function.StreamBridge` object
+
+       ```java
+       StreamBridge bridge;
+       
+       bridge.send("feedSupplier-out-0", new MyObject());
+       ```
 
 Define channel id in the configuration file `application.properties`. Example for `feedSupplier` bean defined above connected to `my-channel` channel:
 
@@ -569,9 +772,23 @@ spring.cloud.stream.bindings.feedSupplier-out-0.destination=my-channel
 spring.cloud.stream.bindings.feedSupplier-out-0.producer.useNativeEncoding=true
 ```
 
+YAML configuration:
+
+```
+spring:
+  cloud:
+    stream:
+      bindings:
+        feedSupplier-out-0:
+          destination: my-channel
+          producer:
+          	useNativeEncoding: true
+```
+
+
 ## Spring Data Redis
 
-Integrates Redisson with Spring Data Redis library. Implements Spring Data's `RedisConnectionFactory` and `ReactiveRedisConnectionFactory` interfaces and allows to interact with Redis or Valkey through `RedisTemplate`, `ReactiveRedisTemplate` or `ReactiveRedisOperations` object.
+Redisson implements `RedisConnectionFactory` and `ReactiveRedisConnectionFactory` interfaces from [Spring Data Redis](https://docs.spring.io/spring-data/redis/reference/index.html) module, allowing usage of `RedisTemplate`, `ReactiveRedisTemplate` or `ReactiveRedisOperations` objects.
 
 ### Usage
 1. Add `redisson-spring-data` dependency into your project:  
@@ -617,6 +834,10 @@ Integrates Redisson with Spring Data Redis library. Implements Spring Data's `Re
             <artifactId>redisson-spring-data-33</artifactId>
             <!-- for Spring Data Redis v.3.4.x -->
             <artifactId>redisson-spring-data-34</artifactId>
+            <!-- for Spring Data Redis v.3.5.x -->
+            <artifactId>redisson-spring-data-35</artifactId>
+            <!-- for Spring Data Redis v.4.0.x -->
+            <artifactId>redisson-spring-data-40</artifactId>
             <version>xVERSIONx</version>
         </dependency>
         ```
@@ -656,7 +877,14 @@ Integrates Redisson with Spring Data Redis library. Implements Spring Data's `Re
         compile 'pro.redisson:redisson-spring-data-33:xVERSIONx'
         // for Spring Data Redis v.3.4.x
         compile 'pro.redisson:redisson-spring-data-34:xVERSIONx'
+        // for Spring Data Redis v.3.5.x
+        compile 'pro.redisson:redisson-spring-data-35:xVERSIONx'
+        // for Spring Data Redis v.4.0.x
+        compile 'pro.redisson:redisson-spring-data-40:xVERSIONx'
         ```
+
+        [License key configuration](configuration.md/#license-key-configuration)
+
 
     -   **Community Edition**
 
@@ -697,6 +925,10 @@ Integrates Redisson with Spring Data Redis library. Implements Spring Data's `Re
             <artifactId>redisson-spring-data-33</artifactId>
             <!-- for Spring Data Redis v.3.4.x -->
             <artifactId>redisson-spring-data-34</artifactId>
+            <!-- for Spring Data Redis v.3.5.x -->
+            <artifactId>redisson-spring-data-35</artifactId>
+            <!-- for Spring Data Redis v.4.0.x -->
+            <artifactId>redisson-spring-data-40</artifactId>
             <version>xVERSIONx</version>
         </dependency>
         ```
@@ -736,6 +968,10 @@ Integrates Redisson with Spring Data Redis library. Implements Spring Data's `Re
         compile 'org.redisson:redisson-spring-data-33:xVERSIONx'
         // for Spring Data Redis v.3.4.x
         compile 'org.redisson:redisson-spring-data-34:xVERSIONx'
+        // for Spring Data Redis v.3.5.x
+        compile 'org.redisson:redisson-spring-data-35:xVERSIONx'
+        // for Spring Data Redis v.4.0.x
+        compile 'org.redisson:redisson-spring-data-40:xVERSIONx'
         ```
 
     </div>
@@ -763,3 +999,5 @@ Integrates Redisson with Spring Data Redis library. Implements Spring Data's `Re
    
    }
    ```
+
+{% include 'spring-ai-vector-store.md' %}

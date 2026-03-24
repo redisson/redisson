@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -124,7 +124,7 @@ public class WeightedRoundRobinBalancer implements LoadBalancer {
                 clientsCopy = findClients(clients, weightsCopy);
             }
 
-            int ind = Math.abs(index.incrementAndGet() % clientsCopy.size());
+            int ind = Math.floorMod(index.incrementAndGet(), clientsCopy.size());
             ClientConnectionsEntry entry = clientsCopy.get(ind);
             for (Entry<RedisURI, WeightEntry> weightEntry : weightsCopy.entrySet()) {
                 if (weightEntry.getKey().equals(entry.getClient().getAddr())) {

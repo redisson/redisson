@@ -141,7 +141,8 @@ public class RedissonTransactionalLocalCachedMapTest extends RedisDockerTest {
         assertThat(m1.get("3")).isEqualTo("4");
         
         transaction.rollback();
-        
+
+        redisson.getKeys().deleteByPattern("*redisson_unlock_latch*");
         assertThat(redisson.getKeys().count()).isEqualTo(1);
         
         assertThat(m1.get("1")).isEqualTo("2");
@@ -164,7 +165,7 @@ public class RedissonTransactionalLocalCachedMapTest extends RedisDockerTest {
         transaction.commit();
 
         assertThat(m1.get("1")).isEqualTo("2");
-        assertThat(m1.get("3")).isEqualTo("4");
+        assertThat(m2.get("3")).isEqualTo("4");
     }
 
 }

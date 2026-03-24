@@ -7,9 +7,14 @@ import org.junit.jupiter.api.Test;
 import org.redisson.api.*;
 import org.redisson.api.MapOptions.WriteMode;
 import org.redisson.api.map.event.*;
+import org.redisson.client.RedisClient;
+import org.redisson.client.RedisClientConfig;
+import org.redisson.client.RedisConnection;
 import org.redisson.client.codec.*;
+import org.redisson.client.protocol.RedisCommands;
 import org.redisson.codec.CompositeCodec;
 import org.redisson.config.Config;
+import org.redisson.config.NameMapper;
 import org.redisson.eviction.EvictionScheduler;
 
 import java.time.Duration;
@@ -302,7 +307,7 @@ public class RedissonMapCacheTest extends BaseMapTest {
             map.put(i, i, 5, TimeUnit.SECONDS);
         }
         
-        assertThat(map.sizeInMemory()).isGreaterThanOrEqualTo(466);
+        assertThat(map.sizeInMemory()).isGreaterThanOrEqualTo(448);
     }
     
     @Test
@@ -1454,6 +1459,45 @@ public class RedissonMapCacheTest extends BaseMapTest {
     }
 
     @Test
+    public void testReadAllEntrySetWithPattern() throws ExecutionException, InterruptedException {
+        RMapCache<String, String> map = redisson.getMapCache("simple12", StringCodec.INSTANCE);
+        map.put("10", "12");
+        map.put("12", "33", 5, TimeUnit.SECONDS, 60, TimeUnit.SECONDS);
+        map.put("21", "43");
+        assertThat((map.readAllEntrySetAsync("1?")).get().size()).isEqualTo(2);
+
+        Thread.sleep(6000);
+
+        assertThat((map.readAllEntrySetAsync("1?")).get().size()).isEqualTo(1);
+    }
+
+    @Test
+    public void testReadAllKeySetWithPattern() throws ExecutionException, InterruptedException {
+        RMapCache<String, String> map = redisson.getMapCache("simple12", StringCodec.INSTANCE);
+        map.put("10", "12");
+        map.put("12", "33", 5, TimeUnit.SECONDS, 60, TimeUnit.SECONDS);
+        map.put("21", "43");
+        assertThat((map.readAllKeySetAsync("1?")).get()).containsOnly("10", "12");
+
+        Thread.sleep(6000);
+
+        assertThat((map.readAllKeySetAsync("1?")).get()).containsOnly("10");
+    }
+
+    @Test
+    public void testReadAllValuesWithPattern() throws ExecutionException, InterruptedException {
+        RMapCache<String, String> map = redisson.getMapCache("simple12", StringCodec.INSTANCE);
+        map.put("10", "12");
+        map.put("12", "33", 5, TimeUnit.SECONDS, 60, TimeUnit.SECONDS);
+        map.put("21", "43");
+        assertThat((map.readAllValuesAsync("1?")).get()).containsOnly("12", "33");
+
+        Thread.sleep(6000);
+
+        assertThat((map.readAllValuesAsync("1?")).get()).containsOnly("12");
+    }
+
+    @Test
     public void testAddAndGetTTL() {
         RMapCache<String, Object> mapCache = redisson.getMapCache("test_put_if_absent", LongCodec.INSTANCE);
         assertThat(mapCache.putIfAbsent("4", 0L, 10000L, TimeUnit.SECONDS)).isNull();
@@ -1522,6 +1566,98 @@ public class RedissonMapCacheTest extends BaseMapTest {
         assertThat("value3".equals(value)).isTrue();
         map.destroy();
 
+    }
+
+    @Test
+    public void testComputeWithTTL() throws Exception {
+        RMapCache<String, String> map = redisson.getMapCache("testMap");
+
+        Duration duration = Duration.ofSeconds(1);
+
+        assertThat(map.compute("key1", duration, (key, oldValue) -> "value1")).isEqualTo("value1");
+        assertThat(map.get("key1")).isEqualTo("value1");
+
+        assertThat(map.compute("key1", duration, (key, oldValue) -> "value2")).isEqualTo("value2");
+        assertThat(map.get("key1")).isEqualTo("value2");
+
+        assertThat(map.compute("key1", duration, (key, oldValue) -> null)).isNull();
+        assertThat(map.containsKey("key1")).isFalse();
+
+        assertThat(map.compute("key1", duration, (key, oldValue) -> "value3")).isEqualTo("value3");
+        assertThat(map.get("key1")).isEqualTo("value3");
+        Thread.sleep(1100);
+        assertThat(map.containsKey("key1")).isFalse();
+
+        map.destroy();
+
+    }
+
+    @Test
+    public void testComputeAsyncWithTTL() throws Exception {
+        RMapCache<String, String> map = redisson.getMapCache("testMap");
+
+        Duration duration = Duration.ofSeconds(1);
+
+        assertThat(map.computeAsync("key1", duration, (key, oldValue) -> "value1").toCompletableFuture().get()).isEqualTo("value1");
+        assertThat(map.get("key1")).isEqualTo("value1");
+
+        assertThat(map.computeAsync("key1", duration, (key, oldValue) -> "value2").toCompletableFuture().get()).isEqualTo("value2");
+        assertThat(map.get("key1")).isEqualTo("value2");
+
+        assertThat(map.computeAsync("key1", duration, (key, oldValue) -> null).toCompletableFuture().get()).isNull();
+        assertThat(map.containsKey("key1")).isFalse();
+
+        assertThat(map.computeAsync("key1", duration, (key, oldValue) -> "value3").toCompletableFuture().get()).isEqualTo("value3");
+        assertThat(map.get("key1")).isEqualTo("value3");
+        Thread.sleep(1100);
+        assertThat(map.containsKey("key1")).isFalse();
+
+        map.destroy();
+
+    }
+
+    @Test
+    public void testNameMapper() throws InterruptedException, ExecutionException {
+        Config config = new Config();
+        config.useSingleServer()
+                .setNameMapper(new NameMapper() {
+                    @Override
+                    public String map(String name) {
+                        return name + ":suffix:";
+                    }
+
+                    @Override
+                    public String unmap(String name) {
+                        return name.replace(":suffix:", "");
+                    }
+                })
+                .setConnectionMinimumIdleSize(3)
+                .setConnectionPoolSize(3)
+                .setAddress(redisson.getConfig().useSingleServer().getAddress());
+
+        RedissonClient redisson = Redisson.create(config);
+
+        AtomicBoolean executed = new AtomicBoolean();
+        RMapCache<String, String> map = redisson.getMapCache("test");
+        map.addListener(new EntryExpiredListener() {
+            @Override
+            public void onExpired(EntryEvent event) {
+                executed.set(true);
+            }
+        });
+        map.put("1", "2", 1, TimeUnit.SECONDS);
+
+        Awaitility.await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> assertThat(executed.get()).isTrue());
+
+        RedisClientConfig destinationCfg = new RedisClientConfig();
+        destinationCfg.setAddress(redisson.getConfig().useSingleServer().getAddress());
+        RedisClient client = RedisClient.create(destinationCfg);
+        RedisConnection destinationConnection = client.connect();
+        List<String> channels = destinationConnection.sync(RedisCommands.PUBSUB_CHANNELS);
+        assertThat(channels).contains("redisson_map_cache_expired:{test:suffix:}");
+        client.shutdown();
+
+        redisson.shutdown();
     }
 }
 

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -280,114 +280,6 @@ public class CompletableFutureWrapper<V> implements RFuture<V> {
     @Override
     public V get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
         return future.get(timeout, unit);
-    }
-
-    @Override
-    public boolean isSuccess() {
-        return future.isDone() && !future.isCompletedExceptionally();
-    }
-
-    @Override
-    public Throwable cause() {
-        if (future.isDone()) {
-            try {
-                future.getNow(null);
-            } catch (CompletionException e) {
-                return e.getCause();
-            } catch (CancellationException e) {
-                return e;
-            }
-        }
-        return null;
-    }
-
-    @Override
-    public V getNow() {
-        return future.getNow(null);
-    }
-
-    @Override
-    public V join() {
-        return future.join();
-    }
-
-    @Override
-    public boolean await(long timeout, TimeUnit unit) throws InterruptedException {
-        try {
-            future.get(timeout, unit);
-        } catch (ExecutionException e) {
-            // skip
-        } catch (TimeoutException e) {
-            return false;
-        }
-        return true;
-    }
-
-    @Override
-    public boolean await(long timeoutMillis) throws InterruptedException {
-        return await(timeoutMillis, TimeUnit.MILLISECONDS);
-    }
-
-    @Override
-    public RFuture<V> sync() throws InterruptedException {
-        try {
-            future.get();
-            return this;
-        } catch (ExecutionException e) {
-            throw (RuntimeException) e.getCause();
-        }
-    }
-
-    @Override
-    public RFuture<V> syncUninterruptibly() {
-        try {
-            future.join();
-            return this;
-        } catch (CompletionException e) {
-            throw (RuntimeException) e.getCause();
-        }
-    }
-
-    @Override
-    public RFuture<V> await() throws InterruptedException {
-        try {
-            future.get();
-        } catch (ExecutionException e) {
-            // skip
-        }
-        return this;
-    }
-
-    @Override
-    public RFuture<V> awaitUninterruptibly() {
-        try {
-            future.join();
-        } catch (Exception e) {
-            // skip
-        }
-        return this;
-    }
-
-    @Override
-    public boolean awaitUninterruptibly(long timeout, TimeUnit unit) {
-        try {
-            future.get(timeout, unit);
-        } catch (ExecutionException | TimeoutException e) {
-            // skip
-        } catch (InterruptedException e) {
-            awaitUninterruptibly(timeout, unit);
-        }
-        return future.isDone();
-    }
-
-    @Override
-    public boolean awaitUninterruptibly(long timeoutMillis) {
-        return awaitUninterruptibly(timeoutMillis, TimeUnit.MILLISECONDS);
-    }
-
-    @Override
-    public void onComplete(BiConsumer<? super V, ? super Throwable> action) {
-        lastFuture = lastFuture.whenComplete(action);
     }
 
 }

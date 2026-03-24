@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,9 +36,13 @@ import org.redisson.redisnode.RedissonSentinelMasterSlaveNodes;
 import org.redisson.redisnode.RedissonSingleNode;
 import org.redisson.renewal.LockRenewalScheduler;
 import org.redisson.transaction.RedissonTransaction;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -51,6 +55,9 @@ import java.util.concurrent.TimeUnit;
  *
  */
 public final class Redisson implements RedissonClient {
+
+    static final Logger log = LoggerFactory.getLogger(Redisson.class);
+    private final Set<Integer> printed = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     private final EvictionScheduler evictionScheduler;
     private final WriteBehindService writeBehindService;
@@ -112,47 +119,9 @@ public final class Redisson implements RedissonClient {
         return new Redisson(config);
     }
 
-    /*
-     * Use Redisson.create().rxJava() method instead
-     */
-    @Deprecated
-    public static RedissonRxClient createRx() {
-        Config config = new Config();
-        config.useSingleServer().setAddress("redis://127.0.0.1:6379");
-        return createRx(config);
-    }
-
-    /*
-     * Use Redisson.create(config).rxJava() method instead
-     */
-    @Deprecated
-    public static RedissonRxClient createRx(Config config) {
-        RedissonClient redisson = create(config);
-        return redisson.rxJava();
-    }
-
     @Override
     public RedissonRxClient rxJava() {
         return new RedissonRx(connectionManager, evictionScheduler, writeBehindService);
-    }
-
-    /*
-     * Use Redisson.create().reactive() method instead
-     */
-    @Deprecated
-    public static RedissonReactiveClient createReactive() {
-        Config config = new Config();
-        config.useSingleServer().setAddress("redis://127.0.0.1:6379");
-        return createReactive(config);
-    }
-
-    /*
-     * Use Redisson.create(config).reactive() method instead
-     */
-    @Deprecated
-    public static RedissonReactiveClient createReactive(Config config) {
-        RedissonClient redisson = create(config);
-        return redisson.reactive();
     }
 
     @Override
@@ -347,12 +316,12 @@ public final class Redisson implements RedissonClient {
 
     @Override
     public <K, V> RLocalCachedMapCache<K, V> getLocalCachedMapCache(String name, LocalCachedMapCacheOptions<K, V> options) {
-        throw new UnsupportedOperationException("This feature is implemented in the Redisson PRO version. Visit https://redisson.pro");
+        throw new UnsupportedOperationException("This feature is implemented in the Redisson PRO version. Please refer to https://redisson.pro/feature-comparison.html");
     }
 
     @Override
     public <K, V> RLocalCachedMapCache<K, V> getLocalCachedMapCache(String name, Codec codec, LocalCachedMapCacheOptions<K, V> options) {
-        throw new UnsupportedOperationException("This feature is implemented in the Redisson PRO version. Visit https://redisson.pro");
+        throw new UnsupportedOperationException("This feature is implemented in the Redisson PRO version. Please refer to https://redisson.pro/feature-comparison.html");
     }
 
     @Override
@@ -673,6 +642,9 @@ public final class Redisson implements RedissonClient {
 
     @Override
     public RLock getRedLock(RLock... locks) {
+        if (printed.add(1)) {
+            log.error("RedLock object is deprecated. Use RLock or RFencedLock object instead.");
+        }
         return new RedissonRedLock(locks);
     }
 
@@ -744,6 +716,17 @@ public final class Redisson implements RedissonClient {
     public RScript getScript(OptionalOptions options) {
         OptionalParams params = (OptionalParams) options;
         return new RedissonScript(commandExecutor.copy(params), params.getCodec());
+    }
+
+    @Override
+    public RVectorSet getVectorSet(String name) {
+        return new RedissonVectorSet(commandExecutor, name);
+    }
+
+    @Override
+    public RVectorSet getVectorSet(CommonOptions options) {
+        CommonParams params = (CommonParams) options;
+        return new RedissonVectorSet(commandExecutor.copy(params), params.getName());
     }
 
     @Override
@@ -890,19 +873,34 @@ public final class Redisson implements RedissonClient {
 
     @Override
     public RReliableTopic getReliableTopic(String name) {
-        return new RedissonReliableTopic(commandExecutor, name, null);
+        return new RedissonReliableTopic(commandExecutor, name);
     }
 
     @Override
     public RReliableTopic getReliableTopic(String name, Codec codec) {
-        return new RedissonReliableTopic(codec, commandExecutor, name, null);
+        return new RedissonReliableTopic(codec, commandExecutor, name);
     }
 
     @Override
     public RReliableTopic getReliableTopic(PlainOptions options) {
         PlainParams params = (PlainParams) options;
         return new RedissonReliableTopic(params.getCodec(),
-                commandExecutor.copy(params), params.getName(), null);
+                commandExecutor.copy(params), params.getName());
+    }
+
+    @Override
+    public <V> RReliablePubSubTopic<V> getReliablePubSubTopic(String name) {
+        throw new UnsupportedOperationException("This feature is implemented in the Redisson PRO version. Please refer to https://redisson.pro/feature-comparison.html");
+    }
+
+    @Override
+    public <V> RReliablePubSubTopic<V> getReliablePubSubTopic(String name, Codec codec) {
+        throw new UnsupportedOperationException("This feature is implemented in the Redisson PRO version. Please refer to https://redisson.pro/feature-comparison.html");
+    }
+
+    @Override
+    public <V> RReliablePubSubTopic<V> getReliablePubSubTopic(PlainOptions options) {
+        throw new UnsupportedOperationException("This feature is implemented in the Redisson PRO version. Please refer to https://redisson.pro/feature-comparison.html");
     }
 
     @Override
@@ -923,10 +921,29 @@ public final class Redisson implements RedissonClient {
 
     @Override
     public <V> RDelayedQueue<V> getDelayedQueue(RQueue<V> destinationQueue) {
+        if (printed.add(2)) {
+            log.error("RDelayedQueue object is deprecated due to github issues #3020, #2998, #1057. Use RReliableQueue object instead.");
+        }
+
         if (destinationQueue == null) {
             throw new NullPointerException();
         }
         return new RedissonDelayedQueue<V>(destinationQueue.getCodec(), commandExecutor, destinationQueue.getName());
+    }
+
+    @Override
+    public <V> RReliableQueue<V> getReliableQueue(String name) {
+        throw new UnsupportedOperationException("This feature is implemented in the Redisson PRO version. Please refer to https://redisson.pro/feature-comparison.html");
+    }
+
+    @Override
+    public <V> RReliableQueue<V> getReliableQueue(String name, Codec codec) {
+        throw new UnsupportedOperationException("This feature is implemented in the Redisson PRO version. Please refer to https://redisson.pro/feature-comparison.html");
+    }
+
+    @Override
+    public <V> RReliableQueue<V> getReliableQueue(PlainOptions options) {
+        throw new UnsupportedOperationException("This feature is implemented in the Redisson PRO version. Please refer to https://redisson.pro/feature-comparison.html");
     }
 
     @Override
@@ -1005,16 +1022,28 @@ public final class Redisson implements RedissonClient {
 
     @Override
     public <V> RBoundedBlockingQueue<V> getBoundedBlockingQueue(String name) {
+        if (printed.add(5)) {
+            log.error("RBoundedBlockingQueue object is deprecated due to github issues #3979, #3835, #4481, #5104, #5575, #5653. Instead, use the RReliableQueue object with delay feature.");
+        }
+
         return new RedissonBoundedBlockingQueue<V>(commandExecutor, name, this);
     }
 
     @Override
     public <V> RBoundedBlockingQueue<V> getBoundedBlockingQueue(String name, Codec codec) {
+        if (printed.add(4)) {
+            log.error("RBoundedBlockingQueue object is deprecated due to github issues #3979, #3835, #4481, #5104, #5575, #5653. Instead, use the RReliableQueue object with delay feature.");
+        }
+
         return new RedissonBoundedBlockingQueue<V>(codec, commandExecutor, name, this);
     }
 
     @Override
     public <V> RBoundedBlockingQueue<V> getBoundedBlockingQueue(PlainOptions options) {
+        if (printed.add(3)) {
+            log.error("RBoundedBlockingQueue object is deprecated due to github issues #3979, #3835, #4481, #5104, #5575, #5653. Instead, use the RReliableQueue object with delay feature.");
+        }
+
         PlainParams params = (PlainParams) options;
         return new RedissonBoundedBlockingQueue<V>(params.getCodec(),
                 commandExecutor.copy(params), params.getName(), this);
@@ -1159,6 +1188,40 @@ public final class Redisson implements RedissonClient {
     }
 
     @Override
+    public <V> RBloomFilterNative<V> getBloomFilterNative(String name) {
+        return new RedissonBloomFilterNative<V>(commandExecutor, name);
+    }
+
+    @Override
+    public <V> RBloomFilterNative<V> getBloomFilterNative(String name, Codec codec) {
+        return new RedissonBloomFilterNative<V>(codec, commandExecutor, name);
+    }
+
+    @Override
+    public <V> RCuckooFilter<V> getCuckooFilter(String name) {
+        return getCuckooFilter(name, null);
+    }
+
+    @Override
+    public <V> RCuckooFilter<V> getCuckooFilter(String name, Codec codec) {
+        return new RedissonCuckooFilter<V>(codec, commandExecutor, name);
+    }
+
+    @Override
+    public <V> RCuckooFilter<V> getCuckooFilter(PlainOptions options) {
+        PlainParams params = (PlainParams) options;
+        return new RedissonCuckooFilter<V>(params.getCodec(),
+                commandExecutor.copy(params), params.getName());
+    }
+
+
+    @Override
+    public <V> RBloomFilterNative<V> getBloomFilterNative(PlainOptions options) {
+        PlainParams params = (PlainParams) options;
+        return new RedissonBloomFilterNative<V>(params.getCodec(), commandExecutor.copy(params), params.getName());
+    }
+
+    @Override
     public RIdGenerator getIdGenerator(String name) {
         return new RedissonIdGenerator(commandExecutor, name);
     }
@@ -1262,19 +1325,6 @@ public final class Redisson implements RedissonClient {
             return (T) new RedissonMasterSlaveNodes(connectionManager, commandExecutor);
         }
         throw new IllegalArgumentException();
-    }
-
-    @Override
-    public NodesGroup<Node> getNodesGroup() {
-        return new RedisNodes<Node>(connectionManager, connectionManager.getServiceManager(), commandExecutor);
-    }
-
-    @Override
-    public ClusterNodesGroup getClusterNodesGroup() {
-        if (!config.isClusterConfig()) {
-            throw new IllegalStateException("Redisson is not in cluster mode!");
-        }
-        return new RedisClusterNodes(connectionManager, connectionManager.getServiceManager(), commandExecutor);
     }
 
     @Override

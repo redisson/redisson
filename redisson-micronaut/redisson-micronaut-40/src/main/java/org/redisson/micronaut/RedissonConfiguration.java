@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,15 +17,17 @@ package org.redisson.micronaut;
 
 import io.micronaut.context.annotation.ConfigurationBuilder;
 import io.micronaut.context.annotation.ConfigurationProperties;
-import io.micronaut.context.annotation.Parameter;
 import io.micronaut.context.annotation.Requires;
+import io.micronaut.context.env.PropertySourcePropertyResolver;
+import io.micronaut.core.naming.conventions.StringConvention;
+import jakarta.inject.Inject;
 import org.redisson.client.NettyHook;
 import org.redisson.client.codec.Codec;
 import org.redisson.config.*;
 import org.redisson.connection.AddressResolverGroupFactory;
 import org.redisson.connection.ConnectionListener;
 
-import java.lang.reflect.InvocationTargetException;
+import java.util.Collection;
 
 /**
  *
@@ -37,91 +39,73 @@ import java.lang.reflect.InvocationTargetException;
 @Requires(property = "redisson")
 public class RedissonConfiguration extends Config {
 
-    public RedissonConfiguration() {
-    }
-
-    @Override
-    public SingleServerConfig getSingleServerConfig() {
-        if (isNotDefined()) {
-            return useSingleServer();
+    @Inject
+    public RedissonConfiguration(PropertySourcePropertyResolver propertyResolver) {
+        Collection<String> props = propertyResolver.getProperties("redisson", StringConvention.CAMEL_CASE).keySet();
+        for (String prop : props) {
+            if (prop.startsWith("clusterServersConfig")) {
+                useClusterServers();
+                break;
+            }
+            if (prop.startsWith("singleServerConfig")) {
+                useSingleServer();
+                break;
+            }
+            if (prop.startsWith("replicatedServersConfig")) {
+                useReplicatedServers();
+                break;
+            }
+            if (prop.startsWith("sentinelServersConfig")) {
+                useSentinelServers();
+                break;
+            }
+            if (prop.startsWith("masterSlaveServersConfig")) {
+                useMasterSlaveServers();
+                break;
+            }
         }
-        return super.getSingleServerConfig();
+        if (props.contains("codec")) {
+            setCodec(propertyResolver.getProperty("redisson.codec", String.class).get());
+        }
+        if (props.contains("addressResolverGroupFactory")) {
+            setAddressResolverGroupFactory(propertyResolver.getProperty("redisson.address-resolver-group-factory", String.class).get());
+        }
+        if (props.contains("connectionListener")) {
+            setConnectionListener(propertyResolver.getProperty("redisson.connection-listener", String.class).get());
+        }
+        if (props.contains("nettyHook")) {
+            setNettyHook(propertyResolver.getProperty("redisson.netty-hook", String.class).get());
+        }
     }
 
     @Override
     @ConfigurationBuilder("singleServerConfig")
-    protected void setSingleServerConfig(SingleServerConfig singleConnectionConfig) {
-        super.setSingleServerConfig(singleConnectionConfig);
+    public SingleServerConfig getSingleServerConfig() {
+        return super.getSingleServerConfig();
     }
 
     @Override
+    @ConfigurationBuilder(value = "clusterServersConfig")
     public ClusterServersConfig getClusterServersConfig() {
-        if (isNotDefined()) {
-            return useClusterServers();
-        }
         return super.getClusterServersConfig();
     }
 
     @Override
-    @ConfigurationBuilder(value = "clusterServersConfig", includes = {"nodeAddresses"})
-    protected void setClusterServersConfig(ClusterServersConfig clusterServersConfig) {
-        super.setClusterServersConfig(clusterServersConfig);
-    }
-
-    private boolean isNotDefined() {
-        return super.getSingleServerConfig() == null
-                && super.getClusterServersConfig() == null
-                && super.getReplicatedServersConfig() == null
-                && super.getSentinelServersConfig() == null
-                && super.getMasterSlaveServersConfig() == null;
-    }
-
-    @Override
+    @ConfigurationBuilder(value = "replicatedServersConfig")
     public ReplicatedServersConfig getReplicatedServersConfig() {
-        if (isNotDefined()) {
-            return useReplicatedServers();
-        }
         return super.getReplicatedServersConfig();
     }
 
     @Override
-    @ConfigurationBuilder(value = "replicatedServersConfig", includes = {"nodeAddresses"})
-    protected void setReplicatedServersConfig(ReplicatedServersConfig replicatedServersConfig) {
-        super.setReplicatedServersConfig(replicatedServersConfig);
-    }
-
-    @Override
+    @ConfigurationBuilder(value = "sentinelServersConfig")
     public SentinelServersConfig getSentinelServersConfig() {
-        if (isNotDefined()) {
-            return useSentinelServers();
-        }
         return super.getSentinelServersConfig();
     }
 
     @Override
-    @ConfigurationBuilder(value = "sentinelServersConfig", includes = {"sentinelAddresses"})
-    protected void setSentinelServersConfig(SentinelServersConfig sentinelConnectionConfig) {
-        super.setSentinelServersConfig(sentinelConnectionConfig);
-    }
-
-    @Override
+    @ConfigurationBuilder(value = "masterSlaveServersConfig")
     public MasterSlaveServersConfig getMasterSlaveServersConfig() {
-        if (isNotDefined()) {
-            return useMasterSlaveServers();
-        }
         return super.getMasterSlaveServersConfig();
-    }
-
-    @Override
-    @ConfigurationBuilder(value = "masterSlaveServersConfig", includes = {"slaveAddresses"})
-    protected void setMasterSlaveServersConfig(MasterSlaveServersConfig masterSlaveConnectionConfig) {
-        super.setMasterSlaveServersConfig(masterSlaveConnectionConfig);
-    }
-
-    @Override
-    @ConfigurationBuilder(value = "codec1")
-    public Config setCodec(Codec codec) {
-        return super.setCodec(codec);
     }
 
     public Config setCodec(String className) {
@@ -133,12 +117,6 @@ public class RedissonConfiguration extends Config {
         }
     }
 
-    @Override
-    @ConfigurationBuilder(value = "nettyHook1")
-    public Config setNettyHook(NettyHook nettyHook) {
-        return super.setNettyHook(nettyHook);
-    }
-
     public Config setNettyHook(String className) {
         try {
             NettyHook nettyHook = (NettyHook) Class.forName(className).getDeclaredConstructor().newInstance();
@@ -148,12 +126,6 @@ public class RedissonConfiguration extends Config {
         }
     }
 
-    @Override
-    @ConfigurationBuilder(value = "addressResolverGroupFactory1")
-    public Config setAddressResolverGroupFactory(AddressResolverGroupFactory addressResolverGroupFactory) {
-        return super.setAddressResolverGroupFactory(addressResolverGroupFactory);
-    }
-
     public Config setAddressResolverGroupFactory(String className) {
         try {
             AddressResolverGroupFactory value = (AddressResolverGroupFactory) Class.forName(className).getDeclaredConstructor().newInstance();
@@ -161,12 +133,6 @@ public class RedissonConfiguration extends Config {
         } catch (Exception e) {
             throw new IllegalArgumentException(e);
         }
-    }
-
-    @Override
-    @ConfigurationBuilder(value = "connectionListener1")
-    public Config setConnectionListener(ConnectionListener connectionListener) {
-        return super.setConnectionListener(connectionListener);
     }
 
     public Config setConnectionListener(String className) {

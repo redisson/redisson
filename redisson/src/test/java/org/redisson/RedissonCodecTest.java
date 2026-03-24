@@ -8,10 +8,7 @@ import io.netty.buffer.ByteBuf;
 import net.bytebuddy.utility.RandomString;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.redisson.api.RBucket;
-import org.redisson.api.RList;
-import org.redisson.api.RMap;
-import org.redisson.api.RedissonClient;
+import org.redisson.api.*;
 import org.redisson.client.codec.Codec;
 import org.redisson.codec.*;
 import org.redisson.codec.protobuf.nativeData.Proto2AllTypes;
@@ -26,11 +23,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonCodecTest extends RedisDockerTest {
     private Codec kryo5Codec = new Kryo5Codec();
-    private Codec furyCodec = new FuryCodec();
+    private Codec foryCodec = new ForyCodec();
     private Codec zstdCodec = new ZStdCodec();
     private Codec smileCodec = new SmileJacksonCodec();
     private Codec codec = new SerializationCodec();
     private Codec jsonCodec = new JsonJacksonCodec();
+    private Codec json3Codec = new JsonJackson3Codec();
     private Codec cborCodec = new CborJacksonCodec();
     private Codec snappyCodecV2 = new SnappyCodecV2();
     //    private Codec msgPackCodec = new MsgPackJacksonCodec();
@@ -41,6 +39,29 @@ public class RedissonCodecTest extends RedisDockerTest {
     private Codec protobufV3Codec = new ProtobufCodec(String.class, Proto3AllTypes.AllTypes3.class,new JsonJacksonCodec());
     private Codec protobufStuffDataCodec = new ProtobufCodec( StuffData.class);
 
+    @Test
+    public void testUUIDJackson() {
+        Config config = createConfig();
+        config.setCodec(jsonCodec);
+        RedissonClient redisson = Redisson.create(config);
+
+        RBucket<UUID> bucket = redisson.getBucket("test");
+        UUID value = UUID.randomUUID();
+        bucket.set(value);
+        assertThat(bucket.get()).isEqualTo(value);
+    }
+
+    @Test
+    public void testUUIDJackson3() {
+        Config config = createConfig();
+        config.setCodec(json3Codec);
+        RedissonClient redisson = Redisson.create(config);
+
+        RBucket<UUID> set = redisson.getBucket("test");
+        UUID value = UUID.randomUUID();
+        set.set(value);
+        assertThat(set.get()).isEqualTo(value);
+    }
 
     @Test
     public void testKryo5Codec() {
@@ -83,9 +104,9 @@ public class RedissonCodecTest extends RedisDockerTest {
     }
 
     @Test
-    public void testFury() {
+    public void testFory() {
         Config config = createConfig();
-        config.setCodec(furyCodec);
+        config.setCodec(foryCodec);
         RedissonClient redisson = Redisson.create(config);
 
         test(redisson);
@@ -134,15 +155,6 @@ public class RedissonCodecTest extends RedisDockerTest {
         assertThat(b.get()).isEqualTo(new TestObject("1", "2"));
     }
 
-    @Test
-    public void testSnappyBig() throws IOException {
-        SnappyCodec sc = new SnappyCodec();
-        String randomData = RandomString.make(Short.MAX_VALUE*2 + 142);
-        ByteBuf g = sc.getValueEncoder().encode(randomData);
-        String decompressedData = (String) sc.getValueDecoder().decode(g, null);
-        assertThat(decompressedData).isEqualTo(randomData);
-    }
-    
     @Test
     public void testSnappyV2() {
         Config config = createConfig();

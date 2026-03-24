@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,6 @@
  * limitations under the License.
  */
 package org.redisson.config;
-
-import org.redisson.api.HostNatMapper;
-import org.redisson.api.HostPortNatMapper;
-import org.redisson.api.NatMapper;
 
 import java.util.ArrayList;
 import java.util.Arrays;

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.StreamEntryStatus;
 import org.redisson.client.protocol.decoder.*;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.CompletableFutureWrapper;
@@ -98,6 +99,33 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     }
 
     @Override
+    public RFuture<Map<StreamMessageId, StreamEntryStatus>> ackAsync(StreamAckArgs args) {
+        StreamAckParams pps = (StreamAckParams) args;
+        List<Object> params = new ArrayList<Object>();
+        params.add(getRawName());
+        params.add(pps.getGroupName());
+
+        if (pps.getRefPolicy() != null) {
+            params.add(pps.getRefPolicy());
+        }
+
+        params.add("IDS");
+        params.add(pps.getIds().length);
+
+        List<StreamMessageId> ids = Arrays.asList(pps.getIds());
+        params.addAll(ids);
+
+        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE,
+                new RedisCommand<>("XACKDEL", new StreamEntryStatusDecoder<>(ids)),
+                params.toArray());
+    }
+
+    @Override
+    public Map<StreamMessageId, StreamEntryStatus> ack(StreamAckArgs args) {
+        return get(ackAsync(args));
+    }
+
+    @Override
     public RFuture<PendingResult> getPendingInfoAsync(String groupName) {
         return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XPENDING, getRawName(), groupName);
     }
@@ -145,6 +173,30 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     @Override
     public List<PendingEntry> listPending(String groupName, String consumerName, StreamMessageId startId, StreamMessageId endId, long idleTime, TimeUnit idleTimeUnit, int count) {
         return get(listPendingAsync(groupName, consumerName, startId, endId, idleTime, idleTimeUnit, count));
+    }
+
+    @Override
+    public List<PendingEntry> listPending(StreamPendingRangeArgs args) {
+        return get(listPendingAsync(args));
+    }
+
+    @Override
+    public RFuture<List<PendingEntry>> listPendingAsync(StreamPendingRangeArgs args) {
+        StreamPendingRangeParams pps = (StreamPendingRangeParams) args;
+        List<Object> params = new LinkedList<>();
+        params.add(getRawName());
+        params.add(pps.getGroupName());
+        if (pps.getIdleTime() != null) {
+            params.add("IDLE");
+            params.add(pps.getIdleTime().toMillis());
+        }
+        params.add(value(pps.getStartId(), pps.isStartIdExclusive()));
+        params.add(value(pps.getEndId(), pps.isEndIdExclusive()));
+        params.add(pps.getCount());
+        if (pps.getConsumerName() != null) {
+            params.add(pps.getConsumerName());
+        }
+        return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XPENDING_ENTRIES, params.toArray());
     }
 
     @Override
@@ -224,6 +276,11 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
             params.add(rp.getTimeout().toMillis());
         }
 
+        if (rp.getMinIdleTime() != null) {
+            params.add("CLAIM");
+            params.add(rp.getMinIdleTime().toMillis());
+        }
+
         if (rp.isNoAck()) {
             params.add("NOACK");
         }
@@ -265,6 +322,11 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         if (rp.getTimeout() != null) {
             params.add("BLOCK");
             params.add(rp.getTimeout().toMillis());
+        }
+
+        if (rp.getMinIdleTime() != null) {
+            params.add("CLAIM");
+            params.add(rp.getMinIdleTime().toMillis());
         }
 
         if (rp.isNoAck()) {
@@ -319,42 +381,10 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
 
     @Override
     public Map<StreamMessageId, Map<K, V>> claim(String groupName, String consumerName, long idleTime, TimeUnit idleTimeUnit,
-            StreamMessageId... ids) {
+                                                    StreamMessageId... ids) {
         return get(claimAsync(groupName, consumerName, idleTime, idleTimeUnit, ids));
     }
 
-    private <R> RFuture<R> addAllCustomAsync(StreamMessageId id, Map<K, V> entries, int trimLen, boolean trimStrict) {
-        List<Object> params = new ArrayList<Object>(entries.size()*2 + 1);
-        params.add(getRawName());
-        
-        if (trimLen > 0) {
-            params.add("MAXLEN");
-            if (!trimStrict) {
-                params.add("~");
-            }
-            params.add(trimLen);
-        }
-        
-        if (id == null) {
-            params.add("*");
-        } else {
-            params.add(id.toString());
-        }
-        
-        for (java.util.Map.Entry<? extends K, ? extends V> t : entries.entrySet()) {
-            checkKey(t.getKey());
-            checkValue(t.getValue());
-
-            params.add(encodeMapKey(t.getKey()));
-            params.add(encodeMapValue(t.getValue()));
-        }
-
-        if (id == null) {
-            return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XADD, params.toArray());
-        }
-        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XADD_VOID, params.toArray());
-    }
-    
     @Override
     public long size() {
         return get(sizeAsync());
@@ -460,6 +490,19 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
             params.add("NOMKSTREAM");
         }
 
+        if (pps.getRefPolicy() != null) {
+            params.add(pps.getRefPolicy());
+        }
+
+        if (pps.getProducerId() != null && pps.getIdempotentId() != null) {
+            params.add("IDMP");
+            params.add(pps.getProducerId());
+            params.add(pps.getIdempotentId());
+        } else if (pps.getProducerId() != null) {
+            params.add("IDMPAUTO");
+            params.add(pps.getProducerId());
+        }
+
         if (pps.getMaxLen() > 0) {
             params.add("MAXLEN");
             if (!pps.isTrimStrict()) {
@@ -529,7 +572,60 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         }
         return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XADD_VOID, params.toArray());
     }
-    
+
+    @Override
+    public RFuture<Map<StreamMessageId, Map<K, V>>> rangeAsync(StreamRangeArgs args) {
+        StreamRangeParams pps = (StreamRangeParams) args;
+        List<Object> params = new LinkedList<Object>();
+        params.add(getRawName());
+        params.add(value(pps.getStartId(), pps.isStartIdExclusive()));
+        params.add(value(pps.getEndId(), pps.isEndIdExclusive()));
+
+        if (pps.getCount() > 0) {
+            params.add("COUNT");
+            params.add(pps.getCount());
+        }
+
+        return commandExecutor.readAsync(getRawName(), codec, RedisCommands.XRANGE, params.toArray());
+    }
+
+    private String value(StreamMessageId messageId, boolean exclusive) {
+        if (exclusive && messageId != StreamMessageId.MAX && messageId != StreamMessageId.MIN) {
+            StringBuilder element = new StringBuilder();
+            element.append("(");
+            element.append(messageId);
+            return element.toString();
+        } else {
+            return messageId.toString();
+        }
+    }
+
+    @Override
+    public Map<StreamMessageId, Map<K, V>> range(StreamRangeArgs args) {
+        return get(rangeAsync(args));
+    }
+
+    @Override
+    public RFuture<Map<StreamMessageId, Map<K, V>>> rangeReversedAsync(StreamRangeArgs args) {
+        StreamRangeParams pps = (StreamRangeParams) args;
+        List<Object> params = new LinkedList<Object>();
+        params.add(getRawName());
+        params.add(value(pps.getStartId(), pps.isStartIdExclusive()));
+        params.add(value(pps.getEndId(), pps.isEndIdExclusive()));
+
+        if (pps.getCount() > 0) {
+            params.add("COUNT");
+            params.add(pps.getCount());
+        }
+
+        return commandExecutor.readAsync(getRawName(), codec, RedisCommands.XREVRANGE, params.toArray());
+    }
+
+    @Override
+    public Map<StreamMessageId, Map<K, V>> rangeReversed(StreamRangeArgs args) {
+        return get(rangeReversedAsync(args));
+    }
+
     @Override
     public RFuture<Map<StreamMessageId, Map<K, V>>> rangeAsync(int count, StreamMessageId startId, StreamMessageId endId) {
         List<Object> params = new LinkedList<Object>();
@@ -602,6 +698,31 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     @Override
     public long remove(StreamMessageId... ids) {
         return get(removeAsync(ids));
+    }
+
+    @Override
+    public Map<StreamMessageId, StreamEntryStatus> remove(StreamRemoveArgs args) {
+        return get(removeAsync(args));
+    }
+
+    @Override
+    public RFuture<Map<StreamMessageId, StreamEntryStatus>> removeAsync(StreamRemoveArgs args) {
+        StreamRemoveParams pps = (StreamRemoveParams) args;
+        List<Object> params = new ArrayList<Object>();
+        params.add(getRawName());
+
+        if (pps.getRefPolicy() != null) {
+            params.add(pps.getRefPolicy());
+        }
+
+        params.add("IDS");
+        params.add(pps.getIds().length);
+        List<StreamMessageId> ids = Arrays.asList(pps.getIds());
+        params.addAll(ids);
+
+        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE,
+                new RedisCommand<>("XDELEX", new StreamEntryStatusDecoder<>(ids)),
+                params.toArray());
     }
 
     @Override
@@ -698,7 +819,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
 
     @Override
     public RFuture<Map<StreamMessageId, Map<K, V>>> pendingRangeAsync(String groupName, String consumerName,
-            StreamMessageId startId, StreamMessageId endId, int count) {
+                                                                        StreamMessageId startId, StreamMessageId endId, int count) {
         return commandExecutor.evalReadAsync(getRawName(), codec, EVAL_XRANGE,
                 "local pendingData = redis.call('xpending', KEYS[1], ARGV[1], ARGV[2], ARGV[3], ARGV[4], ARGV[5]);" +
                 "local result = {}; " +
@@ -713,7 +834,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
 
     @Override
     public RFuture<Map<StreamMessageId, Map<K, V>>> pendingRangeAsync(String groupName, StreamMessageId startId,
-            StreamMessageId endId, long idleTime, TimeUnit idleTimeUnit, int count) {
+                                                                      StreamMessageId endId, long idleTime, TimeUnit idleTimeUnit, int count) {
         return commandExecutor.evalReadAsync(getRawName(), codec, EVAL_XRANGE,
                 "local pendingData = redis.call('xpending', KEYS[1], ARGV[1], 'IDLE', ARGV[2], ARGV[3], ARGV[4], ARGV[5]);" +
                 "local result = {}; " +
@@ -728,7 +849,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
 
     @Override
     public RFuture<Map<StreamMessageId, Map<K, V>>> pendingRangeAsync(String groupName, String consumerName,
-            StreamMessageId startId, StreamMessageId endId, long idleTime, TimeUnit idleTimeUnit, int count) {
+                                                                      StreamMessageId startId, StreamMessageId endId, long idleTime, TimeUnit idleTimeUnit, int count) {
         return commandExecutor.evalReadAsync(getRawName(), codec, EVAL_XRANGE,
                 "local pendingData = redis.call('xpending', KEYS[1], ARGV[1], 'IDLE', ARGV[2], ARGV[3], ARGV[4], ARGV[5], ARGV[6]);" +
                 "local result = {}; " +
@@ -753,13 +874,13 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
 
     @Override
     public Map<StreamMessageId, Map<K, V>> pendingRange(String groupName, String consumerName, StreamMessageId startId,
-            StreamMessageId endId, int count) {
+                                                        StreamMessageId endId, int count) {
         return get(pendingRangeAsync(groupName, consumerName, startId, endId, count));
     }
 
     @Override
     public Map<StreamMessageId, Map<K, V>> pendingRange(String groupName, StreamMessageId startId, StreamMessageId endId,
-            int count) {
+                                                        int count) {
         return get(pendingRangeAsync(groupName, startId, endId, count));
     }
 
@@ -797,6 +918,10 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         if (pps.getLimit() > 0) {
             params.add("LIMIT");
             params.add(pps.getLimit());
+        }
+
+        if (pps.getRefPolicy() != null) {
+            params.add(pps.getRefPolicy());
         }
 
         return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.XTRIM, params.toArray());

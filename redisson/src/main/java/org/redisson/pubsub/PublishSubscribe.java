@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,8 +64,10 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
     public void timeout(CompletableFuture<?> promise, long timeout) {
         service.timeout(promise, timeout);
     }
-
     public CompletableFuture<E> subscribe(String entryName, String channelName) {
+        return subscribe(entryName, channelName, 1);
+    }
+    public CompletableFuture<E> subscribe(String entryName, String channelName, int permits) {
         AsyncSemaphore semaphore = service.getSemaphore(new ChannelName(channelName));
         CompletableFuture<E> newPromise = new CompletableFuture<>();
 
@@ -77,7 +79,7 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
 
             E entry = entries.get(entryName);
             if (entry != null) {
-                entry.acquire();
+                entry.acquire(permits);
                 semaphore.release();
                 entry.getPromise().whenComplete((r, e) -> {
                     if (e != null) {
@@ -90,11 +92,11 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
             }
 
             E value = createEntry(newPromise);
-            value.acquire();
+            value.acquire(permits);
 
             E oldValue = entries.putIfAbsent(entryName, value);
             if (oldValue != null) {
-                oldValue.acquire();
+                oldValue.acquire(permits);
                 semaphore.release();
                 oldValue.getPromise().whenComplete((r, e) -> {
                     if (e != null) {

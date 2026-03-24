@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -746,14 +746,14 @@ public final class RedissonReactive implements RedissonReactiveClient {
 
     @Override
     public RReliableTopicReactive getReliableTopic(String name) {
-        RedissonReliableTopic topic = new RedissonReliableTopic(commandExecutor, name, null);
+        RedissonReliableTopic topic = new RedissonReliableTopic(commandExecutor, name);
         return ReactiveProxyBuilder.create(commandExecutor, topic,
                 new RedissonReliableTopicReactive(topic), RReliableTopicReactive.class);
     }
 
     @Override
     public RReliableTopicReactive getReliableTopic(String name, Codec codec) {
-        RedissonReliableTopic topic = new RedissonReliableTopic(codec, commandExecutor, name, null);
+        RedissonReliableTopic topic = new RedissonReliableTopic(codec, commandExecutor, name);
         return ReactiveProxyBuilder.create(commandExecutor, topic,
                 new RedissonReliableTopicReactive(topic), RReliableTopicReactive.class);
     }
@@ -762,7 +762,7 @@ public final class RedissonReactive implements RedissonReactiveClient {
     public RReliableTopicReactive getReliableTopic(PlainOptions options) {
         PlainParams params = (PlainParams) options;
         CommandReactiveExecutor ca = commandExecutor.copy(params);
-        RedissonReliableTopic topic = new RedissonReliableTopic(params.getCodec(), ca, params.getName(), null);
+        RedissonReliableTopic topic = new RedissonReliableTopic(params.getCodec(), ca, params.getName());
         return ReactiveProxyBuilder.create(commandExecutor, topic,
                 new RedissonReliableTopicReactive(topic), RReliableTopicReactive.class);
     }
@@ -803,6 +803,21 @@ public final class RedissonReactive implements RedissonReactiveClient {
         CommandReactiveExecutor ca = commandExecutor.copy(params);
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonQueue<V>(params.getCodec(), ca, params.getName(), null),
                 new RedissonListReactive<V>(params.getCodec(), ca, params.getName()), RQueueReactive.class);
+    }
+
+    @Override
+    public <V> RReliableQueueReactive<V> getReliableQueue(String name) {
+        throw new UnsupportedOperationException("This feature is implemented in the Redisson PRO version. Please refer to https://redisson.pro/feature-comparison.html");
+    }
+
+    @Override
+    public <V> RReliableQueueReactive<V> getReliableQueue(String name, Codec codec) {
+        throw new UnsupportedOperationException("This feature is implemented in the Redisson PRO version. Please refer to https://redisson.pro/feature-comparison.html");
+    }
+
+    @Override
+    public <V> RReliableQueueReactive<V> getReliableQueue(PlainOptions options) {
+        throw new UnsupportedOperationException("This feature is implemented in the Redisson PRO version. Please refer to https://redisson.pro/feature-comparison.html");
     }
 
     @Override
@@ -1003,6 +1018,45 @@ public final class RedissonReactive implements RedissonReactiveClient {
     }
 
     @Override
+    public <V> RBloomFilterNativeReactive<V> getBloomFilterNative(String name) {
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonBloomFilterNative<>(commandExecutor, name), RBloomFilterNativeReactive.class);
+    }
+
+    @Override
+    public <V> RBloomFilterNativeReactive<V> getBloomFilterNative(String name, Codec codec) {
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonBloomFilterNative<>(codec, commandExecutor, name), RBloomFilterNativeReactive.class);
+    }
+
+    @Override
+    public <V> RBloomFilterNativeReactive<V> getBloomFilterNative(PlainOptions options) {
+        PlainParams params = (PlainParams) options;
+        CommandReactiveExecutor ca = commandExecutor.copy(params);
+        return ReactiveProxyBuilder.create(commandExecutor,
+                new RedissonBloomFilterNative<V>(params.getCodec(), ca, params.getName()), RBloomFilterNativeReactive.class);
+    }
+
+    @Override
+    public <V> RCuckooFilterReactive<V> getCuckooFilter(String name) {
+        return getCuckooFilter(name, null);
+    }
+
+    @Override
+    public <V> RCuckooFilterReactive<V> getCuckooFilter(String name, Codec codec) {
+        return ReactiveProxyBuilder.create(commandExecutor,
+                new RedissonCuckooFilter<V>(codec, commandExecutor, name),
+                RCuckooFilterReactive.class);
+    }
+
+    @Override
+    public <V> RCuckooFilterReactive<V> getCuckooFilter(PlainOptions options) {
+        PlainParams params = (PlainParams) options;
+        CommandReactiveExecutor ca = commandExecutor.copy(params);
+        return ReactiveProxyBuilder.create(commandExecutor,
+                new RedissonCuckooFilter<V>(params.getCodec(), ca, params.getName()),
+                RCuckooFilterReactive.class);
+    }
+
+    @Override
     public RFunctionReactive getFunction() {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonFuction(commandExecutor), RFunctionReactive.class);
     }
@@ -1037,6 +1091,18 @@ public final class RedissonReactive implements RedissonReactiveClient {
     }
 
     @Override
+    public RVectorSetReactive getVectorSet(String name) {
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonVectorSet(commandExecutor, name), RVectorSetReactive.class);
+    }
+
+    @Override
+    public RVectorSetReactive getVectorSet(CommonOptions options) {
+        CommonParams params = (CommonParams) options;
+        CommandReactiveExecutor ca = commandExecutor.copy(params);
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonVectorSet(ca, params.getName()), RVectorSetReactive.class);
+    }
+
+    @Override
     public RBatchReactive createBatch(BatchOptions options) {
         return new RedissonBatchReactive(evictionScheduler, connectionManager, commandExecutor, options);
     }
@@ -1061,19 +1127,6 @@ public final class RedissonReactive implements RedissonReactiveClient {
     @Override
     public Config getConfig() {
         return connectionManager.getServiceManager().getCfg();
-    }
-
-    @Override
-    public NodesGroup<Node> getNodesGroup() {
-        return new RedisNodes<>(connectionManager, connectionManager.getServiceManager(), commandExecutor);
-    }
-
-    @Override
-    public NodesGroup<ClusterNode> getClusterNodesGroup() {
-        if (!getConfig().isClusterConfig()) {
-            throw new IllegalStateException("Redisson not in cluster mode!");
-        }
-        return new RedisNodes<>(connectionManager, connectionManager.getServiceManager(), commandExecutor);
     }
 
     @Override

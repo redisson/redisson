@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 package org.redisson.api;
 
 import java.util.BitSet;
+import java.util.List;
+import org.redisson.api.bitset.BitFieldArgs;
 
 /**
  * Vector of bits that grows as needed.
@@ -92,6 +94,17 @@ public interface RBitSet extends RExpirable, RBitSetAsync {
      * @return result value
      */
     long incrementAndGetUnsigned(int size, long offset, long increment);
+
+    /**
+     * Executes BITFIELD command with multiple subcommands
+     * and returns result list in the same order.
+     * if ReadMode is Slave And Args is only get commands,
+     * then BITFIELD_RO command will be executed
+     *
+     * @param args - bitfield arguments
+     * @return result values
+     */
+    List<Long> bitField(BitFieldArgs args);
 
     /**
      * Returns byte number at specified <code>offset</code>
@@ -249,8 +262,10 @@ public interface RBitSet extends RExpirable, RBitSetAsync {
 
     /**
      * Executes NOT operation over all bits
+     *
+     * @return length in bytes of the destination key
      */
-    void not();
+    long not();
 
     /**
      * Set all bits to one from <code>fromIndex</code> (inclusive) to <code>toIndex</code> (exclusive)
@@ -334,23 +349,66 @@ public interface RBitSet extends RExpirable, RBitSetAsync {
      * Stores result into this object.
      * 
      * @param bitSetNames - name of stored bitsets
+     * @return length in bytes of the destination key
      */
-    void or(String... bitSetNames);
+    long or(String... bitSetNames);
 
     /**
      * Executes AND operation over this object and specified bitsets.
      * Stores result into this object.
      * 
      * @param bitSetNames - name of stored bitsets
+     * @return length in bytes of the destination key
      */
-    void and(String... bitSetNames);
+    long and(String... bitSetNames);
 
     /**
      * Executes XOR operation over this object and specified bitsets.
      * Stores result into this object.
      * 
      * @param bitSetNames - name of stored bitsets
+     * @return length in bytes of the destination key
      */
-    void xor(String... bitSetNames);
+    long xor(String... bitSetNames);
+
+    /**
+     * Executes bitwise DIFF operation over this object and specified bitsets.
+     * Sets bits that are set in this object but not in any of the other bitsets.
+     * Stores result into this object.
+     *
+     * @param bitSetNames name of stored bitsets
+     * @return length in bytes of the destination key
+     */
+    long diff(String... bitSetNames);
+
+    /**
+     * Executes bitwise DIFF1 operation over this object and specified bitsets.
+     * Sets bits that are set in one or more of the other bitsets but not in this object.
+     * Stores result into this object.
+     *
+     * @param bitSetNames name of stored bitsets
+     * @return length in bytes of the destination key
+     */
+    long diffInverse(String... bitSetNames);
+
+    /**
+     * Executes bitwise ANDOR operation over this object and specified bitsets.
+     * Sets bits that are set in this object AND also in one or more of the other bitsets.
+     * Stores result into this object.
+     *
+     * @param bitSetNames name of stored bitsets
+     * @return length in bytes of the destination key
+     */
+    long andOr(String... bitSetNames);
+
+    /**
+     * Executes bitwise ONE operation over this object and specified bitsets.
+     * Sets bits that are set in exactly one of the provided bitsets.
+     * Stores result into this object.
+     *
+     * @param bitSetNames name of stored bitsets
+     * @return length in bytes of the destination key
+     */
+    long setExclusive(String... bitSetNames);
 
 }

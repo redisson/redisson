@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,6 @@
  */
 package org.redisson.api.stream;
 
-import org.redisson.api.StreamMessageId;
-
 import java.util.Map;
 
 /**
@@ -24,9 +22,11 @@ import java.util.Map;
  * @author Nikita Koksharov
  *
  */
-public final class StreamAddParams<K, V> implements StreamAddArgs<K, V>,
-                                              StreamTrimStrategyArgs<StreamAddArgs<K, V>>,
-                                              StreamTrimLimitArgs<StreamAddArgs<K, V>>  {
+public final class StreamAddParams<K, V> extends BaseReferencesParams<StreamTrimLimitArgs<StreamAddArgs<K, V>>>
+                                                    implements StreamAddArgs<K, V>,
+                                                    StreamTrimStrategyArgs<StreamAddArgs<K, V>>,
+                                                    StreamTrimReferencesArgs<StreamAddArgs<K, V>>,
+                                                    StreamIdempotentArgs<StreamAddArgs<K, V>>  {
 
     private final Map<K, V> entries;
     private boolean noMakeStream;
@@ -35,6 +35,9 @@ public final class StreamAddParams<K, V> implements StreamAddArgs<K, V>,
     private int maxLen;
     private StreamMessageId minId;
     private int limit;
+
+    private String producerId;
+    private String idempotentId;
 
     StreamAddParams(Map<K, V> entries) {
         this.entries = entries;
@@ -59,13 +62,30 @@ public final class StreamAddParams<K, V> implements StreamAddArgs<K, V>,
     }
 
     @Override
-    public StreamTrimLimitArgs<StreamAddArgs<K, V>> maxLen(int threshold) {
+    public StreamIdempotentArgs<StreamAddArgs<K, V>> idempotentProducerId(String producerId) {
+        this.producerId = producerId;
+        return this;
+    }
+
+    @Override
+    public StreamAddArgs<K, V> autoId() {
+        return this;
+    }
+
+    @Override
+    public StreamAddArgs<K, V> idempotentId(String idempotentId) {
+        this.idempotentId = idempotentId;
+        return this;
+    }
+
+    @Override
+    public StreamTrimReferencesArgs<StreamAddArgs<K, V>> maxLen(int threshold) {
         this.maxLen = threshold;
         return this;
     }
 
     @Override
-    public StreamTrimLimitArgs<StreamAddArgs<K, V>> minId(StreamMessageId messageId) {
+    public StreamTrimReferencesArgs<StreamAddArgs<K, V>> minId(StreamMessageId messageId) {
         this.minId = messageId;
         return this;
     }
@@ -104,5 +124,13 @@ public final class StreamAddParams<K, V> implements StreamAddArgs<K, V>,
 
     public int getLimit() {
         return limit;
+    }
+
+    public String getProducerId() {
+        return producerId;
+    }
+
+    public String getIdempotentId() {
+        return idempotentId;
     }
 }

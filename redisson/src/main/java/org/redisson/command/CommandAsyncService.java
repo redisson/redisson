@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,12 +26,14 @@ import org.redisson.api.RFuture;
 import org.redisson.api.options.ObjectParams;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisException;
+import org.redisson.client.RedisNoScriptException;
 import org.redisson.client.RedisNodeNotFoundException;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.config.DefaultCommandMapper;
+import org.redisson.config.DelayStrategy;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.NodeSource;
@@ -53,7 +55,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -72,7 +73,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     final RedissonObjectBuilder objectBuilder;
     final RedissonObjectBuilder.ReferenceType referenceType;
     private final int retryAttempts;
-    private final int retryInterval;
+    private final DelayStrategy retryDelay;
     private final int responseTimeout;
     private final boolean trackChanges;
 
@@ -88,7 +89,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         this.objectBuilder = service.objectBuilder;
         this.referenceType = service.referenceType;
         this.retryAttempts = service.retryAttempts;
-        this.retryInterval = service.retryInterval;
+        this.retryDelay = service.retryDelay;
         this.responseTimeout = service.responseTimeout;
         this.trackChanges = trackChanges;
     }
@@ -111,10 +112,10 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         } else {
             this.retryAttempts = connectionManager.getServiceManager().getConfig().getRetryAttempts();
         }
-        if (objectParams.getRetryInterval() > 0) {
-            this.retryInterval = objectParams.getRetryInterval();
+        if (objectParams.getRetryDelay() != null) {
+            this.retryDelay = objectParams.getRetryDelay();
         } else {
-            this.retryInterval = connectionManager.getServiceManager().getConfig().getRetryInterval();
+            this.retryDelay = connectionManager.getServiceManager().getConfig().getRetryDelay();
         }
         if (objectParams.getTimeout() > 0) {
             this.responseTimeout = objectParams.getTimeout();
@@ -131,7 +132,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         this.referenceType = referenceType;
         this.codec = connectionManager.getServiceManager().getCfg().getCodec();
         this.retryAttempts = connectionManager.getServiceManager().getConfig().getRetryAttempts();
-        this.retryInterval = connectionManager.getServiceManager().getConfig().getRetryInterval();
+        this.retryDelay = connectionManager.getServiceManager().getConfig().getRetryDelay();
         this.responseTimeout = connectionManager.getServiceManager().getConfig().getTimeout();
         this.trackChanges = false;
     }
@@ -498,6 +499,20 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         return result;
     }
 
+    private static String trunc(String input) {
+        final int maxLength = 200;
+
+        if (input == null) {
+            return null;
+        }
+
+        if (input.length() <= maxLength) {
+            return input;
+        }
+
+        return input.substring(0, maxLength) + "...";
+    }
+
     protected final Object[] copy(Object[] params) {
         return copy(Arrays.asList(params)).toArray();
     }
@@ -517,17 +532,22 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     private static final Pattern COMMANDS_PATTERN = Pattern.compile("redis\\.call\\(['\"]{1}([\\w.]+)['\"]{1}");
 
     private String map(String script) {
-        if (getServiceManager().getConfig().getCommandMapper() instanceof DefaultCommandMapper) {
+        if (getServiceManager().getCommandMapper() instanceof DefaultCommandMapper) {
             return script;
         }
 
         Matcher matcher = COMMANDS_PATTERN.matcher(script);
+        Set<String> mappedCommands = new HashSet<>();
         while (matcher.find()) {
 
             String command = matcher.group(1);
-            String mapped = getServiceManager().getConfig().getCommandMapper().map(command);
+            if (mappedCommands.contains(command)) {
+                continue;
+            }
+            String mapped = getServiceManager().getCommandMapper().map(command);
             if (!command.equalsIgnoreCase(mapped)) {
                 script = script.replace(command, mapped);
+                mappedCommands.add(command);
             }
         }
         return script;
@@ -548,9 +568,9 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             String sha1 = getServiceManager().calcSHA(mappedScript);
             RedisCommand cmd;
             if (readOnlyMode && EVAL_SHA_RO_SUPPORTED.get()) {
-                cmd = new RedisCommand(evalCommandType, "EVALSHA_RO");
+                cmd = new RedisCommand(evalCommandType, "EVALSHA_RO", trunc(mappedScript));
             } else {
-                cmd = new RedisCommand(evalCommandType, "EVALSHA");
+                cmd = new RedisCommand(evalCommandType, "EVALSHA", trunc(mappedScript));
             }
             List<Object> args = new ArrayList<Object>(2 + keys.size() + params.length);
             args.add(sha1);
@@ -561,7 +581,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             RedisExecutor<T, R> executor = new RedisExecutor(readOnlyMode, nodeSource, codec, cmd,
                     args.toArray(), promise, false,
                     connectionManager, objectBuilder, referenceType, noRetry,
-                    retryAttempts, retryInterval, responseTimeout, trackChanges);
+                    retryAttempts, retryDelay, responseTimeout, trackChanges);
             executor.execute();
 
             promise.whenComplete((res, e) -> {
@@ -591,7 +611,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                                 ns = new NodeSource(nodeSource, executor.getRedisClient());
                             }
 
-                            RFuture<R> future = async(readOnlyMode, ns, codec, cmd, newargs.toArray(), false, noRetry);
+                            RFuture<R> future = asyncNoScript(readOnlyMode, ns, codec, cmd, newargs.toArray(), false, noRetry);
                             transfer(future.toCompletableFuture(), mainPromise);
                         });
                     } else {
@@ -614,6 +634,11 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         args.addAll(keys);
         args.addAll(Arrays.asList(params));
         return async(readOnlyMode, nodeSource, codec, evalCommandType, args.toArray(), false, noRetry);
+    }
+
+    protected <V, R> RFuture<R> asyncNoScript(boolean readOnlyMode, NodeSource source, Codec codec,
+                                              RedisCommand<V> command, Object[] params, boolean ignoreRedirect, boolean noRetry) {
+        return async(readOnlyMode, source, codec, command, params, ignoreRedirect, noRetry);
     }
 
     @Override
@@ -651,7 +676,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             CompletableFuture<R> mainPromise = createPromise();
             RedisExecutor<V, R> executor = new RedisExecutor<>(readOnlyMode, source, codec, cmd, params, mainPromise,
                                                                 ignoreRedirect, connectionManager, objectBuilder, referenceType, noRetry,
-                                                                retryAttempts, retryInterval, responseTimeout, trackChanges);
+                                                                retryAttempts, retryDelay, responseTimeout, trackChanges);
             executor.execute();
             CompletableFuture<R> result = new CompletableFuture<>();
             mainPromise.whenComplete((r, e) -> {
@@ -667,9 +692,20 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         }
 
         CompletableFuture<R> mainPromise = createPromise();
+        if (!readOnlyMode && getServiceManager().hasCachingInstances()) {
+            Arrays.stream(params)
+                    .filter(r -> r instanceof String)
+                    .map(m -> (String) m)
+                    .findFirst()
+                    .ifPresent(name -> {
+                        mainPromise.thenAccept(r -> {
+                            getServiceManager().evictClientSideCaching(name);
+                        });
+                    });
+        }
         RedisExecutor<V, R> executor = new RedisExecutor<>(readOnlyMode, source, codec, cmnd, params, mainPromise,
                                                             ignoreRedirect, connectionManager, objectBuilder, referenceType, noRetry,
-                                                            retryAttempts, retryInterval, responseTimeout, trackChanges);
+                                                            retryAttempts, retryDelay, responseTimeout, trackChanges);
         executor.execute();
         return new CompletableFutureWrapper<>(mainPromise);
     }
@@ -938,7 +974,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     @Override
     public <V> RFuture<V> pollFromAnyAsync(String name, Codec codec, RedisCommand<?> command, long secondsTimeout, String... queueNames) {
-        List<String> mappedNames = Arrays.stream(queueNames).map(m -> connectionManager.getServiceManager().getConfig().getNameMapper().map(m)).collect(Collectors.toList());
+        List<String> mappedNames = Arrays.stream(queueNames).map(m -> connectionManager.getServiceManager().getNameMapper().map(m)).collect(Collectors.toList());
         if (getServiceManager().getCfg().isClusterConfig() && queueNames.length > 0) {
             AtomicReference<Iterator<String>> ref = new AtomicReference<>();
             List<String> names = new ArrayList<>();
@@ -977,17 +1013,14 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         return poll(codec, ref, names, counter, command);
     }
 
-    public <T> CompletionStage<T> handleNoSync(CompletionStage<T> stage, Supplier<CompletionStage<?>> supplier) {
+    @Override
+    public <T> CompletionStage<T> handleNoSync(CompletionStage<T> stage, Function<Throwable, CompletionStage<?>> supplier) {
         CompletionStage<T> s = stage.handle((r, ex) -> {
             if (ex != null) {
-                if (ex.getCause() != null
-                        && ex.getCause().getMessage() != null
-                            && ex.getCause().getMessage().equals("None of slaves were synced")) {
-                    return supplier.get().handle((r1, e) -> {
+                if (ex.getCause() instanceof NoSyncedSlavesException) {
+                    return supplier.apply(ex.getCause()).handle((r1, e) -> {
                         if (e != null) {
-                            if (e.getCause() != null
-                                    && e.getCause().getMessage() != null
-                                        && e.getCause().getMessage().equals("None of slaves were synced")) {
+                            if (e.getCause() instanceof NoSyncedSlavesException) {
                                 throw new CompletionException(ex.getCause());
                             }
                             if (e.getCause() != null) {
@@ -1060,29 +1093,44 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         }
         CompletionStage<T> resFuture = waitFuture.handle((r2, ex2) -> {
             if (ex2 != null) {
-                List<String> commands = new ArrayList<>(Arrays.asList(RedisCommands.WAIT.getName(), RedisCommands.WAITAOF.getName()));
+                List<String> commands = new ArrayList<>(Arrays.asList(RedisCommands.WAITAOF.getName(), RedisCommands.WAIT.getName()));
 
                 List<String> msgs = new ArrayList<>(2);
-                msgs.add(ex2.getMessage());
+                if (ex2.getCause() != null) {
+                    msgs.add(ex2.getCause().getMessage());
+                } else {
+                    msgs.add(ex2.getMessage());
+                }
                 for (Throwable throwable : ex2.getSuppressed()) {
-                    msgs.add(throwable.getMessage());
+                    if (throwable.getCause() != null) {
+                        msgs.add(throwable.getCause().getMessage());
+                    } else {
+                        msgs.add(throwable.getMessage());
+                    }
                 }
 
                 for (String msg : msgs) {
-                    for (String command : commands) {
-                        if (msg.contains("'" + command + "'")) {
-                            commands.remove(command);
+                    Iterator<String> iterator = commands.iterator();
+                    while (iterator.hasNext()) {
+                        String command = iterator.next();
+                        if (msg.startsWith("ERR unknown command")
+                                && msg.toUpperCase().contains(command)) {
+                            iterator.remove();
                             break;
                         }
                     }
                 }
 
-                if (ex2.getMessage().startsWith("ERR unknown command")) {
+                if (commands.size() == 2) {
+                    throw new CompletionException(ex2);
+                } else {
                     waitSupportedCommands = commands;
+                }
+
+                if (commands.isEmpty()) {
                     CompletionStage<T> f = evalWriteAsync(key, codec, evalCommandType, script, keys, params);
                     return f;
                 }
-                throw new CompletionException(ex2);
             }
 
             if (waitSupportedCommands == null) {
@@ -1109,8 +1157,19 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             }
 
             CompletionStage<T> resultFuture = replicationFuture.thenCompose(r -> {
-                int availableSlaves = Integer.parseInt(r.getOrDefault("connected_slaves", "0"));
-                boolean aofEnabled = "1".equals(r.getOrDefault("aof_enabled", "0"));
+                int availableSlaves;
+                boolean aofEnabled;
+                if (waitSupportedCommands.contains(RedisCommands.WAIT.getName())) {
+                    availableSlaves = Integer.parseInt(r.getOrDefault("connected_slaves", "0"));
+                } else {
+                    availableSlaves = 0;
+                }
+                if (waitSupportedCommands.contains(RedisCommands.WAITAOF.getName())
+                        && (syncMode == SyncMode.WAIT_AOF || syncMode == SyncMode.AUTO)) {
+                    aofEnabled = "1".equals(r.getOrDefault("aof_enabled", "0"));
+                } else {
+                    aofEnabled = false;
+                }
                 e.setAvailableSlaves(availableSlaves);
                 e.setAofEnabled(aofEnabled);
 
@@ -1121,9 +1180,17 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 }
 
                 RFuture<BatchResult<?>> future = executorService.executeAsync();
-                CompletionStage<T> f = future.handle((res, ex) -> {
+                CompletionStage<T> sf = future.handle((res, ex) -> {
                     if (ex != null) {
-                        throw new CompletionException(ex);
+                        if (ex instanceof RedisNoScriptException) {
+                            MasterSlaveEntry entry = connectionManager.getEntry(key);
+                            return loadScript(entry.getClient(), script).thenCompose(r3 ->
+                                        syncedEval(timeout, syncMode, retry, key, codec, evalCommandType, script, keys, params));
+                        }
+
+                        CompletableFuture<T> ef = new CompletableFuture<>();
+                        ef.completeExceptionally(ex);
+                        return ef;
                     }
                     if (res.getSyncedSlaves() < availableSlaves
                             || res.getSyncedSlaves() > availableSlaves) {
@@ -1132,12 +1199,12 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                     if (getServiceManager().getCfg().isCheckLockSyncedSlaves()
                             && res.getSyncedSlaves() == 0 && availableSlaves > 0) {
                         throw new CompletionException(
-                                new IllegalStateException("None of slaves were synced. Try to increase slavesSyncTimeout setting or set checkLockSyncedSlaves = false."));
+                                new NoSyncedSlavesException("None of slaves were synced. Try to increase slavesSyncTimeout setting or set checkLockSyncedSlaves = false."));
                     }
 
-                    return getNow(result.toCompletableFuture());
-                });
-                return f;
+                    return result;
+                }).thenCompose(f -> f);
+                return sf;
             });
             return resultFuture;
         }).thenCompose(f -> f);

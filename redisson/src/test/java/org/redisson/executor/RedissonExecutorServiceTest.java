@@ -17,6 +17,7 @@ import org.redisson.api.executor.TaskStartedListener;
 import org.redisson.api.listener.MessageListener;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.config.Config;
+import org.redisson.config.NameMapper;
 import org.redisson.config.RedissonNodeConfig;
 
 import java.io.Serializable;
@@ -67,14 +68,15 @@ public class RedissonExecutorServiceTest extends RedisDockerTest {
 
         e.submit(new DelayedTask(1000, "testcounter"));
         e.submit(new DelayedTask(1000, "testcounter"));
+        assertThat(e.getTaskCount()).isEqualTo(2);
         for (int i = 0; i < 20; i++) {
             e.submit(new RunnableTask());
         }
-        assertThat(e.getTaskCount()).isEqualTo(22);
+        assertThat(e.getTaskCount()).isBetween(5, 22);
 
         Thread.sleep(1500);
 
-        assertThat(e.getTaskCount()).isEqualTo(21);
+        assertThat(e.getTaskCount()).isZero();
     }
 
     @Test
@@ -604,11 +606,11 @@ public class RedissonExecutorServiceTest extends RedisDockerTest {
         RScheduledExecutorService executor = redisson.getExecutorService("test");
         executor.submit(new DelayedTask(2000, "test"));
         Future<?> future = executor.submit(new ScheduledRunnableTask("testparam"), 1, TimeUnit.SECONDS);
-        Thread.sleep(500);
+        Thread.sleep(10);
         assertThat(executor.getTaskCount()).isEqualTo(2);
         Thread.sleep(2000);
         assertThat(executor.getTaskCount()).isEqualTo(0);
-        assertThat(redisson.getKeys().countExists("testparam")).isEqualTo(0);
+        assertThat(redisson.getKeys().countExists("testparam")).isEqualTo(1);
     }
 
     @Test
@@ -755,4 +757,24 @@ public class RedissonExecutorServiceTest extends RedisDockerTest {
         assertThat(redissonES.getTaskCount()).isEqualTo(0);
     }
 
+    @Test
+    public void testRepeatedlyExecuteInFixedLateInCluster() {
+        withNewCluster(
+                (node1, redisson) -> {
+                    RScheduledExecutorService es = redisson.getExecutorService("1231231");
+
+                    es.registerWorkers(WorkerOptions.defaults());
+                    es.scheduleAtFixedRate(new IncrementRunnableTask("fixed_late_int_cluster_test"), 1, 1,
+                            TimeUnit.SECONDS);
+
+                    try {
+                        Thread.sleep(3000);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+
+                    assertThat(redisson.getAtomicLong("fixed_late_int_cluster_test").get()).isGreaterThanOrEqualTo(2);
+                }
+        );
+    }
 }

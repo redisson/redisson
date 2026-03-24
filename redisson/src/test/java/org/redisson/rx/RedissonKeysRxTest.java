@@ -1,6 +1,9 @@
 package org.redisson.rx;
 
 import io.reactivex.rxjava3.core.Flowable;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RBucketRx;
@@ -83,4 +86,34 @@ public class RedissonKeysRxTest extends BaseRxTest {
         Assertions.assertEquals(0, sync(redisson.getKeys().delete("test", "map2")).intValue());
     }
 
+    @Test
+    public void testExpire() {
+        Long s = sync(redisson.getKeys().count());
+        assertThat(s).isEqualTo(0);
+
+        sync(redisson.getBucket("expire-test1").set(23, Duration.ofHours(1)));
+        sync(redisson.getBucket("expire-test2").set(23, Duration.ofHours(1)));
+        s = sync(redisson.getKeys().expire(Duration.ofDays(1), new String[]{"expire-test1", "expire-test2"}));
+        assertThat(s).isEqualTo(2);
+
+        long ttl1 = sync(redisson.getBucket("expire-test1").remainTimeToLive());
+        long ttl2 = sync(redisson.getBucket("expire-test2").remainTimeToLive());
+        assertThat(ttl1).isGreaterThan(TimeUnit.HOURS.toMillis(23));
+        assertThat(ttl2).isGreaterThan(TimeUnit.HOURS.toMillis(23));
+
+        long ts = System.currentTimeMillis() + TimeUnit.DAYS.toMillis(2);
+        s = sync(redisson.getKeys().expireAt(Instant.ofEpochMilli(ts), "expire-test1", "expire-test2"));
+        assertThat(s).isEqualTo(2);
+
+        ttl1 = sync(redisson.getBucket("expire-test1").remainTimeToLive());
+        assertThat(ttl1).isGreaterThan(TimeUnit.DAYS.toMillis(1));
+        ttl2 = sync(redisson.getBucket("expire-test2").remainTimeToLive());
+        assertThat(ttl2).isGreaterThan(TimeUnit.DAYS.toMillis(1));
+
+        s = sync(redisson.getKeys().expire(Duration.ofDays(1), "expire-miss"));
+        assertThat(s).isEqualTo(0);
+
+        s = sync(redisson.getKeys().expireAt(Instant.ofEpochMilli(ts), "expire-miss"));
+        assertThat(s).isEqualTo(0);
+    }
 }

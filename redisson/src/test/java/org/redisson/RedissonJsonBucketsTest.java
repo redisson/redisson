@@ -15,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.redisson.RedissonJsonBucketTest.NestedType;
 import static org.redisson.RedissonJsonBucketTest.TestType;
 
-public class RedissonJsonBucketsTest extends DockerRedisStackTest {
+public class RedissonJsonBucketsTest extends RedisDockerTest {
     
     @Test
     public void testSetAndGet() {

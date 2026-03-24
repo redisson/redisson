@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Single;
 
 import java.util.BitSet;
+import java.util.List;
+import org.redisson.api.bitset.BitFieldArgs;
 
 
 /**
@@ -96,6 +98,17 @@ public interface RBitSetRx extends RExpirableRx {
      * @return result value
      */
     Single<Long> incrementAndGetUnsigned(int size, long offset, long increment);
+
+    /**
+     * Executes BITFIELD command with multiple subcommands
+     * and returns result list in the same order.
+     * if ReadMode is Slave And Args is only get commands,
+     * then BITFIELD_RO command will be executed
+     *
+     * @param args - bitfield arguments
+     * @return result values
+     */
+    Single<List<Long>> bitField(BitFieldArgs args);
 
     /**
      * Returns byte number at specified <code>offset</code>
@@ -251,9 +264,9 @@ public interface RBitSetRx extends RExpirableRx {
     /**
      * Executes NOT operation over all bits
      * 
-     * @return void
+     * @return length in bytes of the destination key
      */
-    Completable not();
+    Single<Long> not();
 
     /**
      * Set all bits to one from <code>fromIndex</code> (inclusive) to <code>toIndex</code> (exclusive)
@@ -334,26 +347,66 @@ public interface RBitSetRx extends RExpirableRx {
      * Stores result into this object.
      * 
      * @param bitSetNames - name of stored bitsets
-     * @return void
+     * @return length in bytes of the destination key
      */
-    Completable or(String... bitSetNames);
+    Single<Long> or(String... bitSetNames);
 
     /**
      * Executes AND operation over this object and specified bitsets.
      * Stores result into this object.
      * 
      * @param bitSetNames - name of stored bitsets
-     * @return void
+     * @return length in bytes of the destination key
      */
-    Completable and(String... bitSetNames);
+    Single<Long> and(String... bitSetNames);
 
     /**
      * Executes XOR operation over this object and specified bitsets.
      * Stores result into this object.
      * 
      * @param bitSetNames - name of stored bitsets
-     * @return void
+     * @return length in bytes of the destination key
      */
-    Completable xor(String... bitSetNames);
+    Single<Long> xor(String... bitSetNames);
+
+    /**
+     * Executes bitwise DIFF operation over this object and specified bitsets.
+     * Sets bits that are set in this object but not in any of the other bitsets.
+     * Stores result into this object.
+     *
+     * @param bitSetNames name of stored bitsets
+     * @return length in bytes of the destination key
+     */
+    Single<Long> diff(String... bitSetNames);
+
+    /**
+     * Executes bitwise DIFF1 operation over this object and specified bitsets.
+     * Sets bits that are set in one or more of the other bitsets but not in this object.
+     * Stores result into this object.
+     *
+     * @param bitSetNames name of stored bitsets
+     * @return length in bytes of the destination key
+     */
+    Single<Long> diffInverse(String... bitSetNames);
+
+    /**
+     * Executes bitwise ANDOR operation over this object and specified bitsets.
+     * Sets bits that are set in this object AND also in one or more of the other bitsets.
+     * Stores result into this object.
+     *
+     * @param bitSetNames name of stored bitsets
+     * @return length in bytes of the destination key
+     */
+    Single<Long> andOr(String... bitSetNames);
+
+    /**
+     * Executes bitwise ONE operation over this object and specified bitsets.
+     * Sets bits that are set in exactly one of the provided bitsets.
+     * Stores result into this object.
+     *
+     * @param bitSetNames name of stored bitsets
+     * @return length in bytes of the destination key
+     */
+    Single<Long> setExclusive(String... bitSetNames);
 
 }

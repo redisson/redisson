@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1668,7 +1668,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
             }
 
             cacheManager.getStatBean(this).addPuts(res);
-            for (int i = 0; i < res; i++) {
+            for (long i = 0; i < res; i++) {
                 cacheManager.getStatBean(this).addPutTime((currentNanoTime() - startTime) / res);
             }
         });

@@ -128,10 +128,10 @@ public class RedissonListMultimapTest extends RedisDockerTest {
     public void testSizeInMemory() {
         RListMultimap<String, String> list = redisson.getListMultimap("test");
         list.put("1", "2");
-        assertThat(list.sizeInMemory()).isEqualTo(88);
+        assertThat(list.sizeInMemory()).isEqualTo(32);
 
         list.put("1", "3");
-        assertThat(list.sizeInMemory()).isEqualTo(96);
+        assertThat(list.sizeInMemory()).isEqualTo(40);
     }
 
     @Test

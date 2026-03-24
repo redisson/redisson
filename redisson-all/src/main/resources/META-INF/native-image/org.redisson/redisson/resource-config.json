@@ -1,7 +1,7 @@
 {
   "resources":{
   "includes":[
-    {"pattern":"\\QMETA-INF/MANIFEST.MF\\E"}, 
+    {"pattern":"\\QMETA-INF/MANIFEST.MF\\E"}
   ]},
   "bundles":[]
 }

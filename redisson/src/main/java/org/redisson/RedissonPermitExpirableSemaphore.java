@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -96,9 +96,9 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                 }
                 
                 if (nearestTimeout != null) {
-                    entry.getLatch().tryAcquire(permits, nearestTimeout, TimeUnit.MILLISECONDS);
+                    entry.getLatch().tryAcquire(nearestTimeout, TimeUnit.MILLISECONDS);
                 } else {
-                    entry.getLatch().acquire(permits);
+                    entry.getLatch().acquire();
                 }
             }
         } finally {
@@ -279,7 +279,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                 return CompletableFuture.completedFuture(ids);
             }
 
-            if (entry.getLatch().tryAcquire(permits)) {
+            if (entry.getLatch().tryAcquire()) {
                 return acquireAsync(permits, entry, leaseTime, timeUnit);
             }
 
@@ -370,7 +370,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
 
         return getServiceManager().execute(() -> {
             RFuture<List<String>> future = tryAcquireAsync(ids, timeoutDate);
-            return commandExecutor.handleNoSync(future, () -> releaseAsync(ids));
+            return commandExecutor.handleNoSync(future, e -> releaseAsync(ids));
         });
     }
 
@@ -502,9 +502,9 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                 current = System.currentTimeMillis();
 
                 if (nearestTimeout != null) {
-                    entry.getLatch().tryAcquire(permits, Math.min(time, nearestTimeout), TimeUnit.MILLISECONDS);
+                    entry.getLatch().tryAcquire(Math.min(time, nearestTimeout), TimeUnit.MILLISECONDS);
                 } else {
-                    entry.getLatch().tryAcquire(permits, time, TimeUnit.MILLISECONDS);
+                    entry.getLatch().tryAcquire(time, TimeUnit.MILLISECONDS);
                 }
                 
                 long elapsed = System.currentTimeMillis() - current;

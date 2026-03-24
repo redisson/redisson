@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,7 +66,11 @@ public class CompositeAsyncIterator<T> implements AsyncIterator<T> {
     @Override
     public CompletionStage<T> next() {
         CompletableFuture<T> result = new CompletableFuture<>();
-        hasNext().thenAccept(v1 -> {
+        hasNext().whenComplete((v1, e) -> {
+            if (e != null) {
+                result.completeExceptionally(e);
+                return;
+            }
             if (!v1) {
                 result.completeExceptionally(new NoSuchElementException());
                 return;

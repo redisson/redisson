@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.redisson.renewal;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.misc.AsyncIteratorUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,7 +80,7 @@ abstract class RenewalTask implements TimerTask {
             return CompletableFuture.completedFuture(null);
         }
 
-        if (!executor.getServiceManager().getCfg().isClusterConfig()) {
+        if (!executor.getServiceManager().isClusterSetup()) {
             return renew(name2entry.keySet().iterator(), chunkSize);
         }
 
@@ -87,12 +88,8 @@ abstract class RenewalTask implements TimerTask {
     }
 
     private CompletionStage<Void> renewSlots(Iterator<Set<String>> iter, int chunkSize) {
-        if (!iter.hasNext()) {
-            return CompletableFuture.completedFuture(null);
-        }
-
-        CompletionStage<Void> c = renew(iter.next().iterator(), chunkSize);
-        return c.thenCompose(r -> renewSlots(iter, chunkSize));
+        return AsyncIteratorUtils.forEachAsync(iter,
+                names -> renew(names.iterator(), chunkSize));
     }
 
     abstract CompletionStage<Void> renew(Iterator<String> iter, int chunkSize);
@@ -110,7 +107,7 @@ abstract class RenewalTask implements TimerTask {
         if (threadId == null || task.hasNoThreads()) {
             name2entry.remove(name);
 
-            if (executor.getServiceManager().getCfg().isClusterConfig()) {
+            if (executor.getServiceManager().isClusterSetup()) {
                 int slot = executor.getConnectionManager().calcSlot(name);
                 slot2names.computeIfPresent(slot, (k, v) -> {
                     v.remove(name);
@@ -147,7 +144,7 @@ abstract class RenewalTask implements TimerTask {
     }
 
     void addSlotName(String rawName) {
-        if (!executor.getServiceManager().getCfg().isClusterConfig()) {
+        if (!executor.getServiceManager().isClusterSetup()) {
             return;
         }
 

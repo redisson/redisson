@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,17 @@
 package org.redisson.api;
 
 import org.redisson.api.search.SpellcheckOptions;
+import org.redisson.api.search.aggregate.AggregationEntry;
 import org.redisson.api.search.aggregate.AggregationOptions;
 import org.redisson.api.search.aggregate.AggregationResult;
+import org.redisson.api.search.aggregate.IterableAggregationOptions;
 import org.redisson.api.search.index.IndexInfo;
 import org.redisson.api.search.index.IndexOptions;
 import org.redisson.api.search.index.FieldIndex;
+import org.redisson.api.search.query.hybrid.HybridSearchResult;
 import org.redisson.api.search.query.QueryOptions;
 import org.redisson.api.search.query.SearchResult;
+import org.redisson.api.search.query.hybrid.HybridQueryArgs;
 
 import java.util.List;
 import java.util.Map;
@@ -40,7 +44,7 @@ public interface RSearch extends RSearchAsync {
      * <p>
      * Code example:
      * <pre>
-     *             search.create("idx", IndexOptions.defaults()
+     *             search.createIndex("idx", IndexOptions.defaults()
      *                                     .on(IndexType.HASH)
      *                                     .prefix(Arrays.asList("doc:")),
      *                                     FieldIndex.text("t1"),
@@ -70,6 +74,28 @@ public interface RSearch extends RSearchAsync {
     SearchResult search(String indexName, String query, QueryOptions options);
 
     /**
+     * Performs hybrid search combining text search and vector similarity
+     * using the FT.HYBRID command.
+     * <p>
+     * Requires Redis Stack 8.4.0 or higher.
+     * <p>
+     * Usage example:
+     * <pre>
+     * SearchResult result = search.hybridSearch("myIndex",
+     *     HybridQueryArgs.query("laptop")
+     *         .vectorSimilarity("@embedding", "$vec")
+     *         .nearestNeighbors(10)
+     *         .params(Map.of("vec", vectorBytes))
+     *         .limit(0, 10));
+     * </pre>
+     *
+     * @param indexName the name of the index
+     * @param args hybrid query arguments
+     * @return search result
+     */
+    HybridSearchResult hybridSearch(String indexName, HybridQueryArgs args);
+
+    /**
      * Executes aggregation over defined index using defined query.
      * <p>
      * Code example:
@@ -84,6 +110,22 @@ public interface RSearch extends RSearchAsync {
      * @return aggregation result
      */
     AggregationResult aggregate(String indexName, String query, AggregationOptions options);
+
+    /**
+     * Executes aggregation over defined index using defined query.
+     * <p>
+     * Code example:
+     * <pre>
+     * Iterable<AggregationEntry> r = s.aggregate("idx", "*", IterableAggregationOptions.defaults()
+     *                                                                 .load("t1", "t2"));
+     * </pre>
+     *
+     * @param indexName index name
+     * @param query query value
+     * @param options iterable aggregationOptions options
+     * @return iterable aggregation result
+     */
+    Iterable<AggregationEntry> aggregate(String indexName, String query, IterableAggregationOptions options);
 
     /**
      * Adds alias to defined index name
@@ -210,6 +252,14 @@ public interface RSearch extends RSearchAsync {
      * @return index info
      */
     IndexInfo info(String indexName);
+
+    /**
+     * Returns boolean value indicating whether index exists
+     *
+     * @param indexName index name
+     * @return boolean value
+     */
+    boolean hasIndex(String indexName);
 
     /**
      * Executes spell checking by defined index name and query.

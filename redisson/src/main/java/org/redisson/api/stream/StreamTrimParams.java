@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,16 +15,15 @@
  */
 package org.redisson.api.stream;
 
-import org.redisson.api.StreamMessageId;
-
 /**
  *
  * @author Nikita Koksharov
  *
  */
-public final class StreamTrimParams implements StreamTrimStrategyArgs<StreamTrimArgs>,
-                                         StreamTrimArgs,
-                                         StreamTrimLimitArgs<StreamTrimArgs> {
+public final class StreamTrimParams extends BaseReferencesParams<StreamTrimLimitArgs<StreamTrimArgs>>
+                                        implements StreamTrimStrategyArgs<StreamTrimArgs>,
+                                            StreamTrimArgs,
+                                            StreamTrimReferencesArgs<StreamTrimArgs> {
 
     Integer maxLen;
     StreamMessageId minId;
@@ -39,13 +38,13 @@ public final class StreamTrimParams implements StreamTrimStrategyArgs<StreamTrim
     }
 
     @Override
-    public StreamTrimLimitArgs<StreamTrimArgs> maxLen(int threshold) {
+    public StreamTrimReferencesArgs<StreamTrimArgs> maxLen(int threshold) {
         this.maxLen = threshold;
         return this;
     }
 
     @Override
-    public StreamTrimLimitArgs<StreamTrimArgs> minId(StreamMessageId messageId) {
+    public StreamTrimReferencesArgs<StreamTrimArgs> minId(StreamMessageId messageId) {
         this.minId = messageId;
         return this;
     }

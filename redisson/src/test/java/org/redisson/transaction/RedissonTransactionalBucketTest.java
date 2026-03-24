@@ -6,6 +6,7 @@ import org.redisson.RedisDockerTest;
 import org.redisson.Redisson;
 import org.redisson.api.*;
 import org.redisson.config.Config;
+import org.redisson.config.NameMapper;
 
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -74,7 +75,8 @@ public class RedissonTransactionalBucketTest extends RedisDockerTest {
         assertThat(bucket.get()).isEqualTo("234");
 
         transaction.commit();
-        
+
+        redisson.getKeys().deleteByPattern("*redisson_unlock_latch*");
         assertThat(redisson.getKeys().count()).isEqualTo(1);
         assertThat(b.get()).isEqualTo("234");
     }
@@ -133,7 +135,8 @@ public class RedissonTransactionalBucketTest extends RedisDockerTest {
         assertThat(bucket.getAndSet("324")).isEqualTo("0");
         
         transaction.commit();
-        
+
+        redisson.getKeys().deleteByPattern("*redisson_unlock_latch*");
         assertThat(redisson.getKeys().count()).isEqualTo(1);
         assertThat(b.get()).isEqualTo("324");
     }
@@ -151,7 +154,8 @@ public class RedissonTransactionalBucketTest extends RedisDockerTest {
         assertThat(bucket.get()).isEqualTo("232");
         
         transaction.commit();
-        
+
+        redisson.getKeys().deleteByPattern("*redisson_unlock_latch*");
         assertThat(redisson.getKeys().count()).isEqualTo(1);
         assertThat(b.get()).isEqualTo("232");
     }
@@ -169,7 +173,8 @@ public class RedissonTransactionalBucketTest extends RedisDockerTest {
         assertThat(bucket.trySet("43")).isFalse();
         
         transaction.commit();
-        
+
+        redisson.getKeys().deleteByPattern("*redisson_unlock_latch*");
         assertThat(redisson.getKeys().count()).isEqualTo(1);
         assertThat(b.get()).isEqualTo("324");
     }
@@ -189,7 +194,8 @@ public class RedissonTransactionalBucketTest extends RedisDockerTest {
         assertThat(set.getAndDelete()).isNull();
         
         transaction.commit();
-        
+
+        redisson.getKeys().deleteByPattern("*redisson_unlock_latch*");
         assertThat(redisson.getKeys().count()).isEqualTo(0);
         assertThat(m.get()).isNull();
     }
@@ -207,11 +213,31 @@ public class RedissonTransactionalBucketTest extends RedisDockerTest {
         assertThat(b.get()).isEqualTo("1234");
         
         transaction.rollback();
-        
+
+        redisson.getKeys().deleteByPattern("*redisson_unlock_latch*");
         assertThat(redisson.getKeys().count()).isEqualTo(1);
         
         assertThat(b.get()).isEqualTo("1234");
     }
 
+    @Test
+    public void testRollback2() {
+        String key = "TRANS_TEST";
+        RBucket<Object> b = redisson.getBucket(key);
+        RTransaction transaction = redisson.createTransaction(TransactionOptions.defaults());
+
+        redisson.getKeys().delete(key);
+
+        RBucket<String> bucket = transaction.getBucket(key);
+        bucket.set("1");
+        bucket.set("2");
+        bucket.set("3");
+        bucket.set("4");
+        bucket.set("5");
+        bucket.setIfAbsent("LAST_VALUE");
+        transaction.rollback();
+
+        assertThat(b.get()).isNull();
+    }
     
 }

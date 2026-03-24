@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ public class RoundRobinLoadBalancer extends BaseLoadBalancer {
             return null;
         }
 
-        int ind = Math.abs(index.incrementAndGet() % clientsCopy.size());
+        int ind = Math.floorMod(index.incrementAndGet(), clientsCopy.size());
         return clientsCopy.get(ind);
     }
 

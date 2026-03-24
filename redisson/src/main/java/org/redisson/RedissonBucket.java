@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,16 +18,21 @@ package org.redisson;
 import org.redisson.api.ObjectListener;
 import org.redisson.api.RBucket;
 import org.redisson.api.RFuture;
+import org.redisson.api.bucket.*;
 import org.redisson.api.listener.SetObjectListener;
 import org.redisson.api.listener.TrackingListener;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.CompletableFutureWrapper;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -414,4 +419,153 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
     public RFuture<Long> findCommonLengthAsync(String name) {
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.LCS, getRawName(), mapName(name), "LEN");
     }
+
+    @Override
+    public String getDigest() {
+        return get(getDigestAsync());
+    }
+
+    @Override
+    public RFuture<String> getDigestAsync() {
+        return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.DIGEST, getRawName());
+    }
+
+    @Override
+    public boolean compareAndSet(CompareAndSetArgs<V> args) {
+        return get(compareAndSetAsync(args));
+    }
+
+    @Override
+    public RFuture<Boolean> compareAndSetAsync(CompareAndSetArgs<V> args) {
+        CompareAndSetParams<V> params = (CompareAndSetParams<V>) args;
+
+        Objects.requireNonNull(params, "Args can't be null");
+        Objects.requireNonNull(params.getNewValue(), "New value must be set");
+
+        ConditionType conditionType = params.getConditionType();
+
+        switch (conditionType) {
+            case EXPECTED:
+                return compareAndSetAsync(params, params.getExpectedValue(), "E");
+            case UNEXPECTED:
+                return compareAndSetAsync(params, params.getUnexpectedValue(), "U");
+            case EXPECTED_DIGEST:
+                return compareAndSetDigestAsync(params, params.getExpectedDigest(), "IFDEQ");
+            case UNEXPECTED_DIGEST:
+                return compareAndSetDigestAsync(params, params.getUnexpectedDigest(), "IFDNE");
+            default:
+                throw new IllegalStateException("Unknown condition type: " + conditionType);
+        }
+    }
+
+    private RFuture<Boolean> compareAndSetAsync(CompareAndSetParams<V> args, V value, String cond) {
+        List<Object> params = new ArrayList<>();
+        if (value == null) {
+            cond += "N";
+        }
+        params.add(cond);
+        params.add(encode(value));
+        params.add(encode(args.getNewValue()));
+        if (args.getTimeToLive() != null) {
+            params.add("pexpire");
+            params.add(args.getTimeToLive().toMillis());
+        } else if (args.getExpireAt() != null) {
+            params.add("pexpireat");
+            params.add(args.getExpireAt().toEpochMilli());
+        } else {
+            params.add("");
+        }
+
+        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
+                  "local cv = redis.call('get', KEYS[1]) " +
+                        "if (ARGV[1] == 'E' and cv == ARGV[2]) " +
+                            "or (ARGV[1] == 'EN' and cv == false) " +
+                            "or (ARGV[1] == 'UN' and cv ~= false) " +
+                            "or (ARGV[1] == 'U' and cv ~= ARGV[2]) then " +
+
+                            "redis.call('set', KEYS[1], ARGV[3]) " +
+
+                            "if #ARGV[4] > 0 then " +
+                                "redis.call(ARGV[4], KEYS[1], ARGV[5]) " +
+                            "end " +
+                            "return 1 " +
+                        "end " +
+                        "return 0 ",
+                Collections.singletonList(getName()),
+                params.toArray());
+    }
+
+    private RFuture<Boolean> compareAndSetDigestAsync(CompareAndSetParams<V> args, String value, String command) {
+        V newValue = args.getNewValue();
+
+        List<Object> params = new ArrayList<>();
+        params.add(getName());
+        params.add(encode(newValue));
+        params.add(command);
+        params.add(value);
+
+        if (args.getTimeToLive() != null) {
+            params.add("PX");
+            params.add(args.getTimeToLive().toMillis());
+        } else if (args.getExpireAt() != null) {
+            params.add("PXAT");
+            params.add(args.getExpireAt().toEpochMilli());
+        }
+
+        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.SET_BOOLEAN, params.toArray());
+    }
+
+    @Override
+    public boolean compareAndDelete(CompareAndDeleteArgs<V> args) {
+        return get(compareAndDeleteAsync(args));
+    }
+
+    @Override
+    public RFuture<Boolean> compareAndDeleteAsync(CompareAndDeleteArgs<V> args) {
+        CompareAndDeleteParams<V> params = (CompareAndDeleteParams<V>) args;
+
+        Objects.requireNonNull(params, "Args can't be null");
+
+        ConditionType conditionType = params.getConditionType();
+
+        switch (conditionType) {
+            case EXPECTED:
+                return compareAndDeleteExpectedAsync(params.getValue());
+            case UNEXPECTED:
+                return compareAndDeleteUnexpectedAsync(params.getValue());
+            case EXPECTED_DIGEST:
+                return commandExecutor.writeAsync(getName(), codec, RedisCommands.DELEX, getName(), "IFDEQ", params.getDigest());
+            case UNEXPECTED_DIGEST:
+                return commandExecutor.writeAsync(getName(), codec, RedisCommands.DELEX, getName(), "IFDNE", params.getDigest());
+            default:
+                throw new IllegalArgumentException("Unknown mode: " + params.getConditionType());
+        }
+    }
+
+    private RFuture<Boolean> compareAndDeleteExpectedAsync(V expected) {
+        String script =
+                "local currValue = redis.call('get', KEYS[1]) " +
+                "if currValue == ARGV[1] then " +
+                    "redis.call('del', KEYS[1]) " +
+                    "return 1 " +
+                "end " +
+                "return 0 ";
+        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
+                script,
+                Collections.singletonList(getName()), encode(expected));
+    }
+
+    private RFuture<Boolean> compareAndDeleteUnexpectedAsync(V unexpected) {
+        String script =
+                "local currValue = redis.call('get', KEYS[1]) " +
+                "if currValue ~= false and currValue ~= ARGV[1] then " +
+                    "redis.call('del', KEYS[1]) " +
+                    "return 1 " +
+                "end " +
+                "return 0 ";
+        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
+                script,
+                Collections.singletonList(getName()), encode(unexpected));
+    }
+
 }

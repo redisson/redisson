@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.redisson</groupId>
         <artifactId>redisson-tomcat</artifactId>
-        <version>3.45.2-SNAPSHOT</version>
+        <version>4.3.1-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
 
@@ -21,19 +21,19 @@
         <dependency>
             <groupId>org.apache.tomcat.embed</groupId>
             <artifactId>tomcat-embed-core</artifactId>
-            <version>11.0.3</version>
+            <version>11.0.18</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.tomcat.embed</groupId>
             <artifactId>tomcat-embed-jasper</artifactId>
-            <version>11.0.2</version>
+            <version>11.0.18</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.tomcat</groupId>
             <artifactId>tomcat-jasper</artifactId>
-            <version>11.0.2</version>
+            <version>11.0.18</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>

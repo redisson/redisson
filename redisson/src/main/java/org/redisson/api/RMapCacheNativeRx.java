@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,15 @@ package org.redisson.api;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Single;
+import java.time.Instant;
 import org.redisson.api.map.MapWriter;
+import org.redisson.api.map.PutArgs;
 
 import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 /**
  * Map-based cache with ability to set TTL per entry.
@@ -58,6 +62,20 @@ public interface RMapCacheNativeRx<K, V> extends RMapRx<K, V>, RDestroyable {
      * <p>
      * If the map previously contained a mapping for
      * the key, the old value is replaced by the specified value.
+     *
+     * @param key - map key
+     * @param value - map value
+     * @param time - time expire date
+     * @return previous associated value
+     */
+    Maybe<V> put(K key, V value, Instant time);
+
+    /**
+     * Stores value mapped by key with specified time to live.
+     * Entry expires after specified time to live.
+     * <p>
+     * If the map previously contained a mapping for
+     * the key, the old value is replaced by the specified value.
      * <p>
      * Works faster than usual {@link #put(Object, Object, Duration)}
      * as it not returns previous value.
@@ -71,6 +89,25 @@ public interface RMapCacheNativeRx<K, V> extends RMapRx<K, V>, RDestroyable {
      *         <code>false</code> if key already exists in the hash and the value was updated.
      */
     Single<Boolean> fastPut(K key, V value, Duration ttl);
+
+    /**
+     * Stores value mapped by key with specified time to live.
+     * Entry expires after specified time to live.
+     * <p>
+     * If the map previously contained a mapping for
+     * the key, the old value is replaced by the specified value.
+     * <p>
+     * Works faster than usual {@link #put(Object, Object, Duration)}
+     * as it not returns previous value.
+     *
+     * @param key - map key
+     * @param value - map value
+     * @param time - time expire date
+     *
+     * @return <code>true</code> if key is a new key in the hash and value was set.
+     *         <code>false</code> if key already exists in the hash and the value was updated.
+     */
+    Single<Boolean> fastPut(K key, V value, Instant time);
 
     /**
      * If the specified key is not already associated
@@ -94,6 +131,49 @@ public interface RMapCacheNativeRx<K, V> extends RMapRx<K, V>, RDestroyable {
      * <p>
      * Stores value mapped by key with specified time to live.
      * Entry expires after specified time to live.
+     *
+     * @param key - map key
+     * @param value - map value
+     * @param time - time expire date
+     *
+     * @return current associated value
+     */
+    Maybe<V> putIfAbsent(K key, V value, Instant time);
+
+    /**
+     * Stores the specified {@code value} mapped by {@code key}
+     * only if mapping already exists.
+     * <p>
+     * Specified time to live starts from the moment this method call was completed.
+     *
+     * @param key - map key
+     * @param value - map value
+     * @param ttl - time to live
+     * @return previous associated value
+     *         or {@code null} if key doesn't exist
+     */
+    Maybe<V> putIfExist(K key, V value, Duration ttl);
+
+    /**
+     * Stores the specified {@code value} mapped by {@code key}
+     * only if mapping already exists.
+     * <p>
+     * Entry expires at specified instant.
+     *
+     * @param key - map key
+     * @param value - map value
+     * @param time - expiration instant
+     * @return previous associated value
+     *         or {@code null} if key doesn't exist
+     */
+    Maybe<V> putIfExist(K key, V value, Instant time);
+
+    /**
+     * If the specified key is not already associated
+     * with a value, associate it with the given value.
+     * <p>
+     * Stores value mapped by key with specified time to live.
+     * Entry expires after specified time to live.
      * <p>
      * Works faster than usual {@link #putIfAbsent(Object, Object, Duration)}
      * as it not returns previous value.
@@ -107,6 +187,25 @@ public interface RMapCacheNativeRx<K, V> extends RMapRx<K, V>, RDestroyable {
      *         <code>false</code> if key already exists in the hash
      */
     Single<Boolean> fastPutIfAbsent(K key, V value, Duration ttl);
+
+    /**
+     * If the specified key is not already associated
+     * with a value, associate it with the given value.
+     * <p>
+     * Stores value mapped by key with specified time to live.
+     * Entry expires after specified time to live.
+     * <p>
+     * Works faster than usual {@link #putIfAbsent(Object, Object, Duration)}
+     * as it not returns previous value.
+     *
+     * @param key - map key
+     * @param value - map value
+     * @param time - time expire date
+     *
+     * @return <code>true</code> if key is a new key in the hash and value was set.
+     *         <code>false</code> if key already exists in the hash
+     */
+    Single<Boolean> fastPutIfAbsent(K key, V value, Instant time);
 
     /**
      * Remaining time to live of map entry associated with a <code>key</code>.
@@ -130,16 +229,45 @@ public interface RMapCacheNativeRx<K, V> extends RMapRx<K, V>, RDestroyable {
     Single<Map<K, Long>> remainTimeToLive(Set<K> keys);
 
     /**
-     * Associates the specified <code>value</code> with the specified <code>key</code>
-     * in batch.
-     * <p>
-     * If {@link MapWriter} is defined then new map entries will be stored in write-through mode.
+     * Use {@link #putAll(PutArgs)} method instead.
      *
      * @param map - mappings to be stored in this map
      * @param ttl - time to live for all key\value entries.
      *              If <code>0</code> then stores infinitely.
      */
+    @Deprecated
     Completable putAll(java.util.Map<? extends K, ? extends V> map, Duration ttl);
+
+    /**
+     * Stores map entries specified in the {@code args} parameter.
+     * <p>
+     * Requires <b>Redis 8.0.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
+     * <p>
+     * If {@link MapWriter} is defined then new map entries will be stored in write-through mode.
+     *
+     * @param args put arguments
+     */
+    Completable putAll(PutArgs<K, V> args);
+
+    /**
+     * Stores the specified entries only if all specified keys already exist.
+     * <p>
+     * Requires <b>Redis 8.0.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
+     *
+     * @param args put arguments
+     * @return {@code true} if all entries were set, {@code false} otherwise
+     */
+    Single<Boolean> putIfAllKeysExist(PutArgs<K, V> args);
+
+    /**
+     * Stores the specified entries only if none of the specified keys exist.
+     * <p>
+     * Requires <b>Redis 8.0.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
+     *
+     * @param args put arguments
+     * @return {@code true} if all entries were set, {@code false} otherwise
+     */
+    Single<Boolean> putIfAllKeysAbsent(PutArgs<K, V> args);
 
     /**
      * Clears an expiration timeout or date of specified entry by key.
@@ -182,6 +310,22 @@ public interface RMapCacheNativeRx<K, V> extends RMapRx<K, V>, RDestroyable {
     Single<Boolean> expireEntry(K key, Duration ttl);
 
     /**
+     * Updates time to live of specified entry by key.
+     * Entry expires when specified time to live was reached.
+     * <p>
+     * Returns <code>false</code> if entry already expired or doesn't exist,
+     * otherwise returns <code>true</code>.
+     *
+     * @param key map key
+     * @param time time expire date
+     * <p>
+     *
+     * @return returns <code>false</code> if entry already expired or doesn't exist,
+     *         otherwise returns <code>true</code>.
+     */
+    Single<Boolean> expireEntry(K key, Instant time);
+
+    /**
      * Sets time to live of specified entry by key.
      * If these parameters weren't set before.
      * Entry expires when specified time to live was reached.
@@ -202,6 +346,23 @@ public interface RMapCacheNativeRx<K, V> extends RMapRx<K, V>, RDestroyable {
     Single<Boolean> expireEntryIfNotSet(K key, Duration ttl);
 
     /**
+     * Sets time to live of specified entry by key.
+     * If these parameters weren't set before.
+     * Entry expires when specified time to live was reached.
+     * <p>
+     * Returns <code>false</code> if entry already has expiration time or doesn't exist,
+     * otherwise returns <code>true</code>.
+     *
+     * @param key map key
+     * @param time time expire date
+     * <p>
+     *
+     * @return returns <code>false</code> if entry already has expiration time or doesn't exist,
+     *         otherwise returns <code>true</code>.
+     */
+    Single<Boolean> expireEntryIfNotSet(K key, Instant time);
+
+    /**
      * Sets time to live of specified entry by key only if it's greater than timeout set before.
      * Entry expires when specified time to live was reached.
      * <p>
@@ -219,6 +380,23 @@ public interface RMapCacheNativeRx<K, V> extends RMapRx<K, V>, RDestroyable {
      *         otherwise returns <code>true</code>.
      */
     Single<Boolean> expireEntryIfGreater(K key, Duration ttl);
+
+
+    /**
+     * Sets time to live of specified entry by key only if it's greater than timeout set before.
+     * Entry expires when specified time to live was reached.
+     * <p>
+     * Returns <code>false</code> if entry already has expiration time or doesn't exist,
+     * otherwise returns <code>true</code>.
+     *
+     * @param key map key
+     * @param time time expire date
+     * <p>
+     *
+     * @return returns <code>false</code> if entry already has expiration time or doesn't exist,
+     *         otherwise returns <code>true</code>.
+     */
+    Single<Boolean> expireEntryIfGreater(K key, Instant time);
 
     /**
      * Sets time to live of specified entry by key only if it's less than timeout set before.
@@ -240,6 +418,22 @@ public interface RMapCacheNativeRx<K, V> extends RMapRx<K, V>, RDestroyable {
     Single<Boolean> expireEntryIfLess(K key, Duration ttl);
 
     /**
+     * Sets time to live of specified entry by key only if it's less than timeout set before.
+     * Entry expires when specified time to live was reached.
+     * <p>
+     * Returns <code>false</code> if entry already has expiration time or doesn't exist,
+     * otherwise returns <code>true</code>.
+     *
+     * @param key map key
+     * @param time time expire date
+     * <p>
+     *
+     * @return returns <code>false</code> if entry already has expiration time or doesn't exist,
+     *         otherwise returns <code>true</code>.
+     */
+    Single<Boolean> expireEntryIfLess(K key, Instant time);
+
+    /**
      * Updates time to live of specified entries by keys.
      * Entries expires when specified time to live was reached.
      * <p>
@@ -255,6 +449,20 @@ public interface RMapCacheNativeRx<K, V> extends RMapRx<K, V>, RDestroyable {
      * @return amount of updated entries.
      */
     Single<Integer> expireEntries(Set<K> keys, Duration ttl);
+
+    /**
+     * Updates time to live of specified entries by keys.
+     * Entries expires when specified time to live was reached.
+     * <p>
+     * Returns amount of updated entries.
+     *
+     * @param keys map keys
+     * @param time time expire date for key\value entries.
+     * <p>
+     *
+     * @return amount of updated entries.
+     */
+    Single<Integer> expireEntries(Set<K> keys, Instant time);
 
     /**
      * Sets time to live of specified entries by keys only if it's greater than timeout set before.
@@ -274,6 +482,20 @@ public interface RMapCacheNativeRx<K, V> extends RMapRx<K, V>, RDestroyable {
     Single<Integer> expireEntriesIfGreater(Set<K> keys, Duration ttl);
 
     /**
+     * Sets time to live of specified entries by keys only if it's greater than timeout set before.
+     * Entries expire when specified time to live was reached.
+     * <p>
+     * Returns amount of updated entries.
+     *
+     * @param keys map keys
+     * @param time time expire date for key\value entry.
+     * <p>
+     *
+     * @return amount of updated entries.
+     */
+    Single<Integer> expireEntriesIfGreater(Set<K> keys, Instant time);
+
+    /**
      * Sets time to live of specified entries by keys only if it's less than timeout set before.
      * Entries expire when specified time to live was reached.
      * <p>
@@ -289,6 +511,20 @@ public interface RMapCacheNativeRx<K, V> extends RMapRx<K, V>, RDestroyable {
      * @return amount of updated entries.
      */
     Single<Integer> expireEntriesIfLess(Set<K> keys, Duration ttl);
+
+    /**
+     * Sets time to live of specified entries by keys only if it's less than timeout set before.
+     * Entries expire when specified time to live was reached.
+     * <p>
+     * Returns amount of updated entries.
+     *
+     * @param keys map keys
+     * @param time time expire date for key\value entry.
+     * <p>
+     *
+     * @return amount of updated entries.
+     */
+    Single<Integer> expireEntriesIfLess(Set<K> keys, Instant time);
 
     /**
      * Sets time to live of specified entries by keys.
@@ -309,6 +545,21 @@ public interface RMapCacheNativeRx<K, V> extends RMapRx<K, V>, RDestroyable {
     Single<Integer> expireEntriesIfNotSet(Set<K> keys, Duration ttl);
 
     /**
+     * Sets time to live of specified entries by keys.
+     * If these parameters weren't set before.
+     * Entries expire when specified time to live was reached.
+     * <p>
+     * Returns amount of updated entries.
+     *
+     * @param keys map keys
+     * @param time time expire date for key\value entry.
+     * <p>
+     *
+     * @return amount of updated entries.
+     */
+    Single<Integer> expireEntriesIfNotSet(Set<K> keys, Instant time);
+
+    /**
      * Adds object event listener
      *
      * @see org.redisson.api.listener.TrackingListener
@@ -323,4 +574,59 @@ public interface RMapCacheNativeRx<K, V> extends RMapRx<K, V>, RDestroyable {
      */
     Single<Integer> addListener(ObjectListener listener);
 
+    /**
+     * If the specified key is not already associated
+     * with a value, attempts to compute its value using the given mapping function and enters it into this map .
+     * <p>
+     * Stores value mapped by key with specified time to live.
+     * Entry expires after specified time to live.
+     *
+     * @param key - map key
+     * @param ttl - time to live for key\value entry.
+     *              If <code>0</code> then stores infinitely.
+     * @param mappingFunction the mapping function to compute a value
+     * @return current associated value
+     */
+    Maybe<V> computeIfAbsent(K key, Duration ttl, Function<? super K, ? extends V> mappingFunction);
+
+    /**
+     * If the specified key is not already associated
+     * with a value, attempts to compute its value using the given mapping function and enters it into this map .
+     * <p>
+     * Stores value mapped by key with specified time to live.
+     * Entry expires after specified time to live.
+     *
+     * @param key - map key
+     * @param time - time expire date
+     * @param mappingFunction the mapping function to compute a value
+     * @return current associated value
+     */
+    Maybe<V> computeIfAbsent(K key, Instant time, Function<? super K, ? extends V> mappingFunction);
+
+    /**
+     * Computes a new mapping for the specified key and its current mapped value.
+     * <p>
+     * Stores value mapped by key with specified time to live.
+     * Entry expires after specified time to live.
+     *
+     * @param key - map key
+     * @param ttl - time to live for key\value entry.
+     *              If <code>0</code> then stores infinitely.
+     * @param remappingFunction - function to compute a value
+     * @return the new value associated with the specified key, or {@code null} if none
+     */
+    Maybe<V> compute(K key, Duration ttl, BiFunction<? super K, ? super V, ? extends V> remappingFunction);
+
+    /**
+     * Computes a new mapping for the specified key and its current mapped value.
+     * <p>
+     * Stores value mapped by key with specified time to live.
+     * Entry expires after specified time to live.
+     *
+     * @param key - map key
+     * @param time - time expire date
+     * @param remappingFunction - function to compute a value
+     * @return the new value associated with the specified key, or {@code null} if none
+     */
+    Maybe<V> compute(K key, Instant time, BiFunction<? super K, ? super V, ? extends V> remappingFunction);
 }

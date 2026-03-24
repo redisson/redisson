@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.redisson</groupId>
         <artifactId>redisson-parent</artifactId>
-        <version>3.45.2-SNAPSHOT</version>
+        <version>4.3.1-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
 
@@ -41,13 +41,13 @@
         <dependency>
             <groupId>org.mybatis</groupId>
             <artifactId>mybatis</artifactId>
-            <version>3.5.16</version>
+            <version>3.5.19</version>
             <optional>true</optional>
         </dependency>
 
         <dependency>
             <groupId>org.testcontainers</groupId>
-            <artifactId>junit-jupiter</artifactId>
+            <artifactId>testcontainers-junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
 

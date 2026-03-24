@@ -1,7 +1,8 @@
 package org.redisson;
 
 import org.junit.jupiter.api.Test;
-import org.redisson.api.NameMapper;
+import org.redisson.api.bucket.SetArgs;
+import org.redisson.config.NameMapper;
 import org.redisson.api.RBucket;
 import org.redisson.api.RBuckets;
 import org.redisson.api.RedissonClient;
@@ -9,6 +10,8 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.config.Config;
 import org.redisson.config.ReadMode;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -186,6 +189,76 @@ public class RedissonBucketsTest extends RedisDockerTest {
 
         RBucket<Object> r3 = redisson.getBucket("41");
         assertThat(r3.get()).isEqualTo(2);
+    }
+
+    @Test
+    public void testSetIfAllKeysExist() {
+        redisson.getBucket("12").set("341");
+        redisson.getBucket("23").set("234");
+
+        Map<String, Integer> buckets = new HashMap<>();
+        buckets.put("12", 1);
+        buckets.put("41", 2);
+        assertThat(redisson.getBuckets().setIfAllKeysExist(SetArgs.entries(buckets))).isFalse();
+
+        redisson.getBucket("41").set("123");
+        Instant s = Instant.now().plusSeconds(10);
+        assertThat(redisson.getBuckets().setIfAllKeysExist(SetArgs.entries(buckets)
+                .expireAt(s))).isTrue();
+
+        Map<String, Integer> buckets2 = new HashMap<>();
+        buckets2.put("41", 3);
+        buckets2.put("23", 4);
+        assertThat(redisson.getBuckets().setIfAllKeysExist(SetArgs.entries(buckets2)
+                .timeToLive(Duration.ofSeconds(2)))).isTrue();
+
+        assertThat(redisson.getBucket("41").remainTimeToLive()).isLessThan(2010);
+        assertThat(redisson.getBucket("12").getExpireTime()).isEqualTo(s.toEpochMilli());
+
+        assertThat(redisson.getBucket("41").get()).isEqualTo(3);
+        assertThat(redisson.getBucket("23").get()).isEqualTo(4);
+
+        buckets2.put("12", 5);
+        assertThat(redisson.getBuckets().setIfAllKeysExist(SetArgs.entries(buckets2)
+                .keepTTL())).isTrue();
+        assertThat(redisson.getBucket("12").get()).isEqualTo(5);
+    }
+
+    @Test
+    public void testSetIfAllKeysAbsent() {
+        redisson.getBucket("12").set("341");
+
+        Map<String, Integer> buckets = new HashMap<>();
+        buckets.put("12", 1);
+        buckets.put("41", 2);
+        assertThat(redisson.getBuckets().setIfAllKeysAbsent(SetArgs.entries(buckets))).isFalse();
+
+        Map<String, Integer> buckets2 = new HashMap<>();
+        buckets2.put("41", 3);
+        buckets2.put("23", 4);
+        assertThat(redisson.getBuckets().setIfAllKeysAbsent(SetArgs.entries(buckets2)
+                .timeToLive(Duration.ofSeconds(2)))).isTrue();
+
+        Map<String, Integer> buckets3 = new HashMap<>();
+        buckets3.put("34", 5);
+        buckets3.put("45", 6);
+
+        Instant s = Instant.now().plusSeconds(10);
+        assertThat(redisson.getBuckets().setIfAllKeysAbsent(SetArgs.entries(buckets3)
+                .expireAt(s))).isTrue();
+
+        assertThat(redisson.getBucket("12").remainTimeToLive()).isEqualTo(-1);
+        assertThat(redisson.getBucket("41").remainTimeToLive()).isLessThan(2000);
+        assertThat(redisson.getBucket("34").getExpireTime()).isEqualTo(s.toEpochMilli());
+
+        assertThat(redisson.getBucket("41").get()).isEqualTo(3);
+        assertThat(redisson.getBucket("34").get()).isEqualTo(5);
+
+        Map<String, Integer> buckets4 = new HashMap<>();
+        buckets4.put("56", 5);
+        assertThat(redisson.getBuckets().setIfAllKeysAbsent(SetArgs.entries(buckets4)
+                .keepTTL())).isTrue();
+        assertThat(redisson.getBucket("56").get()).isEqualTo(5);
     }
 
     

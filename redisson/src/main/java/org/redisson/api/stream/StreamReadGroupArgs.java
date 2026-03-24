@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,6 @@
  */
 package org.redisson.api.stream;
 
-import org.redisson.api.StreamMessageId;
-
 import java.time.Duration;
 
 /**
@@ -26,6 +24,14 @@ import java.time.Duration;
  *
  */
 public interface StreamReadGroupArgs {
+
+    /**
+     * Defines claim messages which have been pending for at least the minimal idle time.
+     *
+     * @param minIdle minimal idle time
+     * @return arguments object
+     */
+    StreamReadGroupArgs claim(Duration minIdle);
 
     /**
      * Defines avoid of adding messages to Pending Entries List.

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -742,6 +742,16 @@ public class RedissonTransferQueue<V> extends RedissonExpirable implements RTran
 
     @Override
     public RFuture<Boolean> addAllAsync(Collection<? extends V> c) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int indexOf(V e)  {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public RFuture<Integer> indexOfAsync(V e)  {
         throw new UnsupportedOperationException();
     }
 }

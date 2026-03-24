@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.redisson</groupId>
         <artifactId>redisson-parent</artifactId>
-        <version>3.45.2-SNAPSHOT</version>
+        <version>4.3.1-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
 
@@ -20,6 +20,11 @@
        <url>https://redisson.pro/</url>
     </organization>
 
+    <properties>
+        <!-- Spring Framework version -->
+        <spring.version>6.2.11</spring.version>
+    </properties>
+
     <profiles>
         <profile>
             <id>unit-test</id>
@@ -34,11 +39,13 @@
             <groupId>io.netty</groupId>
             <artifactId>netty-transport-native-kqueue</artifactId>
             <scope>provided</scope>
+            <classifier>osx-x86_64</classifier>
         </dependency>
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-transport-native-epoll</artifactId>
             <scope>provided</scope>
+            <classifier>linux-x86_64</classifier>
         </dependency>
         <dependency>
             <groupId>io.netty.incubator</groupId>
@@ -132,8 +139,16 @@
         <dependency>
            <groupId>io.github.hakky54</groupId>
            <artifactId>logcaptor</artifactId>
-           <version>2.9.2</version>
+           <version>2.12.1</version>
            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>redis.clients.authentication</groupId>
+            <artifactId>redis-authx-entraid</artifactId>
+            <version>0.1.1-beta2</version>
+            <scope>provided</scope>
+            <optional>true</optional>
         </dependency>
 
         <dependency>
@@ -141,28 +156,29 @@
             <artifactId>logback-classic</artifactId>
             <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>org.testcontainers</groupId>
-            <artifactId>junit-jupiter</artifactId>
+            <artifactId>testcontainers-junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.apache.tomcat.embed</groupId>
             <artifactId>tomcat-embed-core</artifactId>
-            <version>10.1.39</version>
+            <version>10.1.52</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.tomcat.embed</groupId>
             <artifactId>tomcat-embed-jasper</artifactId>
-            <version>10.1.39</version>
+            <version>10.1.52</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.tomcat</groupId>
             <artifactId>tomcat-jasper</artifactId>
-            <version>10.1.39</version>
+            <version>10.1.52</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -171,97 +187,70 @@
             <version>4.5.14</version>
             <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>org.springframework</groupId>
-            <artifactId>spring-test</artifactId>
-            <!-- 4.1+ -->
-            <version>6.1.14</version>
+            <artifactId>spring-beans</artifactId>
+            <version>${spring.version}</version>
+            <scope>provided</scope>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context</artifactId>
+            <version>${spring.version}</version>
             <scope>test</scope>
         </dependency>
+        
+        <!-- Rest of dependencies remain unchanged -->
         <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-core</artifactId>
-            <!-- 4.1+ -->
-            <version>6.1.14</version>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-core</artifactId>
+            <version>1.13.1</version>
             <scope>provided</scope>
+            <optional>true</optional>
         </dependency>
         <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-expression</artifactId>
-            <!-- 4.1+ -->
-            <version>6.1.14</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-webflux</artifactId>
-            <!-- 4.1+ -->            
-            <version>6.1.14</version>
+            <groupId>io.projectreactor</groupId>
+            <artifactId>reactor-test</artifactId>
+            <version>3.8.1</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-compress</artifactId>
-            <version>1.27.1</version>
+            <version>1.28.0</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
-
         <dependency>
-            <groupId>org.lz4</groupId>
+            <groupId>at.yawk.lz4</groupId>
             <artifactId>lz4-java</artifactId>
-            <version>1.8.0</version>
-            <scope>provided</scope>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.marshalling</groupId>
-            <artifactId>jboss-marshalling</artifactId>
-            <version>2.0.11.Final</version>
-            <scope>provided</scope>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.marshalling</groupId>
-            <artifactId>jboss-marshalling-river</artifactId>
-            <version>2.0.11.Final</version>
+            <version>1.10.1</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.msgpack</groupId>
             <artifactId>jackson-dataformat-msgpack</artifactId>
-            <version>0.9.8</version>
+            <version>0.9.9</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.xerial.snappy</groupId>
             <artifactId>snappy-java</artifactId>
-            <version>1.1.10.7</version>
+            <version>1.1.10.8</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>com.github.luben</groupId>
             <artifactId>zstd-jni</artifactId>
-            <version>1.5.6-7</version>
+            <version>1.5.7-6</version>
             <scope>provided</scope>
             <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>de.ruedigermoeller</groupId>
-            <artifactId>fst</artifactId>
-            <version>2.57</version>
-            <scope>provided</scope>
-            <optional>true</optional>
-            <exclusions>
-              <exclusion>
-                 <groupId>org.objenesis</groupId>
-                 <artifactId>objenesis</artifactId>
-              </exclusion>
-            </exclusions> 
         </dependency>
         <dependency>
             <groupId>com.esotericsoftware</groupId>
@@ -269,34 +258,24 @@
             <version>5.6.2</version>
         </dependency>
         <dependency>
-          <groupId>org.apache.fury</groupId>
-          <artifactId>fury-core</artifactId>
-          <version>0.8.0</version>
-          <scope>provided</scope>
-          <optional>true</optional>
+            <groupId>org.apache.fory</groupId>
+            <artifactId>fory-core</artifactId>
+            <version>0.12.2</version>
+            <scope>provided</scope>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <version>2.0.16</version>
+            <version>2.0.17</version>
         </dependency>
 
         <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-annotations</artifactId>
+            <groupId>org.yaml</groupId>
+            <artifactId>snakeyaml</artifactId>
+            <version>2.5</version>
         </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.dataformat</groupId>
-            <artifactId>jackson-dataformat-yaml</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-        </dependency>
+
         <dependency>
             <groupId>com.github.ben-manes.caffeine</groupId>
             <artifactId>caffeine</artifactId>
@@ -304,6 +283,7 @@
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
+
         <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-ion</artifactId>
@@ -328,100 +308,41 @@
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
+
         <dependency>
-            <groupId>com.fasterxml.jackson.datatype</groupId>
-            <artifactId>jackson-datatype-jsr310</artifactId>
-            <scope>test</scope>
+            <groupId>tools.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-ion</artifactId>
+            <scope>provided</scope>
+            <optional>true</optional>
         </dependency>
+        <dependency>
+            <groupId>tools.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-cbor</artifactId>
+            <scope>provided</scope>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>tools.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-smile</artifactId>
+            <scope>provided</scope>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>tools.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-avro</artifactId>
+            <scope>provided</scope>
+            <optional>true</optional>
+        </dependency>
+
         <dependency>
             <groupId>net.bytebuddy</groupId>
             <artifactId>byte-buddy</artifactId>
-            <version>1.15.3</version>
+            <version>1.18.2</version>
         </dependency>
         <dependency>
             <groupId>org.jodd</groupId>
             <artifactId>jodd-util</artifactId>
             <version>6.3.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-context</artifactId>
-            <!-- 4.1+ -->
-            <version>6.1.14</version>
-            <scope>provided</scope>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-beans</artifactId>
-            <!-- 4.1+ -->
-            <version>6.1.14</version>
-            <scope>provided</scope>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-context-support</artifactId>
-            <!-- 4.1+ -->
-            <version>6.1.14</version>
-            <scope>provided</scope>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-web</artifactId>
-            <!-- 4.1+ -->
-            <version>6.1.14</version>
-            <scope>provided</scope>
-            <optional>true</optional>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-tx</artifactId>
-            <!-- 4.1+ -->
-            <version>6.1.14</version>
-            <scope>provided</scope>
-            <optional>true</optional>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework.session</groupId>
-            <artifactId>spring-session-core</artifactId>
-            <!-- 2.0.0+ -->
-            <version>3.3.0</version>
-            <scope>provided</scope>
-            <optional>true</optional>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-actuator</artifactId>
-            <!-- 2.0.0+ -->
-            <version>3.2.5</version>
-            <scope>provided</scope>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-autoconfigure</artifactId>
-            <!-- 2.0.0+ -->
-            <version>3.3.1</version>
-            <scope>provided</scope>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>io.micrometer</groupId>
-            <artifactId>micrometer-core</artifactId>
-            <version>1.13.1</version>
-            <scope>provided</scope>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>io.projectreactor</groupId>
-            <artifactId>reactor-test</artifactId>
-            <version>3.6.11</version>
-            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -460,22 +381,6 @@
 
     <build>
         <plugins>
-<!--
-            <plugin>
-              <groupId>com.github.spotbugs</groupId>
-              <artifactId>spotbugs-maven-plugin</artifactId>
-              <version>4.5.0.0</version>
-                <executions>
-                    <execution>
-                        <phase>verify</phase>
-                        <goals>
-                            <goal>spotbugs</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
--->
-
             <plugin>
          	<artifactId>maven-javadoc-plugin</artifactId>
             </plugin>
@@ -483,7 +388,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-pmd-plugin</artifactId>
-                <version>3.25.0</version>
+                <version>3.28.0</version>
                 <executions>
                     <execution>
                         <phase>verify</phase>
@@ -524,7 +429,7 @@
                         <trimStackTrace>true</trimStackTrace>
                         <forkCount>6</forkCount>
                         <reuseForks>false</reuseForks>
-                        <argLine>${argLine} -javaagent:"${settings.localRepository}"/com/github/hazendaz/jmockit/jmockit/1.54.0/jmockit-1.54.0.jar</argLine>
+                        <argLine>${argLine} -javaagent:"${settings.localRepository}"/com/github/hazendaz/jmockit/jmockit/2.1.0/jmockit-2.1.0.jar</argLine>
                     </configuration>
             </plugin>
 
@@ -560,7 +465,7 @@
                     <instructions>
                         <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
                         <DynamicImport-Package>*</DynamicImport-Package>
-                        <Import-Package>jdk.net;resolution:=optional,javax.cache.*;resolution:=optional,io.reactivex.rxjava3.*;resolution:=optional,jodd.*;resolution:=optional,net.bytebuddy.*;resolution:=optional,org.jboss.marshalling.*;resolution:=optional,org.springframework.*;resolution:=optional,io.projectreactor.*;resolution:=optional,*</Import-Package>
+                        <Import-Package>jdk.net;resolution:=optional,javax.cache.*;resolution:=optional,io.reactivex.rxjava3.*;resolution:=optional,net.bytebuddy.*;resolution:=optional,org.springframework.*;resolution:=optional,io.projectreactor.*;resolution:=optional,*</Import-Package>
                     </instructions>
                 </configuration>
             </plugin>

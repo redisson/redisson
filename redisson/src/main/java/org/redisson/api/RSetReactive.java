@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -258,7 +257,7 @@ public interface RSetReactive<V> extends RCollectionReactive<V>, RSortableReacti
      * @param c - collection to check
      * @return contained elements
      */
-    Mono<List<V>> containsEach(Collection<V> c);
+    Mono<Set<V>> containsEach(Collection<V> c);
 
     /**
      * Adds object event listener

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,6 @@ import org.redisson.config.Config;
 import org.redisson.hibernate.region.*;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
 import java.util.Properties;
@@ -111,14 +110,8 @@ public class RedissonRegionFactory implements RegionFactory {
     private Config loadConfig(String configPath) {
         try {
             return Config.fromYAML(new File(configPath));
-        } catch (IOException e) {
-            // trying next format
-            try {
-                return Config.fromJSON(new File(configPath));
-            } catch (IOException e1) {
-                e1.addSuppressed(e);
-                throw new CacheException("Can't parse default config", e1);
-            }
+        } catch (Exception e) {
+            throw new CacheException("Can't parse default config", e);
         }
     }
     
@@ -127,14 +120,8 @@ public class RedissonRegionFactory implements RegionFactory {
         if (is != null) {
             try {
                 return Config.fromYAML(is);
-            } catch (IOException e) {
-                try {
-                    is = classLoader.getResourceAsStream(fileName);
-                    return Config.fromJSON(is);
-                } catch (IOException e1) {
-                    e1.addSuppressed(e);
-                    throw new CacheException("Can't parse config", e1);
-                }
+            } catch (Exception e) {
+                throw new CacheException("Can't parse config", e);
             }
         }
         return null;
@@ -168,7 +155,7 @@ public class RedissonRegionFactory implements RegionFactory {
                             + "local nextValue = math.max(tonumber(ARGV[1]), tonumber(currentTime) + 1); "
                             + "redis.call('set', KEYS[1], nextValue); "
                             + "return nextValue;",
-                            RScript.ReturnType.INTEGER, Collections.singletonList("redisson-hibernate-timestamp"), time);
+                            RScript.ReturnType.LONG, Collections.singletonList("redisson-hibernate-timestamp"), time);
         } catch (Exception e) {
             if (fallback) {
                 while (true) {

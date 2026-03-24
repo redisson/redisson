@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -142,48 +142,55 @@ public final class RedissonRateLimiter extends RedissonExpirable implements RRat
     }
     
     private CompletableFuture<Boolean> tryAcquireAsync(long permits, long timeoutInMillis) {
-        long s = System.currentTimeMillis();
+        CompletableFuture<Boolean> promise = new CompletableFuture<>();
+        long startTime = System.currentTimeMillis();
+        tryAcquireAsync(permits, timeoutInMillis, startTime, promise);
+        return promise;
+    }
+
+    private void tryAcquireAsync(long permits, long timeoutInMillis, long startTime, CompletableFuture<Boolean> promise) {
         RFuture<Long> future = tryAcquireAsync(RedisCommands.EVAL_LONG, permits);
-        return future.thenCompose(delay -> {
-            if (delay == null) {
-                return CompletableFuture.completedFuture(true);
-            }
-            
-            if (timeoutInMillis == -1) {
-                CompletableFuture<Boolean> f = new CompletableFuture<>();
-                getServiceManager().newTimeout(t -> {
-                    CompletableFuture<Boolean> r = tryAcquireAsync(permits, timeoutInMillis);
-                    commandExecutor.transfer(r, f);
-                }, delay, TimeUnit.MILLISECONDS);
-                return f;
-            }
-            
-            long el = System.currentTimeMillis() - s;
-            long remains = timeoutInMillis - el;
-            if (remains <= 0) {
-                return CompletableFuture.completedFuture(false);
+        future.whenComplete((delay, ex) -> {
+            if (ex != null) {
+                promise.completeExceptionally(ex);
+                return;
             }
 
-            CompletableFuture<Boolean> f = new CompletableFuture<>();
+            if (delay == null) {
+                promise.complete(true);
+                return;
+            }
+
+            if (timeoutInMillis == -1) {
+                getServiceManager().newTimeout(t -> {
+                    tryAcquireAsync(permits, timeoutInMillis, startTime, promise);
+                }, delay, TimeUnit.MILLISECONDS);
+                return;
+            }
+
+            long elapsed = System.currentTimeMillis() - startTime;
+            long remains = timeoutInMillis - elapsed;
+            if (remains <= 0) {
+                promise.complete(false);
+                return;
+            }
+
             if (remains < delay) {
                 getServiceManager().newTimeout(t -> {
-                    f.complete(false);
+                    promise.complete(false);
                 }, remains, TimeUnit.MILLISECONDS);
             } else {
-                long start = System.currentTimeMillis();
                 getServiceManager().newTimeout(t -> {
-                    long elapsed = System.currentTimeMillis() - start;
-                    if (remains <= elapsed) {
-                        f.complete(false);
+                    long newElapsed = System.currentTimeMillis() - startTime;
+                    if (timeoutInMillis <= newElapsed) {
+                        promise.complete(false);
                         return;
                     }
 
-                    CompletableFuture<Boolean> r = tryAcquireAsync(permits, remains - elapsed);
-                    commandExecutor.transfer(r, f);
+                    tryAcquireAsync(permits, timeoutInMillis, startTime, promise);
                 }, delay, TimeUnit.MILLISECONDS);
             }
-            return f;
-        }).toCompletableFuture();
+        });
     }
     
     private <T> RFuture<T> tryAcquireAsync(RedisCommand<T> command, Long value) {
@@ -260,6 +267,61 @@ public final class RedissonRateLimiter extends RedissonExpirable implements RRat
               + "return res;",
                 Arrays.asList(getRawName(), getValueName(), getClientValueName(), getPermitsName(), getClientPermitsName()),
                 value, System.currentTimeMillis(), random);
+    }
+
+
+    @Override
+    public RFuture<Void> releaseAsync(long permits) {
+        if (permits < 0) {
+            throw new IllegalArgumentException("Permits amount can't be negative");
+        }
+        if (permits == 0) {
+            return new CompletableFutureWrapper<>((Void) null);
+        }
+        return commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
+                "local rate = redis.call('hget', KEYS[1], 'rate');"
+                + "local interval = redis.call('hget', KEYS[1], 'interval');"
+                + "local type = redis.call('hget', KEYS[1], 'type');"
+                + "assert(rate ~= false and interval ~= false and type ~= false, 'RateLimiter is not initialized');"
+
+                + "local valueName = KEYS[2];"
+                + "local permitsName = KEYS[4];"
+                + "if type == '1' then "
+                + "    valueName = KEYS[3];"
+                + "    permitsName = KEYS[5];"
+                + "end;"
+
+                + "local currentValue = redis.call('get', valueName);"
+                + "if currentValue == false then "
+                + "    currentValue = tonumber(rate);"
+                + "else "
+                + "    currentValue = tonumber(currentValue);"
+                + "end;"
+
+                + "local newValue = currentValue + tonumber(ARGV[1]);"
+                + "if newValue > tonumber(rate) then "
+                + "    newValue = tonumber(rate);"
+                + "end;"
+                + "redis.call('set', valueName, newValue);"
+
+                + "local keepAliveTime = redis.call('hget', KEYS[1], 'keepAliveTime');"
+                + "if (keepAliveTime ~= false and tonumber(keepAliveTime) > 0) then "
+                + "    redis.call('pexpire', KEYS[1], keepAliveTime);"
+                + "    redis.call('pexpire', valueName, keepAliveTime);"
+                + "    redis.call('pexpire', permitsName, keepAliveTime);"
+                + "else "
+                + "    local ttl = redis.call('pttl', KEYS[1]);"
+                + "    if ttl > 0 then "
+                + "        redis.call('pexpire', valueName, ttl);"
+                + "        redis.call('pexpire', permitsName, ttl);"
+                + "    end;"
+                + "end;",
+                Arrays.asList(getRawName(), getValueName(), getClientValueName(), getPermitsName(), getClientPermitsName()), permits);
+    }
+
+    @Override
+    public void release(long permits) {
+        get(releaseAsync(permits));
     }
 
     @Override

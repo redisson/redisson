@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -109,7 +109,7 @@ public class DNSMonitor {
 
                 if (addresses.size() > 1) {
                     if (!printed) {
-                        log.warn("Use Redisson PRO version (https://redisson.pro) with Proxy mode feature to utilize all ip addresses: {} resolved by: {}",
+                        log.warn("Use Redisson PRO version (https://redisson.pro/feature-comparison.html) with Proxy mode feature to utilize all ip addresses: {} resolved by: {}",
                                 addresses, entry.getKey());
                         printed = true;
                     }

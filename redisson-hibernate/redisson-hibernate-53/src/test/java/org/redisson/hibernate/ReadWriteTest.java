@@ -35,6 +35,7 @@ public class ReadWriteTest extends BaseCoreFunctionalTestCase {
         cfg.setProperty(Environment.PASS, "");
         cfg.setProperty(Environment.CACHE_REGION_PREFIX, "");
         cfg.setProperty(Environment.GENERATE_STATISTICS, "true");
+        cfg.setProperty(Environment.CACHE_REGION_PREFIX, "my-prefix");
 
         cfg.setProperty(Environment.USE_SECOND_LEVEL_CACHE, "true");
         cfg.setProperty(Environment.USE_QUERY_CACHE, "true");

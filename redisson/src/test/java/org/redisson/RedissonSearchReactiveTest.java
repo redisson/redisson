@@ -9,7 +9,7 @@ import reactor.test.StepVerifier;
 
 import java.util.Arrays;
 
-public class RedissonSearchReactiveTest extends DockerRedisStackTest {
+public class RedissonSearchReactiveTest extends RedisDockerTest {
 
     @Test
     public void testDropIndex() {

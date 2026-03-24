@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -453,6 +453,14 @@ public interface RMapAsync<K, V> extends RExpirableAsync {
     RFuture<Set<K>> readAllKeySetAsync();
 
     /**
+     * Read all keys mapped by matched keys of this pattern at once
+     *
+     * @param keyPattern - key Pattern
+     * @return keys
+     */
+    RFuture<Set<K>> readAllKeySetAsync(String keyPattern);
+
+    /**
      * Read all values at once
      *
      * @return values
@@ -460,11 +468,28 @@ public interface RMapAsync<K, V> extends RExpirableAsync {
     RFuture<Collection<V>> readAllValuesAsync();
 
     /**
+     * Read all values mapped by matched keys of this pattern at once
+     *
+     * @param keyPattern - key Pattern
+     * @return values
+     */
+    RFuture<Collection<V>> readAllValuesAsync(String keyPattern);
+
+    /**
      * Read all map entries at once
      *
      * @return entries
      */
     RFuture<Set<Entry<K, V>>> readAllEntrySetAsync();
+
+
+    /**
+     * Read all entries mapped by matched keys of this pattern at once
+     *
+     * @param keyPattern - key Pattern
+     * @return entries
+     */
+    RFuture<Set<Entry<K, V>>> readAllEntrySetAsync(String keyPattern);
 
     /**
      * Read all map as local instance at once

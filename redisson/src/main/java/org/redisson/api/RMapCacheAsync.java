@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
@@ -268,6 +269,20 @@ public interface RMapCacheAsync<K, V> extends RMapAsync<K, V> {
      * @return current associated value
      */
     RFuture<V> computeIfAbsentAsync(K key, Duration ttl, Function<? super K, ? extends V> mappingFunction);
+
+    /**
+     * Computes a new mapping for the specified key and its current mapped value.
+     * <p>
+     * Stores value mapped by key with specified time to live.
+     * Entry expires after specified time to live.
+     *
+     * @param key - map key
+     * @param ttl - time to live for key\value entry.
+     *              If <code>0</code> then stores infinitely.
+     * @param remappingFunction - function to compute a value
+     * @return the new value associated with the specified key, or {@code null} if none
+     */
+    RFuture<V> computeAsync(K key, Duration ttl, BiFunction<? super K, ? super V, ? extends V> remappingFunction);
 
     /**
      * Use {@link #expireEntryAsync(Object, Duration, Duration)} instead.

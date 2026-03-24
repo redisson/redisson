@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@ import org.redisson.api.search.SpellcheckOptions;
 import org.redisson.api.search.aggregate.*;
 import org.redisson.api.search.index.*;
 import org.redisson.api.search.query.*;
+import org.redisson.api.search.query.hybrid.*;
+import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.DoubleCodec;
 import org.redisson.client.codec.LongCodec;
@@ -32,12 +34,10 @@ import org.redisson.client.protocol.convertor.EmptyMapConvertor;
 import org.redisson.client.protocol.decoder.*;
 import org.redisson.codec.CompositeCodec;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.iterator.RedissonBaseIterator;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  *
@@ -144,9 +144,60 @@ public class RedissonSearch implements RSearch {
             addNumericIndex(args, field);
             addFlatVectorIndex(args, field);
             addHNSWVectorIndex(args, field);
+            addSVSVamanaVectorIndex(args, field);
+            addGeoShapeIndex(args, field);
         }
 
         return commandExecutor.writeAsync(indexName, StringCodec.INSTANCE, RedisCommands.FT_CREATE, args.toArray());
+    }
+
+    private static void addSVSVamanaVectorIndex(List<Object> args, FieldIndex field) {
+        if (field instanceof SVSVamanaVectorIndex) {
+            SVSVamanaVectorIndexParams params = (SVSVamanaVectorIndexParams) field;
+            args.add(params.getFieldName());
+            if (params.getAs() != null) {
+                args.add("AS");
+                args.add(params.getAs());
+            }
+            args.add("VECTOR");
+            args.add("SVS-VAMANA");
+            args.add(params.getCount() * 2);
+            args.add("TYPE");
+            args.add(params.getType());
+            args.add("DIM");
+            args.add(params.getDim());
+            args.add("DISTANCE_METRIC");
+            args.add(params.getDistanceMetric());
+
+            if (params.getCompressionAlgorithm() != null) {
+                args.add("COMPRESSION");
+                args.add(params.getCompressionAlgorithm());
+            }
+            if (params.getConstructionWindowSize() != null) {
+                args.add("CONSTRUCTION_WINDOW_SIZE");
+                args.add(params.getConstructionWindowSize());
+            }
+            if (params.getGraphMaxDegree() != null) {
+                args.add("GRAPH_MAX_DEGREE");
+                args.add(params.getGraphMaxDegree());
+            }
+            if (params.getSearchWindowSize() != null) {
+                args.add("SEARCH_WINDOW_SIZE");
+                args.add(params.getSearchWindowSize());
+            }
+            if (params.getEpsilon() != null) {
+                args.add("EPSILON");
+                args.add(params.getEpsilon());
+            }
+            if (params.getTrainingThreshold() != null) {
+                args.add("TRAINING_THRESHOLD");
+                args.add(params.getTrainingThreshold());
+            }
+            if (params.getLeanVecDim() != null) {
+                args.add("LEANVEC_DIM");
+                args.add(params.getLeanVecDim());
+            }
+        }
     }
 
     private static void addHNSWVectorIndex(List<Object> args, FieldIndex field) {
@@ -257,6 +308,28 @@ public class RedissonSearch implements RSearch {
                 if (params.getSortMode() == SortMode.UNNORMALIZED) {
                     args.add("UNF");
                 }
+            }
+            if (params.isNoIndex()) {
+                args.add("NOINDEX");
+            }
+            if (params.isIndexMissing()) {
+                args.add("INDEXMISSING");
+            }
+        }
+    }
+
+    private static void addGeoShapeIndex(List<Object> args, FieldIndex field) {
+        if (field instanceof GeoShapeIndex) {
+            GeoShapeIndexParams params = (GeoShapeIndexParams) field;
+            args.add(params.getFieldName());
+            if (params.getAs() != null) {
+                args.add("AS");
+                args.add(params.getAs());
+            }
+            args.add("GEOSHAPE");
+
+            if (params.getCoordinateSystems() != null) {
+                args.add(params.getCoordinateSystems());
             }
             if (params.isNoIndex()) {
                 args.add("NOINDEX");
@@ -512,7 +585,7 @@ public class RedissonSearch implements RSearch {
 
         RedisStrictCommand<SearchResult> command;
         if (commandExecutor.getServiceManager().isResp3()) {
-            command = new RedisStrictCommand<>("FT.SEARCH",
+            command = new RedisStrictCommand<SearchResult>("FT.SEARCH",
                     new ListMultiDecoder2(new SearchResultDecoderV2(),
                             new ObjectListReplayDecoder(),
                             new ObjectMapReplayDecoder(),
@@ -524,7 +597,7 @@ public class RedissonSearch implements RSearch {
                                             new ObjectListReplayDecoder()));
         }
 
-        return commandExecutor.writeAsync(indexName, StringCodec.INSTANCE, command, args.toArray());
+        return commandExecutor.readAsync(indexName, StringCodec.INSTANCE, command, args.toArray());
     }
 
     private String value(double score, boolean exclusive) {
@@ -550,7 +623,68 @@ public class RedissonSearch implements RSearch {
     }
 
     @Override
-    public RFuture<AggregationResult> aggregateAsync(String indexName, String query, AggregationOptions options) {
+    public Iterable<AggregationEntry> aggregate(String indexName, String query, IterableAggregationOptions options) {
+        List<Object> args = createAggregateArgs(indexName, query, options);
+        int reducers = options.getGroupByParams().stream()
+                .mapToInt(g -> g.getReducers().size())
+                .sum();
+
+        return () -> new RedissonBaseIterator<AggregationEntry>() {
+
+            @Override
+            protected ScanResult<Object> iterator(RedisClient client, String nextIterPos) {
+                RedisStrictCommand<ListScanResult<AggregationEntry>> command;
+                if ("0".equals(nextIterPos)) {
+                    if (commandExecutor.getServiceManager().isResp3()) {
+                        command = new RedisStrictCommand<>("FT.AGGREGATE",
+                                new ListMultiDecoder2(new AggregationCursorResultScanDecoderV2(),
+                                        new ObjectListReplayDecoder(),
+                                        new ObjectListReplayDecoder(),
+                                        new ObjectMapReplayDecoder(),
+                                        new AggregationEntryDecoder(new CompositeCodec(StringCodec.INSTANCE, codec), reducers)));
+                    } else {
+                        command = new RedisStrictCommand<>("FT.AGGREGATE",
+                                new ListMultiDecoder2(new AggregationCursorResultScanDecoder(),
+                                        new ObjectListReplayDecoder(),
+                                        new AggregationEntryDecoder(new CompositeCodec(StringCodec.INSTANCE, codec), reducers)));
+                    }
+                    return scanIterator(indexName, command, args.toArray());
+                }
+
+
+                if (commandExecutor.getServiceManager().isResp3()) {
+                    command = new RedisStrictCommand<>("FT.CURSOR", "READ",
+                            new ListMultiDecoder2(new AggregationCursorResultScanDecoderV2(),
+                                    new ObjectListReplayDecoder(),
+                                    new ObjectListReplayDecoder(),
+                                    new ObjectMapReplayDecoder(),
+                                    new ObjectMapReplayDecoder(new CompositeCodec(StringCodec.INSTANCE, codec))));
+                } else {
+                    command = new RedisStrictCommand<>("FT.CURSOR", "READ",
+                            new ListMultiDecoder2(new AggregationCursorResultScanDecoder(),
+                                    new ObjectListReplayDecoder(),
+                                    new ObjectMapReplayDecoder(new CompositeCodec(StringCodec.INSTANCE, codec))));
+                }
+
+                return scanIterator(indexName, command, indexName, nextIterPos);
+            }
+
+            @Override
+            protected void remove(Object value) {
+                throw new UnsupportedOperationException();
+            }
+        };
+    }
+
+    private ScanResult<Object> scanIterator(String indexName, RedisCommand<?> command, Object... params) {
+        return commandExecutor.get(scanIteratorAsync(indexName, command, params));
+    }
+
+    private RFuture<ScanResult<Object>> scanIteratorAsync(String indexName, RedisCommand<?> command, Object... params) {
+        return commandExecutor.writeAsync(indexName, StringCodec.INSTANCE, command, params);
+    }
+
+    private List<Object> createAggregateArgs(String indexName, String query, AggregationBaseOptions<?> options){
         List<Object> args = new ArrayList<>();
         args.add(indexName);
         args.add(query);
@@ -626,9 +760,10 @@ public class RedissonSearch implements RSearch {
             }
             if (options.getCursorMaxIdle() != null) {
                 args.add("MAXIDLE");
-                args.add(options.getCursorMaxIdle());
+                args.add(options.getCursorMaxIdle().toMillis());
             }
         }
+
         if (!options.getParams().isEmpty()) {
             args.add("PARAMS");
             args.add(options.getParams().size()*2);
@@ -641,7 +776,12 @@ public class RedissonSearch implements RSearch {
             args.add("DIALECT");
             args.add(options.getDialect());
         }
+        return args;
+    }
 
+    @Override
+    public RFuture<AggregationResult> aggregateAsync(String indexName, String query, AggregationOptions options) {
+        List<Object> args = createAggregateArgs(indexName, query, options);
         int reducers = options.getGroupByParams().stream()
                                                  .mapToInt(g -> g.getReducers().size())
                                                  .sum();
@@ -730,6 +870,8 @@ public class RedissonSearch implements RSearch {
             addNumericIndex(args, field);
             addFlatVectorIndex(args, field);
             addHNSWVectorIndex(args, field);
+            addSVSVamanaVectorIndex(args, field);
+            addGeoShapeIndex(args, field);
         }
 
         return commandExecutor.writeAsync(indexName, StringCodec.INSTANCE, RedisCommands.FT_ALTER, args.toArray());
@@ -872,6 +1014,28 @@ public class RedissonSearch implements RSearch {
     }
 
     @Override
+    public boolean hasIndex(String indexName) {
+        return commandExecutor.get(hasIndexAsync(indexName));
+    }
+
+    @Override
+    public RFuture<Boolean> hasIndexAsync(String indexName) {
+        return commandExecutor.evalReadAsync(indexName, StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                        "local result = redis.pcall('FT.INFO', KEYS[1]) "
+                        + "if type(result) == 'table' and result.err then "
+                            + "local err = string.lower(result.err) "
+                            + "if string.find(err, ARGV[1]) or string.find(err, ARGV[2]) then "
+                                + "return 0 "
+                            + "else "
+                                + "return redis.error_reply(result.err) "
+                            + "end "
+                        + "end "
+                        + "return 1 ",
+                Collections.singletonList(indexName), "not found", "no such index"
+        );
+    }
+
+    @Override
     public Map<String, Map<String, Double>> spellcheck(String indexName, String query, SpellcheckOptions options) {
         return commandExecutor.get(spellcheckAsync(indexName, query, options));
     }
@@ -948,5 +1112,208 @@ public class RedissonSearch implements RSearch {
     @Override
     public RFuture<List<String>> getIndexesAsync() {
         return commandExecutor.readAsync((String) null, StringCodec.INSTANCE, RedisCommands.FT_LIST);
+    }
+
+    @Override
+    public HybridSearchResult hybridSearch(String indexName, HybridQueryArgs args) {
+        return commandExecutor.get(hybridSearchAsync(indexName, args));
+    }
+
+    @Override
+    @SuppressWarnings("MethodLength")
+    public RFuture<HybridSearchResult> hybridSearchAsync(String indexName, HybridQueryArgs args) {
+        HybridQueryParams options = (HybridQueryParams) args;
+
+        List<Object> cmdArgs = new ArrayList<>();
+        cmdArgs.add(indexName);
+
+        cmdArgs.add("SEARCH");
+        cmdArgs.add(options.getQuery());
+
+        if (options.getScorer() != null) {
+            cmdArgs.add("SCORER");
+            cmdArgs.add(options.getScorer());
+        }
+
+        if (options.getQueryScoreAlias() != null) {
+            cmdArgs.add("YIELD_SCORE_AS");
+            cmdArgs.add(options.getQueryScoreAlias());
+        }
+
+        VectorSimilarityParams vsimParams = options.getVectorSimilarityParams();
+        if (vsimParams == null) {
+            throw new IllegalArgumentException("vectorSimilarity is required for hybrid search");
+        }
+        cmdArgs.add("VSIM");
+        cmdArgs.add(vsimParams.getField());
+        cmdArgs.add(vsimParams.getParam());
+
+        if (vsimParams.getMode() == VectorSimilarityParams.VectorSearchMode.KNN) {
+            List<Object> knnArgs = new ArrayList<>();
+            knnArgs.add("K");
+            knnArgs.add(vsimParams.getKnnK());
+            if (vsimParams.getEfRuntime() != null) {
+                knnArgs.add("EF_RUNTIME");
+                knnArgs.add(vsimParams.getEfRuntime());
+            }
+            cmdArgs.add("KNN");
+            cmdArgs.add(knnArgs.size());
+            cmdArgs.addAll(knnArgs);
+        } else if (vsimParams.getMode() == VectorSimilarityParams.VectorSearchMode.RANGE) {
+            List<Object> rangeArgs = new ArrayList<>();
+            rangeArgs.add("RADIUS");
+            rangeArgs.add(vsimParams.getRangeRadius());
+            if (vsimParams.getRangeEpsilon() != null) {
+                rangeArgs.add("EPSILON");
+                rangeArgs.add(vsimParams.getRangeEpsilon());
+            }
+            cmdArgs.add("RANGE");
+            cmdArgs.add(rangeArgs.size());
+            cmdArgs.addAll(rangeArgs);
+        }
+
+        if (vsimParams.getScoreAlias() != null) {
+            cmdArgs.add("YIELD_SCORE_AS");
+            cmdArgs.add(vsimParams.getScoreAlias());
+        }
+
+        if (vsimParams.getFilter() != null) {
+            cmdArgs.add("FILTER");
+            cmdArgs.add(vsimParams.getFilter());
+        }
+
+        Combine combine = options.getCombine();
+        if (combine != null) {
+            cmdArgs.add("COMBINE");
+            if (combine instanceof CombineRrfParams) {
+                CombineRrfParams rrfParams = (CombineRrfParams) combine;
+                List<Object> combineArgs = new ArrayList<>();
+                if (rrfParams.getConstant() != null) {
+                    combineArgs.add("CONSTANT");
+                    combineArgs.add(rrfParams.getConstant());
+                }
+                if (rrfParams.getWindow() != null) {
+                    combineArgs.add("WINDOW");
+                    combineArgs.add(rrfParams.getWindow());
+                }
+                cmdArgs.add("RRF");
+                cmdArgs.add(combineArgs.size());
+                cmdArgs.addAll(combineArgs);
+
+                if (rrfParams.getScoreAlias() != null) {
+                    cmdArgs.add("YIELD_SCORE_AS");
+                    cmdArgs.add(rrfParams.getScoreAlias());
+                }
+            } else if (combine instanceof CombineLinearParams) {
+                CombineLinearParams linearParams = (CombineLinearParams) combine;
+                List<Object> combineArgs = new ArrayList<>();
+                if (linearParams.getAlpha() != null) {
+                    combineArgs.add("ALPHA");
+                    combineArgs.add(linearParams.getAlpha());
+                }
+                if (linearParams.getBeta() != null) {
+                    combineArgs.add("BETA");
+                    combineArgs.add(linearParams.getBeta());
+                }
+                if (linearParams.getWindow() != null) {
+                    combineArgs.add("WINDOW");
+                    combineArgs.add(linearParams.getWindow());
+                }
+                cmdArgs.add("LINEAR");
+                cmdArgs.add(combineArgs.size());
+                cmdArgs.addAll(combineArgs);
+
+                // YIELD_SCORE_AS for combined score
+                if (linearParams.getScoreAlias() != null) {
+                    cmdArgs.add("YIELD_SCORE_AS");
+                    cmdArgs.add(linearParams.getScoreAlias());
+                }
+            }
+        }
+
+        if (options.getLimitOffset() != null && options.getLimitCount() != null) {
+            cmdArgs.add("LIMIT");
+            cmdArgs.add(options.getLimitOffset());
+            cmdArgs.add(options.getLimitCount());
+        }
+
+        if (options.getSortFieldName() != null) {
+            cmdArgs.add("SORTBY");
+            if (options.getSortOrder() != null) {
+                cmdArgs.add(2);
+            } else {
+                cmdArgs.add(1);
+            }
+            cmdArgs.add(options.getSortFieldName());
+            if (options.getSortOrder() != null) {
+                cmdArgs.add(options.getSortOrder().name());
+            }
+        }
+
+        if (options.isNoSort()) {
+            cmdArgs.add("NOSORT");
+        }
+
+        if (options.getLoadFields() != null && !options.getLoadFields().isEmpty()) {
+            cmdArgs.add("LOAD");
+            cmdArgs.add(options.getLoadFields().size());
+            cmdArgs.addAll(options.getLoadFields());
+        }
+
+        if (options.getGroupBy() != null) {
+            for (org.redisson.api.search.GroupBy groupBy : options.getGroupBy()) {
+                org.redisson.api.search.GroupParams groupParams = (org.redisson.api.search.GroupParams) groupBy;
+                cmdArgs.add("GROUPBY");
+                cmdArgs.add(groupParams.getFieldNames().size());
+                cmdArgs.addAll(groupParams.getFieldNames());
+                if (groupParams.getReducers() != null) {
+                    for (org.redisson.api.search.Reducer reducer : groupParams.getReducers()) {
+                        org.redisson.api.search.ReducerParams reducerParams = (org.redisson.api.search.ReducerParams) reducer;
+                        cmdArgs.add("REDUCE");
+                        cmdArgs.add(reducerParams.getFunctionName());
+                        cmdArgs.add(reducerParams.getArgs().size());
+                        if (!reducerParams.getArgs().isEmpty()) {
+                            cmdArgs.addAll(reducerParams.getArgs());
+                        }
+                        if (reducerParams.getAs() != null) {
+                            cmdArgs.add("AS");
+                            cmdArgs.add(reducerParams.getAs());
+                        }
+                    }
+                }
+            }
+        }
+
+        if (options.getExpressions() != null) {
+            for (org.redisson.api.search.Expression expr : options.getExpressions()) {
+                cmdArgs.add("APPLY");
+                cmdArgs.add(expr.getValue());
+                cmdArgs.add("AS");
+                cmdArgs.add(expr.getAs());
+            }
+        }
+
+        if (options.getPostFilter() != null) {
+            cmdArgs.add("FILTER");
+            cmdArgs.add(options.getPostFilter());
+        }
+
+        if (options.getParams() != null && !options.getParams().isEmpty()) {
+            List<Object> paramsArgs = new ArrayList<>();
+            for (Map.Entry<String, Object> entry : options.getParams().entrySet()) {
+                paramsArgs.add(entry.getKey());
+                paramsArgs.add(entry.getValue());
+            }
+            cmdArgs.add("PARAMS");
+            cmdArgs.add(paramsArgs.size());
+            cmdArgs.addAll(paramsArgs);
+        }
+
+        if (options.getTimeout() != null) {
+            cmdArgs.add("TIMEOUT");
+            cmdArgs.add(options.getTimeout().toMillis());
+        }
+
+        return commandExecutor.readAsync((String) null, codec, RedisCommands.HYBRID_SEARCH, cmdArgs.toArray());
     }
 }

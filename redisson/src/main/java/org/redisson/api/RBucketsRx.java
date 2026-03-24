@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package org.redisson.api;
 
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Single;
+import org.redisson.api.bucket.SetArgs;
 
 import java.util.Map;
 
@@ -55,5 +56,22 @@ public interface RBucketsRx {
      * @return void
      */
     Completable set(Map<String, ?> buckets);
-    
+
+    /**
+     * Saves objects mapped by Redis key.
+     * If all of them is already exist
+     *
+     * @param args - args
+     * @return <code>true</code> if object has been set overwise <code>false</code>
+     */
+    Single<Boolean> setIfAllKeysExist(SetArgs args);
+
+    /**
+     * Saves objects mapped by Redis key.
+     * If none of the specified keys exist
+     *
+     * @param args - args
+     * @return <code>true</code> if object has been set overwise <code>false</code>
+     */
+    Single<Boolean> setIfAllKeysAbsent(SetArgs args);
 }

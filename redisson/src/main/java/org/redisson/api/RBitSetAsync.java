@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 package org.redisson.api;
 
 import java.util.BitSet;
+import java.util.List;
+import org.redisson.api.bitset.BitFieldArgs;
 
 /**
  * Vector of bits that grows as needed. Asynchronous interface.
@@ -92,6 +94,17 @@ public interface RBitSetAsync extends RExpirableAsync {
      * @return result value
      */
     RFuture<Long> incrementAndGetUnsignedAsync(int size, long offset, long increment);
+
+    /**
+     * Executes BITFIELD command with multiple subcommands
+     * and returns result list in the same order.
+     * if ReadMode is Slave And Args is only get commands,
+     * then BITFIELD_RO command will be executed
+     *
+     * @param args - bitfield arguments
+     * @return result values
+     */
+    RFuture<List<Long>> bitFieldAsync(BitFieldArgs args);
 
     /**
      * Returns byte number at specified <code>offset</code>
@@ -247,9 +260,9 @@ public interface RBitSetAsync extends RExpirableAsync {
     /**
      * Executes NOT operation over all bits
      *
-     * @return void
+     * @return length in bytes of the destination key
      */
-    RFuture<Void> notAsync();
+    RFuture<Long> notAsync();
 
     /**
      * Set all bits to one from <code>fromIndex</code> (inclusive) to <code>toIndex</code> (exclusive)
@@ -338,26 +351,66 @@ public interface RBitSetAsync extends RExpirableAsync {
      * Stores result into this object.
      *
      * @param bitSetNames - name of stored bitsets
-     * @return void
+     * @return length in bytes of the destination key
      */
-    RFuture<Void> orAsync(String... bitSetNames);
+    RFuture<Long> orAsync(String... bitSetNames);
 
     /**
      * Executes AND operation over this object and specified bitsets.
      * Stores result into this object.
      *
      * @param bitSetNames - name of stored bitsets
-     * @return void
+     * @return length in bytes of the destination key
      */
-    RFuture<Void> andAsync(String... bitSetNames);
+    RFuture<Long> andAsync(String... bitSetNames);
 
     /**
      * Executes XOR operation over this object and specified bitsets.
      * Stores result into this object.
      *
      * @param bitSetNames - name of stored bitsets
-     * @return void
+     * @return length in bytes of the destination key
      */
-    RFuture<Void> xorAsync(String... bitSetNames);
+    RFuture<Long> xorAsync(String... bitSetNames);
+
+    /**
+     * Executes bitwise DIFF operation over this object and specified bitsets.
+     * Sets bits that are set in this object but not in any of the other bitsets.
+     * Stores result into this object.
+     *
+     * @param bitSetNames name of stored bitsets
+     * @return length in bytes of the destination key
+     */
+    RFuture<Long> diffAsync(String... bitSetNames);
+
+    /**
+     * Executes bitwise DIFF1 operation over this object and specified bitsets.
+     * Sets bits that are set in one or more of the other bitsets but not in this object.
+     * Stores result into this object.
+     *
+     * @param bitSetNames name of stored bitsets
+     * @return length in bytes of the destination key
+     */
+    RFuture<Long> diffInverseAsync(String... bitSetNames);
+
+    /**
+     * Executes bitwise ANDOR operation over this object and specified bitsets.
+     * Sets bits that are set in this object AND also in one or more of the other bitsets.
+     * Stores result into this object.
+     *
+     * @param bitSetNames name of stored bitsets
+     * @return length in bytes of the destination key
+     */
+    RFuture<Long> andOrAsync(String... bitSetNames);
+
+    /**
+     * Executes bitwise ONE operation over this object and specified bitsets.
+     * Sets bits that are set in exactly one of the provided bitsets.
+     * Stores result into this object.
+     *
+     * @param bitSetNames name of stored bitsets
+     * @return length in bytes of the destination key
+     */
+    RFuture<Long> setExclusiveAsync(String... bitSetNames);
 
 }

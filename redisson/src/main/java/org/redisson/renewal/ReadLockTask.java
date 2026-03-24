@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,10 @@ import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.decoder.ContainsDecoder;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.misc.AsyncChunkProcessor;
+import org.redisson.misc.AsyncChunkProcessor.ChunkExecution;
 
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 /**
@@ -37,17 +38,19 @@ public class ReadLockTask extends LockTask {
 
     @Override
     CompletionStage<Void> renew(Iterator<String> iter, int chunkSize) {
-        if (!iter.hasNext()) {
-            return CompletableFuture.completedFuture(null);
-        }
+        return AsyncChunkProcessor.processAll(iter, chunkSize, this::buildChunk);
+    }
 
+    private ChunkExecution<List<Object>> buildChunk(Iterator<String> iter, int chunkSize) {
         Map<String, Long> name2lockName = new HashMap<>();
         List<Object> args = new ArrayList<>();
         args.add(internalLockLeaseTime);
 
         List<Object> keys = new ArrayList<>(chunkSize);
         List<Object> keysArgs = new ArrayList<>(chunkSize);
-        while (iter.hasNext()) {
+
+        // Build chunk, skipping invalid entries
+        while (iter.hasNext() && keys.size() < chunkSize) {
             String key = iter.next();
 
             ReadLockEntry entry = (ReadLockEntry) name2entry.get(key);
@@ -60,19 +63,23 @@ public class ReadLockTask extends LockTask {
                 continue;
             }
 
+            String keyPrefix = entry.getKeyPrefix(threadId);
+            String lockName = entry.getLockName(threadId);
+
+            if (keyPrefix == null || lockName == null) {
+                continue;
+            }
+
             keys.add(key);
             keysArgs.add(key);
-            keysArgs.add(entry.getKeyPrefix(threadId));
-            args.add(entry.getLockName(threadId));
+            keysArgs.add(keyPrefix);
+            args.add(lockName);
             name2lockName.put(key, threadId);
-
-            if (keys.size() == chunkSize) {
-                break;
-            }
         }
 
+        // No valid entries found - signal completion
         if (keys.isEmpty()) {
-            return CompletableFuture.completedFuture(null);
+            return null;
         }
 
         String firstName = keys.get(0).toString();
@@ -92,8 +99,8 @@ public class ReadLockTask extends LockTask {
                             "for n, key in ipairs(keys) do " +
                                 "counter = tonumber(redis.call('hget', KEYS[i], key)); " +
                                 "if type(counter) == 'number' then " +
-                                    "for i=counter, 1, -1 do " +
-                                        "redis.call('pexpire', KEYS[i+1] .. ':' .. key .. ':rwlock_timeout:' .. i, ARGV[1]); " +
+                                    "for c=counter, 1, -1 do " +
+                                        "redis.call('pexpire', KEYS[i+1] .. ':' .. key .. ':rwlock_timeout:' .. c, ARGV[1]); " +
                                     "end; " +
                                 "end; " +
                             "end; " +
@@ -107,13 +114,12 @@ public class ReadLockTask extends LockTask {
                 keysArgs,
                 args.toArray());
 
-        return f.thenCompose(existingNames -> {
+        return new ChunkExecution<>(f, existingNames -> {
             keys.removeAll(existingNames);
             for (Object k : keys) {
                 String key = k.toString();
                 cancelExpirationRenewal(key, name2lockName.get(key));
             }
-            return renew(iter, chunkSize);
         });
     }
 

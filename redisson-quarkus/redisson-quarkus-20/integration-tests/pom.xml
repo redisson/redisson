@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.redisson</groupId>
         <artifactId>redisson-quarkus-20-parent</artifactId>
-        <version>3.45.2-SNAPSHOT</version>
+        <version>4.3.1-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
 
@@ -36,6 +36,11 @@
       <dependency>
           <groupId>org.jboss.logging</groupId>
           <artifactId>commons-logging-jboss-logging</artifactId>
+          <scope>test</scope>
+      </dependency>
+      <dependency>
+          <groupId>org.testcontainers</groupId>
+          <artifactId>junit-jupiter</artifactId>
           <scope>test</scope>
       </dependency>
     </dependencies>

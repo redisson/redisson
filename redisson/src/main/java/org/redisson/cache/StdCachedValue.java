@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,8 +26,8 @@ public class StdCachedValue<K, V> implements CachedValue<K, V> {
     private final K key;
     private final V value;
 
-    private long ttl;
-    private long maxIdleTime;
+    private final long ttl;
+    private final long maxIdleTime;
 
     private long creationTime;
     private long lastAccess;
@@ -59,6 +59,21 @@ public class StdCachedValue<K, V> implements CachedValue<K, V> {
             return true;
         }
         return false;
+    }
+
+    @Override
+    public long getExpireTime() {
+        if (maxIdleTime == 0 && ttl == 0) {
+            return 0;
+        }
+        long expireTime = Long.MAX_VALUE;
+        if (maxIdleTime != 0) {
+            expireTime = Math.min(expireTime, lastAccess + maxIdleTime);
+        }
+        if (ttl != 0) {
+            expireTime = Math.min(expireTime, creationTime + ttl);
+        }
+        return expireTime;
     }
 
     @Override

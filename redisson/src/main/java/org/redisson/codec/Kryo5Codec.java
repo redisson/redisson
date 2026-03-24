@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,6 +46,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static com.esotericsoftware.kryo.util.Util.className;
 
@@ -117,7 +118,7 @@ public class Kryo5Codec extends BaseCodec {
     }
 
     public Kryo5Codec(ClassLoader classLoader, Set<String> allowedClasses, boolean useReferences) {
-        this.allowedClasses = allowedClasses;
+        this.allowedClasses = allowedClasses.stream().sorted().collect(Collectors.toCollection(LinkedHashSet::new));
         this.useReferences = useReferences;
 
         this.kryoPool = new Pool<Kryo>(true, false, 1024) {
@@ -134,7 +135,15 @@ public class Kryo5Codec extends BaseCodec {
         this.inputPool = new Pool<Input>(true, false, 512) {
             @Override
             protected Input create() {
-                return new Input(8192);
+                return new Input(8192) {
+                    @Override
+                    public void reset() {
+                        super.reset();
+                        if (chars != null && chars.length > capacity) {
+                            chars = new char[capacity];
+                        }
+                    }
+                };
             }
         };
 
@@ -186,12 +195,17 @@ public class Kryo5Codec extends BaseCodec {
         public Object decode(ByteBuf buf, State state) throws IOException {
             Kryo kryo = kryoPool.obtain();
             Input input = inputPool.obtain();
+            boolean success = false;
             try {
                 input.setInputStream(new ByteBufInputStream(buf));
-                return kryo.readClassAndObject(input);
+                Object result = kryo.readClassAndObject(input);
+                success = true;
+                return result;
             } finally {
                 kryoPool.free(kryo);
-                inputPool.free(input);
+                if (success) {
+                    inputPool.free(input);
+                }
             }
         }
     };

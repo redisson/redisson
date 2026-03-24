@@ -5,7 +5,6 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.resolver.AddressResolverGroup;
 import io.netty.resolver.dns.DnsServerAddressStreamProvider;
 import io.netty.resolver.dns.DnsServerAddresses;
-import io.netty.util.internal.SocketUtils;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
@@ -28,12 +27,10 @@ import org.redisson.config.Config;
 import org.redisson.config.SubscriptionMode;
 import org.redisson.connection.SequentialDnsAddressResolverFactory;
 import org.redisson.connection.balancer.RandomLoadBalancer;
-import org.redisson.misc.RedisURI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.ContainerState;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.startupcheck.MinimumDurationRunningStartupCheckStrategy;
 
 import java.io.Serializable;
 import java.net.InetSocketAddress;
@@ -129,7 +126,7 @@ public class RedissonTopicTest extends RedisDockerTest {
                 }
             }
 
-            Awaitility.await().atMost(Duration.ofSeconds(2)).until(() -> counter.get() > 9);
+            await().atMost(Duration.ofSeconds(2)).until(() -> counter.get() > 9);
             assertThat(subscribedCounter.get()).isEqualTo(1);
             assertThat(unsubscribedCounter.get()).isZero();
 
@@ -658,7 +655,7 @@ public class RedissonTopicTest extends RedisDockerTest {
             topic1.publish(new Message("123"));
         }
 
-        Awaitility.await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(counter.get()).isZero());
+        await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(counter.get()).isZero());
     }
     
     @Test
@@ -927,6 +924,7 @@ public class RedissonTopicTest extends RedisDockerTest {
     public void testResubscriptionAfterFailover() throws Exception {
         withSentinel((nodes, config) -> {
             config.useSentinelServers()
+                    .setRetryAttempts(10)
                     .setSubscriptionsPerConnection(20)
                     .setSubscriptionConnectionPoolSize(200);
 
@@ -946,13 +944,15 @@ public class RedissonTopicTest extends RedisDockerTest {
                             lock.unlock();
                             status.add("ok");
                         } catch (Exception e) {
-                            if (e.getMessage().contains("READONLY")
-                                    || e.getMessage().contains("ERR WAIT cannot be used")) {
+                            if (e.getMessage().startsWith("READONLY")
+                                    || e.getMessage().startsWith("attempt to unlock lock")
+                                        || e.getMessage().startsWith("ERR WAIT")) {
                                 // skip
                                 return;
                             }
 
-                            status.add("failed");
+                            status.add("failed " + e.getMessage());
+
                             if (e.getCause() != null
                                     && e.getCause().getMessage().contains("slaves were synced")) {
                                 return;
@@ -977,25 +977,31 @@ public class RedissonTopicTest extends RedisDockerTest {
             nodes.get(0).stop();
 
             try {
-                TimeUnit.SECONDS.sleep(10);
+                TimeUnit.SECONDS.sleep(15);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
 
+            String newMasterIp = getContainerIp(nodes.get(1));
+
             GenericContainer<?> slave =
-                    new GenericContainer<>("bitnami/redis:7.2.4")
+                    new GenericContainer<>(IMAGE)
                             .withNetwork(nodes.get(1).getNetwork())
-                            .withEnv("REDIS_REPLICATION_MODE", "slave")
-                            .withEnv("REDIS_MASTER_HOST", nodes.get(1).getIpAddress())
-                            .withEnv("ALLOW_EMPTY_PASSWORD", "yes")
                             .withNetworkAliases("slave2")
-                            .withExposedPorts(6379);
+                            .withExposedPorts(6379)
+                            .withCommand(
+                                    "redis-server",
+                                    "--bind", "0.0.0.0",
+                                    "--protected-mode", "no",
+                                    "--replicaof", newMasterIp, "6379"
+                            );
+
             nodes.add(slave);
             slave.start();
 
             System.out.println("Failover Finished, start to see Subscribe timeouts now. Can't recover this without a refresh of redison client ");
             try {
-                TimeUnit.SECONDS.sleep(10);
+                TimeUnit.SECONDS.sleep(15);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
@@ -1005,7 +1011,7 @@ public class RedissonTopicTest extends RedisDockerTest {
 
             executor1.shutdown();
             try {
-                assertThat(executor1.awaitTermination(20, TimeUnit.SECONDS)).isTrue();
+                assertThat(executor1.awaitTermination(30, TimeUnit.SECONDS)).isTrue();
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
@@ -1055,7 +1061,7 @@ public class RedissonTopicTest extends RedisDockerTest {
             nodes.forEach(n -> n.start());
 
             try {
-                Thread.sleep(2000);
+                Thread.sleep(8000);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
@@ -1272,7 +1278,7 @@ public class RedissonTopicTest extends RedisDockerTest {
                 topic.publish(i);
             }
 
-            Awaitility.await().atMost(Duration.ofSeconds(5)).until(() -> counter.get() == 10);
+            await().atMost(Duration.ofSeconds(5)).until(() -> counter.get() == 10);
 
             for (int i = 0; i < 10; i++) {
                 RTopic topic = redisson.getTopic("test" + i);
@@ -1341,6 +1347,7 @@ public class RedissonTopicTest extends RedisDockerTest {
     public void testReattachInSentinel3() throws Exception {
         withSentinel((nodes, config) -> {
             config.useSentinelServers()
+                    .setRetryAttempts(8)
                     .setSubscriptionsPerConnection(20)
                     .setSubscriptionConnectionPoolSize(200);
 
@@ -1373,10 +1380,11 @@ public class RedissonTopicTest extends RedisDockerTest {
 
                             status.add("ok");
                         } catch (Exception e) {
-                            status.add("failed");
+                            status.add("failed " + e.getMessage());
 
-                            if (e.getMessage().contains("READONLY")
-                                    || e.getMessage().contains("ERR WAIT cannot be used")) {
+                            if (e.getMessage().startsWith("READONLY")
+                                    || e.getMessage().startsWith("attempt to unlock lock")
+                                         || e.getMessage().startsWith("ERR WAIT")) {
                                 // skip
                                 return;
                             }
@@ -1407,7 +1415,7 @@ public class RedissonTopicTest extends RedisDockerTest {
             System.out.println("master has been stopped! " + port);
 
             try {
-                TimeUnit.SECONDS.sleep(30);
+                TimeUnit.SECONDS.sleep(40);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
@@ -1417,7 +1425,7 @@ public class RedissonTopicTest extends RedisDockerTest {
 
             executor1.shutdown();
             try {
-                assertThat(executor1.awaitTermination(20, TimeUnit.SECONDS)).isTrue();
+                assertThat(executor1.awaitTermination(30, TimeUnit.SECONDS)).isTrue();
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }

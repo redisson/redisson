@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 package org.redisson.api;
+
+import org.redisson.api.bucket.CompareAndDeleteArgs;
+import org.redisson.api.bucket.CompareAndSetArgs;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -132,6 +135,53 @@ public interface RBucket<V> extends RExpirable, RBucketAsync<V> {
      *         was not equal to the expected value.
      */
     boolean compareAndSet(V expect, V update);
+
+    /**
+     * Atomically sets the value if the condition specified in args is met.
+     * <p>
+     * Supports multiple comparison modes:
+     * <ul>
+     *   <li>{@link CompareAndSetArgs#expected(Object)} - compatible with any Redis/Valkey version</li>
+     *   <li>{@link CompareAndSetArgs#unexpected(Object)} - compatible with any Redis/Valkey version</li>
+     *   <li>{@link CompareAndSetArgs#expectedDigest(String)} - requires Redis 8.4+, uses SET IFDEQ</li>
+     *   <li>{@link CompareAndSetArgs#unexpectedDigest(String)} - requires Redis 8.4+, uses SET IFDNE</li>
+     * </ul>
+     * <p>
+     * Example usage:
+     * <pre>
+     * // Set new value if current value equals expected value
+     * bucket.compareAndSet(CompareAndSetArgs.&lt;String&gt;expected("oldValue").set("newValue"));
+     *
+     * // Set new value with TTL if current value does not equal unexpected value
+     * bucket.compareAndSet(CompareAndSetArgs.&lt;String&gt;unexpected("badValue")
+     *     .set("newValue")
+     *     .timeToLive(Duration.ofMinutes(5)));
+     *
+     * // Set new value if hash digest matches (Redis 8.4+)
+     * bucket.compareAndSet(CompareAndSetArgs.&lt;String&gt;expectedDigest("b6acb9d84a38ff74")
+     *     .set("newValue")
+     *     .expireAt(Instant.now().plusSeconds(3600)));
+     * </pre>
+     *
+     * @param args compare-and-set arguments containing condition and new value
+     * @return {@code true} if successful, {@code false} if condition was not met
+     */
+    boolean compareAndSet(CompareAndSetArgs<V> args);
+
+    /**
+     * Conditionally deletes the bucket based on value comparison.
+     * <p>
+     * <ul>
+     *    <li> {@link CompareAndDeleteArgs#expected(Object)} - compatible with any Redis/Valkey version</li>
+     *    <li> {@link CompareAndDeleteArgs#unexpected(Object)} - compatible with any Redis/Valkey version</li>
+     *    <li> {@link CompareAndDeleteArgs#expectedDigest(String)} - requires Redis 8.4+</li>
+     *    <li> {@link CompareAndDeleteArgs#unexpectedDigest(String)} - requires Redis 8.4+</li>
+     * </ul>
+     *
+     * @param args comparison arguments
+     * @return {@code true} if bucket was deleted, {@code false} otherwise
+     */
+    boolean compareAndDelete(CompareAndDeleteArgs<V> args);
 
     /**
      * Retrieves current element in the holder and replaces it with <code>newValue</code>. 
@@ -256,4 +306,13 @@ public interface RBucket<V> extends RExpirable, RBucketAsync<V> {
      */
     long findCommonLength(String name);
 
+    /**
+     * Returns the hash digest of the value stored in this bucket as a hexadecimal string.
+     * The digest is computed using the XXH3 hash algorithm.
+     * <p>
+     * Requires <b>Redis 8.4.0 or higher</b>.
+     *
+     * @return hash digest as hexadecimal string, or {@code null} if the bucket doesn't exist
+     */
+    String getDigest();
 }

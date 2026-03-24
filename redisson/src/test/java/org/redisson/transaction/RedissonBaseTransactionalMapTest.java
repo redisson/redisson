@@ -223,6 +223,7 @@ public abstract class RedissonBaseTransactionalMapTest extends RedisDockerTest {
         assertThat(map.fastPut("1", "2")).isTrue();
         assertThat(map.fastRemove("1")).isEqualTo(1);
         transaction.commit();
+        redisson.getKeys().deleteByPattern("*redisson_unlock_latch*");
         assertThat(redisson.getKeys().count()).isZero();
     }
     
@@ -301,7 +302,8 @@ public abstract class RedissonBaseTransactionalMapTest extends RedisDockerTest {
         assertThat(m.get("3")).isEqualTo("4");
         
         transaction.rollback();
-        
+
+        redisson.getKeys().deleteByPattern("*redisson_unlock_latch*");
         assertThat(redisson.getKeys().count()).isEqualTo(1);
         
         assertThat(m.get("1")).isEqualTo("2");

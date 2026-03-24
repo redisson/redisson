@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.CommandsData;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandBatchService.Entry;
+import org.redisson.config.DelayStrategy;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.NodeSource;
 import org.redisson.connection.NodeSource.Redirect;
@@ -77,11 +78,11 @@ public class RedisCommonBatchExecutor extends RedisExecutor<Object, Void> {
         return result;
     }
 
-    private static int retryInterval(ConnectionManager connectionManager, BatchOptions options) {
-        if (options.getRetryInterval() > 0) {
-            return (int) options.getRetryInterval();
+    private static DelayStrategy retryInterval(ConnectionManager connectionManager, BatchOptions options) {
+        if (options.getRetryDelay() != null) {
+            return options.getRetryDelay();
         }
-        return connectionManager.getServiceManager().getConfig().getRetryInterval();
+        return connectionManager.getServiceManager().getConfig().getRetryDelay();
     }
 
     private static int retryAttempts(ConnectionManager connectionManager, BatchOptions options) {
@@ -106,7 +107,20 @@ public class RedisCommonBatchExecutor extends RedisExecutor<Object, Void> {
             free(command.getParams());
         }
     }
-    
+
+    @Override
+    protected CompletableFuture<RedisConnection> getConnection(CompletableFuture<Void> attemptPromise) {
+        CompletableFuture<RedisConnection> f = super.getConnection(attemptPromise);
+        f.whenComplete((r, e) -> {
+            if (e != null) {
+                if (source.getEntry().getReplacedBy() != null) {
+                    source = new NodeSource(source.getEntry().getReplacedBy());
+                }
+            }
+        });
+        return f;
+    }
+
     @Override
     protected void sendCommand(CompletableFuture<Void> attemptPromise, RedisConnection connection) {
         boolean isAtomic = options.getExecutionMode() != ExecutionMode.IN_MEMORY;

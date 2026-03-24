@@ -5,7 +5,7 @@
 Redisson implements [Hibernate 2nd level Cache](https://docs.jboss.org/hibernate/orm/6.6/userguide/html_single/Hibernate_User_Guide.html#caching) provider based on Redis.  
 All Hibernate cache strategies are supported: `READ_ONLY`, `NONSTRICT_READ_WRITE`, `READ_WRITE` and `TRANSACTIONAL`.  
 
-Compatible with Hibernate 4.x, 5.1.x, 5.2.x, 5.3.3+ up to 5.6.x and 6.0.2+ up to 6.x.x
+Compatible with Hibernate 4.x, 5.1.x, 5.2.x, 5.3.3+ up to 5.6.x and 6.0.2+ up to 7.x.x
 
 ### Eviction, local cache and data partitioning
 
@@ -37,7 +37,7 @@ Redisson provides various Hibernate Cache factories including those with feature
 
 4. **Advanced eviction**
 
-    Allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task, entries are cleaned on Redis or Valkey side.
+    Allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task, entries are cleaned by Valkey or Redis.
 
     Available implementations:
 
@@ -48,8 +48,8 @@ Redisson provides various Hibernate Cache factories including those with feature
 
 5. **Native eviction**
 
-    Allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task, entries are cleaned on Redis or Valkey side.  
-    Requires **Redis 7.4+**.
+    Allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task, entries are cleaned by Valkey or Redis.  
+    Requires **Valkey 9.0+** or **Redis 7.4+**.
 
     Available implementations:
 
@@ -84,6 +84,8 @@ Redisson provides various Hibernate Cache factories including those with feature
             <artifactId>redisson-hibernate-53</artifactId>
             <!-- for Hibernate v6.0.2+ - v6.x.x -->
             <artifactId>redisson-hibernate-6</artifactId>
+            <!-- for Hibernate v7.x.x -->
+            <artifactId>redisson-hibernate-7</artifactId>
             <version>xVERSIONx</version>
         </dependency>
         ```
@@ -101,6 +103,8 @@ Redisson provides various Hibernate Cache factories including those with feature
         compile 'pro.redisson:redisson-hibernate-53:xVERSIONx'
         // for Hibernate v6.0.2+ - v6.x.x
         compile 'pro.redisson:redisson-hibernate-6:xVERSIONx'
+        // for Hibernate v7.x.x
+        compile 'pro.redisson:redisson-hibernate-7:xVERSIONx'
         ```
 
     -   **Community Edition**
@@ -120,6 +124,8 @@ Redisson provides various Hibernate Cache factories including those with feature
             <artifactId>redisson-hibernate-53</artifactId>
             <!-- for Hibernate v6.0.2+ - v6.x.x -->
             <artifactId>redisson-hibernate-6</artifactId>
+            <!-- for Hibernate v7.x.x -->
+            <artifactId>redisson-hibernate-7</artifactId>
             <version>xVERSIONx</version>
         </dependency>
         ```
@@ -137,6 +143,8 @@ Redisson provides various Hibernate Cache factories including those with feature
         compile 'org.redisson:redisson-hibernate-53:xVERSIONx'
         // for Hibernate v6.0.2+ - v6.x.x
         compile 'org.redisson:redisson-hibernate-6:xVERSIONx'
+        // for Hibernate v7.x.x
+        compile 'org.redisson:redisson-hibernate-7:xVERSIONx'
         ```
 
     </div>
@@ -477,7 +485,7 @@ Redisson provides JCache implementations with many important features:
 
 5. **Advanced eviction**
 
-    Doesn't use an entry eviction task, entries are cleaned on Redis or Valkey side.
+    Doesn't use an entry eviction task, entries are cleaned by Valkey or Redis.  
 
     Available implementations:
 
@@ -488,8 +496,8 @@ Redisson provides JCache implementations with many important features:
 
 6. **Native eviction**
 
-    Doesn't use an entry eviction task, entries are cleaned on Redis side.  
-    Requires **Redis 7.4+**.
+    Doesn't use an entry eviction task, entries are cleaned by Valkey or Redis.  
+    Requires **Valkey 9.0+** or **Redis 7.4+**.
 
     Available implementations:
 
@@ -1065,7 +1073,7 @@ Redisson provides multiple MyBatis Cache implementations which support features 
 
 3. **Advanced eviction**
 
-    Allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task, entries are cleaned on Redis or Valkey side.
+    Allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task, entries are cleaned by Valkey or Redis.  
 
     Available implementations:
 
@@ -1076,8 +1084,8 @@ Redisson provides multiple MyBatis Cache implementations which support features 
 
 4. **Native eviction**
 
-    Allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task, entries are cleaned on Redis side.  
-    Requires **Redis 7.4+**.
+    Allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task, entries are cleaned by Valkey or Redis.  
+    Requires **Valkey 9.0+** or **Redis 7.4+**.
 
     Available implementations:
 
@@ -1280,7 +1288,7 @@ Redisson provides various [Quarkus Cache](https://quarkus.io/guides/cache) imple
 
 4. **Advanced eviction**
 
-    Allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task, entries are cleaned on Redis or Valkey side.
+    Allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task, entries are cleaned by Valkey or Redis.  
 
     Available implementations:
 
@@ -1291,8 +1299,8 @@ Redisson provides various [Quarkus Cache](https://quarkus.io/guides/cache) imple
 
 5. **Native eviction**
 
-    Allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task, entries are cleaned on Redis side.  
-    Requires **Redis 7.4+**.
+    Allows to define `time to live` parameter per map entry. Doesn't use an entry eviction task, entries are cleaned by Valkey or Redis.  
+    Requires **Valkey 9.0+** or **Redis 7.4+**.
 
     Available implementations:
 

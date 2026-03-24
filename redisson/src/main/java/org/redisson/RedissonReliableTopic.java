@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ import io.netty.util.Timeout;
 import org.redisson.api.RFuture;
 import org.redisson.api.RReliableTopic;
 import org.redisson.api.RStream;
-import org.redisson.api.StreamMessageId;
+import org.redisson.api.stream.StreamMessageId;
 import org.redisson.api.listener.MessageListener;
 import org.redisson.api.stream.StreamReadGroupArgs;
 import org.redisson.client.codec.Codec;
@@ -77,18 +77,15 @@ public final class RedissonReliableTopic extends RedissonExpirable implements RR
     private final AtomicBoolean subscribed = new AtomicBoolean();
     private final String timeoutName;
 
-    RedissonReliableTopic(Codec codec, CommandAsyncExecutor commandExecutor, String name, String subscriberId) {
+    RedissonReliableTopic(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
         super(codec, commandExecutor, name);
         stream = new RedissonStream<>(new CompositeCodec(StringCodec.INSTANCE, codec), commandExecutor, name);
-        if (subscriberId == null) {
-            subscriberId = getServiceManager().generateId();
-        }
-        this.subscriberId = subscriberId;
+        this.subscriberId = getServiceManager().generateId();
         this.timeoutName = getTimeout(getRawName());
     }
 
-    RedissonReliableTopic(CommandAsyncExecutor commandExecutor, String name, String subscriberId) {
-        this(commandExecutor.getServiceManager().getCfg().getCodec(), commandExecutor, name, subscriberId);
+    RedissonReliableTopic(CommandAsyncExecutor commandExecutor, String name) {
+        this(commandExecutor.getServiceManager().getCfg().getCodec(), commandExecutor, name);
     }
 
     private String getTimeout(String name) {

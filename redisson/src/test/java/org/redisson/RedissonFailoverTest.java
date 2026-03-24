@@ -268,6 +268,7 @@ public class RedissonFailoverTest extends RedisDockerTest {
             config.useClusterServers()
                     .setRetryAttempts(30)
                     .setReadMode(ReadMode.MASTER)
+                    .setCheckMasterLinkStatus(true)
                     .setSubscriptionMode(SubscriptionMode.MASTER);
             RedissonClient redisson = Redisson.create(config);
 

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,6 +79,14 @@ public interface RSemaphoreAsync extends RExpirableAsync {
      * @return void
      */
     RFuture<Void> releaseAsync(int permits);
+
+    /**
+     * Releases defined amount of <code>permits</code> only if semaphore exists.
+     * Increases the number of available permits by <code>permits</code> amount.
+     *
+     * @param permits amount of permits
+     */
+    RFuture<Boolean> releaseIfExistsAsync(int permits);
 
     /**
      * Tries to set number of permits.

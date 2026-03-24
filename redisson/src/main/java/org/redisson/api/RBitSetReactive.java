@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,11 @@
  */
 package org.redisson.api;
 
+import org.redisson.api.bitset.BitFieldArgs;
 import reactor.core.publisher.Mono;
 
 import java.util.BitSet;
+import java.util.List;
 
 /**
  * Reactive interface for BitSet object
@@ -94,6 +96,17 @@ public interface RBitSetReactive extends RExpirableReactive {
      * @return result value
      */
     Mono<Long> incrementAndGetUnsigned(int size, long offset, long increment);
+
+    /**
+     * Executes BITFIELD command with multiple subcommands
+     * and returns result list in the same order.
+     * if ReadMode is Slave And Args is only get commands,
+     * then BITFIELD_RO command will be executed
+     *
+     * @param args - bitfield arguments
+     * @return result values
+     */
+    Mono<List<Long>> bitField(BitFieldArgs args);
 
     /**
      * Returns byte number at specified <code>offset</code>
@@ -249,9 +262,9 @@ public interface RBitSetReactive extends RExpirableReactive {
     /**
      * Executes NOT operation over all bits
      * 
-     * @return void
+     * @return length in bytes of the destination key
      */
-    Mono<Void> not();
+    Mono<Long> not();
 
     /**
      * Set all bits to one from <code>fromIndex</code> (inclusive) to <code>toIndex</code> (exclusive)
@@ -332,26 +345,66 @@ public interface RBitSetReactive extends RExpirableReactive {
      * Stores result into this object.
      * 
      * @param bitSetNames - name of stored bitsets
-     * @return void
+     * @return length in bytes of the destination key
      */
-    Mono<Void> or(String... bitSetNames);
+    Mono<Long> or(String... bitSetNames);
 
     /**
      * Executes AND operation over this object and specified bitsets.
      * Stores result into this object.
      * 
      * @param bitSetNames - name of stored bitsets
-     * @return void
+     * @return length in bytes of the destination key
      */
-    Mono<Void> and(String... bitSetNames);
+    Mono<Long> and(String... bitSetNames);
 
     /**
      * Executes XOR operation over this object and specified bitsets.
      * Stores result into this object.
      * 
      * @param bitSetNames - name of stored bitsets
-     * @return void
+     * @return length in bytes of the destination key
      */
-    Mono<Void> xor(String... bitSetNames);
+    Mono<Long> xor(String... bitSetNames);
+
+    /**
+     * Executes bitwise DIFF operation over this object and specified bitsets.
+     * Sets bits that are set in this object but not in any of the other bitsets.
+     * Stores result into this object.
+     *
+     * @param bitSetNames name of stored bitsets
+     * @return length in bytes of the destination key
+     */
+    Mono<Long> diff(String... bitSetNames);
+
+    /**
+     * Executes bitwise DIFF1 operation over this object and specified bitsets.
+     * Sets bits that are set in one or more of the other bitsets but not in this object.
+     * Stores result into this object.
+     *
+     * @param bitSetNames name of stored bitsets
+     * @return length in bytes of the destination key
+     */
+    Mono<Long> diffInverse(String... bitSetNames);
+
+    /**
+     * Executes bitwise ANDOR operation over this object and specified bitsets.
+     * Sets bits that are set in this object AND also in one or more of the other bitsets.
+     * Stores result into this object.
+     *
+     * @param bitSetNames name of stored bitsets
+     * @return length in bytes of the destination key
+     */
+    Mono<Long> andOr(String... bitSetNames);
+
+    /**
+     * Executes bitwise ONE operation over this object and specified bitsets.
+     * Sets bits that are set in exactly one of the provided bitsets.
+     * Stores result into this object.
+     *
+     * @param bitSetNames name of stored bitsets
+     * @return length in bytes of the destination key
+     */
+    Mono<Long> setExclusive(String... bitSetNames);
 
 }

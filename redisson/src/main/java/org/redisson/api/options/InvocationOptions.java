@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 package org.redisson.api.options;
+
+import org.redisson.config.DelayStrategy;
 
 import java.time.Duration;
 
@@ -48,12 +50,20 @@ public interface InvocationOptions<T extends InvocationOptions<T>> {
     T retryAttempts(int retryAttempts);
 
     /**
-     * Defines time interval for another one attempt to send a Redis command
-     * if it hasn't already been sent.
+     * Use {@link #retryDelay(DelayStrategy)} instead.
      *
      * @param interval retry time interval
      * @return options instance
      */
+    @Deprecated
     T retryInterval(Duration interval);
+
+    /**
+     * Defines the delay strategy for a new attempt to send a command.
+     *
+     * @param delayStrategy delay strategy implementation
+     * @return options instance
+     */
+    T retryDelay(DelayStrategy delayStrategy);
 
 }

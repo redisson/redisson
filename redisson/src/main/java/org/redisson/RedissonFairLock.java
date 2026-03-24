@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,8 +50,8 @@ public class RedissonFairLock extends RedissonLock implements RLock {
         super(commandExecutor, name);
         this.commandExecutor = commandExecutor;
         this.threadWaitTime = getServiceManager().getCfg().getFairLockWaitTimeout();
-        threadsQueueName = prefixName("redisson_lock_queue", name);
-        timeoutSetName = prefixName("redisson_lock_timeout", name);
+        threadsQueueName = prefixName("redisson_lock_queue", getRawName());
+        timeoutSetName = prefixName("redisson_lock_timeout", getRawName());
     }
 
     @Override

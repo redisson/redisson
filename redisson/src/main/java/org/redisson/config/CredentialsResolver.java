@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,12 @@
 package org.redisson.config;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 /**
- * Credentials resolver object which is invoked during connection/reconnection process.
- * It makes possible to specify dynamically changing Redis credentials.
+ * Credentials resolver interface for dynamically managing Valkey or Redis
+ * authentication credentials during connection and reconnection processes.
  *
  * @author Nikita Koksharov
  *
@@ -29,11 +30,31 @@ public interface CredentialsResolver {
 
     /**
      * Asynchronously resolves Credentials object
-     * for specified Redis node <code>address</code> .
+     * for specified Valkey or Redis node <code>address</code> .
      *
-     * @param address address of Redis node
+     * @param address address of Valkey or Redis node
      * @return Credentials object
      */
     CompletionStage<Credentials> resolve(InetSocketAddress address);
+
+    /**
+     * Returns a CompletionStage that completes when the next credential renewal
+     * is needed.
+     * <p>
+     * The returned CompletionStage should complete when an external authentication
+     * system changed credentials and CompletionStage instance returned
+     * by {@link #resolve(InetSocketAddress)} method has been updated.
+     * <p>
+     * For continuous monitoring, implementations should return a new CompletionStage
+     * instance after each credentials update to support chaining multiple renewal events.
+     *
+     * @return CompletionStage that completes when credential renewal is needed.
+     *
+     * @see EntraIdCredentialsResolver
+     *
+     */
+    default CompletionStage<Void> nextRenewal() {
+        return new CompletableFuture<>();
+    }
 
 }

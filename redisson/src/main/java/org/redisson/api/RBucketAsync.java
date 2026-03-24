@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 package org.redisson.api;
+
+import org.redisson.api.bucket.CompareAndDeleteArgs;
+import org.redisson.api.bucket.CompareAndSetArgs;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -131,6 +134,37 @@ public interface RBucketAsync<V> extends RExpirableAsync {
      *         was not equal to the expected value.
      */
     RFuture<Boolean> compareAndSetAsync(V expect, V update);
+
+    /**
+     * Atomically sets the value if the condition specified in args is met.
+     * <p>
+     * Supports multiple comparison modes:
+     * <ul>
+     *   <li>{@link CompareAndSetArgs#expected(Object)} - compatible with any Redis/Valkey version</li>
+     *   <li>{@link CompareAndSetArgs#unexpected(Object)} - compatible with any Redis/Valkey version</li>
+     *   <li>{@link CompareAndSetArgs#expectedDigest(String)} - requires Redis 8.4+, uses SET IFDEQ</li>
+     *   <li>{@link CompareAndSetArgs#unexpectedDigest(String)} - requires Redis 8.4+, uses SET IFDNE</li>
+     * </ul>
+     *
+     * @param args compare-and-set arguments containing condition and new value
+     * @return {@code true} if successful, {@code false} if condition was not met
+     */
+    RFuture<Boolean> compareAndSetAsync(CompareAndSetArgs<V> args);
+
+    /**
+     * Conditionally deletes the bucket based on value comparison.
+     * <p>
+     * <ul>
+     *    <li> {@link CompareAndDeleteArgs#expected(Object)} - compatible with any Redis/Valkey version</li>
+     *    <li> {@link CompareAndDeleteArgs#unexpected(Object)} - compatible with any Redis/Valkey version</li>
+     *    <li> {@link CompareAndDeleteArgs#expectedDigest(String)} - requires Redis 8.4+</li>
+     *    <li> {@link CompareAndDeleteArgs#unexpectedDigest(String)} - requires Redis 8.4+</li>
+     * </ul>
+     *
+     * @param args comparison arguments
+     * @return {@code true} if bucket was deleted, {@code false} otherwise
+     */
+    RFuture<Boolean> compareAndDeleteAsync(CompareAndDeleteArgs<V> args);
 
     /**
      * Retrieves current element in the holder and replaces it with <code>newValue</code>. 
@@ -255,5 +289,15 @@ public interface RBucketAsync<V> extends RExpirableAsync {
      * @return common part of the data
      */
     RFuture<Long> findCommonLengthAsync(String name);
+
+    /**
+     * Returns the hash digest of the value stored in this bucket as a hexadecimal string.
+     * The digest is computed using the XXH3 hash algorithm.
+     * <p>
+     * Requires <b>Redis 8.4.0 or higher</b>.
+     *
+     * @return hash digest as hexadecimal string, or {@code null} if the bucket doesn't exist
+     */
+    RFuture<String> getDigestAsync();
 
 }

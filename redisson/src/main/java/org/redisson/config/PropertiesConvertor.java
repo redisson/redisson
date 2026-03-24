@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,15 +25,15 @@ import java.util.function.Function;
  */
 public class PropertiesConvertor {
 
-    public static String toYaml(String suffix, Iterable<String> propertyNames, Function<String, String> resolver, boolean caseSensitive) {
+    public static String toYaml(String prefix, Iterable<String> propertyNames, Function<String, String> resolver, boolean caseSensitive) {
         Map<String, Object> map = new HashMap<>();
 
         for (String propertyName : propertyNames) {
-            if (!propertyName.startsWith(suffix)) {
+            if (!propertyName.startsWith(prefix)) {
                 continue;
             }
 
-            List<String> pps = Arrays.asList(propertyName.replace(suffix, "").split("\\."));
+            List<String> pps = Arrays.asList(propertyName.replace(prefix, "").split("\\."));
             String value = resolver.apply(propertyName);
             String name = convertKey(pps.get(0), caseSensitive);
             if (pps.size() == 2) {

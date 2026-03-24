@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
-import java.util.function.Supplier;
+import java.util.function.Function;
 
 /**
  *
@@ -164,7 +164,7 @@ public interface CommandAsyncExecutor {
 
     <T> RFuture<T> syncedEval(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params);
 
-    <T> CompletionStage<T> handleNoSync(CompletionStage<T> stage, Supplier<CompletionStage<?>> supplier);
+    <T> CompletionStage<T> handleNoSync(CompletionStage<T> stage, Function<Throwable, CompletionStage<?>> supplier);
 
     boolean isTrackChanges();
 

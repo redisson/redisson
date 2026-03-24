@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,6 +74,16 @@ public interface FieldIndex {
     }
 
     /**
+     * Returns vector field index which uses SVS-VAMANA indexing method
+     *
+     * @param fieldName field name
+     * @return options object
+     */
+    static SVSVamanaVectorIndex svsVamanaVector(String fieldName) {
+        return new SVSVamanaVectorIndexParams(fieldName);
+    }
+
+    /**
      * Returns geo field index
      *
      * @param fieldName field name
@@ -83,4 +93,13 @@ public interface FieldIndex {
         return new GeoIndexParams(fieldName);
     }
 
+    /**
+     * Returns geoshape field index
+     *
+     * @param fieldName field name
+     * @return options object
+     */
+    static GeoShapeIndex geoShape(String fieldName) {
+        return new GeoShapeIndexParams(fieldName);
+    }
 }

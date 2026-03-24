@@ -2,7 +2,6 @@ package org.redisson;
 
 import net.bytebuddy.utility.RandomString;
 import org.assertj.core.api.Assertions;
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -18,6 +17,7 @@ import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.command.BatchPromise;
 import org.redisson.config.Config;
 import org.redisson.config.SubscriptionMode;
+import org.testcontainers.containers.ContainerState;
 
 import java.time.Duration;
 import java.util.*;
@@ -25,9 +25,11 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 public class RedissonBatchTest extends RedisDockerTest {
 
@@ -36,6 +38,54 @@ public class RedissonBatchTest extends RedisDockerTest {
             {BatchOptions.defaults().executionMode(ExecutionMode.IN_MEMORY)},
             {BatchOptions.defaults().executionMode(ExecutionMode.REDIS_WRITE_ATOMIC)}
             });
+    }
+
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testOrder(BatchOptions batchOptions) throws InterruptedException {
+        Assumptions.assumeTrue(batchOptions.getExecutionMode() == ExecutionMode.REDIS_WRITE_ATOMIC);
+
+        Config config = createConfig();
+        config.useSingleServer()
+                .setConnectionMinimumIdleSize(1)
+                .setConnectionPoolSize(1);
+        RedissonClient redisson = Redisson.create(config);
+
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+
+        AtomicReference<Throwable> exceptionRef = new AtomicReference<>();
+
+        final AtomicInteger counter = new AtomicInteger();
+        for(int j=0;j<2;j++){
+            int finalJ = j;
+            executor.submit(new Runnable() {
+                @Override
+                public void run() {
+                    try{
+                        RBatch batch = redisson.createBatch(batchOptions);
+
+                        batch.getScoredSortedSet(finalJ+"").removeAsync("aaa");
+                        batch.getBucket(finalJ +"name").getAsync();
+
+                        BatchResult<?> s = batch.execute();
+                        assertThat(s.getResponses().size()).isGreaterThan(2);
+
+                    }catch (Exception e){
+                        exceptionRef.set(e);
+                    }finally {
+                        counter.incrementAndGet();
+                    }
+
+                }
+            });
+        }
+
+        executor.shutdown();
+        assertThat(executor.awaitTermination(1, TimeUnit.SECONDS)).isTrue();
+        assertThat(exceptionRef.get()).doesNotThrowAnyException();
+        assertThat(counter.get()).isEqualTo(2);
+
+        redisson.shutdown();
     }
 
     @ParameterizedTest
@@ -198,13 +248,52 @@ public class RedissonBatchTest extends RedisDockerTest {
                 });
             }
 
-            Awaitility.await().atMost(14, TimeUnit.SECONDS).until(() -> {
+            await().atMost(14, TimeUnit.SECONDS).until(() -> {
                 return counter.get() == 0;
             });
             Assertions.assertThat(hasErrors).isTrue();
 
             executeBatch(redisson, batchOptions).toCompletableFuture().join();
             redisson.shutdown();
+        });
+    }
+
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testFailover(BatchOptions batchOptions) {
+        Assumptions.assumeTrue(batchOptions.getExecutionMode() == ExecutionMode.IN_MEMORY);
+
+        withNewCluster(data -> {
+            RedissonClient redisson = data.redisson();
+
+            int keysAmount = 100000;
+            AtomicReference<String> status = new AtomicReference<>();
+            Thread t = new Thread(() -> {
+                BatchOptions options = BatchOptions.defaults();
+                options.executionMode(batchOptions.getExecutionMode());
+                options.retryAttempts(20);
+
+                RBatch batch = redisson.createBatch(options);
+                for (int i = 0; i < keysAmount; i++) {
+                    String key = "" + i;
+                    batch.getBucket(key).setAsync(key);
+                }
+                try {
+                    batch.execute();
+                    status.set("OK");
+                } catch (RedisException e) {
+                    status.set(e.getMessage());
+                }
+            });
+            t.start();
+
+            List<ContainerState> masters = getMasterNodes(data.nodes());
+            stop(masters.get(0));
+
+            await().atMost(60, TimeUnit.SECONDS)
+                    .untilAsserted(() -> assertThat(status.get()).isEqualTo("OK"));
+            assertThat(redisson.getKeys().count()).isEqualTo(keysAmount);
+
         });
     }
 
@@ -719,15 +808,14 @@ public class RedissonBatchTest extends RedisDockerTest {
 
 
     @ParameterizedTest
-@MethodSource("data")
+    @MethodSource("data")
     public void testEmpty(BatchOptions batchOptions) {
         RBatch batch = redisson.createBatch(batchOptions);
         batch.execute();
     }
 
     @ParameterizedTest
-@MethodSource("data")
-
+    @MethodSource("data")
     public void testOrdering(BatchOptions batchOptions) throws InterruptedException {
         ExecutorService e = Executors.newFixedThreadPool(16);
         final RBatch batch = redisson.createBatch(batchOptions);
@@ -763,8 +851,7 @@ public class RedissonBatchTest extends RedisDockerTest {
     }
 
     @ParameterizedTest
-@MethodSource("data")
-
+    @MethodSource("data")
     public void test(BatchOptions batchOptions) {
         RBatch batch = redisson.createBatch(batchOptions);
         batch.getMap("test").fastPutAsync("1", "2");

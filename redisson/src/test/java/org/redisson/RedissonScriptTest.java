@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.*;
 import org.redisson.api.RScript.Mode;
-import org.redisson.client.RedisException;
+import org.redisson.client.RedisNoScriptException;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.config.CommandMapper;
 import org.redisson.config.Config;
@@ -53,6 +53,24 @@ public class RedissonScriptTest extends RedisDockerTest {
         assertThat(m.get("key1")).isEqualTo("value3");
     }
 
+
+    @Test
+    public void testCommandMapping2() {
+        Config cfg = createConfig();
+        cfg.useSingleServer().setCommandMapper(new CommandMapper() {
+            @Override
+            public String map(String name) {
+                return name.equalsIgnoreCase("ttl") ? "pttl" : name;
+            }
+        });
+
+        RedissonClient r = Redisson.create(cfg);
+        String script = "redis.call('set','test','value','ex',60);redis.call('ttl','test');return redis.call('ttl','test');";
+        RScript rScript = r.getScript();
+        int eval = rScript.eval(Mode.READ_WRITE, script, RScript.ReturnType.LONG);
+        assert eval == 60000;
+    }
+
     @Test
     public void testMulti() {
         RLexSortedSet idx2 = redisson.getLexSortedSet("ABCD17436");
@@ -74,7 +92,7 @@ public class RedissonScriptTest extends RedisDockerTest {
      
          List<List<Object>> objs = redisson.getScript(StringCodec.INSTANCE).eval(RScript.Mode.READ_ONLY,
                 luaScript1,
-                RScript.ReturnType.MULTI, Collections.emptyList());            
+                RScript.ReturnType.LIST, Collections.emptyList());
         
         assertThat(objs).hasSize(3);
         assertThat(objs.get(0)).hasSize(5);
@@ -85,21 +103,21 @@ public class RedissonScriptTest extends RedisDockerTest {
     @Test
     public void testString() {
         RScript script = redisson.getScript(StringCodec.INSTANCE);
-        String res = script.eval(RScript.Mode.READ_ONLY, "return 'hello'", RScript.ReturnType.STATUS);
+        String res = script.eval(RScript.Mode.READ_ONLY, "return 'hello'", RScript.ReturnType.STRING);
         assertThat(res).isEqualTo("hello");
     }
 
     @Test
     public void testEval() {
         RScript script = redisson.getScript(StringCodec.INSTANCE);
-        List<Object> res = script.eval(RScript.Mode.READ_ONLY, "return {'1','2','3.3333','foo',nil,'bar'}", RScript.ReturnType.MULTI, Collections.emptyList());
+        List<Object> res = script.eval(RScript.Mode.READ_ONLY, "return {'1','2','3.3333','foo',nil,'bar'}", RScript.ReturnType.LIST, Collections.emptyList());
         assertThat(res).containsExactly("1", "2", "3.3333", "foo");
     }
 
     @Test
     public void testEvalAsync() {
         RScript script = redisson.getScript(StringCodec.INSTANCE);
-        RFuture<List<Object>> res = script.evalAsync(RScript.Mode.READ_ONLY, "return {'1','2','3.3333','foo',nil,'bar'}", RScript.ReturnType.MULTI, Collections.emptyList());
+        RFuture<List<Object>> res = script.evalAsync(RScript.Mode.READ_ONLY, "return {'1','2','3.3333','foo',nil,'bar'}", RScript.ReturnType.LIST, Collections.emptyList());
         assertThat(res.toCompletableFuture().join()).containsExactly("1", "2", "3.3333", "foo");
     }
 
@@ -107,7 +125,7 @@ public class RedissonScriptTest extends RedisDockerTest {
     public void testEvalResultMapping() {
         testInCluster(redissonClient -> {
             RScript script = redissonClient.getScript(StringCodec.INSTANCE);
-            Long res = script.eval(RScript.Mode.READ_ONLY, "return 1;", RScript.ReturnType.INTEGER,
+            Long res = script.eval(RScript.Mode.READ_ONLY, "return 1;", RScript.ReturnType.LONG,
                     integers -> integers.stream().mapToLong(r -> r).sum());
             assertThat(res).isEqualTo(3);
         });
@@ -149,11 +167,9 @@ public class RedissonScriptTest extends RedisDockerTest {
         Assertions.assertEquals("bar", r1);
         redisson.getScript().scriptFlush();
 
-        try {
+        Assertions.assertThrows(RedisNoScriptException.class, () -> {
             redisson.getScript().evalSha(Mode.READ_ONLY, "282297a0228f48cd3fc6a55de6316f31422f5d17", RScript.ReturnType.VALUE, Collections.emptyList());
-        } catch (Exception e) {
-            Assertions.assertEquals(RedisException.class, e.getClass());
-        }
+        });
     }
 
     @Test

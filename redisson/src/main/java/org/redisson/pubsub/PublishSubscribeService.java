@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ import org.redisson.misc.Tuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -517,9 +518,10 @@ public class PublishSubscribeService {
 
         MasterSlaveEntry entry = getEntry(channelName);
         if (entry == null) {
+            Duration timeout = config.getRetryDelay().calcDelay(attempts.get());
             connectionManager.getServiceManager().newTimeout(tt -> {
                 trySubscribe(codec, channelNames, promise, type, lock, attempts, listeners);
-            }, config.getRetryInterval(), TimeUnit.MILLISECONDS);
+            }, timeout.toMillis(), TimeUnit.MILLISECONDS);
             return;
         }
 
@@ -679,6 +681,8 @@ public class PublishSubscribeService {
                          PubSubType type, AsyncSemaphore lock, AtomicInteger attempts,
                          RedisPubSubListener<?>... listeners) {
 
+        Duration timeout = config.getRetryDelay().calcDelay(attempts.get());
+
         CompletableFuture<RedisPubSubConnection> connFuture = msEntry.nextPubSubConnection(clientEntry);
         connectionManager.getServiceManager().newTimeout(t -> {
             if (!connFuture.cancel(false)
@@ -687,7 +691,7 @@ public class PublishSubscribeService {
             }
 
             trySubscribe(codec, channelNames, promise, type, lock, attempts, listeners);
-        }, config.getRetryInterval(), TimeUnit.MILLISECONDS);
+        }, timeout.toMillis(), TimeUnit.MILLISECONDS);
 
         promise.whenComplete((res, e) -> {
             if (e != null) {
@@ -812,7 +816,9 @@ public class PublishSubscribeService {
         }
 
         PubSubEntry ee = entry2PubSubConnection.computeIfAbsent(entry.getEntry(), e -> new PubSubEntry());
-        if (!ee.getEntries().contains(entry)) {
+        if (entry.getConnection().isClosed()) {
+            ee.getEntries().remove(entry);
+        } else if (!ee.getEntries().contains(entry)) {
             ee.getEntries().add(entry);
         }
     }
@@ -1001,7 +1007,8 @@ public class PublishSubscribeService {
         if (isMultiEntity(channelName)) {
             entry = connectionManager.getEntrySet()
                     .stream()
-                    .filter(e -> !name2PubSubConnection.containsKey(new PubSubKey(channelName, e)) && e != oldEntry)
+                    .filter(e -> !name2PubSubConnection.containsKey(new PubSubKey(channelName, e))
+                            && (!connectionManager.getServiceManager().getCfg().isClusterConfig() || e != oldEntry))
                     .findFirst()
                     .orElse(null);
         }
@@ -1163,7 +1170,7 @@ public class PublishSubscribeService {
     public void checkShardingSupport(ShardedSubscriptionMode mode, RedisConnection connection) {
         if (mode == ShardedSubscriptionMode.AUTO) {
             try {
-                connection.sync(RedisCommands.PUBSUB_SHARDNUMSUB);
+                connection.sync(RedisCommands.PUBSUB_SHARDNUMSUB, 0);
                 setShardingSupported(true);
             } catch (Exception e) {
                 // skip

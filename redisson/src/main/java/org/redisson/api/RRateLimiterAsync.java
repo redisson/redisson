@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -189,6 +189,18 @@ public interface RRateLimiterAsync extends RExpirableAsync {
      *         if the waiting time elapsed before a permit was acquired
      */
     RFuture<Boolean> tryAcquireAsync(long permits, Duration timeout);
+
+    /**
+     * Releases the given number of <code>permits</code>.
+     *
+     * <p>Increases the number of available permits by the specified amount and completes
+     * immediately, causing any waiting acquirers that can now obtain permits to proceed.
+     *
+     * <p>The returned future completes when the release has been applied.
+     *
+     * @param permits amount to release; must be greater than or equal to zero
+     */
+    RFuture<Void> releaseAsync(long permits);
 
     /**
      * Use {@link #setRateAsync(RateType, long, Duration)} instead

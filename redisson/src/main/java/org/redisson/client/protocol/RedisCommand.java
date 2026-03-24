@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ public class RedisCommand<R> {
 
     private final String name;
     private final String subName;
+    private String script;
 
     private final MultiDecoder<R> replayMultiDecoder;
     Convertor<R> convertor = new EmptyConvertor<R>();
@@ -45,7 +46,15 @@ public class RedisCommand<R> {
         this.replayMultiDecoder = command.replayMultiDecoder;
         this.convertor = command.convertor;
     }
-    
+
+    public RedisCommand(RedisCommand<R> command, String name, String script) {
+        this.name = name;
+        this.subName = command.subName;
+        this.replayMultiDecoder = command.replayMultiDecoder;
+        this.convertor = command.convertor;
+        this.script = script;
+    }
+
     public RedisCommand(RedisCommand<R> command, String name, Convertor<R> convertor) {
         this.name = name;
         this.subName = command.subName;
@@ -122,6 +131,9 @@ public class RedisCommand<R> {
         str.append("(").append(name);
         if (subName != null) {
             str.append(" ").append(subName);
+        }
+        if (script != null) {
+            str.append(", cached script: ").append(script);
         }
         str.append(")");
         return str.toString();

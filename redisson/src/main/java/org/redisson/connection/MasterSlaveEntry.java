@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,10 +32,12 @@ import org.redisson.connection.pool.MasterPubSubConnectionPool;
 import org.redisson.connection.pool.PubSubConnectionPool;
 import org.redisson.connection.pool.SlaveConnectionPool;
 import org.redisson.misc.RedisURI;
+import org.redisson.misc.Tuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -54,6 +56,8 @@ public class MasterSlaveEntry {
     final Logger log = LoggerFactory.getLogger(getClass());
 
     volatile ClientConnectionsEntry masterEntry;
+
+    MasterSlaveEntry replacedBy;
 
     int references;
     
@@ -185,16 +189,24 @@ public class MasterSlaveEntry {
 
     public boolean slaveDown(InetSocketAddress address) {
         ClientConnectionsEntry connectionEntry = getEntry(address);
+        if (connectionEntry != null && connectionEntry == masterEntry) {
+            log.warn("slaveDown called with master address {}, ignoring to prevent master freeze", address);
+            return false;
+        }
         ClientConnectionsEntry entry = freeze(connectionEntry, FreezeReason.MANAGER);
         if (entry == null) {
             return false;
         }
-        
+
         return slaveDown(entry);
     }
 
     public boolean slaveDown(RedisURI address) {
         ClientConnectionsEntry connectionEntry = getEntry(address);
+        if (connectionEntry != null && connectionEntry == masterEntry) {
+            log.warn("slaveDown called with master address {}, ignoring to prevent master freeze", address);
+            return false;
+        }
         ClientConnectionsEntry entry = freeze(connectionEntry, FreezeReason.MANAGER);
         if (entry == null) {
             return false;
@@ -613,18 +625,16 @@ public class MasterSlaveEntry {
             return masterPubSubConnectionPool.get();
         }
 
-        CompletableFuture<RedisPubSubConnection> future = slavePubSubConnectionPool.get();
-        return future.handle((r, e) -> {
-            if (e != null) {
-                if (noPubSubSlaves.compareAndSet(false, true)) {
-                    log.warn("No slaves for master: {} PubSub connections established with the master node.",
-                            masterEntry.getClient().getAddr(), e);
-                }
-                return masterPubSubConnectionPool.get();
+        Tuple<CompletableFuture<RedisPubSubConnection>, Throwable> tuple = slavePubSubConnectionPool.getTuple();
+        if (tuple.getT2() != null) {
+            if (noPubSubSlaves.compareAndSet(false, true)) {
+                log.warn("No slaves for master: {} PubSub connections established with the master node.",
+                        masterEntry.getClient().getAddr(), tuple.getT2());
             }
+            return masterPubSubConnectionPool.get();
+        }
 
-            return CompletableFuture.completedFuture(r);
-        }).thenCompose(f -> f);
+        return tuple.getT1();
     }
 
     public void returnPubSubConnection(RedisPubSubConnection connection) {
@@ -740,15 +750,17 @@ public class MasterSlaveEntry {
                     CompletableFuture<Boolean> f = new CompletableFuture<>();
                     future.whenComplete((r, e) -> {
                         if (e != null) {
-                            int maxAttempts = connectionManager.getServiceManager().getConfig().getRetryAttempts();
-                            int retryInterval = connectionManager.getServiceManager().getConfig().getRetryInterval();
+                            MasterSlaveServersConfig config = connectionManager.getServiceManager().getConfig();
+                            int maxAttempts = config.getRetryAttempts();
                             log.error("Unable to unfreeze entry: {} attempt: {} of {}", entry, retry, maxAttempts, e);
                             entry.setInitialized(false);
                             if (retry < maxAttempts) {
+                                Duration timeout = config.getRetryDelay().calcDelay(retry);
+
                                 connectionManager.getServiceManager().newTimeout(t -> {
                                     CompletableFuture<Boolean> ff = unfreezeAsync(entry, freezeReason, retry + 1);
                                     connectionManager.getServiceManager().transfer(ff, f);
-                                }, retryInterval, TimeUnit.MILLISECONDS);
+                                }, timeout.toMillis(), TimeUnit.MILLISECONDS);
                             } else {
                                 f.complete(false);
                             }
@@ -785,5 +797,13 @@ public class MasterSlaveEntry {
 
     public void setAofEnabled(boolean aof) {
         this.aofEnabled = aof;
+    }
+
+    public MasterSlaveEntry getReplacedBy() {
+        return replacedBy;
+    }
+
+    public void setReplacedBy(MasterSlaveEntry replacedBy) {
+        this.replacedBy = replacedBy;
     }
 }

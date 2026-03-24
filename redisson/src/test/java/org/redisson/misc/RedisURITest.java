@@ -43,4 +43,11 @@ public class RedisURITest {
         assertThat(uri1.getPassword()).isEqualTo("password");
     }
 
+    @Test
+    public void testToken() {
+        RedisURI uri1 = new RedisURI("redis://my-token@compute-1.amazonaws.com:15319");
+        assertThat(uri1.getUsername()).isEqualTo(null);
+        assertThat(uri1.getPassword()).isEqualTo("my-token");
+    }
+
 }

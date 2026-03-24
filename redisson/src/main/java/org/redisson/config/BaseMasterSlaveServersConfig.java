@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ import org.redisson.connection.balancer.RoundRobinLoadBalancer;
 public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig<T>> extends BaseConfig<T> {
 
     /**
-     * Сonnection load balancer for multiple Redis slave servers
+     * Connection load balancer for multiple Redis slave servers
      */
     private LoadBalancer loadBalancer = new RoundRobinLoadBalancer();
 
@@ -174,7 +174,7 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
     }
 
     /**
-     * Сonnection load balancer to multiple Redis slave servers.
+     * Connection load balancer to multiple Redis slave servers.
      * Uses Round-robin algorithm by default
      *
      * @param loadBalancer object

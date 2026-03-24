@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -168,7 +168,7 @@ public class CommandPubSubDecoder extends CommandDecoder {
                         channelName = ((PubSubPatternMessage) result).getPattern();
                     }
                     PubSubEntry entry = entries.remove(channelName);
-                    if (config.isKeepPubSubOrder()) {
+                    if (config.isKeepPubSubOrder() && entry != null) {
                         enqueueMessage(result, pubSubConnection, entry);
                     }
                 }
@@ -301,7 +301,7 @@ public class CommandPubSubDecoder extends CommandDecoder {
     private Decoder<Object> getDecoder(Codec codec, List<Object> parts, byte[] name, long size) {
         PubSubEntry entry = entries.get(new ChannelName(name));
         if (entry != null) {
-            return entry.getDecoder().getDecoder(codec, parts.size(), state(), size);
+            return entry.getDecoder().getDecoder(codec, parts.size(), state(), size, parts);
         }
         return ByteArrayCodec.INSTANCE.getValueDecoder();
     }

@@ -67,7 +67,8 @@ public class RedissonTransactionalBucketReactiveTest extends BaseReactiveTest {
         assertThat(sync(bucket.get())).isEqualTo("234");
         
         sync(transaction.commit());
-        
+
+        redisson.getKeys().deleteByPattern("*redisson_unlock_latch*").block();
         assertThat(sync(redisson.getKeys().count())).isEqualTo(1);
         assertThat(sync(b.get())).isEqualTo("234");
     }
@@ -87,6 +88,7 @@ public class RedissonTransactionalBucketReactiveTest extends BaseReactiveTest {
 
         Thread.sleep(100);
 
+        redisson.getKeys().deleteByPattern("*redisson_unlock_latch*").block();
         assertThat(sync(redisson.getKeys().count())).isEqualTo(1);
         assertThat(sync(b.get())).isEqualTo("324");
     }
@@ -106,7 +108,8 @@ public class RedissonTransactionalBucketReactiveTest extends BaseReactiveTest {
         sync(transaction.commit());
 
         Thread.sleep(100);
-        
+
+        redisson.getKeys().deleteByPattern("*redisson_unlock_latch*").block();
         assertThat(sync(redisson.getKeys().count())).isEqualTo(1);
         assertThat(sync(b.get())).isEqualTo("232");
     }
@@ -127,6 +130,7 @@ public class RedissonTransactionalBucketReactiveTest extends BaseReactiveTest {
 
         Thread.sleep(100);
 
+        redisson.getKeys().deleteByPattern("*redisson_unlock_latch*").block();
         assertThat(sync(redisson.getKeys().count())).isEqualTo(1);
         assertThat(sync(b.get())).isEqualTo("324");
     }
@@ -149,6 +153,7 @@ public class RedissonTransactionalBucketReactiveTest extends BaseReactiveTest {
 
         Thread.sleep(100);
 
+        redisson.getKeys().deleteByPattern("*redisson_unlock_latch*").block();
         assertThat(sync(redisson.getKeys().count())).isEqualTo(0);
         assertThat(sync(m.get())).isNull();
     }
@@ -166,7 +171,8 @@ public class RedissonTransactionalBucketReactiveTest extends BaseReactiveTest {
         assertThat(sync(b.get())).isEqualTo("1234");
         
         sync(transaction.rollback());
-        
+
+        redisson.getKeys().deleteByPattern("*redisson_unlock_latch*").block();
         assertThat(sync(redisson.getKeys().count())).isEqualTo(1);
         
         assertThat(sync(b.get())).isEqualTo("1234");

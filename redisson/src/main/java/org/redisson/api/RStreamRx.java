@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.redisson.api;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Single;
 import org.redisson.api.stream.*;
+import org.redisson.client.protocol.StreamEntryStatus;
 
 import java.util.List;
 import java.util.Map;
@@ -91,7 +92,18 @@ public interface RStreamRx<K, V> extends RExpirableRx {
      * @return marked messages amount
      */
     Single<Long> ack(String groupName, StreamMessageId... ids);
-    
+
+    /**
+     * Acknowledges and conditionally deletes one or multiple entries (messages)
+     * for a stream consumer group at the specified key.
+     *
+     * Requires <b>Redis 8.2.0 and higher.</b>
+     *
+     * @param args - method arguments object
+     * @return map with entry statuses mapped by id
+     */
+    Single<Map<StreamMessageId, StreamEntryStatus>> ack(StreamAckArgs args);
+
     /**
      * Returns common info about pending messages by group name.
      * 
@@ -113,6 +125,7 @@ public interface RStreamRx<K, V> extends RExpirableRx {
      * @param count - amount of messages
      * @return list
      */
+    @Deprecated
     Single<List<PendingEntry>> listPending(String groupName, StreamMessageId startId, StreamMessageId endId, int count);
     
     /**
@@ -129,6 +142,7 @@ public interface RStreamRx<K, V> extends RExpirableRx {
      * @param count - amount of messages
      * @return list
      */
+    @Deprecated
     Single<List<PendingEntry>> listPending(String groupName, String consumerName, StreamMessageId startId, StreamMessageId endId, int count);
 
     /**
@@ -150,6 +164,7 @@ public interface RStreamRx<K, V> extends RExpirableRx {
      * @param count - amount of messages
      * @return list
      */
+    @Deprecated
     Single<List<PendingEntry>> listPending(String groupName, StreamMessageId startId, StreamMessageId endId, long idleTime, TimeUnit idleTimeUnit, int count);
 
     /**
@@ -172,7 +187,17 @@ public interface RStreamRx<K, V> extends RExpirableRx {
      * @param count - amount of messages
      * @return list
      */
+    @Deprecated
     Single<List<PendingEntry>> listPending(String groupName, String consumerName, StreamMessageId startId, StreamMessageId endId, long idleTime, TimeUnit idleTimeUnit, int count);
+
+    /**
+     * Returns list of common info about pending messages by group and consumer name.
+     * Limited by start Stream Message ID and end Stream Message ID and count.
+     *
+     * @param args - method arguments object
+     * @return list
+     */
+    Single<List<PendingEntry>> listPending(StreamPendingRangeArgs args);
 
     /**
      * Returns stream data of pending messages by group name.
@@ -376,6 +401,7 @@ public interface RStreamRx<K, V> extends RExpirableRx {
      * @param endId - end Stream ID
      * @return stream data mapped by Stream ID
      */
+    @Deprecated
     Single<Map<StreamMessageId, Map<K, V>>> range(StreamMessageId startId, StreamMessageId endId);
 
     /**
@@ -386,6 +412,7 @@ public interface RStreamRx<K, V> extends RExpirableRx {
      * @param endId - end Stream ID
      * @return stream data mapped by Stream ID
      */
+    @Deprecated
     Single<Map<StreamMessageId, Map<K, V>>> range(int count, StreamMessageId startId, StreamMessageId endId);
     
     /**
@@ -395,6 +422,7 @@ public interface RStreamRx<K, V> extends RExpirableRx {
      * @param endId - end Stream ID
      * @return stream data mapped by Stream ID
      */
+    @Deprecated
     Single<Map<StreamMessageId, Map<K, V>>> rangeReversed(StreamMessageId startId, StreamMessageId endId);
     
     /**
@@ -405,8 +433,25 @@ public interface RStreamRx<K, V> extends RExpirableRx {
      * @param endId - end Stream ID
      * @return stream data mapped by Stream ID
      */
+    @Deprecated
     Single<Map<StreamMessageId, Map<K, V>>> rangeReversed(int count, StreamMessageId startId, StreamMessageId endId);
-    
+
+    /**
+     * Returns stream data in range.
+     *
+     * @param args - method arguments object
+     * @return stream data mapped by Stream ID
+     */
+    Single<Map<StreamMessageId, Map<K, V>>> range(StreamRangeArgs args);
+
+    /**
+     * Returns stream data in reverse order in range.
+     *
+     * @param args - method arguments object
+     * @return stream data mapped by Stream ID
+     */
+    Single<Map<StreamMessageId, Map<K, V>>> rangeReversed(StreamRangeArgs args);
+
     /**
      * Removes messages by id.
      * 
@@ -414,6 +459,15 @@ public interface RStreamRx<K, V> extends RExpirableRx {
      * @return deleted messages amount
      */
     Single<Long> remove(StreamMessageId... ids);
+
+    /**
+     * Removes messages.
+     * Requires <b>Redis 8.2.0 and higher.</b>
+     *
+     * @param args - method arguments object
+     * @return map with entry statuses mapped by id
+     */
+    Single<Map<StreamMessageId, StreamEntryStatus>> remove(StreamRemoveArgs args);
 
     /**
      * Trims stream using strict trimming.

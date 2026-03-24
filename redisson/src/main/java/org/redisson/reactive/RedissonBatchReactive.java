@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -395,6 +395,30 @@ public class RedissonBatchReactive implements RBatchReactive {
     public <V> RBlockingDequeReactive<V> getBlockingDeque(String name, Codec codec) {
         return ReactiveProxyBuilder.create(executorService, new RedissonBlockingDeque<V>(codec, executorService, name, null), 
                 new RedissonListReactive<V>(codec, executorService, name), RBlockingDequeReactive.class);
+    }
+
+    @Override
+    public <T> RBloomFilterNativeReactive<T> getBloomFilterNative(String name) {
+        return ReactiveProxyBuilder.create(executorService,
+                new RedissonBloomFilterNative<>(executorService, name), RBloomFilterNativeReactive.class);
+    }
+
+    @Override
+    public <T> RBloomFilterNativeReactive<T> getBloomFilterNative(String name, Codec codec) {
+        return ReactiveProxyBuilder.create(executorService,
+                new RedissonBloomFilterNative<>(codec, executorService, name), RBloomFilterNativeReactive.class);
+    }
+
+    @Override
+    public <V> RCuckooFilterReactive<V> getCuckooFilter(String name) {
+        return getCuckooFilter(name, null);
+    }
+
+    @Override
+    public <V> RCuckooFilterReactive<V> getCuckooFilter(String name, Codec codec) {
+        return ReactiveProxyBuilder.create(executorService,
+                new RedissonCuckooFilter<V>(codec, executorService, name),
+                RCuckooFilterReactive.class);
     }
 
 }

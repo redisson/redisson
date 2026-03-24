@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -414,6 +414,30 @@ public class RedissonBatchRx implements RBatchRx {
         RedissonBlockingDeque<V> deque = new RedissonBlockingDeque<V>(codec, executorService, name, null);
         return RxProxyBuilder.create(executorService, deque, 
                 new RedissonListRx<V>(deque), RBlockingDequeRx.class);
+    }
+
+    @Override
+    public <T> RBloomFilterNativeRx<T> getBloomFilterNative(String name) {
+        return RxProxyBuilder.create(executorService,
+                new RedissonBloomFilterNative<>(executorService, name), RBloomFilterNativeRx.class);
+    }
+
+    @Override
+    public <T> RBloomFilterNativeRx<T> getBloomFilterNative(String name, Codec codec) {
+        return RxProxyBuilder.create(executorService,
+                new RedissonBloomFilterNative<>(codec, executorService, name), RBloomFilterNativeRx.class);
+    }
+
+    @Override
+    public <V> RCuckooFilterRx<V> getCuckooFilter(String name) {
+        return getCuckooFilter(name, null);
+    }
+
+    @Override
+    public <V> RCuckooFilterRx<V> getCuckooFilter(String name, Codec codec) {
+        return RxProxyBuilder.create(executorService,
+                new RedissonCuckooFilter<V>(codec, executorService, name),
+                RCuckooFilterRx.class);
     }
 
 }

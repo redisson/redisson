@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -279,12 +279,16 @@ public class LocalCacheView<K, V> {
                 return cacheKey;
             }
         }
-        ByteBuf encoded = object.encodeMapKey(key);
+        ByteBuf encoded = encodeMapKey(key);
         try {
             return toCacheKey(encoded);
         } finally {
             encoded.release();
         }
+    }
+
+    protected ByteBuf encodeMapKey(Object key) {
+        return object.encodeMapKey(key);
     }
 
     public void putCacheKey(Object key, CacheKey cacheKey) {

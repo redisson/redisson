@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,5 +64,14 @@ public interface RQueue<V> extends Queue<V>, RExpirable, RQueueAsync<V> {
      * @return listener id
      */
     int addListener(ObjectListener listener);
+
+    /**
+     * Returns index of <code>element</code> or
+     * -1 if element isn't found
+     *
+     * @param element to find
+     * @return index of -1 if element isn't found
+     */
+    int indexOf(V element);
 
 }

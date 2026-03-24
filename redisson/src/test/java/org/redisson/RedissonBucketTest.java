@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.redisson.api.*;
+import org.redisson.api.bucket.CompareAndDeleteArgs;
 import org.redisson.api.listener.SetObjectListener;
 import org.redisson.api.listener.TrackingListener;
 import org.redisson.api.options.PlainOptions;
@@ -14,10 +15,7 @@ import org.redisson.client.RedisResponseTimeoutException;
 import org.redisson.client.codec.IntegerCodec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
-import org.redisson.config.Config;
-import org.redisson.config.Protocol;
-import org.redisson.config.ReadMode;
-import org.redisson.config.SubscriptionMode;
+import org.redisson.config.*;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 
@@ -33,6 +31,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class RedissonBucketTest extends RedisDockerTest {
 
@@ -114,6 +113,24 @@ public class RedissonBucketTest extends RedisDockerTest {
         });
 
         rs.shutdown();
+    }
+
+    @Test
+    public void testRenameInCluster2() {
+        testInCluster(rc -> {
+            RBucket<String> b = rc.getBucket("{abc}alpha");
+            b.set("123");
+
+            RBatch rb = rc.createBatch(BatchOptions.defaults().sync(1, Duration.ofSeconds(1)));
+            RBucketAsync<Object> b2 = rb.getBucket("{abc}alpha");
+            b2.renameAsync("{abc}beta");
+            rb.execute();
+
+            RBucket<String> bs = rc.getBucket("{abc}beta");
+            assertThat(bs.get()).isEqualTo("123");
+
+            assertThat(rc.getKeys().count()).isEqualTo(1);
+        });
     }
 
     @Test
@@ -225,11 +242,11 @@ public class RedissonBucketTest extends RedisDockerTest {
     @Test
     public void testOptions() {
         Config c = createConfig();
-        c.useSingleServer().setTimeout(10);
+        c.useSingleServer().setTimeout(5);
 
         RedissonClient r = Redisson.create(c);
 
-        String val = RandomString.make(1048 * 10000);
+        String val = RandomString.make(1048 * 40000);
         Assertions.assertThrows(RedisResponseTimeoutException.class, () -> {
             RBucket<String> al = r.getBucket("test");
             al.set(val);
@@ -430,7 +447,7 @@ public class RedissonBucketTest extends RedisDockerTest {
     public void testSizeInMemory() {
         RBucket<Integer> al = redisson.getBucket("test");
         al.set(1234);
-        assertThat(al.sizeInMemory()).isEqualTo(56);
+        assertThat(al.sizeInMemory()).isEqualTo(32);
     }
     
     @Test
@@ -635,7 +652,7 @@ public class RedissonBucketTest extends RedisDockerTest {
         Config config = createConfig(redis);
         config.useSingleServer()
                 .setRetryAttempts(3)
-                .setRetryInterval(0);
+                .setRetryDelay(new ConstantDelay(Duration.ZERO));
         RedissonClient rc = Redisson.create(config);
 
         List<String> args = new ArrayList<>();
@@ -802,6 +819,83 @@ public class RedissonBucketTest extends RedisDockerTest {
 
         assertThat(bucket1.findCommon("test2")).isEmpty();
         assertThat(bucket1.findCommonLength("test2")).isEqualTo(0);
+    }
+
+    @Test
+    public void testGetDigest() {
+        RBucket<String> bucket = redisson.getBucket("testDigest");
+        bucket.set("Hello world");
+
+        String digest = bucket.getDigest();
+
+        assertThat(digest).isNotNull();
+        assertThat(digest).matches("[0-9a-f]+").hasSize(16);
+
+        bucket.delete();
+
+        String emptyDigest = bucket.getDigest();
+        assertThat(emptyDigest).isNull();
+    }
+
+    @Test
+    public void testCompareAndDeleteExpected() {
+        RBucket<String> bucket = redisson.getBucket("testCompareAndDeleteExpected");
+
+        bucket.set("value1");
+        assertThat(bucket.compareAndDelete(CompareAndDeleteArgs.expected("value1"))).isTrue();
+        assertThat(bucket.isExists()).isFalse();
+
+        bucket.set("value2");
+        assertThat(bucket.compareAndDelete(CompareAndDeleteArgs.expected("wrongValue"))).isFalse();
+        assertThat(bucket.isExists()).isTrue();
+        assertThat(bucket.get()).isEqualTo("value2");
+
+        bucket.delete();
+        assertThat(bucket.compareAndDelete(CompareAndDeleteArgs.expected("anyValue"))).isFalse();
+    }
+
+    @Test
+    public void testCompareAndDeleteUnexpected() {
+        RBucket<String> bucket = redisson.getBucket("testCompareAndDeleteUnexpected");
+
+        bucket.set("value1");
+        assertThat(bucket.compareAndDelete(CompareAndDeleteArgs.unexpected("differentValue"))).isTrue();
+        assertThat(bucket.isExists()).isFalse();
+
+        bucket.set("value2");
+        assertThat(bucket.compareAndDelete(CompareAndDeleteArgs.unexpected("value2"))).isFalse();
+        assertThat(bucket.isExists()).isTrue();
+        assertThat(bucket.get()).isEqualTo("value2");
+
+        bucket.delete();
+        assertThat(bucket.compareAndDelete(CompareAndDeleteArgs.unexpected("anyValue"))).isFalse();
+    }
+
+    @Test
+    public void testCompareAndDeleteAsync() throws Exception {
+        RBucket<String> bucket = redisson.getBucket("testCompareAndDeleteAsync");
+
+        bucket.set("value1");
+        assertThat(bucket.compareAndDeleteAsync(CompareAndDeleteArgs.expected("value1")).get()).isTrue();
+        assertThat(bucket.isExists()).isFalse();
+
+        bucket.set("value2");
+        assertThat(bucket.compareAndDeleteAsync(CompareAndDeleteArgs.unexpected("differentValue")).get()).isTrue();
+        assertThat(bucket.isExists()).isFalse();
+    }
+
+    @Test
+    public void testCompareAndDeleteArgsValidation() {
+        RBucket<String> bucket = redisson.getBucket("testCompareAndDeleteValidation");
+
+        assertThatThrownBy(() -> bucket.compareAndDelete(null))
+                .isInstanceOf(NullPointerException.class);
+
+        assertThatThrownBy(() -> CompareAndDeleteArgs.expectedDigest(null))
+                .isInstanceOf(NullPointerException.class);
+
+        assertThatThrownBy(() -> CompareAndDeleteArgs.unexpectedDigest(null))
+                .isInstanceOf(NullPointerException.class);
     }
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,7 +64,7 @@ public final class RedissonJsonBuckets implements RJsonBuckets {
         }
         
         List<Object> keysList = Arrays.stream(keys)
-                .map(k -> commandExecutor.getServiceManager().getConfig().getNameMapper().map(k))
+                .map(k -> commandExecutor.getServiceManager().getNameMapper().map(k))
                 .collect(Collectors.toList());
         
         JsonCodecWrapper jsonCodec = new JsonCodecWrapper(codec);
@@ -76,7 +76,7 @@ public final class RedissonJsonBuckets implements RJsonBuckets {
                         .flatMap(c -> c.entrySet().stream())
                         .filter(e -> e.getKey() != null && e.getValue() != null)
                         .map(e -> {
-                            String key = commandExecutor.getServiceManager().getConfig().getNameMapper().unmap((String) e.getKey());
+                            String key = commandExecutor.getServiceManager().getNameMapper().unmap((String) e.getKey());
                             return new AbstractMap.SimpleEntry<>(key, (V) e.getValue());
                         }).collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
             }
@@ -117,7 +117,7 @@ public final class RedissonJsonBuckets implements RJsonBuckets {
         }
         
         Map<String, ?> mappedBuckets = buckets.entrySet().stream().collect(
-                Collectors.toMap(e -> commandExecutor.getServiceManager().getConfig().getNameMapper().map(e.getKey()),
+                Collectors.toMap(e -> commandExecutor.getServiceManager().getNameMapper().map(e.getKey()),
                         Map.Entry::getValue));
         JsonCodecWrapper jsonCodec = new JsonCodecWrapper(codec);
         return commandExecutor.writeBatchedAsync(jsonCodec, RedisCommands.JSON_MSET, new VoidSlotCallback() {

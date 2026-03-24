@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,6 +50,7 @@ public class ClusterNodeInfo {
     private RedisURI address;
     private final Set<Flag> flags = EnumSet.noneOf(Flag.class);
     private String slaveOf;
+    private String hostName;
 
     private final Set<ClusterSlotRange> slotRanges = new HashSet<>();
 
@@ -92,6 +93,14 @@ public class ClusterNodeInfo {
         this.slaveOf = slaveOf;
     }
 
+    public String getHostName() {
+        return hostName;
+    }
+
+    public void setHostName(String hostName) {
+        this.hostName = hostName;
+    }
+
     public String getNodeInfo() {
         return nodeInfo;
     }
@@ -99,7 +108,7 @@ public class ClusterNodeInfo {
     @Override
     public String toString() {
         return "ClusterNodeInfo [nodeId=" + nodeId + ", address=" + address + ", flags=" + flags
-                + ", slaveOf=" + slaveOf + ", slotRanges=" + slotRanges + "]";
+                + ", slaveOf=" + slaveOf + ", hostName=" + hostName + ", slotRanges=" + slotRanges + "]";
     }
 
 }

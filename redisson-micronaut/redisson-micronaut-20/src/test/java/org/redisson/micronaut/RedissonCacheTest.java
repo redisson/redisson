@@ -47,6 +47,23 @@ public class RedissonCacheTest {
     }
 
     @Test
+    public void testCacheYaml() throws InterruptedException {
+        ApplicationContext ac = ApplicationContext.run();
+
+        RedissonClient client = ac.getBean(RedissonClient.class);
+        assertThat(client).isNotNull();
+        RedissonSyncCache cache = ac.getBean(RedissonSyncCache.class, Qualifiers.byName("test"));
+        cache.put(1, 2);
+        Thread.sleep(3500);
+        assertThat(cache.get(1, Integer.class).isPresent()).isFalse();
+        cache.put(3, 4);
+        Thread.sleep(2000);
+        cache.get(3, Integer.class);
+        Thread.sleep(2000);
+        assertThat(cache.get(3, Integer.class).isPresent()).isTrue();
+    }
+
+    @Test
     public void testAsyncCache() throws ExecutionException, InterruptedException {
         Map<String, Object> map = new HashMap<>();
         map.put("redisson.threads", "10");

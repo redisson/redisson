@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,9 +44,9 @@ public interface RScript extends RScriptAsync {
 
     enum ReturnType {
         BOOLEAN(RedisCommands.EVAL_BOOLEAN_SAFE),
-        INTEGER(RedisCommands.EVAL_LONG),
-        MULTI(RedisCommands.EVAL_LIST),
-        STATUS(RedisCommands.EVAL_STRING),
+        LONG(RedisCommands.EVAL_LONG),
+        LIST(RedisCommands.EVAL_LIST),
+        STRING(RedisCommands.EVAL_STRING),
         VALUE(RedisCommands.EVAL_OBJECT),
         MAPVALUE(RedisCommands.EVAL_MAP_VALUE),
         MAPVALUELIST(RedisCommands.EVAL_MAP_VALUE_LIST);

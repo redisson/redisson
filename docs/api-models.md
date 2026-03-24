@@ -1,4 +1,4 @@
-### Synchronous and Asynchronous API
+## Synchronous and Asynchronous API
 
 Redisson instances are fully thread-safe. 
 
@@ -61,9 +61,9 @@ future.thenAcceptAsync(res -> {
 }, executor);
 ```
 
-### Reactive API
+## Reactive API
 
-Reactive API could be reached via [RedissonReactiveClient](https://www.javadoc.io/doc/org.redisson/redisson/latest/org/redisson/api/RedissonReactiveClient.html) interface.
+Reactive API can be reached via [RedissonReactiveClient](https://www.javadoc.io/doc/org.redisson/redisson/latest/org/redisson/api/RedissonReactiveClient.html) interface.
 
 Redisson's implementation based on [Project Reactor](https://projectreactor.io).  
 
@@ -81,9 +81,9 @@ get.doOnSuccess(res -> {
 }).subscribe();
 ```
 
-### RxJava API
+## RxJava API
 
-RxJava API could be reached via [RedissonRxClient](https://www.javadoc.io/doc/org.redisson/redisson/latest/org/redisson/api/RedissonRxClient.html) interface.
+RxJava API can be reached via [RedissonRxClient](https://www.javadoc.io/doc/org.redisson/redisson/latest/org/redisson/api/RedissonRxClient.html) interface.
 
 Redisson's implementation based on [RxJava3](https://github.com/ReactiveX/RxJava).  
 
@@ -99,31 +99,4 @@ Single<Long> get = longObject.get();
 get.doOnSuccess(res -> {
    // ...
 }).subscribe();
-```
-
-### Retry policy
-
-Redisson implements auto-retry policy per operation. Retry policy is controlled by [retryAttempts](configuration.md) and [retryInterval](configuration.md) settings. These settings are applied to each Redisson object. [timeout](configuration.md) setting is applied when the Redis or Valkey command was successfully sent. 
-
-Settings above can be overridden per Redisson object instance. These settings apply to each method of a given Redisson object instance.
-
-Here is an example with `RBucket` object:
-```java
-Config config = new Config();
-config.useSingleServer()
-        .setRetryAttempts(2)
-        .setRetryInterval(1800)
-        .setTimeout(5000)
-        .setAddress("redis://127.0.0.1:6789");
-
-
-RedissonClient client = Redisson.create(config);
-
-// instance uses global retryInterval and timeout parameters
-RBucket<MyObject> bucket = client.getBucket('myObject');
-
-// instance with overridden retryInterval and timeout parameters
-RBucket<MyObject> bucket = client.getBucket(PlainOptions.name('myObject')
-                                                        .timeout(Duration.ofSeconds(3))
-                                                        .retryInterval(Duration.ofSeconds(5)));
 ```

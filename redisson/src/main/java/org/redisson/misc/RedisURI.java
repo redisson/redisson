@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -86,7 +86,11 @@ public final class RedisURI {
             URL url = new URL(urlHost);
             if (url.getUserInfo() != null) {
                 String[] details = url.getUserInfo().split(":", 2);
-                if (details.length == 2) {
+                if (details.length == 1) {
+                    // According to RFC 1738 section 3.1, the password can be omitted.
+                    // However, Redis CLI extends this URL semantic and uses the single auth component as password
+                    password = URLDecoder.decode(details[0], StandardCharsets.UTF_8.toString());
+                } else if (details.length == 2) {
                     if (!details[0].isEmpty()) {
                         username = URLDecoder.decode(details[0], StandardCharsets.UTF_8.toString());
                     }
@@ -102,6 +106,7 @@ public final class RedisURI {
         } catch (MalformedURLException | UnsupportedEncodingException e) {
             throw new IllegalArgumentException(e);
         }
+        this.hashCode = Objects.hash(isSsl(), host, port);
     }
 
     private String parseUrl(String uri) {
@@ -181,6 +186,11 @@ public final class RedisURI {
 
     @Override
     public String toString() {
+        if (username != null && password != null) {
+            return getScheme() + "://" + username + ":" + password + "@" + trimIpv6Brackets(host) + ":" + port;
+        } else if (password != null) {
+            return getScheme() + "://" + password + "@" + trimIpv6Brackets(host) + ":" + port;
+        }
         return getScheme() + "://" + trimIpv6Brackets(host) + ":" + port;
     }
     

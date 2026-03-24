@@ -1,11 +1,23 @@
 package org.redisson;
 
+import java.time.Duration;
+import java.util.concurrent.atomic.AtomicReference;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
+import org.redisson.api.RBucket;
+import org.redisson.api.RedissonClient;
+import org.redisson.api.bitset.BitFieldArgs;
+import org.redisson.api.bitset.BitFieldOverflow;
+import org.redisson.api.bitset.BitOffset;
 import org.redisson.api.RBitSet;
-import org.springframework.util.StopWatch;
 
 import java.util.BitSet;
-import java.util.Random;
+import java.util.List;
+import org.redisson.api.listener.TrackingListener;
+import org.redisson.config.Config;
+import org.redisson.config.Protocol;
+import org.redisson.config.ReadMode;
+import org.redisson.config.SubscriptionMode;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -25,6 +37,74 @@ public class RedissonBitSetTest extends RedisDockerTest {
         assertThat(bs.setSigned(8, 1, -120)).isZero();
         assertThat(bs.incrementAndGetSigned(8, 1, 1)).isEqualTo(-119);
         assertThat(bs.getSigned(8, 1)).isEqualTo(-119);
+    }
+
+    @Test
+    public void testBitFieldMultipleOperations() {
+        RBitSet bs = redisson.getBitSet("testBitFieldMultipleOperations");
+
+        List<Long> result = bs.bitField(BitFieldArgs.create()
+                .incrementUnsignedBy(32, BitOffset.bit(32), 1)
+                .incrementUnsignedBy(32, BitOffset.bit(64), 1)
+                .getUnsigned(32, BitOffset.bit(32)));
+        assertThat(result).containsExactly(1L, 1L, 1L);
+
+        result = bs.bitField(BitFieldArgs.create()
+                .incrementSignedBy(8, BitOffset.bit(0), -1)
+                .incrementUnsignedBy(8, BitOffset.bit(8), 2));
+        assertThat(result).containsExactly(-1L, 2L);
+    }
+
+    @Test
+    public void testBitFieldIndexedOffsets() {
+        RBitSet bs = redisson.getBitSet("testBitFieldIndexedOffsets");
+
+        List<Long> result = bs.bitField(BitFieldArgs.create()
+                .setSigned(8, BitOffset.index(0), 100)
+                .setSigned(8, BitOffset.index(1), 200)
+                .getUnsigned(8, BitOffset.bit(0))
+                .getUnsigned(8, BitOffset.bit(8)));
+        assertThat(result).containsExactly(0L, 0L, 100L, 200L);
+    }
+
+    @Test
+    public void testBitFieldOverflowFail() {
+        RBitSet bs = redisson.getBitSet("testBitFieldOverflowFail");
+
+        List<Long> result = bs.bitField(BitFieldArgs.create()
+                .setUnsigned(2, BitOffset.bit(102), 3)
+                                                    .overflow(BitFieldOverflow.FAIL)
+                .incrementUnsignedBy(2, BitOffset.bit(102), 1));
+        assertThat(result).containsExactly(0L, null);
+    }
+
+    @Test
+    public void testBitFieldReadOnly() {
+        testInCluster(rc -> {
+            Config c = rc.getConfig();
+            c.useClusterServers().setReadMode(ReadMode.SLAVE);
+            RedissonClient redissonClient = Redisson.create(c);
+
+            RBitSet bs = redissonClient.getBitSet("testBitFieldReadOnly");
+            List<Long> set = bs.bitField(BitFieldArgs.create()
+                    .setSigned(8, BitOffset.index(0), 100)
+                    .setSigned(8, BitOffset.index(1), 200));
+            assertThat(set).containsExactly(0L, 0L);
+
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+
+            List<Long> result = bs.bitField(BitFieldArgs.create()
+                    .getUnsigned(8, BitOffset.bit(0))
+                    .getUnsigned(8, BitOffset.bit(8)));
+
+            assertThat(result).containsExactly(100L, 200L);
+
+            redissonClient.shutdown();
+        });
     }
 
     @Test
@@ -120,7 +200,7 @@ public class RedissonBitSetTest extends RedisDockerTest {
         RBitSet bs = redisson.getBitSet("testbitset");
         bs.set(3);
         bs.set(5);
-        bs.not();
+        assertThat(bs.not()).isEqualTo(1);
         assertThat(bs.toString()).isEqualTo("{0, 1, 2, 4, 6, 7}");
     }
 
@@ -200,7 +280,7 @@ public class RedissonBitSetTest extends RedisDockerTest {
         RBitSet bs2 = redisson.getBitSet("testbitset2");
         bs2.set(4);
         bs2.set(10);
-        bs1.and(bs2.getName());
+        assertThat(bs1.and(bs2.getName())).isEqualTo(2);
         assertThat(bs1.get(3)).isFalse();
         assertThat(bs1.get(4)).isTrue();
         assertThat(bs1.get(5)).isFalse();
@@ -221,5 +301,46 @@ public class RedissonBitSetTest extends RedisDockerTest {
         assertThat(result[2]).isTrue();
         assertThat(result[3]).isTrue();
     }
+
+    @Test
+    public void testAndOr() {
+        RBitSet bs1 = redisson.getBitSet("testbitset1");
+        bs1.set(3, 5);
+        assertThat(bs1.cardinality()).isEqualTo(2);
+        assertThat(bs1.size()).isEqualTo(8);
+
+        RBitSet bs2 = redisson.getBitSet("testbitset2");
+        bs2.set(4);
+        bs2.set(10);
+        assertThat(bs1.andOr(bs2.getName())).isEqualTo(2);
+        assertThat(bs1.get(3)).isFalse();
+        assertThat(bs1.get(4)).isTrue();
+        assertThat(bs1.get(5)).isFalse();
+        assertThat(bs2.get(10)).isTrue();
+
+        assertThat(bs1.cardinality()).isEqualTo(1);
+        assertThat(bs1.size()).isEqualTo(16);
+    }
+
+    @Test
+    public void testDiff() {
+        RBitSet bs1 = redisson.getBitSet("testbitset1");
+        bs1.set(3, 5);
+        assertThat(bs1.cardinality()).isEqualTo(2);
+        assertThat(bs1.size()).isEqualTo(8);
+
+        RBitSet bs2 = redisson.getBitSet("testbitset2");
+        bs2.set(4);
+        bs2.set(10);
+        assertThat(bs1.diff(bs2.getName())).isEqualTo(2);
+        assertThat(bs1.get(3)).isTrue();
+        assertThat(bs1.get(4)).isFalse();
+        assertThat(bs1.get(5)).isFalse();
+        assertThat(bs2.get(10)).isTrue();
+
+        assertThat(bs1.cardinality()).isEqualTo(1);
+        assertThat(bs1.size()).isEqualTo(16);
+    }
+
 
 }

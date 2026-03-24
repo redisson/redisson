@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.redisson</groupId>
         <artifactId>redisson-hibernate</artifactId>
-        <version>3.45.2-SNAPSHOT</version>
+        <version>4.3.1-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
 
@@ -19,6 +19,18 @@
         <maven.compiler.release>11</maven.compiler.release>
         <main.basedir>${project.parent.parent.basedir}</main.basedir>
     </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.junit</groupId>
+                <artifactId>junit-bom</artifactId>
+                <version>5.10.2</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <dependencies>
        <dependency>
@@ -35,30 +47,16 @@
          <scope>test</scope>
        </dependency>
 
-       <dependency>
-         <groupId>org.testcontainers</groupId>
-         <artifactId>junit-jupiter</artifactId>
-         <scope>test</scope>
-       </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers-junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
 
     </dependencies>
 
     <build>
         <plugins>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                    <configuration>
-                        <redirectTestOutputToFile>true</redirectTestOutputToFile>
-                        <reuseForks>true</reuseForks>
-                        <argLine>
-                           ${argLine}
-                           --add-opens=java.base/java.util=ALL-UNNAMED
-                           -javaagent:"${settings.localRepository}"/org/jmockit/jmockit/1.49/jmockit-1.49.jar
-                        </argLine>
-                    </configuration>
-            </plugin>
 
             <plugin>
                 <artifactId>maven-jar-plugin</artifactId>

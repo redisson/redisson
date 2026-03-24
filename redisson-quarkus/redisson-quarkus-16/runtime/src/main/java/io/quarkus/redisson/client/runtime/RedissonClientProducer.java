@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package io.quarkus.redisson.client.runtime;
 
-import com.fasterxml.jackson.databind.MapperFeature;
 import io.quarkus.arc.DefaultBean;
 import io.quarkus.runtime.shutdown.ShutdownConfig;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -77,11 +76,11 @@ public class RedissonClientProducer {
             }, false);
         }
 
-        ConfigSupport support = new ConfigSupport() {
-            {
-                yamlMapper.configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
-            }
-        };
+        if (config.trim().isEmpty()) {
+            throw new IllegalStateException("Redisson settings aren't defined.");
+        }
+
+        ConfigSupport support = new ConfigSupport(true);
         Config c = support.fromYAML(config, Config.class);
         redisson = Redisson.create(c);
         return redisson;

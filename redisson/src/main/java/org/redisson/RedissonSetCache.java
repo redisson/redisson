@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,9 +29,11 @@ import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.eviction.EvictionScheduler;
+import org.redisson.iterator.BaseAsyncIterator;
 import org.redisson.iterator.RedissonBaseIterator;
 import org.redisson.mapreduce.RedissonCollectionMapReduce;
 import org.redisson.misc.CompletableFutureWrapper;
+import org.redisson.misc.CompositeAsyncIterator;
 
 import java.time.Duration;
 import java.util.*;
@@ -622,7 +624,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
     }
 
     @Override
-    public List<V> containsEach(Collection<V> c) {
+    public Set<V> containsEach(Collection<V> c) {
         throw new UnsupportedOperationException();
     }
 
@@ -675,7 +677,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
     public RFuture<Integer> unionAsync(String... names) {
         List<Object> keys = new LinkedList<>();
         keys.add(getRawName());
-        keys.addAll(Arrays.asList(names));
+        keys.addAll(map(names));
         for (Object key : names) {
             String tempName = prefixName("__redisson_cache_temp", key.toString());
             keys.add(tempName);
@@ -704,22 +706,24 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
     public RFuture<Set<V>> readUnionAsync(String... names) {
         List<Object> keys = new LinkedList<>();
         keys.add(getRawName());
-        keys.addAll(Arrays.asList(names));
-        for (Object key : new ArrayList<>(keys)) {
-            String tempName = prefixName("__redisson_cache_temp", key.toString());
-            keys.add(tempName);
-        }
+        keys.addAll(map(names));
 
         return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_SET,
-                  "for i = 1, #KEYS, 1 do " +
-                            "local values = redis.call('zrangebyscore', KEYS[ARGV[3] + i], ARGV[1], ARGV[2], 'WITHSCORES');" +
-                            "for j = 1, #values, 2 do "
-                              + "redis.call('zadd', KEYS[ARGV[3] + i], values[j], values[j+1]); " +
-                            "end;" +
-                        "end; " +
-                        "local values = redis.call('zunion', ARGV[3], unpack(KEYS, ARGV[3], #ARGV), 'AGGREGATE', 'SUM');" +
-                        "redis.call('del', unpack(KEYS, ARGV[3], #KEYS)); " +
-                        "return values;",
+                     "local args = {} " +
+                     "table.insert(args, #KEYS) " +
+                     "for _, key_name in ipairs(KEYS) do " +
+                          "table.insert(args, key_name) " +
+                     "end " +
+                     "table.insert(args, 'WITHSCORES')" +
+
+                     "local values = redis.call('zunion', unpack(args)) " +
+                     "local res = {} " +
+                     "for j = 1, #values, 2 do " +
+                         "if tonumber(values[j+1]) > tonumber(ARGV[1]) then " +
+                             "table.insert(res, values[j]);" +
+                         "end " +
+                     "end;" +
+                     "return res;",
                 keys,
                 System.currentTimeMillis(), 92233720368547758L, names.length+1);
     }
@@ -728,7 +732,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
     public RFuture<Integer> diffAsync(String... names) {
         List<Object> keys = new LinkedList<>();
         keys.add(getRawName());
-        keys.addAll(Arrays.asList(names));
+        keys.addAll(map(names));
         for (Object key : names) {
             String tempName = prefixName("__redisson_cache_temp", key.toString());
             keys.add(tempName);
@@ -755,31 +759,32 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
     public RFuture<Set<V>> readDiffAsync(String... names) {
         List<Object> keys = new LinkedList<>();
         keys.add(getRawName());
-        keys.addAll(Arrays.asList(names));
-        for (Object key : new ArrayList<>(keys)) {
-            String tempName = prefixName("__redisson_cache_temp", key.toString());
-            keys.add(tempName);
-        }
+        keys.addAll(map(names));
+        return commandExecutor.evalReadAsync(getRawName(), codec, RedisCommands.EVAL_SET,
+               "local args = {} " +
+                     "table.insert(args, #KEYS) " +
+                     "for _, key_name in ipairs(KEYS) do " +
+                          "table.insert(args, key_name) " +
+                     "end " +
+                     "table.insert(args, 'WITHSCORES')" +
 
-        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_SET,
-                "for i = 1, #KEYS, 1 do " +
-                        "local values = redis.call('zrangebyscore', KEYS[ARGV[3] + i], ARGV[1], ARGV[2], 'WITHSCORES');" +
-                        "for j = 1, #values, 2 do "
-                          + "redis.call('zadd', KEYS[ARGV[3] + i], values[j], values[j+1]); " +
-                        "end;" +
-                     "end; " +
-                     "local values = redis.call('zdiff', ARGV[3], unpack(KEYS, ARGV[3], #ARGV));" +
-                     "redis.call('del', unpack(KEYS, ARGV[3], #KEYS)); " +
-                     "return values;",
+                     "local values = redis.call('zdiff', unpack(args)) " +
+                     "local res = {} " +
+                     "for j = 1, #values, 2 do " +
+                         "if tonumber(values[j+1]) > tonumber(ARGV[1]) then " +
+                             "table.insert(res, values[j]);" +
+                         "end " +
+                     "end;" +
+                     "return res;",
                         keys,
-                System.currentTimeMillis(), 92233720368547758L, names.length+1);
+                System.currentTimeMillis());
     }
 
     @Override
     public RFuture<Integer> intersectionAsync(String... names) {
         List<Object> keys = new LinkedList<>();
         keys.add(getRawName());
-        keys.addAll(Arrays.asList(names));
+        keys.addAll(map(names));
         for (Object key : names) {
             String tempName = prefixName("__redisson_cache_temp", key.toString());
             keys.add(tempName);
@@ -808,24 +813,26 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
     public RFuture<Set<V>> readIntersectionAsync(String... names) {
         List<Object> keys = new LinkedList<>();
         keys.add(getRawName());
-        keys.addAll(Arrays.asList(names));
-        for (Object key : new ArrayList<>(keys)) {
-            String tempName = prefixName("__redisson_cache_temp", key.toString());
-            keys.add(tempName);
-        }
+        keys.addAll(map(names));
 
         return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_SET,
-                  "for i = 1, #KEYS, 1 do " +
-                        "local values = redis.call('zrangebyscore', KEYS[ARGV[3] + i], ARGV[1], ARGV[2], 'WITHSCORES');" +
-                           "for j = 1, #values, 2 do "
-                            + "redis.call('zadd', KEYS[ARGV[3] + i], values[j], values[j+1]); " +
-                           "end;" +
-                        "end; " +
-                        "local values = redis.call('zinter', ARGV[3], unpack(KEYS, ARGV[3], #ARGV), 'AGGREGATE', 'SUM');" +
-                        "redis.call('del', unpack(KEYS, ARGV[3], #KEYS)); " +
-                        "return values;",
+               "local args = {} " +
+                     "table.insert(args, #KEYS) " +
+                     "for _, key_name in ipairs(KEYS) do " +
+                          "table.insert(args, key_name) " +
+                     "end " +
+                     "table.insert(args, 'WITHSCORES')" +
+
+                     "local values = redis.call('zinter', unpack(args)) " +
+                     "local res = {} " +
+                     "for j = 1, #values, 2 do " +
+                         "if tonumber(values[j+1]) > tonumber(ARGV[1]) then " +
+                             "table.insert(res, values[j]);" +
+                         "end " +
+                     "end;" +
+                     "return res;",
                          keys,
-                System.currentTimeMillis(), 92233720368547758L, names.length+1);
+                System.currentTimeMillis());
     }
 
     @Override
@@ -837,7 +844,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
     public RFuture<Integer> countIntersectionAsync(int limit, String... names) {
         List<Object> keys = new LinkedList<>();
         keys.add(getRawName());
-        keys.addAll(Arrays.asList(names));
+        keys.addAll(map(names));
         for (Object key : new ArrayList<>(keys)) {
             String tempName = prefixName("__redisson_cache_temp", key.toString());
             keys.add(tempName);
@@ -899,7 +906,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
     }
 
     @Override
-    public RFuture<List<V>> containsEachAsync(Collection<V> c) {
+    public RFuture<Set<V>> containsEachAsync(Collection<V> c) {
         throw new UnsupportedOperationException();
     }
 
@@ -1487,6 +1494,24 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
         }
 
         return super.addListenerAsync(listener);
+    }
+
+    @Override
+    public AsyncIterator<V> iteratorAsync() {
+        return iteratorAsync(10);
+    }
+
+    @Override
+    public AsyncIterator<V> iteratorAsync(int count) {
+        AsyncIterator<V> asyncIterator = new BaseAsyncIterator<V, Object>() {
+
+            @Override
+            protected RFuture<ScanResult<Object>> iterator(RedisClient client, String nextItPos) {
+                return scanIteratorAsync(name, client, nextItPos, null, count);
+            }
+
+        };
+        return new CompositeAsyncIterator<>(Arrays.asList(asyncIterator), 0);
     }
 
     @Override

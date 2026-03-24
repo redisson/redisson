@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,7 +68,7 @@ public abstract class BaseRemoteService {
 
     public BaseRemoteService(Codec codec, String name, CommandAsyncExecutor commandExecutor, String executorId) {
         this.codec = commandExecutor.getServiceManager().getCodec(codec);
-        this.name = commandExecutor.getServiceManager().getConfig().getNameMapper().map(name);
+        this.name = commandExecutor.getServiceManager().getNameMapper().map(name);
         this.commandExecutor = commandExecutor;
         this.executorId = executorId;
         this.cancelRequestMapName = "{" + name + ":remote" + "}:cancel-request";

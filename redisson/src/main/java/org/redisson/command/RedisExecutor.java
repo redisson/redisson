@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.ListMultiDecoder2;
 import org.redisson.client.protocol.decoder.ObjectListReplayDecoder;
+import org.redisson.config.DelayStrategy;
 import org.redisson.connection.ClientConnectionsEntry;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
@@ -74,10 +75,11 @@ public class RedisExecutor<V, R> {
     final RedissonObjectBuilder.ReferenceType referenceType;
     final boolean noRetry;
     final int attempts;
-    final int retryInterval;
+    final DelayStrategy retryStrategy;
     final int responseTimeout;
     final boolean trackChanges;
 
+    long retryInterval;
     CompletableFuture<RedisConnection> connectionFuture;
     boolean reuseConnection;
     NodeSource source;
@@ -93,7 +95,7 @@ public class RedisExecutor<V, R> {
                          Object[] params, CompletableFuture<R> mainPromise, boolean ignoreRedirect,
                          ConnectionManager connectionManager, RedissonObjectBuilder objectBuilder,
                          RedissonObjectBuilder.ReferenceType referenceType, boolean noRetry,
-                         int retryAttempts, int retryInterval, int responseTimeout,
+                         int retryAttempts, DelayStrategy retryStrategy, int responseTimeout,
                          boolean trackChanges) {
         super();
         this.readOnlyMode = readOnlyMode;
@@ -106,9 +108,9 @@ public class RedisExecutor<V, R> {
         this.connectionManager = connectionManager;
         this.objectBuilder = objectBuilder;
         this.noRetry = noRetry;
+        this.retryStrategy = retryStrategy;
 
         this.attempts = retryAttempts;
-        this.retryInterval = retryInterval;
         this.responseTimeout = responseTimeout;
         this.referenceType = referenceType;
         this.trackChanges = trackChanges;
@@ -168,6 +170,8 @@ public class RedisExecutor<V, R> {
                     }
                 });
             }
+
+            retryInterval = retryStrategy.calcDelay(attempt).toMillis();
 
             scheduleRetryTimeout(connectionFuture, attemptPromise);
 
@@ -466,7 +470,7 @@ public class RedisExecutor<V, R> {
 
             int pendingTasks = countPendingTasks();
             attemptPromise.completeExceptionally(
-                    new RedisResponseTimeoutException("Redis server response timeout (" + timeoutAmount + " ms) occured"
+                    new RedisResponseTimeoutException("Redis server response timeout (" + timeoutAmount + " ms) occurred"
                             + " after " + attempt + " of " + attempts + " retry attempts,"
                             + " is non-idempotent command: " + (command != null && command.isNoRetry())
                             + " Check connection with Redis node: " + connection.getRedisClient().getAddr() + " for TCP packet drops or bandwidth limits. "
@@ -493,6 +497,9 @@ public class RedisExecutor<V, R> {
                 if (command.getReplayMultiDecoder() instanceof ObjectListReplayDecoder
                         || command.getReplayMultiDecoder() instanceof ListMultiDecoder2) {
                     res = (R) Collections.emptyList();
+                }
+                if (RedisCommands.XREAD.getName().equals(command.getName())) {
+                    res = (R) Collections.emptyMap();
                 }
                 if (attemptPromise.complete(res)) {
                     connection.forceFastReconnectAsync();
@@ -560,44 +567,24 @@ public class RedisExecutor<V, R> {
                 }
             }
 
-            if (cause instanceof RedisMovedException && !ignoreRedirect) {
-                RedisMovedException ex = (RedisMovedException) cause;
+            if (cause instanceof RedisRedirectException && !ignoreRedirect) {
+                RedisRedirectException ex = (RedisRedirectException) cause;
                 if (source.getRedirect() == Redirect.MOVED
                         && source.getAddr().equals(ex.getUrl())) {
+                    free();
                     mainPromise.completeExceptionally(new RedisException("MOVED redirection loop detected. Node " + source.getAddr() + " has further redirect to " + ex.getUrl()));
                     return;
                 }
 
-                onException();
+                Redirect reason = Redirect.REDIRECT;
+                if (cause instanceof RedisMovedException) {
+                    reason = Redirect.MOVED;
+                }
+                if (cause instanceof RedisAskException) {
+                    reason = Redirect.ASK;
+                }
 
-                CompletableFuture<RedisURI> ipAddrFuture = connectionManager.getServiceManager().resolveIP(ex.getUrl());
-                ipAddrFuture.whenComplete((ip, e) -> {
-                    if (e != null) {
-                        free();
-                        handleError(connectionFuture, e);
-                        return;
-                    }
-                    source = new NodeSource(ex.getSlot(), ip, Redirect.MOVED);
-                    execute();
-                });
-                return;
-            }
-
-            if (cause instanceof RedisAskException && !ignoreRedirect) {
-                RedisAskException ex = (RedisAskException) cause;
-
-                onException();
-
-                CompletableFuture<RedisURI> ipAddrFuture = connectionManager.getServiceManager().resolveIP(ex.getUrl());
-                ipAddrFuture.whenComplete((ip, e) -> {
-                    if (e != null) {
-                        free();
-                        handleError(connectionFuture, e);
-                        return;
-                    }
-                    source = new NodeSource(ex.getSlot(), ip, Redirect.ASK);
-                    execute();
-                });
+                handleRedirect(ex, connectionFuture, reason);
                 return;
             }
 
@@ -606,6 +593,7 @@ public class RedisExecutor<V, R> {
                 if (connection != null) {
                     ClientConnectionsEntry ce = entry.getEntry(connection.getRedisClient());
                     if (ce != null && ce.getNodeType() == NodeType.SLAVE) {
+                        onException();
                         source = new NodeSource(entry.getClient());
                         execute();
                         return;
@@ -634,6 +622,21 @@ public class RedisExecutor<V, R> {
         } catch (Exception e) {
             handleError(connectionFuture, e);
         }
+    }
+
+    private void handleRedirect(RedisRedirectException ex, CompletableFuture<RedisConnection> connectionFuture, Redirect reason) {
+        onException();
+
+        CompletableFuture<RedisURI> ipAddrFuture = connectionManager.getServiceManager().resolveIP(ex.getUrl());
+        ipAddrFuture.whenComplete((ip, e) -> {
+            if (e != null) {
+                free();
+                handleError(connectionFuture, e);
+                return;
+            }
+            source = new NodeSource(ex.getSlot(), ip, reason);
+            execute();
+        });
     }
 
     protected void handleResult(CompletableFuture<R> attemptPromise, CompletableFuture<RedisConnection> connectionFuture) throws ReflectiveOperationException {

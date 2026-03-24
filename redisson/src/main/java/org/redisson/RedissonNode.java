@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,11 +25,11 @@ import org.redisson.config.RedissonNodeConfig;
 import org.redisson.config.RedissonNodeFileConfig;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
+import org.redisson.executor.SpringTasksInjector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.HashSet;
 import java.util.Map.Entry;
@@ -95,14 +95,8 @@ public final class RedissonNode {
         RedissonNodeFileConfig config = null;
         try {
             config = RedissonNodeFileConfig.fromYAML(new File(configPath));
-        } catch (IOException e) {
-            // trying next format
-            try {
-                config = RedissonNodeFileConfig.fromJSON(new File(configPath));
-            } catch (IOException e1) {
-                e1.addSuppressed(e);
-                throw new IllegalArgumentException("Can't parse config " + configPath, e1);
-            }
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Can't parse config " + configPath, e);
         }
         
         final RedissonNode node = RedissonNode.create(config);
@@ -156,8 +150,10 @@ public final class RedissonNode {
             }
             
             WorkerOptions options = WorkerOptions.defaults()
-                                                .workers(mapReduceWorkers)
-                                                .beanFactory(config.getBeanFactory());
+                                                .workers(mapReduceWorkers);
+            if (config.getBeanFactory() != null) {
+                options.tasksInjector(new SpringTasksInjector(config.getBeanFactory()));
+            }
 
             RScheduledExecutorService e = redisson.getExecutorService(RExecutorService.MAPREDUCE_NAME);
             e.registerWorkers(options);
@@ -168,10 +164,12 @@ public final class RedissonNode {
         for (Entry<String, Integer> entry : config.getExecutorServiceWorkers().entrySet()) {
             String name = entry.getKey();
             int workers = entry.getValue();
-            
+
             WorkerOptions options = WorkerOptions.defaults()
-                                                .workers(workers)
-                                                .beanFactory(config.getBeanFactory());
+                    .workers(mapReduceWorkers);
+            if (config.getBeanFactory() != null) {
+                options.tasksInjector(new SpringTasksInjector(config.getBeanFactory()));
+            }
 
             RScheduledExecutorService e = redisson.getExecutorService(name);
             e.registerWorkers(options);

@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.redisson</groupId>
         <artifactId>redisson-quarkus-30-cache-parent</artifactId>
-        <version>3.45.2-SNAPSHOT</version>
+        <version>4.3.1-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
 
@@ -86,9 +86,6 @@
                         <version>${quarkus.plugin.version}</version>
                     </path>
                 </annotationProcessorPaths>
-                <compilerArgs>
-                    <arg>-AlegacyConfigRoot=true</arg>
-                </compilerArgs>
             </configuration>
         </plugin>
         <plugin>

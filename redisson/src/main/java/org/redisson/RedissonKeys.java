@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,12 +15,17 @@
  */
 package org.redisson;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.util.concurrent.CompletionStage;
 import org.redisson.api.*;
 import org.redisson.api.listener.FlushListener;
 import org.redisson.api.listener.NewObjectListener;
 import org.redisson.api.listener.SetObjectListener;
 import org.redisson.api.options.KeysScanOptions;
 import org.redisson.api.options.KeysScanParams;
+import org.redisson.api.keys.MigrateArgs;
+import org.redisson.api.keys.MigrateParams;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisException;
 import org.redisson.client.codec.ByteArrayCodec;
@@ -37,7 +42,6 @@ import org.redisson.client.protocol.decoder.ListScanResultReplayDecoder;
 import org.redisson.client.protocol.decoder.ObjectListReplayDecoder;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandBatchService;
-import org.redisson.config.Protocol;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.iterator.BaseAsyncIterator;
@@ -413,22 +417,22 @@ public final class RedissonKeys implements RKeys {
     }
 
     private String map(String key) {
-        return commandExecutor.getServiceManager().getConfig().getNameMapper().map(key);
+        return commandExecutor.getServiceManager().getNameMapper().map(key);
     }
 
     private String unmap(String key) {
-        return commandExecutor.getServiceManager().getConfig().getNameMapper().unmap(key);
+        return commandExecutor.getServiceManager().getNameMapper().unmap(key);
     }
 
     private List<String> unmap(List<String> keys) {
         return keys.stream()
-                .map(k -> commandExecutor.getServiceManager().getConfig().getNameMapper().unmap(k))
+                .map(k -> commandExecutor.getServiceManager().getNameMapper().unmap(k))
                 .collect(Collectors.toList());
     }
 
     private String[] map(String[] keys) {
         return Arrays.stream(keys)
-                .map(k -> commandExecutor.getServiceManager().getConfig().getNameMapper().map(k))
+                .map(k -> commandExecutor.getServiceManager().getNameMapper().map(k))
                 .toArray(String[]::new);
     }
 
@@ -536,6 +540,16 @@ public final class RedissonKeys implements RKeys {
     }
 
     @Override
+    public long expireAt(Instant instant, String... names) {
+        return commandExecutor.get(expireAtAsync(instant, names));
+    }
+
+    @Override
+    public RFuture<Long> expireAtAsync(Instant instant, String... names) {
+        return expireAsyncInternal(RedisCommands.PEXPIREAT, instant.toEpochMilli(), names);
+    }
+
+    @Override
     public boolean expire(String name, long timeToLive, TimeUnit timeUnit) {
         return commandExecutor.get(expireAsync(name, timeToLive, timeUnit));
     }
@@ -547,14 +561,90 @@ public final class RedissonKeys implements RKeys {
     }
 
     @Override
+    public long expire(Duration duration, String... names) {
+        return commandExecutor.get(expireAsync(duration, names));
+    }
+
+    @Override
+    public RFuture<Long> expireAsync(Duration duration, String... names) {
+        return expireAsyncInternal(RedisCommands.PEXPIRE, duration.toMillis(), names);
+    }
+
+    private RFuture<Long> expireAsyncInternal(RedisCommand<?> command, long arg, String... names) {
+        if (names.length == 0) {
+            return new CompletableFutureWrapper<>(0L);
+        }
+
+        CommandBatchService executorService = new CommandBatchService(commandExecutor);
+        for (String name : names) {
+            String key = map(name);
+            executorService.writeAsync(key, StringCodec.INSTANCE, command, key, arg);
+        }
+
+        CompletionStage<Long> result = executorService.executeAsync().thenApply(r -> {
+            long success = 0;
+            for (Object response : r.getResponses()) {
+                if (response instanceof Boolean && (Boolean) response) {
+                    success++;
+                }
+            }
+            return success;
+        });
+
+        return new CompletableFutureWrapper<>(result);
+    }
+
+    @Override
     public void migrate(String name, String host, int port, int database, long timeout) {
         commandExecutor.get(migrateAsync(name, host, port, database, timeout));
+    }
+
+    @Override
+    public void migrate(MigrateArgs migrateArgs) {
+        commandExecutor.get(migrateAsync(migrateArgs));
     }
 
     @Override
     public RFuture<Void> migrateAsync(String name, String host, int port, int database, long timeout) {
         return commandExecutor.writeAsync(map(name), RedisCommands.MIGRATE, host, port, map(name), database, timeout);
     }
+
+    @Override
+    public RFuture<Void> migrateAsync(MigrateArgs migrateArgs) {
+        MigrateParams migrateArgsParams = (MigrateParams) migrateArgs;
+        List<Object> params = new ArrayList<>();
+        params.add(migrateArgsParams.getHost());
+        params.add(migrateArgsParams.getPort());
+        params.add("");
+        params.add(migrateArgsParams.getDatabase());
+        params.add(migrateArgsParams.getTimeout());
+        MigrateMode migrateMode = migrateArgsParams.getMode();
+        if ((migrateMode.ordinal() & MigrateMode.COPY.ordinal()) != 0) {
+            params.add(MigrateMode.COPY.name());
+        }
+        if ((migrateMode.ordinal() & MigrateMode.REPLACE.ordinal()) != 0) {
+            params.add(MigrateMode.REPLACE.name());
+        }
+        String username = migrateArgsParams.getUsername();
+        String password = migrateArgsParams.getPassword();
+        if (username != null && !username.isEmpty()) {
+            params.add("AUTH2");
+            params.add(username);
+            params.add(password);
+        } else if (password != null && !password.isEmpty()) {
+            params.add("AUTH");
+            params.add(password);
+        }
+        String[] keys = migrateArgsParams.getKeys();
+        String name = keys[0];
+        params.add("KEYS");
+        for (String key : keys) {
+            params.add(map(key));
+        }
+        return commandExecutor.writeAsync(map(name), RedisCommands.MIGRATE, params.toArray());
+    }
+
+
 
     @Override
     public void copy(String name, String host, int port, int database, long timeout) {
@@ -636,7 +726,7 @@ public final class RedissonKeys implements RKeys {
             return addListenerAsync("__keyevent@*:del", (DeletedObjectListener) listener, DeletedObjectListener::onDeleted);
         }
         if (listener instanceof FlushListener) {
-            if (commandExecutor.getServiceManager().getCfg().getProtocol() != Protocol.RESP3) {
+            if (!commandExecutor.getServiceManager().isResp3()) {
                 throw new IllegalStateException("`protocol` config setting should be set to RESP3 value");
             }
 

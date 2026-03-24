@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,10 @@
  */
 package org.redisson;
 
+import org.redisson.api.*;
 import org.redisson.api.LocalCachedMapOptions;
 import org.redisson.api.MapCacheOptions;
 import org.redisson.api.MapOptions;
-import org.redisson.api.*;
 import org.redisson.api.options.*;
 import org.redisson.client.codec.Codec;
 import org.redisson.codec.JsonCodec;
@@ -683,12 +683,12 @@ public final class RedissonRx implements RedissonRxClient {
 
     @Override
     public RReliableTopicRx getReliableTopic(String name) {
-        return RxProxyBuilder.create(commandExecutor, new RedissonReliableTopic(commandExecutor, name, null), RReliableTopicRx.class);
+        return RxProxyBuilder.create(commandExecutor, new RedissonReliableTopic(commandExecutor, name), RReliableTopicRx.class);
     }
 
     @Override
     public RReliableTopicRx getReliableTopic(String name, Codec codec) {
-        return RxProxyBuilder.create(commandExecutor, new RedissonReliableTopic(codec, commandExecutor, name, null), RReliableTopicRx.class);
+        return RxProxyBuilder.create(commandExecutor, new RedissonReliableTopic(codec, commandExecutor, name), RReliableTopicRx.class);
     }
 
     @Override
@@ -696,7 +696,7 @@ public final class RedissonRx implements RedissonRxClient {
         PlainParams params = (PlainParams) options;
         CommandRxExecutor ce = commandExecutor.copy(params);
         return RxProxyBuilder.create(commandExecutor,
-                new RedissonReliableTopic(params.getCodec(), ce, params.getName(), null), RReliableTopicRx.class);
+                new RedissonReliableTopic(params.getCodec(), ce, params.getName()), RReliableTopicRx.class);
     }
 
     @Override
@@ -734,6 +734,21 @@ public final class RedissonRx implements RedissonRxClient {
         CommandRxExecutor ce = commandExecutor.copy(params);
         return RxProxyBuilder.create(commandExecutor, new RedissonQueue<V>(params.getCodec(), ce, params.getName(), null),
                 new RedissonListRx<V>(new RedissonList<V>(params.getCodec(), ce, params.getName(), null)), RQueueRx.class);
+    }
+
+    @Override
+    public <V> RReliableQueueRx<V> getReliableQueue(String name) {
+        throw new UnsupportedOperationException("This feature is implemented in the Redisson PRO version. Please refer to https://redisson.pro/feature-comparison.html");
+    }
+
+    @Override
+    public <V> RReliableQueueRx<V> getReliableQueue(String name, Codec codec) {
+        throw new UnsupportedOperationException("This feature is implemented in the Redisson PRO version. Please refer to https://redisson.pro/feature-comparison.html");
+    }
+
+    @Override
+    public <V> RReliableQueueRx<V> getReliableQueue(PlainOptions options) {
+        throw new UnsupportedOperationException("This feature is implemented in the Redisson PRO version. Please refer to https://redisson.pro/feature-comparison.html");
     }
 
     @Override
@@ -936,6 +951,45 @@ public final class RedissonRx implements RedissonRxClient {
     }
 
     @Override
+    public <V> RBloomFilterNativeRx<V> getBloomFilterNative(String name) {
+        return RxProxyBuilder.create(commandExecutor, new RedissonBloomFilterNative<>(commandExecutor, name), RBloomFilterNativeRx.class);
+    }
+
+    @Override
+    public <V> RBloomFilterNativeRx<V> getBloomFilterNative(String name, Codec codec) {
+        return RxProxyBuilder.create(commandExecutor, new RedissonBloomFilterNative<>(codec, commandExecutor, name), RBloomFilterNativeRx.class);
+    }
+
+    @Override
+    public <V> RBloomFilterNativeRx<V> getBloomFilterNative(PlainOptions options) {
+        PlainParams params = (PlainParams) options;
+        CommandRxExecutor ce = commandExecutor.copy(params);
+        return RxProxyBuilder.create(commandExecutor,
+                new RedissonBloomFilterNative<V>(params.getCodec(), ce, params.getName()), RBloomFilterNativeRx.class);
+    }
+
+    @Override
+    public <V> RCuckooFilterRx<V> getCuckooFilter(String name) {
+        return getCuckooFilter(name, null);
+    }
+
+    @Override
+    public <V> RCuckooFilterRx<V> getCuckooFilter(String name, Codec codec) {
+        return RxProxyBuilder.create(commandExecutor,
+                new RedissonCuckooFilter<V>(codec, commandExecutor, name),
+                RCuckooFilterRx.class);
+    }
+
+    @Override
+    public <V> RCuckooFilterRx<V> getCuckooFilter(PlainOptions options) {
+        PlainParams params = (PlainParams) options;
+        CommandRxExecutor ca = commandExecutor.copy(params);
+        return RxProxyBuilder.create(commandExecutor,
+                new RedissonCuckooFilter<V>(params.getCodec(), ca, params.getName()),
+                RCuckooFilterRx.class);
+    }
+
+    @Override
     public RFunctionRx getFunction() {
         return RxProxyBuilder.create(commandExecutor, new RedissonFuction(commandExecutor), RFunctionRx.class);
     }
@@ -970,6 +1024,18 @@ public final class RedissonRx implements RedissonRxClient {
     }
 
     @Override
+    public RVectorSetRx getVectorSet(String name) {
+        return RxProxyBuilder.create(commandExecutor, new RedissonVectorSet(commandExecutor, name), RVectorSetRx.class);
+    }
+
+    @Override
+    public RVectorSetRx getVectorSet(CommonOptions options) {
+        CommonParams params = (CommonParams) options;
+        CommandRxExecutor ce = commandExecutor.copy(params);
+        return RxProxyBuilder.create(commandExecutor, new RedissonVectorSet(ce, params.getName()), RVectorSetRx.class);
+    }
+
+    @Override
     public RBatchRx createBatch() {
         return createBatch(BatchOptions.defaults());
     }
@@ -994,19 +1060,6 @@ public final class RedissonRx implements RedissonRxClient {
     @Override
     public Config getConfig() {
         return connectionManager.getServiceManager().getCfg();
-    }
-
-    @Override
-    public NodesGroup<Node> getNodesGroup() {
-        return new RedisNodes<Node>(connectionManager, connectionManager.getServiceManager(), commandExecutor);
-    }
-
-    @Override
-    public NodesGroup<ClusterNode> getClusterNodesGroup() {
-        if (!getConfig().isClusterConfig()) {
-            throw new IllegalStateException("Redisson not in cluster mode!");
-        }
-        return new RedisNodes<ClusterNode>(connectionManager, connectionManager.getServiceManager(), commandExecutor);
     }
 
     @Override

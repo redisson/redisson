@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,9 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.TrustManagerFactory;
 import java.net.InetSocketAddress;
 import java.net.URL;
+import java.time.Duration;
+import java.util.Collections;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 
@@ -76,7 +79,6 @@ public class RedisClientConfig {
     private KeyManagerFactory sslKeyManagerFactory;
     private NettyHook nettyHook = new DefaultNettyHook();
     private CredentialsResolver credentialsResolver = new DefaultCredentialsResolver();
-    private int credentialsReapplyInterval;
     private Consumer<InetSocketAddress> connectedListener;
     private Consumer<InetSocketAddress> disconnectedListener;
 
@@ -85,6 +87,10 @@ public class RedisClientConfig {
     private FailedNodeDetector failedNodeDetector = new FailedConnectionDetector();
 
     private Protocol protocol = Protocol.RESP2;
+
+    private Set<ValkeyCapability> capabilities = Collections.emptySet();
+
+    private DelayStrategy reconnectionDelay = new EqualJitterDelay(Duration.ofMillis(100), Duration.ofSeconds(10));
 
     public RedisClientConfig() {
     }
@@ -119,7 +125,6 @@ public class RedisClientConfig {
         this.resolverGroup = config.resolverGroup;
         this.sslHostname = config.sslHostname;
         this.credentialsResolver = config.credentialsResolver;
-        this.credentialsReapplyInterval = config.credentialsReapplyInterval;
         this.connectedListener = config.connectedListener;
         this.disconnectedListener = config.disconnectedListener;
         this.sslKeyManagerFactory = config.sslKeyManagerFactory;
@@ -133,6 +138,8 @@ public class RedisClientConfig {
         this.protocol = config.protocol;
         this.sslKeystoreType = config.sslKeystoreType;
         this.sslVerificationMode = config.sslVerificationMode;
+        this.capabilities = config.capabilities;
+        this.reconnectionDelay = config.reconnectionDelay;
     }
 
     public NettyHook getNettyHook() {
@@ -416,15 +423,6 @@ public class RedisClientConfig {
         return this;
     }
 
-    public int getCredentialsReapplyInterval() {
-        return credentialsReapplyInterval;
-    }
-
-    public RedisClientConfig setCredentialsReapplyInterval(int credentialsReapplyInterval) {
-        this.credentialsReapplyInterval = credentialsReapplyInterval;
-        return this;
-    }
-
     public Consumer<InetSocketAddress> getConnectedListener() {
         return connectedListener;
     }
@@ -500,6 +498,23 @@ public class RedisClientConfig {
     }
     public RedisClientConfig setSslVerificationMode(SslVerificationMode sslVerificationMode) {
         this.sslVerificationMode = sslVerificationMode;
+        return this;
+    }
+
+    public Set<ValkeyCapability> getCapabilities() {
+        return capabilities;
+    }
+
+    public RedisClientConfig setCapabilities(Set<ValkeyCapability> capabilities) {
+        this.capabilities = capabilities;
+        return this;
+    }
+
+    public DelayStrategy getReconnectionDelay() {
+        return reconnectionDelay;
+    }
+    public RedisClientConfig setReconnectionDelay(DelayStrategy reconnectionDelay) {
+        this.reconnectionDelay = reconnectionDelay;
         return this;
     }
 }

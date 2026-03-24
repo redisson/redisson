@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -107,7 +107,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         super();
         this.codec = commandExecutor.getServiceManager().getCodec(codec);
         this.commandExecutor = commandExecutor;
-        this.name = commandExecutor.getServiceManager().getConfig().getNameMapper().map(name);
+        this.name = commandExecutor.getServiceManager().getNameMapper().map(name);
         this.redisson = redisson;
         this.queueTransferService = commandExecutor.getServiceManager().getQueueTransferService();
         this.responses = commandExecutor.getServiceManager().getResponses();
@@ -298,6 +298,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         service.setStatusName(statusName);
         service.setTasksCounterName(tasksCounterName);
         service.setTasksName(tasksName);
+        service.setTasksLatchName(tasksLatchName);
         service.setTerminationTopicName(terminationTopic.getChannelNames().get(0));
         service.setSchedulerChannelName(schedulerChannelName);
         service.setSchedulerQueueName(schedulerQueueName);
@@ -426,11 +427,9 @@ public class RedissonExecutorService implements RScheduledExecutorService {
             byte[] lambdaBody = null;
             if (classStream == null) {
                 ByteArrayOutputStream os = new ByteArrayOutputStream();
-                try {
-                    ObjectOutput oo = new ObjectOutputStream(os);
+                try (ObjectOutput oo = new ObjectOutputStream(os)) {
                     oo.writeObject(task);
                     oo.flush();
-                    oo.close();
                 } catch (Exception e) {
                     throw new IllegalArgumentException("Unable to serialize lambda", e);
                 }
@@ -450,18 +449,11 @@ public class RedissonExecutorService implements RScheduledExecutorService {
             }
             
             byte[] classBody;
-            try {
-                DataInputStream s = new DataInputStream(classStream);
+            try (DataInputStream s = new DataInputStream(classStream)) {
                 classBody = new byte[s.available()];
                 s.readFully(classBody);
             } catch (IOException e) {
                 throw new IllegalArgumentException(e);
-            } finally {
-                try {
-                    classStream.close();
-                } catch (IOException e) {
-                    // skip
-                }
             }
             
             result = new ClassBody(lambdaBody, classBody, className);
@@ -498,7 +490,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
 
     @Override
     public String getName() {
-        return commandExecutor.getServiceManager().getConfig().getNameMapper().unmap(name);
+        return commandExecutor.getServiceManager().getNameMapper().unmap(name);
     }
     
     @Override
@@ -1149,7 +1141,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         check(task);
 
         MasterSlaveServersConfig config = commandExecutor.getServiceManager().getConfig();
-        int timeout = (config.getTimeout() + config.getRetryInterval()) * config.getRetryAttempts();
+        long timeout = (config.getTimeout() + config.getRetryDelay().calcDelay(config.getRetryAttempts()).toMillis()) * config.getRetryAttempts();
         timeout = Math.max(timeout, 1);
 
         String taskName = tasksLatchName + ":" + id;

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -545,7 +545,7 @@ public interface RedissonClient {
      * <p>
      * Uses Redis native commands for entry expiration and not a scheduled eviction task.
      * <p>
-     * Requires <b>Redis 7.4.0 and higher.</b>
+     * Requires <b>Redis 7.4.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
      *
      * @param <K> type of key
      * @param <V> type of value
@@ -562,7 +562,7 @@ public interface RedissonClient {
      * <p>
      * Uses Redis native commands for entry expiration and not a scheduled eviction task.
      * <p>
-     * Requires <b>Redis 7.4.0 and higher.</b>
+     * Requires <b>Redis 7.4.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
      *
      * @param <K> type of key
      * @param <V> type of value
@@ -579,7 +579,7 @@ public interface RedissonClient {
      * <p>
      * Uses Redis native commands for entry expiration and not a scheduled eviction task.
      * <p>
-     * Requires <b>Redis 7.4.0 and higher.</b>
+     * Requires <b>Redis 7.4.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
      *
      * @param <K> type of key
      * @param <V> type of value
@@ -687,7 +687,7 @@ public interface RedissonClient {
      * Returns map instance by name.
      * Supports entry eviction with a given TTL.
      * <p>
-     * Requires <b>Redis 7.4.0 and higher.</b>
+     * Requires <b>Redis 7.4.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
      *
      * @param <K> type of key
      * @param <V> type of value
@@ -701,7 +701,7 @@ public interface RedissonClient {
      * using provided codec for both map keys and values.
      * Supports entry eviction with a given TTL.
      * <p>
-     * Requires <b>Redis 7.4.0 and higher.</b>
+     * Requires <b>Redis 7.4.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
      *
      * @param <K> type of key
      * @param <V> type of value
@@ -716,7 +716,7 @@ public interface RedissonClient {
      * Supports entry eviction with a given TTL.
      * Configured by the parameters of the options-object.
      * <p>
-     * Requires <b>Redis 7.4.0 and higher.</b>
+     * Requires <b>Redis 7.4.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
      *
      * @param <K> type of key
      * @param <V> type of value
@@ -805,7 +805,7 @@ public interface RedissonClient {
      * <p>
      * Uses Redis native commands for entry expiration and not a scheduled eviction task.
      * <p>
-     * Requires <b>Redis 7.4.0 and higher.</b>
+     * Requires <b>Redis 7.4.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
      *
      * @param <K> type of key
      * @param <V> type of value
@@ -822,7 +822,7 @@ public interface RedissonClient {
      * <p>
      * Uses Redis native commands for entry expiration and not a scheduled eviction task.
      * <p>
-     * Requires <b>Redis 7.4.0 and higher.</b>
+     * Requires <b>Redis 7.4.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
      *
      * @param <K> type of key
      * @param <V> type of value
@@ -839,7 +839,7 @@ public interface RedissonClient {
      * <p>
      * Uses Redis native commands for entry expiration and not a scheduled eviction task.
      * <p>
-     * Requires <b>Redis 7.4.0 and higher.</b>
+     * Requires <b>Redis 7.4.0 and higher.</b> or <b>Valkey 9.0.0 and higher.</b>
      *
      * @param <K> type of key
      * @param <V> type of value
@@ -1239,6 +1239,49 @@ public interface RedissonClient {
     RReliableTopic getReliableTopic(PlainOptions options);
 
     /**
+     * Returns reliable pubsub topic instance by name.
+     * <p>
+     * Reliable pubsub topics provide advanced messaging features including managed subscriptions,
+     * seek operation, pull/push consumers, message acknowledgment and many more.
+     * <p>
+     * Requires <b>Redis 5.0.0 and higher or any Valkey version.</b>
+     *
+     * @param <V> the type of message values
+     * @param name name of the topic
+     * @return RReliablePubSubTopic object
+     */
+    <V> RReliablePubSubTopic<V> getReliablePubSubTopic(String name);
+
+    /**
+     * Returns reliable pubsub topic instance by name using the provided codec for messages.
+     * <p>
+     * Reliable pubsub topics provide advanced messaging features including managed subscriptions,
+     * seek operation, pull/push consumers, message acknowledgment and many more.
+     * <p>
+     * Requires <b>Redis 5.0.0 and higher or any Valkey version.</b>
+     *
+     * @param <V> the type of message values
+     * @param name name of the topic
+     * @param codec codec for message serialization and deserialization
+     * @return RReliablePubSubTopic object
+     */
+    <V> RReliablePubSubTopic<V> getReliablePubSubTopic(String name, Codec codec);
+
+    /**
+     * Returns reliable pubsub topic instance with the specified options.
+     * <p>
+     * Reliable pubsub topics provide advanced messaging features including managed subscriptions,
+     * seek operation, pull/push consumers, message acknowledgment and many more.
+     * <p>
+     * Requires <b>Redis 5.0.0 and higher or any Valkey version.</b>
+     *
+     * @param <V> the type of message values
+     * @param options instance options including name and codec configuration
+     * @return RReliablePubSubTopic object
+     */
+    <V> RReliablePubSubTopic<V> getReliablePubSubTopic(PlainOptions options);
+
+    /**
      * Returns topic instance satisfies by pattern name.
      *
      *  Supported glob-style patterns:
@@ -1318,16 +1361,50 @@ public interface RedissonClient {
     <V> RTransferQueue<V> getTransferQueue(PlainOptions options);
 
     /**
-     * Returns unbounded delayed queue instance by name.
-     * <p>
-     * Could be attached to destination queue only.
-     * All elements are inserted with transfer delay to destination queue.
+     * Instead, use the {@link RReliableQueue} object with delay feature.
      * 
      * @param <V> type of value
      * @param destinationQueue destination queue
      * @return Delayed queue object
      */
     <V> RDelayedQueue<V> getDelayedQueue(RQueue<V> destinationQueue);
+
+    /**
+     * Returns a reliable queue instance by name.
+     * <p>
+     * The reliable queue provides guaranteed message delivery through acknowledgment mechanisms
+     * and synchronous replication.
+     *
+     * @param name the name of the queue
+     * @param <V> the type of elements in this queue
+     * @return Reliable queue instance
+     */
+    <V> RReliableQueue<V> getReliableQueue(String name);
+
+    /**
+     * Returns a reliable queue instance by name and provided codec.
+     * <p>
+     * The reliable queue provides guaranteed message delivery through acknowledgment mechanisms
+     * and synchronous replication.
+     *
+     * @param name the name of the queue
+     * @param codec the codec used for message serialization and deserialization
+     * @param <V> the type of elements in this queue
+     * @return Reliable queue instance
+     */
+    <V> RReliableQueue<V> getReliableQueue(String name, Codec codec);
+
+    /**
+     * Returns a reliable queue instance with the specified configuration options.
+     * <p>
+     * The reliable queue provides guaranteed message delivery through acknowledgment mechanisms
+     * and synchronous replication.
+     *
+     * @param options configuration options for the reliable queue
+     * @param <V> the type of elements in this queue
+     * @return Reliable queue instance
+     */
+    <V> RReliableQueue<V> getReliableQueue(PlainOptions options);
 
     /**
      * Returns unbounded queue instance by name
@@ -1527,32 +1604,34 @@ public interface RedissonClient {
     <V> RBlockingQueue<V> getBlockingQueue(PlainOptions options);
 
     /**
-     * Returns bounded blocking queue instance by name.
+     * Instead, use the {@link RReliableQueue} object with the queue size limit feature.
      *
      * @param <V> type of value
      * @param name of queue
      * @return BoundedBlockingQueue object
      */
+    @Deprecated
     <V> RBoundedBlockingQueue<V> getBoundedBlockingQueue(String name);
 
     /**
-     * Returns bounded blocking queue instance by name
-     * using provided codec for queue objects.
+     * Instead, use the {@link RReliableQueue} object with the queue size limit feature.
      * 
      * @param <V> type of value
      * @param name name of queue
      * @param codec codec for values
      * @return BoundedBlockingQueue object
      */
+    @Deprecated
     <V> RBoundedBlockingQueue<V> getBoundedBlockingQueue(String name, Codec codec);
 
     /**
-     * Returns bounded blocking queue instance with specified <code>options</code>.
+     * Instead, use the {@link RReliableQueue} object with the queue size limit feature.
      *
      * @param <V> type of value
      * @param options instance options
      * @return BoundedBlockingQueue object
      */
+    @Deprecated
     <V> RBoundedBlockingQueue<V> getBoundedBlockingQueue(PlainOptions options);
 
     /**
@@ -1739,6 +1818,67 @@ public interface RedissonClient {
     <V> RBloomFilter<V> getBloomFilter(PlainOptions options);
 
     /**
+     * Returns bloom filter native instance by name.
+     * using BF.* Commands
+     *
+     * @param <V> type of value
+     * @param name name of object
+     * @return BloomFilterNative object
+     */
+    <V> RBloomFilterNative<V> getBloomFilterNative(String name);
+
+    /**
+     * Returns bloom filter instance by name
+     * using BF.* Commands
+     * using provided codec for objects.
+     *
+     * @param <V> type of value
+     * @param name name of object
+     * @param codec codec for values
+     * @return BloomFilterNative object
+     */
+    <V> RBloomFilterNative<V> getBloomFilterNative(String name, Codec codec);
+
+    /**
+     * Returns bloom filter instance with specified <code>options</code>.
+     * using BF.* Commands
+     *
+     * @param <V> type of value
+     * @param options instance options
+     * @return BloomFilterNative object
+     */
+    <V> RBloomFilterNative<V> getBloomFilterNative(PlainOptions options);
+
+    /**
+     * Returns cuckoo filter instance by <code>name</code>.
+     *
+     * @param <V> type of value
+     * @param name name of object
+     * @return CuckooFilter object
+     */
+    <V> RCuckooFilter<V> getCuckooFilter(String name);
+
+    /**
+     * Returns cuckoo filter instance by <code>name</code>
+     * using provided <code>codec</code> for values.
+     *
+     * @param <V> type of value
+     * @param name name of object
+     * @param codec codec for values
+     * @return CuckooFilter object
+     */
+    <V> RCuckooFilter<V> getCuckooFilter(String name, Codec codec);
+
+    /**
+     * Returns cuckoo filter instance with specified <code>options</code>.
+     *
+     * @param <V> type of value
+     * @param options instance options
+     * @return CuckooFilter object
+     */
+    <V> RCuckooFilter<V> getCuckooFilter(PlainOptions options);
+
+    /**
      * Returns id generator instance by name.
      *
      * @param name name of object
@@ -1799,6 +1939,26 @@ public interface RedissonClient {
      * @return Script object
      */
     RScript getScript(OptionalOptions options);
+
+    /**
+     * Returns vector set instance by name.
+     * <p>
+     * Requires <b>Redis 8.0.0 and higher.</b>
+     *
+     * @param name - name of vector set
+     * @return vector set instance
+     */
+    RVectorSet getVectorSet(String name);
+
+    /**
+     * Returns vector set instance by name with specified <code>options</code>.
+     * <p>
+     * Requires <b>Redis 8.0.0 and higher.</b>
+     *
+     * @param options instance options
+     * @return vector set instance
+     */
+    RVectorSet getVectorSet(CommonOptions options);
 
     /**
      * Returns ScheduledExecutorService by name
@@ -2019,30 +2179,18 @@ public interface RedissonClient {
     Config getConfig();
 
     /**
-     * Returns API to manage Redis nodes
+     * Returns API to manage Valkey or Redis nodes
      *
      * @see RedisNodes#CLUSTER
      * @see RedisNodes#MASTER_SLAVE
      * @see RedisNodes#SENTINEL_MASTER_SLAVE
      * @see RedisNodes#SINGLE
      *
-     * @param nodes Redis nodes API class
-     * @param <T> type of Redis nodes API
-     * @return Redis nodes API object
+     * @param nodes Valkey or Redis nodes API class
+     * @param <T> type of Valkey or Redis nodes API
+     * @return Valkey or Redis nodes API object
      */
     <T extends BaseRedisNodes> T getRedisNodes(RedisNodes<T> nodes);
-
-    /*
-     * Use getRedisNodes() method instead
-     */
-    @Deprecated
-    NodesGroup<Node> getNodesGroup();
-
-    /*
-     * Use getRedisNodes() method instead
-     */
-    @Deprecated
-    ClusterNodesGroup getClusterNodesGroup();
 
     /**
      * Returns {@code true} if this Redisson instance has been shut down.

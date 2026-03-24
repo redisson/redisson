@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ public class RedissonBlockingQueueReactive<V> extends RedissonListReactive<V> {
     private final RBlockingQueue<V> queue;
     
     public RedissonBlockingQueueReactive(RBlockingQueue<V> queue) {
-        super((BaseRedissonList<V>) queue);
+        super(null);
         this.queue = queue;
     }
 
@@ -45,5 +45,14 @@ public class RedissonBlockingQueueReactive<V> extends RedissonListReactive<V> {
             }
         });
     }
-    
+
+    @Override
+    RFuture<V> getAsync(int currentIndex) {
+        return ((BaseRedissonList) queue).getAsync(currentIndex);
+    }
+
+    @Override
+    RFuture<Boolean> addAsync(V o) {
+        return ((BaseRedissonList) queue).addAsync(o);
+    }
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -135,7 +135,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
                         log.debug("slave {} state: {}", slaveAddr, map);
 
-                        if (isSlaveDown(flags, masterLinkStatus)) {
+                        if (isDown(flags, masterLinkStatus)) {
                             log.warn("slave: {} is down", slaveAddr);
                         } else {
                             this.config.addSlaveAddress(uri.toString());
@@ -212,7 +212,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private void checkAuth(SentinelServersConfig cfg) {
-        if (cfg.getPassword() == null) {
+        if (serviceManager.getCfg().getPassword() == null && cfg.getPassword() == null) {
             return;
         }
 
@@ -391,7 +391,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             return CompletableFuture.completedFuture(null);
         }
 
-        RFuture<List<Map<String, String>>> sentinelsFuture = connection.async(1, cfg.getRetryInterval(), cfg.getTimeout(),
+        RFuture<List<Map<String, String>>> sentinelsFuture = connection.async(1, cfg.getRetryDelay(), cfg.getTimeout(),
                                                                                 StringCodec.INSTANCE, RedisCommands.SENTINEL_SENTINELS, cfg.getMasterName());
         return sentinelsFuture.thenCompose(list -> {
             if (list.isEmpty()) {
@@ -401,7 +401,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             List<CompletableFuture<InetSocketAddress>> newUris = list.stream().filter(m -> {
                 String flags = m.getOrDefault("flags", "");
                 String masterLinkStatus = m.getOrDefault("master-link-status", "");
-                if (!m.isEmpty() && !isSlaveDown(flags, masterLinkStatus)) {
+                if (!m.isEmpty() && !isDown(flags, masterLinkStatus)) {
                     return true;
                 }
                 return false;
@@ -434,10 +434,10 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private CompletionStage<Void> checkSlavesChange(SentinelServersConfig cfg, RedisConnection connection) {
-        RFuture<List<Map<String, String>>> slavesFuture = connection.async(1, cfg.getRetryInterval(), cfg.getTimeout(),
+        RFuture<List<Map<String, String>>> slavesFuture = connection.async(1, cfg.getRetryDelay(), cfg.getTimeout(),
                                                                             StringCodec.INSTANCE, RedisCommands.SENTINEL_SLAVES, cfg.getMasterName());
         return slavesFuture.thenCompose(slavesMap -> {
-            Set<RedisURI> currentSlaves = Collections.newSetFromMap(new ConcurrentHashMap<>(slavesMap.size()));
+            Set<RedisURI> currentSlaves = ConcurrentHashMap.newKeySet(slavesMap.size());
             List<CompletableFuture<Void>> futures = new ArrayList<>();
             for (Map<String, String> map : slavesMap) {
                 if (map.isEmpty()) {
@@ -448,6 +448,13 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 String port = map.get("port");
                 String flags = map.getOrDefault("flags", "");
                 String masterLinkStatus = map.getOrDefault("master-link-status", "");
+
+                if (isDown(flags, masterLinkStatus)) {
+                    RedisURI uri = serviceManager.toURI(scheme, host, port);
+                    slaveDown(uri);
+                    continue;
+                }
+
                 String masterHost = map.get("master-host");
                 String masterPort = map.get("master-port");
 
@@ -470,7 +477,10 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                         .thenCompose(res -> {
                             InetSocketAddress slaveAddr = slaveAddrFuture.getNow(null);
                             InetSocketAddress masterAddr = masterAddrFuture.getNow(null);
-                            if (isSlaveDown(flags, masterLinkStatus)) {
+                            if (flags.contains("promoted")) {
+                                return CompletableFuture.completedFuture(res);
+                            }
+                            if (isDown(flags, masterLinkStatus)) {
                                 slaveDown(slaveAddr);
                                 return CompletableFuture.completedFuture(res);
                             }
@@ -503,7 +513,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private CompletionStage<RedisClient> checkMasterChange(SentinelServersConfig cfg, RedisConnection connection) {
-        RFuture<RedisURI> masterFuture = connection.async(1, cfg.getRetryInterval(), cfg.getTimeout(),
+        RFuture<RedisURI> masterFuture = connection.async(1, cfg.getRetryDelay(), cfg.getTimeout(),
                                                             StringCodec.INSTANCE, masterHostCommand, cfg.getMasterName());
         return masterFuture
                 .thenCompose(u -> resolveIP(u.getHost(), "" + u.getPort()))
@@ -641,7 +651,18 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         }
     }
 
-    private boolean isSlaveDown(String flags, String masterLinkStatus) {
+    private void slaveDown(RedisURI addr) {
+        if (config.isSlaveNotUsed()) {
+            log.warn("slave: {} is down", addr);
+        } else {
+            MasterSlaveEntry entry = getEntry(singleSlotRange.getStartSlot());
+            if (entry.slaveDown(addr)) {
+                log.warn("slave: {} is down", addr);
+            }
+        }
+    }
+
+    private boolean isDown(String flags, String masterLinkStatus) {
         boolean baseStatus = flags.contains("s_down") || flags.contains("disconnected");
         if (cfg.isCheckSlaveStatusWithSyncing() && !StringUtil.isNullOrEmpty(masterLinkStatus)) {
             return baseStatus || masterLinkStatus.contains("err");

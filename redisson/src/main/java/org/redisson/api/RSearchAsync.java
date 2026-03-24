@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,10 @@ import org.redisson.api.search.aggregate.AggregationResult;
 import org.redisson.api.search.index.FieldIndex;
 import org.redisson.api.search.index.IndexInfo;
 import org.redisson.api.search.index.IndexOptions;
+import org.redisson.api.search.query.hybrid.HybridSearchResult;
 import org.redisson.api.search.query.QueryOptions;
 import org.redisson.api.search.query.SearchResult;
+import org.redisson.api.search.query.hybrid.HybridQueryArgs;
 
 import java.util.List;
 import java.util.Map;
@@ -40,7 +42,7 @@ public interface RSearchAsync {
      * <p>
      * Code example:
      * <pre>
-     *             search.create("idx", IndexOptions.defaults()
+     *             search.createIndexAsync("idx", IndexOptions.defaults()
      *                                     .on(IndexType.HASH)
      *                                     .prefix(Arrays.asList("doc:")),
      *                                     FieldIndex.text("t1"),
@@ -58,7 +60,7 @@ public interface RSearchAsync {
      * <p>
      * Code example:
      * <pre>
-     * SearchResult r = s.search("idx", "*", QueryOptions.defaults()
+     * SearchResult r = s.searchAsync("idx", "*", QueryOptions.defaults()
      *                                                   .returnAttributes(new ReturnAttribute("t1"), new ReturnAttribute("t2")));
      * </pre>
      *
@@ -70,11 +72,23 @@ public interface RSearchAsync {
     RFuture<SearchResult> searchAsync(String indexName, String query, QueryOptions options);
 
     /**
+     * Performs hybrid search combining text search and vector similarity
+     * using the FT.HYBRID command.
+     * <p>
+     * Requires <b>Redis 8.4.0 and higher.</b>
+     *
+     * @param indexName the name of the index
+     * @param args hybrid query arguments
+     * @return search result
+     */
+    RFuture<HybridSearchResult> hybridSearchAsync(String indexName, HybridQueryArgs args);
+
+    /**
      * Executes aggregation over defined index using defined query.
      * <p>
      * Code example:
      * <pre>
-     * AggregationResult r = s.aggregate("idx", "*", AggregationOptions.defaults()
+     * AggregationResult r = s.aggregateAsync("idx", "*", AggregationOptions.defaults()
      *                                                                 .load("t1", "t2"));
      * </pre>
      *
@@ -212,11 +226,18 @@ public interface RSearchAsync {
     RFuture<IndexInfo> infoAsync(String indexName);
 
     /**
+     * Returns boolean value indicating whether index exists
+     *
+     * @param indexName index name
+     * @return boolean value
+     */
+    RFuture<Boolean> hasIndexAsync(String indexName);
+    /**
      * Executes spell checking by defined index name and query.
      * Returns a map of misspelled terms and their score.
      *
      * <pre>
-     * Map<String, Map<String, Double>> res = s.spellcheck("idx", "Hocke sti", SpellcheckOptions.defaults()
+     * Map<String, Map<String, Double>> res = s.spellcheckAsync("idx", "Hocke sti", SpellcheckOptions.defaults()
      *                                                                                          .includedTerms("name"));
      * </pre>
      *

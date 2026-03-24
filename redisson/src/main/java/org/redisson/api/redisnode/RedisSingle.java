@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 package org.redisson.api.redisnode;
 
 /**
- * Redis Single node API interface
+ * Valkey or Redis Single node API interface
  *
  * @author Nikita Koksharov
  *
@@ -24,7 +24,7 @@ package org.redisson.api.redisnode;
 public interface RedisSingle extends BaseRedisNodes {
 
     /**
-     * Returns Redis node
+     * Returns Valkey or Redis node
      *
      * @return Redis node
      */

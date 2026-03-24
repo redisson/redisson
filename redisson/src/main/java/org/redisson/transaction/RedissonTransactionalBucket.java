@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -354,6 +354,18 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
     public RFuture<Boolean> trySetAsync(V value, long timeToLive, TimeUnit timeUnit) {
         long currentThreadId = Thread.currentThread().getId();
         return trySet(value, new BucketTrySetOperation<V>(getName(), getLockName(), getCodec(), value, timeToLive, timeUnit, transactionId, currentThreadId));
+    }
+
+    @Override
+    public RFuture<Boolean> setIfAbsentAsync(V newValue) {
+        long currentThreadId = Thread.currentThread().getId();
+        return trySet(newValue, new BucketTrySetOperation<V>(getName(), getLockName(), getCodec(), newValue, transactionId, currentThreadId));
+    }
+
+    @Override
+    public RFuture<Boolean> setIfAbsentAsync(V value, Duration duration) {
+        long currentThreadId = Thread.currentThread().getId();
+        return trySet(value, new BucketTrySetOperation<V>(getName(), getLockName(), getCodec(), value, duration.toMillis(), TimeUnit.MILLISECONDS, transactionId, currentThreadId));
     }
 
     private RFuture<Boolean> trySet(V newValue, BucketTrySetOperation operation) {

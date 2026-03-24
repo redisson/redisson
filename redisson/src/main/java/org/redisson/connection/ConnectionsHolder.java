@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,11 +23,13 @@ import org.redisson.misc.AsyncSemaphore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Deque;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.function.Function;
 
 /**
@@ -40,7 +42,7 @@ public class ConnectionsHolder<T extends RedisConnection> {
     final Logger log = LoggerFactory.getLogger(getClass());
 
     private final Queue<T> allConnections = new ConcurrentLinkedQueue<>();
-    private final Queue<T> freeConnections = new ConcurrentLinkedQueue<>();
+    private final Deque<T> freeConnections = new ConcurrentLinkedDeque<>();
     private final AsyncSemaphore freeConnectionsCounter;
 
     private final RedisClient client;
@@ -90,11 +92,25 @@ public class ConnectionsHolder<T extends RedisConnection> {
     }
 
     private T pollConnection(RedisCommand<?> command) {
-        T c = freeConnections.poll();
-        if (c != null && changeUsage) {
-            c.incUsage();
+        int size = freeConnections.size();
+        for (int i = 0; i < size; i++) {
+            T conn = freeConnections.poll();
+            if (conn == null) {
+                return null;
+            }
+            if (conn.isActive()) {
+                if (i > 0) {
+                    log.debug("skipped connections with inactive channel: {}", i);
+                }
+                if (changeUsage) {
+                    conn.incUsage();
+                }
+                return conn;
+            }
+
+            freeConnections.addLast(conn);
         }
-        return c;
+        return null;
     }
 
     private void releaseConnection(T connection) {
@@ -108,7 +124,11 @@ public class ConnectionsHolder<T extends RedisConnection> {
         }
 
         connection.setLastUsageTime(System.nanoTime());
-        freeConnections.add(connection);
+        if (connection.isActive()) {
+            freeConnections.addFirst(connection);
+        } else {
+            freeConnections.addLast(connection);
+        }
         if (changeUsage) {
             connection.decUsage();
         }

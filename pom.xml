@@ -3,13 +3,13 @@
 
     <groupId>org.redisson</groupId>
     <artifactId>redisson-parent</artifactId>
-    <version>3.45.2-SNAPSHOT</version>
+    <version>4.3.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Redisson</name>
-    <description>Easy Redis Java client and Real-Time Data Platform. Valkey compatible. Sync/Async/RxJava3/Reactive API. Client side caching. Over 50 Redis based Java objects and services: JCache API (JSR-107), Hibernate Cache, MyBatis Cache, Quarkus Cache, Micronaut Cache, Apache Tomcat Session, Spring Session, Micronaut Session, Hibernate, Spring Boot Starter, Spring Cache, Spring Session, Spring Transaction Manager, Spring Cloud Stream, Spring Data Redis, JSON, Set, Multimap, Geo, SortedSet, Map, List, Queue, Deque, Semaphore, ReadWriteLock, FairLock, Lock, AtomicLong, AtomicDouble, LongAdder, DoubleAdder, Map Reduce, Bloom filter, Scheduler, RPC</description>
-    <inceptionYear>2014</inceptionYear>
-    <url>http://redisson.org</url>
+    <description>Valkey and Redis Java client. Real-Time Data Platform. Sync/Async/RxJava3/Reactive API. Client side caching. Over 50 Redis based Java objects and services: JCache API (JSR-107), Hibernate Cache, MyBatis Cache, Quarkus Cache, Micronaut Cache, Apache Tomcat Session, Spring Session, Micronaut Session, Hibernate, Spring Boot Starter, Spring Cache, Spring Session, Spring Transaction Manager, Spring Cloud Stream, Spring Data Redis, JSON, Set, Multimap, Geo, SortedSet, Map, List, Queue, Deque, Semaphore, ReadWriteLock, FairLock, Lock, AtomicLong, AtomicDouble, LongAdder, DoubleAdder, Map Reduce, Bloom filter, Scheduler, RPC</description>
+    <inceptionYear>2013</inceptionYear>
+    <url>https://redisson.pro</url>
 
     <organization>
        <name>Redisson</name>
@@ -61,14 +61,24 @@
         <module>redisson</module>
         <module>redisson-all</module>
         <module>redisson-tomcat</module>
-        <module>redisson-spring-data</module>
-        <module>redisson-spring-boot-starter</module>
         <module>redisson-mybatis</module>
         <module>redisson-hibernate</module>
         <module>redisson-helidon</module>
         <module>redisson-quarkus</module>
         <module>redisson-micronaut</module>
+        <module>redisson-spring</module>
     </modules>
+
+    <distributionManagement>
+        <repository>
+            <id>central</id>
+            <url>https://central.sonatype.com/api/v1/publisher/deployments/upload/</url>
+        </repository>
+        <snapshotRepository>
+            <id>central</id>
+            <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+        </snapshotRepository>
+    </distributionManagement>
 
     <profiles>
         <profile>
@@ -78,7 +88,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-source-plugin</artifactId>
-                        <version>3.3.1</version>
+                        <version>3.4.0</version>
                         <executions>
                           <execution>
                             <id>attach-sources</id>
@@ -137,19 +147,19 @@
             <dependency>
                 <groupId>org.assertj</groupId>
                 <artifactId>assertj-core</artifactId>
-                <version>3.26.3</version>
+                <version>3.27.7</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>org.awaitility</groupId>
                 <artifactId>awaitility</artifactId>
-                <version>4.2.2</version>
+                <version>4.3.0</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
                <groupId>com.github.hazendaz.jmockit</groupId>
                <artifactId>jmockit</artifactId>
-               <version>1.54.0</version>
+               <version>2.1.0</version>
                <scope>test</scope>
             </dependency>
             <dependency>
@@ -159,54 +169,44 @@
                <scope>test</scope>
             </dependency>
             <dependency>
-                <groupId>org.junit.jupiter</groupId>
-                <artifactId>junit-jupiter-api</artifactId>
-                <version>5.11.4</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.junit.jupiter</groupId>
-                <artifactId>junit-jupiter-engine</artifactId>
-                <version>5.11.4</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.junit.jupiter</groupId>
-                <artifactId>junit-jupiter-params</artifactId>
-                <version>5.11.4</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency> 
-                <groupId>org.junit.platform</groupId> 
-                <artifactId>junit-platform-runner</artifactId> 
-                <version>1.11.4</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
                 <groupId>ch.qos.logback</groupId>
                 <artifactId>logback-classic</artifactId>
-                <version>1.5.16</version>
+                <version>1.5.19</version>
                 <scope>test</scope>
             </dependency>
 
             <dependency>
+                <groupId>org.junit</groupId>
+                <artifactId>junit-bom</artifactId>
+                <version>5.12.1</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
                 <groupId>org.testcontainers</groupId>
                 <artifactId>testcontainers-bom</artifactId>
-                <version>1.20.3</version>
+                <version>2.0.3</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-bom</artifactId>
-                <version>4.1.118.Final</version>
+                <version>4.2.10.Final</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson</groupId>
                 <artifactId>jackson-bom</artifactId>
-                <version>2.18.2</version>
+                <version>2.20.0</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>tools.jackson</groupId>
+                <artifactId>jackson-bom</artifactId>
+                <version>3.0.3</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -223,22 +223,20 @@
       
       <plugins>
           <plugin>
-         	<groupId>org.sonatype.plugins</groupId>
-         	<artifactId>nexus-staging-maven-plugin</artifactId>
-         	<version>1.7.0</version>
-         	<extensions>true</extensions>
+                <groupId>org.sonatype.central</groupId>
+                <artifactId>central-publishing-maven-plugin</artifactId>
+                <version>0.10.0</version>
+                <extensions>true</extensions>
                 <configuration>
-                    <serverId>ossrepo</serverId>
-                    <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-                    <autoReleaseAfterClose>true</autoReleaseAfterClose>
-                    <stagingProgressTimeoutMinutes>15</stagingProgressTimeoutMinutes>
- 		</configuration>
+                    <publishingServerId>central</publishingServerId>
+                    <autoPublish>true</autoPublish>
+                    <waitUntil>published</waitUntil>
+                </configuration>
           </plugin>
-
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-release-plugin</artifactId>
-            <version>3.1.1</version>
+            <version>3.3.1</version>
             <configuration>
                 <autoVersionSubmodules>true</autoVersionSubmodules>
                 <useReleaseProfile>true</useReleaseProfile>
@@ -397,7 +395,7 @@
             <plugin>
          	<groupId>org.apache.maven.plugins</groupId>
          	<artifactId>maven-javadoc-plugin</artifactId>
-         	<version>3.10.1</version>
+         	<version>3.12.0</version>
          	<executions>
                    <execution>
                      <id>attach-javadocs</id>
@@ -416,7 +414,10 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.5.1</version>
+                <version>3.5.4</version>
+                <configuration>
+                    <redirectTestOutputToFile>true</redirectTestOutputToFile>
+                </configuration>
             </plugin>
 
         </plugins>

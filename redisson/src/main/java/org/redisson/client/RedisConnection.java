@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-2024 Nikita Koksharov
+ * Copyright (c) 2013-2026 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,11 +26,13 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.handler.CommandsQueue;
 import org.redisson.client.handler.CommandsQueuePubSub;
 import org.redisson.client.protocol.*;
+import org.redisson.config.DelayStrategy;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.LogHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.util.Deque;
 import java.util.Queue;
 import java.util.concurrent.*;
@@ -253,21 +255,24 @@ public class RedisConnection implements RedisCommands {
         return async(-1, codec, command, params);
     }
 
-    public <T, R> RFuture<R> async(int retryAttempts, int retryInterval, long timeout, Codec codec, RedisCommand<T> command, Object... params) {
+    public <T, R> RFuture<R> async(int retryAttempts, DelayStrategy delayStrategy, long timeout, Codec codec, RedisCommand<T> command, Object... params) {
         CompletableFuture<R> result = new CompletableFuture<>();
-        AtomicInteger attempts = new AtomicInteger(retryAttempts);
-        async(result, attempts, retryInterval, timeout, codec, command, params);
+        AtomicInteger attempts = new AtomicInteger();
+        async(result, retryAttempts, attempts, delayStrategy, timeout, codec, command, params);
         return new CompletableFutureWrapper<>(result);
     }
 
-    private <T, R> void async(CompletableFuture<R> promise, AtomicInteger attempts, int retryInterval, long timeout, Codec codec, RedisCommand<T> command, Object... params) {
+    private <T, R> void async(CompletableFuture<R> promise, int maxAttempts, AtomicInteger attempts, DelayStrategy delayStrategy,
+                              long timeout, Codec codec, RedisCommand<T> command, Object... params) {
         RFuture<R> f = async(timeout, codec, command, params);
         f.whenComplete((r, e) -> {
             if (e != null) {
-                if (attempts.decrementAndGet() >= 0) {
+                if (attempts.get() < maxAttempts) {
+                    Duration delay = delayStrategy.calcDelay(attempts.get());
+                    attempts.incrementAndGet();
                     redisClient.getTimer().newTimeout(t -> {
-                        async(promise, attempts, retryInterval, timeout, codec, command, params);
-                    }, retryInterval, TimeUnit.MILLISECONDS);
+                        async(promise, maxAttempts, attempts, delayStrategy, timeout, codec, command, params);
+                    }, delay.toMillis(), TimeUnit.MILLISECONDS);
                     return;
                 }
 
@@ -338,19 +343,7 @@ public class RedisConnection implements RedisCommands {
     }
 
     private void closeInternal() {
-        QueueCommand command = getCurrentCommandData();
-        if ((command != null && command.isBlockingCommand())
-                    || !connectionPromise.isDone()) {
-            channel.close();
-        } else {
-            RFuture<Void> f = async(RedisCommands.QUIT);
-            f.whenComplete((res, e) -> {
-                if (redisClient.isShutdown()) {
-                    return;
-                }
-                channel.close();
-            });
-        }
+        channel.close();
     }
     
     public CompletionStage<Void> forceFastReconnectAsync() {
