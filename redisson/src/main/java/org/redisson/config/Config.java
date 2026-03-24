@@ -113,6 +113,7 @@ public class Config {
     private Protocol protocol = Protocol.RESP2;
 
     private boolean connectViaRedisProxy = false;
+    
     private Set<ValkeyCapability> valkeyCapabilities = Collections.emptySet();
 
     private NameMapper nameMapper = NameMapper.direct();
@@ -1026,6 +1027,8 @@ public class Config {
      */
     public void setConnectViaRedisProxy(boolean connectViaRedisProxy) {
         this.connectViaRedisProxy = connectViaRedisProxy;
+    }
+    
     public Set<ValkeyCapability> getValkeyCapabilities() {
         return valkeyCapabilities;
     }
