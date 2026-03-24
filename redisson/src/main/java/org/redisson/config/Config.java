@@ -105,6 +105,8 @@ public class Config {
 
     private Protocol protocol = Protocol.RESP2;
 
+    private boolean connectViaRedisProxy = false;
+
     public Config() {
     }
 
@@ -360,7 +362,7 @@ public class Config {
     }
 
     public boolean isClusterConfig() {
-        return clusterServersConfig != null;
+        return clusterServersConfig != null || connectViaRedisProxy;
     }
 
     public boolean isSentinelConfig() {
@@ -942,5 +944,21 @@ public class Config {
     public Config setProtocol(Protocol protocol) {
         this.protocol = protocol;
         return this;
+    }
+
+    public boolean isConnectViaRedisProxy() {
+        return connectViaRedisProxy;
+    }
+
+    /**
+     * Defines whether Redisson should connect to Redis via Redis proxy.
+     * <p>
+     * Default value is <code>false</code>
+     *
+     * @param connectViaRedisProxy <code>true</code> if Redisson should connect to Redis via Redis proxy, <code>false</code> otherwise.
+     * @return config
+     */
+    public void setConnectViaRedisProxy(boolean connectViaRedisProxy) {
+        this.connectViaRedisProxy = connectViaRedisProxy;
     }
 }
