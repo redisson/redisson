@@ -206,6 +206,7 @@ public class Config {
         setSslKeyManagerFactory(oldConf.getSslKeyManagerFactory());
         setSslTrustManagerFactory(oldConf.getSslTrustManagerFactory());
         setSslVerificationMode(oldConf.getSslVerificationMode());
+        setConnectViaRedisProxy(oldConf.isConnectViaRedisProxy());
 
         if (oldConf.getSingleServerConfig() != null) {
             setSingleServerConfig(new SingleServerConfig(oldConf.getSingleServerConfig()));
