@@ -108,7 +108,7 @@ public interface RExecutorService extends ExecutorService, RExecutorServiceAsync
      * @return a Future representing pending completion of the task
      */
     @Override
-    <T> RExecutorFuture<T> submit(Runnable task, T result);;
+    <T> RExecutorFuture<T> submit(Runnable task, T result);
 
     /**
      * Synchronously submits a Runnable task for execution asynchronously.
