@@ -583,8 +583,7 @@ public class Config {
     /**
      * Use external Executor for Netty.
      * <p>
-     * For example, it allows to define <code>Executors.newVirtualThreadPerTaskExecutor()</code>
-     * to use virtual threads.
+     * Virtual threads are not recommended
      * <p>
      * The caller is responsible for closing the Executor.
      *
