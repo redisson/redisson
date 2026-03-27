@@ -35,11 +35,12 @@ public class RedissonPriorityQueueTest extends RedisDockerTest {
     @Test
     public void testComparable() {
         RPriorityQueue<Entry> queue = redisson.getPriorityQueue("anyQueue");
+        assertThat(queue.poll()).isNull();
+
         queue.add(new Entry("b", 1));
         queue.add(new Entry("c", 1));
         queue.add(new Entry("a", 1));
 
-        // Entry [a:1]
         Entry e = queue.poll();
         assertThat(e.key).isEqualTo("a");
         Entry e1 = queue.poll();
@@ -49,11 +50,13 @@ public class RedissonPriorityQueueTest extends RedisDockerTest {
     @Test
     public void testPollLastAndOfferFirstTo() {
         RPriorityQueue<Integer> queue1 = redisson.getPriorityQueue("deque1");
+        assertThat(queue1.pollLastAndOfferFirstTo("test3")).isNull();
         queue1.add(2);
         queue1.add(1);
         queue1.add(3);
 
         RPriorityQueue<Integer> queue2 = redisson.getPriorityQueue("deque2");
+        assertThat(queue2.pollLastAndOfferFirstTo("test3")).isNull();
         queue2.add(5);
         queue2.add(4);
         queue2.add(6);

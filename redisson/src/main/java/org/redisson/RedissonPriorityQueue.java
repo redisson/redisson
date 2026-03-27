@@ -274,9 +274,15 @@ public class RedissonPriorityQueue<V> extends BaseRedissonList<V> implements RPr
     }
 
     protected final <T> RFuture<V> wrapLockedAsync(RedisCommand<T> command, Object... params) {
-        return wrapLockedAsync(() -> {
-            return commandExecutor.writeAsync(getRawName(), codec, command, params);
+        CompletionStage<V> f = sizeAsync().thenCompose(r -> {
+            if (r > 0) {
+                return wrapLockedAsync(() -> {
+                    return commandExecutor.writeAsync(getRawName(), codec, command, params);
+                });
+            }
+            return CompletableFuture.completedFuture(null);
         });
+        return new CompletableFutureWrapper<>(f);
     }
 
     protected final <T, R> RFuture<R> wrapLockedAsync(Supplier<RFuture<R>> callable) {
@@ -422,7 +428,13 @@ public class RedissonPriorityQueue<V> extends BaseRedissonList<V> implements RPr
 
     @Override
     public RFuture<V> pollLastAndOfferFirstToAsync(String queueName) {
-        return wrapLockedAsync(RedisCommands.RPOPLPUSH, getRawName(), queueName);
+        CompletionStage<V> f = sizeAsync().thenCompose(r -> {
+            if (r > 0) {
+                return wrapLockedAsync(RedisCommands.RPOPLPUSH, getRawName(), queueName);
+            }
+            return CompletableFuture.completedFuture(null);
+        });
+        return new CompletableFutureWrapper<>(f);
     }
 
     @Override
