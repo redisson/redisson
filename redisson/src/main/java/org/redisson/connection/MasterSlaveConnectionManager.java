@@ -215,10 +215,13 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             return;
         }
 
-        CompletableFuture<RedisConnection> c = masterSlaveEntry.connectionReadOp(RedisCommands.MGET, false);
+        CompletableFuture<RedisConnection> c = masterSlaveEntry.connectionReadOp(RedisCommands.EVAL_VOID, false);
         RedisConnection cc = c.join();
         try {
-            cc.sync(RedisCommands.MGET, "test1", "test2");
+            String script = "redis.call('get', KEYS[1], ARGV[1]) " +
+                            "redis.call('get', KEYS[2], ARGV[2])";
+
+            cc.sync(RedisCommands.EVAL_VOID, script, 2, "test1", "test2", "value1", "value2");
         } catch (Exception e) {
             if (e.getMessage().startsWith("CROSSSLOT")) {
                 log.info("Cluster setup detected");
