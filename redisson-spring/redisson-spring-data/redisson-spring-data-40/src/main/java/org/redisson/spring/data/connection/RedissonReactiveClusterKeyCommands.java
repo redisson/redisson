@@ -17,15 +17,19 @@ package org.redisson.spring.data.connection;
 
 import io.netty.util.CharsetUtil;
 import org.reactivestreams.Publisher;
+import org.redisson.api.BatchResult;
 import org.redisson.client.RedisClient;
 import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.command.CommandBatchService;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.reactive.CommandReactiveExecutor;
 import org.springframework.data.redis.connection.ReactiveClusterKeyCommands;
 import org.springframework.data.redis.connection.ReactiveRedisConnection;
 import org.springframework.data.redis.connection.ReactiveRedisConnection.BooleanResponse;
+import org.springframework.data.redis.connection.ReactiveRedisConnection.MultiValueResponse;
+import org.springframework.data.redis.connection.ReactiveRedisConnection.NumericResponse;
 import org.springframework.data.redis.connection.RedisClusterNode;
 import org.springframework.util.Assert;
 import reactor.core.publisher.Flux;
@@ -61,6 +65,35 @@ public class RedissonReactiveClusterKeyCommands extends RedissonReactiveKeyComma
             return new CompletableFutureWrapper<>(future);
         });
         return m.map(v -> v.stream().map(t -> ByteBuffer.wrap(t.getBytes(CharsetUtil.UTF_8))).collect(Collectors.toList()));
+    }
+
+    @Override
+    public Flux<MultiValueResponse<ByteBuffer, ByteBuffer>> keys(Publisher<ByteBuffer> patterns) {
+        return execute(patterns, pattern -> {
+            Mono<List<String>> m = executorService.reactive(() -> {
+                List<CompletableFuture<List<String>>> futures = executorService.readAllAsync(StringCodec.INSTANCE, RedisCommands.KEYS, toByteArray(pattern));
+                CompletableFuture<Void> ff = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+                CompletableFuture<List<String>> future = ff.thenApply(r -> {
+                    return futures.stream().flatMap(f -> f.getNow(new ArrayList<>()).stream()).collect(Collectors.toList());
+                }).toCompletableFuture();
+                return new CompletableFutureWrapper<>(future);
+            });
+            return m.map(v -> {
+                List<ByteBuffer> values = v.stream().map(t -> ByteBuffer.wrap(t.getBytes())).collect(Collectors.toList());
+                return new MultiValueResponse<>(pattern, values);
+            });
+        });
+    }
+
+    @Override
+    public Flux<NumericResponse<List<ByteBuffer>, Long>> mUnlink(Publisher<List<ByteBuffer>> keys) {
+        return execute(keys, coll -> {
+            CommandBatchService es = new CommandBatchService(executorService);
+            coll.stream().map(buf -> toByteArray(buf)).forEach(buf -> es.writeAsync(buf, StringCodec.INSTANCE, RedisCommands.UNLINK, buf));
+
+            Mono<BatchResult<?>> m = executorService.reactive(es::executeAsync);
+            return m.map(r -> new NumericResponse<>(coll, r.getResponses().stream().collect(Collectors.summarizingLong(v -> (long) v)).getSum()));
+        });
     }
 
     @Override
