@@ -368,6 +368,10 @@ public class RedissonSessionManager extends ManagerBase {
 
     protected RedissonClient buildClient() throws LifecycleException {
         if (config == null) {
+            if (configPath == null) {
+                throw new LifecycleException(
+                        "Either a Config object (via setConfig) or a configPath must be provided");
+            }
             try {
                 config = Config.fromYAML(new File(configPath), getClass().getClassLoader());
             } catch (IOException e) {
