@@ -14,6 +14,7 @@ import org.springframework.data.redis.connection.ReactiveRedisClusterConnection;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.List;
 import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -67,6 +68,18 @@ public class RedissonReactiveClusterKeyCommandsTest extends RedisDockerTest {
             } else {
                 assertThat(connection.keyCommands().ttl(newKey).block()).isEqualTo(-1);
             }
+        });
+    }
+
+    @Test
+    public void testMUnlink() {
+        testInClusterReactive(connection -> {
+            connection.stringCommands().set(ByteBuffer.wrap("key{1}".getBytes()), value).block();
+            connection.stringCommands().set(ByteBuffer.wrap("key{16383}".getBytes()), value).block();
+
+            List<ByteBuffer> keys = connection.keyCommands().keys(ByteBuffer.wrap("key*".getBytes())).block();
+            Long res = connection.keyCommands().mUnlink(keys).block();
+            assertThat(res).isEqualTo(2);
         });
     }
 
