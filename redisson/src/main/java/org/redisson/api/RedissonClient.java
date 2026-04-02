@@ -1367,6 +1367,7 @@ public interface RedissonClient {
      * @param destinationQueue destination queue
      * @return Delayed queue object
      */
+    @Deprecated
     <V> RDelayedQueue<V> getDelayedQueue(RQueue<V> destinationQueue);
 
     /**
