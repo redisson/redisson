@@ -57,7 +57,12 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
          * if LocalCachedMap instance has been disconnected less than 10 minutes 
          * or whole local cache will be cleaned otherwise.
          */
-        LOAD
+        LOAD,
+
+        /**
+         * Reload local cache if map instance connect/disconnected.
+         */
+        RELOAD
         
     }
     
@@ -132,6 +137,20 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
 
     }
 
+    public enum ReadMode {
+
+        /**
+         * Read data only in local cache.
+         */
+        LOCALCACHE,
+
+        /**
+         * Read data in Redis if not found in local cache.
+         */
+        LOCALCACHE_REDIS
+
+    }
+
     public enum ExpirationEventPolicy {
 
         /**
@@ -159,6 +178,7 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
     private long maxIdleInMillis;
     private CacheProvider cacheProvider;
     private StoreMode storeMode;
+    private ReadMode readMode;
     private boolean storeCacheMiss;
     private ExpirationEventPolicy expirationEventPolicy;
     private boolean useObjectAsCacheKey;
@@ -176,6 +196,7 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
         this.maxIdleInMillis = copy.maxIdleInMillis;
         this.cacheProvider = copy.cacheProvider;
         this.storeMode = copy.storeMode;
+        this.readMode = copy.readMode;
         this.storeCacheMiss = copy.storeCacheMiss;
         this.useObjectAsCacheKey = copy.useObjectAsCacheKey;
     }
@@ -207,6 +228,7 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
                     .reconnectionStrategy(ReconnectionStrategy.NONE)
                     .cacheProvider(CacheProvider.REDISSON)
                     .storeMode(StoreMode.LOCALCACHE_REDIS)
+                    .readMode(ReadMode.LOCALCACHE_REDIS)
                     .syncStrategy(SyncStrategy.INVALIDATE)
                     .storeCacheMiss(false)
                     .useObjectAsCacheKey(false)
@@ -263,6 +285,7 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
      * @param reconnectionStrategy
      *          <p><code>CLEAR</code> - clear local cache if map instance has been disconnected for a while.
      *          <p><code>LOAD</code> - store invalidated entry hash in invalidation log for 10 minutes. Cache keys for stored invalidated entry hashes will be removed if LocalCachedMap instance has been disconnected less than 10 minutes or whole cache will be cleaned otherwise
+     *          <p><code>RELOAD</code> - <p><code>NONE</code> - Reload local cache if map instance connect/disconnected.
      *          <p><code>NONE</code> - Default. No reconnection handling
      * @return LocalCachedMapOptions instance
      */
@@ -364,6 +387,10 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
         return storeMode;
     }
 
+    public ReadMode getReadMode() {
+        return readMode;
+    }
+
     /**
      * Defines store mode of cache data.
      *
@@ -374,6 +401,19 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
      */
     public LocalCachedMapOptions<K, V> storeMode(StoreMode storeMode) {
         this.storeMode = storeMode;
+        return this;
+    }
+
+    /**
+     * Defines read mode of cache data.
+     *
+     * @param readMode
+     *         <p><code>LOCALCACHE</code> - read data in local cache only.
+     *         <p><code>LOCALCACHE_REDIS</code> - read data in Redis if not found in local cache.
+     * @return LocalCachedMapOptions instance
+     */
+    public LocalCachedMapOptions<K, V> readMode(ReadMode readMode) {
+        this.readMode = readMode;
         return this;
     }
 
