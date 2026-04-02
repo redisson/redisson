@@ -289,6 +289,11 @@ public class MasterSlaveEntry {
                             ff.thenAccept(r -> {
                                 if (r) {
                                     log.info("slave {} has been successfully reconnected", entry.getClient().getAddr());
+                                } else {
+                                    log.warn("Unable to re-establish connection pool for {}. "
+                                                + "A new attempt will be made in {}ms.",
+                                            entry.getClient().getAddr(), config.getFailedSlaveReconnectionInterval());
+                                    scheduleCheck(entry);
                                 }
                             });
                         } else {
@@ -743,7 +748,11 @@ public class MasterSlaveEntry {
                     entry.setInitialized(true);
 
                     List<CompletableFuture<Void>> futures = new ArrayList<>(2);
-                    futures.add(entry.initConnections(config.getSlaveConnectionMinimumIdleSize()));
+                    int idleSize = config.getSlaveConnectionMinimumIdleSize();
+                    if (entry == masterEntry) {
+                        idleSize = config.getMasterConnectionMinimumIdleSize();
+                    }
+                    futures.add(entry.initConnections(idleSize));
                     futures.add(entry.initPubSubConnections(config.getSubscriptionConnectionMinimumIdleSize()));
 
                     CompletableFuture<Void> future = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
