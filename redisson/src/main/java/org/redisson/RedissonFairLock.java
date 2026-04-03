@@ -47,11 +47,15 @@ public class RedissonFairLock extends RedissonLock implements RLock {
     private final String timeoutSetName;
 
     public RedissonFairLock(CommandAsyncExecutor commandExecutor, String name) {
-        super(commandExecutor, name);
+        this(commandExecutor, name, null);
+    }
+
+    public RedissonFairLock(CommandAsyncExecutor commandExecutor, String name, String namespace) {
+        super(commandExecutor, name, namespace);
         this.commandExecutor = commandExecutor;
         this.threadWaitTime = getServiceManager().getCfg().getFairLockWaitTimeout();
-        threadsQueueName = prefixName("redisson_lock_queue", getRawName());
-        timeoutSetName = prefixName("redisson_lock_timeout", getRawName());
+        threadsQueueName = prefixName(addNamespaceIfExist(namespace, "redisson_lock_queue"), getRawName());
+        timeoutSetName = prefixName(addNamespaceIfExist(namespace, "redisson_lock_timeout"), getRawName());
     }
 
     @Override

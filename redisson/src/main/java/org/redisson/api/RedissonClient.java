@@ -983,6 +983,20 @@ public interface RedissonClient {
      */
     RLock getFairLock(String name);
 
+
+    /**
+     * Returns Lock instance by name and namespace.
+     * <p>
+     * Implements a <b>fair</b> locking so it guarantees an acquire order by threads.
+     * <p>
+     * To increase reliability during failover, all operations wait for propagation to all Redis slaves.
+     *
+     * @param name the name of the lock
+     * @param namespace the namespace that isolates this lock from others
+     * @return RLock object representing the fair lock
+     */
+    RLock getFairLock(String name, String namespace);
+
     /**
      * Returns Lock instance with specified <code>options</code>.
      * <p>
