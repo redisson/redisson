@@ -192,7 +192,7 @@
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-bom</artifactId>
-                <version>4.2.11.Final</version>
+                <version>4.2.12.Final</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -206,7 +206,7 @@
             <dependency>
                 <groupId>tools.jackson</groupId>
                 <artifactId>jackson-bom</artifactId>
-                <version>3.1.0</version>
+                <version>3.1.1</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
