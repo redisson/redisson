@@ -9,7 +9,7 @@
     </parent>
 
     <properties>
-        <spring-boot.version>4.0.1</spring-boot.version>
+        <spring-boot.version>4.0.5</spring-boot.version>
         <main.basedir>${project.parent.parent.basedir}</main.basedir>
     </properties>
 
