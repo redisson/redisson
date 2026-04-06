@@ -186,7 +186,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
 
     @Override
     public RFuture<Integer> getTaskCountAsync() {
-        return commandExecutor.readAsync(getName(), LongCodec.INSTANCE, RedisCommands.GET_INTEGER, tasksCounterName);
+        return commandExecutor.readAsync(tasksCounterName, LongCodec.INSTANCE, RedisCommands.GET_INTEGER, tasksCounterName);
     }
 
     @Override
@@ -248,7 +248,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
 
             @Override
             protected RFuture<Long> pushTaskAsync() {
-                return commandExecutor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_LONG,
+                return commandExecutor.evalWriteAsync(requestQueueName, LongCodec.INSTANCE, RedisCommands.EVAL_LONG,
                         "local expiredTaskIds = redis.call('zrangebyscore', KEYS[2], 0, ARGV[1], 'limit', 0, ARGV[2]); "
                       + "local retryInterval = redis.call('get', KEYS[4]);"
                       + "if #expiredTaskIds > 0 then "
@@ -477,7 +477,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     public void shutdown() {
         deregisterWorkers();
 
-        commandExecutor.get(commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_VOID,
+        commandExecutor.get(commandExecutor.evalWriteAsync(tasksCounterName, LongCodec.INSTANCE, RedisCommands.EVAL_VOID,
                 "if redis.call('exists', KEYS[2]) == 0 then "
                      + "if redis.call('get', KEYS[1]) == '0' or redis.call('exists', KEYS[1]) == 0 then "
                         + "redis.call('set', KEYS[2], ARGV[2]);"
@@ -485,7 +485,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
                      + "else "
                         + "redis.call('set', KEYS[2], ARGV[1]);"
                      + "end;"
-                + "end;", 
+                + "end;",
                 Arrays.<Object>asList(tasksCounterName, statusName, terminationTopic.getChannelNames().get(0), tasksRetryIntervalName),
                 SHUTDOWN_STATE, TERMINATED_STATE));
     }
@@ -519,11 +519,11 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     }
 
     private boolean checkState(int state) {
-        return commandExecutor.get(commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
+        return commandExecutor.get(commandExecutor.evalWriteAsync(statusName, codec, RedisCommands.EVAL_BOOLEAN,
                 "if redis.call('exists', KEYS[1]) == 1 and tonumber(redis.call('get', KEYS[1])) >= tonumber(ARGV[1]) then "
                 + "return 1;"
             + "end;"
-            + "return 0;", 
+            + "return 0;",
                 Arrays.<Object>asList(statusName),
                 state));
     }
@@ -1148,7 +1148,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
 
         String taskName = tasksLatchName + ":" + id;
 
-        RFuture<Boolean> r = commandExecutor.evalWriteNoRetryAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        RFuture<Boolean> r = commandExecutor.evalWriteNoRetryAsync(tasksName, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
             "if redis.call('hexists', KEYS[1], ARGV[2]) == 0 then "
                      + "if redis.call('set', KEYS[2], 1, 'NX', 'PX', ARGV[1]) ~= nil then "
                         + "return 0; "

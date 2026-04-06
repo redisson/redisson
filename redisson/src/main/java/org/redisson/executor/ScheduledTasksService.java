@@ -94,7 +94,7 @@ public class ScheduledTasksService extends TasksService {
                 + "end;"
                 + "return 0;";
         
-        RFuture<Boolean> f = commandExecutor.evalWriteNoRetryAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN, script,
+        RFuture<Boolean> f = commandExecutor.evalWriteNoRetryAsync(tasksCounterName, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN, script,
                 Arrays.asList(tasksCounterName, statusName, schedulerQueueName,
                         schedulerChannelName, tasksName, tasksRetryIntervalName, tasksExpirationTimeName, taskName),
                 params.getStartTime(), request.getId(), encode(request), tasksRetryInterval, expireTime);
@@ -103,7 +103,7 @@ public class ScheduledTasksService extends TasksService {
     
     @Override
     protected CompletableFuture<Boolean> removeAsync(String requestQueueName, String taskId) {
-        RFuture<Boolean> f = commandExecutor.evalWriteNoRetryAsync(name, StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        RFuture<Boolean> f = commandExecutor.evalWriteNoRetryAsync(requestQueueName, StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "local task = redis.call('hget', KEYS[6], ARGV[1]); "
                   + "redis.call('hdel', KEYS[6], ARGV[1]); "
                   
