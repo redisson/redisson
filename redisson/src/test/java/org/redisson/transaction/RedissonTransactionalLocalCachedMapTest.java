@@ -11,6 +11,7 @@ import org.redisson.api.map.MapLoader;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.codec.CompositeCodec;
 import org.redisson.codec.SnappyCodecV2;
+import org.redisson.api.options.LocalCachedMapOptions;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -72,12 +73,12 @@ public class RedissonTransactionalLocalCachedMapTest extends RedisDockerTest {
     }
 
     @Test
-    public void testPut() throws InterruptedException {
-        RLocalCachedMap<String, String> m1 = redisson.getLocalCachedMap("test", LocalCachedMapOptions.defaults());
+    public void testPut() {
+        RLocalCachedMap<String, String> m1 = redisson.getLocalCachedMap(LocalCachedMapOptions.name("test"));
         m1.put("1", "2");
         m1.put("3", "4");
         
-        RLocalCachedMap<String, String> m2 = redisson.getLocalCachedMap("test", LocalCachedMapOptions.defaults());
+        RLocalCachedMap<String, String> m2 = redisson.getLocalCachedMap(LocalCachedMapOptions.name("test"));
         m2.get("1");
         m2.get("3");
         
@@ -97,11 +98,11 @@ public class RedissonTransactionalLocalCachedMapTest extends RedisDockerTest {
     
     @Test
     public void testPutRemove() {
-        RLocalCachedMap<String, String> m1 = redisson.getLocalCachedMap("test", LocalCachedMapOptions.defaults());
+        RLocalCachedMap<String, String> m1 = redisson.getLocalCachedMap(LocalCachedMapOptions.name("test"));
         m1.put("1", "2");
         m1.put("3", "4");
         
-        RLocalCachedMap<String, String> m2 = redisson.getLocalCachedMap("test", LocalCachedMapOptions.defaults());
+        RLocalCachedMap<String, String> m2 = redisson.getLocalCachedMap(LocalCachedMapOptions.name("test"));
         m2.get("1");
         m2.get("3");
         
@@ -125,11 +126,11 @@ public class RedissonTransactionalLocalCachedMapTest extends RedisDockerTest {
     
     @Test
     public void testRollback() {
-        RLocalCachedMap<String, String> m1 = redisson.getLocalCachedMap("test", LocalCachedMapOptions.defaults());
+        RLocalCachedMap<String, String> m1 = redisson.getLocalCachedMap(LocalCachedMapOptions.name("test"));
         m1.put("1", "2");
         m1.put("3", "4");
         
-        RLocalCachedMap<String, String> m2 = redisson.getLocalCachedMap("test", LocalCachedMapOptions.defaults());
+        RLocalCachedMap<String, String> m2 = redisson.getLocalCachedMap(LocalCachedMapOptions.name("test"));
         m2.get("1");
         m2.get("3");
         
@@ -152,9 +153,9 @@ public class RedissonTransactionalLocalCachedMapTest extends RedisDockerTest {
     }
 
     @Test
-    public void testPut2Maps() throws InterruptedException {
-        RLocalCachedMap<String, String> m1 = redisson.getLocalCachedMap("test1", LocalCachedMapOptions.defaults());
-        RLocalCachedMap<String, String> m2 = redisson.getLocalCachedMap("test2", LocalCachedMapOptions.defaults());
+    public void testPut2Maps() {
+        RLocalCachedMap<String, String> m1 = redisson.getLocalCachedMap(LocalCachedMapOptions.name("test1"));
+        RLocalCachedMap<String, String> m2 = redisson.getLocalCachedMap(LocalCachedMapOptions.name("test2"));
 
         RTransaction transaction = redisson.createTransaction(TransactionOptions.defaults());
         RMap<String, String> tMap1 = transaction.getLocalCachedMap(m1);
