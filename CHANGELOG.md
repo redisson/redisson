@@ -3,7 +3,30 @@ Redisson Releases History
 
 Upgrade to __[Redisson PRO](https://redisson.pro/feature-comparison.html)__ with **advanced features**.
 
-### 2-Mar-2025 - 4.3.0 released
+### 6-Apr-2026 - 4.3.1 released
+
+Feature - `RQueue.indexOf()` method added (thanks to @seakider)  
+
+Improvement - `RPriorityQueue.poll()` should return immediately if queue is empty  
+
+Fixed - `CacheEvict` doesn't work correctly in `redisson-spring-data-40` (thanks to @seakider)  
+Fixed - Quarkus throws NPE if Redisson configuration isn't defined  
+Fixed - missing @deprecated annotation on RedissonClient.getDelayedQueue() (thanks to @minseok1015)  
+Fixed - master connection is frozen during ElastiCache/Valkey upgrade (thanks to @gpsinghsandhu)  
+Fixed - `RSearch.readCursor()` skips rows if total is 0  
+Fixed - connection in reconnection state shouldn't be used  
+Fixed - cluster detection for a single node connection  
+Fixed - comment in `config.setNettyExecutor()` that virtual threads are not recommended (thanks to @seakider)  
+Fixed - DNS hostname resolution shouldn't be used for offline slaves in Sentinel mode  
+Fixed - Spring Data Listener addition for RedisMessageListenerContainer hangs  
+Fixed - LOADING error on slave burns extra retry attempt in batch commands (thanks to @yuxi.jin)  
+Fixed - Spring Data Redis Cluster compatibility  
+Fixed - Cluster topology error handling (thanks to @ngyngcphu)  
+Fixed - AsyncIterator's `CompletionStage` is not completed exceptionally, when connection gets read timeout (thanks to @seakider)  
+Fixed - unnecessary semicolons in RExecutorService (thanks to @chancehee)  
+Fixed - WriteRedisConnectionException is thrown after Cluster failover  
+
+### 2-Mar-2026 - 4.3.0 released
 
 Feature - [JMS API](https://redisson.pro/docs/messaging/#jms-api-implementation) implemented  
 Feature - [RCuckooFilter](https://redisson.pro/docs/data-and-services/objects/#cuckoo-filter) object added  
@@ -26,7 +49,7 @@ Fixed - `RTopicPattern` resubscription after failover (thanks to @peterhalicky)
 Fixed - `RBloomFilterNative`'s `add()`, `exists()`, `count()` return type  
 Fixed - Spring Data `ReactiveKeyCommands.scan()` method throws NPE if `count` setting isn't defined  
 
-### 5-Feb-2025 - 4.2.0 released
+### 5-Feb-2026 - 4.2.0 released
 
 Feature - [Spring AI Vector Store](https://redisson.pro/docs/integration-with-spring/#spring-ai-vector-store) implemented  
 Feature - `AvroJackson3Codec`, `CborJackson3Codec`, `IonJackson3Codec`, `SmileJackson3Codec` codecs added  
