@@ -29,7 +29,7 @@ import java.util.Map;
 public class IndexInfoDecoder implements MultiDecoder<Object> {
     @Override
     public Object decode(List<Object> parts, State state) {
-        if (!parts.isEmpty() && parts.get(0) instanceof Map) {
+        if (!parts.isEmpty() && (parts.get(0) instanceof Map || !isKeyValueList(parts))) {
             return parts;
         }
 
@@ -73,6 +73,10 @@ public class IndexInfoDecoder implements MultiDecoder<Object> {
         }
 
         return result;
+    }
+
+    private boolean isKeyValueList(List<Object> parts) {
+        return parts.size() % 2 == 0;
     }
 
     private Long toLong(Map<String, Object> result, String prop) {

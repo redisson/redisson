@@ -262,6 +262,32 @@ public class RedissonSearchTest extends RedisDockerTest {
     }
 
     @Test
+    public void testInfoPrefixes() {
+        RSearch s = redisson.getSearch();
+
+        s.createIndex("idx-prefix", IndexOptions.defaults()
+                        .on(IndexType.HASH)
+                        .prefix(Arrays.asList("myprefix:")),
+                FieldIndex.text("t1"));
+
+        IndexInfo info = s.info("idx-prefix");
+        assertThat(info.getName()).isEqualTo("idx-prefix");
+
+        Map<String, Object> definition = info.getDefinition();
+        assertThat(definition).containsKey("prefixes");
+
+        Object prefixes = definition.get("prefixes");
+        assertThat(prefixes).isInstanceOf(List.class);
+
+        List<String> prefixList = (List<String>) prefixes;
+        assertThat(prefixList).containsExactly("myprefix:");
+
+        // verify attributes are still decoded correctly as maps
+        assertThat(info.getAttributes()).hasSize(1);
+        assertThat(info.getAttributes().get(0)).containsEntry("attribute", "t1");
+    }
+
+    @Test
     public void testHasIndex() {
         for (int i = 0; i < 1000; i++) {
             RMap<String, SimpleObject> m = redisson.getMap("doc:" +i, new CompositeCodec(StringCodec.INSTANCE, redisson.getConfig().getCodec()));
