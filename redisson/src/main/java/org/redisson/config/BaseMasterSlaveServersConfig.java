@@ -59,6 +59,8 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
     private int masterConnectionPoolSize = 64;
 
     private ReadMode readMode = ReadMode.SLAVE;
+
+    private boolean slaveLoadingFallbackToMaster = true;
     
     private SubscriptionMode subscriptionMode = SubscriptionMode.MASTER;
     
@@ -89,6 +91,7 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
         setSlaveConnectionMinimumIdleSize(config.getSlaveConnectionMinimumIdleSize());
         setSubscriptionConnectionMinimumIdleSize(config.getSubscriptionConnectionMinimumIdleSize());
         setReadMode(config.getReadMode());
+        setSlaveLoadingFallbackToMaster(config.isSlaveLoadingFallbackToMaster());
         setSubscriptionMode(config.getSubscriptionMode());
         setDnsMonitoringInterval(config.getDnsMonitoringInterval());
         setFailedSlaveReconnectionInterval(config.getFailedSlaveReconnectionInterval());
@@ -280,6 +283,23 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
     }
     public ReadMode getReadMode() {
         return readMode;
+    }
+
+    /**
+     * Defines whether a read command should be redirected to the master node
+     * if a slave node returns a LOADING error.
+     * <p>
+     * Default is <code>true</code>
+     *
+     * @param slaveLoadingFallbackToMaster <code>true</code> to retry on master
+     * @return config
+     */
+    public T setSlaveLoadingFallbackToMaster(boolean slaveLoadingFallbackToMaster) {
+        this.slaveLoadingFallbackToMaster = slaveLoadingFallbackToMaster;
+        return (T) this;
+    }
+    public boolean isSlaveLoadingFallbackToMaster() {
+        return slaveLoadingFallbackToMaster;
     }
     
     public boolean isSlaveNotUsed() {
