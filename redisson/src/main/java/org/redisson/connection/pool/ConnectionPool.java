@@ -30,8 +30,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -62,7 +62,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
 
     public Tuple<CompletableFuture<T>, Throwable> getTuple(RedisCommand<?> command, boolean trackChanges) {
         Collection<ClientConnectionsEntry> entries = masterSlaveEntry.getAllEntries();
-        List<ClientConnectionsEntry> entriesCopy = new LinkedList<>(entries);
+        List<ClientConnectionsEntry> entriesCopy = new ArrayList<>(entries);
         entriesCopy.removeIf(n -> n.isFreezed() || !isHealthy(n));
         if (!entriesCopy.isEmpty()) {
             ClientConnectionsEntry entry = config.getLoadBalancer().getEntry(entriesCopy, command);
@@ -72,8 +72,8 @@ abstract class ConnectionPool<T extends RedisConnection> {
             }
         }
         
-        List<InetSocketAddress> failed = new LinkedList<>();
-        List<InetSocketAddress> freezed = new LinkedList<>();
+        List<InetSocketAddress> failed = new ArrayList<>();
+        List<InetSocketAddress> freezed = new ArrayList<>();
         for (ClientConnectionsEntry entry : entries) {
             if (entry.getClient().getConfig().getFailedNodeDetector().isNodeFailed()) {
                 failed.add(entry.getClient().getAddr());

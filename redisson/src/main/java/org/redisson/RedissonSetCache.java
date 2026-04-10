@@ -675,7 +675,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
 
     @Override
     public RFuture<Integer> unionAsync(String... names) {
-        List<Object> keys = new LinkedList<>();
+        List<Object> keys = new ArrayList<>();
         keys.add(getRawName());
         keys.addAll(map(names));
         for (Object key : names) {
@@ -704,7 +704,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
 
     @Override
     public RFuture<Set<V>> readUnionAsync(String... names) {
-        List<Object> keys = new LinkedList<>();
+        List<Object> keys = new ArrayList<>();
         keys.add(getRawName());
         keys.addAll(map(names));
 
@@ -730,7 +730,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
 
     @Override
     public RFuture<Integer> diffAsync(String... names) {
-        List<Object> keys = new LinkedList<>();
+        List<Object> keys = new ArrayList<>();
         keys.add(getRawName());
         keys.addAll(map(names));
         for (Object key : names) {
@@ -757,7 +757,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
 
     @Override
     public RFuture<Set<V>> readDiffAsync(String... names) {
-        List<Object> keys = new LinkedList<>();
+        List<Object> keys = new ArrayList<>();
         keys.add(getRawName());
         keys.addAll(map(names));
         return commandExecutor.evalReadAsync(getRawName(), codec, RedisCommands.EVAL_SET,
@@ -782,7 +782,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
 
     @Override
     public RFuture<Integer> intersectionAsync(String... names) {
-        List<Object> keys = new LinkedList<>();
+        List<Object> keys = new ArrayList<>();
         keys.add(getRawName());
         keys.addAll(map(names));
         for (Object key : names) {
@@ -811,7 +811,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
 
     @Override
     public RFuture<Set<V>> readIntersectionAsync(String... names) {
-        List<Object> keys = new LinkedList<>();
+        List<Object> keys = new ArrayList<>();
         keys.add(getRawName());
         keys.addAll(map(names));
 
@@ -842,7 +842,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
 
     @Override
     public RFuture<Integer> countIntersectionAsync(int limit, String... names) {
-        List<Object> keys = new LinkedList<>();
+        List<Object> keys = new ArrayList<>();
         keys.add(getRawName());
         keys.addAll(map(names));
         for (Object key : new ArrayList<>(keys)) {

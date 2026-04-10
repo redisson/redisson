@@ -21,8 +21,8 @@ import org.redisson.command.CommandAsyncExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayDeque;
 import java.util.Deque;
-import java.util.LinkedList;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
@@ -35,7 +35,7 @@ abstract class EvictionTask implements TimerTask {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
     
-    final Deque<Integer> sizeHistory = new LinkedList<>();
+    final Deque<Integer> sizeHistory = new ArrayDeque<>();
     final int minDelay;
     final int maxDelay;
     final int keysLimit;

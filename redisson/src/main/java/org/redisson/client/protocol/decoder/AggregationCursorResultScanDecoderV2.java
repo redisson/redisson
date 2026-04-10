@@ -38,8 +38,8 @@ public class AggregationCursorResultScanDecoderV2 implements MultiDecoder<ListSc
         }
 
         Long total = (Long) m.get("total_results");
-        List<AggregationEntry> docs = new LinkedList<>();
         List<Map<String, Object>> results = (List<Map<String, Object>>) m.get("results");
+        List<AggregationEntry> docs = new ArrayList<>(results.size());
         for (Map<String, Object> result : results) {
             Map<String, Object> map = (Map<String, Object>) result.get("extra_attributes");
             docs.add(new AggregationEntry(total, map));

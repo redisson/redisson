@@ -49,7 +49,7 @@ public class PubSubConnectionEntry {
     private final Map<ChannelName, SubscribeListener> subscribeChannelListeners = new ConcurrentHashMap<>();
     private final Map<ChannelName, Queue<RedisPubSubListener<?>>> channelListeners = new ConcurrentHashMap<>();
 
-    private static final Queue<RedisPubSubListener<?>> EMPTY_QUEUE = new LinkedList<>();
+    private static final Queue<RedisPubSubListener<?>> EMPTY_QUEUE = new ArrayDeque<>(0);
 
     private final ServiceManager serviceManager;
     private final PublishSubscribeService subscribeService;

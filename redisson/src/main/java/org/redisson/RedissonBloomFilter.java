@@ -97,12 +97,12 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
 
     @Override
     public boolean add(T object) {
-        return add(Arrays.asList(object)) > 0;
+        return add(Collections.singletonList(object)) > 0;
     }
 
     @Override
     public RFuture<Boolean> addAsync(T object) {
-        CompletionStage<Boolean> f = addAsync(Arrays.asList(object)).thenApply(r -> r > 0);
+        CompletionStage<Boolean> f = addAsync(Collections.singletonList(object)).thenApply(r -> r > 0);
         return new CompletableFutureWrapper<>(f);
     }
 
@@ -228,7 +228,7 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
     }
 
     List<Long> index(Collection<T> objects) {
-        List<Long> allIndexes = new LinkedList<>();
+        List<Long> allIndexes = new ArrayList<>();
         for (T object : objects) {
             long[] hashes = hash(object);
             long[] indexes = hash(hashes[0], hashes[1], hashIterations, size);
@@ -239,12 +239,12 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
 
     @Override
     public boolean contains(T object) {
-        return contains(Arrays.asList(object)) > 0;
+        return contains(Collections.singletonList(object)) > 0;
     }
 
     @Override
     public RFuture<Boolean> containsAsync(T object) {
-        CompletionStage<Boolean> f = containsAsync(Arrays.asList(object)).thenApply(r -> r > 0);
+        CompletionStage<Boolean> f = containsAsync(Collections.singletonList(object)).thenApply(r -> r > 0);
         return new CompletableFutureWrapper<>(f);
     }
 

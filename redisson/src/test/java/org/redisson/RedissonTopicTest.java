@@ -607,7 +607,7 @@ public class RedissonTopicTest extends RedisDockerTest {
                 .setSubscriptionConnectionPoolSize(connection)
                 .setSubscriptionsPerConnection(subscription);
         RedissonClient redissonClient = Redisson.create(config);
-        final Queue<RTopic> queue = new LinkedList<>();
+        final Queue<RTopic> queue = new ArrayDeque<>();
         int i = 0;
         boolean timeout = false;
         while (true) {

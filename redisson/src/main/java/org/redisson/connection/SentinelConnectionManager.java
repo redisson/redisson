@@ -100,7 +100,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                     continue;
                 }
 
-                List<CompletableFuture<Void>> connectionFutures = new LinkedList<>();
+                List<CompletableFuture<Void>> connectionFutures = new ArrayList<>();
                 if (currentMaster.get() == null) {
                     RedisURI master = connection.sync(masterHostCommand, cfg.getMasterName());
                     if (master == null) {
