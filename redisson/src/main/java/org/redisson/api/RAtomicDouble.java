@@ -15,6 +15,8 @@
  */
 package org.redisson.api;
 
+import org.redisson.api.atomic.CompareAndDeleteArgs;
+
 /**
  * Distributed implementation to the AtomicDouble
  *
@@ -22,6 +24,15 @@ package org.redisson.api;
  *
  */
 public interface RAtomicDouble extends RExpirable, RAtomicDoubleAsync {
+
+    /**
+     * Atomically deletes the value if it satisfies the condition
+     * defined by the specified arguments.
+     *
+     * @param args compare and delete arguments
+     * @return {@code true} if deleted, {@code false} otherwise
+     */
+    boolean compareAndDelete(CompareAndDeleteArgs args);
 
     /**
      * Atomically decrements by one the current value.

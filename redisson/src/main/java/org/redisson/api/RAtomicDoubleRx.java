@@ -17,6 +17,7 @@ package org.redisson.api;
 
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Single;
+import org.redisson.api.atomic.CompareAndDeleteArgs;
 
 /**
  * Reactive interface for AtomicDouble object
@@ -25,6 +26,15 @@ import io.reactivex.rxjava3.core.Single;
  *
  */
 public interface RAtomicDoubleRx extends RExpirableRx {
+
+    /**
+     * Atomically deletes the value if it satisfies the condition
+     * defined by the specified arguments.
+     *
+     * @param args compare and delete arguments
+     * @return {@code true} if deleted, {@code false} otherwise
+     */
+    Single<Boolean> compareAndDelete(CompareAndDeleteArgs args);
 
     /**
      * Atomically sets the value to the given updated value

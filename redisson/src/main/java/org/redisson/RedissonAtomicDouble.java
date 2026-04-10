@@ -17,10 +17,12 @@ package org.redisson;
 
 import java.math.BigDecimal;
 import java.util.Collections;
+import java.util.Objects;
 
 import org.redisson.api.ObjectListener;
 import org.redisson.api.RAtomicDouble;
 import org.redisson.api.RFuture;
+import org.redisson.api.atomic.CompareAndDeleteArgs;
 import org.redisson.api.listener.IncrByListener;
 import org.redisson.client.codec.DoubleCodec;
 import org.redisson.client.codec.StringCodec;
@@ -39,6 +41,42 @@ public class RedissonAtomicDouble extends RedissonExpirable implements RAtomicDo
 
     public RedissonAtomicDouble(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
+    }
+
+    @Override
+    public boolean compareAndDelete(CompareAndDeleteArgs args) {
+        return get(compareAndDeleteAsync(args));
+    }
+
+    @Override
+    public RFuture<Boolean> compareAndDeleteAsync(CompareAndDeleteArgs args) {
+        Objects.requireNonNull(args, "Args can't be null");
+
+        return commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+              "local currValue = redis.call('get', KEYS[1]); "
+                  + "if currValue == false then "
+                      + "return 0; "
+                  + "end; "
+
+                  + "currValue = tonumber(currValue); "
+                  + "local threshold = tonumber(ARGV[1]); "
+                  + "local op = ARGV[2]; "
+                  + "local match = false; "
+                  + "if op == '<' then match = currValue < threshold; "
+                  + "elseif op == '<=' then match = currValue <= threshold; "
+                  + "elseif op == '>' then match = currValue > threshold; "
+                  + "elseif op == '>=' then match = currValue >= threshold; "
+                  + "elseif op == '==' then match = currValue == threshold; "
+                  + "elseif op == '~=' then match = currValue ~= threshold; "
+                  + "end; "
+                  + "if match then "
+                      + "redis.call('del', KEYS[1]); "
+                      + "return 1; "
+                  + "end; "
+                  + "return 0;",
+                Collections.singletonList(getRawName()),
+                BigDecimal.valueOf(args.getThreshold().doubleValue()).toPlainString(),
+                args.getCondition().getOperator());
     }
 
     @Override

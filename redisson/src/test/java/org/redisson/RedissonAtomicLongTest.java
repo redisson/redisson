@@ -3,11 +3,61 @@ package org.redisson;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RAtomicLong;
+import org.redisson.api.atomic.CompareAndDeleteArgs;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonAtomicLongTest extends RedisDockerTest {
-    
+
+    @Test
+    public void testCompareAndDelete() {
+        RAtomicLong al = redisson.getAtomicLong("test");
+        al.set(10);
+
+        // less - value is 10, threshold is 5, 10 < 5 is false
+        assertThat(al.compareAndDelete(CompareAndDeleteArgs.less(5))).isFalse();
+        assertThat(al.isExists()).isTrue();
+        // less - value is 10, threshold is 15, 10 < 15 is true
+        assertThat(al.compareAndDelete(CompareAndDeleteArgs.less(15))).isTrue();
+        assertThat(al.isExists()).isFalse();
+
+        // lessOrEqual
+        al.set(10);
+        assertThat(al.compareAndDelete(CompareAndDeleteArgs.lessOrEqual(9))).isFalse();
+        assertThat(al.compareAndDelete(CompareAndDeleteArgs.lessOrEqual(10))).isTrue();
+        assertThat(al.isExists()).isFalse();
+
+        // greater - value is 10, threshold is 15, 10 > 15 is false
+        al.set(10);
+        assertThat(al.compareAndDelete(CompareAndDeleteArgs.greater(15))).isFalse();
+        assertThat(al.isExists()).isTrue();
+        // greater - value is 10, threshold is 5, 10 > 5 is true
+        assertThat(al.compareAndDelete(CompareAndDeleteArgs.greater(5))).isTrue();
+        assertThat(al.isExists()).isFalse();
+
+        // greaterOrEqual
+        al.set(10);
+        assertThat(al.compareAndDelete(CompareAndDeleteArgs.greaterOrEqual(11))).isFalse();
+        assertThat(al.compareAndDelete(CompareAndDeleteArgs.greaterOrEqual(10))).isTrue();
+        assertThat(al.isExists()).isFalse();
+
+        // equal
+        al.set(10);
+        assertThat(al.compareAndDelete(CompareAndDeleteArgs.equal(11))).isFalse();
+        assertThat(al.compareAndDelete(CompareAndDeleteArgs.equal(10))).isTrue();
+        assertThat(al.isExists()).isFalse();
+
+        // notEqual
+        al.set(10);
+        assertThat(al.compareAndDelete(CompareAndDeleteArgs.notEqual(10))).isFalse();
+        assertThat(al.compareAndDelete(CompareAndDeleteArgs.notEqual(11))).isTrue();
+        assertThat(al.isExists()).isFalse();
+
+        // non-existent key - nothing to delete
+        assertThat(al.compareAndDelete(CompareAndDeleteArgs.equal(0))).isFalse();
+        assertThat(al.compareAndDelete(CompareAndDeleteArgs.less(0))).isFalse();
+    }
+
     @Test
     public void testSetIfLess() {
         RAtomicLong al = redisson.getAtomicLong("test");

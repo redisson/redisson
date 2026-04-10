@@ -15,6 +15,7 @@
  */
 package org.redisson.api;
 
+import org.redisson.api.atomic.CompareAndDeleteArgs;
 import reactor.core.publisher.Mono;
 
 /**
@@ -24,6 +25,15 @@ import reactor.core.publisher.Mono;
  *
  */
 public interface RAtomicLongReactive extends RExpirableReactive {
+
+    /**
+     * Atomically deletes the value if it satisfies the condition
+     * defined by the specified arguments.
+     *
+     * @param args compare and delete arguments
+     * @return {@code true} if deleted, {@code false} otherwise
+     */
+    Mono<Boolean> compareAndDelete(CompareAndDeleteArgs args);
 
     /**
      * Atomically sets the value to the given updated value

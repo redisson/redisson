@@ -2,13 +2,61 @@ package org.redisson;
 
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RAtomicDouble;
+import org.redisson.api.atomic.CompareAndDeleteArgs;
 
 import java.math.BigDecimal;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonAtomicDoubleTest extends RedisDockerTest {
-    
+
+    @Test
+    public void testCompareAndDelete() {
+        RAtomicDouble al = redisson.getAtomicDouble("test");
+        al.set(10.5);
+
+        // less - value is 10.5, threshold is 5.0, 10.5 < 5.0 is false
+        assertThat(al.compareAndDelete(CompareAndDeleteArgs.less(5.0))).isFalse();
+        assertThat(al.isExists()).isTrue();
+        // less - value is 10.5, threshold is 15.0, 10.5 < 15.0 is true
+        assertThat(al.compareAndDelete(CompareAndDeleteArgs.less(15.0))).isTrue();
+        assertThat(al.isExists()).isFalse();
+
+        // lessOrEqual
+        al.set(10.5);
+        assertThat(al.compareAndDelete(CompareAndDeleteArgs.lessOrEqual(10.4))).isFalse();
+        assertThat(al.compareAndDelete(CompareAndDeleteArgs.lessOrEqual(10.5))).isTrue();
+        assertThat(al.isExists()).isFalse();
+
+        // greater
+        al.set(10.5);
+        assertThat(al.compareAndDelete(CompareAndDeleteArgs.greater(15.0))).isFalse();
+        assertThat(al.compareAndDelete(CompareAndDeleteArgs.greater(5.0))).isTrue();
+        assertThat(al.isExists()).isFalse();
+
+        // greaterOrEqual
+        al.set(10.5);
+        assertThat(al.compareAndDelete(CompareAndDeleteArgs.greaterOrEqual(10.6))).isFalse();
+        assertThat(al.compareAndDelete(CompareAndDeleteArgs.greaterOrEqual(10.5))).isTrue();
+        assertThat(al.isExists()).isFalse();
+
+        // equal
+        al.set(10.5);
+        assertThat(al.compareAndDelete(CompareAndDeleteArgs.equal(10.6))).isFalse();
+        assertThat(al.compareAndDelete(CompareAndDeleteArgs.equal(10.5))).isTrue();
+        assertThat(al.isExists()).isFalse();
+
+        // notEqual
+        al.set(10.5);
+        assertThat(al.compareAndDelete(CompareAndDeleteArgs.notEqual(10.5))).isFalse();
+        assertThat(al.compareAndDelete(CompareAndDeleteArgs.notEqual(10.6))).isTrue();
+        assertThat(al.isExists()).isFalse();
+
+        // non-existent key - nothing to delete
+        assertThat(al.compareAndDelete(CompareAndDeleteArgs.equal(0.0))).isFalse();
+        assertThat(al.compareAndDelete(CompareAndDeleteArgs.less(0.0))).isFalse();
+    }
+
     @Test
     public void testSetIfLess() {
         RAtomicDouble al = redisson.getAtomicDouble("test");

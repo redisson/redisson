@@ -15,6 +15,8 @@
  */
 package org.redisson.api;
 
+import org.redisson.api.atomic.CompareAndDeleteArgs;
+
 /**
  * Distributed async implementation of {@link java.util.concurrent.atomic.AtomicLong}
  *
@@ -22,6 +24,15 @@ package org.redisson.api;
  *
  */
 public interface RAtomicLongAsync extends RExpirableAsync {
+
+    /**
+     * Atomically deletes the value if it satisfies the condition
+     * defined by the specified arguments.
+     *
+     * @param args compare and delete arguments
+     * @return {@code true} if deleted, {@code false} otherwise
+     */
+    RFuture<Boolean> compareAndDeleteAsync(CompareAndDeleteArgs args);
 
     /**
      * Atomically sets the value to the given updated value
