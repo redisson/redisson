@@ -93,7 +93,7 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
     @Override
     public RFuture<V> pollAsync(long timeout, TimeUnit unit) {
         if (timeout < 0) {
-            return new CompletableFutureWrapper<>((V) null);
+            return CompletableFutureWrapper.completedNull();
         }
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.BLPOP_VALUE, getRawName(), toSeconds(timeout, unit));
     }
@@ -124,7 +124,7 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
     @Override
     public RFuture<Entry<String, V>> pollFromAnyWithNameAsync(Duration timeout, String... queueNames) {
         if (timeout.toMillis() < 0) {
-            return new CompletableFutureWrapper<>((Entry) null);
+            return CompletableFutureWrapper.completedNull();
         }
 
         return commandExecutor.pollFromAnyAsync(getRawName(), codec, RedisCommands.BLPOP_NAME,
@@ -138,7 +138,7 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
     @Override
     public RFuture<V> pollFromAnyAsync(long timeout, TimeUnit unit, String... queueNames) {
         if (timeout < 0) {
-            return new CompletableFutureWrapper<>((V) null);
+            return CompletableFutureWrapper.completedNull();
         }
 
         return commandExecutor.pollFromAnyAsync(getRawName(), codec, RedisCommands.BLPOP_VALUE,
@@ -191,7 +191,7 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
     @Override
     public RFuture<Entry<String, V>> pollLastFromAnyWithNameAsync(Duration timeout, String... queueNames) {
         if (timeout.toMillis() < 0) {
-            return new CompletableFutureWrapper<>((Entry) null);
+            return CompletableFutureWrapper.completedNull();
         }
         return commandExecutor.pollFromAnyAsync(getRawName(), codec, RedisCommands.BRPOP_NAME,
                 toSeconds(timeout.toMillis(), TimeUnit.MILLISECONDS), queueNames);
@@ -200,7 +200,7 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
     @Override
     public RFuture<V> pollLastAndOfferFirstToAsync(String queueName, long timeout, TimeUnit unit) {
         if (timeout < 0) {
-            return new CompletableFutureWrapper<>((V) null);
+            return CompletableFutureWrapper.completedNull();
         }
 
         String mappedName = mapName(queueName);

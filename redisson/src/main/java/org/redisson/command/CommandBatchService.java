@@ -253,7 +253,7 @@ public class CommandBatchService extends CommandAsyncService implements BatchSer
                         .flatMap(e -> e.getCommands().stream())
                         .flatMap(c -> Arrays.stream(c.getParams()))
                         .forEach(obj -> ReferenceCountUtil.safeRelease(obj));
-        return new CompletableFutureWrapper<>((Void) null);
+        return CompletableFutureWrapper.completedNull();
     }
     
     public BatchResult<?> execute() {

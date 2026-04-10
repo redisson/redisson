@@ -32,6 +32,10 @@ import java.util.function.Function;
  */
 public class CompletableFutureWrapper<V> implements RFuture<V> {
 
+    public static <T> CompletableFutureWrapper<T> completedNull() {
+        return new CompletableFutureWrapper<>((T) null);
+    }
+
     private final CompletableFuture<V> future;
     private CompletableFuture<V> lastFuture;
 

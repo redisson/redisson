@@ -456,7 +456,7 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
             throw new IllegalArgumentException("Permits amount can't be negative");
         }
         if (permits == 0) {
-            return new CompletableFutureWrapper<>((Void) null);
+            return CompletableFutureWrapper.completedNull();
         }
 
         RFuture<Void> future = commandExecutor.syncedEvalNoRetry(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_VOID,

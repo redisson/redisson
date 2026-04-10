@@ -501,7 +501,7 @@ public class BaseTransactionalMap<K, V> extends BaseTransactionalObject {
         MapEntry entry = state.get(keyHash);
         if (entry != null) {
             if (entry == MapEntry.NULL) {
-                return new CompletableFutureWrapper<>((Integer) null);
+                return CompletableFutureWrapper.completedNull();
             } else {
                 ByteBuf valueState = ((RedissonObject) map).encodeMapValue(entry.getValue());
                 try {
@@ -520,7 +520,7 @@ public class BaseTransactionalMap<K, V> extends BaseTransactionalObject {
         MapEntry entry = state.get(keyHash);
         if (entry != null) {
             if (entry == MapEntry.NULL) {
-                return new CompletableFutureWrapper<>((V) null);
+                return CompletableFutureWrapper.completedNull();
             } else {
                 return new CompletableFutureWrapper<>((V) entry.getValue());
             }

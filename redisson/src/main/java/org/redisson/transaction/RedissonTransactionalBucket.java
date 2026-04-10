@@ -230,7 +230,7 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
         checkState();
         if (state != null) {
             if (state == NULL) {
-                return new CompletableFutureWrapper<>((V) null);
+                return CompletableFutureWrapper.completedNull();
             } else {
                 return new CompletableFutureWrapper<>((V) state);
             }
