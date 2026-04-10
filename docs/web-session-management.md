@@ -11,17 +11,17 @@ Supports Apache Tomcat versions 7.x up to 11.x
 1. **Add two jars into `TOMCAT_BASE/lib` directory:**  
 
 
-	[redisson-all-3.50.0.jar](https://repo1.maven.org/maven2/org/redisson/redisson-all/3.50.0/redisson-all-3.50.0.jar)
+	[redisson-all-4.3.0.jar](https://repo1.maven.org/maven2/org/redisson/redisson-all/4.3.0/redisson-all-4.3.0.jar)
 
-	Tomcat 7.x - [redisson-tomcat-7-3.50.0.jar](https://repo1.maven.org/maven2/org/redisson/redisson-tomcat-7/3.50.0/redisson-tomcat-7-3.50.0.jar)  
+	Tomcat 7.x - [redisson-tomcat-7-4.3.0.jar](https://repo1.maven.org/maven2/org/redisson/redisson-tomcat-7/4.3.0/redisson-tomcat-7-4.3.0.jar)  
 
-	Tomcat 8.x - [redisson-tomcat-8-3.50.0.jar](https://repo1.maven.org/maven2/org/redisson/redisson-tomcat-8/3.50.0/redisson-tomcat-8-3.50.0.jar)  
+	Tomcat 8.x - [redisson-tomcat-8-4.3.0.jar](https://repo1.maven.org/maven2/org/redisson/redisson-tomcat-8/4.3.0/redisson-tomcat-8-4.3.0.jar)  
 
-	Tomcat 9.x - [redisson-tomcat-9-3.50.0.jar](https://repo1.maven.org/maven2/org/redisson/redisson-tomcat-9/3.50.0/redisson-tomcat-9-3.50.0.jar)  
+	Tomcat 9.x - [redisson-tomcat-9-4.3.0.jar](https://repo1.maven.org/maven2/org/redisson/redisson-tomcat-9/4.3.0/redisson-tomcat-9-4.3.0.jar)  
 
-	Tomcat 10.x - [redisson-tomcat-10-3.50.0.jar](https://repo1.maven.org/maven2/org/redisson/redisson-tomcat-10/3.50.0/redisson-tomcat-10-3.50.0.jar)  
+	Tomcat 10.x - [redisson-tomcat-10-4.3.0.jar](https://repo1.maven.org/maven2/org/redisson/redisson-tomcat-10/4.3.0/redisson-tomcat-10-4.3.0.jar)  
 
-	Tomcat 11.x - [redisson-tomcat-11-3.50.0.jar](https://repo1.maven.org/maven2/org/redisson/redisson-tomcat-11/3.50.0/redisson-tomcat-11-3.50.0.jar)  
+	Tomcat 11.x - [redisson-tomcat-11-4.3.0.jar](https://repo1.maven.org/maven2/org/redisson/redisson-tomcat-11/4.3.0/redisson-tomcat-11-4.3.0.jar)  
 
 	<br/>[Redisson PRO vs. Community Edition ➜](https://redisson.pro/feature-comparison.html)<br/><br/>
 
