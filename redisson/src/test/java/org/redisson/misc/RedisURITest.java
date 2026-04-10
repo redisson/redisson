@@ -50,4 +50,25 @@ public class RedisURITest {
         assertThat(uri1.getPassword()).isEqualTo("my-token");
     }
 
+    @Test
+    public void testPasswordMasking() {
+        RedisURI uri = new RedisURI("redis://secretPassword@localhost:6379");
+        assertThat(uri.toString()).doesNotContain("secretPassword");
+        assertThat(uri.toString()).contains("***");
+    }
+
+    @Test
+    public void testUsernamePasswordMasking() {
+        RedisURI uri = new RedisURI("redis://user:secretPassword@localhost:6379");
+        assertThat(uri.toString()).doesNotContain("user");
+        assertThat(uri.toString()).doesNotContain("secretPassword");
+        assertThat(uri.toString()).contains("***");
+    }
+
+    @Test
+    public void testNoCredentialsMasking() {
+        RedisURI uri = new RedisURI("redis://localhost:6379");
+        assertThat(uri.toString()).isEqualTo("redis://localhost:6379");
+    }
+
 }
