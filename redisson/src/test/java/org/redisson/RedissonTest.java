@@ -891,6 +891,20 @@ public class RedissonTest extends RedisDockerTest {
     }
 
     @Test
+    public void testClusterConfigYAMLWithSlaveLoadingFallbackDisabled() throws IOException {
+        Config c2 = new Config();
+        c2.useClusterServers()
+                .addNodeAddress("redis://82.12.47.12:1028", "redis://82.12.47.14:1028")
+                .setFallbackLoadingToMaster(false);
+        String t = c2.toYAML();
+
+        Config c = Config.fromYAML(t);
+
+        assertThat(t).contains("slaveLoadingFallbackToMaster: false");
+        assertThat(c.toYAML()).isEqualTo(t);
+    }
+
+    @Test
     public void testReplicatedConfigYAML() throws IOException {
         Config c2 = new Config();
         c2.useReplicatedServers().addNodeAddress("redis://82.12.47.12:1028", "redis://82.12.47.14:1028");
