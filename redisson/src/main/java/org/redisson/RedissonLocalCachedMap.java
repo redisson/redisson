@@ -292,7 +292,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
 
         if (storeMode == LocalCachedMapOptions.StoreMode.LOCALCACHE) {
             if (hasNoLoader()) {
-                return new CompletableFutureWrapper((Void) null);
+                return CompletableFutureWrapper.completedNull();
             }
 
             CompletableFuture<V> future = loadValue((K) key, false, threadId);
@@ -734,7 +734,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 }
             }
             if (f == null) {
-                return new CompletableFutureWrapper<>((Void) null);
+                return CompletableFutureWrapper.completedNull();
             } else {
                 return new CompletableFutureWrapper<>(f);
             }
@@ -1176,7 +1176,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 return new CompletableFutureWrapper<>(f);
             } else {
                 mapKey.release();
-                return new CompletableFutureWrapper((Void) null);
+                return CompletableFutureWrapper.completedNull();
             }
         }
 
@@ -1306,7 +1306,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 return new CompletableFutureWrapper<>(f);
             } else {
                 encodedKey.release();
-                return new CompletableFutureWrapper<>((V) null);
+                return CompletableFutureWrapper.completedNull();
             }
         }
 

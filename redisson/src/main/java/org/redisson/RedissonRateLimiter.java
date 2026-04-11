@@ -276,7 +276,7 @@ public final class RedissonRateLimiter extends RedissonExpirable implements RRat
             throw new IllegalArgumentException("Permits amount can't be negative");
         }
         if (permits == 0) {
-            return new CompletableFutureWrapper<>((Void) null);
+            return CompletableFutureWrapper.completedNull();
         }
         return commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
                 "local rate = redis.call('hget', KEYS[1], 'rate');"

@@ -318,7 +318,7 @@ public abstract class LocalCacheListener {
             cacheKeyMap.clear();
         }
         if (syncListenerId == 0) {
-            return new CompletableFutureWrapper<>((Void) null);
+            return CompletableFutureWrapper.completedNull();
         }
 
         byte[] id = commandExecutor.getServiceManager().generateIdArray();

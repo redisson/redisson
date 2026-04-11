@@ -318,7 +318,7 @@ public class RedissonTransaction implements RTransaction {
 
     private RFuture<BatchResult<?>> enableLocalCacheAsync(String requestId, Map<HashKey, HashValue> hashes) {
         if (hashes.isEmpty()) {
-            return new CompletableFutureWrapper<>((BatchResult<?>) null);
+            return CompletableFutureWrapper.completedNull();
         }
         
         RedissonBatch publishBatch = createBatch();

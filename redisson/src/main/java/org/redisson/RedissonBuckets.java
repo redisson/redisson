@@ -137,7 +137,7 @@ public class RedissonBuckets implements RBuckets {
     @Override
     public RFuture<Void> setAsync(Map<String, ?> buckets) {
         if (buckets.isEmpty()) {
-            return new CompletableFutureWrapper<>((Void) null);
+            return CompletableFutureWrapper.completedNull();
         }
 
         Map<String, ?> mappedBuckets = map(buckets);

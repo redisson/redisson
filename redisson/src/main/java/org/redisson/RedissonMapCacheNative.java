@@ -335,7 +335,7 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
     private RFuture<Void> putAllAsyncInternal(PutArgs<K, V> args) {
         PutParams<K, V> params = (PutParams<K, V>) args;
         if (params.getEntries().isEmpty()) {
-            return new CompletableFutureWrapper<>((Void) null);
+            return CompletableFutureWrapper.completedNull();
         }
 
         RFuture<Void> future = putAllOperationAsync(params);
@@ -380,7 +380,7 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
 
     private RFuture<Void> putAllAsyncInternal(Map<? extends K, ? extends V> map, long ms) {
         if (map.isEmpty()) {
-            return new CompletableFutureWrapper<>((Void) null);
+            return CompletableFutureWrapper.completedNull();
         }
 
         RFuture<Void> future = putAllOperationAsync(map, ms);
