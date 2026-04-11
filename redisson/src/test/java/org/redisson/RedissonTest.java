@@ -895,7 +895,7 @@ public class RedissonTest extends RedisDockerTest {
         Config c2 = new Config();
         c2.useClusterServers()
                 .addNodeAddress("redis://82.12.47.12:1028", "redis://82.12.47.14:1028")
-                .setSlaveLoadingFallbackToMaster(false);
+                .setFallbackLoadingToMaster(false);
         String t = c2.toYAML();
 
         Config c = Config.fromYAML(t);

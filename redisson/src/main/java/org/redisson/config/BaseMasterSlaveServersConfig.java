@@ -60,7 +60,7 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
 
     private ReadMode readMode = ReadMode.SLAVE;
 
-    private boolean slaveLoadingFallbackToMaster = true;
+    private boolean fallbackLoadingToMaster = true;
     
     private SubscriptionMode subscriptionMode = SubscriptionMode.MASTER;
     
@@ -91,7 +91,7 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
         setSlaveConnectionMinimumIdleSize(config.getSlaveConnectionMinimumIdleSize());
         setSubscriptionConnectionMinimumIdleSize(config.getSubscriptionConnectionMinimumIdleSize());
         setReadMode(config.getReadMode());
-        setSlaveLoadingFallbackToMaster(config.isSlaveLoadingFallbackToMaster());
+        setFallbackLoadingToMaster(config.isFallbackLoadingToMaster());
         setSubscriptionMode(config.getSubscriptionMode());
         setDnsMonitoringInterval(config.getDnsMonitoringInterval());
         setFailedSlaveReconnectionInterval(config.getFailedSlaveReconnectionInterval());
@@ -291,15 +291,16 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
      * <p>
      * Default is <code>true</code>
      *
-     * @param slaveLoadingFallbackToMaster <code>true</code> to retry on master
+     * @param fallbackLoadingToMaster <code>true</code> to retry on master
      * @return config
      */
-    public T setSlaveLoadingFallbackToMaster(boolean slaveLoadingFallbackToMaster) {
-        this.slaveLoadingFallbackToMaster = slaveLoadingFallbackToMaster;
+    public T setFallbackLoadingToMaster(boolean fallbackLoadingToMaster) {
+        this.fallbackLoadingToMaster = fallbackLoadingToMaster;
         return (T) this;
     }
-    public boolean isSlaveLoadingFallbackToMaster() {
-        return slaveLoadingFallbackToMaster;
+
+    public boolean isFallbackLoadingToMaster() {
+        return fallbackLoadingToMaster;
     }
     
     public boolean isSlaveNotUsed() {
