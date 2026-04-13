@@ -285,6 +285,23 @@ public class RedisExecutor<V, R> {
                     return;
                 }
 
+                if (command != null && command.isBlockingCommand() && !connectionFuture.isDone()) {
+                    if (attempt < attempts) {
+                        attempt++;
+                        scheduleRetryTimeout(connectionFuture, attemptPromise);
+                        return;
+                    }
+
+                    exception = new RedisTimeoutException("Unable to acquire connection! "
+                            + "Increase connection pool size. "
+                            + "Node source: " + source
+                            + ", " + LogHelper.toString(command, params)
+                            + " after " + attempt + " of " + attempts + " retry attempts");
+                    connectionFuture.completeExceptionally(new CancellationException());
+                    attemptPromise.completeExceptionally(exception);
+                    return;
+                }
+
                 if (connectionFuture.completeExceptionally(new CancellationException())) {
                     exception = new RedisTimeoutException("Unable to acquire connection! " + connectionFuture +
                                 "Increase connection pool size. "
