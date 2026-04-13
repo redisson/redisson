@@ -741,7 +741,7 @@ public final class ServiceManager {
         @Override
         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
             if (method.getName().endsWith("lockAsync")) {
-                return new CompletableFutureWrapper<>((Void) null);
+                return CompletableFutureWrapper.completedNull();
             }
             return null;
         }

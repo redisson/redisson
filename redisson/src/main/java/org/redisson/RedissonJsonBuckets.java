@@ -113,7 +113,7 @@ public final class RedissonJsonBuckets implements RJsonBuckets {
     @Override
     public RFuture<Void> setAsync(JsonCodec codec, String path, Map<String, ?> buckets) {
         if (buckets.isEmpty()) {
-            return new CompletableFutureWrapper<>((Void) null);
+            return CompletableFutureWrapper.completedNull();
         }
         
         Map<String, ?> mappedBuckets = buckets.entrySet().stream().collect(

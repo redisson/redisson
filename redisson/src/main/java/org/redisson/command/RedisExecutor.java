@@ -609,7 +609,9 @@ public class RedisExecutor<V, R> {
                 RedisConnection connection = connectionFuture.getNow(null);
                 if (connection != null) {
                     ClientConnectionsEntry ce = entry.getEntry(connection.getRedisClient());
-                    if (ce != null && ce.getNodeType() == NodeType.SLAVE) {
+                    if (ce != null
+                            && ce.getNodeType() == NodeType.SLAVE
+                            && entry.getConfig().isFallbackLoadingToMaster()) {
                         onException();
                         source = new NodeSource(entry.getClient());
                         execute();

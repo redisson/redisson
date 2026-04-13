@@ -941,7 +941,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     @Override
     public RFuture<Void> putAllAsync(Map<? extends K, ? extends V> map, long ttl, TimeUnit ttlUnit) {
         if (map.isEmpty()) {
-            return new CompletableFutureWrapper<>((Void) null);
+            return CompletableFutureWrapper.completedNull();
         }
 
         RFuture<Void> future = putAllOperationAsync(map, ttl, ttlUnit);

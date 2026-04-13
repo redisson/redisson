@@ -310,7 +310,7 @@ public final class RedissonReliableTopic extends RedissonExpirable implements RR
         if (listeners.isEmpty()) {
             return removeSubscriber();
         }
-        return new CompletableFutureWrapper<>((Void) null);
+        return CompletableFutureWrapper.completedNull();
     }
 
     private RFuture<Void> removeSubscriber() {
