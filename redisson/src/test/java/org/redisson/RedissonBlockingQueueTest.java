@@ -131,6 +131,7 @@ public class RedissonBlockingQueueTest extends RedissonQueueTest {
         }
 
         restart(redis);
+        Thread.sleep(4000);
 
         queue1.put(123);
         
@@ -261,6 +262,8 @@ public class RedissonBlockingQueueTest extends RedissonQueueTest {
         });
 
         restart(redis);
+        Thread.sleep(4000);
+
         queue1.put(123);
         
         // check connection rotation
