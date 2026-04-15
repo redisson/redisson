@@ -1470,4 +1470,8 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         listener.removeListener(listenerId);
         return super.removeListenerAsync(listenerId);
     }
+    
+    public boolean isUsingSharedTopic() {
+        return getSubscribeService().isShardingSupported() && !((LocalCachedMapOptions<?, ?>) options).isUseTopicPattern();
+    }
 }
