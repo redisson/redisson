@@ -6,15 +6,19 @@ import mockit.MockUp;
 import org.junit.jupiter.api.Test;
 import org.redisson.RedisDockerTest;
 import org.redisson.RedissonListMultimapCache;
-import org.redisson.api.*;
+import org.redisson.api.RLocalCachedMap;
+import org.redisson.api.RMap;
+import org.redisson.api.RTransaction;
+import org.redisson.api.TransactionOptions;
 import org.redisson.api.map.MapLoader;
+import org.redisson.api.options.LocalCachedMapOptions;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.codec.CompositeCodec;
 import org.redisson.codec.SnappyCodecV2;
-import org.redisson.api.options.LocalCachedMapOptions;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -168,5 +172,208 @@ public class RedissonTransactionalLocalCachedMapTest extends RedisDockerTest {
         assertThat(m1.get("1")).isEqualTo("2");
         assertThat(m2.get("3")).isEqualTo("4");
     }
-
+    
+    @Test
+    public void testPutWithUpdateInCluster() {
+        testInCluster(redisson -> {
+            LocalCachedMapOptions<String, String> opts = LocalCachedMapOptions
+                    .<String, String>name("test")
+                    .syncStrategy(LocalCachedMapOptions.SyncStrategy.UPDATE);
+            
+            RLocalCachedMap<String, String> m1 = redisson.getLocalCachedMap(opts);
+            m1.put("1", "1");
+            
+            RLocalCachedMap<String, String> m2 = redisson.getLocalCachedMap(opts);
+            m2.get("1");
+            
+            RTransaction transaction = redisson.createTransaction(TransactionOptions.defaults());
+            RLocalCachedMap<String, String> transactionMap = transaction.getLocalCachedMap(m1);
+            transactionMap.put("1", "2");
+            
+            assertThat(m1.get("1")).isEqualTo("1");
+            assertThat(m2.get("1")).isEqualTo("1");
+            
+            transaction.commit();
+            
+            assertThat(m1.get("1")).isEqualTo("2");
+            assertThat(m2.get("1")).isEqualTo("2");
+        });
+    }
+    
+    @Test
+    public void testPutWithUpdateWithPatternTopicInCluster() {
+        testInCluster(redisson -> {
+            LocalCachedMapOptions<String, String> opts = LocalCachedMapOptions
+                    .<String, String>name("test")
+                    .syncStrategy(LocalCachedMapOptions.SyncStrategy.UPDATE);
+            
+            RLocalCachedMap<String, String> m1 = redisson.getLocalCachedMap(opts);
+            m1.put("1", "1");
+            
+            LocalCachedMapOptions<String, String> opts2 = LocalCachedMapOptions
+                    .<String, String>name("test")
+                    .useTopicPattern(true)
+                    .syncStrategy(LocalCachedMapOptions.SyncStrategy.UPDATE);
+            RLocalCachedMap<String, String> m2 = redisson.getLocalCachedMap(opts2);
+            m2.get("1");
+            
+            RTransaction transaction = redisson.createTransaction(TransactionOptions.defaults());
+            RLocalCachedMap<String, String> transactionMap = transaction.getLocalCachedMap(m1);
+            transactionMap.put("1", "2");
+            
+            assertThat(m1.get("1")).isEqualTo("1");
+            assertThat(m2.get("1")).isEqualTo("1");
+            
+            transaction.commit();
+            
+            assertThat(m1.get("1")).isEqualTo("2");
+            assertThat(m2.get("1")).isEqualTo("2");
+        });
+    }
+    
+    @Test
+    public void testPutAsyncWithUpdateInCluster() {
+        testInCluster(redisson -> {
+            LocalCachedMapOptions<String, String> opts = LocalCachedMapOptions
+                    .<String, String>name("test")
+                    .syncStrategy(LocalCachedMapOptions.SyncStrategy.UPDATE);
+            
+            RLocalCachedMap<String, String> m1 = redisson.getLocalCachedMap(opts);
+            m1.put("1", "1");
+            
+            RLocalCachedMap<String, String> m2 = redisson.getLocalCachedMap(opts);
+            m2.get("1");
+            
+            RTransaction transaction = redisson.createTransaction(TransactionOptions.defaults());
+            RLocalCachedMap<String, String> transactionMap = transaction.getLocalCachedMap(m1);
+            transactionMap.put("1", "2");
+            
+            assertThat(m1.get("1")).isEqualTo("1");
+            assertThat(m2.get("1")).isEqualTo("1");
+            
+            try {
+                transaction.commitAsync().get();
+            } catch (ExecutionException | InterruptedException e) {
+                // skip
+            }
+            
+            assertThat(m1.get("1")).isEqualTo("2");
+            assertThat(m2.get("1")).isEqualTo("2");
+        });
+    }
+    
+    @Test
+    public void testPutAsyncWithUpdateWithPatternTopicInCluster() {
+        testInCluster(redisson -> {
+            LocalCachedMapOptions<String, String> opts = LocalCachedMapOptions
+                    .<String, String>name("test")
+                    .syncStrategy(LocalCachedMapOptions.SyncStrategy.UPDATE);
+            
+            RLocalCachedMap<String, String> m1 = redisson.getLocalCachedMap(opts);
+            m1.put("1", "1");
+            
+            LocalCachedMapOptions<String, String> opts2 = LocalCachedMapOptions
+                    .<String, String>name("test")
+                    .useTopicPattern(true)
+                    .syncStrategy(LocalCachedMapOptions.SyncStrategy.UPDATE);
+            RLocalCachedMap<String, String> m2 = redisson.getLocalCachedMap(opts2);
+            m2.get("1");
+            
+            RTransaction transaction = redisson.createTransaction(TransactionOptions.defaults());
+            RLocalCachedMap<String, String> transactionMap = transaction.getLocalCachedMap(m1);
+            transactionMap.put("1", "2");
+            
+            assertThat(m1.get("1")).isEqualTo("1");
+            assertThat(m2.get("1")).isEqualTo("1");
+            
+            try {
+                transaction.commitAsync().get();
+            } catch (ExecutionException | InterruptedException e) {
+                // skip
+            }
+            
+            assertThat(m1.get("1")).isEqualTo("2");
+            assertThat(m2.get("1")).isEqualTo("2");
+        });
+    }
+    
+    @Test
+    public void testLocalCacheMapSyn() {
+        testInCluster((redisson) -> {
+            LocalCachedMapOptions<String, String> opts = LocalCachedMapOptions
+                    .<String, String>name("test")
+                    .syncStrategy(LocalCachedMapOptions.SyncStrategy.UPDATE);
+            
+            RLocalCachedMap<String, String> m1 = redisson.getLocalCachedMap(opts);
+            m1.put("1", "1");
+            
+            LocalCachedMapOptions<String, String> opts2 = LocalCachedMapOptions
+                    .<String, String>name("test")
+                    .useTopicPattern(true)
+                    .syncStrategy(LocalCachedMapOptions.SyncStrategy.UPDATE);
+            RLocalCachedMap<String, String> m2 = redisson.getLocalCachedMap(opts2);
+            
+            assertThat(m1.get("1")).isEqualTo("1");
+            assertThat(m2.get("1")).isEqualTo("1");
+            
+            m1.put("1", "2");
+            
+            assertThat(m1.get("1")).isEqualTo("2");
+            assertThat(m2.get("1")).isEqualTo("2");
+        });
+    }
+    
+    @Test
+    public void testPutWithUpdateSyncStrategy() {
+        LocalCachedMapOptions<String, String> opts = LocalCachedMapOptions
+                .<String, String>name("test")
+                .syncStrategy(LocalCachedMapOptions.SyncStrategy.UPDATE);
+        
+        RLocalCachedMap<String, String> m1 = redisson.getLocalCachedMap(opts);
+        m1.put("1", "1");
+        
+        RLocalCachedMap<String, String> m2 = redisson.getLocalCachedMap(opts);
+        m2.get("1");
+        
+        RTransaction transaction = redisson.createTransaction(TransactionOptions.defaults());
+        RLocalCachedMap<String, String> transactionMap = transaction.getLocalCachedMap(m1);
+        transactionMap.put("1", "2");
+        
+        assertThat(m1.get("1")).isEqualTo("1");
+        assertThat(m2.get("1")).isEqualTo("1");
+        
+        transaction.commit();
+        
+        assertThat(m1.get("1")).isEqualTo("2");
+        assertThat(m2.get("1")).isEqualTo("2");
+    }
+    
+    @Test
+    public void testPutWithUpdateSyncStrategy2() {
+        LocalCachedMapOptions<String, String> opts = LocalCachedMapOptions
+                .<String, String>name("test")
+                .syncStrategy(LocalCachedMapOptions.SyncStrategy.UPDATE);
+        
+        RLocalCachedMap<String, String> m1 = redisson.getLocalCachedMap(opts);
+        m1.put("1", "1");
+        
+        LocalCachedMapOptions<String, String> opts2 = LocalCachedMapOptions
+                .<String, String>name("test")
+                .useTopicPattern(true)
+                .syncStrategy(LocalCachedMapOptions.SyncStrategy.UPDATE);
+        RLocalCachedMap<String, String> m2 = redisson.getLocalCachedMap(opts2);
+        m2.get("1");
+        
+        RTransaction transaction = redisson.createTransaction(TransactionOptions.defaults());
+        RLocalCachedMap<String, String> transactionMap = transaction.getLocalCachedMap(m1);
+        transactionMap.put("1", "2");
+        
+        assertThat(m1.get("1")).isEqualTo("1");
+        assertThat(m2.get("1")).isEqualTo("1");
+        
+        transaction.commit();
+        
+        assertThat(m1.get("1")).isEqualTo("2");
+        assertThat(m2.get("1")).isEqualTo("2");
+    }
 }
