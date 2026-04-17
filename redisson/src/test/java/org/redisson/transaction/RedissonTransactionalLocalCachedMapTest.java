@@ -317,7 +317,13 @@ public class RedissonTransactionalLocalCachedMapTest extends RedisDockerTest {
             assertThat(m2.get("1")).isEqualTo("1");
             
             m1.put("1", "2");
-            
+
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+
             assertThat(m1.get("1")).isEqualTo("2");
             assertThat(m2.get("1")).isEqualTo("2");
         });
