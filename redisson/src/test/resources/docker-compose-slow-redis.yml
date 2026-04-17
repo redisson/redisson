@@ -1,3 +1,14 @@
+# Usage example:
+#
+#ComposeContainer environment = new ComposeContainer(
+#                new File("src/test/resources/docker-compose-slow-valkey.yml"))
+#                        .withExposedService("toxiproxy", 6379, Wait.forListeningPort());
+#environment.start();
+#
+#Config cfg = createConfig();
+#cfg.useSingleServer().setAddress("redis://localhost:" + environment.getServicePort("toxiproxy", 6379));
+#RedissonClient redisson = Redisson.create(cfg);
+
 services:
   redis:
     image: redis:alpine
