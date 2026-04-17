@@ -92,6 +92,11 @@ cf.setTopicConfig("events", eventsTopicConfig);
 // Subscription configuration (default and per-subscription)
 cf.setSubscriptionConfig(myDefaultSubscriptionConfig);
 cf.setSubscriptionConfig("mySub", mySubConfig);
+
+// Synchronization (replication) configuration — default and per-destination
+cf.setSyncConfig(myDefaultSyncConfig);
+cf.setQueueSyncConfig("orders", strictSync);
+cf.setTopicSyncConfig("events", strictSync);
 ```
 
 Per-destination configuration takes precedence over the default. If neither is set for a given destination, the factory returns `null` and Redisson uses its own built-in defaults.
@@ -322,6 +327,7 @@ The `<n>` segment is the JNDI lookup name for the factory. Any key matching `con
 | `connectionfactory.<n>.configFile` | Path or URL to a Redisson YAML configuration file. When present, inline Redisson properties are ignored for this factory. Supports variable expansion. |
 | `connectionfactory.<n>.clientId` | JMS client identifier assigned to all connections from this factory. Required for durable subscriptions. Supports variable expansion. |
 | `connectionfactory.<n>.<redissonProperty>` | Any Redisson configuration property in camelCase, matching YAML field names exactly. Passed through Redisson's `PropertiesConvertor` and parsed as YAML. |
+| `connectionfactory.<n>.sync.<property>` | Factory-wide sync configuration. See [Sync Configuration Properties](#sync-configuration-properties). |
 
 Redisson properties use camelCase names that correspond directly to the field names in Redisson's YAML configuration format. Nested objects are expressed with dot notation.
 
@@ -365,6 +371,7 @@ The `<n>` segment is the JNDI lookup name. The `name` property (the physical Red
 |----------|-------------|
 | `queue.<n>.name` | Physical Redis queue name (required). The JNDI name `<n>` is the lookup key; this value is the underlying queue name in Redis. Supports variable expansion. |
 | `queue.<n>.<property>` | Queue configuration property. Maps to a method on Redisson's `QueueConfigParams`. See [Queue Configuration Properties](#queue-configuration-properties). |
+| `queue.<n>.sync.<property>` | Per-queue sync configuration. Overrides the factory default for this queue. See [Sync Configuration Properties](#sync-configuration-properties). |
 
 Example:
 
@@ -386,6 +393,7 @@ Topic properties follow the pattern `topic.<n>.<property>`.
 |----------|-------------|
 | `topic.<n>.name` | Physical Redis topic name (required). Supports variable expansion. |
 | `topic.<n>.<property>` | Topic configuration property. Maps to a method on Redisson's `TopicConfigParams`. See [Topic Configuration Properties](#topic-configuration-properties). |
+| `topic.<n>.sync.<property>` | Per-topic sync configuration. Overrides the factory default for this topic and applies to publish, ack, and nack on every subscription of the topic. See [Sync Configuration Properties](#sync-configuration-properties). |
 
 #### Subscription Properties
 
@@ -596,6 +604,52 @@ topic.events.subscription.auditLog.deadLetterTopicName=events-dlt
 topic.events.subscription.auditLog.retainAfterAck=true
 ```
 
+#### Sync Configuration Properties
+
+Sync configuration controls replication behaviour for JMS operations. It is applied factory-wide or per-destination through either the native Java API on `RedissonConnectionFactory` or through the JNDI environment using a `sync.` sub-key under an existing `connectionfactory.`, `queue.`, or `topic.` prefix.
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `syncMode` | `SyncMode` | `AUTO` | Replication mode: `AUTO`, `ACK`, or `ACK_AOF`. See [Synchronization Configuration](#synchronization-configuration) for semantics. |
+| `syncFailureMode` | `SyncFailureMode` | `LOG_WARNING` | Behaviour when the sync target is not met within `syncTimeout`: `LOG_WARNING` or `THROW_EXCEPTION`. |
+| `syncTimeout` | `Duration` | `1s` | How long to wait for replica acknowledgement before invoking `syncFailureMode`. |
+
+Native API example:
+
+```java
+JmsSyncConfig syncConfig = JmsSyncConfig.defaults()
+    .syncMode(SyncMode.ACK)
+    .syncFailureMode(SyncFailureMode.THROW_EXCEPTION)
+    .syncTimeout(Duration.ofMillis(500));
+
+cf.setSyncConfig(syncConfig);               // factory-wide default
+cf.setQueueSyncConfig("audit", syncConfig); // per-queue override
+cf.setTopicSyncConfig("events", syncConfig);// per-topic override
+```
+
+`setQueueSyncConfig(name, config)` and `setTopicSyncConfig(name, config)` require both arguments to be non-`null` — passing `null` throws `NullPointerException`. To clear the factory-wide default, call `setSyncConfig(null)`. To revert a specific queue or topic to the factory default, reassign it with a fresh `JmsSyncConfig.defaults()`.
+
+JNDI example — three scopes, same property names:
+
+```properties
+# Factory-wide default
+connectionfactory.myFactory.sync.syncMode=ACK
+connectionfactory.myFactory.sync.syncFailureMode=THROW_EXCEPTION
+connectionfactory.myFactory.sync.syncTimeout=500
+
+# Per-queue override — lives alongside other queue config properties
+queue.orders.name=orders
+queue.orders.deliveryLimit=5
+queue.orders.sync.syncMode=ACK_AOF
+queue.orders.sync.syncTimeout=2000
+
+# Per-topic override
+topic.events.name=events
+topic.events.sync.syncMode=ACK
+```
+
+In JNDI, `sync.syncTimeout` accepts either milliseconds as a number or an ISO-8601 duration (e.g. `PT0.5S`), consistent with every other `Duration` property in the JNDI schema. `syncMode` and `syncFailureMode` accept the enum constant names exactly (`AUTO` / `ACK` / `ACK_AOF`, `LOG_WARNING` / `THROW_EXCEPTION`). Per-subscription sync configuration is not supported — acknowledgements from any subscription inherit the enclosing topic's sync config.
+
 
 ### Complete JNDI Example
 
@@ -615,11 +669,19 @@ connectionfactory.primary.clientId=app-primary
 connectionfactory.secondary.configFile=${REDISSON_CONFIG_PATH}
 connectionfactory.secondary.clientId=app-secondary
 
+# Factory-wide default sync config
+connectionfactory.primary.sync.syncMode=AUTO
+connectionfactory.primary.sync.syncFailureMode=LOG_WARNING
+
 # Queues
 queue.orders.name=app.orders
 queue.orders.deliveryLimit=5
 queue.orders.visibility=60000
 queue.orders.deadLetterQueueName=app.orders-dlq
+# Stricter sync for the orders queue — override the factory default
+queue.orders.sync.syncMode=ACK
+queue.orders.sync.syncFailureMode=THROW_EXCEPTION
+queue.orders.sync.syncTimeout=500
 
 queue.deadLetters.name=app.orders-dlq
 
