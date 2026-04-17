@@ -505,19 +505,33 @@ public class RedisExecutor<V, R> {
                     && (command == null || (!command.isBlockingCommand() && !command.isNoRetry()));
     }
 
+    private Object emptyBlockingResult(RedisCommand<?> command) {
+        String name = command.getName();
+        if (RedisCommands.XREAD.getName().equals(name)
+                || RedisCommands.XREADGROUP.getName().equals(name)) {
+            return Collections.emptyMap();
+        }
+
+        // BLMPOP and BZMPOP share their command name with list-returning
+        // sibling variants (BLMPOP_VALUES, BZMPOP_SINGLE_LIST, BZMPOP_ENTRIES),
+        // so we must match on instance identity, not name.
+        if (command == RedisCommands.BLMPOP || command == RedisCommands.BZMPOP) {
+            return Collections.emptyMap();
+        }
+
+        if (command.getReplayMultiDecoder() instanceof ObjectListReplayDecoder
+                || command.getReplayMultiDecoder() instanceof ListMultiDecoder2) {
+            return Collections.emptyList();
+        }
+        return null;
+    }
+
     private void handleBlockingOperations(CompletableFuture<R> attemptPromise, RedisConnection connection, long popTimeout) {
         Timeout scheduledFuture;
         if (popTimeout != 0) {
             // handling cases when connection has been lost
             scheduledFuture = connectionManager.getServiceManager().newTimeout(timeout -> {
-                R res = null;
-                if (command.getReplayMultiDecoder() instanceof ObjectListReplayDecoder
-                        || command.getReplayMultiDecoder() instanceof ListMultiDecoder2) {
-                    res = (R) Collections.emptyList();
-                }
-                if (RedisCommands.XREAD.getName().equals(command.getName())) {
-                    res = (R) Collections.emptyMap();
-                }
+                R res = (R) emptyBlockingResult(command);
                 if (attemptPromise.complete(res)) {
                     connection.forceFastReconnectAsync();
                 }
