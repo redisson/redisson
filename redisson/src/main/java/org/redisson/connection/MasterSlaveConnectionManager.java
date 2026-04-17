@@ -199,12 +199,16 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                     lastAttempt = false;
                     throw e;
                 }
+                Throwable cause = e.getCause();
+                if (cause instanceof InterruptedException) {
+                    throw e;
+                }
                 try {
                     Duration timeout = config.getRetryDelay().calcDelay(attempt);
                     Thread.sleep(timeout.toMillis());
                 } catch (InterruptedException ex) {
                     Thread.currentThread().interrupt();
-                    return;
+                    throw new RedisConnectionException(ex);
                 }
             }
         }
@@ -251,6 +255,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
+                throw new RedisConnectionException(e);
             } catch (ExecutionException | TimeoutException e) {
                 throw new RedisConnectionException(e);
             }
@@ -265,6 +270,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                     }
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
+                    throw new RedisConnectionException(e);
                 } catch (ExecutionException | TimeoutException e) {
                     throw new RedisConnectionException(e);
                 }

@@ -261,17 +261,17 @@ public class RedissonSession extends InMemorySession implements Session {
     }
 
     public void load(Map<CharSequence, Object> attrs) {
-        Long creationTime = (Long) attrs.remove(CREATION_TIME_ATTR);
+        Number creationTime = (Number) attrs.remove(CREATION_TIME_ATTR);
         if (creationTime != null) {
-            this.creationTime = Instant.ofEpochMilli(creationTime);
+            this.creationTime = Instant.ofEpochMilli(creationTime.longValue());
         }
-        Long lastAccessedTime = (Long) attrs.remove(LAST_ACCESSED_TIME_ATTR);
+        Number lastAccessedTime = (Number) attrs.remove(LAST_ACCESSED_TIME_ATTR);
         if (lastAccessedTime != null) {
-            super.setLastAccessedTime(Instant.ofEpochMilli(lastAccessedTime));
+            super.setLastAccessedTime(Instant.ofEpochMilli(lastAccessedTime.longValue()));
         }
-        Long maxInactiveInterval = (Long) attrs.remove(MAX_INACTIVE_INTERVAL_ATTR);
+        Number maxInactiveInterval = (Number) attrs.remove(MAX_INACTIVE_INTERVAL_ATTR);
         if (maxInactiveInterval != null) {
-            super.setMaxInactiveInterval(Duration.ofMillis(maxInactiveInterval));
+            super.setMaxInactiveInterval(Duration.ofMillis(maxInactiveInterval.longValue()));
         }
         setNew(false);
 

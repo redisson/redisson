@@ -68,8 +68,8 @@ public abstract class LocalCacheListener {
     private volatile long lastInvalidate;
     private RTopic invalidationTopic;
     private RPatternTopic patternTopic;
-    private int syncListenerId;
-    private int reconnectionListenerId;
+    private Map<Object, Integer> syncListenerIds = new HashMap<>(2);
+    private Map<Object, Integer> reconnectionListenerIds = new HashMap<>(2);
 
     private int expireListenerId;
 
@@ -130,11 +130,11 @@ public abstract class LocalCacheListener {
         }
 
         if (options.getReconnectionStrategy() != ReconnectionStrategy.NONE) {
-            reconnectionListenerId = addReconnectionListener();
+            addReconnectionListener();
         }
 
         if (options.getSyncStrategy() != SyncStrategy.NONE) {
-            syncListenerId = addMessageListener();
+            addMessageListener();
 
             if (commandExecutor instanceof BatchService) {
                 return;
@@ -156,52 +156,56 @@ public abstract class LocalCacheListener {
             }
         }
     }
-
+    
     void createTopic(String name, CommandAsyncExecutor commandExecutor) {
-        if (isSharded && !options.isUseTopicPattern()) {
+        if (isSharded) {
             invalidationTopic = RedissonShardedTopic.createRaw(LocalCachedMessageCodec.INSTANCE, commandExecutor, getInvalidationTopicName());
+            patternTopic = new RedissonPatternTopic(LocalCachedMessageCodec.INSTANCE, commandExecutor, "*:topic");
+        } else if (options.isUseTopicPattern()) {
+            patternTopic = new RedissonPatternTopic(LocalCachedMessageCodec.INSTANCE, commandExecutor, "*:topic");
         } else {
             invalidationTopic = RedissonTopic.createRaw(LocalCachedMessageCodec.INSTANCE, commandExecutor, getInvalidationTopicName());
         }
-        if (options.isUseTopicPattern()) {
-            patternTopic = new RedissonPatternTopic(LocalCachedMessageCodec.INSTANCE, commandExecutor, "*:topic");
-        }
     }
-
-    int addMessageListener() {
+    
+    void addMessageListener() {
         if (patternTopic != null) {
-            return patternTopic.addListener(Object.class,
+            syncListenerIds.put(patternTopic, patternTopic.addListener(Object.class,
                     (pattern, channel, msg) -> {
                         if (!getInvalidationTopicName().equals(channel.toString())) {
                             return;
                         }
                         LocalCacheListener.this.onMessage(msg);
-                    });
+                    }));
         }
-        return invalidationTopic.addListener(Object.class,
-                (channel, msg) -> LocalCacheListener.this.onMessage(msg));
+        if (invalidationTopic != null) {
+            syncListenerIds.put(invalidationTopic, invalidationTopic.addListener(Object.class,
+                    (channel, msg) -> LocalCacheListener.this.onMessage(msg)));
+        }
     }
-
-    int addReconnectionListener() {
+    
+    void addReconnectionListener() {
         if (patternTopic != null) {
-            return patternTopic.addListener(new PatternStatusListener() {
+            reconnectionListenerIds.put(patternTopic, patternTopic.addListener(new PatternStatusListener() {
                 @Override
                 public void onPSubscribe(String pattern) {
                     LocalCacheListener.this.onSubscribe();
                 }
-
+                
                 @Override
                 public void onPUnsubscribe(String pattern) {
                     // skip
                 }
-            });
+            }));
         }
-        return invalidationTopic.addListener(new BaseStatusListener() {
-            @Override
-            public void onSubscribe(String channel) {
-                LocalCacheListener.this.onSubscribe();
-            }
-        });
+        if (invalidationTopic != null) {
+            reconnectionListenerIds.put(invalidationTopic, invalidationTopic.addListener(new BaseStatusListener() {
+                @Override
+                public void onSubscribe(String channel) {
+                    LocalCacheListener.this.onSubscribe();
+                }
+            }));
+        }
     }
 
     final void onMessage(Object msg) {
@@ -317,7 +321,7 @@ public abstract class LocalCacheListener {
         if (options.isUseObjectAsCacheKey()) {
             cacheKeyMap.clear();
         }
-        if (syncListenerId == 0) {
+        if (syncListenerIds.isEmpty()) {
             return CompletableFutureWrapper.completedNull();
         }
 
@@ -376,14 +380,7 @@ public abstract class LocalCacheListener {
     }
 
     public void remove() {
-        List<Integer> ids = new ArrayList<>(2);
-        if (syncListenerId != 0) {
-            ids.add(syncListenerId);
-        }
-        if (reconnectionListenerId != 0) {
-            ids.add(reconnectionListenerId);
-        }
-        removeAsync(ids);
+        removeAsync();
 
         if (options.getExpirationEventPolicy() == LocalCachedMapOptions.ExpirationEventPolicy.SUBSCRIBE_WITH_KEYEVENT_PATTERN) {
             RPatternTopic topic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:expired");
@@ -394,13 +391,29 @@ public abstract class LocalCacheListener {
         }
     }
 
-    void removeAsync(List<Integer> ids) {
-        if (patternTopic != null) {
+    void removeAsync() {
+        List<Integer> ids = getIds(patternTopic);
+        if (!ids.isEmpty()) {
             patternTopic.removeListenerAsync(ids.toArray(new Integer[0]));
-            return;
         }
-
-        invalidationTopic.removeListenerAsync(ids.toArray(new Integer[0]));
+        ids = getIds(invalidationTopic);
+        if (!ids.isEmpty()) {
+            invalidationTopic.removeListenerAsync(ids.toArray(new Integer[0]));
+        }
+    }
+    
+    private List<Integer> getIds(Object topic) {
+        if (topic == null) {
+            return Collections.emptyList();
+        }
+        List<Integer> ids = new ArrayList<>(2);
+        if (syncListenerIds.containsKey(topic)) {
+            ids.add(syncListenerIds.get(topic));
+        }
+        if (reconnectionListenerIds.containsKey(topic)) {
+            ids.add(reconnectionListenerIds.get(topic));
+        }
+        return ids;
     }
 
     public String getUpdatesLogName() {

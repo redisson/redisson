@@ -511,21 +511,21 @@ public class RedissonSession extends StandardSession {
     }
     
     public void load(Map<String, Object> attrs) {
-        Long creationTime = (Long) attrs.remove(CREATION_TIME_ATTR);
+        Number creationTime = (Number) attrs.remove(CREATION_TIME_ATTR);
         if (creationTime != null) {
-            this.creationTime = creationTime;
+            this.creationTime = creationTime.longValue();
         }
-        Long lastAccessedTime = (Long) attrs.remove(LAST_ACCESSED_TIME_ATTR);
+        Number lastAccessedTime = (Number) attrs.remove(LAST_ACCESSED_TIME_ATTR);
         if (lastAccessedTime != null) {
-            this.lastAccessedTime = lastAccessedTime;
+            this.lastAccessedTime = lastAccessedTime.longValue();
         }
         Integer maxInactiveInterval = (Integer) attrs.remove(MAX_INACTIVE_INTERVAL_ATTR);
         if (maxInactiveInterval != null) {
             this.maxInactiveInterval = maxInactiveInterval;
         }
-        Long thisAccessedTime = (Long) attrs.remove(THIS_ACCESSED_TIME_ATTR);
+        Number thisAccessedTime = (Number) attrs.remove(THIS_ACCESSED_TIME_ATTR);
         if (thisAccessedTime != null) {
-            this.thisAccessedTime = thisAccessedTime;
+            this.thisAccessedTime = thisAccessedTime.longValue();
         }
         Boolean isValid = (Boolean) attrs.remove(IS_VALID_ATTR);
         if (isValid != null) {
