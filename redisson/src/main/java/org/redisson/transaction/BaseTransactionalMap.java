@@ -104,9 +104,10 @@ public class BaseTransactionalMap<K, V> extends BaseTransactionalObject {
         
         return map.isExistsAsync();
     }
-    
+
     public RFuture<Boolean> unlinkAsync(CommandAsyncExecutor commandExecutor) {
-        return deleteAsync(commandExecutor, new UnlinkOperation(map.getName()));
+        long threadId = Thread.currentThread().getId();
+        return deleteAsync(commandExecutor, new UnlinkOperation(map.getName(), null, lockName, threadId, transactionId));
     }
     
     public RFuture<Boolean> touchAsync(CommandAsyncExecutor commandExecutor) {
@@ -126,25 +127,28 @@ public class BaseTransactionalMap<K, V> extends BaseTransactionalObject {
     }
 
     public RFuture<Boolean> deleteAsync(CommandAsyncExecutor commandExecutor) {
-        return deleteAsync(commandExecutor, new DeleteOperation(map.getName()));
+        long threadId = Thread.currentThread().getId();
+        return deleteAsync(commandExecutor, new DeleteOperation(map.getName(), null, lockName, transactionId, threadId));
     }
 
     protected RFuture<Boolean> deleteAsync(CommandAsyncExecutor commandExecutor, TransactionalOperation operation) {
-        if (deleted != null) {
-            operations.add(operation);
-            CompletableFuture<Boolean> result = new CompletableFuture<>();
-            result.complete(!deleted);
-            deleted = true;
-            return new CompletableFutureWrapper<>(result);
-        }
+        return executeLocked(timeout, () -> {
+            if (deleted != null) {
+                operations.add(operation);
+                CompletableFuture<Boolean> result = new CompletableFuture<>();
+                result.complete(!deleted);
+                deleted = true;
+                return new CompletableFutureWrapper<>(result);
+            }
 
-        CompletionStage<Boolean> f = map.isExistsAsync().thenApply(res -> {
-            operations.add(operation);
-            state.replaceAll((k, v) -> MapEntry.NULL);
-            deleted = true;
-            return res;
-        });
-        return new CompletableFutureWrapper<>(f);
+            CompletionStage<Boolean> f = map.isExistsAsync().thenApply(res -> {
+                operations.add(operation);
+                state.replaceAll((k, v) -> MapEntry.NULL);
+                deleted = true;
+                return res;
+            });
+            return new CompletableFutureWrapper<>(f);
+        }, getWriteLock());
     }
     
     protected ScanResult<Map.Entry<Object, Object>> scanIterator(String name, RedisClient client,

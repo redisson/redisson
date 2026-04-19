@@ -82,6 +82,7 @@ public class LocalCachedMessageCodec extends BaseCodec {
             byte len = buf.readByte();
             CharSequence requestId = buf.readCharSequence(len, CharsetUtil.US_ASCII);
             long timeout = buf.readLong();
+            boolean disableCache = buf.readBoolean();
             int hashesCount = buf.readInt();
             byte[][] hashes = new byte[hashesCount][];
             for (int i = 0; i < hashesCount; i++) {
@@ -89,7 +90,7 @@ public class LocalCachedMessageCodec extends BaseCodec {
                 buf.readBytes(keyHash);
                 hashes[i] = keyHash;
             }
-            return new LocalCachedMapDisable(requestId.toString(), hashes, timeout);
+            return new LocalCachedMapDisable(requestId.toString(), hashes, timeout, disableCache);
         }
 
         if (type == 0x4) {
@@ -99,6 +100,7 @@ public class LocalCachedMessageCodec extends BaseCodec {
         if (type == 0x5) {
             byte len = buf.readByte();
             CharSequence requestId = buf.readCharSequence(len, CharsetUtil.UTF_8);
+            boolean enableCache = buf.readBoolean();
             int hashesCount = buf.readInt();
             byte[][] hashes = new byte[hashesCount][];
             for (int i = 0; i < hashesCount; i++) {
@@ -106,7 +108,7 @@ public class LocalCachedMessageCodec extends BaseCodec {
                 buf.readBytes(keyHash);
                 hashes[i] = keyHash;
             }
-            return new LocalCachedMapEnable(requestId.toString(), hashes);
+            return new LocalCachedMapEnable(requestId.toString(), hashes, enableCache);
         }
 
         if (type == 0x6) {
@@ -165,6 +167,7 @@ public class LocalCachedMessageCodec extends BaseCodec {
             result.writeByte(li.getRequestId().length());
             result.writeCharSequence(li.getRequestId(), CharsetUtil.UTF_8);
             result.writeLong(li.getTimeout());
+            result.writeBoolean(li.isDisableCache());
             result.writeInt(li.getKeyHashes().length);
             for (int i = 0; i < li.getKeyHashes().length; i++) {
                 result.writeBytes(li.getKeyHashes()[i]);
@@ -185,6 +188,7 @@ public class LocalCachedMessageCodec extends BaseCodec {
 
             result.writeByte(li.getRequestId().length());
             result.writeCharSequence(li.getRequestId(), CharsetUtil.UTF_8);
+            result.writeBoolean(li.isEnableCache());
             result.writeInt(li.getKeyHashes().length);
             for (int i = 0; i < li.getKeyHashes().length; i++) {
                 result.writeBytes(li.getKeyHashes()[i]);
