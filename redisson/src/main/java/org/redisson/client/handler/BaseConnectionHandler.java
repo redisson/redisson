@@ -179,51 +179,6 @@ public abstract class BaseConnectionHandler<C extends RedisConnection> extends C
         return f.toCompletableFuture();
     }
 
-//    private void reapplyCredential(ChannelHandlerContext ctx, Duration renewalInterval) {
-//        if (isClosed(ctx, connection)) {
-//            return;
-//        }
-//
-//        CompletableFuture<Void> future;
-//        QueueCommand currentCommand = connection.getCurrentCommandData();
-//        if (connection.getUsage() == 0 && (currentCommand == null || !currentCommand.isBlockingCommand())) {
-//            future = authWithCredential();
-//        } else {
-//            future = null;
-//        }
-//
-//        RedisClientConfig config = redisClient.getConfig();
-//
-//        config.getTimer().newTimeout(timeout -> {
-//            if (isClosed(ctx, connection)) {
-//                return;
-//            }
-//
-//            QueueCommand cd = connection.getCurrentCommandData();
-//            if (cd != null && cd.isBlockingCommand()) {
-//                reapplyCredential(ctx, renewalInterval);
-//                return;
-//            }
-//
-//            if (connection.getUsage() == 0 && future != null && (future.cancel(false) || cause(future) != null)) {
-//                Throwable cause = cause(future);
-//                if (!(cause instanceof RedisRetryException)) {
-//                    if (!future.isCancelled()) {
-//                        log.error("Unable to send AUTH command over channel: {}", ctx.channel(), cause);
-//                    }
-//
-//                    log.debug("channel: {} closed due to AUTH response timeout set in {} ms", ctx.channel(), config.getCredentialsReapplyInterval());
-//                    ctx.channel().close();
-//                } else {
-//                    reapplyCredential(ctx, renewalInterval);
-//                }
-//
-//            } else {
-//                reapplyCredential(ctx, renewalInterval);
-//            }
-//        }, renewalInterval.toMillis(), TimeUnit.MILLISECONDS);
-//    }
-
     protected Throwable cause(CompletableFuture<?> future) {
         try {
             future.toCompletableFuture().getNow(null);
