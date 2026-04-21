@@ -155,7 +155,7 @@ public abstract class BaseConnectionHandler<C extends RedisConnection> extends C
                 });
     }
 
-    private CompletableFuture<Void> authWithCredential() {
+    protected CompletableFuture<Void> authWithCredential() {
         RedisClientConfig config = redisClient.getConfig();
         InetSocketAddress addr = redisClient.resolveAddr().getNow(null);
         CompletionStage<Void> f = config.getCredentialsResolver().resolve(addr)
