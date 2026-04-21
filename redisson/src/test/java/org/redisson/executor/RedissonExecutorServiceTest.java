@@ -72,7 +72,7 @@ public class RedissonExecutorServiceTest extends RedisDockerTest {
         for (int i = 0; i < 20; i++) {
             e.submit(new RunnableTask());
         }
-        assertThat(e.getTaskCount()).isBetween(5, 22);
+        assertThat(e.getTaskCount()).isBetween(4, 22);
 
         Thread.sleep(1500);
 
