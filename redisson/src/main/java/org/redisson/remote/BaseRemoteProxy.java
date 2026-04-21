@@ -117,7 +117,7 @@ public abstract class BaseRemoteProxy {
         });
 
         if (e.getStarted().compareAndSet(false, true)) {
-            pollResponse();
+            pollResponse(e);
         }
 
         return responseFuture;
@@ -176,13 +176,16 @@ public abstract class BaseRemoteProxy {
         });
     }
 
-    private void pollResponse() {
+    private void pollResponse(ResponseEntry owner) {
+        if (responses.get(responseQueueName) != owner) {
+            return;
+        }
         RBlockingQueue<RRemoteServiceResponse> queue = new RedissonBlockingQueue<>(codec, commandExecutor, responseQueueName);
         RFuture<RRemoteServiceResponse> future = queue.pollAsync(60, TimeUnit.SECONDS);
-        future.whenComplete(createResponseListener());
+        future.whenComplete(createResponseListener(owner));
     }
 
-    private BiConsumer<RRemoteServiceResponse, Throwable> createResponseListener() {
+    private BiConsumer<RRemoteServiceResponse, Throwable> createResponseListener(ResponseEntry owner) {
         return (response, e) -> {
             if (e != null) {
                 if (commandExecutor.getServiceManager().isShuttingDown(e)) {
@@ -194,7 +197,7 @@ public abstract class BaseRemoteProxy {
             }
 
             if (response == null) {
-                pollResponse();
+                pollResponse(owner);
                 return;
             }
 
@@ -203,7 +206,7 @@ public abstract class BaseRemoteProxy {
                 String key = response.getId();
                 List<Result> list = entry.getResponses().get(key);
                 if (list == null) {
-                    pollResponse();
+                    pollResponse(owner);
                     return entry;
                 }
 
@@ -220,7 +223,7 @@ public abstract class BaseRemoteProxy {
                     return null;
                 }
 
-                pollResponse();
+                pollResponse(owner);
                 return entry;
             });
 

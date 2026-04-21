@@ -8,6 +8,9 @@ import org.junit.jupiter.api.*;
 import org.redisson.*;
 import org.redisson.api.*;
 import org.redisson.api.annotation.RInject;
+import org.redisson.client.RedisClient;
+import org.redisson.client.RedisClientConfig;
+import org.redisson.client.RedisConnection;
 import org.redisson.config.Config;
 import org.redisson.config.RedissonNodeConfig;
 
@@ -21,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.IntSupplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -304,8 +308,82 @@ public class RedissonScheduledExecutorServiceTest extends RedisDockerTest {
         
         node.shutdown();
     }
-    
-//    @Test
+
+    @Test
+    public void testResponsesLeakOnTimedOutSchedules() throws Exception {
+        final String execName = "leak-test";
+
+        RemoteInvocationOptions original =
+                Reflect.onClass(RedissonExecutorService.class).get("RESULT_OPTIONS");
+        Reflect.onClass(RedissonExecutorService.class)
+                .set("RESULT_OPTIONS",
+                        RemoteInvocationOptions.defaults().noAck()
+                                .expectResultWithin(2, TimeUnit.SECONDS));
+
+        RedisClientConfig inspectorCfg = new RedisClientConfig();
+        inspectorCfg.setAddress(redisson.getConfig().useSingleServer().getAddress());
+        RedisClient inspector = RedisClient.create(inspectorCfg);
+        RedisConnection inspectorConn = inspector.connect();
+
+        try {
+            RScheduledExecutorService executor = redisson.getExecutorService(execName);
+
+            IntSupplier countBlockedBlpops = () -> {
+                List<String> clients = inspectorConn.sync(
+                        org.redisson.client.protocol.RedisCommands.CLIENT_LIST);
+                int n = 0;
+                for (String line : clients) {
+                    if (!line.contains("cmd=blpop")) {
+                        continue;
+                    }
+                    int fi = line.indexOf(" flags=");
+                    if (fi < 0) {
+                        continue;
+                    }
+                    int end = line.indexOf(' ', fi + 1);
+                    String flags = line.substring(fi + " flags=".length(),
+                            end < 0 ? line.length() : end);
+                    if (flags.indexOf('b') >= 0) {
+                        n++;
+                    }
+                }
+                return n;
+            };
+
+            // Baseline includes the 5 worker BLPOPs from @BeforeEach. They're
+            // on a different queue and stay blocked continuously across this
+            // test, so delta isolates response-queue BLPOPs.
+            int baseline = countBlockedBlpops.getAsInt();
+
+            // Three schedule/timeout cycles. Each schedule starts a
+            // pollResponse BLPOP; the 2s response-timeout then removes the
+            // ResponseEntry while the BLPOP is still blocked at Redis.
+            for (int i = 0; i < 3; i++) {
+                executor.schedule(new ScheduledRunnableTask("zombie-" + i),
+                        10, TimeUnit.MILLISECONDS);
+                Thread.sleep(2500);
+            }
+
+            int t = countBlockedBlpops.getAsInt() - baseline;
+            System.out.println("BLPOP delta right after 3 schedules (ignored): " + t);
+
+            // Wait for the original 60s BLPOPs to time out. At that point the
+            // listener fires: buggy code re-issues another BLPOP unconditionally;
+            // fixed code checks `responses.get(q) != owner` and exits the loop,
+            // returning the connection to the pool.
+            Thread.sleep(68_000);
+
+            int delta = countBlockedBlpops.getAsInt() - baseline;
+            assertThat(delta)
+                    .as("after BLPOPs time out once, zombie pollResponse loops should not keep re-polling")
+                    .isLessThanOrEqualTo(1);
+        } finally {
+            Reflect.onClass(RedissonExecutorService.class).set("RESULT_OPTIONS", original);
+            redisson.getExecutorService(execName).delete();
+        }
+    }
+
+    //    @Test
     public void testCronExpression2() throws InterruptedException {
         ExecutorOptions e = ExecutorOptions.defaults().taskRetryInterval(2, TimeUnit.SECONDS);
         RScheduledExecutorService executor = redisson.getExecutorService("test", e);
