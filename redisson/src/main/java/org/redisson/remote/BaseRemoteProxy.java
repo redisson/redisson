@@ -211,12 +211,17 @@ public abstract class BaseRemoteProxy {
                 }
 
                 boolean isResultResponse = response instanceof RemoteServiceResponse;
-                Result res;
                 if (isResultResponse) {
-                    res = list.remove(list.size() - 1);
-                } else {
-                    res = list.remove(0);
+                    // drain stale acks, see #5146 for details
+                    while (list.size() > 1) {
+                        Result stale = list.remove(0);
+                        CompletableFuture<RRemoteServiceResponse> f = stale.getPromise();
+                        stale.cancelResponseTimeout();
+                        f.complete(new RemoteServiceAck(response.getId()));
+                    }
                 }
+
+                Result res = list.remove(0);
                 if (list.isEmpty()) {
                     entry.getResponses().remove(key);
                 }
