@@ -210,7 +210,8 @@ public abstract class BaseRemoteProxy {
                     return entry;
                 }
 
-                Result res = list.remove(0);
+                boolean isResultResponse = response instanceof RemoteServiceResponse;
+                Result res = isResultResponse ? list.remove(list.size() - 1) : list.remove(0);
                 if (list.isEmpty()) {
                     entry.getResponses().remove(key);
                 }
