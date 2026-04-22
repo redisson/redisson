@@ -950,4 +950,46 @@ public class RedissonRemoteServiceTest extends RedisDockerTest {
         assertThat(future.isDone()).isEqualTo(true);
         client.shutdown();
     }
+
+    public interface Service {
+        boolean process();
+    }
+    
+    public static class ServiceImpl implements Service {
+        @Override
+        public boolean process() {
+            return true;
+        }
+    }
+
+    @Test
+    public void testAckUnordered() throws InterruptedException {
+        RedissonClient server = createInstance();
+        RedissonClient client = createInstance();
+        try {
+            server.getRemoteService("testAckUnordered").register(Service.class, new ServiceImpl());
+            RRemoteService clientRemote = client.getRemoteService("testAckUnordered");
+            ExecutorService ee = Executors.newFixedThreadPool(50);
+            for (int i = 0; i < 10000; i++) {
+                ee.submit(() -> {
+                    try {
+                        RemoteInvocationOptions opts = RemoteInvocationOptions.defaults()
+                                .expectAckWithin(100, TimeUnit.MILLISECONDS)
+                                .expectResultWithin(5, TimeUnit.SECONDS);
+                        Service service = clientRemote.get(Service.class, opts);
+
+                        boolean r = service.process();
+                        assertThat(r).isEqualTo(true);
+                    } catch (RemoteServiceAckTimeoutException | RemoteServiceTimeoutException e) {
+                        // skip, those are expected errors in this test
+                    }
+                });
+            }
+            ee.shutdown();
+            ee.awaitTermination(100, TimeUnit.SECONDS);
+        } finally {
+            client.shutdown();
+            server.shutdown();
+        }
+    }
 }
