@@ -24,6 +24,7 @@ import java.util.Optional;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -967,26 +968,36 @@ public class RedissonRemoteServiceTest extends RedisDockerTest {
         RedissonClient server = createInstance();
         RedissonClient client = createInstance();
         try {
+            final long lowACKTimeout = 50;
             server.getRemoteService("testAckUnordered").register(Service.class, new ServiceImpl());
             RRemoteService clientRemote = client.getRemoteService("testAckUnordered");
             ExecutorService ee = Executors.newFixedThreadPool(50);
-            for (int i = 0; i < 10000; i++) {
+
+            AtomicReference<Exception> unknownException = new AtomicReference<>(null);
+
+            for (int i = 0; i < 2000; i++) {
                 ee.submit(() -> {
+                    if (unknownException.get() != null) return;
                     try {
                         RemoteInvocationOptions opts = RemoteInvocationOptions.defaults()
-                                .expectAckWithin(100, TimeUnit.MILLISECONDS)
-                                .expectResultWithin(5, TimeUnit.SECONDS);
+                                .expectAckWithin(lowACKTimeout, TimeUnit.MILLISECONDS)
+                                .expectResultWithin(5000, TimeUnit.MILLISECONDS);
                         Service service = clientRemote.get(Service.class, opts);
 
                         boolean r = service.process();
                         assertThat(r).isEqualTo(true);
                     } catch (RemoteServiceAckTimeoutException | RemoteServiceTimeoutException e) {
                         // skip, those are expected errors in this test
+                    } catch (Exception e) {
+                        unknownException.set(e);
                     }
                 });
             }
+
             ee.shutdown();
             ee.awaitTermination(100, TimeUnit.SECONDS);
+
+            assertThat(unknownException.get()).isNull();
         } finally {
             client.shutdown();
             server.shutdown();
