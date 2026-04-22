@@ -18,7 +18,7 @@ package org.redisson.client.protocol.decoder;
 import org.redisson.api.search.aggregate.AggregationEntry;
 import org.redisson.client.handler.State;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -34,7 +34,7 @@ public class AggregationCursorResultScanDecoder implements MultiDecoder<ListScan
 
         List<Object> list = (List<Object>) parts.get(0);
         long total = (long) list.get(0);
-        List<AggregationEntry> result = new LinkedList<>();
+        List<AggregationEntry> result = new ArrayList<>(parts.size() - 1);
         for (int i = 1; i < list.size(); i++) {
             result.add(new AggregationEntry(total, (Map<String, Object>) list.get(i)));
         }

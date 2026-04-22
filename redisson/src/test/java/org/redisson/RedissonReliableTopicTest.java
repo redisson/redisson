@@ -8,7 +8,7 @@ import org.redisson.api.listener.MessageListener;
 import org.redisson.config.Config;
 
 import java.time.Duration;
-import java.util.LinkedList;
+import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -118,7 +118,7 @@ public class RedissonReliableTopicTest extends RedisDockerTest {
 
         rt.publish("1");
 
-        Queue<String> messages = new LinkedList<>();
+        Queue<String> messages = new ArrayDeque<>();
         String id = rt.addListener(String.class, (ch, m) -> {
             messages.add(m);
         });

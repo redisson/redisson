@@ -68,7 +68,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     @Override
     public RFuture<Void> createGroupAsync(StreamCreateGroupArgs args) {
         StreamCreateGroupParams pps = (StreamCreateGroupParams) args;
-        List<Object> params = new LinkedList<>();
+        List<Object> params = new ArrayList<>();
         params.add("CREATE");
         params.add(getRawName());
         params.add(pps.getName());
@@ -183,7 +183,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     @Override
     public RFuture<List<PendingEntry>> listPendingAsync(StreamPendingRangeArgs args) {
         StreamPendingRangeParams pps = (StreamPendingRangeParams) args;
-        List<Object> params = new LinkedList<>();
+        List<Object> params = new ArrayList<>();
         params.add(getRawName());
         params.add(pps.getGroupName());
         if (pps.getIdleTime() != null) {
@@ -483,7 +483,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     public <R> RFuture<R> addCustomAsync(StreamMessageId id, StreamAddArgs<K, V> args) {
         StreamAddParams<K, V> pps = (StreamAddParams<K, V>) args;
 
-        List<Object> params = new LinkedList<Object>();
+        List<Object> params = new ArrayList<Object>();
         params.add(getRawName());
 
         if (pps.isNoMakeStream()) {
@@ -544,7 +544,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     }
 
     private <R> RFuture<R> addCustomAsync(StreamMessageId id, K key, V value, int trimLen, boolean trimStrict) {
-        List<Object> params = new LinkedList<Object>();
+        List<Object> params = new ArrayList<Object>();
         params.add(getRawName());
         
         if (trimLen > 0) {
@@ -576,7 +576,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     @Override
     public RFuture<Map<StreamMessageId, Map<K, V>>> rangeAsync(StreamRangeArgs args) {
         StreamRangeParams pps = (StreamRangeParams) args;
-        List<Object> params = new LinkedList<Object>();
+        List<Object> params = new ArrayList<Object>();
         params.add(getRawName());
         params.add(value(pps.getStartId(), pps.isStartIdExclusive()));
         params.add(value(pps.getEndId(), pps.isEndIdExclusive()));
@@ -608,7 +608,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     @Override
     public RFuture<Map<StreamMessageId, Map<K, V>>> rangeReversedAsync(StreamRangeArgs args) {
         StreamRangeParams pps = (StreamRangeParams) args;
-        List<Object> params = new LinkedList<Object>();
+        List<Object> params = new ArrayList<Object>();
         params.add(getRawName());
         params.add(value(pps.getStartId(), pps.isStartIdExclusive()));
         params.add(value(pps.getEndId(), pps.isEndIdExclusive()));
@@ -628,7 +628,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
 
     @Override
     public RFuture<Map<StreamMessageId, Map<K, V>>> rangeAsync(int count, StreamMessageId startId, StreamMessageId endId) {
-        List<Object> params = new LinkedList<Object>();
+        List<Object> params = new ArrayList<Object>();
         params.add(getRawName());
         params.add(startId);
         params.add(endId);
@@ -648,7 +648,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
 
     @Override
     public RFuture<Map<StreamMessageId, Map<K, V>>> rangeReversedAsync(int count, StreamMessageId startId, StreamMessageId endId) {
-        List<Object> params = new LinkedList<Object>();
+        List<Object> params = new ArrayList<Object>();
         params.add(getRawName());
         params.add(startId);
         params.add(endId);
@@ -897,7 +897,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     private RFuture<Long> trimAsync(StreamTrimArgs args, boolean trimStrict) {
         StreamTrimParams pps = (StreamTrimParams) args;
 
-        List<Object> params = new LinkedList<>();
+        List<Object> params = new ArrayList<>();
         params.add(getRawName());
 
         if (pps.getMaxLen() != null) {

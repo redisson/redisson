@@ -87,7 +87,7 @@ public class CommandBatchService extends CommandAsyncService implements BatchSer
     
     public static class Entry {
 
-        final List<BatchCommandData<?, ?>> evalCommands = new LinkedList<>();
+        final List<BatchCommandData<?, ?>> evalCommands = new ArrayList<>();
         final Deque<BatchCommandData<?, ?>> commands = new ConcurrentLinkedDeque<>();
         volatile boolean readOnlyMode = true;
 

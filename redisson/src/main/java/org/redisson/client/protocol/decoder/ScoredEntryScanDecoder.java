@@ -21,7 +21,7 @@ import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.ScoredEntry;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -39,7 +39,7 @@ public class ScoredEntryScanDecoder<T> implements MultiDecoder<ListScanResult<Sc
     
     @Override
     public ListScanResult<ScoredEntry<T>> decode(List<Object> parts, State state) {
-        List<ScoredEntry<T>> result = new LinkedList<>();
+        List<ScoredEntry<T>> result = new ArrayList<>();
         List<Object> values = (List<Object>) parts.get(1);
         for (int i = 0; i < values.size(); i += 2) {
             result.add(new ScoredEntry<T>(((Number) values.get(i+1)).doubleValue(), (T) values.get(i)));

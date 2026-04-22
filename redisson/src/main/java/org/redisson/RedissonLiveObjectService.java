@@ -501,7 +501,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                 ClassUtils.setField(detached, obj.getKey(), set);
             } else if (obj.getValue() instanceof RDeque) {
                 Collection<Object> redissonDeque = (Collection<Object>) obj.getValue();
-                Deque<Object> deque = new LinkedList<Object>();
+                Deque<Object> deque = new ArrayDeque<>();
                 for (Object object : redissonDeque) {
                     if (isLiveObject(object)) {
                         Object detachedObject = alreadyDetached.get(getMap(object).getName());
@@ -516,7 +516,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                 ClassUtils.setField(detached, obj.getKey(), deque);
             } else if (obj.getValue() instanceof RQueue) {
                 Collection<Object> redissonQueue = (Collection<Object>) obj.getValue();
-                Queue<Object> queue = new LinkedList<Object>();
+                Queue<Object> queue = new ArrayDeque<>();
                 for (Object object : redissonQueue) {
                     if (isLiveObject(object)) {
                         Object detachedObject = alreadyDetached.get(getMap(object).getName());

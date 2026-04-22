@@ -191,7 +191,7 @@ public abstract class RedissonObject implements RObject {
     protected final RFuture<Boolean> copyAsync(CommandAsyncExecutor commandExecutor, List<Object> keys,
                                                 int database, boolean replace) {
         if (keys.size() == 2) {
-            List<Object> args = new LinkedList<>();
+            List<Object> args = new ArrayList<>();
             args.add(keys.get(0));
             args.add(keys.get(1));
             if (database >= 0) {
@@ -230,7 +230,7 @@ public abstract class RedissonObject implements RObject {
 
     protected final RFuture<Void> renameAsync(CommandAsyncExecutor commandExecutor, List<Object> keys, Runnable runnable) {
         if (keys.size() == 2) {
-            List<Object> args = new LinkedList<>();
+            List<Object> args = new ArrayList<>();
             args.add(keys.get(0));
             args.add(keys.get(1));
             CompletionStage<Void> f = commandExecutor.writeAsync((String) keys.get(0), StringCodec.INSTANCE, RedisCommands.RENAME, args.toArray());
@@ -252,7 +252,7 @@ public abstract class RedissonObject implements RObject {
 
     protected final RFuture<Boolean> renamenxAsync(CommandAsyncExecutor commandExecutor, List<Object> keys, Consumer<Boolean> callback) {
         if (keys.size() == 2) {
-            List<Object> args = new LinkedList<>();
+            List<Object> args = new ArrayList<>();
             args.add(keys.get(0));
             args.add(keys.get(1));
             CompletionStage<Boolean> f = commandExecutor.writeAsync((String) keys.get(0), StringCodec.INSTANCE, RedisCommands.RENAMENX, args.toArray());

@@ -1464,7 +1464,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     @Override
     public RFuture<Integer> intersectionAsync(SetIntersectionArgs args) {
         SetIntersectionParams sip = (SetIntersectionParams) args;
-        List<Object> params = new LinkedList<>();
+        List<Object> params = new ArrayList<>();
         params.add(getRawName());
         params.add(sip.getNames().length);
         params.addAll(map(sip.getNames()));
@@ -1543,7 +1543,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     @Override
     public RFuture<Collection<V>> readIntersectionAsync(SetIntersectionArgs args) {
         SetIntersectionParams sip = (SetIntersectionParams) args;
-        List<Object> params = new LinkedList<>();
+        List<Object> params = new ArrayList<>();
         params.add(sip.getNames().length + 1);
         params.add(getRawName());
         params.addAll(map(sip.getNames()));
@@ -1564,7 +1564,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     @Override
     public RFuture<Collection<ScoredEntry<V>>> readIntersectionEntriesAsync(SetIntersectionArgs args) {
         SetIntersectionParams sip = (SetIntersectionParams) args;
-        List<Object> params = new LinkedList<>();
+        List<Object> params = new ArrayList<>();
         params.add(sip.getNames().length + 1);
         params.add(getRawName());
         params.addAll(map(sip.getNames()));
@@ -1672,7 +1672,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     @Override
     public RFuture<Integer> unionAsync(SetUnionArgs args) {
         SetUnionParams sup = (SetUnionParams) args;
-        List<Object> params = new LinkedList<>();
+        List<Object> params = new ArrayList<>();
         params.add(getRawName());
         params.add(sup.getNames().length);
         params.addAll(map(sup.getNames()));
@@ -1751,7 +1751,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     @Override
     public RFuture<Collection<V>> readUnionAsync(SetUnionArgs args) {
         SetUnionParams sup = (SetUnionParams) args;
-        List<Object> params = new LinkedList<>();
+        List<Object> params = new ArrayList<>();
         params.add(sup.getNames().length + 1);
         params.add(getRawName());
         params.addAll(map(sup.getNames()));
@@ -1772,7 +1772,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     @Override
     public RFuture<Collection<ScoredEntry<V>>> readUnionEntriesAsync(SetUnionArgs args) {
         SetUnionParams sup = (SetUnionParams) args;
-        List<Object> params = new LinkedList<>();
+        List<Object> params = new ArrayList<>();
         params.add(sup.getNames().length + 1);
         params.add(getRawName());
         params.addAll(map(sup.getNames()));
