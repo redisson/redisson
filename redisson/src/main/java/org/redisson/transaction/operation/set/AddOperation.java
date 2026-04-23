@@ -28,17 +28,15 @@ import org.redisson.command.CommandAsyncExecutor;
  */
 public class AddOperation extends SetOperation {
 
-    private String readLockName;
     private Object value;
 
-    public AddOperation(RObject set, Object value, String readLockName, String transactionId, long threadId) {
-        this(set.getName(), set.getCodec(), readLockName, value, transactionId, threadId);
+    public AddOperation(RObject set, Object value, String transactionId, long threadId) {
+        this(set.getName(), set.getCodec(), value, transactionId, threadId);
     }
     
-    public AddOperation(String name, Codec codec, String readLockName, Object value, String transactionId, long threadId) {
+    public AddOperation(String name, Codec codec, Object value, String transactionId, long threadId) {
         super(name, codec, transactionId, threadId);
         this.value = value;
-        this.readLockName = readLockName;
     }
 
     @Override
@@ -46,14 +44,12 @@ public class AddOperation extends SetOperation {
         RSet<Object> set = new RedissonSet<>(codec, commandExecutor, name, null);
         set.addAsync(value);
         getLock(set, commandExecutor, value).unlockAsync(threadId);
-        getReadLock(readLockName, commandExecutor).unlockAsync(threadId);
     }
 
     @Override
     public void rollback(CommandAsyncExecutor commandExecutor) {
         RSet<Object> set = new RedissonSet<>(codec, commandExecutor, name, null);
         getLock(set, commandExecutor, value).unlockAsync(threadId);
-        getReadLock(readLockName, commandExecutor).unlockAsync(threadId);
     }
 
     public Object getValue() {

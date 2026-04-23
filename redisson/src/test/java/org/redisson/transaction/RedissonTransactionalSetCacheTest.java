@@ -139,5 +139,34 @@ public class RedissonTransactionalSetCacheTest extends RedisDockerTest {
         assertThat(s.contains("3")).isFalse();
     }
 
+    @Test
+    public void testAdd2() {
+        RSetCache<String> s = redisson.getSetCache("test");
+
+        RTransaction transaction = redisson.createTransaction(TransactionOptions.defaults());
+        RSetCache<String> set = transaction.getSetCache("test");
+
+        set.add("hello");
+        set.delete();
+        transaction.commit();
+
+        assertThat(s.isExists()).isFalse();
+    }
+
+    @Test
+    public void testRemove2() {
+        RSetCache<String> s = redisson.getSetCache("test");
+        s.add("hello");
+        s.add("123");
+
+        RTransaction transaction = redisson.createTransaction(TransactionOptions.defaults());
+        RSetCache<String> set = transaction.getSetCache("test");
+        set.remove("hello");
+        set.delete();
+        transaction.commit();
+
+        assertThat(s.isExists()).isFalse();
+    }
+
     
 }
