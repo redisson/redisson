@@ -610,7 +610,7 @@ Sync configuration controls replication behaviour for JMS operations. It is appl
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `syncMode` | `SyncMode` | `AUTO` | Replication mode: `AUTO`, `ACK`, or `ACK_AOF`. See [Synchronization Configuration](#synchronization-configuration) for semantics. |
+| `syncMode` | `SyncMode` | `AUTO` | Replication mode: `AUTO`, `ACK`, or `ACK_AOF`. |
 | `syncFailureMode` | `SyncFailureMode` | `LOG_WARNING` | Behaviour when the sync target is not met within `syncTimeout`: `LOG_WARNING` or `THROW_EXCEPTION`. |
 | `syncTimeout` | `Duration` | `1s` | How long to wait for replica acknowledgement before invoking `syncFailureMode`. |
 

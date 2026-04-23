@@ -84,8 +84,10 @@ Redisson provides various Hibernate Cache factories including those with feature
             <artifactId>redisson-hibernate-53</artifactId>
             <!-- for Hibernate v6.0.2+ - v6.x.x -->
             <artifactId>redisson-hibernate-6</artifactId>
-            <!-- for Hibernate v7.x.x -->
+            <!-- for Hibernate v7.0.x - 7.1.x -->
             <artifactId>redisson-hibernate-7</artifactId>
+            <!-- for Hibernate v7.2.x - 7.3.x -->
+            <artifactId>redisson-hibernate-72</artifactId>
             <version>xVERSIONx</version>
         </dependency>
         ```
@@ -103,8 +105,10 @@ Redisson provides various Hibernate Cache factories including those with feature
         compile 'pro.redisson:redisson-hibernate-53:xVERSIONx'
         // for Hibernate v6.0.2+ - v6.x.x
         compile 'pro.redisson:redisson-hibernate-6:xVERSIONx'
-        // for Hibernate v7.x.x
+        // for Hibernate v7.0.x - 7.1.x
         compile 'pro.redisson:redisson-hibernate-7:xVERSIONx'
+        // for Hibernate v7.2.x - 7.3.x
+        compile 'pro.redisson:redisson-hibernate-72:xVERSIONx'
         ```
 
     -   **Community Edition**
@@ -124,8 +128,10 @@ Redisson provides various Hibernate Cache factories including those with feature
             <artifactId>redisson-hibernate-53</artifactId>
             <!-- for Hibernate v6.0.2+ - v6.x.x -->
             <artifactId>redisson-hibernate-6</artifactId>
-            <!-- for Hibernate v7.x.x -->
+            <!-- for Hibernate v7.0.x - 7.1.x -->
             <artifactId>redisson-hibernate-7</artifactId>
+            <!-- for Hibernate v7.2.x - 7.3.x -->
+            <artifactId>redisson-hibernate-72</artifactId>
             <version>xVERSIONx</version>
         </dependency>
         ```
@@ -143,8 +149,10 @@ Redisson provides various Hibernate Cache factories including those with feature
         compile 'org.redisson:redisson-hibernate-53:xVERSIONx'
         // for Hibernate v6.0.2+ - v6.x.x
         compile 'org.redisson:redisson-hibernate-6:xVERSIONx'
-        // for Hibernate v7.x.x
+        // for Hibernate v7.0.x - 7.1.x
         compile 'org.redisson:redisson-hibernate-7:xVERSIONx'
+        // for Hibernate v7.2.x - 7.3.x
+        compile 'org.redisson:redisson-hibernate-72:xVERSIONx'
         ```
 
     </div>
