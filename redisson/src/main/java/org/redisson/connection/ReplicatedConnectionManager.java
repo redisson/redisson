@@ -158,9 +158,9 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
                         log.error("No master available among the configured addresses, "
                                 + "please check your configuration.");
                     }
-
-                    checkFailedSlaves(slaveIPs);
                 }
+
+                checkFailedSlaves(slaveIPs);
 
                 scheduleMasterChangeCheck(cfg);
             });
