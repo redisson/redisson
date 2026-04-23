@@ -69,6 +69,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
 
     ReplicatedConnectionManager(ReplicatedServersConfig cfg, Config configCopy) {
         super(cfg, configCopy);
+        this.serviceManager.setNatMapper(cfg.getNatMapper());
     }
 
     @Override
