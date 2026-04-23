@@ -136,5 +136,34 @@ public class RedissonTransactionalSetTest extends RedisDockerTest {
         Thread.sleep(1100);
         assertThat(s.isExists()).isFalse();
     }
+
+    @Test
+    public void testAdd2() {
+        RSet<String> s = redisson.getSet("test");
+
+        RTransaction transaction = redisson.createTransaction(TransactionOptions.defaults());
+        RSet<String> set = transaction.getSet("test");
+
+        set.add("hello");
+        set.delete();
+        transaction.commit();
+
+        assertThat(s.isExists()).isFalse();
+    }
+
+    @Test
+    public void testRemove2() {
+        RSet<String> s = redisson.getSet("test");
+        s.add("hello");
+        s.add("123");
+
+        RTransaction transaction = redisson.createTransaction(TransactionOptions.defaults());
+        RSet<String> set = transaction.getSet("test");
+        set.remove("hello");
+        set.delete();
+        transaction.commit();
+
+        assertThat(s.isExists()).isFalse();
+    }
     
 }
