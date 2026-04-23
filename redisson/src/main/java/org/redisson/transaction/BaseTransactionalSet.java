@@ -424,10 +424,7 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
 
     protected <R> RFuture<R> executeLocked(Object value, Supplier<CompletionStage<R>> runnable) {
         RLock lock = getLock(set, (V) value);
-        long threadId = Thread.currentThread().getId();
-        return executeLocked(threadId, timeout, () -> {
-            return executeLocked(threadId, timeout, runnable, lock);
-        }, getReadLock());
+        return executeLocked(timeout, runnable, lock);
     }
 
     protected <R> RFuture<R> executeLocked(Supplier<CompletionStage<R>> runnable, Collection<?> values) {
