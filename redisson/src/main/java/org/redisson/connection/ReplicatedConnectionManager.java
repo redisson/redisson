@@ -69,6 +69,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
 
     ReplicatedConnectionManager(ReplicatedServersConfig cfg, Config configCopy) {
         super(cfg, configCopy);
+        this.serviceManager.setNatMapper(cfg.getNatMapper());
     }
 
     @Override
@@ -157,9 +158,9 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
                         log.error("No master available among the configured addresses, "
                                 + "please check your configuration.");
                     }
-
-                    checkFailedSlaves(slaveIPs);
                 }
+
+                checkFailedSlaves(slaveIPs);
 
                 scheduleMasterChangeCheck(cfg);
             });

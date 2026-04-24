@@ -28,6 +28,8 @@ import java.util.List;
  */
 public class ReplicatedServersConfig extends BaseMasterSlaveServersConfig<ReplicatedServersConfig> {
 
+    private NatMapper natMapper = NatMapper.direct();
+
     /**
      * Replication group node urls list
      */
@@ -116,6 +118,25 @@ public class ReplicatedServersConfig extends BaseMasterSlaveServersConfig<Replic
      */
     public ReplicatedServersConfig setMonitorIPChanges(boolean monitorIPChanges) {
         this.monitorIPChanges = monitorIPChanges;
+        return this;
+    }
+
+    public NatMapper getNatMapper() {
+        return natMapper;
+    }
+
+    /**
+     * Defines NAT mapper which maps Redis URI object.
+     * Applied to all Redis connections.
+     *
+     * @see HostNatMapper
+     * @see HostPortNatMapper
+     *
+     * @param natMapper nat mapper object
+     * @return config
+     */
+    public ReplicatedServersConfig setNatMapper(NatMapper natMapper) {
+        this.natMapper = natMapper;
         return this;
     }
 
