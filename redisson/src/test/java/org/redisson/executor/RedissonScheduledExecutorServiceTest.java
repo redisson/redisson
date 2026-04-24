@@ -12,6 +12,7 @@ import org.redisson.client.RedisClient;
 import org.redisson.client.RedisClientConfig;
 import org.redisson.client.RedisConnection;
 import org.redisson.config.Config;
+import org.redisson.config.NameMapper;
 import org.redisson.config.RedissonNodeConfig;
 
 import java.io.IOException;
@@ -105,6 +106,47 @@ public class RedissonScheduledExecutorServiceTest extends RedisDockerTest {
         Thread.sleep(2000);
         assertThat(futureMap).hasSize(0);
     }
+
+    public static class NameMapperTask implements Runnable, Serializable {
+
+        @RInject
+        RedissonClient redisson;
+
+        @Override
+        public void run() {
+            redisson.getAtomicLong("counter").incrementAndGet();
+        }
+
+    }
+
+    @Test
+    public void testNameMapper() throws ExecutionException, InterruptedException, TimeoutException {
+        Config c = createConfig();
+        c.setNameMapper(new NameMapper() {
+            @Override
+            public String map(String name) {
+                return name + ":mysuffix";
+            }
+
+            @Override
+            public String unmap(String name) {
+                return name.replace(":mysuffix", "");
+            }
+        });
+        RedissonClient redisson = Redisson.create(c);
+
+        RScheduledExecutorService exec = redisson.getExecutorService("test");
+        exec.registerWorkers(WorkerOptions.defaults().workers(1));
+
+        exec.schedule(new NameMapperTask(), CronSchedule.of("0/1 * * * * ?")).getTaskId();
+        for (int i = 1; i <= 5; i++) {
+            Thread.sleep(1000);
+        }
+        assertThat(redisson.getAtomicLong("counter").get()).isEqualTo(5);
+
+        redisson.shutdown();
+    }
+
 
     @Test
     public void testScheduleAtFixedRate() throws InterruptedException {

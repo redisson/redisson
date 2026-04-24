@@ -127,7 +127,7 @@ public class TasksRunnerService implements RemoteExecutorService {
     public void scheduleAtFixedRate(ScheduledAtFixedRateParameters params) {
         long start = System.nanoTime();
         executeRunnable(params, false);
-        if (!redisson.getMap(tasksName, StringCodec.INSTANCE).containsKey(params.getRequestId())) {
+        if (!hasTask(params.getRequestId())) {
             return;
         }
 
@@ -140,7 +140,13 @@ public class TasksRunnerService implements RemoteExecutorService {
         params.setSpentTime(spent);
         asyncScheduledServiceAtFixed(params.getExecutorId(), params.getRequestId()).scheduleAtFixedRate(params);
     }
-    
+
+    private boolean hasTask(String requestId) {
+        RFuture<Boolean> f = commandExecutor.writeAsync(tasksName, LongCodec.INSTANCE,
+                RedisCommands.HEXISTS, tasksName, requestId);
+        return commandExecutor.get(f);
+    }
+
     @Override
     public void schedule(ScheduledCronExpressionParameters params) {
         CronExpression expression = new CronExpression(params.getCronExpression());
@@ -149,7 +155,7 @@ public class TasksRunnerService implements RemoteExecutorService {
 
         executeRunnable(params, nextStartDate == null);
 
-        if (nextStartDate == null || !redisson.getMap(tasksName, StringCodec.INSTANCE).containsKey(params.getRequestId())) {
+        if (nextStartDate == null || !hasTask(params.getRequestId())) {
             return;
         }
 
