@@ -502,7 +502,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     
     @Override
     public RFuture<Boolean> deleteAsync() {
-        RFuture<Long> deleteFuture = redisson.getKeys().deleteAsync(
+        RFuture<Long> deleteFuture = commandExecutor.writeBatchedAsync(null, RedisCommands.DEL, new LongSlotCallback(),
                 requestQueueName, statusName, tasksCounterName, schedulerQueueName, tasksName, tasksRetryIntervalName);
         CompletionStage<Boolean> f = deleteFuture.thenApply(res -> res > 0);
         return new CompletableFutureWrapper<>(f);

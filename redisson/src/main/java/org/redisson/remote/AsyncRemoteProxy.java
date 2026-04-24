@@ -393,8 +393,13 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
 
     private void cancelExecution(RemoteInvocationOptions optionsCopy,
             boolean mayInterruptIfRunning, RemotePromise<Object> remotePromise, String cancelRequestMapName) {
-        RMap<String, RemoteServiceCancelRequest> canceledRequests = new RedissonMap<>(new CompositeCodec(StringCodec.INSTANCE, codec, codec), commandExecutor, cancelRequestMapName, null, null, null);
-        canceledRequests.fastPutAsync(remotePromise.getRequestId().toString(), new RemoteServiceCancelRequest(mayInterruptIfRunning, false));
+        RMap<String, RemoteServiceCancelRequest> canceledRequests = new RedissonMap(new CompositeCodec(StringCodec.INSTANCE, codec, codec), commandExecutor, cancelRequestMapName, null, null, null) {
+            @Override
+            protected void setName(String name) {
+                this.name = name;
+            }
+        };
+        canceledRequests.fastPutAsync(remotePromise.getRequestId(), new RemoteServiceCancelRequest(mayInterruptIfRunning, false));
         canceledRequests.expireAsync(60, TimeUnit.SECONDS);
         
         // subscribe for async result if it's not expected before

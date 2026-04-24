@@ -71,8 +71,8 @@ public abstract class BaseRemoteService {
         this.name = commandExecutor.getServiceManager().getNameMapper().map(name);
         this.commandExecutor = commandExecutor;
         this.executorId = executorId;
-        this.cancelRequestMapName = "{" + name + ":remote" + "}:cancel-request";
-        this.cancelResponseMapName = "{" + name + ":remote" + "}:cancel-response";
+        this.cancelRequestMapName = "{" + this.name + ":remote" + "}:cancel-request";
+        this.cancelResponseMapName = "{" + this.name + ":remote" + "}:cancel-response";
         this.responseQueueName = getResponseQueueName(executorId);
     }
 
@@ -144,7 +144,12 @@ public abstract class BaseRemoteService {
     }
 
     protected <K, V> RMap<K, V> getMap(String name) {
-        return new RedissonMap<>(new CompositeCodec(StringCodec.INSTANCE, codec, codec), commandExecutor, name);
+        return new RedissonMap(new CompositeCodec(StringCodec.INSTANCE, codec, codec), commandExecutor, name) {
+            @Override
+            protected void setName(String name) {
+                this.name = name;
+            }
+        };
     }
     
     protected <T> void scheduleCheck(String mapName, String requestId, CompletableFuture<T> cancelRequest) {
