@@ -17,7 +17,6 @@ package org.redisson.transaction;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -29,11 +28,14 @@ public class HashValue {
 
     private final AtomicInteger counter = new AtomicInteger();
     private final List<byte[]> keyIds = new ArrayList<byte[]>();
+    private boolean allKeys;
 
-    private final AtomicBoolean allKeys = new AtomicBoolean(false);
-
-    public AtomicBoolean getAllKeys() {
+    public boolean isAllKeys() {
         return allKeys;
+    }
+
+    public void setAllKeys(boolean allKeys) {
+        this.allKeys = allKeys;
     }
 
     public HashValue() {

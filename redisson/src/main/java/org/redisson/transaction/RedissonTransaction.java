@@ -325,7 +325,7 @@ public class RedissonTransaction implements RTransaction {
         for (Entry<HashKey, HashValue> entry : hashes.entrySet()) {
             String name = RedissonObject.suffixName(entry.getKey().getName(), RedissonLocalCachedMap.TOPIC_SUFFIX);
             RTopicAsync topic = publishBatch.getTopic(name, LocalCachedMessageCodec.INSTANCE);
-            LocalCachedMapEnable msg = new LocalCachedMapEnable(requestId, entry.getValue().getKeyIds().toArray(new byte[entry.getValue().getKeyIds().size()][]), entry.getValue().getAllKeys().get());
+            LocalCachedMapEnable msg = new LocalCachedMapEnable(requestId, entry.getValue().getKeyIds().toArray(new byte[entry.getValue().getKeyIds().size()][]), entry.getValue().isAllKeys());
             topic.publishAsync(msg);
         }
         
@@ -341,7 +341,7 @@ public class RedissonTransaction implements RTransaction {
         for (Entry<HashKey, HashValue> entry : hashes.entrySet()) {
             String name = RedissonObject.suffixName(entry.getKey().getName(), RedissonLocalCachedMap.TOPIC_SUFFIX);
             RTopicAsync topic = publishBatch.getTopic(name, LocalCachedMessageCodec.INSTANCE);
-            LocalCachedMapEnable msg = new LocalCachedMapEnable(requestId, entry.getValue().getKeyIds().toArray(new byte[entry.getValue().getKeyIds().size()][]), entry.getValue().getAllKeys().get());
+            LocalCachedMapEnable msg = new LocalCachedMapEnable(requestId, entry.getValue().getKeyIds().toArray(new byte[entry.getValue().getKeyIds().size()][]), entry.getValue().isAllKeys());
             topic.publishAsync(msg);
         }
         
@@ -378,13 +378,12 @@ public class RedissonTransaction implements RTransaction {
                 hashes.put(hashKey, value);
             }
 
-            if (isKeyOperate(transactionalOperation)) {
-                if (value.getAllKeys().compareAndSet(false, true)) {
-                    String disabledCachesName = RedissonObject.suffixName(transactionalOperation.getName(), RedissonLocalCachedMap.DISABLED_CACHES_SUFFIX);
-                    RSetCacheAsync<LocalCachedMapDisabledKey> setCache = batch.getSetCache(disabledCachesName, localCacheCodec);
-                    LocalCachedMapDisabledKey localCacheKey = new LocalCachedMapDisabledKey(requestId, options.getResponseTimeout());
-                    setCache.addAsync(localCacheKey, options.getResponseTimeout(), TimeUnit.MILLISECONDS);
-                }
+            if (isKeyOperate(transactionalOperation) && !value.isAllKeys()) {
+                value.setAllKeys(true);
+                String disabledCachesName = RedissonObject.suffixName(transactionalOperation.getName(), RedissonLocalCachedMap.DISABLED_CACHES_SUFFIX);
+                RSetCacheAsync<LocalCachedMapDisabledKey> setCache = batch.getSetCache(disabledCachesName, localCacheCodec);
+                LocalCachedMapDisabledKey localCacheKey = new LocalCachedMapDisabledKey(requestId, options.getResponseTimeout());
+                setCache.addAsync(localCacheKey, options.getResponseTimeout(), TimeUnit.MILLISECONDS);
             } else if (transactionalOperation instanceof MapOperation) {
                 MapOperation mapOperation = (MapOperation) transactionalOperation;
                 RedissonLocalCachedMap<?, ?> map = (RedissonLocalCachedMap<?, ?>) mapOperation.getMap();
@@ -430,7 +429,7 @@ public class RedissonTransaction implements RTransaction {
                 RMultimapCacheAsync<LocalCachedMapDisabledKey, String> multimap = publishBatch.getListMultimapCache(disabledKeysName, localCacheCodec);
                 multimap.removeAllAsync(localCacheKey);
             }
-            if (entry.getValue().getAllKeys().get()) {
+            if (entry.getValue().isAllKeys()) {
                 String disabledCachesName = RedissonObject.suffixName(entry.getKey().getName(), RedissonLocalCachedMap.DISABLED_CACHES_SUFFIX);
                 RSetCacheAsync<LocalCachedMapDisabledKey> setCache = batch.getSetCache(disabledCachesName, localCacheCodec);
                 setCache.removeAsync(localCacheKey);
@@ -438,7 +437,7 @@ public class RedissonTransaction implements RTransaction {
 
             RTopicAsync topic = publishBatch.getTopic(RedissonObject.suffixName(entry.getKey().getName(), RedissonLocalCachedMap.TOPIC_SUFFIX), LocalCachedMessageCodec.INSTANCE);
             RFuture<Long> future = topic.publishAsync(new LocalCachedMapDisable(requestId,
-                    entry.getValue().getKeyIds().toArray(new byte[entry.getValue().getKeyIds().size()][]), options.getResponseTimeout(), entry.getValue().getAllKeys().get()));
+                    entry.getValue().getKeyIds().toArray(new byte[entry.getValue().getKeyIds().size()][]), options.getResponseTimeout(), entry.getValue().isAllKeys()));
             future.thenAccept(res -> {
                 int receivers = res.intValue();
                 AtomicInteger counter = entry.getValue().getCounter();
@@ -485,13 +484,13 @@ public class RedissonTransaction implements RTransaction {
                 hashes.put(hashKey, value);
             }
 
-            if (isKeyOperate(transactionalOperation)) {
-                if (value.getAllKeys().compareAndSet(false, true)) {
-                    String disabledCachesName = RedissonObject.suffixName(transactionalOperation.getName(), RedissonLocalCachedMap.DISABLED_CACHES_SUFFIX);
-                    RSetCacheAsync<LocalCachedMapDisabledKey> setCache = batch.getSetCache(disabledCachesName, localCacheCodec);
-                    LocalCachedMapDisabledKey localCacheKey = new LocalCachedMapDisabledKey(requestId, options.getResponseTimeout());
-                    setCache.addAsync(localCacheKey, options.getResponseTimeout(), TimeUnit.MILLISECONDS);
-                }
+            if (isKeyOperate(transactionalOperation) && !value.isAllKeys()) {
+                value.setAllKeys(true);
+                String disabledCachesName = RedissonObject.suffixName(transactionalOperation.getName(), RedissonLocalCachedMap.DISABLED_CACHES_SUFFIX);
+                RSetCacheAsync<LocalCachedMapDisabledKey> setCache = batch.getSetCache(disabledCachesName, localCacheCodec);
+                LocalCachedMapDisabledKey localCacheKey = new LocalCachedMapDisabledKey(requestId, options.getResponseTimeout());
+                setCache.addAsync(localCacheKey, options.getResponseTimeout(), TimeUnit.MILLISECONDS);
+
             } else if (transactionalOperation instanceof MapOperation) {
                 MapOperation mapOperation = (MapOperation) transactionalOperation;
                 RedissonLocalCachedMap<?, ?> map = (RedissonLocalCachedMap<?, ?>) mapOperation.getMap();
@@ -545,7 +544,7 @@ public class RedissonTransaction implements RTransaction {
                         RMultimapCacheAsync<LocalCachedMapDisabledKey, String> multimap = publishBatch.getListMultimapCache(disabledKeysName, localCacheCodec);
                         multimap.removeAllAsync(localCacheKey);
                     }
-                    if (entry.getValue().getAllKeys().get()) {
+                    if (entry.getValue().isAllKeys()) {
                         String disabledCachesName = RedissonObject.suffixName(entry.getKey().getName(), RedissonLocalCachedMap.DISABLED_CACHES_SUFFIX);
                         RSetCacheAsync<LocalCachedMapDisabledKey> setCache = batch.getSetCache(disabledCachesName, localCacheCodec);
                         setCache.removeAsync(localCacheKey);
@@ -555,7 +554,7 @@ public class RedissonTransaction implements RTransaction {
                             RedissonLocalCachedMap.TOPIC_SUFFIX), LocalCachedMessageCodec.INSTANCE);
                     RFuture<Long> publishFuture = topic.publishAsync(new LocalCachedMapDisable(requestId,
                             entry.getValue().getKeyIds().toArray(new byte[entry.getValue().getKeyIds().size()][]),
-                            options.getResponseTimeout(), entry.getValue().getAllKeys().get()));
+                            options.getResponseTimeout(), entry.getValue().isAllKeys()));
                     publishFuture.thenAccept(receivers -> {
                         AtomicInteger counter = entry.getValue().getCounter();
                         if (counter.addAndGet(receivers.intValue()) == 0) {
