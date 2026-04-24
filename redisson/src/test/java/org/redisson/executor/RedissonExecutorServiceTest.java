@@ -290,6 +290,7 @@ public class RedissonExecutorServiceTest extends RedisDockerTest {
 
         RExecutorFuture<?> future = e.submit(new RunnableTask());
         future.toCompletableFuture().get(1, TimeUnit.SECONDS);
+        redisson.shutdown();
     }
 
     @Test
