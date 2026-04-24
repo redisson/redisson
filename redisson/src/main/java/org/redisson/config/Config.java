@@ -112,6 +112,8 @@ public class Config {
 
     private Protocol protocol = Protocol.RESP2;
 
+    private boolean connectViaRedisProxy = false;
+    
     private Set<ValkeyCapability> valkeyCapabilities = Collections.emptySet();
 
     private NameMapper nameMapper = NameMapper.direct();
@@ -204,6 +206,7 @@ public class Config {
         setSslKeyManagerFactory(oldConf.getSslKeyManagerFactory());
         setSslTrustManagerFactory(oldConf.getSslTrustManagerFactory());
         setSslVerificationMode(oldConf.getSslVerificationMode());
+        setConnectViaRedisProxy(oldConf.isConnectViaRedisProxy());
 
         if (oldConf.getSingleServerConfig() != null) {
             setSingleServerConfig(new SingleServerConfig(oldConf.getSingleServerConfig()));
@@ -424,7 +427,7 @@ public class Config {
     }
 
     public boolean isClusterConfig() {
-        return clusterServersConfig != null;
+        return clusterServersConfig != null || connectViaRedisProxy;
     }
 
     public boolean isSentinelConfig() {
@@ -1011,6 +1014,22 @@ public class Config {
         return this;
     }
 
+    public boolean isConnectViaRedisProxy() {
+        return connectViaRedisProxy;
+    }
+
+    /**
+     * Defines whether Redisson should connect to Redis via Redis proxy.
+     * <p>
+     * Default value is <code>false</code>
+     *
+     * @param connectViaRedisProxy <code>true</code> if Redisson should connect to Redis via Redis proxy, <code>false</code> otherwise.
+     * @return config
+     */
+    public void setConnectViaRedisProxy(boolean connectViaRedisProxy) {
+        this.connectViaRedisProxy = connectViaRedisProxy;
+    }
+    
     public Set<ValkeyCapability> getValkeyCapabilities() {
         return valkeyCapabilities;
     }
