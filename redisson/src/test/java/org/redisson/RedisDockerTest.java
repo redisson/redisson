@@ -438,6 +438,78 @@ public class RedisDockerTest {
         }
     }
 
+    record ReplicatedData(Startable container, RedissonClient redisson, List<ContainerState> nodes) {}
+
+    private static ReplicatedData createReplicated() {
+        DockerComposeContainer environment =
+                new DockerComposeContainer(new File("src/test/resources/docker-compose-redis-replicated.yml"))
+                        .withOptions("--compatibility")
+                        .withExposedService("redis-master", 6379)
+                        .withExposedService("redis-replica", 6379);
+
+        environment.start();
+
+        try {
+            Thread.sleep(10000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
+        List<ContainerState> nodes = new ArrayList<>();
+        Optional<ContainerState> master = environment.getContainerByServiceName("redis-master");
+        Optional<ContainerState> replica = environment.getContainerByServiceName("redis-replica");
+        nodes.add(master.get());
+        nodes.add(replica.get());
+
+        Ports.Binding[] masterPort = master.get().getContainerInfo().getNetworkSettings()
+                .getPorts().getBindings().get(new ExposedPort(master.get().getExposedPorts().get(0)));
+        Ports.Binding[] replicaPort = replica.get().getContainerInfo().getNetworkSettings()
+                .getPorts().getBindings().get(new ExposedPort(replica.get().getExposedPorts().get(0)));
+
+        Config config = new Config();
+        config.setProtocol(protocol);
+        config.useReplicatedServers()
+                .setNatMapper(new NatMapper() {
+                    @Override
+                    public RedisURI map(RedisURI uri) {
+                        for (ContainerState state : nodes) {
+                            if (state.getContainerInfo() == null) {
+                                continue;
+                            }
+
+                            InspectContainerResponse node = state.getContainerInfo();
+                            Ports.Binding[] mappedPort = node.getNetworkSettings()
+                                    .getPorts().getBindings().get(new ExposedPort(uri.getPort()));
+
+                            Map<String, ContainerNetwork> ss = node.getNetworkSettings().getNetworks();
+                            ContainerNetwork s = ss.values().iterator().next();
+
+                            if (mappedPort != null
+                                    && s.getIpAddress().equals(uri.getHost())) {
+                                return new RedisURI(uri.getScheme(), "127.0.0.1", Integer.valueOf(mappedPort[0].getHostPortSpec()));
+                            }
+                        }
+                        return uri;
+                    }
+                })
+                .addNodeAddress("redis://127.0.0.1:" + masterPort[0].getHostPortSpec())
+                .addNodeAddress("redis://127.0.0.1:" + replicaPort[0].getHostPortSpec());
+
+        RedissonClient redisson = Redisson.create(config);
+        return new ReplicatedData(environment, redisson, nodes);
+    }
+
+    protected void withNewReplicated(BiConsumer<List<ContainerState>, RedissonClient> callback) {
+        ReplicatedData data = createReplicated();
+
+        try {
+            callback.accept(data.nodes, data.redisson);
+        } finally {
+            data.redisson.shutdown();
+            data.container.stop();
+        }
+    }
+
     protected String execute(ContainerState node, String... commands) {
         try {
             Container.ExecResult r = node.execInContainer(commands);

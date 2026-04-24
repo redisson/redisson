@@ -1,0 +1,30 @@
+services:
+  redis-master:
+    image: redis:latest
+    command: redis-server --port 6379 --protected-mode no --bind 0.0.0.0
+    ports:
+      - "6379"
+    volumes:
+      - redis-replicated-master:/data
+    networks:
+      - redisreplicated
+
+  redis-replica:
+    image: redis:latest
+    command: redis-server --port 6379 --protected-mode no --bind 0.0.0.0 --replicaof redis-master 6379
+    depends_on:
+      - redis-master
+    ports:
+      - "6379"
+    volumes:
+      - redis-replicated-replica:/data
+    networks:
+      - redisreplicated
+
+volumes:
+  redis-replicated-master:
+  redis-replicated-replica:
+
+networks:
+  redisreplicated:
+    driver: bridge

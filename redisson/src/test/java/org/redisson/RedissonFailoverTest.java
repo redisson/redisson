@@ -1,6 +1,7 @@
 package org.redisson;
 
 import org.junit.jupiter.api.Test;
+import org.redisson.api.NodeType;
 import org.redisson.api.RFuture;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.redisnode.RedisClusterMaster;
@@ -8,6 +9,8 @@ import org.redisson.api.redisnode.RedisNodes;
 import org.redisson.config.Config;
 import org.redisson.config.ReadMode;
 import org.redisson.config.SubscriptionMode;
+import org.redisson.connection.ClientConnectionsEntry;
+import org.redisson.connection.balancer.RoundRobinLoadBalancer;
 import org.testcontainers.containers.ContainerState;
 import org.testcontainers.containers.GenericContainer;
 
@@ -16,6 +19,7 @@ import java.util.*;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -305,6 +309,48 @@ public class RedissonFailoverTest extends RedisDockerTest {
             }
 
             redisson.shutdown();
+        });
+    }
+
+    @Test
+    public void testReplicatedFailoverToMaster() {
+        withNewReplicated((nodes, redisson) -> {
+            List<ContainerState> slaves = getSlaveNodes(nodes);
+            AtomicReference<ClientConnectionsEntry> lastUsedConn = new AtomicReference<>();
+
+            Config config = redisson.getConfig();
+            config.useReplicatedServers()
+                    .setReadMode(ReadMode.SLAVE)
+                    .setLoadBalancer(new RoundRobinLoadBalancer() {
+                        @Override
+                        public ClientConnectionsEntry getEntry(List<ClientConnectionsEntry> clientsCopy) {
+                            ClientConnectionsEntry entry = super.getEntry(clientsCopy);
+                            lastUsedConn.set(entry);
+                            return entry;
+                        }
+                    });
+            RedissonClient observeClient = Redisson.create(config);
+
+            observeClient.getBucket("testFallbackInCluster").get();
+            assertThat(lastUsedConn.get()).isNotNull();
+            assertThat(lastUsedConn.get().getNodeType()).isEqualTo(NodeType.SLAVE);
+
+            for (ContainerState slave : slaves) {
+                stop(slave);
+            }
+
+            // wait for refreshing failed slaves
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+
+            observeClient.getBucket("testFallbackInCluster").get();
+            assertThat(lastUsedConn.get()).isNotNull();
+            assertThat(lastUsedConn.get().getNodeType()).isEqualTo(NodeType.MASTER);
+
+            observeClient.shutdown();
         });
     }
 
