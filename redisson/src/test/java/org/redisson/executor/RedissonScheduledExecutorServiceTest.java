@@ -34,7 +34,7 @@ public class RedissonScheduledExecutorServiceTest extends RedisDockerTest {
     private static RedissonNode node;
     
     @BeforeEach
-    public void before() throws IOException, InterruptedException {
+    public void before() {
         Config config = createConfig();
         RedissonNodeConfig nodeConfig = new RedissonNodeConfig(config);
         nodeConfig.setExecutorServiceWorkers(Collections.singletonMap("test", 5));
