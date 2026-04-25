@@ -224,6 +224,17 @@ public final class Redisson implements RedissonClient {
     }
 
     @Override
+    public RGcra getGcra(String name) {
+        return new RedissonGcra(commandExecutor, name);
+    }
+
+    @Override
+    public RGcra getGcra(CommonOptions options) {
+        CommonParams params = (CommonParams) options;
+        return new RedissonGcra(commandExecutor.copy(params), params.getName());
+    }
+
+    @Override
     public <V> RBucket<V> getBucket(String name, Codec codec) {
         return new RedissonBucket<>(codec, commandExecutor, name);
     }

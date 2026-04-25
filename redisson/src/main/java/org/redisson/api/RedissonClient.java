@@ -145,6 +145,22 @@ public interface RedissonClient {
      * @return RateLimiter object
      */
     RRateLimiter getRateLimiter(CommonOptions options);
+
+    /**
+     * Returns GCRA instance by <code>name</code>.
+     *
+     * @param name of GCRA object
+     * @return GCRA object
+     */
+    RGcra getGcra(String name);
+
+    /**
+     * Returns GCRA instance with specified <code>options</code>.
+     *
+     * @param options instance options
+     * @return GCRA object
+     */
+    RGcra getGcra(CommonOptions options);
     
     /**
      * Returns binary stream holder instance by <code>name</code>
