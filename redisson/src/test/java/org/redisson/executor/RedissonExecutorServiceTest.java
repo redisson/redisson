@@ -778,4 +778,152 @@ public class RedissonExecutorServiceTest extends RedisDockerTest {
                 }
         );
     }
+
+    @Test
+    public void testExecutorServiceInCluster() throws Exception {
+        withNewCluster((nodes, redisson) -> {
+            try {
+                RExecutorService executor = redisson.getExecutorService("test-cluster-executor");
+                executor.registerWorkers(WorkerOptions.defaults().workers(2));
+
+                RExecutorFuture<String> future = executor.submit(new IncrementCallableTask("cluster-counter"));
+                String result = future.get(10, TimeUnit.SECONDS);
+                assertThat(result).isEqualTo("1234");
+
+                assertThat(executor.getTaskCount()).isEqualTo(0);
+
+                RExecutorFuture<?> f1 = executor.submit(new IncrementRunnableTask("cluster-counter-2"));
+                RExecutorFuture<?> f2 = executor.submit(new IncrementRunnableTask("cluster-counter-2"));
+                f1.get(10, TimeUnit.SECONDS);
+                f2.get(10, TimeUnit.SECONDS);
+
+                assertThat(redisson.getAtomicLong("cluster-counter-2").get()).isEqualTo(2);
+
+                executor.shutdown();
+                assertThat(executor.isShutdown()).isTrue();
+            } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    @Test
+    public void testScheduledExecutorServiceInCluster() throws Exception {
+        withNewCluster((nodes, redisson) -> {
+            try {
+                RScheduledExecutorService executor = redisson.getExecutorService("test-cluster-scheduler");
+                executor.registerWorkers(WorkerOptions.defaults().workers(2));
+
+                RScheduledFuture<?> future = executor.schedule(new IncrementRunnableTask("cluster-scheduled"), 1, TimeUnit.SECONDS);
+                future.get(10, TimeUnit.SECONDS);
+
+                assertThat(redisson.getAtomicLong("cluster-scheduled").get()).isEqualTo(1);
+
+                RScheduledFuture<?> cancelFuture = executor.schedule(new IncrementRunnableTask("cluster-cancel"), 10, TimeUnit.SECONDS);
+                String taskId = ((RemotePromise<?>) cancelFuture.toCompletableFuture()).getRequestId();
+                Thread.sleep(100);
+                Boolean cancelled = executor.cancelTask(taskId);
+                assertThat(cancelled).isTrue();
+
+                executor.shutdown();
+            } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    @Test
+    public void testTaskCountInCluster() throws Exception {
+        withNewCluster((nodes, redisson) -> {
+            try {
+                RExecutorService executor = redisson.getExecutorService("test-cluster-taskcount");
+                executor.registerWorkers(WorkerOptions.defaults().workers(1));
+
+                assertThat(executor.getTaskCount()).isEqualTo(0);
+
+                RExecutorFuture<?> future = executor.submit(new DelayedTask(3000, "cluster-delay"));
+                Thread.sleep(200);
+
+                int taskCount = executor.getTaskCount();
+                assertThat(taskCount).isGreaterThanOrEqualTo(1);
+
+                future.get(10, TimeUnit.SECONDS);
+                Thread.sleep(500);
+
+                assertThat(executor.getTaskCount()).isEqualTo(0);
+
+                executor.shutdown();
+            } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    @Test
+    public void testCancelTaskInCluster() throws Exception {
+        withNewCluster((nodes, redisson) -> {
+            try {
+                RScheduledExecutorService executor = redisson.getExecutorService("test-cluster-cancel-task");
+                executor.registerWorkers(WorkerOptions.defaults().workers(1));
+
+                RScheduledFuture<?> future = executor.schedule(new DelayedTask(10000, "cluster-cancel-task"), 0, TimeUnit.SECONDS);
+                Thread.sleep(500);
+
+                String taskId = ((RemotePromise<?>) future.toCompletableFuture()).getRequestId();
+                Boolean cancelled = executor.cancelTask(taskId);
+                assertThat(cancelled).isTrue();
+
+                executor.shutdown();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    @Test
+    public void testExecutorServiceWithNameMapperInCluster() throws Exception {
+        withNewCluster((nodes, redisson) -> {
+            try {
+                Config config = redisson.getConfig();
+                config.useClusterServers()
+                      .setNameMapper(new NameMapper() {
+                          @Override
+                          public String map(String name) {
+                              return "prefix:" + name;
+                          }
+
+                          @Override
+                          public String unmap(String name) {
+                              return name.replace("prefix:", "");
+                          }
+                      });
+                RedissonClient redissonWithMapper = Redisson.create(config);
+
+                try {
+                    RExecutorService executor = redissonWithMapper.getExecutorService("test-namemapper-cluster");
+                    executor.registerWorkers(WorkerOptions.defaults().workers(1));
+
+                    RExecutorFuture<?> future = executor.submit(new IncrementRunnableTask("namemapper-counter"));
+                    future.get(10, TimeUnit.SECONDS);
+
+                    assertThat(executor.getTaskCount()).isEqualTo(0);
+
+                    executor.shutdown();
+                    assertThat(executor.isShutdown()).isTrue();
+                    assertThat(executor.awaitTermination(5, TimeUnit.SECONDS)).isTrue();
+
+                    assertThat(redissonWithMapper.getAtomicLong("namemapper-counter").get()).isEqualTo(1);
+                } finally {
+                    redissonWithMapper.shutdown();
+                }
+            } catch (InterruptedException | ExecutionException | TimeoutException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(e);
+            }
+        });
+    }
 }

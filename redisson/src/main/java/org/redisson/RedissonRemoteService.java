@@ -82,7 +82,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
     @Override
     protected CompletableFuture<Boolean> addAsync(String requestQueueName, RemoteServiceRequest request,
                                                   RemotePromise<Object> result) {
-        RFuture<Boolean> future = commandExecutor.evalWriteNoRetryAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        RFuture<Boolean> future = commandExecutor.evalWriteNoRetryAsync(requestQueueName, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                   "redis.call('hset', KEYS[2], ARGV[1], ARGV[2]);"
                 + "redis.call('rpush', KEYS[1], ARGV[1]); "
                 + "return 1;",
@@ -95,7 +95,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
 
     @Override
     protected CompletableFuture<Boolean> removeAsync(String requestQueueName, String taskId) {
-        RFuture<Boolean> f = commandExecutor.evalWriteNoRetryAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        RFuture<Boolean> f = commandExecutor.evalWriteNoRetryAsync(requestQueueName, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if redis.call('lrem', KEYS[1], 1, ARGV[1]) > 0 then "
                         + "redis.call('hdel', KEYS[2], ARGV[1]);" +
                            "return 1;" +
@@ -315,7 +315,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
                     if (request.getOptions().isAckExpected()) {
                         String responseName = getResponseQueueName(request.getExecutorId());
                         String ackName = getAckName(request.getId());
-                                RFuture<Boolean> ackClientsFuture = commandExecutor.evalWriteNoRetryAsync(responseName,
+                                RFuture<Boolean> ackClientsFuture = commandExecutor.evalWriteNoRetryAsync(ackName,
                                         LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                                             "if redis.call('setnx', KEYS[1], 1) == 1 then " 
                                                 + "redis.call('pexpire', KEYS[1], ARGV[1]);"

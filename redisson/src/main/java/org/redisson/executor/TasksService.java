@@ -127,7 +127,7 @@ public class TasksService extends BaseRemoteService {
             expireTime = System.currentTimeMillis() + params.getTtl();
         }
 
-        RFuture<Boolean> f = getAddCommandExecutor().evalWriteNoRetryAsync(name, StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        RFuture<Boolean> f = getAddCommandExecutor().evalWriteNoRetryAsync(tasksCounterName, StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                         // check if executor service not in shutdown state
                         "if redis.call('exists', KEYS[2]) == 0 then "
                             + "redis.call('hset', KEYS[5], ARGV[2], ARGV[3]);"
@@ -161,7 +161,7 @@ public class TasksService extends BaseRemoteService {
     
     @Override
     protected CompletableFuture<Boolean> removeAsync(String requestQueueName, String taskId) {
-        RFuture<Boolean> f = commandExecutor.evalWriteNoRetryAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        RFuture<Boolean> f = commandExecutor.evalWriteNoRetryAsync(requestQueueName, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
           "if redis.call('exists', KEYS[3]) == 0 then " +
                     "return nil;" +
                 "end;" +
