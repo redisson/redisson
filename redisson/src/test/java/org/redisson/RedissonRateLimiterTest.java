@@ -3,7 +3,6 @@ package org.redisson;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.redisson.api.*;
-import org.redisson.config.Config;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -366,6 +365,209 @@ public class RedissonRateLimiterTest extends RedisDockerTest {
 
         //clean all keys in test
         redisson.getKeys().deleteByPattern("*test_change_rate*");
+    }
+
+    @Test
+    public void testSetRateArgsDefaultResetsState() {
+        String name = "testSetRateArgsDefaultResetsState";
+        RRateLimiter rr = redisson.getRateLimiter(name);
+
+        rr.setRate(RateLimiterSetRateArgs.of(RateType.OVERALL, 10, Duration.ofSeconds(5)));
+        rr.acquire(3);
+        assertThat(rr.availablePermits()).isEqualTo(7);
+
+        // default behavior matches legacy setRate() => clears state
+        rr.setRate(RateLimiterSetRateArgs.of(RateType.OVERALL, 20, Duration.ofSeconds(5)));
+        assertThat(rr.availablePermits()).isEqualTo(20);
+
+        redisson.getKeys().deleteByPattern("*" + name + "*");
+    }
+
+    @Test
+    public void testSetRateArgsKeepStateNewKey() {
+        String name = "testSetRateArgsKeepStateNewKey";
+        RRateLimiter rr = redisson.getRateLimiter(name);
+        rr.delete();
+
+        rr.setRate(RateLimiterSetRateArgs.of(RateType.OVERALL, 10, Duration.ofSeconds(5)).keepState());
+        assertThat(rr.availablePermits()).isEqualTo(10);
+
+        rr.acquire(2);
+        assertThat(rr.availablePermits()).isEqualTo(8);
+
+        assertThat(rr.tryAcquire(10)).isFalse();
+        assertThat(rr.tryAcquire(8)).isTrue();
+
+        redisson.getKeys().deleteByPattern("*" + name + "*");
+    }
+
+    @Test
+    public void testSetRateArgsKeepStateExistingKeyHigherRate() throws InterruptedException {
+        String name = "testSetRateArgsKeepStateExistingKeyHigherRate";
+        RRateLimiter rr = redisson.getRateLimiter(name);
+
+        rr.setRate(RateLimiterSetRateArgs.of(RateType.OVERALL, 10, Duration.ofSeconds(2)));
+
+        Thread.sleep(1000);
+
+        rr.acquire(4); // used=4
+        assertThat(rr.availablePermits()).isEqualTo(6);
+
+        rr.setRate(RateLimiterSetRateArgs.of(RateType.OVERALL, 20, Duration.ofSeconds(5)).keepState());
+        // newValue = 20 - used(4) = 16
+        assertThat(rr.availablePermits()).isEqualTo(16);
+
+        assertThat(rr.tryAcquire(16)).isTrue();
+
+        redisson.getKeys().deleteByPattern("*" + name + "*");
+    }
+
+    @Test
+    public void testSetRateArgsKeepStateLowerRateNewValuePositive() throws InterruptedException {
+        String name = "testSetRateArgsKeepStateLowerRateNewValuePositive";
+        RRateLimiter rr = redisson.getRateLimiter(name);
+
+        rr.setRate(RateLimiterSetRateArgs.of(RateType.OVERALL, 10, Duration.ofSeconds(2)));
+
+        Thread.sleep(1000);
+
+        rr.acquire(3); // used=3
+        assertThat(rr.availablePermits()).isEqualTo(7);
+
+        rr.setRate(RateLimiterSetRateArgs.of(RateType.OVERALL, 5, Duration.ofSeconds(5)).keepState());
+        // newValue = 5 - used(3) = 2
+        assertThat(rr.availablePermits()).isEqualTo(2);
+
+        assertThat(rr.tryAcquire(3)).isFalse();
+        assertThat(rr.tryAcquire(2)).isTrue();
+
+        redisson.getKeys().deleteByPattern("*" + name + "*");
+    }
+
+    @Test
+    public void testSetRateArgsKeepStateLowerRateNewValueNegative() throws InterruptedException {
+        String name = "testSetRateArgsKeepStateLowerRateNewValueNegative";
+        RRateLimiter rr = redisson.getRateLimiter(name);
+
+        rr.setRate(RateLimiterSetRateArgs.of(RateType.OVERALL, 10, Duration.ofSeconds(2)));
+
+        Thread.sleep(1000);
+
+        rr.acquire(8); // used=8
+        assertThat(rr.availablePermits()).isEqualTo(2);
+
+        rr.setRate(RateLimiterSetRateArgs.of(RateType.OVERALL, 5, Duration.ofSeconds(5)).keepState());
+        // newValue = 5 - used(8) = -3 => 0
+        assertThat(rr.availablePermits()).isEqualTo(0);
+
+        assertThat(rr.tryAcquire(1)).isFalse();
+        assertThat(rr.tryAcquire(2)).isFalse();
+
+        redisson.getKeys().deleteByPattern("*" + name + "*");
+    }
+
+
+    @Test
+    public void testSetRateArgsKeepStatePermitResetFull() throws InterruptedException {
+        String name = "testSetRateArgsKeepStatePermitResetFull";
+        RRateLimiter rr = redisson.getRateLimiter(name);
+
+        rr.setRate(RateLimiterSetRateArgs.of(RateType.OVERALL, 10, Duration.ofSeconds(1)));
+        rr.acquire(8); // used=8
+        assertThat(rr.availablePermits()).isEqualTo(2);
+
+        Thread.sleep(2000);
+
+        rr.setRate(RateLimiterSetRateArgs.of(RateType.OVERALL, 10, Duration.ofSeconds(1)).keepState());
+        assertThat(rr.availablePermits()).isEqualTo(10);
+
+        redisson.getKeys().deleteByPattern("*" + name + "*");
+    }
+
+    @Test
+    public void testSetRateArgsKeepStateModeChangeClearsState() {
+        String name = "testSetRateArgsKeepStateModeChangeClearsState";
+        RRateLimiter rr = redisson.getRateLimiter(name);
+
+        rr.setRate(RateLimiterSetRateArgs.of(RateType.OVERALL, 10, Duration.ofSeconds(5)));
+        rr.acquire(4);
+        assertThat(rr.availablePermits()).isEqualTo(6);
+
+        rr.setRate(RateLimiterSetRateArgs.of(RateType.PER_CLIENT, 10, Duration.ofSeconds(5)).keepState());
+        assertThat(rr.availablePermits()).isEqualTo(10);
+
+        redisson.getKeys().deleteByPattern("*" + name + "*");
+    }
+
+    @Test
+    public void testSetRateArgsKeepAliveTimeLessThanIntervalThrows() {
+        String name = "testSetRateArgsKeepAliveTimeLessThanIntervalThrows";
+        RRateLimiter rr = redisson.getRateLimiter(name);
+
+        assertThatThrownBy(() -> rr.setRate(RateLimiterSetRateArgs.of(RateType.OVERALL, 10, Duration.ofSeconds(5))
+                .keepAliveTime(Duration.ofSeconds(1))))
+                .isInstanceOf(IllegalArgumentException.class);
+
+        redisson.getKeys().deleteByPattern("*" + name + "*");
+    }
+
+    @Test
+    public void testSetRateArgsKeepStateWindowRelease() throws InterruptedException {
+        String name = "testSetRateArgsKeepStateRateIntervalChangeDropsExpired";
+        RRateLimiter rr = redisson.getRateLimiter(name);
+
+        rr.setRate(RateLimiterSetRateArgs.of(RateType.OVERALL, 10, Duration.ofSeconds(5)));
+        rr.acquire(3);
+        assertThat(rr.availablePermits()).isEqualTo(7);
+
+        Thread.sleep(1100);
+
+        rr.setRate(RateLimiterSetRateArgs.of(RateType.OVERALL, 10, Duration.ofSeconds(1)).keepState());
+        assertThat(rr.availablePermits()).isEqualTo(10);
+
+        redisson.getKeys().deleteByPattern("*" + name + "*");
+    }
+
+    @Test
+    public void testSetRateArgsKeepStateExistingKeyStateMissing() {
+        String name = "testSetRateArgsKeepStateExistingKeyStateMissing";
+        RRateLimiter rr = redisson.getRateLimiter(name);
+
+        rr.setRate(RateLimiterSetRateArgs.of(RateType.OVERALL, 10, Duration.ofSeconds(5)));
+        rr.acquire(2);
+        assertThat(rr.availablePermits()).isEqualTo(8);
+
+        String valueKey = redisson.getKeys().getKeysStream()
+                .filter(k -> k.contains(name) && k.endsWith("value"))
+                .findAny().orElseThrow();
+        String permitsKey = redisson.getKeys().getKeysStream()
+                .filter(k -> k.contains(name) && k.endsWith("permits"))
+                .findAny().orElseThrow();
+        redisson.getKeys().delete(valueKey, permitsKey);
+
+        rr.setRate(RateLimiterSetRateArgs.of(RateType.OVERALL, 10, Duration.ofSeconds(5)).keepState());
+        assertThat(rr.availablePermits()).isEqualTo(10);
+
+        redisson.getKeys().deleteByPattern("*" + name + "*");
+    }
+
+    @Test
+    public void testSetRateArgsKeepStatePerClientUsesClientState() {
+        String name = "testSetRateArgsKeepStatePerClientUsesClientState";
+        RRateLimiter rr = redisson.getRateLimiter(name);
+
+        rr.setRate(RateLimiterSetRateArgs.of(RateType.PER_CLIENT, 10, Duration.ofSeconds(5)));
+        rr.acquire(3);
+
+        String valueKey = redisson.getKeys().getKeysStream()
+                .filter(k -> k.contains(name) && k.contains("value:"))
+                .findAny().orElseThrow();
+        assertThat(redisson.getAtomicLong(valueKey).get()).isEqualTo(7);
+
+        rr.setRate(RateLimiterSetRateArgs.of(RateType.PER_CLIENT, 20, Duration.ofSeconds(5)).keepState());
+        assertThat(rr.availablePermits()).isEqualTo(17);
+
+        redisson.getKeys().deleteByPattern("*" + name + "*");
     }
 
     @Test

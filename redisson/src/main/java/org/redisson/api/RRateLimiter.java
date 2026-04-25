@@ -75,6 +75,15 @@ public interface RRateLimiter extends RRateLimiterAsync, RExpirable {
     void setRate(RateType mode, long rate, long rateInterval, RateIntervalUnit rateIntervalUnit);
 
     /**
+     * Sets the rate limit and keeps state by default.
+     * <p>
+     * Use {@link RateLimiterSetRateArgs#of(RateType, long, Duration)} to construct arguments.
+     *
+     * @param args arguments object
+     */
+    void setRate(RateLimiterSetRateArgs args);
+
+    /**
      * Sets the rate limit and clears the state.
      * Overrides both limit and state if they haven't been set before.
      *
@@ -82,6 +91,7 @@ public interface RRateLimiter extends RRateLimiterAsync, RExpirable {
      * @param rate rate
      * @param rateInterval rate time interval
      */
+    @Deprecated
     void setRate(RateType mode, long rate, Duration rateInterval);
 
     /**
@@ -93,6 +103,7 @@ public interface RRateLimiter extends RRateLimiterAsync, RExpirable {
      * @param rateInterval rate time interval
      * @param keepAliveTime this is the maximum time that the limiter will wait for a new acquisition before deletion
      */
+    @Deprecated
     void setRate(RateType mode, long rate, Duration rateInterval, Duration keepAliveTime);
 
     /**

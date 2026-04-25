@@ -412,8 +412,94 @@ public final class RedissonRateLimiter extends RedissonExpirable implements RRat
     }
 
     @Override
+    public void setRate(RateLimiterSetRateArgs args) {
+        get(setRateAsync(args));
+    }
+
+    @Override
     public RFuture<Void> setRateAsync(RateType mode, long rate, Duration rateInterval) {
         return setRateAsync(mode, rate, rateInterval, Duration.ZERO);
+    }
+
+    @Override
+    public RFuture<Void> setRateAsync(RateLimiterSetRateArgs args) {
+        if (!args.getKeepAliveTime().isZero() && args.getKeepAliveTime().toMillis() < args.getRateInterval().toMillis()) {
+            throw new IllegalArgumentException("The parameter keepAliveTime should be greater than or equal to rateInterval");
+        }
+
+        long keepState = 0;
+        if (args.isKeepState()) {
+            keepState = 1;
+        }
+
+        return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                "local valueName = KEYS[2];"
+              + "local permitsName = KEYS[4];"
+              + "if ARGV[3] == '1' then "
+                  + "valueName = KEYS[3];"
+                  + "permitsName = KEYS[5];"
+              + "end "
+
+              + "local oldType = redis.call('hget', KEYS[1], 'type');"
+              + "redis.call('hset', KEYS[1], 'rate', ARGV[1]);"
+              + "redis.call('hset', KEYS[1], 'interval', ARGV[2]);"
+              + "redis.call('hset', KEYS[1], 'type', ARGV[3]);"
+              + "redis.call('hset', KEYS[1], 'keepAliveTime', ARGV[4]);"
+              + "if tonumber(ARGV[4]) > 0 then "
+                  + "redis.call('pexpire', KEYS[1], ARGV[4]); "
+              + "end; "
+
+              + "if oldType ~= false and oldType ~= ARGV[3] then "
+                  + "redis.call('del', KEYS[2], KEYS[3], KEYS[4], KEYS[5]);"
+                  + "return 1;"
+              + "end; "
+
+              + "if ARGV[6] == '0' then "
+                  + "redis.call('del', valueName, permitsName);"
+                  + "return 1;"
+              + "end; "
+
+              + "local rate = tonumber(ARGV[1]);"
+              + "local interval = tonumber(ARGV[2]);"
+              + "local now = tonumber(ARGV[5]);"
+              + "local currentValue = redis.call('get', valueName);"
+              + "if currentValue == false then "
+                  + "currentValue = rate;"
+              + "else "
+                  + "currentValue = tonumber(currentValue);"
+              + "end; "
+
+              + "redis.call('zremrangebyscore', permitsName, 0, now - interval);"
+
+              + "local values = redis.call('zrange', permitsName, 0, -1);"
+              + "local used = 0;"
+              + "for i, v in ipairs(values) do "
+                  + "local random, permits = struct.unpack('Bc0I', v);"
+                  + "used = used + permits;"
+              + "end; "
+
+              + "local newValue = rate - used;"
+              + "if newValue < 0 then "
+                  + "newValue = 0;"
+              + "end; "
+              + "redis.call('set', valueName, newValue);"
+
+              + "local keepAliveTime = redis.call('hget', KEYS[1], 'keepAliveTime'); "
+              + "if (keepAliveTime ~= false and tonumber(keepAliveTime) > 0) then "
+                    + "redis.call('pexpire', KEYS[1], keepAliveTime); "
+                    + "redis.call('pexpire', valueName, keepAliveTime); "
+                    + "redis.call('pexpire', permitsName, keepAliveTime); "
+              + "else "
+                    + "local ttl = redis.call('pttl', KEYS[1]); "
+                    + "if ttl > 0 then "
+                        + "redis.call('pexpire', valueName, ttl); "
+                        + "redis.call('pexpire', permitsName, ttl); "
+                    + "end; "
+              + "end; "
+              + "return 1;",
+                Arrays.asList(getRawName(), getValueName(), getClientValueName(), getPermitsName(), getClientPermitsName()),
+                args.getRate(), args.getRateInterval().toMillis(), args.getMode().ordinal(), args.getKeepAliveTime().toMillis(),
+                System.currentTimeMillis(), keepState);
     }
 
     private static final RedisCommand HGETALL = new RedisCommand("HGETALL", new MapEntriesDecoder(new MultiDecoder<RateLimiterConfig>() {
