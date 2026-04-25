@@ -16,6 +16,7 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.codec.CompositeCodec;
 import org.redisson.codec.SnappyCodecV2;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -99,7 +100,127 @@ public class RedissonTransactionalLocalCachedMapTest extends RedisDockerTest {
         assertThat(m1.get("3")).isEqualTo("5");
         assertThat(m2.get("3")).isEqualTo("5");
     }
-    
+
+    @Test
+    public void testDelete(){
+        RLocalCachedMap<String, String> m1 = redisson.getLocalCachedMap(LocalCachedMapOptions.name("test"));
+        m1.put("1", "2");
+        m1.put("3", "4");
+
+        RLocalCachedMap<String, String> m2 = redisson.getLocalCachedMap(LocalCachedMapOptions.name("test"));
+        m2.get("1");
+        m2.get("3");
+
+        RTransaction transaction = redisson.createTransaction(TransactionOptions.defaults());
+        RMap<String, String> map = transaction.getLocalCachedMap(m1);
+        assertThat(map.get("1")).isEqualTo("2");
+        assertThat(map.remove("3")).isEqualTo("4");
+        assertThat(map.put("3", "5")).isNull();
+        assertThat(map.get("3")).isEqualTo("5");
+
+        assertThat(map.delete()).isTrue();
+
+        assertThat(m1.get("3")).isEqualTo("4");
+        assertThat(m2.get("3")).isEqualTo("4");
+
+        transaction.commit();
+
+        assertThat(m1.isExists()).isFalse();
+        assertThat(m2.isExists()).isFalse();
+    }
+
+    @Test
+    public void testUnlink(){
+        RLocalCachedMap<String, String> m1 = redisson.getLocalCachedMap(LocalCachedMapOptions.name("test"));
+        m1.put("1", "2");
+        m1.put("3", "4");
+
+        RLocalCachedMap<String, String> m2 = redisson.getLocalCachedMap(LocalCachedMapOptions.name("test"));
+        m2.get("1");
+        m2.get("3");
+
+        RTransaction transaction = redisson.createTransaction(TransactionOptions.defaults());
+        RMap<String, String> map = transaction.getLocalCachedMap(m1);
+        assertThat(map.get("1")).isEqualTo("2");
+        assertThat(map.remove("3")).isEqualTo("4");
+        assertThat(map.put("3", "5")).isNull();
+        assertThat(map.get("3")).isEqualTo("5");
+
+        assertThat(map.unlink()).isTrue();
+
+        assertThat(m1.get("3")).isEqualTo("4");
+        assertThat(m2.get("3")).isEqualTo("4");
+
+        transaction.commit();
+
+        assertThat(m1.isExists()).isFalse();
+        assertThat(m2.isExists()).isFalse();
+    }
+
+    @Test
+    public void testExpire() throws InterruptedException {
+        RLocalCachedMap<String, String> m1 = redisson.getLocalCachedMap(LocalCachedMapOptions.name("test"));
+        m1.put("1", "2");
+        m1.put("3", "4");
+
+        RLocalCachedMap<String, String> m2 = redisson.getLocalCachedMap(LocalCachedMapOptions.name("test"));
+        m2.get("1");
+        m2.get("3");
+
+        RTransaction transaction = redisson.createTransaction(TransactionOptions.defaults());
+        RMap<String, String> map = transaction.getLocalCachedMap(m1);
+        assertThat(map.get("1")).isEqualTo("2");
+        assertThat(map.remove("3")).isEqualTo("4");
+        assertThat(map.put("3", "5")).isNull();
+        assertThat(map.get("3")).isEqualTo("5");
+
+        assertThat(map.expire(Duration.ofSeconds(2))).isTrue();
+        assertThat(map.put("3", "8")).isEqualTo("5");
+
+        assertThat(m1.get("3")).isEqualTo("4");
+        assertThat(m2.get("3")).isEqualTo("4");
+
+        transaction.commit();
+        assertThat(m1.get("3")).isEqualTo("8");
+        assertThat(m2.get("3")).isEqualTo("8");
+
+        Thread.sleep(2200);
+        assertThat(m1.isExists()).isFalse();
+        assertThat(m2.isExists()).isFalse();
+    }
+
+    @Test
+    public void testClearExpire() throws InterruptedException {
+        RLocalCachedMap<String, String> m1 = redisson.getLocalCachedMap(LocalCachedMapOptions.name("test"));
+        m1.put("1", "2");
+        m1.put("3", "4");
+
+        RLocalCachedMap<String, String> m2 = redisson.getLocalCachedMap(LocalCachedMapOptions.name("test"));
+        m2.get("1");
+        m2.get("3");
+
+        RTransaction transaction = redisson.createTransaction(TransactionOptions.defaults());
+        RMap<String, String> map = transaction.getLocalCachedMap(m1);
+        assertThat(map.get("1")).isEqualTo("2");
+        assertThat(map.remove("3")).isEqualTo("4");
+        assertThat(map.put("3", "5")).isNull();
+        assertThat(map.get("3")).isEqualTo("5");
+
+        assertThat(map.expire(Duration.ofSeconds(2))).isTrue();
+        assertThat(map.put("3", "8")).isEqualTo("5");
+        assertThat(map.clearExpire()).isTrue();
+        assertThat(m1.get("3")).isEqualTo("4");
+        assertThat(m2.get("3")).isEqualTo("4");
+
+        transaction.commit();
+        assertThat(m1.get("3")).isEqualTo("8");
+        assertThat(m2.get("3")).isEqualTo("8");
+
+        Thread.sleep(2200);
+        assertThat(m1.isExists()).isTrue();
+        assertThat(m2.isExists()).isTrue();
+    }
+
     @Test
     public void testPutRemove() {
         RLocalCachedMap<String, String> m1 = redisson.getLocalCachedMap(LocalCachedMapOptions.name("test"));

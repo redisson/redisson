@@ -26,14 +26,20 @@ public class LocalCachedMapEnable implements Serializable {
 
     private byte[][] keyHashes;
     private String requestId;
-    
+    private boolean enableCache;
+
+    public boolean isEnableCache() {
+        return enableCache;
+    }
+
     public LocalCachedMapEnable() {
     }
 
-    public LocalCachedMapEnable(String requestId, byte[][] keyHashes) {
+    public LocalCachedMapEnable(String requestId, byte[][] keyHashes, boolean enableCache) {
         super();
         this.requestId = requestId;
         this.keyHashes = keyHashes;
+        this.enableCache = enableCache;
     }
     
     public String getRequestId() {

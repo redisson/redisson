@@ -50,7 +50,8 @@ public abstract class LocalCacheListener {
     public static final String DISABLED_KEYS_SUFFIX = "disabled-keys";
     public static final String DISABLED_ACK_SUFFIX = ":topic";
 
-    private ConcurrentMap<CacheKey, String> disabledKeys = new ConcurrentHashMap<>();
+    private ConcurrentMap<CacheKey, Set<String>> disabledKeys = new ConcurrentHashMap<>();
+    private Set<String> cacheDisabled = ConcurrentHashMap.newKeySet();
 
     private static final Logger log = LoggerFactory.getLogger(LocalCacheListener.class);
 
@@ -99,7 +100,7 @@ public abstract class LocalCacheListener {
     }
 
     public boolean isDisabled(Object key) {
-        return disabledKeys.containsKey(key);
+        return disabledKeys.containsKey(key) || !cacheDisabled.isEmpty();
     }
 
     public void add(Map<CacheKey, ? extends CacheValue> cache, Map<Object, CacheKey> cacheKeyMap) {
@@ -140,8 +141,14 @@ public abstract class LocalCacheListener {
                 return;
             }
 
-            String disabledKeysName = RedissonObject.suffixName(name, DISABLED_KEYS_SUFFIX);
+            String disabledCachesName = RedissonObject.suffixName(name, RedissonLocalCachedMap.DISABLED_CACHES_SUFFIX);
             CompositeCodec localCacheCodec = new CompositeCodec(LocalCachedMessageCodec.INSTANCE, StringCodec.INSTANCE, StringCodec.INSTANCE);
+            RSetCache<LocalCachedMapDisabledKey> setCache = new RedissonSetCache<>(localCacheCodec, null, commandExecutor, disabledCachesName, null);
+            for (LocalCachedMapDisabledKey key : setCache.readAll()) {
+                disableCache(key.getRequestId(), key.getTimeout());
+            }
+
+            String disabledKeysName = RedissonObject.suffixName(name, DISABLED_KEYS_SUFFIX);
             RListMultimapCache<LocalCachedMapDisabledKey, String> multimap =
                     new RedissonListMultimapCache<>(null, localCacheCodec, commandExecutor, disabledKeysName);
 
@@ -219,6 +226,9 @@ public abstract class LocalCacheListener {
             }
 
             disableKeys(requestId, keysToDisable, m.getTimeout());
+            if (m.isDisableCache()) {
+                disableCache(requestId, m.getTimeout());
+            }
 
             RedissonTopic topic = RedissonTopic.createRaw(LocalCachedMessageCodec.INSTANCE,
                     commandExecutor, RedissonObject.suffixName(name, requestId + DISABLED_ACK_SUFFIX));
@@ -229,7 +239,20 @@ public abstract class LocalCacheListener {
             LocalCachedMapEnable m = (LocalCachedMapEnable) msg;
             for (byte[] keyHash : m.getKeyHashes()) {
                 CacheKey key = new CacheKey(keyHash);
-                disabledKeys.remove(key, m.getRequestId());
+                disabledKeys.compute(key, (k, v) -> {
+                    if (v == null) {
+                        return null;
+                    }
+                    v.remove(m.getRequestId());
+                    if (v.isEmpty()) {
+                        return null;
+                    }
+                    return v;
+                });
+            }
+
+            if (m.isEnableCache()) {
+                cacheDisabled.remove(m.getRequestId());
             }
         }
 
@@ -363,9 +386,28 @@ public abstract class LocalCacheListener {
 
     protected abstract CacheValue updateCache(ByteBuf keyBuf, ByteBuf valueBuf) throws IOException;
 
+    private void disableCache(final String requestId, long timeout) {
+        cacheDisabled.add(requestId);
+
+        cache.clear();
+        if (options.isUseObjectAsCacheKey()) {
+            cacheKeyMap.clear();
+        }
+
+        commandExecutor.getServiceManager().newTimeout(t -> {
+            cacheDisabled.remove(requestId);
+        }, timeout, TimeUnit.MILLISECONDS);
+    }
+
     private void disableKeys(final String requestId, final Set<CacheKey> keys, long timeout) {
         for (CacheKey key : keys) {
-            disabledKeys.put(key, requestId);
+            disabledKeys.compute(key, (k, v) -> {
+                if (v == null) {
+                    v = new HashSet<>();
+                }
+                v.add(requestId);
+                return v;
+            });
             CacheValue cacheValue = cache.remove(key);
             if (options.isUseObjectAsCacheKey() && cacheValue != null) {
                 cacheKeyMap.remove(cacheValue.getValue());
@@ -374,7 +416,16 @@ public abstract class LocalCacheListener {
 
         commandExecutor.getServiceManager().newTimeout(t -> {
             for (CacheKey cacheKey : keys) {
-                disabledKeys.remove(cacheKey, requestId);
+                disabledKeys.compute(cacheKey, (k, v) -> {
+                    if (v == null) {
+                        return null;
+                    }
+                    v.remove(requestId);
+                    if (v.isEmpty()) {
+                        return null;
+                    }
+                    return v;
+                });
             }
         }, timeout, TimeUnit.MILLISECONDS);
     }

@@ -28,7 +28,16 @@ public class HashValue {
 
     private final AtomicInteger counter = new AtomicInteger();
     private final List<byte[]> keyIds = new ArrayList<byte[]>();
-    
+    private boolean allKeys;
+
+    public boolean isAllKeys() {
+        return allKeys;
+    }
+
+    public void setAllKeys(boolean allKeys) {
+        this.allKeys = allKeys;
+    }
+
     public HashValue() {
     }
     
