@@ -121,6 +121,7 @@ public interface RedisCommands {
     RedisCommand<Object> GEORADIUS_STORE = new RedisCommand<Object>("GEORADIUS", new Long2MultiDecoder());
     RedisCommand<Object> GEORADIUSBYMEMBER_STORE = new RedisCommand<Object>("GEORADIUSBYMEMBER", new Long2MultiDecoder());
     RedisCommand<Object> GEOSEARCHSTORE_STORE = new RedisCommand<Object>("GEOSEARCHSTORE", new Long2MultiDecoder());
+    RedisCommand<GcraResult> GCRA = new RedisCommand<>("GCRA", new GcraResultDecoder());
 
     RedisStrictCommand<Integer> KEYSLOT = new RedisStrictCommand<Integer>("CLUSTER", "KEYSLOT", new IntegerReplayConvertor());
     RedisStrictCommand<RType> TYPE = new RedisStrictCommand<RType>("TYPE", new TypeConvertor());
@@ -949,7 +950,8 @@ public interface RedisCommands {
             Arrays.asList(RPOPLPUSH.getName(), LPOP.getName(), RPOP.getName(), LPUSH.getName(), RPUSH.getName(),
                     LPUSHX.getName(), RPUSHX.getName(), GEOADD.getName(), XADD.getName(), APPEND.getName(),
                     DECR.getName(), "DECRBY", INCR.getName(), INCRBY.getName(), ZINCRBY.getName(),
-                    "HINCRBYFLOAT", "HINCRBY", "INCRBYFLOAT", SETNX.getName(), MSETNX.getName(), HSETNX.getName()));
+                    "HINCRBYFLOAT", "HINCRBY", "INCRBYFLOAT", SETNX.getName(), MSETNX.getName(), HSETNX.getName(),
+                    GCRA.getName()));
 
     RedisStrictCommand<Long> JSON_STRLEN = new RedisStrictCommand<>("JSON.STRLEN");
     RedisCommand<List<Long>> JSON_STRLEN_LIST = new RedisCommand("JSON.STRLEN", new ObjectListReplayDecoder<Long>(), new LongReplayConvertor());

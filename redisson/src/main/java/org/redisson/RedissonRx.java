@@ -144,6 +144,18 @@ public final class RedissonRx implements RedissonRxClient {
     }
 
     @Override
+    public RGcraRx getGcra(String name) {
+        return RxProxyBuilder.create(commandExecutor, new RedissonGcra(commandExecutor, name), RGcraRx.class);
+    }
+
+    @Override
+    public RGcraRx getGcra(CommonOptions options) {
+        CommonParams params = (CommonParams) options;
+        return RxProxyBuilder.create(commandExecutor,
+                new RedissonGcra(commandExecutor.copy(params), params.getName()), RGcraRx.class);
+    }
+
+    @Override
     public RBinaryStreamRx getBinaryStream(String name) {
         RedissonBinaryStream stream = new RedissonBinaryStream(commandExecutor, name);
         return RxProxyBuilder.create(commandExecutor, stream,

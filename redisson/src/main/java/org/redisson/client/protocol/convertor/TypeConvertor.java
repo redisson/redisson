@@ -45,6 +45,9 @@ public class TypeConvertor implements Convertor<RType> {
         if ("stream".equals(val)) {
             return RType.STREAM;
         }
+        if ("gcra".equals(val)) {
+            return RType.GCRA;
+        }
         if ("ReJSON-RL".equals(val)) {
             return RType.JSON;
         }

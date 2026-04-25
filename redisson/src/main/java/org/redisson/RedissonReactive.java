@@ -145,6 +145,18 @@ public final class RedissonReactive implements RedissonReactiveClient {
     }
 
     @Override
+    public RGcraReactive getGcra(String name) {
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonGcra(commandExecutor, name), RGcraReactive.class);
+    }
+
+    @Override
+    public RGcraReactive getGcra(CommonOptions options) {
+        CommonParams params = (CommonParams) options;
+        CommandReactiveExecutor ca = commandExecutor.copy(params);
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonGcra(ca, params.getName()), RGcraReactive.class);
+    }
+
+    @Override
     public RBinaryStreamReactive getBinaryStream(String name) {
         RedissonBinaryStream stream = new RedissonBinaryStream(commandExecutor, name);
         return ReactiveProxyBuilder.create(commandExecutor, stream,

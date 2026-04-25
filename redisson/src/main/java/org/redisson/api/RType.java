@@ -28,6 +28,7 @@ public enum RType {
     SET("set"),
     ZSET("zset"),
     STREAM("stream"),
+    GCRA("gcra"),
     JSON("ReJSON-RL");
 
     private final String value;
