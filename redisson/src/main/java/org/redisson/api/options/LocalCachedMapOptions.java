@@ -50,7 +50,12 @@ public interface LocalCachedMapOptions<K, V> extends ExMapOptions<LocalCachedMap
          * if LocalCachedMap instance has been disconnected less than 10 minutes 
          * or whole local cache will be cleaned otherwise.
          */
-        LOAD
+        LOAD,
+
+        /**
+         * Reload local cache if map instance connect/disconnected.
+         */
+        RELOAD
         
     }
     
@@ -125,6 +130,20 @@ public interface LocalCachedMapOptions<K, V> extends ExMapOptions<LocalCachedMap
 
     }
 
+    enum ReadMode {
+
+        /**
+         * Read data only in local cache.
+         */
+        LOCALCACHE,
+
+        /**
+         * Read data in Redis if not found in local cache.
+         */
+        LOCALCACHE_REDIS
+
+    }
+
     enum ExpirationEventPolicy {
 
         /**
@@ -172,6 +191,7 @@ public interface LocalCachedMapOptions<K, V> extends ExMapOptions<LocalCachedMap
      * @param reconnectionStrategy
      *          <p><code>CLEAR</code> - clear local cache if map instance has been disconnected for a while.
      *          <p><code>LOAD</code> - store invalidated entry hash in invalidation log for 10 minutes. Cache keys for stored invalidated entry hashes will be removed if LocalCachedMap instance has been disconnected less than 10 minutes or whole cache will be cleaned otherwise
+     *          <p><code>RELOAD</code> - Reload local cache if map instance connect/disconnected.
      *          <p><code>NONE</code> - Default. No reconnection handling
      * @return LocalCachedMapOptions instance
      */
@@ -227,6 +247,16 @@ public interface LocalCachedMapOptions<K, V> extends ExMapOptions<LocalCachedMap
      * @return LocalCachedMapOptions instance
      */
     LocalCachedMapOptions<K, V> storeMode(StoreMode storeMode);
+
+    /**
+     * Defines read mode of cache data.
+     *
+     * @param readMode
+     *         <p><code>LOCALCACHE</code> - read data in local cache only.
+     *         <p><code>LOCALCACHE_REDIS</code> - read data in Redis if not found in local cache.
+     * @return LocalCachedMapOptions instance
+     */
+    LocalCachedMapOptions<K, V> readMode(LocalCachedMapOptions.ReadMode readMode);
 
     /**
      * Defines Cache provider used as local cache store.

@@ -302,6 +302,9 @@ public abstract class LocalCacheListener {
 
             loadAfterReconnection();
         }
+        if (options.getReconnectionStrategy() == ReconnectionStrategy.RELOAD) {
+            reloadCache();
+        }
     }
 
     public void notifyUpdate(CacheValue value) {
@@ -362,6 +365,7 @@ public abstract class LocalCacheListener {
     }
 
     protected abstract CacheValue updateCache(ByteBuf keyBuf, ByteBuf valueBuf) throws IOException;
+    protected abstract void reloadCache();
 
     private void disableKeys(final String requestId, final Set<CacheKey> keys, long timeout) {
         for (CacheKey key : keys) {
