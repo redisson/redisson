@@ -12,23 +12,25 @@ import org.redisson.codec.SerializationCodec;
 import org.redisson.config.Config;
 import org.redisson.remote.RemoteServiceAckTimeoutException;
 import org.redisson.remote.RemoteServiceTimeoutException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.Disposable;
 import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.io.NotSerializableException;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonRemoteServiceTest extends RedisDockerTest {
+    private static final Logger log = LoggerFactory.getLogger(RedissonRemoteServiceTest.class);
 
     public static class Pojo {
 
@@ -955,7 +957,7 @@ public class RedissonRemoteServiceTest extends RedisDockerTest {
     public interface Service {
         boolean process();
     }
-    
+
     public static class ServiceImpl implements Service {
         @Override
         public boolean process() {
@@ -1002,5 +1004,43 @@ public class RedissonRemoteServiceTest extends RedisDockerTest {
             client.shutdown();
             server.shutdown();
         }
+    }
+
+    @Test
+    public void testPerformance() {
+        testInCluster(redisClient -> {
+            Config config = redissonCluster.getConfig();
+            RedissonClient server = Redisson.create(config);
+            RedissonClient client = Redisson.create(config);
+
+            server.getRemoteService("TestPerformance").register(RemoteInterface.class, new RemoteImpl());
+
+            RemoteInterface serviceRemoteInterface = client.getRemoteService("TestPerformance").get(RemoteInterface.class);
+            ExecutorService executorService = Executors.newFixedThreadPool(64);
+
+            final int TOTAL = 50_000;
+            AtomicLong totalTime = new AtomicLong();
+            AtomicInteger successCount = new AtomicInteger();
+            final long start = System.currentTimeMillis();
+            for (int i = 0; i < TOTAL; i++) {
+                final long value = i;
+                executorService.submit(() -> {
+                    serviceRemoteInterface.resultMethod(value);
+                    totalTime.addAndGet(System.currentTimeMillis() - start);
+                    int finished = successCount.incrementAndGet();
+                    if (finished == TOTAL) {
+                        totalTime.set(System.currentTimeMillis() - start);
+                    }
+                });
+            }
+            executorService.shutdown();
+            try {
+                assertThat(executorService.awaitTermination(100, TimeUnit.SECONDS)).isTrue();
+                assertThat(successCount.get()).isEqualTo(TOTAL);
+                log.info("TestPerformance Result, duration={}, rps={}", totalTime, 1.0 * TOTAL / totalTime.get() * 1000);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 }
