@@ -15,7 +15,6 @@
  */
 package org.redisson.client.protocol.decoder;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,7 +23,6 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 
-import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
 
 /**
@@ -34,19 +32,16 @@ import io.netty.util.CharsetUtil;
  */
 public class StringMapDataDecoder implements MultiDecoder<Map<String, String>> {
 
-    private final Decoder decoder = new Decoder() {
-        @Override
-        public Object decode(ByteBuf buf, State state) throws IOException {
-            String value = buf.toString(CharsetUtil.UTF_8);
-            Map<String, String> result = new HashMap<String, String>();
-            for (String entry : value.split("\r\n|\n")) {
-                String[] parts = entry.split(":");
-                if (parts.length == 2) {
-                    result.put(parts[0], parts[1]);
-                }
+    private final Decoder decoder = (buf, state) -> {
+        String value = buf.toString(CharsetUtil.UTF_8);
+        Map<String, String> result = new HashMap<String, String>();
+        for (String entry : value.split("\r\n|\n")) {
+            String[] parts = entry.split(":");
+            if (parts.length == 2) {
+                result.put(parts[0], parts[1]);
             }
-            return result;
         }
+        return result;
     };
 
     @Override

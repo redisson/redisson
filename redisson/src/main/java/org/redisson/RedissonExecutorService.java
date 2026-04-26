@@ -318,12 +318,9 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         remoteService.setListeners(options.getListeners());
         remoteService.setTaskTimeout(options.getTaskTimeout());
         remoteService.register(RemoteExecutorService.class, service, options.getWorkers(), es);
-        workersGroupListenerId = workersTopic.addListener(String.class, new MessageListener<String>() {
-            @Override
-            public void onMessage(CharSequence channel, String id) {
-                redisson.getAtomicLong(workersCounterName + ":" + id).getAndAdd(options.getWorkers());
-                redisson.getSemaphore(workersSemaphoreName + ":" + id).release();
-            }
+        workersGroupListenerId = workersTopic.addListener(String.class, (channel, id) -> {
+            redisson.getAtomicLong(workersCounterName + ":" + id).getAndAdd(options.getWorkers());
+            redisson.getSemaphore(workersSemaphoreName + ":" + id).release();
         });
     }
     
@@ -540,12 +537,9 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         }
         
         CountDownLatch latch = new CountDownLatch(1);
-        MessageListener<Long> listener = new MessageListener<Long>() {
-            @Override
-            public void onMessage(CharSequence channel, Long msg) {
-                if (msg == TERMINATED_STATE) {
-                    latch.countDown();
-                }
+        MessageListener<Long> listener = (channel, msg) -> {
+            if (msg == TERMINATED_STATE) {
+                latch.countDown();
             }
         };
         int listenerId = terminationTopic.addListener(Long.class, listener);

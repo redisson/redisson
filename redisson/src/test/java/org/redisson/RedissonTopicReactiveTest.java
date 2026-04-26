@@ -55,12 +55,7 @@ public class RedissonTopicReactiveTest extends BaseReactiveTest {
     @Test
     public void testRemoveListenerById() throws InterruptedException {
         RTopicReactive topic1 = redisson.getTopic("topic1");
-        MessageListener listener = new MessageListener() {
-            @Override
-            public void onMessage(CharSequence channel, Object msg) {
-                Assertions.fail();
-            }
-        };
+        MessageListener listener = (channel, msg) -> Assertions.fail();
         
         Mono<Integer> res = topic1.addListener(Message.class, listener);
         Integer listenerId = res.block();
@@ -73,12 +68,7 @@ public class RedissonTopicReactiveTest extends BaseReactiveTest {
     @Test
     public void testRemoveListenerByInstance() throws InterruptedException {
         RTopicReactive topic1 = redisson.getTopic("topic1");
-        MessageListener listener = new MessageListener() {
-            @Override
-            public void onMessage(CharSequence channel, Object msg) {
-                Assertions.fail();
-            }
-        };
+        MessageListener listener = (channel, msg) -> Assertions.fail();
         
         topic1.addListener(Message.class, listener).block();
 

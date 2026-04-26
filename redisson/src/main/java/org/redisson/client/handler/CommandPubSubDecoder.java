@@ -183,16 +183,13 @@ public class CommandPubSubDecoder extends CommandDecoder {
                     enqueueMessage(result, pubSubConnection, entry);
                 }
             } else {
-                config.getExecutor().execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (result instanceof PubSubStatusMessage) {
-                            pubSubConnection.onMessage((PubSubStatusMessage) result);
-                        } else if (result instanceof PubSubMessage) {
-                            pubSubConnection.onMessage((PubSubMessage) result);
-                        } else if (result instanceof PubSubPatternMessage) {
-                            pubSubConnection.onMessage((PubSubPatternMessage) result);
-                        }
+                config.getExecutor().execute(() -> {
+                    if (result instanceof PubSubStatusMessage) {
+                        pubSubConnection.onMessage((PubSubStatusMessage) result);
+                    } else if (result instanceof PubSubMessage) {
+                        pubSubConnection.onMessage((PubSubMessage) result);
+                    } else if (result instanceof PubSubPatternMessage) {
+                        pubSubConnection.onMessage((PubSubPatternMessage) result);
                     }
                 });
             }

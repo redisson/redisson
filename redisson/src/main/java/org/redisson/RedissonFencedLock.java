@@ -16,7 +16,6 @@
 package org.redisson;
 
 import io.netty.util.Timeout;
-import io.netty.util.TimerTask;
 import org.redisson.api.RFencedLock;
 import org.redisson.api.RFuture;
 import org.redisson.client.codec.LongCodec;
@@ -199,13 +198,10 @@ public class RedissonFencedLock extends RedissonLock implements RFencedLock {
                 tryLockAsync(time, waitTime, leaseTime, unit, r, result, currentThreadId);
             });
             if (!subscribeFuture.isDone()) {
-                Timeout scheduledFuture = commandExecutor.getServiceManager().newTimeout(new TimerTask() {
-                    @Override
-                    public void run(Timeout timeout) throws Exception {
-                        if (!subscribeFuture.isDone()) {
-                            subscribeFuture.cancel(false);
-                            result.complete(null);
-                        }
+                Timeout scheduledFuture = commandExecutor.getServiceManager().newTimeout(timeout -> {
+                    if (!subscribeFuture.isDone()) {
+                        subscribeFuture.cancel(false);
+                        result.complete(null);
                     }
                 }, time.get(), TimeUnit.MILLISECONDS);
                 futureRef.set(scheduledFuture);

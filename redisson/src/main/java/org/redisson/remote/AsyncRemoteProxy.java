@@ -87,113 +87,109 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
         
         // local copy of the options, to prevent mutation
         RemoteInvocationOptions optionsCopy = new RemoteInvocationOptions(options);
-        InvocationHandler handler = new InvocationHandler() {
-            @Override
-            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-                if (method.getName().equals("toString")) {
-                    return proxy.getClass().getName() + "-" + remoteInterface.getName();
-                } else if (method.getName().equals("equals")) {
-                    return proxy == args[0];
-                } else if (method.getName().equals("hashCode")) {
-                    return (proxy.getClass().getName() + "-" + remoteInterface.getName()).hashCode();
-                }
-
-                if (!optionsCopy.isResultExpected() && !(method.getReturnType().equals(Void.class)
-                        || method.getReturnType().equals(Void.TYPE) || method.getReturnType().equals(RFuture.class))) {
-                    throw new IllegalArgumentException("The noResult option only supports void return value");
-                }
-
-                String requestId = remoteService.generateRequestId(args);
-                String requestQueueName = getRequestQueueName(syncInterface);
-                Long ackTimeout = optionsCopy.getAckTimeoutInMillis();
-                RemoteServiceRequest request = new RemoteServiceRequest(executorId, requestId, method.getName(),
-                                                    remoteService.getMethodSignature(method), args, optionsCopy, System.currentTimeMillis());
-
-                CompletableFuture<RemoteServiceAck> ackFuture;
-                if (optionsCopy.isAckExpected()) {
-                    ackFuture = pollResponse(optionsCopy.getAckTimeoutInMillis(), requestId, false);
-                } else {
-                    ackFuture = null;
-                }
-                
-                CompletableFuture<RRemoteServiceResponse> responseFuture;
-                if (optionsCopy.isResultExpected()) {
-                    long timeout = remoteService.getTimeout(optionsCopy.getExecutionTimeoutInMillis(), request);
-                    responseFuture = pollResponse(timeout, requestId, false);
-                } else {
-                    responseFuture = null;
-                }
-
-                RemotePromise<Object> result = createResultPromise(optionsCopy, requestId, requestQueueName,
-                        ackTimeout);
-                CompletableFuture<Boolean> addFuture = remoteService.addAsync(requestQueueName, request, result);
-                addFuture.whenComplete((res, e) -> {
-                        if (e != null) {
-                            if (responseFuture != null) {
-                                responseFuture.cancel(false);
-                            }
-                            if (ackFuture != null) {
-                                ackFuture.cancel(false);
-                            }
-                            result.completeExceptionally(e);
-                            return;
-                        }
-                        
-                        if (!res) {
-                            result.completeExceptionally(new RedisException("Task hasn't been added"));
-                            if (responseFuture != null) {
-                                responseFuture.cancel(false);
-                            }
-                            if (ackFuture != null) {
-                                ackFuture.cancel(false);
-                            }
-                            return;
-                        }
-
-                                if (optionsCopy.isAckExpected()) {
-                                    ackFuture.whenComplete((ack, ex) -> {
-                                        if (ex != null) {
-                                            if (responseFuture != null) {
-                                                responseFuture.cancel(false);
-                                            }
-
-                                            result.completeExceptionally(ex);
-                                            return;
-                                        }
-
-                                        if (ack == null) {
-                                            String ackName = remoteService.getAckName(requestId);
-                                            CompletionStage<RemoteServiceAck> ackFutureAttempt =
-                                                                        tryPollAckAgainAsync(optionsCopy, ackName, requestId);
-                                            ackFutureAttempt.whenComplete((re, ex2) -> {
-                                                if (ex2 != null) {
-                                                    result.completeExceptionally(ex2);
-                                                    return;
-                                                }
-
-                                                if (re == null) {
-                                                    Exception exc = new RemoteServiceAckTimeoutException(
-                                                            "No ACK response after "
-                                                                    + optionsCopy.getAckTimeoutInMillis()
-                                                                    + "ms for request: " + requestId);
-                                                    result.completeExceptionally(exc);
-                                                    return;
-                                                }
-
-                                                awaitResultAsync(optionsCopy, result, ackName, responseFuture);
-                                            });
-                                        } else {
-                                            awaitResultAsync(optionsCopy, result, responseFuture);
-                                        }
-                                    });
-                                } else {
-                                    awaitResultAsync(optionsCopy, result, responseFuture);
-                                }
-                        });
-
-                return convertResult(result, method.getReturnType());
+        InvocationHandler handler = (proxy, method, args) -> {
+            if (method.getName().equals("toString")) {
+                return proxy.getClass().getName() + "-" + remoteInterface.getName();
+            } else if (method.getName().equals("equals")) {
+                return proxy == args[0];
+            } else if (method.getName().equals("hashCode")) {
+                return (proxy.getClass().getName() + "-" + remoteInterface.getName()).hashCode();
             }
 
+            if (!optionsCopy.isResultExpected() && !(method.getReturnType().equals(Void.class)
+                    || method.getReturnType().equals(Void.TYPE) || method.getReturnType().equals(RFuture.class))) {
+                throw new IllegalArgumentException("The noResult option only supports void return value");
+            }
+
+            String requestId = remoteService.generateRequestId(args);
+            String requestQueueName = getRequestQueueName(syncInterface);
+            Long ackTimeout = optionsCopy.getAckTimeoutInMillis();
+            RemoteServiceRequest request = new RemoteServiceRequest(executorId, requestId, method.getName(),
+                                                remoteService.getMethodSignature(method), args, optionsCopy, System.currentTimeMillis());
+
+            CompletableFuture<RemoteServiceAck> ackFuture;
+            if (optionsCopy.isAckExpected()) {
+                ackFuture = pollResponse(optionsCopy.getAckTimeoutInMillis(), requestId, false);
+            } else {
+                ackFuture = null;
+            }
+
+            CompletableFuture<RRemoteServiceResponse> responseFuture;
+            if (optionsCopy.isResultExpected()) {
+                long timeout = remoteService.getTimeout(optionsCopy.getExecutionTimeoutInMillis(), request);
+                responseFuture = pollResponse(timeout, requestId, false);
+            } else {
+                responseFuture = null;
+            }
+
+            RemotePromise<Object> result = createResultPromise(optionsCopy, requestId, requestQueueName,
+                    ackTimeout);
+            CompletableFuture<Boolean> addFuture = remoteService.addAsync(requestQueueName, request, result);
+            addFuture.whenComplete((res, e) -> {
+                    if (e != null) {
+                        if (responseFuture != null) {
+                            responseFuture.cancel(false);
+                        }
+                        if (ackFuture != null) {
+                            ackFuture.cancel(false);
+                        }
+                        result.completeExceptionally(e);
+                        return;
+                    }
+
+                    if (!res) {
+                        result.completeExceptionally(new RedisException("Task hasn't been added"));
+                        if (responseFuture != null) {
+                            responseFuture.cancel(false);
+                        }
+                        if (ackFuture != null) {
+                            ackFuture.cancel(false);
+                        }
+                        return;
+                    }
+
+                            if (optionsCopy.isAckExpected()) {
+                                ackFuture.whenComplete((ack, ex) -> {
+                                    if (ex != null) {
+                                        if (responseFuture != null) {
+                                            responseFuture.cancel(false);
+                                        }
+
+                                        result.completeExceptionally(ex);
+                                        return;
+                                    }
+
+                                    if (ack == null) {
+                                        String ackName = remoteService.getAckName(requestId);
+                                        CompletionStage<RemoteServiceAck> ackFutureAttempt =
+                                                                    tryPollAckAgainAsync(optionsCopy, ackName, requestId);
+                                        ackFutureAttempt.whenComplete((re, ex2) -> {
+                                            if (ex2 != null) {
+                                                result.completeExceptionally(ex2);
+                                                return;
+                                            }
+
+                                            if (re == null) {
+                                                Exception exc = new RemoteServiceAckTimeoutException(
+                                                        "No ACK response after "
+                                                                + optionsCopy.getAckTimeoutInMillis()
+                                                                + "ms for request: " + requestId);
+                                                result.completeExceptionally(exc);
+                                                return;
+                                            }
+
+                                            awaitResultAsync(optionsCopy, result, ackName, responseFuture);
+                                        });
+                                    } else {
+                                        awaitResultAsync(optionsCopy, result, responseFuture);
+                                    }
+                                });
+                            } else {
+                                awaitResultAsync(optionsCopy, result, responseFuture);
+                            }
+                    });
+
+            return convertResult(result, method.getReturnType());
         };
         return (T) Proxy.newProxyInstance(remoteInterface.getClassLoader(), new Class[] { remoteInterface }, handler);
     }

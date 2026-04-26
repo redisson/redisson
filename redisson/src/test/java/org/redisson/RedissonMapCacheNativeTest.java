@@ -201,12 +201,7 @@ public class RedissonMapCacheNativeTest extends BaseMapTest {
         testWithParams(redisson -> {
             RMapCacheNative<Long, String> rMapCache = redisson.getMapCacheNative("test");
             AtomicBoolean removed = new AtomicBoolean();
-            rMapCache.addListener(new MapRemoveListener() {
-                @Override
-                public void onRemove(String name) {
-                    removed.set(true);
-                }
-            });
+            rMapCache.addListener((MapRemoveListener) name -> removed.set(true));
 
             rMapCache.put(1L, "1");
             rMapCache.remove(1L);
@@ -758,12 +753,7 @@ public class RedissonMapCacheNativeTest extends BaseMapTest {
         testWithParams(redisson -> {
             AtomicInteger executedCount = new AtomicInteger();
             RMapCacheNative<String, String> map = redisson.getMapCacheNative("simple");
-            map.addListener(new MapExpiredListener() {
-                @Override
-                public void onExpired(String name) {
-                    executedCount.incrementAndGet();
-                }
-            });
+            map.addListener((MapExpiredListener) name -> executedCount.incrementAndGet());
             map.put("1", "2", Duration.ofSeconds(1));
             map.put("3", "4", Instant.now().plusSeconds(2));
 

@@ -44,23 +44,20 @@ public class ProxyBuilder {
     private static final ConcurrentMap<Tuple<Method, Class<?>>, Method> METHODS_MAPPING = new ConcurrentHashMap<>();
 
     public static <T> T create(Callback commandExecutor, Object instance, Object implementation, Class<T> clazz, ServiceManager serviceManager) {
-        InvocationHandler handler = new InvocationHandler() {
-            @Override
-            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-                Method instanceMethod = getMethod(method, instance, implementation);
+        InvocationHandler handler = (proxy, method, args) -> {
+            Method instanceMethod = getMethod(method, instance, implementation);
 
-                if (instanceMethod.getName().endsWith("Async")) {
-                    Callable<RFuture<Object>> callable = () -> (RFuture<Object>) instanceMethod.invoke(instance, args);
-                    return commandExecutor.execute(callable, method);
-                }
-
-                if (implementation != null
-                        && instanceMethod.getDeclaringClass().isAssignableFrom(implementation.getClass())) {
-                    return instanceMethod.invoke(implementation, args);
-                }
-
-                return instanceMethod.invoke(instance, args);
+            if (instanceMethod.getName().endsWith("Async")) {
+                Callable<RFuture<Object>> callable = () -> (RFuture<Object>) instanceMethod.invoke(instance, args);
+                return commandExecutor.execute(callable, method);
             }
+
+            if (implementation != null
+                    && instanceMethod.getDeclaringClass().isAssignableFrom(implementation.getClass())) {
+                return instanceMethod.invoke(implementation, args);
+            }
+
+            return instanceMethod.invoke(instance, args);
         };
         return (T) Proxy.newProxyInstance(clazz.getClassLoader(), new Class[] { clazz }, handler);
     }

@@ -53,31 +53,22 @@ public class RedissonBucketTest extends RedisDockerTest {
         RedissonClient rs = Redisson.create(c);
         RBucket<String> b = rs.getBucket("test");
         AtomicInteger ref = new AtomicInteger();
-        int id = b.addListener(new TrackingListener() {
-            @Override
-            public void onChange(String name) {
-                assertThat(name).isEqualTo(b.getName());
-                ref.incrementAndGet();
-            }
+        int id = b.addListener((TrackingListener) name -> {
+            assertThat(name).isEqualTo(b.getName());
+            ref.incrementAndGet();
         });
-        int id3 = b.addListener(new TrackingListener() {
-            @Override
-            public void onChange(String name) {
-                assertThat(name).isEqualTo(b.getName());
-                ref.incrementAndGet();
-            }
+        int id3 = b.addListener((TrackingListener) name -> {
+            assertThat(name).isEqualTo(b.getName());
+            ref.incrementAndGet();
         });
         String r = b.get();
         assertThat(ref.get()).isZero();
 
         RBucket<String> b2 = rs.getBucket("test1");
         AtomicReference<String> ref2 = new AtomicReference<>();
-        int id2 = b2.addListener(new TrackingListener() {
-            @Override
-            public void onChange(String name) {
-                System.out.println("name2 " + name);
-                ref2.set(name);
-            }
+        int id2 = b2.addListener((TrackingListener) name -> {
+            System.out.println("name2 " + name);
+            ref2.set(name);
         });
         b2.get();
         assertThat(ref2.get()).isNull();
@@ -167,12 +158,7 @@ public class RedissonBucketTest extends RedisDockerTest {
             RedissonClient redissonClient = Redisson.create(c);
             RBucket<String> b = redissonClient.getBucket("test");
             AtomicReference<String> ref = new AtomicReference<>();
-            int id = b.addListener(new TrackingListener() {
-                @Override
-                public void onChange(String name) {
-                    ref.set(name);
-                }
-            });
+            int id = b.addListener((TrackingListener) name -> ref.set(name));
             String r = b.get();
             assertThat(ref.get()).isNull();
 
@@ -209,12 +195,7 @@ public class RedissonBucketTest extends RedisDockerTest {
                 RedissonClient redissonClient = Redisson.create(c);
                 RBucket<String> b = redissonClient.getBucket("test");
                 AtomicReference<String> ref = new AtomicReference<>();
-                int id = b.addListener(new TrackingListener() {
-                    @Override
-                    public void onChange(String name) {
-                        ref.set(name);
-                    }
-                });
+                int id = b.addListener((TrackingListener) name -> ref.set(name));
                 String r = b.get();
                 assertThat(ref.get()).isNull();
 
@@ -372,12 +353,7 @@ public class RedissonBucketTest extends RedisDockerTest {
             RBucket<Integer> al = redisson.getBucket("test");
             al.set(1);
             CountDownLatch latch = new CountDownLatch(1);
-            al.addListener(new DeletedObjectListener() {
-                @Override
-                public void onDeleted(String name) {
-                    latch.countDown();
-                }
-            });
+            al.addListener((DeletedObjectListener) name -> latch.countDown());
             al.delete();
 
             try {
@@ -392,10 +368,7 @@ public class RedissonBucketTest extends RedisDockerTest {
     public void testRemoveListenerAsync() {
         testWithParams(redisson -> {
             RBucket<Integer> al = redisson.getBucket("test");
-            int id = al.addListenerAsync(new SetObjectListener() {
-                @Override
-                public void onSet(String name) {
-                }
+            int id = al.addListenerAsync((SetObjectListener) name -> {
             }).toCompletableFuture().join();
             al.removeListenerAsync(id).toCompletableFuture().join();
         }, NOTIFY_KEYSPACE_EVENTS, "E$");
@@ -406,12 +379,7 @@ public class RedissonBucketTest extends RedisDockerTest {
         testWithParams(redisson -> {
             RBucket<Integer> al = redisson.getBucket("test");
             CountDownLatch latch = new CountDownLatch(1);
-            al.addListener(new SetObjectListener() {
-                @Override
-                public void onSet(String name) {
-                    latch.countDown();
-                }
-            });
+            al.addListener((SetObjectListener) name -> latch.countDown());
             al.set(1);
 
             try {
@@ -428,12 +396,7 @@ public class RedissonBucketTest extends RedisDockerTest {
             RBucket<Integer> al = redisson.getBucket("test");
             al.set(1, Duration.ofSeconds(3));
             CountDownLatch latch = new CountDownLatch(1);
-            al.addListener(new ExpiredObjectListener() {
-                @Override
-                public void onExpired(String name) {
-                    latch.countDown();
-                }
-            });
+            al.addListener((ExpiredObjectListener) name -> latch.countDown());
 
             try {
                 assertThat(latch.await(4, TimeUnit.SECONDS)).isTrue();

@@ -55,18 +55,8 @@ public class RedissonLockRxTest extends BaseRxTest {
             RLockRx lock1 = redisson.rxJava().getLock("lock1");
 
             CountDownLatch latch = new CountDownLatch(4);
-            Single<Integer> listener1 = lock1.addListener(new ExpiredObjectListener() {
-                @Override
-                public void onExpired(String name) {
-                    latch.countDown();
-                }
-            });
-            Single<Integer> listener2 = lock1.addListener(new DeletedObjectListener() {
-                @Override
-                public void onDeleted(String name) {
-                    latch.countDown();
-                }
-            });
+            Single<Integer> listener1 = lock1.addListener((ExpiredObjectListener) name -> latch.countDown());
+            Single<Integer> listener2 = lock1.addListener((DeletedObjectListener) name -> latch.countDown());
             int listenerId1 = sync(listener1);
             int listenerId2 = sync(listener2);
 

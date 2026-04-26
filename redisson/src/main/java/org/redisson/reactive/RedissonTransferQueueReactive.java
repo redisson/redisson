@@ -21,7 +21,6 @@ import org.redisson.api.RFuture;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 
-import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
 /**
@@ -43,50 +42,42 @@ public class RedissonTransferQueueReactive<V> {
     }
 
     public Publisher<V> iterator() {
-        return Flux.create(new Consumer<FluxSink<V>>() {
+        return Flux.create(emitter -> emitter.onRequest(new LongConsumer() {
+
+            int currentIndex = 0;
 
             @Override
-            public void accept(FluxSink<V> emitter) {
-                emitter.onRequest(new LongConsumer() {
-
-                    int currentIndex = 0;
-
-                    @Override
-                    public void accept(long value) {
-                        onRequest(true, emitter, value);
-                    }
-
-                    protected void onRequest(boolean forward, FluxSink<V> emitter, long n) {
-                        queue.getValueAsync(currentIndex).whenComplete((value, e) -> {
-                                if (e != null) {
-                                    emitter.error(e);
-                                    return;
-                                }
-
-                                if (value != null) {
-                                    emitter.next(value);
-                                    if (forward) {
-                                        currentIndex++;
-                                    } else {
-                                        currentIndex--;
-                                    }
-                                }
-
-                                if (value == null) {
-                                    emitter.complete();
-                                    return;
-                                }
-                                if (n-1 == 0) {
-                                    return;
-                                }
-                                onRequest(forward, emitter, n-1);
-                        });
-                    }
-                });
-
+            public void accept(long value) {
+                onRequest(true, emitter, value);
             }
 
-        });
+            protected void onRequest(boolean forward, FluxSink<V> emitter, long n) {
+                queue.getValueAsync(currentIndex).whenComplete((value, e) -> {
+                        if (e != null) {
+                            emitter.error(e);
+                            return;
+                        }
+
+                        if (value != null) {
+                            emitter.next(value);
+                            if (forward) {
+                                currentIndex++;
+                            } else {
+                                currentIndex--;
+                            }
+                        }
+
+                        if (value == null) {
+                            emitter.complete();
+                            return;
+                        }
+                        if (n-1 == 0) {
+                            return;
+                        }
+                        onRequest(forward, emitter, n-1);
+                });
+            }
+        }));
     }
 
     public Publisher<Boolean> addAll(Publisher<? extends V> c) {

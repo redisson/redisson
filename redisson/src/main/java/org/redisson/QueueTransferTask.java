@@ -16,11 +16,9 @@
 package org.redisson;
 
 import io.netty.util.Timeout;
-import io.netty.util.TimerTask;
 import org.redisson.api.RFuture;
 import org.redisson.api.RTopic;
 import org.redisson.api.listener.BaseStatusListener;
-import org.redisson.api.listener.MessageListener;
 import org.redisson.connection.ServiceManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,12 +86,7 @@ public abstract class QueueTransferTask {
             }
         });
         
-        messageListenerId = schedulerTopic.addListener(Long.class, new MessageListener<Long>() {
-            @Override
-            public void onMessage(CharSequence channel, Long startTime) {
-                scheduleTask(startTime);
-            }
-        });
+        messageListenerId = schedulerTopic.addListener(Long.class, (channel, startTime) -> scheduleTask(startTime));
     }
     
     public void stop() {
@@ -122,16 +115,13 @@ public abstract class QueueTransferTask {
         
         long delay = startTime - System.currentTimeMillis();
         if (delay > 10) {
-            Timeout timeout = serviceManager.newTimeout(new TimerTask() {
-                @Override
-                public void run(Timeout timeout) throws Exception {
-                    pushTask();
-                    
-                    TimeoutTask currentTimeout = lastTimeout.get();
-                    if (currentTimeout != null
-                            && currentTimeout.getTask() == timeout) {
-                        lastTimeout.compareAndSet(currentTimeout, null);
-                    }
+            Timeout timeout = serviceManager.newTimeout(timeout1 -> {
+                pushTask();
+
+                TimeoutTask currentTimeout = lastTimeout.get();
+                if (currentTimeout != null
+                        && currentTimeout.getTask() == timeout1) {
+                    lastTimeout.compareAndSet(currentTimeout, null);
                 }
             }, delay, TimeUnit.MILLISECONDS);
             

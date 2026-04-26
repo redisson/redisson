@@ -58,25 +58,22 @@ public class RedissonBatchTest extends RedisDockerTest {
         final AtomicInteger counter = new AtomicInteger();
         for(int j=0;j<2;j++){
             int finalJ = j;
-            executor.submit(new Runnable() {
-                @Override
-                public void run() {
-                    try{
-                        RBatch batch = redisson.createBatch(batchOptions);
+            executor.submit(() -> {
+                try{
+                    RBatch batch = redisson.createBatch(batchOptions);
 
-                        batch.getScoredSortedSet(finalJ+"").removeAsync("aaa");
-                        batch.getBucket(finalJ +"name").getAsync();
+                    batch.getScoredSortedSet(finalJ+"").removeAsync("aaa");
+                    batch.getBucket(finalJ +"name").getAsync();
 
-                        BatchResult<?> s = batch.execute();
-                        assertThat(s.getResponses().size()).isGreaterThan(2);
+                    BatchResult<?> s = batch.execute();
+                    assertThat(s.getResponses().size()).isGreaterThan(2);
 
-                    }catch (Exception e){
-                        exceptionRef.set(e);
-                    }finally {
-                        counter.incrementAndGet();
-                    }
-
+                }catch (Exception e){
+                    exceptionRef.set(e);
+                }finally {
+                    counter.incrementAndGet();
                 }
+
             });
         }
 
@@ -826,15 +823,12 @@ public class RedissonBatchTest extends RedisDockerTest {
         }
         for (int i = 0; i < 500; i++) {
             final int j = i;
-            e.execute(new Runnable() {
-                @Override
-                public void run() {
-                    synchronized (RedissonBatchTest.this) {
-                        int i = (int) index.incrementAndGet();
-                        int ind = j % 3;
-                        RFuture<Long> f1 = batch.getAtomicLong("test" + ind).addAndGetAsync(j);
-                        futures.set(i, f1);
-                    }
+            e.execute(() -> {
+                synchronized (RedissonBatchTest.this) {
+                    int i1 = (int) index.incrementAndGet();
+                    int ind = j % 3;
+                    RFuture<Long> f1 = batch.getAtomicLong("test" + ind).addAndGetAsync(j);
+                    futures.set(i1, f1);
                 }
             });
         }

@@ -18,8 +18,6 @@ package org.redisson.remote;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
-import io.netty.util.Timeout;
-import io.netty.util.TimerTask;
 import org.redisson.RedissonBlockingQueue;
 import org.redisson.RedissonMap;
 import org.redisson.api.RBlockingQueue;
@@ -153,31 +151,28 @@ public abstract class BaseRemoteService {
     }
     
     protected <T> void scheduleCheck(String mapName, String requestId, CompletableFuture<T> cancelRequest) {
-        commandExecutor.getServiceManager().newTimeout(new TimerTask() {
-            @Override
-            public void run(Timeout timeout) throws Exception {
+        commandExecutor.getServiceManager().newTimeout(timeout -> {
+            if (cancelRequest.isDone()) {
+                return;
+            }
+
+            RMap<String, T> canceledRequests = getMap(mapName);
+            RFuture<T> future = canceledRequests.removeAsync(requestId);
+            future.whenComplete((request, ex) -> {
                 if (cancelRequest.isDone()) {
                     return;
                 }
+                if (ex != null) {
+                    scheduleCheck(mapName, requestId, cancelRequest);
+                    return;
+                }
 
-                RMap<String, T> canceledRequests = getMap(mapName);
-                RFuture<T> future = canceledRequests.removeAsync(requestId);
-                future.whenComplete((request, ex) -> {
-                    if (cancelRequest.isDone()) {
-                        return;
-                    }
-                    if (ex != null) {
-                        scheduleCheck(mapName, requestId, cancelRequest);
-                        return;
-                    }
-                    
-                    if (request == null) {
-                        scheduleCheck(mapName, requestId, cancelRequest);
-                    } else {
-                        cancelRequest.complete(request);
-                    }
-                });
-            }
+                if (request == null) {
+                    scheduleCheck(mapName, requestId, cancelRequest);
+                } else {
+                    cancelRequest.complete(request);
+                }
+            });
         }, 3000, TimeUnit.MILLISECONDS);
     }
 

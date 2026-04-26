@@ -28,7 +28,6 @@ import org.redisson.client.codec.DoubleCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
-import org.redisson.client.protocol.convertor.Convertor;
 import org.redisson.command.CommandAsyncExecutor;
 
 /**
@@ -150,12 +149,7 @@ public class RedissonAtomicDouble extends RedissonExpirable implements RAtomicDo
 
     @Override
     public RFuture<Double> getAndAddAsync(final double delta) {
-        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, new RedisStrictCommand<Double>("INCRBYFLOAT", new Convertor<Double>() {
-            @Override
-            public Double convert(Object obj) {
-                return Double.valueOf(obj.toString()) - delta;
-            }
-        }), getRawName(), BigDecimal.valueOf(delta).toPlainString());
+        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, new RedisStrictCommand<Double>("INCRBYFLOAT", obj -> Double.valueOf(obj.toString()) - delta), getRawName(), BigDecimal.valueOf(delta).toPlainString());
     }
 
 

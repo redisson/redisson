@@ -55,12 +55,7 @@ public class RedissonTopicRxTest extends BaseRxTest {
     @Test
     public void testRemoveListenerById() throws InterruptedException {
         RTopicRx topic1 = redisson.getTopic("topic1");
-        MessageListener listener = new MessageListener() {
-            @Override
-            public void onMessage(CharSequence channel, Object msg) {
-                Assertions.fail();
-            }
-        };
+        MessageListener listener = (channel, msg) -> Assertions.fail();
         
         Single<Integer> res = topic1.addListener(Message.class, listener);
         Integer listenerId = res.blockingGet();
@@ -73,12 +68,7 @@ public class RedissonTopicRxTest extends BaseRxTest {
     @Test
     public void testRemoveListenerByInstance() throws InterruptedException {
         RTopicRx topic1 = redisson.getTopic("topic1");
-        MessageListener listener = new MessageListener() {
-            @Override
-            public void onMessage(CharSequence channel, Object msg) {
-                Assertions.fail();
-            }
-        };
+        MessageListener listener = (channel, msg) -> Assertions.fail();
         
         topic1.addListener(Message.class, listener);
 

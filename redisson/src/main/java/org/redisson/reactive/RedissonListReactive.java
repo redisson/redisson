@@ -23,7 +23,6 @@ import org.redisson.client.codec.Codec;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 
-import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
 /**
@@ -66,58 +65,50 @@ public class RedissonListReactive<V> {
     }
 
     private Publisher<V> iterator(int startIndex, boolean forward) {
-        return Flux.create(new Consumer<FluxSink<V>>() {
+        return Flux.create(emitter -> emitter.onRequest(new LongConsumer() {
+
+            int currentIndex = startIndex;
+            volatile boolean maxAccepted;
 
             @Override
-            public void accept(FluxSink<V> emitter) {
-                emitter.onRequest(new LongConsumer() {
-                    
-                    int currentIndex = startIndex;
-                    volatile boolean maxAccepted;
-                    
-                    @Override
-                    public void accept(long value) {
-                        if (Long.MAX_VALUE == value) {
-                            maxAccepted = true;
-                        }
-                        if (maxAccepted && value != Long.MAX_VALUE) {
-                            return;
-                        }
-                        onRequest(forward, emitter, value);
-                    }
-                    
-                    private void onRequest(boolean forward, FluxSink<V> emitter, long n) {
-                        getAsync(currentIndex).whenComplete((value, e) -> {
-                                if (e != null) {
-                                    emitter.error(e);
-                                    return;
-                                }
-
-                                if (value != null) {
-                                    emitter.next(value);
-                                    if (forward) {
-                                        currentIndex++;
-                                    } else {
-                                        currentIndex--;
-                                    }
-                                }
-
-                                if (value == null) {
-                                    emitter.complete();
-                                    return;
-                                }
-                                if (n-1 == 0) {
-                                    return;
-                                }
-                                onRequest(forward, emitter, n-1);
-                        });
-                    }
-
-                });
-                
+            public void accept(long value) {
+                if (Long.MAX_VALUE == value) {
+                    maxAccepted = true;
+                }
+                if (maxAccepted && value != Long.MAX_VALUE) {
+                    return;
+                }
+                onRequest(forward, emitter, value);
             }
 
-        });
+            private void onRequest(boolean forward1, FluxSink<V> emitter, long n) {
+                getAsync(currentIndex).whenComplete((value, e) -> {
+                        if (e != null) {
+                            emitter.error(e);
+                            return;
+                        }
+
+                        if (value != null) {
+                            emitter.next(value);
+                            if (forward1) {
+                                currentIndex++;
+                            } else {
+                                currentIndex--;
+                            }
+                        }
+
+                        if (value == null) {
+                            emitter.complete();
+                            return;
+                        }
+                        if (n-1 == 0) {
+                            return;
+                        }
+                        onRequest(forward1, emitter, n-1);
+                });
+            }
+
+        }));
     }
 
     RFuture<V> getAsync(int currentIndex) {

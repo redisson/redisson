@@ -1846,12 +1846,7 @@ public class RedissonScoredSortedSetTest extends RedisDockerTest {
         testWithParams(redisson -> {
             RScoredSortedSet<Integer> ss = redisson.getScoredSortedSet("test");
             AtomicInteger latch = new AtomicInteger();
-            int id = ss.addListener(new ScoredSortedSetAddListener() {
-                @Override
-                public void onAdd(String name) {
-                    latch.incrementAndGet();
-                }
-            });
+            int id = ss.addListener((ScoredSortedSetAddListener) name -> latch.incrementAndGet());
             ss.add(1, 1);
 
             Awaitility.await().atMost(Duration.ofSeconds(1)).untilAsserted(() -> {

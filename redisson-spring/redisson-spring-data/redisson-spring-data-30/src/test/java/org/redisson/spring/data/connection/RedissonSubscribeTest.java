@@ -40,12 +40,7 @@ public class RedissonSubscribeTest extends BaseConnectionTest {
             }
 
             Queue<String> names = new ConcurrentLinkedQueue<>();
-            container.addMessageListener(new MessageListener() {
-                @Override
-                public void onMessage(Message message, byte[] pattern) {
-                    names.add(new String(message.getBody()));
-                }
-            }, new PatternTopic("__keyevent@0__:expired"));
+            container.addMessageListener((message, pattern) -> names.add(new String(message.getBody())), new PatternTopic("__keyevent@0__:expired"));
             container.afterPropertiesSet();
             container.start();
 
@@ -93,18 +88,8 @@ public class RedissonSubscribeTest extends BaseConnectionTest {
             RedisMessageListenerContainer container = new RedisMessageListenerContainer();
             container.setConnectionFactory(factory);
             AtomicInteger counterTest = new AtomicInteger();
-            container.addMessageListener(new MessageListener() {
-                @Override
-                public void onMessage(Message message, byte[] pattern) {
-                    counterTest.incrementAndGet();
-                }
-            }, new PatternTopic("__keyspace@0__:mykey"));
-            container.addMessageListener(new MessageListener() {
-                @Override
-                public void onMessage(Message message, byte[] pattern) {
-                    counterTest.incrementAndGet();
-                }
-            }, new PatternTopic("__keyevent@0__:del"));
+            container.addMessageListener((message, pattern) -> counterTest.incrementAndGet(), new PatternTopic("__keyspace@0__:mykey"));
+            container.addMessageListener((message, pattern) -> counterTest.incrementAndGet(), new PatternTopic("__keyevent@0__:del"));
             container.afterPropertiesSet();
             container.start();
             assertThat(container.isRunning()).isTrue();
@@ -123,12 +108,7 @@ public class RedissonSubscribeTest extends BaseConnectionTest {
     public void testSubscribe() {
         RedissonConnection connection = new RedissonConnection(redisson);
         AtomicReference<byte[]> msg = new AtomicReference<byte[]>();
-        connection.subscribe(new MessageListener() {
-            @Override
-            public void onMessage(Message message, byte[] pattern) {
-                msg.set(message.getBody());
-            }
-        }, "test".getBytes());
+        connection.subscribe((message, pattern) -> msg.set(message.getBody()), "test".getBytes());
         
         connection.publish("test".getBytes(), "msg".getBytes());
         Awaitility.await().atMost(Durations.ONE_SECOND)
@@ -143,12 +123,7 @@ public class RedissonSubscribeTest extends BaseConnectionTest {
     public void testUnSubscribe() {
         RedissonConnection connection = new RedissonConnection(redisson);
         AtomicReference<byte[]> msg = new AtomicReference<byte[]>();
-        connection.subscribe(new MessageListener() {
-            @Override
-            public void onMessage(Message message, byte[] pattern) {
-                msg.set(message.getBody());
-            }
-        }, "test".getBytes());
+        connection.subscribe((message, pattern) -> msg.set(message.getBody()), "test".getBytes());
         
         connection.publish("test".getBytes(), "msg".getBytes());
         Awaitility.await().atMost(Durations.ONE_SECOND)

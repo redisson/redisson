@@ -28,17 +28,14 @@ public class RedissonScriptTest extends RedisDockerTest {
                 + "return nil; ";
 
         Config cfg = createConfig();
-        cfg.useSingleServer().setCommandMapper(new CommandMapper() {
-            @Override
-            public String map(String name) {
-                if (name.equalsIgnoreCase("cmd1")) {
-                    return "hget";
-                }
-                if (name.equalsIgnoreCase("cmd2")) {
-                    return "hset";
-                }
-                return name;
+        cfg.useSingleServer().setCommandMapper(name -> {
+            if (name.equalsIgnoreCase("cmd1")) {
+                return "hget";
             }
+            if (name.equalsIgnoreCase("cmd2")) {
+                return "hset";
+            }
+            return name;
         });
 
         RedissonClient r = Redisson.create(cfg);
@@ -57,12 +54,7 @@ public class RedissonScriptTest extends RedisDockerTest {
     @Test
     public void testCommandMapping2() {
         Config cfg = createConfig();
-        cfg.useSingleServer().setCommandMapper(new CommandMapper() {
-            @Override
-            public String map(String name) {
-                return name.equalsIgnoreCase("ttl") ? "pttl" : name;
-            }
-        });
+        cfg.useSingleServer().setCommandMapper(name -> name.equalsIgnoreCase("ttl") ? "pttl" : name);
 
         RedissonClient r = Redisson.create(cfg);
         String script = "redis.call('set','test','value','ex',60);redis.call('ttl','test');return redis.call('ttl','test');";
