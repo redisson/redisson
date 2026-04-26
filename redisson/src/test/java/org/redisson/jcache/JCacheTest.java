@@ -245,24 +245,19 @@ public class JCacheTest extends RedisDockerTest {
     public void testGetAllCacheLoader() throws Exception {
         MutableConfiguration<String, String> jcacheConfig = createJCacheConfig();
         jcacheConfig.setReadThrough(true);
-        jcacheConfig.setCacheLoaderFactory(new Factory<CacheLoader<String, String>>() {
+        jcacheConfig.setCacheLoaderFactory((Factory<CacheLoader<String, String>>) () -> new CacheLoader<String, String>() {
             @Override
-            public CacheLoader<String, String> create() {
-                return new CacheLoader<String, String>() {
-                    @Override
-                    public String load(String key) throws CacheLoaderException {
-                        throw new CacheLoaderException("shouldn't be used");
-                    }
+            public String load(String key) throws CacheLoaderException {
+                throw new CacheLoaderException("shouldn't be used");
+            }
 
-                    @Override
-                    public Map<String, String> loadAll(Iterable<? extends String> keys) throws CacheLoaderException {
-                        Map<String, String> res = new HashMap<>();
-                        for (String key : keys) {
-                            res.put(key, key+"_loaded");
-                        }
-                        return res;
-                    }
-                };
+            @Override
+            public Map<String, String> loadAll(Iterable<? extends String> keys) throws CacheLoaderException {
+                Map<String, String> res = new HashMap<>();
+                for (String key : keys) {
+                    res.put(key, key+"_loaded");
+                }
+                return res;
             }
         });
         Configuration<String, String> config = RedissonConfiguration.fromInstance(redisson, jcacheConfig);

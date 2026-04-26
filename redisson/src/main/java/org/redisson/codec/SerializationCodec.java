@@ -67,21 +67,17 @@ public class SerializationCodec extends BaseCodec {
         }
     };
 
-    private final Encoder encoder = new Encoder() {
-
-        @Override
-        public ByteBuf encode(Object in) throws IOException {
-            ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
-            try {
-                ByteBufOutputStream result = new ByteBufOutputStream(out);
-                ObjectOutputStream outputStream = new ObjectOutputStream(result);
-                outputStream.writeObject(in);
-                outputStream.close();
-                return result.buffer();
-            } catch (IOException e) {
-                out.release();
-                throw e;
-            }
+    private final Encoder encoder = in -> {
+        ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
+        try {
+            ByteBufOutputStream result = new ByteBufOutputStream(out);
+            ObjectOutputStream outputStream = new ObjectOutputStream(result);
+            outputStream.writeObject(in);
+            outputStream.close();
+            return result.buffer();
+        } catch (IOException e) {
+            out.release();
+            throw e;
         }
     };
 

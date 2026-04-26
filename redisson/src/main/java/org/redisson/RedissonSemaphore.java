@@ -16,7 +16,6 @@
 package org.redisson;
 
 import io.netty.util.Timeout;
-import io.netty.util.TimerTask;
 import org.redisson.api.RFuture;
 import org.redisson.api.RSemaphore;
 import org.redisson.client.codec.LongCodec;
@@ -187,15 +186,12 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
 
                 long t = time.get();
                 if (!executed.get()) {
-                    Timeout scheduledFuture = commandExecutor.getServiceManager().newTimeout(new TimerTask() {
-                        @Override
-                        public void run(Timeout timeout) throws Exception {
-                            if (entry.removeListener(listener)) {
-                                long elapsed = System.currentTimeMillis() - current;
-                                time.addAndGet(-elapsed);
-                                
-                                tryAcquireAsync(time, permits, entry, result);
-                            }
+                    Timeout scheduledFuture = commandExecutor.getServiceManager().newTimeout(timeout -> {
+                        if (entry.removeListener(listener)) {
+                            long elapsed = System.currentTimeMillis() - current;
+                            time.addAndGet(-elapsed);
+
+                            tryAcquireAsync(time, permits, entry, result);
                         }
                     }, t, TimeUnit.MILLISECONDS);
                     futureRef.set(scheduledFuture);

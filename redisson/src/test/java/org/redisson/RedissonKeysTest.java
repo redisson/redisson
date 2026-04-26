@@ -33,12 +33,7 @@ public class RedissonKeysTest extends RedisDockerTest {
     public void testNewObjectListener() {
         testWithParams(redisson -> {
             AtomicReference<String> ref = new AtomicReference<>();
-            int id = redisson.getKeys().addListener(new NewObjectListener() {
-                @Override
-                public void onNew(String name) {
-                    ref.set(name);
-                }
-            });
+            int id = redisson.getKeys().addListener((NewObjectListener) name -> ref.set(name));
 
             redisson.getBucket("test").set("123");
 
@@ -52,12 +47,7 @@ public class RedissonKeysTest extends RedisDockerTest {
     public void testDeleteListener() {
         testWithParams(redisson -> {
             AtomicReference<String> ref = new AtomicReference<>();
-            int id = redisson.getKeys().addListener(new DeletedObjectListener() {
-                @Override
-                public void onDeleted(String name) {
-                    ref.set(name);
-                }
-            });
+            int id = redisson.getKeys().addListener((DeletedObjectListener) name -> ref.set(name));
 
             redisson.getBucket("test").set("123");
             redisson.getBucket("test").delete();

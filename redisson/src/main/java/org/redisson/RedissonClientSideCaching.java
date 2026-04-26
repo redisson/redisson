@@ -25,7 +25,6 @@ import org.redisson.pubsub.PublishSubscribeService;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.Arrays;
 import java.util.Collections;
@@ -86,32 +85,29 @@ public final class RedissonClientSideCaching implements RClientSideCaching {
     }
 
     public <T> T create(Object instance, Class<T> clazz) {
-        InvocationHandler handler = new InvocationHandler() {
-            @Override
-            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-                if (!method.getName().contains("read")) {
-                    return method.invoke(instance, args);
-                }
-
-                String name = (String) Arrays.stream(args)
-                                            .filter(r -> r instanceof String)
-                                            .findFirst()
-                                            .orElse(null);
-                if (name == null) {
-                    return method.invoke(instance, args);
-                }
-
-                CacheKeyParams key = new CacheKeyParams(args);
-                Set<CacheKeyParams> values = name2cacheKey.computeIfAbsent(name, v -> Collections.newSetFromMap(new ConcurrentHashMap<>()));
-                values.add(key);
-                return cache.computeIfAbsent(key, k -> {
-                    try {
-                        return method.invoke(instance, args);
-                    } catch (IllegalAccessException | InvocationTargetException e) {
-                        throw new IllegalStateException(e);
-                    }
-                });
+        InvocationHandler handler = (proxy, method, args) -> {
+            if (!method.getName().contains("read")) {
+                return method.invoke(instance, args);
             }
+
+            String name = (String) Arrays.stream(args)
+                                        .filter(r -> r instanceof String)
+                                        .findFirst()
+                                        .orElse(null);
+            if (name == null) {
+                return method.invoke(instance, args);
+            }
+
+            CacheKeyParams key = new CacheKeyParams(args);
+            Set<CacheKeyParams> values = name2cacheKey.computeIfAbsent(name, v -> Collections.newSetFromMap(new ConcurrentHashMap<>()));
+            values.add(key);
+            return cache.computeIfAbsent(key, k -> {
+                try {
+                    return method.invoke(instance, args);
+                } catch (IllegalAccessException | InvocationTargetException e) {
+                    throw new IllegalStateException(e);
+                }
+            });
         };
         return (T) Proxy.newProxyInstance(clazz.getClassLoader(), new Class[] { clazz }, handler);
     }

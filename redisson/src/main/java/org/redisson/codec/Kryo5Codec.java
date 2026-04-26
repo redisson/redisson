@@ -79,13 +79,11 @@ public class Kryo5Codec extends BaseCodec {
                     ctor.setAccessible(true);
                 }
                 final Constructor constructor = ctor;
-                return new ObjectInstantiator() {
-                    public Object newInstance() {
-                        try {
-                            return constructor.newInstance();
-                        } catch (Exception ex) {
-                            throw new KryoException("Error constructing instance of class: " + className(type), ex);
-                        }
+                return (ObjectInstantiator) () -> {
+                    try {
+                        return constructor.newInstance();
+                    } catch (Exception ex) {
+                        throw new KryoException("Error constructing instance of class: " + className(type), ex);
                     }
                 };
             } catch (Exception ignored) {

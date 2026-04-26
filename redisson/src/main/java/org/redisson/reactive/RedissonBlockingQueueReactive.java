@@ -20,7 +20,6 @@ import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RFuture;
 import reactor.core.publisher.Flux;
 
-import java.util.concurrent.Callable;
 
 /**
  * 
@@ -38,12 +37,7 @@ public class RedissonBlockingQueueReactive<V> extends RedissonListReactive<V> {
     }
 
     public Flux<V> takeElements() {
-        return ElementsStream.takeElements(new Callable<RFuture<V>>() {
-            @Override
-            public RFuture<V> call() throws Exception {
-                return queue.takeAsync();
-            }
-        });
+        return ElementsStream.takeElements(() -> queue.takeAsync());
     }
 
     @Override

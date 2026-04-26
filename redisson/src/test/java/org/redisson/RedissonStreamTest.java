@@ -70,12 +70,7 @@ public class RedissonStreamTest extends RedisDockerTest {
             RStream<String, String> ss = redisson.getStream("test");
             ss.createGroup(StreamCreateGroupArgs.name("test-group").makeStream());
             CountDownLatch latch = new CountDownLatch(1);
-            ss.addListener(new StreamAddListener() {
-                @Override
-                public void onAdd(String name) {
-                    latch.countDown();
-                }
-            });
+            ss.addListener((StreamAddListener) name -> latch.countDown());
             ss.add(StreamAddArgs.entry("test1", "test2"));
 
             try {

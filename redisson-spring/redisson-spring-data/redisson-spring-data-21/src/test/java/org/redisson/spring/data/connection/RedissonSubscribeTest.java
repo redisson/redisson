@@ -17,12 +17,7 @@ public class RedissonSubscribeTest extends BaseConnectionTest {
     public void testSubscribe() {
         RedissonConnection connection = new RedissonConnection(redisson);
         AtomicReference<byte[]> msg = new AtomicReference<byte[]>();
-        connection.subscribe(new MessageListener() {
-            @Override
-            public void onMessage(Message message, byte[] pattern) {
-                msg.set(message.getBody());
-            }
-        }, "test".getBytes());
+        connection.subscribe((message, pattern) -> msg.set(message.getBody()), "test".getBytes());
         
         connection.publish("test".getBytes(), "msg".getBytes());
         Awaitility.await().atMost(Durations.ONE_SECOND)
@@ -37,12 +32,7 @@ public class RedissonSubscribeTest extends BaseConnectionTest {
     public void testUnSubscribe() {
         RedissonConnection connection = new RedissonConnection(redisson);
         AtomicReference<byte[]> msg = new AtomicReference<byte[]>();
-        connection.subscribe(new MessageListener() {
-            @Override
-            public void onMessage(Message message, byte[] pattern) {
-                msg.set(message.getBody());
-            }
-        }, "test".getBytes());
+        connection.subscribe((message, pattern) -> msg.set(message.getBody()), "test".getBytes());
         
         connection.publish("test".getBytes(), "msg".getBytes());
         Awaitility.await().atMost(Durations.ONE_SECOND)

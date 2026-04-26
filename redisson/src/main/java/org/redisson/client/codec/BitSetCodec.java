@@ -17,11 +17,8 @@ package org.redisson.client.codec;
 
 import java.util.BitSet;
 
-import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
-
-import io.netty.buffer.ByteBuf;
 
 /**
  * 
@@ -33,13 +30,10 @@ public class BitSetCodec implements Codec {
 
     public static final BitSetCodec INSTANCE = new BitSetCodec();
 
-    private final Decoder<Object> decoder = new Decoder<Object>() {
-        @Override
-        public Object decode(ByteBuf buf, State state) {
-            byte[] result = new byte[buf.readableBytes()];
-            buf.readBytes(result);
-            return fromByteArrayReverse(result);
-        }
+    private final Decoder<Object> decoder = (buf, state) -> {
+        byte[] result = new byte[buf.readableBytes()];
+        buf.readBytes(result);
+        return fromByteArrayReverse(result);
     };
 
     private static BitSet fromByteArrayReverse(byte[] bytes) {

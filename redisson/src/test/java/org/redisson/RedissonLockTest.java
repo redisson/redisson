@@ -598,18 +598,8 @@ public class RedissonLockTest extends BaseConcurrentTest {
         testWithParams(redisson -> {
             RLock lock1 = redisson.getLock("lock1");
             CountDownLatch latch = new CountDownLatch(4);
-            int listenerId1 = lock1.addListener(new ExpiredObjectListener() {
-                @Override
-                public void onExpired(String name) {
-                    latch.countDown();
-                }
-            });
-            int listenerId2 = lock1.addListener(new DeletedObjectListener() {
-                @Override
-                public void onDeleted(String name) {
-                    latch.countDown();
-                }
-            });
+            int listenerId1 = lock1.addListener((ExpiredObjectListener) name -> latch.countDown());
+            int listenerId2 = lock1.addListener((DeletedObjectListener) name -> latch.countDown());
 
             lock1.lock(5, TimeUnit.SECONDS);
             lock1.unlock();

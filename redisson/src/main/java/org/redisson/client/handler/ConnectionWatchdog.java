@@ -116,56 +116,52 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
         log.debug("reconnecting {} to {} ", connection, connection.getRedisClient().getAddr());
 
         try {
-            bootstrap.connect(connection.getRedisClient().getAddr()).addListener(new ChannelFutureListener() {
+            bootstrap.connect(connection.getRedisClient().getAddr()).addListener((ChannelFutureListener) future -> {
+                if (connection.getRedisClient().isShutdown()
+                        || connection.isClosed()
+                            || bootstrap.config().group().isShuttingDown()) {
+                    if (future.isSuccess()) {
+                        Channel ch = future.channel();
+                        RedisConnection con = RedisConnection.getFrom(ch);
+                        if (con != null) {
+                            con.closeAsync();
+                        }
+                    }
+                    if (connection.isClosed()) {
+                        semaphore.release();
+                    }
+                    return;
+                }
 
-                @Override
-                public void operationComplete(ChannelFuture future) throws Exception {
-                    if (connection.getRedisClient().isShutdown()
-                            || connection.isClosed()
-                                || bootstrap.config().group().isShuttingDown()) {
-                        if (future.isSuccess()) {
-                            Channel ch = future.channel();
-                            RedisConnection con = RedisConnection.getFrom(ch);
-                            if (con != null) {
-                                con.closeAsync();
+                if (future.isSuccess()) {
+                    Channel channel = future.channel();
+                    if (channel.localAddress().equals(channel.remoteAddress())) {
+                        channel.close();
+                        log.error("local address and remote address are the same! connected to: {}, localAddress: {} remoteAddress: {}",
+                                connection.getRedisClient().getAddr(), channel.localAddress(), channel.remoteAddress());
+                    } else {
+                        RedisConnection c = RedisConnection.getFrom(channel);
+                        c.getConnectionPromise().whenComplete((res, e) -> {
+                            if (e == null) {
+                                semaphore.release();
+                                if (connection.getRedisClient().isShutdown()
+                                        || connection.isClosed()) {
+                                    channel.close();
+                                    return;
+                                } else {
+                                    log.debug("{} connected to {}, command: {}", connection, connection.getRedisClient().getAddr(), connection.getCurrentCommandData());
+                                }
+                                refresh(connection, channel);
+                            } else {
+                                channel.close();
+                                reconnect(connection, nextAttempt);
                             }
-                        }
-                        if (connection.isClosed()) {
-                            semaphore.release();
-                        }
+                        });
                         return;
                     }
-
-                    if (future.isSuccess()) {
-                        Channel channel = future.channel();
-                        if (channel.localAddress().equals(channel.remoteAddress())) {
-                            channel.close();
-                            log.error("local address and remote address are the same! connected to: {}, localAddress: {} remoteAddress: {}", 
-                                    connection.getRedisClient().getAddr(), channel.localAddress(), channel.remoteAddress());
-                        } else {
-                            RedisConnection c = RedisConnection.getFrom(channel);
-                            c.getConnectionPromise().whenComplete((res, e) -> {
-                                if (e == null) {
-                                    semaphore.release();
-                                    if (connection.getRedisClient().isShutdown()
-                                            || connection.isClosed()) {
-                                        channel.close();
-                                        return;
-                                    } else {
-                                        log.debug("{} connected to {}, command: {}", connection, connection.getRedisClient().getAddr(), connection.getCurrentCommandData());
-                                    }
-                                    refresh(connection, channel);
-                                } else {
-                                    channel.close();
-                                    reconnect(connection, nextAttempt);
-                                }
-                            });
-                            return;
-                        }
-                    }
-
-                    reconnect(connection, nextAttempt);
                 }
+
+                reconnect(connection, nextAttempt);
             });
         } catch (RejectedExecutionException e) {
             // skip

@@ -299,12 +299,7 @@ public class RedissonTest extends RedisDockerTest {
         int iterations = 500_000;
         for (int i = 0; i < iterations; i++) {
             final int j = i;
-            executor.execute(new Runnable() {
-                @Override
-                public void run() {
-                    map.put("" + j, "" + j);
-                }
-            });
+            executor.execute(() -> map.put("" + j, "" + j));
         }
         
         executor.shutdown();
@@ -485,28 +480,22 @@ public class RedissonTest extends RedisDockerTest {
 
     public static class SlowCodec extends BaseCodec {
 
-        private final Encoder encoder = new Encoder() {
-            @Override
-            public ByteBuf encode(Object in) throws IOException {
-                ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
-                out.writeCharSequence(in.toString(), CharsetUtil.UTF_8);
-                return out;
-            }
+        private final Encoder encoder = in -> {
+            ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
+            out.writeCharSequence(in.toString(), CharsetUtil.UTF_8);
+            return out;
         };
 
-        public final Decoder<Object> decoder = new Decoder<Object>() {
-            @Override
-            public Object decode(ByteBuf buf, State state) throws IOException {
-                String str = buf.toString(CharsetUtil.UTF_8);
-                buf.readerIndex(buf.readableBytes());
-                try {
-                    Thread.sleep(2500);
-                } catch (InterruptedException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                }
-                return str;
+        public final Decoder<Object> decoder = (buf, state) -> {
+            String str = buf.toString(CharsetUtil.UTF_8);
+            buf.readerIndex(buf.readableBytes());
+            try {
+                Thread.sleep(2500);
+            } catch (InterruptedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
             }
+            return str;
         };
 
         public SlowCodec() {
@@ -636,12 +625,7 @@ public class RedissonTest extends RedisDockerTest {
 
         Config config = createConfig(redis);
         config.useSingleServer()
-                .setCredentialsResolver(new CredentialsResolver() {
-                    @Override
-                    public CompletionStage<Credentials> resolve(InetSocketAddress address) {
-                        return CompletableFuture.completedFuture(new Credentials(null, "1234"));
-                    }
-                });
+                .setCredentialsResolver(address -> CompletableFuture.completedFuture(new Credentials(null, "1234")));
 
         RedissonClient redisson = Redisson.create(config);
         RBucket<String> b = redisson.getBucket("test");
@@ -649,23 +633,13 @@ public class RedissonTest extends RedisDockerTest {
 
         redisson.shutdown();
 
-        config.setCredentialsResolver(new CredentialsResolver() {
-            @Override
-            public CompletionStage<Credentials> resolve(InetSocketAddress address) {
-                return CompletableFuture.completedFuture(new Credentials(null, "12345"));
-            }
-        });
+        config.setCredentialsResolver(address -> CompletableFuture.completedFuture(new Credentials(null, "12345")));
 
         Assertions.assertThrows(RedisConnectionException.class, () -> {
             Redisson.create(config);
         });
 
-        config.setCredentialsResolver(new CredentialsResolver() {
-            @Override
-            public CompletionStage<Credentials> resolve(InetSocketAddress address) {
-                return CompletableFuture.completedFuture(new Credentials(null, "1234"));
-            }
-        });
+        config.setCredentialsResolver(address -> CompletableFuture.completedFuture(new Credentials(null, "1234")));
 
         RedissonClient r = Redisson.create(config);
         b = r.getBucket("test");
@@ -1217,29 +1191,25 @@ public class RedissonTest extends RedisDockerTest {
 
             Config config = new Config();
             config.useClusterServers()
-                    .setNatMapper(new NatMapper() {
-
-                        @Override
-                        public RedisURI map(RedisURI uri) {
-                            for (ContainerState state : nodes) {
-                                if (state.getContainerInfo() == null) {
-                                    continue;
-                                }
-
-                                InspectContainerResponse node = state.getContainerInfo();
-                                Ports.Binding[] mappedPort = node.getNetworkSettings()
-                                        .getPorts().getBindings().get(new ExposedPort(uri.getPort()));
-
-                                Map<String, ContainerNetwork> ss = node.getNetworkSettings().getNetworks();
-                                ContainerNetwork s = ss.values().iterator().next();
-
-                                if (mappedPort != null
-                                        && s.getIpAddress().equals(uri.getHost())) {
-                                    return new RedisURI("redis://127.0.0.1:" + mappedPort[0].getHostPortSpec());
-                                }
+                    .setNatMapper(uri -> {
+                        for (ContainerState state : nodes) {
+                            if (state.getContainerInfo() == null) {
+                                continue;
                             }
-                            return uri;
+
+                            InspectContainerResponse node = state.getContainerInfo();
+                            Ports.Binding[] mappedPort = node.getNetworkSettings()
+                                    .getPorts().getBindings().get(new ExposedPort(uri.getPort()));
+
+                            Map<String, ContainerNetwork> ss = node.getNetworkSettings().getNetworks();
+                            ContainerNetwork s = ss.values().iterator().next();
+
+                            if (mappedPort != null
+                                    && s.getIpAddress().equals(uri.getHost())) {
+                                return new RedisURI("redis://127.0.0.1:" + mappedPort[0].getHostPortSpec());
+                            }
                         }
+                        return uri;
                     })
                     .addNodeAddress("redis://yes@localhost:" + mp[0].getHostPortSpec());
 

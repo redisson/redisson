@@ -19,7 +19,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.ByteBufOutputStream;
-import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
 import tools.jackson.core.type.TypeReference;
@@ -39,33 +38,27 @@ import java.io.OutputStream;
  */
 public class TypedJsonJackson3Codec extends JsonJackson3Codec {
 
-    private final Encoder encoder = new Encoder() {
-        @Override
-        public ByteBuf encode(Object in) throws IOException {
-            ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
-            try {
-                ByteBufOutputStream os = new ByteBufOutputStream(out);
-                mapObjectMapper.writeValue((OutputStream) os, in);
-                return os.buffer();
-            } catch (Exception e) {
-                out.release();
-                throw new IOException(e);
-            }
+    private final Encoder encoder = in -> {
+        ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
+        try {
+            ByteBufOutputStream os = new ByteBufOutputStream(out);
+            mapObjectMapper.writeValue((OutputStream) os, in);
+            return os.buffer();
+        } catch (Exception e) {
+            out.release();
+            throw new IOException(e);
         }
     };
 
     private Decoder<Object> createDecoder(final Class<?> valueClass, final TypeReference valueTypeReference) {
-        return new Decoder<Object>() {
-            @Override
-            public Object decode(ByteBuf buf, State state) throws IOException {
-                if (valueClass != null) {
-                    return mapObjectMapper.readValue((InputStream) new ByteBufInputStream(buf), valueClass);
-                }
-                if (valueTypeReference != null) {
-                    return mapObjectMapper.readValue((InputStream) new ByteBufInputStream(buf), valueTypeReference);
-                }
-                return mapObjectMapper.readValue((InputStream) new ByteBufInputStream(buf), Object.class);
+        return (buf, state) -> {
+            if (valueClass != null) {
+                return mapObjectMapper.readValue((InputStream) new ByteBufInputStream(buf), valueClass);
             }
+            if (valueTypeReference != null) {
+                return mapObjectMapper.readValue((InputStream) new ByteBufInputStream(buf), valueTypeReference);
+            }
+            return mapObjectMapper.readValue((InputStream) new ByteBufInputStream(buf), Object.class);
         };
     }
 

@@ -715,12 +715,7 @@ public class RedissonSetCacheTest extends RedisDockerTest {
         testWithParams(redisson -> {
             RSetCache<Integer> ss = redisson.getSetCache("test");
             AtomicInteger latch = new AtomicInteger();
-            int id = ss.addListener(new SetAddListener() {
-                @Override
-                public void onAdd(String name) {
-                    latch.incrementAndGet();
-                }
-            });
+            int id = ss.addListener((SetAddListener) name -> latch.incrementAndGet());
             ss.add(1, 10, TimeUnit.SECONDS);
 
             Awaitility.await().atMost(Duration.ofSeconds(1)).untilAsserted(() -> {

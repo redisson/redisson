@@ -2407,12 +2407,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         return read(keys[0], StringCodec.INSTANCE, RedisCommands.TOUCH_LONG, Arrays.asList(keys).toArray());
     }
 
-    private static final RedisStrictCommand<ValueEncoding> OBJECT_ENCODING = new RedisStrictCommand<ValueEncoding>("OBJECT", "ENCODING", new Convertor<ValueEncoding>() {
-        @Override
-        public ValueEncoding convert(Object obj) {
-            return ValueEncoding.of((String) obj);
-        }
-    });
+    private static final RedisStrictCommand<ValueEncoding> OBJECT_ENCODING = new RedisStrictCommand<ValueEncoding>("OBJECT", "ENCODING", obj -> ValueEncoding.of((String) obj));
 
     @Override
     public ValueEncoding encodingOf(byte[] key) {
@@ -2420,12 +2415,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         return read(key, StringCodec.INSTANCE, OBJECT_ENCODING, key);
     }
 
-    private static final RedisStrictCommand<Duration> OBJECT_IDLETIME = new RedisStrictCommand<>("OBJECT", "IDLETIME", new Convertor<Duration>() {
-        @Override
-        public Duration convert(Object obj) {
-            return Duration.ofSeconds((Long)obj);
-        }
-    });
+    private static final RedisStrictCommand<Duration> OBJECT_IDLETIME = new RedisStrictCommand<>("OBJECT", "IDLETIME", obj -> Duration.ofSeconds((Long)obj));
 
     @Override
     public Duration idletime(byte[] key) {

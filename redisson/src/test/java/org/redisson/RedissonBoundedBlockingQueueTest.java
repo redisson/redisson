@@ -66,15 +66,10 @@ public class RedissonBoundedBlockingQueueTest extends RedisDockerTest {
         
         ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
         final AtomicBoolean executed = new AtomicBoolean();
-        executor.schedule(new Runnable() {
-
-            @Override
-            public void run() {
-                RBoundedBlockingQueue<Integer> queue1 = redisson.getBoundedBlockingQueue("bounded-queue");
-                assertThat(queue1.remove()).isEqualTo(1);
-                executed.set(true);
-            }
-            
+        executor.schedule(() -> {
+            RBoundedBlockingQueue<Integer> queue1 = redisson.getBoundedBlockingQueue("bounded-queue");
+            assertThat(queue1.remove()).isEqualTo(1);
+            executed.set(true);
         }, 1, TimeUnit.SECONDS);
 
         start = System.currentTimeMillis();
@@ -147,15 +142,10 @@ public class RedissonBoundedBlockingQueueTest extends RedisDockerTest {
         
         final AtomicBoolean executed = new AtomicBoolean();
         
-        executor.schedule(new Runnable() {
-
-            @Override
-            public void run() {
-                RBoundedBlockingQueue<Integer> queue1 = redisson.getBoundedBlockingQueue("bounded-queue");
-                assertThat(queue1.poll()).isEqualTo(1);
-                executed.set(true);
-            }
-            
+        executor.schedule(() -> {
+            RBoundedBlockingQueue<Integer> queue2 = redisson.getBoundedBlockingQueue("bounded-queue");
+            assertThat(queue2.poll()).isEqualTo(1);
+            executed.set(true);
         }, 1, TimeUnit.SECONDS);
 
         queue1.put(4);
@@ -175,12 +165,7 @@ public class RedissonBoundedBlockingQueueTest extends RedisDockerTest {
         ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
         for (int i = 0; i < 10000; i++) {
             final int k = i;
-            executor.execute(new Runnable() {
-                @Override
-                public void run() {
-                    queue1.add(k);
-                }
-            });
+            executor.execute(() -> queue1.add(k));
         }
         
         executor.shutdown();

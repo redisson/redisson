@@ -20,7 +20,6 @@ import org.redisson.api.ratelimiter.RateLimiterArgs;
 import org.redisson.api.ratelimiter.RateLimiterParams;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
-import org.redisson.client.handler.State;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.MapEntriesDecoder;
@@ -529,26 +528,21 @@ public final class RedissonRateLimiter extends RedissonExpirable implements RRat
                 System.currentTimeMillis(), keepState, requireExistLong);
     }
 
-    private static final RedisCommand HGETALL = new RedisCommand("HGETALL", new MapEntriesDecoder(new MultiDecoder<RateLimiterConfig>() {
-
-        @Override
-        public RateLimiterConfig decode(List<Object> parts, State state) {
-            Map<String, String> map = new HashMap<>(parts.size()/2);
-            for (int i = 0; i < parts.size(); i++) {
-                if (i % 2 != 0) {
-                    map.put(parts.get(i-1).toString(), parts.get(i).toString());
-                }
+    private static final RedisCommand HGETALL = new RedisCommand("HGETALL", new MapEntriesDecoder((MultiDecoder<RateLimiterConfig>) (parts, state) -> {
+        Map<String, String> map = new HashMap<>(parts.size()/2);
+        for (int i = 0; i < parts.size(); i++) {
+            if (i % 2 != 0) {
+                map.put(parts.get(i-1).toString(), parts.get(i).toString());
             }
-
-            if (map.size()==0){
-                return new RateLimiterConfig(RateType.OVERALL, 0L, 0L);
-            }
-            RateType type = RateType.values()[Integer.parseInt(map.get("type"))];
-            Long rateInterval = Long.valueOf(map.get("interval"));
-            Long rate = Long.valueOf(map.get("rate"));
-            return new RateLimiterConfig(type, rateInterval, rate);
         }
-        
+
+        if (map.size()==0){
+            return new RateLimiterConfig(RateType.OVERALL, 0L, 0L);
+        }
+        RateType type = RateType.values()[Integer.parseInt(map.get("type"))];
+        Long rateInterval = Long.valueOf(map.get("interval"));
+        Long rate = Long.valueOf(map.get("rate"));
+        return new RateLimiterConfig(type, rateInterval, rate);
     }));
     
     @Override

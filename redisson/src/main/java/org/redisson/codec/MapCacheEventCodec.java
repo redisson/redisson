@@ -15,12 +15,8 @@
  */
 package org.redisson.codec;
 
-import io.netty.buffer.ByteBuf;
 import org.redisson.client.codec.Codec;
-import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
-
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,24 +27,21 @@ import java.util.List;
  */
 public class MapCacheEventCodec extends BaseEventCodec {
 
-    private final Decoder<Object> decoder = new Decoder<Object>() {
-        @Override
-        public Object decode(ByteBuf buf, State state) throws IOException {
-            List<Object> result = new ArrayList<Object>(3);
+    private final Decoder<Object> decoder = (buf, state) -> {
+        List<Object> result = new ArrayList<Object>(3);
 
-            Object key = MapCacheEventCodec.this.decode(buf, state, codec.getMapKeyDecoder());
-            result.add(key);
+        Object key = MapCacheEventCodec.this.decode(buf, state, codec.getMapKeyDecoder());
+        result.add(key);
 
-            Object value = MapCacheEventCodec.this.decode(buf, state, codec.getMapValueDecoder());
-            result.add(value);
-            
-            if (buf.isReadable()) {
-                Object oldValue = MapCacheEventCodec.this.decode(buf, state, codec.getMapValueDecoder());
-                result.add(oldValue);
-            }
-            
-            return result;
+        Object value = MapCacheEventCodec.this.decode(buf, state, codec.getMapValueDecoder());
+        result.add(value);
+
+        if (buf.isReadable()) {
+            Object oldValue = MapCacheEventCodec.this.decode(buf, state, codec.getMapValueDecoder());
+            result.add(oldValue);
         }
+
+        return result;
     };
 
     public MapCacheEventCodec(Codec codec, OSType osType) {

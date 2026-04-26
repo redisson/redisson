@@ -21,7 +21,6 @@ import org.redisson.RedissonLocalCachedMap;
 import org.redisson.RedissonObject;
 import org.redisson.RedissonTopic;
 import org.redisson.api.*;
-import org.redisson.api.listener.MessageListener;
 import org.redisson.cache.LocalCachedMapDisable;
 import org.redisson.cache.LocalCachedMapDisabledKey;
 import org.redisson.cache.LocalCachedMapEnable;
@@ -410,13 +409,10 @@ public class RedissonTransaction implements RTransaction {
             RTopic topic = RedissonTopic.createRaw(LocalCachedMessageCodec.INSTANCE,
                     commandExecutor, RedissonObject.suffixName(entry.getKey().getName(), requestId + RedissonLocalCachedMap.DISABLED_ACK_SUFFIX));
             topics.add(topic);
-            topic.addListener(Object.class, new MessageListener<Object>() {
-                @Override
-                public void onMessage(CharSequence channel, Object msg) {
-                    AtomicInteger counter = entry.getValue().getCounter();
-                    if (counter.decrementAndGet() == 0) {
-                        latch.countDown();
-                    }
+            topic.addListener(Object.class, (channel, msg) -> {
+                AtomicInteger counter = entry.getValue().getCounter();
+                if (counter.decrementAndGet() == 0) {
+                    latch.countDown();
                 }
             });
         }

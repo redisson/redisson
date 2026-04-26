@@ -38,8 +38,8 @@ import io.netty.resolver.AddressResolverGroup;
 import io.netty.resolver.DefaultAddressResolverGroup;
 import io.netty.resolver.dns.DnsServerAddressStreamProviders;
 import io.netty.util.Timer;
-import io.netty.util.TimerTask;
 import io.netty.util.*;
+import io.netty.util.TimerTask;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
@@ -67,8 +67,6 @@ import org.redisson.renewal.LockRenewalScheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -738,14 +736,11 @@ public final class ServiceManager {
         return mapResolver;
     }
 
-    public static final RLock DUMMY_LOCK = (RLock) Proxy.newProxyInstance(ServiceManager.class.getClassLoader(), new Class[] {RLock.class}, new InvocationHandler() {
-        @Override
-        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-            if (method.getName().endsWith("lockAsync")) {
-                return CompletableFutureWrapper.completedNull();
-            }
-            return null;
+    public static final RLock DUMMY_LOCK = (RLock) Proxy.newProxyInstance(ServiceManager.class.getClassLoader(), new Class[] {RLock.class}, (proxy, method, args) -> {
+        if (method.getName().endsWith("lockAsync")) {
+            return CompletableFutureWrapper.completedNull();
         }
+        return null;
     });
 
     public void register(LockRenewalScheduler renewalScheduler) {

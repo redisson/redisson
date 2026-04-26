@@ -29,12 +29,7 @@ public class RedissonListTest extends RedisDockerTest {
         testWithParams(redisson -> {
             RList<Integer> al = redisson.getList("name");
             CountDownLatch latch = new CountDownLatch(1);
-            al.addListener(new ListAddListener() {
-                @Override
-                public void onListAdd(String name) {
-                    latch.countDown();
-                }
-            });
+            al.addListener((ListAddListener) name -> latch.countDown());
             al.add(1);
 
             try {

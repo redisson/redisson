@@ -42,12 +42,7 @@ public class RedissonReliableTopicTest extends RedisDockerTest {
         }
 
         AtomicInteger ii = new AtomicInteger();
-        rt.addListener(Integer.class, new MessageListener<Integer>() {
-            @Override
-            public void onMessage(CharSequence channel, Integer msg) {
-                ii.incrementAndGet();
-            }
-        });
+        rt.addListener(Integer.class, (channel, msg) -> ii.incrementAndGet());
 
 
         ee.shutdown();

@@ -217,13 +217,10 @@ public class PublishSubscribeService {
 
         List<CompletableFuture<PubSubConnectionEntry>> ffs = new ArrayList<>();
         for (MasterSlaveEntry entry : connectionManager.getEntrySet()) {
-            RedisPubSubListener<Object> entryListener = new RedisPubSubListener<Object>() {
-                @Override
-                public void onMessage(CharSequence channel, Object msg) {
-                    if (msg == null
-                            && channel.equals(ChannelName.TRACKING.toString())) {
-                        listener.onFlush(entry.getClient().getAddr());
-                    }
+            RedisPubSubListener<Object> entryListener = (channel, msg) -> {
+                if (msg == null
+                        && channel.equals(ChannelName.TRACKING.toString())) {
+                    listener.onFlush(entry.getClient().getAddr());
                 }
             };
             int entryListenerId = System.identityHashCode(entryListener);
@@ -244,13 +241,10 @@ public class PublishSubscribeService {
 
         List<CompletableFuture<PubSubConnectionEntry>> ffs = new ArrayList<>();
         for (MasterSlaveEntry entry : connectionManager.getEntrySet()) {
-            RedisPubSubListener<Object> entryListener = new RedisPubSubListener<Object>() {
-                @Override
-                public void onMessage(CharSequence channel, Object msg) {
-                    if (msg != null
-                            && channel.equals(ChannelName.TRACKING.toString())) {
-                        listener.onChange((String) msg);
-                    }
+            RedisPubSubListener<Object> entryListener = (channel, msg) -> {
+                if (msg != null
+                        && channel.equals(ChannelName.TRACKING.toString())) {
+                    listener.onChange((String) msg);
                 }
             };
             int entryListenerId = System.identityHashCode(entryListener);
@@ -319,13 +313,10 @@ public class PublishSubscribeService {
                                                 CommandAsyncExecutor commandExecutor, TrackingListener listener) {
         MasterSlaveEntry entry = connectionManager.getEntry(key);
 
-        RedisPubSubListener<Object> redisPubSubListener = new RedisPubSubListener<Object>() {
-            @Override
-            public void onMessage(CharSequence channel, Object msg) {
-                if (channel.equals(ChannelName.TRACKING.toString())
-                        && key.equals(msg)) {
-                    listener.onChange((String) msg);
-                }
+        RedisPubSubListener<Object> redisPubSubListener = (channel, msg) -> {
+            if (channel.equals(ChannelName.TRACKING.toString())
+                    && key.equals(msg)) {
+                listener.onChange((String) msg);
             }
         };
 

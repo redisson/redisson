@@ -287,45 +287,35 @@ public final class RedisClient {
         CompletionStage<RedisConnection> f = addrFuture.thenCompose(res -> {
             CompletableFuture<RedisConnection> r = new CompletableFuture<>();
             ChannelFuture channelFuture = bootstrap.connect(res);
-            channelFuture.addListener(new ChannelFutureListener() {
-                @Override
-                public void operationComplete(final ChannelFuture future) throws Exception {
-                    if (isShutdown()) {
-                        RedisConnectionException cause = new RedisConnectionException("RedisClient is shutdown");
-                        r.completeExceptionally(cause);
-                        return;
-                    }
+            channelFuture.addListener((ChannelFutureListener) future -> {
+                if (isShutdown()) {
+                    RedisConnectionException cause = new RedisConnectionException("RedisClient is shutdown");
+                    r.completeExceptionally(cause);
+                    return;
+                }
 
-                    if (future.isSuccess()) {
-                        RedisConnection c = RedisConnection.getFrom(future.channel());
-                        c.getConnectionPromise().whenComplete((res, e) -> {
-                            bootstrap.config().group().execute(new Runnable() {
-                                @Override
-                                public void run() {
-                                    if (e == null) {
-                                        if (!r.complete(c)) {
-                                            c.closeAsync();
-                                        } else {
-                                            executor.execute(() -> {
-                                                if (config.getConnectedListener() != null) {
-                                                    config.getConnectedListener().accept((InetSocketAddress) getAddr());
-                                                }
-                                            });
+                if (future.isSuccess()) {
+                    RedisConnection c = RedisConnection.getFrom(future.channel());
+                    c.getConnectionPromise().whenComplete((res1, e) -> {
+                        bootstrap.config().group().execute(() -> {
+                            if (e == null) {
+                                if (!r.complete(c)) {
+                                    c.closeAsync();
+                                } else {
+                                    executor.execute(() -> {
+                                        if (config.getConnectedListener() != null) {
+                                            config.getConnectedListener().accept((InetSocketAddress) getAddr());
                                         }
-                                    } else {
-                                        r.completeExceptionally(e);
-                                        c.closeAsync();
-                                    }
+                                    });
                                 }
-                            });
-                        });
-                    } else {
-                        bootstrap.config().group().execute(new Runnable() {
-                            public void run() {
-                                r.completeExceptionally(future.cause());
+                            } else {
+                                r.completeExceptionally(e);
+                                c.closeAsync();
                             }
                         });
-                    }
+                    });
+                } else {
+                    bootstrap.config().group().execute(() -> r.completeExceptionally(future.cause()));
                 }
             });
             return r;
@@ -357,39 +347,29 @@ public final class RedisClient {
         CompletionStage<RedisPubSubConnection> f = nameFuture.thenCompose(res -> {
             CompletableFuture<RedisPubSubConnection> r = new CompletableFuture<>();
             ChannelFuture channelFuture = pubSubBootstrap.connect(res);
-            channelFuture.addListener(new ChannelFutureListener() {
-                @Override
-                public void operationComplete(final ChannelFuture future) throws Exception {
-                    if (isShutdown()) {
-                        RedisConnectionException cause = new RedisConnectionException("RedisClient is shutdown");
-                        r.completeExceptionally(cause);
-                        return;
-                    }
+            channelFuture.addListener((ChannelFutureListener) future -> {
+                if (isShutdown()) {
+                    RedisConnectionException cause = new RedisConnectionException("RedisClient is shutdown");
+                    r.completeExceptionally(cause);
+                    return;
+                }
 
-                    if (future.isSuccess()) {
-                        RedisPubSubConnection c = RedisPubSubConnection.getFrom(future.channel());
-                        c.getConnectionPromise().whenComplete((res, e) -> {
-                            pubSubBootstrap.config().group().execute(new Runnable() {
-                                @Override
-                                public void run() {
-                                    if (e == null) {
-                                        if (!r.complete(c)) {
-                                            c.closeAsync();
-                                        }
-                                    } else {
-                                        r.completeExceptionally(e);
-                                        c.closeAsync();
-                                    }
+                if (future.isSuccess()) {
+                    RedisPubSubConnection c = RedisPubSubConnection.getFrom(future.channel());
+                    c.getConnectionPromise().whenComplete((res1, e) -> {
+                        pubSubBootstrap.config().group().execute(() -> {
+                            if (e == null) {
+                                if (!r.complete(c)) {
+                                    c.closeAsync();
                                 }
-                            });
-                        });
-                    } else {
-                        pubSubBootstrap.config().group().execute(new Runnable() {
-                            public void run() {
-                                r.completeExceptionally(future.cause());
+                            } else {
+                                r.completeExceptionally(e);
+                                c.closeAsync();
                             }
                         });
-                    }
+                    });
+                } else {
+                    pubSubBootstrap.config().group().execute(() -> r.completeExceptionally(future.cause()));
                 }
             });
             return r;
@@ -417,16 +397,13 @@ public final class RedisClient {
         }
 
         ChannelGroupFuture channelsFuture = channels.close();
-        channelsFuture.addListener(new FutureListener<Void>() {
-            @Override
-            public void operationComplete(Future<Void> future) throws Exception {
-                if (!future.isSuccess()) {
-                    result.completeExceptionally(future.cause());
-                    return;
-                }
-                
-                shutdown(result);
+        channelsFuture.addListener((FutureListener<Void>) future -> {
+            if (!future.isSuccess()) {
+                result.completeExceptionally(future.cause());
+                return;
             }
+
+            shutdown(result);
         });
 
         return new CompletableFutureWrapper<>(result);

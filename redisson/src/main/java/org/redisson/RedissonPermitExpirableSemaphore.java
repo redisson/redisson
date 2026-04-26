@@ -17,7 +17,6 @@ package org.redisson;
 
 import io.netty.buffer.ByteBufUtil;
 import io.netty.util.Timeout;
-import io.netty.util.TimerTask;
 import org.redisson.api.RFuture;
 import org.redisson.api.RPermitExpirableSemaphore;
 import org.redisson.client.codec.ByteArrayCodec;
@@ -205,18 +204,15 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
 
                 Timeout scheduledFuture;
                 if (nearestTimeout != null) {
-                    scheduledFuture = getServiceManager().newTimeout(new TimerTask() {
-                        @Override
-                        public void run(Timeout timeout) throws Exception {
-                            if (waitTimeoutFutureRef.get() != null && !waitTimeoutFutureRef.get().cancel()) {
-                                return;
-                            }
-                            
-                            long elapsed = System.currentTimeMillis() - current;
-                            time.addAndGet(-elapsed);
-
-                            tryAcquireAsync(time, permits, entry, result, leaseTime, timeUnit);
+                    scheduledFuture = getServiceManager().newTimeout(timeout -> {
+                        if (waitTimeoutFutureRef.get() != null && !waitTimeoutFutureRef.get().cancel()) {
+                            return;
                         }
+
+                        long elapsed = System.currentTimeMillis() - current;
+                        time.addAndGet(-elapsed);
+
+                        tryAcquireAsync(time, permits, entry, result, leaseTime, timeUnit);
                     }, nearestTimeout, TimeUnit.MILLISECONDS);
                 } else {
                     scheduledFuture = null;
@@ -240,19 +236,16 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                 entry.addListener(listener);
 
                 long t = time.get();
-                Timeout waitTimeoutFuture = getServiceManager().newTimeout(new TimerTask() {
-                    @Override
-                    public void run(Timeout timeout) throws Exception {
-                        if (scheduledFuture != null && !scheduledFuture.cancel()) {
-                            return;
-                        }
+                Timeout waitTimeoutFuture = getServiceManager().newTimeout(timeout -> {
+                    if (scheduledFuture != null && !scheduledFuture.cancel()) {
+                        return;
+                    }
 
-                        if (entry.removeListener(listener)) {
-                            long elapsed = System.currentTimeMillis() - current;
-                            time.addAndGet(-elapsed);
-                            
-                            tryAcquireAsync(time, permits, entry, result, leaseTime, timeUnit);
-                        }
+                    if (entry.removeListener(listener)) {
+                        long elapsed = System.currentTimeMillis() - current;
+                        time.addAndGet(-elapsed);
+
+                        tryAcquireAsync(time, permits, entry, result, leaseTime, timeUnit);
                     }
                 }, t, TimeUnit.MILLISECONDS);
                 waitTimeoutFutureRef.set(waitTimeoutFuture);
@@ -566,12 +559,9 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
             });
             
             if (!subscribeFuture.isDone()) {
-                Timeout scheduledFuture = getServiceManager().newTimeout(new TimerTask() {
-                    @Override
-                    public void run(Timeout timeout) throws Exception {
-                        if (!subscribeFuture.isDone()) {
-                            result.complete(Collections.emptyList());
-                        }
+                Timeout scheduledFuture = getServiceManager().newTimeout(timeout -> {
+                    if (!subscribeFuture.isDone()) {
+                        result.complete(Collections.emptyList());
                     }
                 }, time.get(), TimeUnit.MILLISECONDS);
                 futureRef.set(scheduledFuture);

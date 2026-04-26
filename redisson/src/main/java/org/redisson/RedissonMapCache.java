@@ -3156,45 +3156,33 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         CompletionStage<Integer> f = osTypeFuture.thenCompose(osType -> {
             if (listener instanceof EntryRemovedListener) {
                 RTopic topic = getTopic(getRemovedChannelName());
-                return topic.addListenerAsync(List.class, new MessageListener<List<Object>>() {
-                    @Override
-                    public void onMessage(CharSequence channel, List<Object> msg) {
-                        EntryEvent<K, V> event = new EntryEvent<K, V>(RedissonMapCache.this, EntryEvent.Type.REMOVED, (K) msg.get(0), null, (V) msg.get(1));
-                        ((EntryRemovedListener<K, V>) listener).onRemoved(event);
-                    }
+                return topic.addListenerAsync(List.class, (MessageListener<List<Object>>) (channel, msg) -> {
+                    EntryEvent<K, V> event = new EntryEvent<K, V>(RedissonMapCache.this, EntryEvent.Type.REMOVED, (K) msg.get(0), null, (V) msg.get(1));
+                    ((EntryRemovedListener<K, V>) listener).onRemoved(event);
                 });
             }
 
             if (listener instanceof EntryCreatedListener) {
                 RTopic topic = getTopic(getCreatedChannelName());
-                return topic.addListenerAsync(List.class, new MessageListener<List<Object>>() {
-                    @Override
-                    public void onMessage(CharSequence channel, List<Object> msg) {
-                        EntryEvent<K, V> event = new EntryEvent<K, V>(RedissonMapCache.this, EntryEvent.Type.CREATED, (K) msg.get(0), (V) msg.get(1), null);
-                        ((EntryCreatedListener<K, V>) listener).onCreated(event);
-                    }
+                return topic.addListenerAsync(List.class, (MessageListener<List<Object>>) (channel, msg) -> {
+                    EntryEvent<K, V> event = new EntryEvent<K, V>(RedissonMapCache.this, EntryEvent.Type.CREATED, (K) msg.get(0), (V) msg.get(1), null);
+                    ((EntryCreatedListener<K, V>) listener).onCreated(event);
                 });
             }
 
             if (listener instanceof EntryUpdatedListener) {
                 RTopic topic = getTopic(getUpdatedChannelName());
-                return topic.addListenerAsync(List.class, new MessageListener<List<Object>>() {
-                    @Override
-                    public void onMessage(CharSequence channel, List<Object> msg) {
-                        EntryEvent<K, V> event = new EntryEvent<K, V>(RedissonMapCache.this, EntryEvent.Type.UPDATED, (K) msg.get(0), (V) msg.get(1), (V) msg.get(2));
-                        ((EntryUpdatedListener<K, V>) listener).onUpdated(event);
-                    }
+                return topic.addListenerAsync(List.class, (MessageListener<List<Object>>) (channel, msg) -> {
+                    EntryEvent<K, V> event = new EntryEvent<K, V>(RedissonMapCache.this, EntryEvent.Type.UPDATED, (K) msg.get(0), (V) msg.get(1), (V) msg.get(2));
+                    ((EntryUpdatedListener<K, V>) listener).onUpdated(event);
                 });
             }
 
             if (listener instanceof EntryExpiredListener) {
                 RTopic topic = getTopic(getExpiredChannelName());
-                return topic.addListenerAsync(List.class, new MessageListener<List<Object>>() {
-                    @Override
-                    public void onMessage(CharSequence channel, List<Object> msg) {
-                        EntryEvent<K, V> event = new EntryEvent<K, V>(RedissonMapCache.this, EntryEvent.Type.EXPIRED, (K) msg.get(0), (V) msg.get(1), null);
-                        ((EntryExpiredListener<K, V>) listener).onExpired(event);
-                    }
+                return topic.addListenerAsync(List.class, (MessageListener<List<Object>>) (channel, msg) -> {
+                    EntryEvent<K, V> event = new EntryEvent<K, V>(RedissonMapCache.this, EntryEvent.Type.EXPIRED, (K) msg.get(0), (V) msg.get(1), null);
+                    ((EntryExpiredListener<K, V>) listener).onExpired(event);
                 });
             }
 

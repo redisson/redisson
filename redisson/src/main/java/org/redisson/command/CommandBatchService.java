@@ -17,7 +17,6 @@ package org.redisson.command;
 
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.Timeout;
-import io.netty.util.TimerTask;
 import org.redisson.api.BatchOptions;
 import org.redisson.api.BatchOptions.ExecutionMode;
 import org.redisson.api.BatchResult;
@@ -633,18 +632,15 @@ public class CommandBatchService extends CommandAsyncService implements BatchSer
             responseTimeout = connectionManager.getServiceManager().getConfig().getTimeout();
         }
 
-        Timeout timeout = connectionManager.getServiceManager().newTimeout(new TimerTask() {
-            @Override
-            public void run(Timeout timeout) throws Exception {
-                connections.values().forEach(c -> {
-                    c.getCancelCallback().run();
-                });
+        Timeout timeout = connectionManager.getServiceManager().newTimeout(timeout1 -> {
+            connections.values().forEach(c -> {
+                c.getCancelCallback().run();
+            });
 
-                resultPromise.completeExceptionally(new RedisTimeoutException("Response timeout for queued commands " + responseTimeout + ": " +
-                        commands.values().stream()
-                                .flatMap(e -> e.getCommands().stream().map(d -> d.getCommand()))
-                                .collect(Collectors.toList())));
-            }
+            resultPromise.completeExceptionally(new RedisTimeoutException("Response timeout for queued commands " + responseTimeout + ": " +
+                    commands.values().stream()
+                            .flatMap(e -> e.getCommands().stream().map(d -> d.getCommand()))
+                            .collect(Collectors.toList())));
         }, responseTimeout, TimeUnit.MILLISECONDS);
 
         CompletableFuture<Void> allFutures = CompletableFuture.allOf(commands.values().stream()

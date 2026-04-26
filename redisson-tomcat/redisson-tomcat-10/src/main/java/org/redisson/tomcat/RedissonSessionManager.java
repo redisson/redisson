@@ -300,63 +300,59 @@ public class RedissonSessionManager extends ManagerBase {
         
         if (readMode == ReadMode.MEMORY && this.broadcastSessionUpdates || broadcastSessionEvents) {
             RTopic updatesTopic = getTopic();
-            messageListener = new MessageListener<AttributeMessage>() {
-                
-                @Override
-                public void onMessage(CharSequence channel, AttributeMessage msg) {
-                    try {
-                        if (msg.getNodeId().equals(nodeId)) {
-                            return;
-                        }
-
-                        RedissonSession session = (RedissonSession) RedissonSessionManager.super.findSession(msg.getSessionId());
-                        if (session != null) {
-                            if (msg instanceof SessionDestroyedMessage) {
-                                session.expire();
-                            }
-                            
-                            if (msg instanceof AttributeRemoveMessage) {
-                                for (String name : ((AttributeRemoveMessage)msg).getNames()) {
-                                    session.superRemoveAttributeInternal(name, true);
-                                }
-                            }
-
-                            if (msg instanceof AttributesClearMessage) {
-                                RedissonSessionManager.super.remove(session, false);
-                            }
-                            
-                            if (msg instanceof AttributesPutAllMessage) {
-                                AttributesPutAllMessage m = (AttributesPutAllMessage) msg;
-                                Map<String, Object> attrs = m.getAttrs(codecToUse.getMapValueDecoder());
-                                session.load(attrs);
-                            }
-                            
-                            if (msg instanceof AttributeUpdateMessage) {
-                                AttributeUpdateMessage m = (AttributeUpdateMessage)msg;
-                                Map<String, Object> attrs = new HashMap<>();
-                                attrs.put(m.getName(), m.getValue(codecToUse.getMapValueDecoder()));
-                                session.load(attrs);
-                            }
-                        } else {
-                            if (msg instanceof SessionCreatedMessage) {
-                                findSession(msg.getSessionId());
-                            }
-                            
-                            if (msg instanceof SessionDestroyedMessage) {
-                                Session s = findSession(msg.getSessionId(), false);
-                                if (s != null) {
-                                    s.expire();
-                                }
-                                RSet<String> set = getNotifiedNodes(msg.getSessionId());
-                                set.add(nodeId);
-                                set.expire(Duration.ofSeconds(60));
-                            }
-                            
-                        }
-
-                    } catch (Exception e) {
-                        log.error("Unable to handle topic message", e);
+            messageListener = (MessageListener<AttributeMessage>) (channel, msg) -> {
+                try {
+                    if (msg.getNodeId().equals(nodeId)) {
+                        return;
                     }
+
+                    RedissonSession session = (RedissonSession) RedissonSessionManager.super.findSession(msg.getSessionId());
+                    if (session != null) {
+                        if (msg instanceof SessionDestroyedMessage) {
+                            session.expire();
+                        }
+
+                        if (msg instanceof AttributeRemoveMessage) {
+                            for (String name : ((AttributeRemoveMessage)msg).getNames()) {
+                                session.superRemoveAttributeInternal(name, true);
+                            }
+                        }
+
+                        if (msg instanceof AttributesClearMessage) {
+                            RedissonSessionManager.super.remove(session, false);
+                        }
+
+                        if (msg instanceof AttributesPutAllMessage) {
+                            AttributesPutAllMessage m = (AttributesPutAllMessage) msg;
+                            Map<String, Object> attrs = m.getAttrs(codecToUse.getMapValueDecoder());
+                            session.load(attrs);
+                        }
+
+                        if (msg instanceof AttributeUpdateMessage) {
+                            AttributeUpdateMessage m = (AttributeUpdateMessage)msg;
+                            Map<String, Object> attrs = new HashMap<>();
+                            attrs.put(m.getName(), m.getValue(codecToUse.getMapValueDecoder()));
+                            session.load(attrs);
+                        }
+                    } else {
+                        if (msg instanceof SessionCreatedMessage) {
+                            findSession(msg.getSessionId());
+                        }
+
+                        if (msg instanceof SessionDestroyedMessage) {
+                            Session s = findSession(msg.getSessionId(), false);
+                            if (s != null) {
+                                s.expire();
+                            }
+                            RSet<String> set = getNotifiedNodes(msg.getSessionId());
+                            set.add(nodeId);
+                            set.expire(Duration.ofSeconds(60));
+                        }
+
+                    }
+
+                } catch (Exception e) {
+                    log.error("Unable to handle topic message", e);
                 }
             };
             

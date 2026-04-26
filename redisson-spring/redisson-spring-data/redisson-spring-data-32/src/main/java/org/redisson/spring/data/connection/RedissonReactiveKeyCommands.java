@@ -63,12 +63,7 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
         });
     }
     
-    private static final RedisStrictCommand<DataType> TYPE = new RedisStrictCommand<DataType>("TYPE", new Convertor<DataType>() {
-        @Override
-        public DataType convert(Object obj) {
-            return DataType.fromCode(obj.toString());
-        }
-    });
+    private static final RedisStrictCommand<DataType> TYPE = new RedisStrictCommand<DataType>("TYPE", obj -> DataType.fromCode(obj.toString()));
 
     @Override
     public Flux<CommandResponse<KeyCommand, DataType>> type(Publisher<KeyCommand> keys) {
@@ -310,12 +305,7 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
         });
     }
     
-    private static final RedisStrictCommand<ValueEncoding> OBJECT_ENCODING = new RedisStrictCommand<ValueEncoding>("OBJECT", "ENCODING", new Convertor<ValueEncoding>() {
-        @Override
-        public ValueEncoding convert(Object obj) {
-            return ValueEncoding.of((String) obj);
-        }
-    });
+    private static final RedisStrictCommand<ValueEncoding> OBJECT_ENCODING = new RedisStrictCommand<ValueEncoding>("OBJECT", "ENCODING", obj -> ValueEncoding.of((String) obj));
 
     @Override
     public Mono<ValueEncoding> encodingOf(ByteBuffer key) {

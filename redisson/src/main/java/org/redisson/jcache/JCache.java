@@ -1135,43 +1135,40 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
             return;
         }
 
-        commandExecutor.getServiceManager().getExecutor().execute(new Runnable() {
-            @Override
-            public void run() {
-                for (K key : keys) {
-                    try {
-                        if (!containsKey(key) || replaceExistingValues) {
-                            RLock lock = getLockedLock(key);
-                            try {
-                                if (!containsKey(key)|| replaceExistingValues) {
-                                    V value;
-                                    try {
-                                        value = cacheLoader.load(key);
-                                    } catch (Exception ex) {
-                                        throw new CacheLoaderException(ex);
-                                    }
-                                    if (value != null) {
-                                        if (atomicExecution) {
-                                            putValue(key, value);
-                                        } else {
-                                            putValueLocked(key, value);
-                                        }
+        commandExecutor.getServiceManager().getExecutor().execute(() -> {
+            for (K key : keys) {
+                try {
+                    if (!containsKey(key) || replaceExistingValues) {
+                        RLock lock = getLockedLock(key);
+                        try {
+                            if (!containsKey(key)|| replaceExistingValues) {
+                                V value;
+                                try {
+                                    value = cacheLoader.load(key);
+                                } catch (Exception ex) {
+                                    throw new CacheLoaderException(ex);
+                                }
+                                if (value != null) {
+                                    if (atomicExecution) {
+                                        putValue(key, value);
+                                    } else {
+                                        putValueLocked(key, value);
                                     }
                                 }
-                            } finally {
-                                lock.unlock();
                             }
+                        } finally {
+                            lock.unlock();
                         }
-                    } catch (Exception e) {
-                        if (completionListener != null) {
-                            completionListener.onException(e);
-                        }
-                        throw e;
                     }
+                } catch (Exception e) {
+                    if (completionListener != null) {
+                        completionListener.onException(e);
+                    }
+                    throw e;
                 }
-                if (completionListener != null) {
-                    completionListener.onCompletion();
-                }
+            }
+            if (completionListener != null) {
+                completionListener.onCompletion();
             }
         });
     }
@@ -3092,19 +3089,11 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
             try {
                 final T result = invoke(key, entryProcessor, arguments);
                 if (result != null) {
-                    results.put(key, new EntryProcessorResult<T>() {
-                        @Override
-                        public T get() throws EntryProcessorException {
-                            return result;
-                        }
-                    });
+                    results.put(key, () -> result);
                 }
             } catch (final EntryProcessorException e) {
-                results.put(key, new EntryProcessorResult<T>() {
-                    @Override
-                    public T get() throws EntryProcessorException {
-                        throw e;
-                    }
+                results.put(key, () -> {
+                    throw e;
                 });
             }
         }
@@ -3207,18 +3196,15 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
             }
 
             RTopic topic = redisson.getTopic(channelName, new JCacheEventCodec(codec, osType, sync));
-            int listenerId = topic.addListener(List.class, new MessageListener<List<Object>>() {
-                @Override
-                public void onMessage(CharSequence channel, List<Object> msg) {
-                    JCacheEntryEvent<K, V> event = new JCacheEntryEvent<K, V>(JCache.this, EventType.REMOVED, msg.get(0), msg.get(1), msg.get(1));
-                    try {
-                        if (filter == null || filter.evaluate(event)) {
-                            List<CacheEntryEvent<? extends K, ? extends V>> events = Collections.<CacheEntryEvent<? extends K, ? extends V>>singletonList(event);
-                            ((CacheEntryRemovedListener<K, V>) listener).onRemoved(events);
-                        }
-                    } finally {
-                        sendSync(sync, msg);
+            int listenerId = topic.addListener(List.class, (MessageListener<List<Object>>) (channel, msg) -> {
+                JCacheEntryEvent<K, V> event = new JCacheEntryEvent<K, V>(JCache.this, EventType.REMOVED, msg.get(0), msg.get(1), msg.get(1));
+                try {
+                    if (filter == null || filter.evaluate(event)) {
+                        List<CacheEntryEvent<? extends K, ? extends V>> events = Collections.<CacheEntryEvent<? extends K, ? extends V>>singletonList(event);
+                        ((CacheEntryRemovedListener<K, V>) listener).onRemoved(events);
                     }
+                } finally {
+                    sendSync(sync, msg);
                 }
             });
             values.put(listenerId, channelName);
@@ -3230,18 +3216,15 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
             }
 
             RTopic topic = redisson.getTopic(channelName, new JCacheEventCodec(codec, osType, sync));
-            int listenerId = topic.addListener(List.class, new MessageListener<List<Object>>() {
-                @Override
-                public void onMessage(CharSequence channel, List<Object> msg) {
-                    JCacheEntryEvent<K, V> event = new JCacheEntryEvent<K, V>(JCache.this, EventType.CREATED, msg.get(0), msg.get(1));
-                    try {
-                        if (filter == null || filter.evaluate(event)) {
-                            List<CacheEntryEvent<? extends K, ? extends V>> events = Collections.<CacheEntryEvent<? extends K, ? extends V>>singletonList(event);
-                            ((CacheEntryCreatedListener<K, V>) listener).onCreated(events);
-                        }
-                    } finally {
-                        sendSync(sync, msg);
+            int listenerId = topic.addListener(List.class, (MessageListener<List<Object>>) (channel, msg) -> {
+                JCacheEntryEvent<K, V> event = new JCacheEntryEvent<K, V>(JCache.this, EventType.CREATED, msg.get(0), msg.get(1));
+                try {
+                    if (filter == null || filter.evaluate(event)) {
+                        List<CacheEntryEvent<? extends K, ? extends V>> events = Collections.<CacheEntryEvent<? extends K, ? extends V>>singletonList(event);
+                        ((CacheEntryCreatedListener<K, V>) listener).onCreated(events);
                     }
+                } finally {
+                    sendSync(sync, msg);
                 }
             });
             values.put(listenerId, channelName);
@@ -3257,19 +3240,16 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
             }
 
             RTopic topic = redisson.getTopic(channelName, new JCacheEventCodec(codec, osType, sync, true));
-            int listenerId = topic.addListener(List.class, new MessageListener<List<Object>>() {
-                @Override
-                public void onMessage(CharSequence channel, List<Object> msg) {
-                    JCacheEntryEvent<K, V> event = new JCacheEntryEvent<K, V>(JCache.this, EventType.UPDATED, msg.get(0), msg.get(1), msg.get(2));
+            int listenerId = topic.addListener(List.class, (MessageListener<List<Object>>) (channel, msg) -> {
+                JCacheEntryEvent<K, V> event = new JCacheEntryEvent<K, V>(JCache.this, EventType.UPDATED, msg.get(0), msg.get(1), msg.get(2));
 
-                    try {
-                        if (filter == null || filter.evaluate(event)) {
-                            List<CacheEntryEvent<? extends K, ? extends V>> events = Collections.<CacheEntryEvent<? extends K, ? extends V>>singletonList(event);
-                            ((CacheEntryUpdatedListener<K, V>) listener).onUpdated(events);
-                        }
-                    } finally {
-                        sendSync(sync, msg);
+                try {
+                    if (filter == null || filter.evaluate(event)) {
+                        List<CacheEntryEvent<? extends K, ? extends V>> events = Collections.<CacheEntryEvent<? extends K, ? extends V>>singletonList(event);
+                        ((CacheEntryUpdatedListener<K, V>) listener).onUpdated(events);
                     }
+                } finally {
+                    sendSync(sync, msg);
                 }
             });
             values.put(listenerId, channelName);
@@ -3278,14 +3258,11 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
             String channelName = getExpiredChannelName();
 
             RTopic topic = redisson.getTopic(channelName, new JCacheEventCodec(codec, osType, false));
-            int listenerId = topic.addListener(List.class, new MessageListener<List<Object>>() {
-                @Override
-                public void onMessage(CharSequence channel, List<Object> msg) {
-                    JCacheEntryEvent<K, V> event = new JCacheEntryEvent<K, V>(JCache.this, EventType.EXPIRED, msg.get(0), msg.get(1), msg.get(1));
-                    if (filter == null || filter.evaluate(event)) {
-                        List<CacheEntryEvent<? extends K, ? extends V>> events = Collections.<CacheEntryEvent<? extends K, ? extends V>>singletonList(event);
-                        ((CacheEntryExpiredListener<K, V>) listener).onExpired(events);
-                    }
+            int listenerId = topic.addListener(List.class, (MessageListener<List<Object>>) (channel, msg) -> {
+                JCacheEntryEvent<K, V> event = new JCacheEntryEvent<K, V>(JCache.this, EventType.EXPIRED, msg.get(0), msg.get(1), msg.get(1));
+                if (filter == null || filter.evaluate(event)) {
+                    List<CacheEntryEvent<? extends K, ? extends V>> events = Collections.<CacheEntryEvent<? extends K, ? extends V>>singletonList(event);
+                    ((CacheEntryExpiredListener<K, V>) listener).onExpired(events);
                 }
             });
             values.put(listenerId, channelName);

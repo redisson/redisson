@@ -568,16 +568,13 @@ public class RedissonRemoteServiceTest extends RedisDockerTest {
         java.util.concurrent.Future[] clientFutures = new java.util.concurrent.Future[clientAmount];
         ExecutorService executor = Executors.newFixedThreadPool(clientAmount);
         for (int i = 0; i < clientAmount; i++) {
-            clientFutures[i] = executor.submit(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        RemoteInterface ri = client.getRemoteService().get(RemoteInterface.class, clientAmount * 3, TimeUnit.SECONDS, clientAmount * 3, TimeUnit.SECONDS);
-                        readyLatch.await();
-                        ri.timeoutMethod();
-                    } catch (InterruptedException e) {
-                        // ignore
-                    }
+            clientFutures[i] = executor.submit(() -> {
+                try {
+                    RemoteInterface ri = client.getRemoteService().get(RemoteInterface.class, clientAmount * 3, TimeUnit.SECONDS, clientAmount * 3, TimeUnit.SECONDS);
+                    readyLatch.await();
+                    ri.timeoutMethod();
+                } catch (InterruptedException e) {
+                    // ignore
                 }
             });
         }

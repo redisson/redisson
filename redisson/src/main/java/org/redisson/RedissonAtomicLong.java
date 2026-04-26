@@ -24,7 +24,6 @@ import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
-import org.redisson.client.protocol.convertor.Convertor;
 import org.redisson.command.CommandAsyncExecutor;
 
 import java.util.Collections;
@@ -147,12 +146,7 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
 
     @Override
     public RFuture<Long> getAndAddAsync(final long delta) {
-        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, new RedisStrictCommand<Long>("INCRBY", new Convertor<Long>() {
-            @Override
-            public Long convert(Object obj) {
-                return ((Long) obj) - delta;
-            }
-        }), getRawName(), delta);
+        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, new RedisStrictCommand<Long>("INCRBY", obj -> ((Long) obj) - delta), getRawName(), delta);
     }
 
 

@@ -101,17 +101,12 @@ public class RedissonReactiveHashCommands extends RedissonBaseReactive implement
         });
     }
     
-    private static final RedisCommand<List<Object>> HMGET = new RedisCommand<List<Object>>("HMGET", new MultiDecoder<List<Object>>() {
-
-        @Override
-        public List<Object> decode(List<Object> parts, State state) {
-            List<Object> list = parts.stream().filter(e -> e != null).collect(Collectors.toList());
-            if (list.isEmpty()) {
-                return null;
-            }
-            return parts;
+    private static final RedisCommand<List<Object>> HMGET = new RedisCommand<List<Object>>("HMGET", (parts, state) -> {
+        List<Object> list = parts.stream().filter(e -> e != null).collect(Collectors.toList());
+        if (list.isEmpty()) {
+            return null;
         }
-        
+        return parts;
     });
 
     @Override

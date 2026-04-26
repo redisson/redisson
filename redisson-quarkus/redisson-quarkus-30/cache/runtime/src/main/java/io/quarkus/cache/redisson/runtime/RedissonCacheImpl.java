@@ -86,114 +86,87 @@ public class RedissonCacheImpl extends AbstractCache implements RedissonCache {
     @Override
     public <K, V> Uni<V> put(K key, V value) {
         Objects.requireNonNull(key, NULL_KEYS_NOT_SUPPORTED_MSG);
-        return Uni.createFrom().completionStage(new Supplier<CompletionStage<V>>() {
-            @Override
-            public CompletionStage<V> get() {
-                long ttl = cacheInfo.expireAfterWrite.orElse(Duration.ZERO).toMillis();
-                long maxIdleTime = cacheInfo.expireAfterAccess.orElse(Duration.ZERO).toMillis();
+        return Uni.createFrom().completionStage((Supplier<CompletionStage<V>>) () -> {
+            long ttl = cacheInfo.expireAfterWrite.orElse(Duration.ZERO).toMillis();
+            long maxIdleTime = cacheInfo.expireAfterAccess.orElse(Duration.ZERO).toMillis();
 
-                if (maxIdleTime > 0 || ttl > 0) {
-                    if (mapCacheNative != null) {
-                        return mapCacheNative.putAsync(key, value, Duration.ofMillis(ttl));
-                    }
-                    return mapCache.putAsync(key, value, ttl, TimeUnit.MILLISECONDS, maxIdleTime, TimeUnit.MILLISECONDS);
+            if (maxIdleTime > 0 || ttl > 0) {
+                if (mapCacheNative != null) {
+                    return mapCacheNative.putAsync(key, value, Duration.ofMillis(ttl));
                 }
-                return map.putAsync(key, value);
+                return mapCache.putAsync(key, value, ttl, TimeUnit.MILLISECONDS, maxIdleTime, TimeUnit.MILLISECONDS);
             }
+            return map.putAsync(key, value);
         });
     }
 
     @Override
     public <K, V> Uni<Boolean> fastPut(K key, V value) {
         Objects.requireNonNull(key, NULL_KEYS_NOT_SUPPORTED_MSG);
-        return Uni.createFrom().completionStage(new Supplier<CompletionStage<Boolean>>() {
-            @Override
-            public CompletionStage<Boolean> get() {
-                long ttl = cacheInfo.expireAfterWrite.orElse(Duration.ZERO).toMillis();
-                long maxIdleTime = cacheInfo.expireAfterAccess.orElse(Duration.ZERO).toMillis();
+        return Uni.createFrom().completionStage((Supplier<CompletionStage<Boolean>>) () -> {
+            long ttl = cacheInfo.expireAfterWrite.orElse(Duration.ZERO).toMillis();
+            long maxIdleTime = cacheInfo.expireAfterAccess.orElse(Duration.ZERO).toMillis();
 
-                if (maxIdleTime > 0 || ttl > 0) {
-                    if (mapCacheNative != null) {
-                        return mapCacheNative.fastPutAsync(key, value, Duration.ofMillis(ttl));
-                    }
-                    return mapCache.fastPutAsync(key, value, ttl, TimeUnit.MILLISECONDS, maxIdleTime, TimeUnit.MILLISECONDS);
+            if (maxIdleTime > 0 || ttl > 0) {
+                if (mapCacheNative != null) {
+                    return mapCacheNative.fastPutAsync(key, value, Duration.ofMillis(ttl));
                 }
-                return map.fastPutAsync(key, value);
+                return mapCache.fastPutAsync(key, value, ttl, TimeUnit.MILLISECONDS, maxIdleTime, TimeUnit.MILLISECONDS);
             }
+            return map.fastPutAsync(key, value);
         });
     }
 
     @Override
     public <K, V> Uni<V> putIfAbsent(K key, V value) {
         Objects.requireNonNull(key, NULL_KEYS_NOT_SUPPORTED_MSG);
-        return Uni.createFrom().completionStage(new Supplier<CompletionStage<V>>() {
-            @Override
-            public CompletionStage<V> get() {
-                long ttl = cacheInfo.expireAfterWrite.orElse(Duration.ZERO).toMillis();
-                long maxIdleTime = cacheInfo.expireAfterAccess.orElse(Duration.ZERO).toMillis();
+        return Uni.createFrom().completionStage((Supplier<CompletionStage<V>>) () -> {
+            long ttl = cacheInfo.expireAfterWrite.orElse(Duration.ZERO).toMillis();
+            long maxIdleTime = cacheInfo.expireAfterAccess.orElse(Duration.ZERO).toMillis();
 
-                if (maxIdleTime > 0 || ttl > 0) {
-                    if (mapCacheNative != null) {
-                        return mapCacheNative.putIfAbsentAsync(key, value, Duration.ofMillis(ttl));
-                    }
-                    return mapCache.putIfAbsentAsync(key, value, ttl, TimeUnit.MILLISECONDS, maxIdleTime, TimeUnit.MILLISECONDS);
+            if (maxIdleTime > 0 || ttl > 0) {
+                if (mapCacheNative != null) {
+                    return mapCacheNative.putIfAbsentAsync(key, value, Duration.ofMillis(ttl));
                 }
-                return map.putIfAbsentAsync(key, value);
+                return mapCache.putIfAbsentAsync(key, value, ttl, TimeUnit.MILLISECONDS, maxIdleTime, TimeUnit.MILLISECONDS);
             }
+            return map.putIfAbsentAsync(key, value);
         });
     }
 
     @Override
     public <K, V> Uni<V> putIfExists(K key, V value) {
         Objects.requireNonNull(key, NULL_KEYS_NOT_SUPPORTED_MSG);
-        return Uni.createFrom().completionStage(new Supplier<CompletionStage<V>>() {
-            @Override
-            public CompletionStage<V> get() {
-                return map.putIfExistsAsync(key, value);
-            }
-        });
+        return Uni.createFrom().completionStage((Supplier<CompletionStage<V>>) () -> map.putIfExistsAsync(key, value));
     }
 
     @Override
     public <K, V> Uni<Boolean> fastPutIfAbsent(K key, V value) {
         Objects.requireNonNull(key, NULL_KEYS_NOT_SUPPORTED_MSG);
-        return Uni.createFrom().completionStage(new Supplier<CompletionStage<Boolean>>() {
-            @Override
-            public CompletionStage<Boolean> get() {
-                long ttl = cacheInfo.expireAfterWrite.orElse(Duration.ZERO).toMillis();
-                long maxIdleTime = cacheInfo.expireAfterAccess.orElse(Duration.ZERO).toMillis();
+        return Uni.createFrom().completionStage((Supplier<CompletionStage<Boolean>>) () -> {
+            long ttl = cacheInfo.expireAfterWrite.orElse(Duration.ZERO).toMillis();
+            long maxIdleTime = cacheInfo.expireAfterAccess.orElse(Duration.ZERO).toMillis();
 
-                if (maxIdleTime > 0 || ttl > 0) {
-                    if (mapCacheNative != null) {
-                        return mapCacheNative.fastPutIfAbsentAsync(key, value, Duration.ofMillis(ttl));
-                    }
-                    return mapCache.fastPutIfAbsentAsync(key, value, ttl, TimeUnit.MILLISECONDS, maxIdleTime, TimeUnit.MILLISECONDS);
+            if (maxIdleTime > 0 || ttl > 0) {
+                if (mapCacheNative != null) {
+                    return mapCacheNative.fastPutIfAbsentAsync(key, value, Duration.ofMillis(ttl));
                 }
-                return map.fastPutIfAbsentAsync(key, value);
+                return mapCache.fastPutIfAbsentAsync(key, value, ttl, TimeUnit.MILLISECONDS, maxIdleTime, TimeUnit.MILLISECONDS);
             }
+            return map.fastPutIfAbsentAsync(key, value);
         });
     }
 
     @Override
     public <K, V> Uni<Boolean> fastPutIfExists(K key, V value) {
         Objects.requireNonNull(key, NULL_KEYS_NOT_SUPPORTED_MSG);
-        return Uni.createFrom().completionStage(new Supplier<CompletionStage<Boolean>>() {
-            @Override
-            public CompletionStage<Boolean> get() {
-                return map.fastPutIfExistsAsync(key, value);
-            }
-        });
+        return Uni.createFrom().completionStage((Supplier<CompletionStage<Boolean>>) () -> map.fastPutIfExistsAsync(key, value));
     }
 
     @Override
     public <K, V> Uni<V> getOrDefault(K key, V defaultValue) {
         Objects.requireNonNull(key, NULL_KEYS_NOT_SUPPORTED_MSG);
-        return Uni.createFrom().completionStage(new Supplier<CompletionStage<V>>() {
-            @Override
-            public CompletionStage<V> get() {
-                return map.getAsync(key);
-            }
-        }).onItem().ifNull().continueWith(() -> defaultValue);
+        return Uni.createFrom().completionStage((Supplier<CompletionStage<V>>) () -> map.getAsync(key)).onItem().ifNull().continueWith(() -> defaultValue);
     }
 
     @Override
@@ -204,62 +177,34 @@ public class RedissonCacheImpl extends AbstractCache implements RedissonCache {
     @Override
     public <K, V> Uni<V> get(K key, Function<K, V> valueLoader) {
         Objects.requireNonNull(key, NULL_KEYS_NOT_SUPPORTED_MSG);
-        return Uni.createFrom().completionStage(new Supplier<CompletionStage<V>>() {
-            @Override
-            public CompletionStage<V> get() {
-                return map.computeIfAbsentAsync(key, valueLoader);
-            }
-        });
+        return Uni.createFrom().completionStage((Supplier<CompletionStage<V>>) () -> map.computeIfAbsentAsync(key, valueLoader));
     }
 
     @Override
     public <K, V> Uni<V> getAsync(K key, Function<K, Uni<V>> valueLoader) {
         Objects.requireNonNull(key, NULL_KEYS_NOT_SUPPORTED_MSG);
-        return Uni.createFrom().completionStage(new Supplier<CompletionStage<V>>() {
-            @Override
-            public CompletionStage<V> get() {
-                return map.computeIfAbsentAsync(key, new Function<K, V>() {
-                    @Override
-                    public V apply(K o) {
-                        return valueLoader.apply(o).await().indefinitely();
-                    }
-                });
-            }
-        });
+        return Uni.createFrom().completionStage((Supplier<CompletionStage<V>>) () -> map.computeIfAbsentAsync(key, (Function<K, V>) o -> valueLoader.apply(o).await().indefinitely()));
     }
 
     @Override
     public Uni<Void> invalidate(Object key) {
         Objects.requireNonNull(key, NULL_KEYS_NOT_SUPPORTED_MSG);
-        return Uni.createFrom().completionStage(new Supplier<CompletionStage<Void>>() {
-            @Override
-            public CompletionStage<Void> get() {
-                return map.removeAsync(key).thenApply(r -> null);
-            }
-        });
+        return Uni.createFrom().completionStage((Supplier<CompletionStage<Void>>) () -> map.removeAsync(key).thenApply(r -> null));
     }
 
     @Override
     public Uni<Void> invalidateAll() {
-        return Uni.createFrom().completionStage(new Supplier<CompletionStage<Void>>() {
-            @Override
-            public CompletionStage<Void> get() {
-                return map.deleteAsync().thenApply(r -> null);
-            }
-        });
+        return Uni.createFrom().completionStage((Supplier<CompletionStage<Void>>) () -> map.deleteAsync().thenApply(r -> null));
     }
 
     @Override
     public Uni<Void> invalidateIf(Predicate<Object> predicate) {
-        return Uni.createFrom().completionStage(new Supplier<CompletionStage<Void>>() {
-            @Override
-            public CompletionStage<Void> get() {
-                ExecutorService executor = ((RedissonObject) map).getServiceManager().getExecutor();
-                return map.readAllKeySetAsync().thenComposeAsync(keys -> {
-                    Object[] deleted = ((Set<Object>) keys).stream().filter(k -> predicate.test(k)).toArray();
-                    return map.fastRemoveAsync(deleted);
-                }, executor);
-            }
+        return Uni.createFrom().completionStage((Supplier<CompletionStage<Void>>) () -> {
+            ExecutorService executor = ((RedissonObject) map).getServiceManager().getExecutor();
+            return map.readAllKeySetAsync().thenComposeAsync(keys -> {
+                Object[] deleted = ((Set<Object>) keys).stream().filter(k -> predicate.test(k)).toArray();
+                return map.fastRemoveAsync(deleted);
+            }, executor);
         });
     }
 

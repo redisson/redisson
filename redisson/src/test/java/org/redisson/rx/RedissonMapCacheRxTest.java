@@ -177,13 +177,10 @@ public class RedissonMapCacheRxTest extends BaseRxTest {
         sync(cache.put("0", "8", 1, TimeUnit.SECONDS));
 
         AtomicBoolean received = new AtomicBoolean();
-        cache.addListener(new EntryExpiredListener<String, String>() {
-            @Override
-            public void onExpired(EntryEvent<String, String> event) {
-                assertThat(event.getKey()).isEqualTo("0");
-                assertThat(event.getValue()).isEqualTo("8");
-                received.set(true);
-            }
+        cache.addListener((EntryExpiredListener<String, String>) event -> {
+            assertThat(event.getKey()).isEqualTo("0");
+            assertThat(event.getValue()).isEqualTo("8");
+            received.set(true);
         }).blockingGet();
 
         Awaitility.await().atMost(Duration.ofSeconds(7)).untilAsserted(() -> {

@@ -22,8 +22,6 @@ import java.util.function.Supplier;
 import org.redisson.api.RFuture;
 
 import io.reactivex.rxjava3.core.Flowable;
-import io.reactivex.rxjava3.functions.Action;
-import io.reactivex.rxjava3.functions.LongConsumer;
 import io.reactivex.rxjava3.processors.ReplayProcessor;
 
 /**
@@ -35,21 +33,13 @@ public class ElementsStream {
 
     public static <V> Flowable<V> takeElements(Supplier<RFuture<V>> callable) {
         ReplayProcessor<V> p = ReplayProcessor.create();
-        return p.doOnRequest(new LongConsumer() {
-            @Override
-            public void accept(long n) throws Exception {
-                AtomicLong counter = new AtomicLong(n);
-                AtomicReference<RFuture<V>> futureRef = new AtomicReference<RFuture<V>>();
-                
-                take(callable, p, counter, futureRef);
+        return p.doOnRequest(n -> {
+            AtomicLong counter = new AtomicLong(n);
+            AtomicReference<RFuture<V>> futureRef = new AtomicReference<RFuture<V>>();
 
-                p.doOnCancel(new Action() {
-                    @Override
-                    public void run() throws Exception {
-                        futureRef.get().cancel(true);
-                    }
-                });
-            }
+            take(callable, p, counter, futureRef);
+
+            p.doOnCancel(() -> futureRef.get().cancel(true));
         });
     }
     

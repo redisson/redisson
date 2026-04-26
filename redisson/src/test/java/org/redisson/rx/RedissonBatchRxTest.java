@@ -393,15 +393,12 @@ public class RedissonBatchRxTest extends BaseRxTest {
         }
         for (int i = 0; i < 500; i++) {
             final int j = i;
-            e.execute(new Runnable() {
-                @Override
-                public void run() {
-                    synchronized (RedissonBatchRxTest.this) {
-                        int i = (int) index.incrementAndGet();
-                        int ind = j % 3;
-                        Single<Long> f1 = batch.getAtomicLong("test" + ind).addAndGet(j);
-                        futures.set(i, f1);
-                    }
+            e.execute(() -> {
+                synchronized (RedissonBatchRxTest.this) {
+                    int i1 = (int) index.incrementAndGet();
+                    int ind = j % 3;
+                    Single<Long> f1 = batch.getAtomicLong("test" + ind).addAndGet(j);
+                    futures.set(i1, f1);
                 }
             });
         }

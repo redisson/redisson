@@ -15,10 +15,8 @@
  */
 package org.redisson.reactive;
 
-import java.util.concurrent.Callable;
 
 import org.redisson.RedissonBlockingDeque;
-import org.redisson.api.RFuture;
 
 import reactor.core.publisher.Flux;
 
@@ -38,21 +36,11 @@ public class RedissonBlockingDequeReactive<V> extends RedissonBlockingQueueReact
     }
 
     public Flux<V> takeFirstElements() {
-        return ElementsStream.takeElements(new Callable<RFuture<V>>() {
-            @Override
-            public RFuture<V> call() throws Exception {
-                return queue.takeFirstAsync();
-            }
-        });
+        return ElementsStream.takeElements(() -> queue.takeFirstAsync());
     }
     
     public Flux<V> takeLastElements() {
-        return ElementsStream.takeElements(new Callable<RFuture<V>>() {
-            @Override
-            public RFuture<V> call() throws Exception {
-                return queue.takeLastAsync();
-            }
-        });
+        return ElementsStream.takeElements(() -> queue.takeLastAsync());
     }
     
 }

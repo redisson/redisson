@@ -329,30 +329,10 @@ public class RedissonListMultimapTest extends RedisDockerTest {
         testWithParams(redisson -> {
             Queue<Integer> nfs = new ConcurrentLinkedQueue<>();
             RListMultimap<Integer, Integer> map = redisson.getListMultimap("test1");
-            map.addListener(new MapPutListener() {
-                @Override
-                public void onPut(String name) {
-                    nfs.add(1);
-                }
-            });
-            map.addListener(new MapRemoveListener() {
-                @Override
-                public void onRemove(String name) {
-                    nfs.add(2);
-                }
-            });
-            map.addListener(new ListAddListener() {
-                @Override
-                public void onListAdd(String name) {
-                    nfs.add(3);
-                }
-            });
-            map.addListener(new ListRemoveListener() {
-                @Override
-                public void onListRemove(String name) {
-                    nfs.add(4);
-                }
-            });
+            map.addListener((MapPutListener) name -> nfs.add(1));
+            map.addListener((MapRemoveListener) name -> nfs.add(2));
+            map.addListener((ListAddListener) name -> nfs.add(3));
+            map.addListener((ListRemoveListener) name -> nfs.add(4));
             map.put(1, 5);
             map.put(1, 8);
             map.remove(1, 5);

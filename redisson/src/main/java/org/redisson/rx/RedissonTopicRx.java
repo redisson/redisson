@@ -22,8 +22,6 @@ import org.redisson.api.RTopic;
 import org.redisson.api.listener.MessageListener;
 
 import io.reactivex.rxjava3.core.Flowable;
-import io.reactivex.rxjava3.functions.Action;
-import io.reactivex.rxjava3.functions.LongConsumer;
 import io.reactivex.rxjava3.processors.ReplayProcessor;
 
 /**
@@ -41,34 +39,26 @@ public class RedissonTopicRx {
 
     public <M> Flowable<M> getMessages(Class<M> type) {
         ReplayProcessor<M> p = ReplayProcessor.create();
-        return p.doOnRequest(new LongConsumer() {
-            @Override
-            public void accept(long n) throws Exception {
-                AtomicLong counter = new AtomicLong(n);
-                RFuture<Integer> t = topic.addListenerAsync(type, new MessageListener<M>() {
-                    @Override
-                    public void onMessage(CharSequence channel, M msg) {
-                        p.onNext(msg);
-                        if (counter.decrementAndGet() == 0) {
-                            topic.removeListenerAsync(this);
-                            p.onComplete();
-                        }
+        return p.doOnRequest(n -> {
+            AtomicLong counter = new AtomicLong(n);
+            RFuture<Integer> t = topic.addListenerAsync(type, new MessageListener<M>() {
+                @Override
+                public void onMessage(CharSequence channel, M msg) {
+                    p.onNext(msg);
+                    if (counter.decrementAndGet() == 0) {
+                        topic.removeListenerAsync(this);
+                        p.onComplete();
                     }
-                });
-                t.whenComplete((id, e) -> {
-                    if (e != null) {
-                        p.onError(e);
-                        return;
-                    }
-                    
-                    p.doOnCancel(new Action() {
-                        @Override
-                        public void run() throws Exception {
-                            topic.removeListenerAsync(id);
-                        }
-                    });
-                });
-            }
+                }
+            });
+            t.whenComplete((id, e) -> {
+                if (e != null) {
+                    p.onError(e);
+                    return;
+                }
+
+                p.doOnCancel(() -> topic.removeListenerAsync(id));
+            });
         });
     }
     

@@ -15,12 +15,7 @@
  */
 package org.redisson.reactive;
 
-import java.lang.reflect.Method;
-import java.util.concurrent.Callable;
-
-import org.redisson.api.RFuture;
 import org.redisson.misc.ProxyBuilder;
-import org.redisson.misc.ProxyBuilder.Callback;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -36,16 +31,13 @@ public class ReactiveProxyBuilder {
     }
 
     public static <T> T create(CommandReactiveExecutor commandExecutor, Object instance, Object implementation, Class<T> clazz) {
-        return ProxyBuilder.create(new Callback() {
-            @Override
-            public Object execute(Callable<RFuture<Object>> callable, Method instanceMethod) {
-                Mono<Object> result = commandExecutor.reactive(callable);
-                if (instanceMethod.getReturnType().isAssignableFrom(Flux.class)) {
-                    Mono<Iterable> monoListResult = result.cast(Iterable.class);
-                    return monoListResult.flatMapMany(Flux::fromIterable);
-                }
-                return result;
+        return ProxyBuilder.create((callable, instanceMethod) -> {
+            Mono<Object> result = commandExecutor.reactive(callable);
+            if (instanceMethod.getReturnType().isAssignableFrom(Flux.class)) {
+                Mono<Iterable> monoListResult = result.cast(Iterable.class);
+                return monoListResult.flatMapMany(Flux::fromIterable);
             }
+            return result;
         }, instance, implementation, clazz, commandExecutor.getServiceManager());
     }
     

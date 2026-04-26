@@ -316,24 +316,20 @@ public class RedissonTopicPatternTest extends RedisDockerTest {
         List<Future<?>> futures = new ArrayList<>(); 
         for (int i = 0; i < threads; i++) {
 
-            Runnable worker = new Runnable() {
+            Runnable worker = () -> {
+                for (int j = 0; j < loops; j++) {
+                    RPatternTopic t = redisson.getPatternTopic("PUBSUB*");
+                    int listenerId = t.addListener(new PatternStatusListener() {
+                        @Override
+                        public void onPUnsubscribe(String channel) {
+                        }
 
-                @Override
-                public void run() {
-                    for (int j = 0; j < loops; j++) {
-                        RPatternTopic t = redisson.getPatternTopic("PUBSUB*");
-                        int listenerId = t.addListener(new PatternStatusListener() {
-                            @Override
-                            public void onPUnsubscribe(String channel) {
-                            }
-                            
-                            @Override
-                            public void onPSubscribe(String channel) {
-                            }
-                        });
-                        redisson.getTopic("PUBSUB_" + j).publish("message");
-                        t.removeListener(listenerId);
-                    }
+                        @Override
+                        public void onPSubscribe(String channel) {
+                        }
+                    });
+                    redisson.getTopic("PUBSUB_" + j).publish("message");
+                    t.removeListener(listenerId);
                 }
             };
             Future<?> s = executor.submit(worker);
@@ -378,12 +374,7 @@ public class RedissonTopicPatternTest extends RedisDockerTest {
             AtomicInteger executions = new AtomicInteger();
 
             RPatternTopic topic = redisson.getPatternTopic("__keyevent@*:del", StringCodec.INSTANCE);
-            topic.addListener(String.class, new PatternMessageListener<String>() {
-                @Override
-                public void onMessage(CharSequence pattern, CharSequence channel, String msg) {
-                    executions.incrementAndGet();
-                }
-            });
+            topic.addListener(String.class, (pattern, channel, msg) -> executions.incrementAndGet());
 
             List<ContainerState> masters = getMasterNodes(nds);
             stop(masters.get(0));
@@ -431,12 +422,9 @@ public class RedissonTopicPatternTest extends RedisDockerTest {
         final AtomicBoolean executed = new AtomicBoolean();
         
         RPatternTopic topic = redisson.getPatternTopic("topic*");
-        topic.addListener(Integer.class, new PatternMessageListener<Integer>() {
-            @Override
-            public void onMessage(CharSequence pattern, CharSequence channel, Integer msg) {
-                if (msg == 1) {
-                    executed.set(true);
-                }
+        topic.addListener(Integer.class, (pattern, channel, msg) -> {
+            if (msg == 1) {
+                executed.set(true);
             }
         });
 

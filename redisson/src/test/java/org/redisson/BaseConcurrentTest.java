@@ -29,12 +29,9 @@ public abstract class BaseConcurrentTest extends RedisDockerTest {
         long watch = System.currentTimeMillis();
         for (int i = 0; i < iterations; i++) {
             final int n = i;
-            executor.execute(new Runnable() {
-                @Override
-                public void run() {
-                    RedissonClient redisson = instances.get(n);
-                    runnable.run(redisson);
-                }
+            executor.execute(() -> {
+                RedissonClient redisson = instances.get(n);
+                runnable.run(redisson);
             });
         }
 
@@ -46,12 +43,7 @@ public abstract class BaseConcurrentTest extends RedisDockerTest {
         executor = Executors.newCachedThreadPool();
 
         for (final RedissonClient redisson : instances.values()) {
-            executor.execute(new Runnable() {
-                @Override
-                public void run() {
-                    redisson.shutdown();
-                }
-            });
+            executor.execute(() -> redisson.shutdown());
         }
 
         group.shutdownGracefully();

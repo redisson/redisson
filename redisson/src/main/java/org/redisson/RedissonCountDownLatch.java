@@ -16,7 +16,6 @@
 package org.redisson;
 
 import io.netty.util.Timeout;
-import io.netty.util.TimerTask;
 import org.redisson.api.RCountDownLatch;
 import org.redisson.api.RFuture;
 import org.redisson.client.codec.LongCodec;
@@ -222,15 +221,12 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
             entry.addListener(listener);
 
             if (!executed.get()) {
-                Timeout timeoutFuture = commandExecutor.getServiceManager().newTimeout(new TimerTask() {
-                    @Override
-                    public void run(Timeout timeout) throws Exception {
-                        if (entry.removeListener(listener)) {
-                            long elapsed = System.currentTimeMillis() - current;
-                            time.addAndGet(-elapsed);
+                Timeout timeoutFuture = commandExecutor.getServiceManager().newTimeout(timeout -> {
+                    if (entry.removeListener(listener)) {
+                        long elapsed = System.currentTimeMillis() - current;
+                        time.addAndGet(-elapsed);
 
-                            commandExecutor.transfer(await(time, entry), future);
-                        }
+                        commandExecutor.transfer(await(time, entry), future);
                     }
                 }, time.get(), TimeUnit.MILLISECONDS);
                 futureRef.set(timeoutFuture);

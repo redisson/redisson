@@ -35,7 +35,6 @@ import org.redisson.client.handler.State;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
-import org.redisson.client.protocol.convertor.Convertor;
 import org.redisson.client.protocol.decoder.ListMultiDecoder2;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.client.protocol.decoder.ListScanResultReplayDecoder;
@@ -265,14 +264,11 @@ public final class RedissonKeys implements RKeys {
         return commandExecutor.get(randomKeyAsync());
     }
 
-    private final RedisStrictCommand<String> randomKey = new RedisStrictCommand<String>("RANDOMKEY", new Convertor<String>() {
-        @Override
-        public String convert(Object obj) {
-            if (obj == null) {
-                return null;
-            }
-            return unmap((String) obj);
+    private final RedisStrictCommand<String> randomKey = new RedisStrictCommand<String>("RANDOMKEY", obj -> {
+        if (obj == null) {
+            return null;
         }
+        return unmap((String) obj);
     });
 
     @Override

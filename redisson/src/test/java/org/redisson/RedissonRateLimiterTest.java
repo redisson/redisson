@@ -240,20 +240,17 @@ public class RedissonRateLimiterTest extends RedisDockerTest {
         AtomicLong counter = new AtomicLong();
         ExecutorService pool = Executors.newFixedThreadPool(8);
         for (int i = 0; i < 8; i++) {
-            pool.execute(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        while (true) {
-                            rr.acquire();
-                            queue.add(System.currentTimeMillis());
-                            if (counter.incrementAndGet() > 1000) {
-                                break;
-                            }
+            pool.execute(() -> {
+                try {
+                    while (true) {
+                        rr.acquire();
+                        queue.add(System.currentTimeMillis());
+                        if (counter.incrementAndGet() > 1000) {
+                            break;
                         }
-                    } catch (Exception e) {
-                        e.printStackTrace();
                     }
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
             });
         }
@@ -291,23 +288,20 @@ public class RedissonRateLimiterTest extends RedisDockerTest {
         AtomicLong counter = new AtomicLong();
         ExecutorService pool = Executors.newFixedThreadPool(8);
         for (int i = 0; i < 8; i++) {
-            pool.execute(new Runnable() {
-                @Override
-                public void run() {
-                    while (true) {
-                        if (rr.tryAcquire()) {
-                            if (counter.incrementAndGet() > 500) {
-                                break;
-                            }
-                            queue.add(System.currentTimeMillis());
+            pool.execute(() -> {
+                while (true) {
+                    if (rr.tryAcquire()) {
+                        if (counter.incrementAndGet() > 500) {
+                            break;
                         }
-                        try {
-                            Thread.sleep(ThreadLocalRandom.current().nextInt(10));
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-
+                        queue.add(System.currentTimeMillis());
                     }
+                    try {
+                        Thread.sleep(ThreadLocalRandom.current().nextInt(10));
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+
                 }
             });
         }

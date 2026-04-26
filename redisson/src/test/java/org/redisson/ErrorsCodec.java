@@ -28,18 +28,12 @@ public class ErrorsCodec extends BaseCodec {
 
     public static final ErrorsCodec INSTANCE = new ErrorsCodec();
 
-    private final Encoder encoder = new Encoder() {
-        @Override
-        public ByteBuf encode(Object in) throws IOException {
-            throw new RuntimeException();
-        }
+    private final Encoder encoder = in -> {
+        throw new RuntimeException();
     };
 
-    private final Decoder<Object> decoder = new Decoder<Object>() {
-        @Override
-        public Object decode(ByteBuf buf, State state) {
-            throw new RuntimeException();
-        }
+    private final Decoder<Object> decoder = (buf, state) -> {
+        throw new RuntimeException();
     };
 
     public ErrorsCodec() {
