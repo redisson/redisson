@@ -40,48 +40,34 @@ public abstract class PublisherAdder<V> {
     public Single<Boolean> addAll(Publisher<? extends V> c) {
         final Flowable<? extends V> cc = Flowable.fromPublisher(c);
         final ReplayProcessor<Boolean> p = ReplayProcessor.create();
-        return p.doOnRequest(new LongConsumer() {
-            @Override
-            public void accept(long t) throws Exception {
-                final AtomicBoolean completed = new AtomicBoolean();
-                final AtomicLong values = new AtomicLong();
-                final AtomicBoolean lastSize = new AtomicBoolean();
+        return p.doOnRequest(t -> {
+            final AtomicBoolean completed = new AtomicBoolean();
+            final AtomicLong values = new AtomicLong();
+            final AtomicBoolean lastSize = new AtomicBoolean();
 
-                cc.subscribe(new Consumer<V>() {
-                    @Override
-                    public void accept(V t) throws Exception {
-                        values.getAndIncrement();
-                        add(t).whenComplete((res, e) -> {
-                            if (e != null) {
-                                p.onError(e);
-                                return;
-                            }
+            cc.subscribe((Consumer<V>) t2 -> {
+                values.getAndIncrement();
+                add(t2).whenComplete((res, e) -> {
+                    if (e != null) {
+                        p.onError(e);
+                        return;
+                    }
 
-                            if (res) {
-                                lastSize.set(true);
-                            }
-                            if (values.decrementAndGet() == 0 && completed.get()) {
-                                p.onNext(lastSize.get());
-                                p.onComplete();
-                            }
-                        });
+                    if (res) {
+                        lastSize.set(true);
                     }
-                }, new Consumer<Throwable>() {
-                    @Override
-                    public void accept(Throwable t) throws Exception {
-                        p.onError(t);
-                    }
-                }, new Action() {
-                    @Override
-                    public void run() throws Exception {
-                        completed.set(true);
-                        if (values.get() == 0) {
-                            p.onNext(lastSize.get());
-                            p.onComplete();
-                        }
+                    if (values.decrementAndGet() == 0 && completed.get()) {
+                        p.onNext(lastSize.get());
+                        p.onComplete();
                     }
                 });
-            }
+            }, t1 -> p.onError(t1), () -> {
+                completed.set(true);
+                if (values.get() == 0) {
+                    p.onNext(lastSize.get());
+                    p.onComplete();
+                }
+            });
         }).singleOrError();
     }
 

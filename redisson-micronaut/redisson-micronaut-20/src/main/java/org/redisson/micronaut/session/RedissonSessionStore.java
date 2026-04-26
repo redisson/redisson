@@ -96,46 +96,42 @@ public class RedissonSessionStore implements SessionStore<RedissonSession>, Patt
 
         if (sessionConfiguration.isBroadcastSessionUpdates()) {
             RTopic updatesTopic = getTopic();
-            messageListener = new MessageListener<AttributeMessage>() {
+            messageListener = (channel, msg) -> {
+                if (msg.getNodeId().equals(nodeId)) {
+                    return;
+                }
 
-                @Override
-                public void onMessage(CharSequence channel, AttributeMessage msg) {
-                    if (msg.getNodeId().equals(nodeId)) {
+                findSession(msg.getSessionId()).thenAccept(s -> {
+                    if (s.isPresent()) {
                         return;
                     }
 
-                    findSession(msg.getSessionId()).thenAccept(s -> {
-                        if (s.isPresent()) {
-                            return;
+                    try {
+                        RedissonSession session = s.get();
+                        if (msg instanceof AttributeRemoveMessage) {
+                            for (CharSequence name : ((AttributeRemoveMessage)msg).getNames()) {
+                                session.superRemove(name);
+                            }
                         }
 
-                        try {
-                            RedissonSession session = s.get();
-                            if (msg instanceof AttributeRemoveMessage) {
-                                for (CharSequence name : ((AttributeRemoveMessage)msg).getNames()) {
-                                    session.superRemove(name);
-                                }
-                            }
-
-                            if (msg instanceof AttributesClearMessage) {
-                                deleteSession(session.getId());
-                            }
-
-                            if (msg instanceof AttributesPutAllMessage) {
-                                AttributesPutAllMessage m = (AttributesPutAllMessage) msg;
-                                Map<CharSequence, Object> attrs = m.getAttrs(getCodec().getMapValueDecoder());
-                                session.load(attrs);
-                            }
-
-                            if (msg instanceof AttributeUpdateMessage) {
-                                AttributeUpdateMessage m = (AttributeUpdateMessage)msg;
-                                session.superPut(m.getName(), m.getValue(getCodec().getMapValueDecoder()));
-                            }
-                        } catch (Exception e) {
-                            LOG.error("Unable to handle topic message", e);
+                        if (msg instanceof AttributesClearMessage) {
+                            deleteSession(session.getId());
                         }
-                    });
-                }
+
+                        if (msg instanceof AttributesPutAllMessage) {
+                            AttributesPutAllMessage m = (AttributesPutAllMessage) msg;
+                            Map<CharSequence, Object> attrs = m.getAttrs(getCodec().getMapValueDecoder());
+                            session.load(attrs);
+                        }
+
+                        if (msg instanceof AttributeUpdateMessage) {
+                            AttributeUpdateMessage m = (AttributeUpdateMessage)msg;
+                            session.superPut(m.getName(), m.getValue(getCodec().getMapValueDecoder()));
+                        }
+                    } catch (Exception e) {
+                        LOG.error("Unable to handle topic message", e);
+                    }
+                });
             };
 
             updatesTopic.addListener(AttributeMessage.class, messageListener);

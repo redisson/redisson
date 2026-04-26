@@ -66,12 +66,7 @@ public class RedissonShardedTopicTest extends RedisDockerTest {
                     subscriptions.incrementAndGet();
                 }
             });
-            topic.addListener(Integer.class, new MessageListener<Integer>() {
-                @Override
-                public void onMessage(CharSequence channel, Integer msg) {
-                    executed.set(true);
-                }
-            });
+            topic.addListener(Integer.class, (channel, msg) -> executed.set(true));
 
             assertThat(topic.countSubscribers()).isEqualTo(1);
 

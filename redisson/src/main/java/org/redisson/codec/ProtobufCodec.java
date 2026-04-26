@@ -28,7 +28,6 @@ import io.protostuff.Schema;
 import io.protostuff.runtime.RuntimeSchema;
 import org.redisson.client.codec.BaseCodec;
 import org.redisson.client.codec.Codec;
-import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
 
@@ -137,26 +136,23 @@ public class ProtobufCodec extends BaseCodec {
             throw new IllegalArgumentException("class to create protobuf decoder can not be null");
         }
 
-        return new Decoder<Object>() {
-            @Override
-            public Object decode(ByteBuf buf, State state) throws IOException {
-                //use blacklistDecoder
-                if (protobufBlacklist.contains(clazz.getName())) {
-                    return blacklistDecoder.decode(buf, state);
-                }
+        return (buf, state) -> {
+            //use blacklistDecoder
+            if (protobufBlacklist.contains(clazz.getName())) {
+                return blacklistDecoder.decode(buf, state);
+            }
 
-                InputStream is = new ByteBufInputStream(buf);
-                if (MessageLite.class.isAssignableFrom(clazz)) {
-                    //native deserialize
-                    try {
-                        return clazz.getDeclaredMethod("parseFrom", InputStream.class).invoke(clazz, is);
-                    } catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
-                        throw new IOException(e);
-                    }
-                } else {
-                    //protostuff
-                    return ProtostuffUtils.deserialize(is, clazz);
+            InputStream is = new ByteBufInputStream(buf);
+            if (MessageLite.class.isAssignableFrom(clazz)) {
+                //native deserialize
+                try {
+                    return clazz.getDeclaredMethod("parseFrom", InputStream.class).invoke(clazz, is);
+                } catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
+                    throw new IOException(e);
                 }
+            } else {
+                //protostuff
+                return ProtostuffUtils.deserialize(is, clazz);
             }
         };
     }
@@ -165,25 +161,22 @@ public class ProtobufCodec extends BaseCodec {
         if (clazz == null) {
             throw new IllegalArgumentException("class to create protobuf encoder can not be null");
         }
-        return new Encoder() {
-            @Override
-            public ByteBuf encode(Object in) throws IOException {
-                //use blacklistEncoder
-                if (protobufBlacklist.contains(clazz.getName())) {
-                    return blacklistEncoder.encode(in);
-                }
-
-                ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
-                if (MessageLite.class.isAssignableFrom(clazz)) {
-                    //native serialize
-                    out.writeBytes(((MessageLite) in).toByteArray());
-                } else {
-                    //protostuff
-                    ByteBufOutputStream os = new ByteBufOutputStream(out);
-                    ProtostuffUtils.serialize(os, in);
-                }
-                return out;
+        return in -> {
+            //use blacklistEncoder
+            if (protobufBlacklist.contains(clazz.getName())) {
+                return blacklistEncoder.encode(in);
             }
+
+            ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
+            if (MessageLite.class.isAssignableFrom(clazz)) {
+                //native serialize
+                out.writeBytes(((MessageLite) in).toByteArray());
+            } else {
+                //protostuff
+                ByteBufOutputStream os = new ByteBufOutputStream(out);
+                ProtostuffUtils.serialize(os, in);
+            }
+            return out;
         };
     }
 

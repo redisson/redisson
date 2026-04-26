@@ -216,13 +216,10 @@ public class RedissonTopicTest extends RedisDockerTest {
                     System.out.println("redis channel unsubscribed {}" + channel);
                 }
             });
-            t.addListener(String.class, new MessageListener<String>() {
-                @Override
-                public void onMessage(CharSequence channel, String msg) {
+            t.addListener(String.class, (channel, msg) -> {
 //                    System.out.println("channel " + channel + " " + msg);
-                    counter.incrementAndGet();
+                counter.incrementAndGet();
 //                    System.out.println("m " + counter.incrementAndGet());
-                }
             });
         }
 
@@ -264,24 +261,20 @@ public class RedissonTopicTest extends RedisDockerTest {
         List<Future<?>> futures = new ArrayList<>(); 
         for (int i = 0; i < threads; i++) {
 
-            Runnable worker = new Runnable() {
+            Runnable worker = () -> {
+                for (int j = 0; j < loops; j++) {
+                    RTopic t = redisson.getTopic("PUBSUB_" + j);
+                    int listenerId = t.addListener(new StatusListener() {
+                        @Override
+                        public void onUnsubscribe(String channel) {
+                        }
 
-                @Override
-                public void run() {
-                    for (int j = 0; j < loops; j++) {
-                        RTopic t = redisson.getTopic("PUBSUB_" + j);
-                        int listenerId = t.addListener(new StatusListener() {
-                            @Override
-                            public void onUnsubscribe(String channel) {
-                            }
-                            
-                            @Override
-                            public void onSubscribe(String channel) {
-                            }
-                        });
-                        t.publish("message");
-                        t.removeListener(listenerId);
-                    }
+                        @Override
+                        public void onSubscribe(String channel) {
+                        }
+                    });
+                    t.publish("message");
+                    t.removeListener(listenerId);
                 }
             };
             Future<?> s = executor.submit(worker);
@@ -316,20 +309,14 @@ public class RedissonTopicTest extends RedisDockerTest {
         RTopic stringTopic = redisson.getTopic("test1", StringCodec.INSTANCE);
         for (int i = 0; i < 3; i++) {
             AtomicInteger stringMessageReceived = new AtomicInteger();
-            int listenerId = stringTopic.addListener(String.class, new MessageListener<String>() {
-                @Override
-                public void onMessage(CharSequence channel, String msg) {
-                    assertThat(msg).isEqualTo("testmsg");
-                    stringMessageReceived.incrementAndGet();
-                }
+            int listenerId = stringTopic.addListener(String.class, (channel, msg) -> {
+                org.assertj.core.api.Assertions.assertThat(msg).isEqualTo("testmsg");
+                stringMessageReceived.incrementAndGet();
             });
             RPatternTopic patternTopic = redisson.getPatternTopic("test*", StringCodec.INSTANCE);
-            int patternListenerId = patternTopic.addListener(String.class, new PatternMessageListener<String>() {
-                @Override
-                public void onMessage(CharSequence pattern, CharSequence channel, String msg) {
-                    assertThat(msg).isEqualTo("testmsg");
-                    stringMessageReceived.incrementAndGet();
-                }
+            int patternListenerId = patternTopic.addListener(String.class, (pattern, channel, msg) -> {
+                org.assertj.core.api.Assertions.assertThat(msg).isEqualTo("testmsg");
+                stringMessageReceived.incrementAndGet();
             });
 
             stringTopic.publish("testmsg");
@@ -345,24 +332,17 @@ public class RedissonTopicTest extends RedisDockerTest {
     public void testMultiTypeConnection() {
         RTopic stringTopic = redisson.getTopic("test1", StringCodec.INSTANCE);
         AtomicBoolean stringMessageReceived = new AtomicBoolean();
-        stringTopic.addListener(String.class, new MessageListener<String>() {
-            @Override
-            public void onMessage(CharSequence channel, String msg) {
-                assertThat(msg).isEqualTo("testmsg");
-                stringMessageReceived.set(true);
-            }
+        stringTopic.addListener(String.class, (channel, msg) -> {
+            org.assertj.core.api.Assertions.assertThat(msg).isEqualTo("testmsg");
+            stringMessageReceived.set(true);
         });
         stringTopic.publish("testmsg");
         
         RTopic longTopic = redisson.getTopic("test2", LongCodec.INSTANCE);
         AtomicBoolean longMessageReceived = new AtomicBoolean();
-        longTopic.addListener(Long.class, new MessageListener<Long>() {
-
-            @Override
-            public void onMessage(CharSequence channel, Long msg) {
-                assertThat(msg).isEqualTo(1L);
-                longMessageReceived.set(true);
-            }
+        longTopic.addListener(Long.class, (channel, msg) -> {
+            org.assertj.core.api.Assertions.assertThat(msg).isEqualTo(1L);
+            longMessageReceived.set(true);
         });
         longTopic.publish(1L);
         
@@ -617,12 +597,9 @@ public class RedissonTopicTest extends RedisDockerTest {
                   queue.poll().removeAllListeners();
               }
               RTopic topic = redissonClient.getTopic(++i + "");
-                topic.addListener(Object.class, new MessageListener<Object>() {
-                    @Override
-                    public void onMessage(CharSequence channel, Object msg) {
-                        // TODO Auto-generated method stub
+                topic.addListener(Object.class, (channel, msg) -> {
+                    // TODO Auto-generated method stub
 
-                    }
                 });
               queue.offer(topic);
               if (i > 1000) {
@@ -661,12 +638,7 @@ public class RedissonTopicTest extends RedisDockerTest {
     @Test
     public void testRemoveByInstance() {
         RTopic topic1 = redisson.getTopic("topic1");
-        MessageListener listener = new MessageListener() {
-            @Override
-            public void onMessage(CharSequence channel, Object msg) {
-                Assertions.fail();
-            }
-        };
+        MessageListener listener = (channel, msg) -> Assertions.fail();
         
         topic1.addListener(Message.class, listener);
 
@@ -799,12 +771,7 @@ public class RedissonTopicTest extends RedisDockerTest {
                 subscriptions.incrementAndGet();
             }
         });
-        topic.addListener(Integer.class, new MessageListener<Integer>() {
-            @Override
-            public void onMessage(CharSequence channel, Integer msg) {
-                executed.set(true);
-            }
-        });
+        topic.addListener(Integer.class, (channel, msg) -> executed.set(true));
 
         restart(redis);
 
@@ -878,12 +845,7 @@ public class RedissonTopicTest extends RedisDockerTest {
         for (int i = 0; i < 10; i++) {
 
             Set<String> messages = new HashSet<>();
-            topic.addListener(String.class, new MessageListener<String>() {
-                @Override
-                public void onMessage(CharSequence channel, String msg) {
-                    messages.add(msg);
-                }
-            });
+            topic.addListener(String.class, (channel, msg) -> messages.add(msg));
 
             if (i == 1) {
                 s.updateIP("127.0.0.2");
@@ -1041,12 +1003,7 @@ public class RedissonTopicTest extends RedisDockerTest {
                     subscriptions.incrementAndGet();
                 }
             });
-            topic.addListener(Integer.class, new MessageListener<Integer>() {
-                @Override
-                public void onMessage(CharSequence channel, Integer msg) {
-                    executed.set(true);
-                }
-            });
+            topic.addListener(Integer.class, (channel, msg) -> executed.set(true));
 
             sendCommands(redisson, "topic");
 
@@ -1139,12 +1096,7 @@ public class RedissonTopicTest extends RedisDockerTest {
                 subscriptions.incrementAndGet();
             }
         });
-        topic.addListener(Integer.class, new MessageListener<Integer>() {
-            @Override
-            public void onMessage(CharSequence channel, Integer msg) {
-                executed.set(true);
-            }
-        });
+        topic.addListener(Integer.class, (channel, msg) -> executed.set(true));
 
         sendCommands(redisson, "topic");
 
@@ -1170,12 +1122,7 @@ public class RedissonTopicTest extends RedisDockerTest {
                 subscriptions.incrementAndGet();
             }
         });
-        topic.addListenerAsync(Integer.class, new MessageListener<Integer>() {
-            @Override
-            public void onMessage(CharSequence channel, Integer msg) {
-                executed.set(true);
-            }
-        });
+        topic.addListenerAsync(Integer.class, (channel, msg) -> executed.set(true));
 
         Thread.sleep(TimeUnit.SECONDS.toMillis(5));
 
@@ -1310,12 +1257,7 @@ public class RedissonTopicTest extends RedisDockerTest {
                     subscriptions.incrementAndGet();
                 }
             });
-            topic.addListener(Integer.class, new MessageListener<Integer>() {
-                @Override
-                public void onMessage(CharSequence channel, Integer msg) {
-                    executed.set(true);
-                }
-            });
+            topic.addListener(Integer.class, (channel, msg) -> executed.set(true));
             assertThat(topic.countListeners()).isEqualTo(2);
 
             sendCommands(redisson, "topic");
@@ -1503,12 +1445,7 @@ public class RedissonTopicTest extends RedisDockerTest {
                     subscriptions.incrementAndGet();
                 }
             });
-            topic.addListener(Integer.class, new MessageListener<Integer>() {
-                @Override
-                public void onMessage(CharSequence channel, Integer msg) {
-                    executed.set(true);
-                }
-            });
+            topic.addListener(Integer.class, (channel, msg) -> executed.set(true));
 
             sendCommands(redisson, "3");
 

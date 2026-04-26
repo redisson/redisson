@@ -39,12 +39,7 @@ public class RedissonLexSortedSetTest extends RedisDockerTest {
         testWithParams(redisson -> {
             RLexSortedSet al = redisson.getLexSortedSet("test");
             CountDownLatch latch = new CountDownLatch(1);
-            al.addListener(new ScoredSortedSetAddListener() {
-                @Override
-                public void onAdd(String name) {
-                    latch.countDown();
-                }
-            });
+            al.addListener((ScoredSortedSetAddListener) name -> latch.countDown());
             al.add("abc");
 
             try {

@@ -251,12 +251,7 @@ public class RedissonMapCacheReactiveTest extends BaseReactiveTest {
     public void testComputeIfAbsent() {
         RMapCacheReactive<Integer, String> map = redisson.getMapCache("simple");
 
-        map.computeIfAbsent(7, Duration.ofSeconds(1), new Function<Integer, String>() {
-            @Override
-            public String apply(Integer integer) {
-                return "1234";
-            }
-        }).block();
+        map.computeIfAbsent(7, Duration.ofSeconds(1), integer -> "1234").block();
 
         assertThat(map.get(7).block()).isEqualTo("1234");
     }

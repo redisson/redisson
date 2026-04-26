@@ -208,12 +208,7 @@ public class RedissonMapCacheTest extends BaseMapTest {
         RMapCache<Long, String> rMapCache = redisson.getMapCache("test");
         rMapCache.trySetMaxSize(5);
         AtomicBoolean removed = new AtomicBoolean();
-        rMapCache.addListener(new EntryRemovedListener() {
-            @Override
-            public void onRemoved(EntryEvent event) {
-                removed.set(true);
-            }
-        });
+        rMapCache.addListener((EntryRemovedListener) event -> removed.set(true));
 
         rMapCache.put(1L, "1");
         rMapCache.put(2L, "2");
@@ -230,12 +225,7 @@ public class RedissonMapCacheTest extends BaseMapTest {
     public void testDestroy() {
         RMapCache<String, String> cache = redisson.getMapCache("test");
         AtomicInteger counter = new AtomicInteger();
-        cache.addListener(new EntryCreatedListener<>() {
-            @Override
-            public void onCreated(EntryEvent<Object, Object> event) {
-                counter.incrementAndGet();
-            }
-        });
+        cache.addListener((EntryCreatedListener<Object, Object>) event -> counter.incrementAndGet());
 
         cache.fastPut("1", "2");
 
@@ -916,12 +906,7 @@ public class RedissonMapCacheTest extends BaseMapTest {
 
             AtomicBoolean executed = new AtomicBoolean();
             RMapCache<String, String> map = redisson.getMapCache("simple");
-            map.addListener(new EntryExpiredListener() {
-                @Override
-                public void onExpired(EntryEvent event) {
-                    executed.set(true);
-                }
-            });
+            map.addListener((EntryExpiredListener) event -> executed.set(true));
             map.put("1", "2", 1, TimeUnit.SECONDS);
 
             Awaitility.await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> assertThat(executed.get()).isTrue());
@@ -1148,22 +1133,17 @@ public class RedissonMapCacheTest extends BaseMapTest {
 
     private void checkCreatedListener(RMapCache<Integer, Integer> map, Integer key, Integer value, Runnable runnable) {
         AtomicBoolean ref = new AtomicBoolean();
-        int createListener1 = map.addListener(new EntryCreatedListener<Integer, Integer>() {
+        int createListener1 = map.addListener((EntryCreatedListener<Integer, Integer>) event -> {
+            try {
+                assertThat(event.getKey()).isEqualTo(key);
+                assertThat(event.getValue()).isEqualTo(value);
 
-            @Override
-            public void onCreated(EntryEvent<Integer, Integer> event) {
-                try {
-                    assertThat(event.getKey()).isEqualTo(key);
-                    assertThat(event.getValue()).isEqualTo(value);
-                    
-                    if (!ref.compareAndSet(false, true)) {
-                        Assertions.fail();
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
+                if (!ref.compareAndSet(false, true)) {
+                    Assertions.fail();
                 }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-            
         });
         runnable.run();
 
@@ -1213,18 +1193,13 @@ public class RedissonMapCacheTest extends BaseMapTest {
 
     private void checkExpiredListener(RMapCache<Integer, Integer> map, Integer key, Integer value, Runnable runnable) {
         AtomicBoolean ref = new AtomicBoolean();
-        int createListener1 = map.addListener(new EntryExpiredListener<Integer, Integer>() {
+        int createListener1 = map.addListener((EntryExpiredListener<Integer, Integer>) event -> {
+            assertThat(event.getKey()).isEqualTo(key);
+            assertThat(event.getValue()).isEqualTo(value);
 
-            @Override
-            public void onExpired(EntryEvent<Integer, Integer> event) {
-                assertThat(event.getKey()).isEqualTo(key);
-                assertThat(event.getValue()).isEqualTo(value);
-                
-                if (!ref.compareAndSet(false, true)) {
-                    Assertions.fail();
-                }
+            if (!ref.compareAndSet(false, true)) {
+                Assertions.fail();
             }
-            
         });
         runnable.run();
 
@@ -1235,19 +1210,14 @@ public class RedissonMapCacheTest extends BaseMapTest {
     
     private void checkUpdatedListener(RMapCache<Integer, Integer> map, Integer key, Integer value, Integer oldValue, Runnable runnable) {
         AtomicBoolean ref = new AtomicBoolean();
-        int createListener1 = map.addListener(new EntryUpdatedListener<Integer, Integer>() {
+        int createListener1 = map.addListener((EntryUpdatedListener<Integer, Integer>) event -> {
+            assertThat(event.getKey()).isEqualTo(key);
+            assertThat(event.getValue()).isEqualTo(value);
+            assertThat(event.getOldValue()).isEqualTo(oldValue);
 
-            @Override
-            public void onUpdated(EntryEvent<Integer, Integer> event) {
-                assertThat(event.getKey()).isEqualTo(key);
-                assertThat(event.getValue()).isEqualTo(value);
-                assertThat(event.getOldValue()).isEqualTo(oldValue);
-                
-                if (!ref.compareAndSet(false, true)) {
-                    Assertions.fail();
-                }
+            if (!ref.compareAndSet(false, true)) {
+                Assertions.fail();
             }
-            
         });
         runnable.run();
 
@@ -1284,18 +1254,13 @@ public class RedissonMapCacheTest extends BaseMapTest {
     
     private void checkRemovedListener(RMapCache<Integer, Integer> map, Integer key, Integer value, Runnable runnable) {
         AtomicBoolean ref = new AtomicBoolean();
-        int createListener1 = map.addListener(new EntryRemovedListener<Integer, Integer>() {
+        int createListener1 = map.addListener((EntryRemovedListener<Integer, Integer>) event -> {
+            assertThat(event.getKey()).isEqualTo(key);
+            assertThat(event.getValue()).isEqualTo(value);
 
-            @Override
-            public void onRemoved(EntryEvent<Integer, Integer> event) {
-                assertThat(event.getKey()).isEqualTo(key);
-                assertThat(event.getValue()).isEqualTo(value);
-                
-                if (!ref.compareAndSet(false, true)) {
-                    Assertions.fail();
-                }
+            if (!ref.compareAndSet(false, true)) {
+                Assertions.fail();
             }
-            
         });
         runnable.run();
 
@@ -1639,12 +1604,7 @@ public class RedissonMapCacheTest extends BaseMapTest {
 
         AtomicBoolean executed = new AtomicBoolean();
         RMapCache<String, String> map = redisson.getMapCache("test");
-        map.addListener(new EntryExpiredListener() {
-            @Override
-            public void onExpired(EntryEvent event) {
-                executed.set(true);
-            }
-        });
+        map.addListener((EntryExpiredListener) event -> executed.set(true));
         map.put("1", "2", 1, TimeUnit.SECONDS);
 
         Awaitility.await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> assertThat(executed.get()).isTrue());

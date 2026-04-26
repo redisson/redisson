@@ -24,7 +24,6 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.ScoredEntry;
 import reactor.core.publisher.Flux;
 
-import java.util.concurrent.Callable;
 
 /**
  * 
@@ -53,21 +52,11 @@ public class RedissonScoredSortedSetReactive<V>  {
     }
     
     public Flux<V> takeFirstElements() {
-        return ElementsStream.takeElements(new Callable<RFuture<V>>() {
-            @Override
-            public RFuture<V> call() throws Exception {
-                return instance.takeFirstAsync();
-            }
-        });
+        return ElementsStream.takeElements(() -> instance.takeFirstAsync());
     }
     
     public Flux<V> takeLastElements() {
-        return ElementsStream.takeElements(new Callable<RFuture<V>>() {
-            @Override
-            public RFuture<V> call() throws Exception {
-                return instance.takeLastAsync();
-            }
-        });
+        return ElementsStream.takeElements(() -> instance.takeLastAsync());
     }
 
     private Flux<V> scanIteratorReactive(String pattern, int count) {

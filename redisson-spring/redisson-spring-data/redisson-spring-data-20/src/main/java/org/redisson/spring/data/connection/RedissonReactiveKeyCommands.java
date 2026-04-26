@@ -57,12 +57,7 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
         });
     }
     
-    private static final RedisStrictCommand<DataType> TYPE = new RedisStrictCommand<DataType>("TYPE", new Convertor<DataType>() {
-        @Override
-        public DataType convert(Object obj) {
-            return DataType.fromCode(obj.toString());
-        }
-    });
+    private static final RedisStrictCommand<DataType> TYPE = new RedisStrictCommand<DataType>("TYPE", obj -> DataType.fromCode(obj.toString()));
 
     @Override
     public Flux<CommandResponse<KeyCommand, DataType>> type(Publisher<KeyCommand> keys) {

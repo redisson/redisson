@@ -55,27 +55,24 @@ public class RedissonCacheBuildRecorder {
             @Override
             @SuppressWarnings({ "rawtypes", "unchecked" })
             public Supplier<CacheManager> get(Context context) {
-                return new Supplier<CacheManager>() {
-                    @Override
-                    public CacheManager get() {
-                        Set<RedissonCacheInfo> cacheInfos = RedissonCacheInfoBuilder.build(context.cacheNames(), redisCacheConfigRV.getValue());
-                        if (cacheInfos.isEmpty()) {
-                            return new CacheManagerImpl(Collections.emptyMap());
-                        } else {
-                            // The number of caches is known at build time so we can use fixed initialCapacity and loadFactor for the caches map.
-                            Map<String, Cache> caches = new HashMap<>(cacheInfos.size() + 1, 1.0F);
-                            for (RedissonCacheInfo cacheInfo : cacheInfos) {
-                                if (LOGGER.isDebugEnabled()) {
-                                    LOGGER.debugf(
-                                            "Building Redis cache [%s] with [expireAfterAccess=%s], [expireAfterWrite=%s], [maxSize=%s]",
-                                            cacheInfo.name, cacheInfo.expireAfterAccess, cacheInfo.expireAfterWrite, cacheInfo.maxSize);
-                                }
-
-                                RedissonCacheImpl cache = new RedissonCacheImpl(cacheInfo);
-                                caches.put(cacheInfo.name, cache);
+                return () -> {
+                    Set<RedissonCacheInfo> cacheInfos = RedissonCacheInfoBuilder.build(context.cacheNames(), redisCacheConfigRV.getValue());
+                    if (cacheInfos.isEmpty()) {
+                        return new CacheManagerImpl(Collections.emptyMap());
+                    } else {
+                        // The number of caches is known at build time so we can use fixed initialCapacity and loadFactor for the caches map.
+                        Map<String, Cache> caches = new HashMap<>(cacheInfos.size() + 1, 1.0F);
+                        for (RedissonCacheInfo cacheInfo : cacheInfos) {
+                            if (LOGGER.isDebugEnabled()) {
+                                LOGGER.debugf(
+                                        "Building Redis cache [%s] with [expireAfterAccess=%s], [expireAfterWrite=%s], [maxSize=%s]",
+                                        cacheInfo.name, cacheInfo.expireAfterAccess, cacheInfo.expireAfterWrite, cacheInfo.maxSize);
                             }
-                            return new CacheManagerImpl(caches);
+
+                            RedissonCacheImpl cache = new RedissonCacheImpl(cacheInfo);
+                            caches.put(cacheInfo.name, cache);
                         }
+                        return new CacheManagerImpl(caches);
                     }
                 };
             }

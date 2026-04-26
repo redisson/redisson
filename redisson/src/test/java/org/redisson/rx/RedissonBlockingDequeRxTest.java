@@ -67,15 +67,12 @@ public class RedissonBlockingDequeRxTest extends BaseRxTest {
     @Test
     public void testPollLastFromAny() {
         final RBlockingDequeRx<Integer> queue1 = redisson.getBlockingDeque("deque:pollany");
-        Executors.newSingleThreadScheduledExecutor().schedule(new Runnable() {
-            @Override
-            public void run() {
-                RBlockingDequeRx<Integer> queue2 = redisson.getBlockingDeque("deque:pollany1");
-                RBlockingDequeRx<Integer> queue3 = redisson.getBlockingDeque("deque:pollany2");
-                sync(queue3.put(2));
-                sync(queue1.put(1));
-                sync(queue2.put(3));
-            }
+        Executors.newSingleThreadScheduledExecutor().schedule(() -> {
+            RBlockingDequeRx<Integer> queue2 = redisson.getBlockingDeque("deque:pollany1");
+            RBlockingDequeRx<Integer> queue3 = redisson.getBlockingDeque("deque:pollany2");
+            sync(queue3.put(2));
+            sync(queue1.put(1));
+            sync(queue2.put(3));
         }, 3, TimeUnit.SECONDS);
 
         long s = System.currentTimeMillis();

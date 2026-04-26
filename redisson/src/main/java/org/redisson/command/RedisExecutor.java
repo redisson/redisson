@@ -277,100 +277,95 @@ public class RedisExecutor<V, R> {
             return;
         }
 
-        TimerTask retryTimerTask = new TimerTask() {
+        TimerTask retryTimerTask = t -> {
+            if (attemptPromise.isDone()) {
+                return;
+            }
 
-            @Override
-            public void run(Timeout t) throws Exception {
-                if (attemptPromise.isDone()) {
+            if (command != null && command.isBlockingCommand() && !connectionFuture.isDone()) {
+                if (attempt < attempts) {
+                    attempt++;
+                    scheduleRetryTimeout(connectionFuture, attemptPromise);
                     return;
                 }
 
-                if (command != null && command.isBlockingCommand() && !connectionFuture.isDone()) {
-                    if (attempt < attempts) {
+                exception = new RedisTimeoutException("Unable to acquire connection! "
+                        + "Increase connection pool size. "
+                        + "Node source: " + source
+                        + ", " + LogHelper.toString(command, params)
+                        + " after " + attempt + " of " + attempts + " retry attempts");
+                connectionFuture.completeExceptionally(new CancellationException());
+                attemptPromise.completeExceptionally(exception);
+                return;
+            }
+
+            if (connectionFuture.completeExceptionally(new CancellationException())) {
+                exception = new RedisTimeoutException("Unable to acquire connection! " + connectionFuture +
+                            "Increase connection pool size. "
+                            + "Node source: " + source
+                            + ", " + LogHelper.toString(command, params)
+                            + " after " + attempt + " of " + attempts + " retry attempts");
+            } else {
+                if (connectionFuture.isDone() && !connectionFuture.isCompletedExceptionally()) {
+                    if (writeFuture == null || !writeFuture.isDone()) {
+                        if (attempt == attempts) {
+                            if (writeFuture != null && writeFuture.cancel(false)) {
+                                if (exception == null) {
+                                    int pendingTasks = countPendingTasks();
+                                    exception = new RedisTimeoutException("Command still hasn't been written into connection! " +
+                                            "Check CPU usage of the JVM. Check that there are no blocking invocations in async/reactive/rx listeners or subscribeOnElements method. Check connection with Redis node: " + getNow(connectionFuture).getRedisClient().getAddr() +
+                                            " for TCP packet drops. Try to increase nettyThreads setting." +
+                                            " Netty pending tasks: " + pendingTasks + ","
+                                          + " Node source: " + source + ", connection: " + getNow(connectionFuture)
+                                            + ", " + LogHelper.toString(command, params)
+                                            + " after " + attempt + " of " + attempts + " retry attempts");
+                                }
+                                attemptPromise.completeExceptionally(exception);
+                            }
+                            return;
+                        }
                         attempt++;
+
                         scheduleRetryTimeout(connectionFuture, attemptPromise);
                         return;
                     }
 
-                    exception = new RedisTimeoutException("Unable to acquire connection! "
-                            + "Increase connection pool size. "
-                            + "Node source: " + source
-                            + ", " + LogHelper.toString(command, params)
-                            + " after " + attempt + " of " + attempts + " retry attempts");
-                    connectionFuture.completeExceptionally(new CancellationException());
-                    attemptPromise.completeExceptionally(exception);
-                    return;
-                }
-
-                if (connectionFuture.completeExceptionally(new CancellationException())) {
-                    exception = new RedisTimeoutException("Unable to acquire connection! " + connectionFuture +
-                                "Increase connection pool size. "
-                                + "Node source: " + source
-                                + ", " + LogHelper.toString(command, params)
-                                + " after " + attempt + " of " + attempts + " retry attempts");
-                } else {
-                    if (connectionFuture.isDone() && !connectionFuture.isCompletedExceptionally()) {
-                        if (writeFuture == null || !writeFuture.isDone()) {
-                            if (attempt == attempts) {
-                                if (writeFuture != null && writeFuture.cancel(false)) {
-                                    if (exception == null) {
-                                        int pendingTasks = countPendingTasks();
-                                        exception = new RedisTimeoutException("Command still hasn't been written into connection! " +
-                                                "Check CPU usage of the JVM. Check that there are no blocking invocations in async/reactive/rx listeners or subscribeOnElements method. Check connection with Redis node: " + getNow(connectionFuture).getRedisClient().getAddr() +
-                                                " for TCP packet drops. Try to increase nettyThreads setting." +
-                                                " Netty pending tasks: " + pendingTasks + ","
-                                              + " Node source: " + source + ", connection: " + getNow(connectionFuture)
-                                                + ", " + LogHelper.toString(command, params)
-                                                + " after " + attempt + " of " + attempts + " retry attempts");
-                                    }
-                                    attemptPromise.completeExceptionally(exception);
-                                }
-                                return;
-                            }
-                            attempt++;
-
-                            scheduleRetryTimeout(connectionFuture, attemptPromise);
-                            return;
-                        }
-
-                        if (writeFuture.isSuccess()) {
-                            return;
-                        }
+                    if (writeFuture.isSuccess()) {
+                        return;
                     }
                 }
-
-                if (mainPromise.isCompletedExceptionally()) {
-                    Throwable c = cause(mainPromise);
-                    if (c instanceof CancellationException || c instanceof RedissonShutdownException) {
-                        if (attemptPromise.completeExceptionally(new CancellationException())) {
-                            free();
-                        }
-                    }
-                    return;
-                }
-
-                if (attempt == attempts) {
-                    // filled out in connectionFuture or writeFuture handler
-                    if (exception != null) {
-                        attemptPromise.completeExceptionally(exception);
-                    }
-                    return;
-                }
-                if (!attemptPromise.completeExceptionally(new CancellationException())) {
-                    return;
-                }
-
-                attempt++;
-                if (log.isDebugEnabled()) {
-                    log.debug("attempt {} for {} to {}",
-                            attempt, LogHelper.toString(command, params), source);
-                }
-
-                mainPromiseListener = null;
-
-                execute();
             }
 
+            if (mainPromise.isCompletedExceptionally()) {
+                Throwable c = cause(mainPromise);
+                if (c instanceof CancellationException || c instanceof RedissonShutdownException) {
+                    if (attemptPromise.completeExceptionally(new CancellationException())) {
+                        free();
+                    }
+                }
+                return;
+            }
+
+            if (attempt == attempts) {
+                // filled out in connectionFuture or writeFuture handler
+                if (exception != null) {
+                    attemptPromise.completeExceptionally(exception);
+                }
+                return;
+            }
+            if (!attemptPromise.completeExceptionally(new CancellationException())) {
+                return;
+            }
+
+            attempt++;
+            if (log.isDebugEnabled()) {
+                log.debug("attempt {} for {} to {}",
+                        attempt, LogHelper.toString(command, params), source);
+            }
+
+            mainPromiseListener = null;
+
+            execute();
         };
 
         timeout = Optional.of(connectionManager.getServiceManager().newTimeout(retryTimerTask, retryInterval, TimeUnit.MILLISECONDS));

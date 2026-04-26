@@ -18,12 +18,8 @@ package org.redisson.rx;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Single;
-import org.redisson.api.RFuture;
 import org.redisson.misc.ProxyBuilder;
-import org.redisson.misc.ProxyBuilder.Callback;
 
-import java.lang.reflect.Method;
-import java.util.concurrent.Callable;
 
 /**
  * 
@@ -37,19 +33,16 @@ public class RxProxyBuilder {
     }
 
     public static <T> T create(CommandRxExecutor commandExecutor, Object instance, Object implementation, Class<T> clazz) {
-        return ProxyBuilder.create(new Callback() {
-            @Override
-            public Object execute(Callable<RFuture<Object>> callable, Method instanceMethod) {
-                Flowable<Object> flowable = commandExecutor.flowable(callable);
+        return ProxyBuilder.create((callable, instanceMethod) -> {
+            Flowable<Object> flowable = commandExecutor.flowable(callable);
 
-                if (instanceMethod.getReturnType() == Completable.class) {
-                    return flowable.ignoreElements();
-                }
-                if (instanceMethod.getReturnType() == Single.class) {
-                    return flowable.singleOrError();
-                }
-                return flowable.singleElement();
+            if (instanceMethod.getReturnType() == Completable.class) {
+                return flowable.ignoreElements();
             }
+            if (instanceMethod.getReturnType() == Single.class) {
+                return flowable.singleOrError();
+            }
+            return flowable.singleElement();
         }, instance, implementation, clazz, commandExecutor.getServiceManager());
     }
     

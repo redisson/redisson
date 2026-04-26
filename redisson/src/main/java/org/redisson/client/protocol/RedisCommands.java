@@ -626,27 +626,21 @@ public interface RedisCommands {
     RedisStrictCommand<Boolean> MSETNX = new RedisStrictCommand<Boolean>("MSETNX", new BooleanReplayConvertor());
     RedisStrictCommand<Boolean> MSETEX = new RedisStrictCommand<Boolean>("MSETEX", new BooleanReplayConvertor());
 
-    RedisCommand<Boolean> HPEXPIRE = new RedisCommand("HPEXPIRE", new ListFirstObjectDecoder(), new Convertor<Boolean>() {
-        @Override
-        public Boolean convert(Object obj) {
-            Long val = (Long) obj;
-            if (val == -2) {
-                return null;
-            }
-
-            return val == 1;
+    RedisCommand<Boolean> HPEXPIRE = new RedisCommand("HPEXPIRE", new ListFirstObjectDecoder(), (Convertor<Boolean>) obj -> {
+        Long val = (Long) obj;
+        if (val == -2) {
+            return null;
         }
+
+        return val == 1;
     });
-    RedisCommand<Boolean> HPERSIST = new RedisCommand("HPERSIST", new ListFirstObjectDecoder(), new Convertor<Boolean>() {
-        @Override
-        public Boolean convert(Object obj) {
-            Long val = (Long) obj;
-            if (val == -2) {
-                return null;
-            }
-
-            return val == 1;
+    RedisCommand<Boolean> HPERSIST = new RedisCommand("HPERSIST", new ListFirstObjectDecoder(), (Convertor<Boolean>) obj -> {
+        Long val = (Long) obj;
+        if (val == -2) {
+            return null;
         }
+
+        return val == 1;
     });
     RedisCommand<Long> HPTTL = new RedisCommand("HPTTL", new ListFirstObjectDecoder(), new LongReplayConvertor());
     RedisStrictCommand<Boolean> HSETNX = new RedisStrictCommand<Boolean>("HSETNX", new BooleanReplayConvertor());
@@ -851,12 +845,7 @@ public interface RedisCommands {
     RedisStrictCommand<Long> OBJECT_IDLETIME = new RedisStrictCommand<Long>("OBJECT", "IDLETIME", new LongReplayConvertor());
     RedisStrictCommand<Integer> OBJECT_REFCOUNT = new RedisStrictCommand<Integer>("OBJECT", "REFCOUNT", new IntegerReplayConvertor(0));
     RedisStrictCommand<Integer> OBJECT_FREQ = new RedisStrictCommand<Integer>("OBJECT", "FREQ", new IntegerReplayConvertor(0));
-    RedisStrictCommand<ObjectEncoding> OBJECT_ENCODING = new RedisStrictCommand<>("OBJECT", "ENCODING", new Convertor<ObjectEncoding>() {
-        @Override
-        public ObjectEncoding convert(Object obj) {
-            return ObjectEncoding.valueOfEncoding(obj);
-        }
-    });
+    RedisStrictCommand<ObjectEncoding> OBJECT_ENCODING = new RedisStrictCommand<>("OBJECT", "ENCODING", obj -> ObjectEncoding.valueOfEncoding(obj));
 
     RedisStrictCommand<Long> MEMORY_USAGE = new RedisStrictCommand<Long>("MEMORY", "USAGE", new LongReplayConvertor());
     RedisStrictCommand<Map<String, String>> MEMORY_STATS = new RedisStrictCommand<>("MEMORY", "STATS", new StringMapReplayDecoder());
