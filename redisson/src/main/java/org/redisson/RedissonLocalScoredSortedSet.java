@@ -19,7 +19,6 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.RemovalCause;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import org.checkerframework.checker.nullness.qual.NonNull;
 import org.redisson.api.RFuture;
 import org.redisson.api.RTopic;
 import org.redisson.api.RedissonClient;
@@ -1280,7 +1279,7 @@ public class RedissonLocalScoredSortedSet<V> extends RedissonScoredSortedSet<V> 
         return getValuesRankRangeMain(startIndex, endIndex, descending);
     }
 
-    private @NonNull List<V> getValuesRankRangeMain(int startIndex, int endIndex, boolean descending) {
+    private List<V> getValuesRankRangeMain(int startIndex, int endIndex, boolean descending) {
         List<V> result = new ArrayList<>(endIndex - startIndex + 1);
         int currentRank = 0;
         Iterable<ConcurrentSkipListSet<V>> buckets =
