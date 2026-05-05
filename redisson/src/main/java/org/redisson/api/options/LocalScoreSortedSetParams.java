@@ -23,7 +23,8 @@ import java.time.Duration;
  * @param <V> value type
  * @author Nikita Koksharov
  */
-public final class LocalScoreSortedSetParams<V> implements LocalScoreSortedSetOptions<V> {
+public final class LocalScoreSortedSetParams<V> extends BaseOptions<LocalScoreSortedSetOptions<V>, org.redisson.client.codec.Codec>
+        implements LocalScoreSortedSetOptions<V> {
 
     private final String name;
     private ReconnectionStrategy reconnectionStrategy = ReconnectionStrategy.NONE;

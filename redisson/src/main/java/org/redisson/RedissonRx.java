@@ -610,6 +610,29 @@ public final class RedissonRx implements RedissonRxClient {
     }
 
     @Override
+    public <V> RLocalScoredSortedSetRx<V> getLocalScoredSortedSet(String name,
+            org.redisson.api.options.LocalScoreSortedSetOptions<V> options) {
+        return getLocalScoredSortedSet(name, null, options);
+    }
+
+    @Override
+    public <V> RLocalScoredSortedSetRx<V> getLocalScoredSortedSet(String name, Codec codec,
+            org.redisson.api.options.LocalScoreSortedSetOptions<V> options) {
+        RedissonLocalScoredSortedSet<V> set = new RedissonLocalScoredSortedSet<>(codec, commandExecutor, name, null, options);
+        return RxProxyBuilder.create(commandExecutor, set,
+                new RedissonScoredSortedSetRx<>(set), RLocalScoredSortedSetRx.class);
+    }
+
+    @Override
+    public <V> RLocalScoredSortedSetRx<V> getLocalScoredSortedSet(org.redisson.api.options.LocalScoreSortedSetOptions<V> options) {
+        LocalScoreSortedSetParams<V> params = (LocalScoreSortedSetParams<V>) options;
+        CommandRxExecutor ce = commandExecutor.copy(params);
+        RedissonLocalScoredSortedSet<V> set = new RedissonLocalScoredSortedSet<>(params.getCodec(), ce, params.getName(), null, options);
+        return RxProxyBuilder.create(commandExecutor, set,
+                new RedissonScoredSortedSetRx<>(set), RLocalScoredSortedSetRx.class);
+    }
+
+    @Override
     public <V> RScoredSortedSetRx<V> getScoredSortedSet(String name, Codec codec) {
         RedissonScoredSortedSet<V> set = new RedissonScoredSortedSet<V>(codec, commandExecutor, name, null);
         return RxProxyBuilder.create(commandExecutor, set, 

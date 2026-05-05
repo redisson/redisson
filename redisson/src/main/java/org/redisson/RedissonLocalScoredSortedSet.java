@@ -20,6 +20,7 @@ import com.github.benmanes.caffeine.cache.RemovalCause;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.redisson.api.RFuture;
+import org.redisson.api.RLocalScoredSortedSet;
 import org.redisson.api.RTopic;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.listener.BaseStatusListener;
@@ -54,7 +55,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.TimeUnit;
 
-public class RedissonLocalScoredSortedSet<V> extends RedissonScoredSortedSet<V> {
+public class RedissonLocalScoredSortedSet<V> extends RedissonScoredSortedSet<V> implements RLocalScoredSortedSet<V> {
 
     /**
      * Marker key used in pub/sub messages to signal a full local-cache invalidation.
@@ -88,7 +89,7 @@ public class RedissonLocalScoredSortedSet<V> extends RedissonScoredSortedSet<V> 
                 || params.getReadMode() == LocalScoreSortedSetOptions.ReadMode.LOCALCACHE;
         reconnectionStrategy = params.getReconnectionStrategy();
         preload = params.isPreload();
-        init(commandExecutor, name, redisson, params);
+        init(commandExecutor, name, params);
     }
 
     /**
@@ -96,6 +97,7 @@ public class RedissonLocalScoredSortedSet<V> extends RedissonScoredSortedSet<V> 
      * <p>
      * This method synchronizes both internal structures: value->score cache and score buckets.
      */
+    @Override
     public void preloadCache() {
         Double lastScore = get(super.lastScoreAsync());
         Double firstScore = get(super.firstScoreAsync());
@@ -120,6 +122,7 @@ public class RedissonLocalScoredSortedSet<V> extends RedissonScoredSortedSet<V> 
      *
      * @return local score-to-values cache
      */
+    @Override
     public ConcurrentMap<Double, ConcurrentSkipListSet<V>> getScoreCache() {
         return scoreCache;
     }
@@ -129,6 +132,7 @@ public class RedissonLocalScoredSortedSet<V> extends RedissonScoredSortedSet<V> 
      *
      * @return local value-to-score cache
      */
+    @Override
     public Map<V, Double> getCache() {
         return cache;
     }
@@ -1127,6 +1131,7 @@ public class RedissonLocalScoredSortedSet<V> extends RedissonScoredSortedSet<V> 
      * Releases resources (topic listeners and local caches) associated with this instance.
      * Must be called when this instance is no longer needed.
      */
+    @Override
     public void destroy() {
         topic.removeListener(syncListenerId, reconnectionListenerId);
         scoreCache.clear();
@@ -1477,10 +1482,10 @@ public class RedissonLocalScoredSortedSet<V> extends RedissonScoredSortedSet<V> 
         return new CompletableFutureWrapper<>(count);
     }
 
-    private void init(CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson, LocalScoreSortedSetParams<V> params) {
+    private void init(CommandAsyncExecutor commandExecutor, String name, LocalScoreSortedSetParams<V> params) {
         cache = createCache(params);
         try {
-            this.topic = redisson.getTopic(name + ":cache-sync-topic", LocalCachedMessageCodec.INSTANCE);
+            this.topic = new RedissonTopic(LocalCachedMessageCodec.INSTANCE, commandExecutor, name + ":cache-sync-topic");
             instanceId = commandExecutor.getServiceManager().generateIdArray();
             syncListenerId = addSyncListener();
             if (preload) {

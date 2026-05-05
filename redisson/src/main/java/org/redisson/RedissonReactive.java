@@ -667,6 +667,31 @@ public final class RedissonReactive implements RedissonReactiveClient {
     }
 
     @Override
+    public <V> RLocalScoredSortedSetReactive<V> getLocalScoredSortedSet(String name,
+            org.redisson.api.options.LocalScoreSortedSetOptions<V> options) {
+        RedissonLocalScoredSortedSet<V> set = new RedissonLocalScoredSortedSet<>(null, commandExecutor, name, null, options);
+        return ReactiveProxyBuilder.create(commandExecutor, set,
+                new RedissonScoredSortedSetReactive<V>(commandExecutor, name), RLocalScoredSortedSetReactive.class);
+    }
+
+    @Override
+    public <V> RLocalScoredSortedSetReactive<V> getLocalScoredSortedSet(String name, Codec codec,
+            org.redisson.api.options.LocalScoreSortedSetOptions<V> options) {
+        RedissonLocalScoredSortedSet<V> set = new RedissonLocalScoredSortedSet<>(codec, commandExecutor, name, null, options);
+        return ReactiveProxyBuilder.create(commandExecutor, set,
+                new RedissonScoredSortedSetReactive<V>(codec, commandExecutor, name), RLocalScoredSortedSetReactive.class);
+    }
+
+    @Override
+    public <V> RLocalScoredSortedSetReactive<V> getLocalScoredSortedSet(org.redisson.api.options.LocalScoreSortedSetOptions<V> options) {
+        LocalScoreSortedSetParams<V> params = (LocalScoreSortedSetParams<V>) options;
+        CommandReactiveExecutor ca = commandExecutor.copy(params);
+        RedissonLocalScoredSortedSet<V> set = new RedissonLocalScoredSortedSet<>(params.getCodec(), ca, params.getName(), null, options);
+        return ReactiveProxyBuilder.create(commandExecutor, set,
+                new RedissonScoredSortedSetReactive<V>(params.getCodec(), ca, params.getName()), RLocalScoredSortedSetReactive.class);
+    }
+
+    @Override
     public <V> RScoredSortedSetReactive<V> getScoredSortedSet(String name, Codec codec) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonScoredSortedSet<V>(codec, commandExecutor, name, null), 
                 new RedissonScoredSortedSetReactive<V>(codec, commandExecutor, name), RScoredSortedSetReactive.class);

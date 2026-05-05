@@ -15,6 +15,8 @@
  */
 package org.redisson.api.options;
 
+import org.redisson.client.codec.Codec;
+
 import java.time.Duration;
 
 /**
@@ -23,7 +25,7 @@ import java.time.Duration;
  * @param <V> value type
  * @author Nikita Koksharov
  */
-public interface LocalScoreSortedSetOptions<V> {
+public interface LocalScoreSortedSetOptions<V> extends CodecOptions<LocalScoreSortedSetOptions<V>, Codec> {
 
     /**
      * Various strategies to avoid stale objects in local cache.

@@ -52,10 +52,7 @@ class RedissonLocalScoredSortedSetTest extends RedisDockerTest {
                 .evictionPolicy(LocalScoreSortedSetOptions.EvictionPolicy.NONE)
                 .cacheSize(0)
                 .reconnectionStrategy(LocalScoreSortedSetOptions.ReconnectionStrategy.NONE);
-        return new RedissonLocalScoredSortedSet<>(
-                client.getConfig().getCodec(),
-                ((Redisson) client).getCommandExecutor(),
-                name, client, options);
+        return (RedissonLocalScoredSortedSet<String>) client.getLocalScoredSortedSet(name, options);
     }
 
     /**
@@ -67,10 +64,7 @@ class RedissonLocalScoredSortedSetTest extends RedisDockerTest {
                 .evictionPolicy(LocalScoreSortedSetOptions.EvictionPolicy.NONE)
                 .cacheSize(0)
                 .reconnectionStrategy(LocalScoreSortedSetOptions.ReconnectionStrategy.NONE);
-        return new RedissonLocalScoredSortedSet<>(
-                redisson.getConfig().getCodec(),
-                ((Redisson) redisson).getCommandExecutor(),
-                name, redisson, options);
+        return (RedissonLocalScoredSortedSet<String>) redisson.getLocalScoredSortedSet(options);
     }
 
     /**
@@ -85,10 +79,7 @@ class RedissonLocalScoredSortedSetTest extends RedisDockerTest {
                 .cacheSize(0)
                 .reconnectionStrategy(LocalScoreSortedSetOptions.ReconnectionStrategy.NONE)
                 .preload(true);
-        return new RedissonLocalScoredSortedSet<>(
-                redisson.getConfig().getCodec(),
-                ((Redisson) redisson).getCommandExecutor(),
-                name, redisson, params);
+        return (RedissonLocalScoredSortedSet<String>) redisson.getLocalScoredSortedSet(params);
     }
 
     private RScoredSortedSet<String> redis(String name) {
