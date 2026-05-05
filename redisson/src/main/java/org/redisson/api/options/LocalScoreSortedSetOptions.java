@@ -136,17 +136,16 @@ public interface LocalScoreSortedSetOptions<V> {
      * If size is <code>-1</code> then local cache is always empty and doesn't store data.
      *
      * @param cacheSize size of cache
-     * @return LocalCachedMapOptions instance
+     * @return LocalScoreSortedSetOptions instance
      */
     LocalScoreSortedSetOptions<V> cacheSize(int cacheSize);
 
     /**
      * Defines strategy for load missed local cache updates after Redis connection failure.
      *
-     * @param reconnectionStrategy <p><code>CLEAR</code> - clear local cache if map instance has been disconnected for a while.
-     *                             <p><code>LOAD</code> - store invalidated entry hash in invalidation log for 10 minutes. Cache keys for stored invalidated entry hashes will be removed if LocalCachedMap instance has been disconnected less than 10 minutes or whole cache will be cleaned otherwise
+     * @param reconnectionStrategy <p><code>PRE_LOAD</code> - Preload local cache if set instance has reconnected
      *                             <p><code>NONE</code> - Default. No reconnection handling
-     * @return LocalCachedMapOptions instance
+     * @return LocalScoreSortedSetOptions instance
      */
     LocalScoreSortedSetOptions<V> reconnectionStrategy(ReconnectionStrategy reconnectionStrategy);
 
@@ -158,7 +157,7 @@ public interface LocalScoreSortedSetOptions<V> {
      *                       <p><code>SOFT</code> - uses local cache with soft references. The garbage collector will evict items from the local cache when the JVM is running out of memory.
      *                       <p><code>WEAK</code> - uses local cache with weak references. The garbage collector will evict items from the local cache when it became weakly reachable.
      *                       <p><code>NONE</code> - doesn't use eviction policy, but timeToLive and maxIdleTime params are still working.
-     * @return LocalCachedMapOptions instance
+     * @return LocalScoreSortedSetOptions instance
      */
     LocalScoreSortedSetOptions<V> evictionPolicy(EvictionPolicy evictionPolicy);
 
@@ -167,7 +166,7 @@ public interface LocalScoreSortedSetOptions<V> {
      * If value equals to <code>0</code> then timeout is not applied
      *
      * @param ttl - time to live in milliseconds
-     * @return LocalCachedMapOptions instance
+     * @return LocalScoreSortedSetOptions instance
      */
     LocalScoreSortedSetOptions<V> timeToLive(Duration ttl);
 
@@ -176,7 +175,7 @@ public interface LocalScoreSortedSetOptions<V> {
      * If value equals to <code>0</code> then timeout is not applied
      *
      * @param idleTime time to live in milliseconds
-     * @return LocalCachedMapOptions instance
+     * @return LocalScoreSortedSetOptions instance
      */
     LocalScoreSortedSetOptions<V> maxIdle(Duration idleTime);
 
@@ -185,7 +184,7 @@ public interface LocalScoreSortedSetOptions<V> {
      *
      * @param storeMode <p><code>LOCALCACHE</code> - store data in local cache only.
      *                  <p><code>LOCALCACHE_REDIS</code> - store data in both Redis and local cache.
-     * @return LocalCachedMapOptions instance
+     * @return LocalScoreSortedSetOptions instance
      */
     LocalScoreSortedSetOptions<V> storeMode(StoreMode storeMode);
 
@@ -194,7 +193,7 @@ public interface LocalScoreSortedSetOptions<V> {
      *
      * @param cacheProvider <p><code>REDISSON</code> - uses Redisson own implementation.
      *                      <p><code>CAFFEINE</code> - uses Caffeine implementation.
-     * @return LocalCachedMapOptions instance
+     * @return LocalScoreSortedSetOptions instance
      */
     LocalScoreSortedSetOptions<V> cacheProvider(CacheProvider cacheProvider);
 
