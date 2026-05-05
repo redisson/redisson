@@ -59,14 +59,14 @@
 
     <modules>
         <module>redisson</module>
-   <!--     <module>redisson-all</module>
+        <module>redisson-all</module>
         <module>redisson-tomcat</module>
         <module>redisson-mybatis</module>
         <module>redisson-hibernate</module>
         <module>redisson-helidon</module>
         <module>redisson-quarkus</module>
         <module>redisson-micronaut</module>
-        <module>redisson-spring</module>-->
+        <module>redisson-spring</module>
     </modules>
 
     <distributionManagement>
