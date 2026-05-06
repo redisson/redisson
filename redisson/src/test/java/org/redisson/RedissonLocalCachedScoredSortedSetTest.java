@@ -1,13 +1,12 @@
 package org.redisson;
 
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.redisson.api.RLocalScoredSortedSet;
+import org.redisson.api.RLocalCachedScoredSortedSet;
 import org.redisson.api.RScoredSortedSet;
 import org.redisson.api.RedissonClient;
-import org.redisson.api.options.LocalScoreSortedSetOptions;
-import org.redisson.api.options.LocalScoreSortedSetParams;
+import org.redisson.api.options.LocalCachedScoredSortedSetOptions;
+import org.redisson.api.options.LocalCachedScoredSortedSetParams;
 import org.redisson.client.protocol.ScoredEntry;
 
 import java.time.Duration;
@@ -24,63 +23,58 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Tests for {@link RLocalScoredSortedSet} covering:
+ * Tests for {@link RLocalCachedScoredSortedSet} covering:
  * - All overridden methods (LOCALCACHE_REDIS mode: local cache + Redis in sync)
  * - LocalOnly mode (StoreMode.LOCALCACHE: local-only, no Redis writes)
  * - Cross-instance cache synchronization via pub/sub
  * - Preload from Redis
  */
-class RLocalScoredSortedSetTest extends RedisDockerTest {
-
-    @BeforeEach
-    void setUp() {
-        redisson.getKeys().flushall();
-    }
+class RedissonLocalCachedScoredSortedSetTest extends RedisDockerTest {
 
     // ───────────────────────── helpers ──────────────────────────
 
-    private RLocalScoredSortedSet<String> createSet(String name) {
+    private RLocalCachedScoredSortedSet<String> createSet(String name) {
         return createSet(redisson, name);
     }
 
     /**
      * LOCALCACHE_REDIS – reads from local, writes to both.
      */
-    private RLocalScoredSortedSet<String> createSet(RedissonClient client, String name) {
-        LocalScoreSortedSetOptions<String> options = LocalScoreSortedSetOptions.<String>name(name)
-                .storeMode(LocalScoreSortedSetOptions.StoreMode.LOCALCACHE_REDIS)
-                .readMode(LocalScoreSortedSetOptions.ReadMode.LOCALCACHE)
-                .evictionPolicy(LocalScoreSortedSetOptions.EvictionPolicy.NONE)
+    private RLocalCachedScoredSortedSet<String> createSet(RedissonClient client, String name) {
+        LocalCachedScoredSortedSetOptions<String> options = LocalCachedScoredSortedSetOptions.<String>name(name)
+                .storeMode(LocalCachedScoredSortedSetOptions.StoreMode.LOCALCACHE_REDIS)
+                .readMode(LocalCachedScoredSortedSetOptions.ReadMode.LOCALCACHE)
+                .evictionPolicy(LocalCachedScoredSortedSetOptions.EvictionPolicy.NONE)
                 .cacheSize(0)
-                .reconnectionStrategy(LocalScoreSortedSetOptions.ReconnectionStrategy.NONE);
-        return client.getLocalScoredSortedSet(name, options);
+                .reconnectionStrategy(LocalCachedScoredSortedSetOptions.ReconnectionStrategy.NONE);
+        return client.getLocalCachedScoredSortedSet(name, options);
     }
 
     /**
      * StoreMode.LOCALCACHE – local only, never touches Redis.
      */
-    private RLocalScoredSortedSet<String> createLocalOnlySet(String name) {
-        LocalScoreSortedSetOptions<String> options = LocalScoreSortedSetOptions.<String>name(name)
-                .storeMode(LocalScoreSortedSetOptions.StoreMode.LOCALCACHE)
-                .evictionPolicy(LocalScoreSortedSetOptions.EvictionPolicy.NONE)
+    private RLocalCachedScoredSortedSet<String> createLocalOnlySet(String name) {
+        LocalCachedScoredSortedSetOptions<String> options = LocalCachedScoredSortedSetOptions.<String>name(name)
+                .storeMode(LocalCachedScoredSortedSetOptions.StoreMode.LOCALCACHE)
+                .evictionPolicy(LocalCachedScoredSortedSetOptions.EvictionPolicy.NONE)
                 .cacheSize(0)
-                .reconnectionStrategy(LocalScoreSortedSetOptions.ReconnectionStrategy.NONE);
-        return redisson.getLocalScoredSortedSet(options);
+                .reconnectionStrategy(LocalCachedScoredSortedSetOptions.ReconnectionStrategy.NONE);
+        return redisson.getLocalCachedScoredSortedSet(options);
     }
 
     /**
      * Creates a set with preload=true so the cache is populated from Redis on construction.
      */
-    private RLocalScoredSortedSet<String> createPreloadSet(String name) {
-        LocalScoreSortedSetParams<String> params =
-                (LocalScoreSortedSetParams<String>) LocalScoreSortedSetOptions.<String>name(name);
-        params.storeMode(LocalScoreSortedSetOptions.StoreMode.LOCALCACHE_REDIS)
-                .readMode(LocalScoreSortedSetOptions.ReadMode.LOCALCACHE)
-                .evictionPolicy(LocalScoreSortedSetOptions.EvictionPolicy.NONE)
+    private RLocalCachedScoredSortedSet<String> createPreloadSet(String name) {
+        LocalCachedScoredSortedSetParams<String> params =
+                (LocalCachedScoredSortedSetParams<String>) LocalCachedScoredSortedSetOptions.<String>name(name);
+        params.storeMode(LocalCachedScoredSortedSetOptions.StoreMode.LOCALCACHE_REDIS)
+                .readMode(LocalCachedScoredSortedSetOptions.ReadMode.LOCALCACHE)
+                .evictionPolicy(LocalCachedScoredSortedSetOptions.EvictionPolicy.NONE)
                 .cacheSize(0)
-                .reconnectionStrategy(LocalScoreSortedSetOptions.ReconnectionStrategy.NONE)
+                .reconnectionStrategy(LocalCachedScoredSortedSetOptions.ReconnectionStrategy.NONE)
                 .preload(true);
-        return redisson.getLocalScoredSortedSet(params);
+        return redisson.getLocalCachedScoredSortedSet(params);
     }
 
     private RScoredSortedSet<String> redis(String name) {
@@ -90,7 +84,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
     /**
      * Assert that local cache == Redis state (entries, scores, size).
      */
-    private void assertConsistent(RLocalScoredSortedSet<String> local, RScoredSortedSet<String> redis) {
+    private void assertConsistent(RLocalCachedScoredSortedSet<String> local, RScoredSortedSet<String> redis) {
         Collection<ScoredEntry<String>> redisEntries = redis.entryRange(0, -1);
         Collection<ScoredEntry<String>> localEntries = local.entryRange(0, -1);
 
@@ -108,7 +102,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testAdd() {
-        RLocalScoredSortedSet<String> set = createSet("t:add");
+        RLocalCachedScoredSortedSet<String> set = createSet("t:add");
         try {
             assertThat(set.add(1.0, "a")).isTrue();
             assertThat(set.add(1.0, "a")).isFalse();  // duplicate → false
@@ -121,7 +115,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testAddAll() {
-        RLocalScoredSortedSet<String> set = createSet("t:addAll");
+        RLocalCachedScoredSortedSet<String> set = createSet("t:addAll");
         try {
             Map<String, Double> m = new LinkedHashMap<>();
             m.put("a", 1.0);
@@ -139,7 +133,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testContains() {
-        RLocalScoredSortedSet<String> set = createSet("t:contains");
+        RLocalCachedScoredSortedSet<String> set = createSet("t:contains");
         try {
             set.add(1.0, "x");
             assertThat(set.contains("x")).isTrue();
@@ -151,7 +145,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testContainsAll() {
-        RLocalScoredSortedSet<String> set = createSet("t:containsAll");
+        RLocalCachedScoredSortedSet<String> set = createSet("t:containsAll");
         try {
             set.add(1.0, "a");
             set.add(2.0, "b");
@@ -164,7 +158,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testSizeAndReadAll() {
-        RLocalScoredSortedSet<String> set = createSet("t:sizeReadAll");
+        RLocalCachedScoredSortedSet<String> set = createSet("t:sizeReadAll");
         try {
             assertThat(set.size()).isZero();
             set.add(1.0, "a");
@@ -178,7 +172,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testGetScore() {
-        RLocalScoredSortedSet<String> set = createSet("t:getScore");
+        RLocalCachedScoredSortedSet<String> set = createSet("t:getScore");
         try {
             set.add(3.5, "x");
             assertThat(set.getScore("x")).isEqualTo(3.5);
@@ -190,7 +184,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testGetScoreCollection() {
-        RLocalScoredSortedSet<String> set = createSet("t:getScoreCol");
+        RLocalCachedScoredSortedSet<String> set = createSet("t:getScoreCol");
         try {
             set.add(1.0, "a");
             set.add(3.0, "c");
@@ -207,7 +201,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testRemove() {
-        RLocalScoredSortedSet<String> set = createSet("t:remove");
+        RLocalCachedScoredSortedSet<String> set = createSet("t:remove");
         try {
             set.add(1.0, "a");
             set.add(2.0, "b");
@@ -222,7 +216,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testRemoveAll() {
-        RLocalScoredSortedSet<String> set = createSet("t:removeAll");
+        RLocalCachedScoredSortedSet<String> set = createSet("t:removeAll");
         try {
             set.add(1.0, "a");
             set.add(2.0, "b");
@@ -237,7 +231,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testRemoveRangeByScore() {
-        RLocalScoredSortedSet<String> set = createSet("t:removeRangeByScore");
+        RLocalCachedScoredSortedSet<String> set = createSet("t:removeRangeByScore");
         try {
             set.add(1.0, "a");
             set.add(2.0, "b");
@@ -254,7 +248,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testRemoveRangeByScoreInvalidRange() {
-        RLocalScoredSortedSet<String> set = createSet("t:removeByScoreInvalid");
+        RLocalCachedScoredSortedSet<String> set = createSet("t:removeByScoreInvalid");
         try {
             set.add(1.0, "a");
             assertThat(set.removeRangeByScore(5.0, true, 1.0, true)).isZero();
@@ -266,7 +260,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testRemoveRangeByRank() {
-        RLocalScoredSortedSet<String> set = createSet("t:removeByRank");
+        RLocalCachedScoredSortedSet<String> set = createSet("t:removeByRank");
         try {
             set.add(1.0, "a");
             set.add(2.0, "b");
@@ -282,7 +276,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testDelete() {
-        RLocalScoredSortedSet<String> set = createSet("t:delete");
+        RLocalCachedScoredSortedSet<String> set = createSet("t:delete");
         try {
             set.add(1.0, "a");
             set.add(2.0, "b");
@@ -299,8 +293,8 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
     void testDeleteAsync_CrossInstance_BroadcastsClear() throws ExecutionException, InterruptedException {
         String name = "t:deleteAsync:crossInstance";
         RedissonClient c2 = createInstance();
-        RLocalScoredSortedSet<String> s1 = createSet(redisson, name);
-        RLocalScoredSortedSet<String> s2 = createSet(c2, name);
+        RLocalCachedScoredSortedSet<String> s1 = createSet(redisson, name);
+        RLocalCachedScoredSortedSet<String> s2 = createSet(c2, name);
         try {
             // Populate both instances
             s1.add(1.0, "a");
@@ -337,7 +331,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
     @Test
     void testDeleteAsync_LocalOnly_NoSync() throws ExecutionException, InterruptedException {
         String name = "t:deleteAsync:localOnly";
-        RLocalScoredSortedSet<String> s1 = createLocalOnlySet(name);
+        RLocalCachedScoredSortedSet<String> s1 = createLocalOnlySet(name);
         try {
             s1.add(1.0, "x");
             s1.add(2.0, "y");
@@ -354,7 +348,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
     @Test
     void testDeleteAsync_ClearsAllData() {
         String name = "t:deleteAsync:clearsAll";
-        RLocalScoredSortedSet<String> set = createSet(name);
+        RLocalCachedScoredSortedSet<String> set = createSet(name);
         try {
             // Add multiple entries
             set.add(1.0, "a");
@@ -391,8 +385,8 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
     void testDeleteAsync_MultipleDeletesHaveNoEffect() throws ExecutionException, InterruptedException {
         String name = "t:deleteAsync:multiDelete";
         RedissonClient c2 = createInstance();
-        RLocalScoredSortedSet<String> s1 = createSet(redisson, name);
-        RLocalScoredSortedSet<String> s2 = createSet(c2, name);
+        RLocalCachedScoredSortedSet<String> s1 = createSet(redisson, name);
+        RLocalCachedScoredSortedSet<String> s2 = createSet(c2, name);
         try {
             s1.add(1.0, "a");
             awaitCacheSize(s2, 1);
@@ -417,8 +411,8 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
     void testDeleteAsync_BothInstancesCanDelete() {
         String name = "t:deleteAsync:bothDelete";
         RedissonClient c2 = createInstance();
-        RLocalScoredSortedSet<String> s1 = createSet(redisson, name);
-        RLocalScoredSortedSet<String> s2 = createSet(c2, name);
+        RLocalCachedScoredSortedSet<String> s1 = createSet(redisson, name);
+        RLocalCachedScoredSortedSet<String> s2 = createSet(c2, name);
         try {
             // Add via s1
             s1.add(1.0, "a");
@@ -448,7 +442,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testAddIfAbsent() {
-        RLocalScoredSortedSet<String> set = createSet("t:addIfAbsent");
+        RLocalCachedScoredSortedSet<String> set = createSet("t:addIfAbsent");
         try {
             assertThat(set.addIfAbsent(1.0, "a")).isTrue();
             assertThat(set.addIfAbsent(9.0, "a")).isFalse();  // already present
@@ -461,7 +455,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testAddIfExists() {
-        RLocalScoredSortedSet<String> set = createSet("t:addIfExists");
+        RLocalCachedScoredSortedSet<String> set = createSet("t:addIfExists");
         try {
             assertThat(set.addIfExists(9.0, "missing")).isFalse();
             set.add(1.0, "a");
@@ -475,7 +469,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testAddIfLess() {
-        RLocalScoredSortedSet<String> set = createSet("t:addIfLess");
+        RLocalCachedScoredSortedSet<String> set = createSet("t:addIfLess");
         try {
             set.add(10.0, "a");
             assertThat(set.addIfLess(5.0, "a")).isTrue();     // 5 < 10 → update
@@ -490,7 +484,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testAddIfGreater() {
-        RLocalScoredSortedSet<String> set = createSet("t:addIfGreater");
+        RLocalCachedScoredSortedSet<String> set = createSet("t:addIfGreater");
         try {
             set.add(5.0, "a");
             assertThat(set.addIfGreater(10.0, "a")).isTrue();  // 10 > 5 → update
@@ -509,7 +503,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testAddAllIfAbsent() {
-        RLocalScoredSortedSet<String> set = createSet("t:addAllIfAbsent");
+        RLocalCachedScoredSortedSet<String> set = createSet("t:addAllIfAbsent");
         try {
             set.add(1.0, "existing");
             Map<String, Double> input = new LinkedHashMap<>();
@@ -528,7 +522,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testAddAllIfExist() {
-        RLocalScoredSortedSet<String> set = createSet("t:addAllIfExist");
+        RLocalCachedScoredSortedSet<String> set = createSet("t:addAllIfExist");
         try {
             set.add(1.0, "a");
             set.add(2.0, "b");
@@ -548,7 +542,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testAddAllIfGreater() {
-        RLocalScoredSortedSet<String> set = createSet("t:addAllIfGreater");
+        RLocalCachedScoredSortedSet<String> set = createSet("t:addAllIfGreater");
         try {
             set.add(10.0, "a");
             set.add(20.0, "b");
@@ -568,7 +562,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testAddAllIfLess() {
-        RLocalScoredSortedSet<String> set = createSet("t:addAllIfLess");
+        RLocalCachedScoredSortedSet<String> set = createSet("t:addAllIfLess");
         try {
             set.add(10.0, "a");
             set.add(20.0, "b");
@@ -592,7 +586,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testAddScore() {
-        RLocalScoredSortedSet<String> set = createSet("t:addScore");
+        RLocalCachedScoredSortedSet<String> set = createSet("t:addScore");
         try {
             set.add(1.0, "a");
             assertThat(set.addScore("a", 4.0)).isEqualTo(5.0);
@@ -607,7 +601,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testAddAndGetRank() {
-        RLocalScoredSortedSet<String> set = createSet("t:addAndGetRank");
+        RLocalCachedScoredSortedSet<String> set = createSet("t:addAndGetRank");
         try {
             assertThat(set.addAndGetRank(1.0, "a")).isZero();
             assertThat(set.addAndGetRank(3.0, "c")).isEqualTo(1);
@@ -620,7 +614,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testAddAndGetRevRank() {
-        RLocalScoredSortedSet<String> set = createSet("t:addAndGetRevRank");
+        RLocalCachedScoredSortedSet<String> set = createSet("t:addAndGetRevRank");
         try {
             assertThat(set.addAndGetRevRank(1.0, "a")).isZero();
             assertThat(set.addAndGetRevRank(3.0, "c")).isZero();  // now highest
@@ -633,7 +627,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testAddScoreAndGetRank() {
-        RLocalScoredSortedSet<String> set = createSet("t:addScoreGetRank");
+        RLocalCachedScoredSortedSet<String> set = createSet("t:addScoreGetRank");
         try {
             set.add(1.0, "a");
             set.add(5.0, "b");
@@ -648,7 +642,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testAddScoreAndGetRevRank() {
-        RLocalScoredSortedSet<String> set = createSet("t:addScoreGetRevRank");
+        RLocalCachedScoredSortedSet<String> set = createSet("t:addScoreGetRevRank");
         try {
             set.add(1.0, "a");
             set.add(5.0, "b");
@@ -667,7 +661,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testRankAndRevRank() {
-        RLocalScoredSortedSet<String> set = createSet("t:rankRevRank");
+        RLocalCachedScoredSortedSet<String> set = createSet("t:rankRevRank");
         try {
             set.add(1.0, "a");
             set.add(2.0, "b");
@@ -685,7 +679,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testRevRankCollection() {
-        RLocalScoredSortedSet<String> set = createSet("t:revRankCol");
+        RLocalCachedScoredSortedSet<String> set = createSet("t:revRankCol");
         try {
             set.add(1.0, "a");
             set.add(2.0, "b");
@@ -703,7 +697,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testFirstAndLastScoreAndValue() {
-        RLocalScoredSortedSet<String> set = createSet("t:firstLast");
+        RLocalCachedScoredSortedSet<String> set = createSet("t:firstLast");
         try {
             assertThat(set.firstScore()).isNull();
             assertThat(set.lastScore()).isNull();
@@ -723,7 +717,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testFirstAndLastEntry() {
-        RLocalScoredSortedSet<String> set = createSet("t:firstLastEntry");
+        RLocalCachedScoredSortedSet<String> set = createSet("t:firstLastEntry");
         try {
             assertThat(set.firstEntry()).isNull();
             assertThat(set.lastEntry()).isNull();
@@ -742,7 +736,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testCount() {
-        RLocalScoredSortedSet<String> set = createSet("t:count");
+        RLocalCachedScoredSortedSet<String> set = createSet("t:count");
         try {
             set.add(1.0, "a");
             set.add(2.0, "b");
@@ -758,7 +752,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testValueRangeByScore() {
-        RLocalScoredSortedSet<String> set = createSet("t:valueRangeByScore");
+        RLocalCachedScoredSortedSet<String> set = createSet("t:valueRangeByScore");
         try {
             set.add(1.0, "a");
             set.add(2.0, "b");
@@ -772,7 +766,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testEntryRangeByScore() {
-        RLocalScoredSortedSet<String> set = createSet("t:entryRangeByScore");
+        RLocalCachedScoredSortedSet<String> set = createSet("t:entryRangeByScore");
         try {
             set.add(1.0, "a");
             set.add(2.0, "b");
@@ -786,7 +780,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testEntryRangeByScoreEmptyOnInvalidRange() {
-        RLocalScoredSortedSet<String> set = createSet("t:entryRangeInvalid");
+        RLocalCachedScoredSortedSet<String> set = createSet("t:entryRangeInvalid");
         try {
             set.add(1.0, "a");
             assertThat(set.entryRange(5.0, true, 1.0, true)).isEmpty();
@@ -801,7 +795,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testValueRangeByRank() {
-        RLocalScoredSortedSet<String> set = createSet("t:valueRangeByRank");
+        RLocalCachedScoredSortedSet<String> set = createSet("t:valueRangeByRank");
         try {
             set.add(1.0, "a");
             set.add(2.0, "b");
@@ -815,7 +809,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testValueRangeReversedByRank() {
-        RLocalScoredSortedSet<String> set = createSet("t:valueRangeRevByRank");
+        RLocalCachedScoredSortedSet<String> set = createSet("t:valueRangeRevByRank");
         try {
             set.add(1.0, "a");
             set.add(2.0, "b");
@@ -828,7 +822,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testValueRangeReversedByScore() {
-        RLocalScoredSortedSet<String> set = createSet("t:valueRangeRevByScore");
+        RLocalCachedScoredSortedSet<String> set = createSet("t:valueRangeRevByScore");
         try {
             set.add(1.0, "a");
             set.add(2.0, "b");
@@ -841,7 +835,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testEntryRangeByRank() {
-        RLocalScoredSortedSet<String> set = createSet("t:entryRangeByRank");
+        RLocalCachedScoredSortedSet<String> set = createSet("t:entryRangeByRank");
         try {
             set.add(1.0, "a");
             set.add(2.0, "b");
@@ -855,7 +849,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testEntryRangeReversedByRank() {
-        RLocalScoredSortedSet<String> set = createSet("t:entryRangeRevByRank");
+        RLocalCachedScoredSortedSet<String> set = createSet("t:entryRangeRevByRank");
         try {
             set.add(1.0, "a");
             set.add(2.0, "b");
@@ -869,7 +863,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testEntryRangeReversedByScore() {
-        RLocalScoredSortedSet<String> set = createSet("t:entryRangeRevByScore");
+        RLocalCachedScoredSortedSet<String> set = createSet("t:entryRangeRevByScore");
         try {
             set.add(1.0, "a");
             set.add(2.0, "b");
@@ -890,7 +884,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testPollFirstSingle() {
-        RLocalScoredSortedSet<String> set = createLocalOnlySet("t:pollFirst1");
+        RLocalCachedScoredSortedSet<String> set = createLocalOnlySet("t:pollFirst1");
         try {
             assertThat(set.pollFirst()).isNull();
             set.add(1.0, "a");
@@ -906,7 +900,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testPollLastSingle() {
-        RLocalScoredSortedSet<String> set = createLocalOnlySet("t:pollLast1");
+        RLocalCachedScoredSortedSet<String> set = createLocalOnlySet("t:pollLast1");
         try {
             assertThat(set.pollLast()).isNull();
             set.add(1.0, "a");
@@ -922,7 +916,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testPollFirstCount() {
-        RLocalScoredSortedSet<String> set = createLocalOnlySet("t:pollFirstN");
+        RLocalCachedScoredSortedSet<String> set = createLocalOnlySet("t:pollFirstN");
         try {
             set.add(1.0, "a");
             set.add(2.0, "b");
@@ -937,7 +931,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testPollLastCount() {
-        RLocalScoredSortedSet<String> set = createLocalOnlySet("t:pollLastN");
+        RLocalCachedScoredSortedSet<String> set = createLocalOnlySet("t:pollLastN");
         try {
             set.add(1.0, "a");
             set.add(2.0, "b");
@@ -952,7 +946,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testPollFirstEntry() {
-        RLocalScoredSortedSet<String> set = createLocalOnlySet("t:pollFirstEntry");
+        RLocalCachedScoredSortedSet<String> set = createLocalOnlySet("t:pollFirstEntry");
         try {
             assertThat(set.pollFirstEntry()).isNull();
             set.add(1.0, "a");
@@ -966,7 +960,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testPollLastEntry() {
-        RLocalScoredSortedSet<String> set = createLocalOnlySet("t:pollLastEntry");
+        RLocalCachedScoredSortedSet<String> set = createLocalOnlySet("t:pollLastEntry");
         try {
             assertThat(set.pollLastEntry()).isNull();
             set.add(1.0, "a");
@@ -980,7 +974,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testPollFirstEntries() {
-        RLocalScoredSortedSet<String> set = createLocalOnlySet("t:pollFirstEntries");
+        RLocalCachedScoredSortedSet<String> set = createLocalOnlySet("t:pollFirstEntries");
         try {
             set.add(1.0, "a");
             set.add(2.0, "b");
@@ -995,7 +989,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testPollLastEntries() {
-        RLocalScoredSortedSet<String> set = createLocalOnlySet("t:pollLastEntries");
+        RLocalCachedScoredSortedSet<String> set = createLocalOnlySet("t:pollLastEntries");
         try {
             set.add(1.0, "a");
             set.add(2.0, "b");
@@ -1010,7 +1004,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testPollZeroCount() {
-        RLocalScoredSortedSet<String> set = createLocalOnlySet("t:pollZero");
+        RLocalCachedScoredSortedSet<String> set = createLocalOnlySet("t:pollZero");
         try {
             set.add(1.0, "a");
             assertTrue(set.pollFirst(0).isEmpty());
@@ -1028,7 +1022,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testReplace() {
-        RLocalScoredSortedSet<String> set = createSet("t:replace");
+        RLocalCachedScoredSortedSet<String> set = createSet("t:replace");
         try {
             set.add(1.0, "a");
             set.add(2.0, "b");
@@ -1048,7 +1042,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testLocalOnlyModeDoesNotWriteToRedis() {
-        RLocalScoredSortedSet<String> set = createLocalOnlySet("t:localOnly");
+        RLocalCachedScoredSortedSet<String> set = createLocalOnlySet("t:localOnly");
         try {
             set.add(1.0, "a");
             set.add(2.0, "b");
@@ -1063,7 +1057,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testLocalOnlyReadOps() {
-        RLocalScoredSortedSet<String> set = createLocalOnlySet("t:localOnlyRead");
+        RLocalCachedScoredSortedSet<String> set = createLocalOnlySet("t:localOnlyRead");
         try {
             set.add(1.0, "a");
             set.add(2.0, "b");
@@ -1084,7 +1078,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testLocalOnlyAddIfAbsent() {
-        RLocalScoredSortedSet<String> set = createLocalOnlySet("t:localOnlyAddIfAbsent");
+        RLocalCachedScoredSortedSet<String> set = createLocalOnlySet("t:localOnlyAddIfAbsent");
         try {
             assertThat(set.addIfAbsent(1.0, "a")).isTrue();
             assertThat(set.addIfAbsent(9.0, "a")).isFalse();
@@ -1097,7 +1091,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testLocalOnlyAddIfExists() {
-        RLocalScoredSortedSet<String> set = createLocalOnlySet("t:localOnlyAddIfExists");
+        RLocalCachedScoredSortedSet<String> set = createLocalOnlySet("t:localOnlyAddIfExists");
         try {
             assertThat(set.addIfExists(9.0, "missing")).isFalse();
             set.add(1.0, "a");
@@ -1110,7 +1104,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testLocalOnlyAddIfLessAndGreater() {
-        RLocalScoredSortedSet<String> set = createLocalOnlySet("t:localOnlyAddIfLessGreater");
+        RLocalCachedScoredSortedSet<String> set = createLocalOnlySet("t:localOnlyAddIfLessGreater");
         try {
             set.add(5.0, "a");
             assertThat(set.addIfLess(3.0, "a")).isTrue();
@@ -1126,7 +1120,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testLocalOnlyRemoveRangeByScore() {
-        RLocalScoredSortedSet<String> set = createLocalOnlySet("t:localOnlyRmByScore");
+        RLocalCachedScoredSortedSet<String> set = createLocalOnlySet("t:localOnlyRmByScore");
         try {
             set.add(1.0, "a");
             set.add(2.0, "b");
@@ -1141,7 +1135,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testLocalOnlyAddAllConditionals() {
-        RLocalScoredSortedSet<String> set = createLocalOnlySet("t:localOnlyBulkCond");
+        RLocalCachedScoredSortedSet<String> set = createLocalOnlySet("t:localOnlyBulkCond");
         try {
             set.add(10.0, "a");
             Map<String, Double> m = new LinkedHashMap<>();
@@ -1157,7 +1151,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testLocalOnlyAddScore() {
-        RLocalScoredSortedSet<String> set = createLocalOnlySet("t:localOnlyAddScore");
+        RLocalCachedScoredSortedSet<String> set = createLocalOnlySet("t:localOnlyAddScore");
         try {
             set.add(5.0, "a");
             assertThat(set.addScore("a", 3.0)).isEqualTo(8.0);
@@ -1170,7 +1164,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testLocalOnlyAddAndGetRankRevRank() {
-        RLocalScoredSortedSet<String> set = createLocalOnlySet("t:localOnlyRank");
+        RLocalCachedScoredSortedSet<String> set = createLocalOnlySet("t:localOnlyRank");
         try {
             assertThat(set.addAndGetRank(1.0, "a")).isZero();
             assertThat(set.addAndGetRevRank(3.0, "c")).isZero();
@@ -1183,7 +1177,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testLocalOnlyRetainAllAndDelete() {
-        RLocalScoredSortedSet<String> set = createLocalOnlySet("t:localOnlyRetain");
+        RLocalCachedScoredSortedSet<String> set = createLocalOnlySet("t:localOnlyRetain");
         try {
             set.add(1.0, "a");
             set.add(2.0, "b");
@@ -1199,7 +1193,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testLocalOnlyRemoveAll() {
-        RLocalScoredSortedSet<String> set = createLocalOnlySet("t:localOnlyRemoveAll");
+        RLocalCachedScoredSortedSet<String> set = createLocalOnlySet("t:localOnlyRemoveAll");
         try {
             set.add(1.0, "a");
             set.add(2.0, "b");
@@ -1213,7 +1207,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testLocalOnlyReplace() {
-        RLocalScoredSortedSet<String> set = createLocalOnlySet("t:localOnlyReplace");
+        RLocalCachedScoredSortedSet<String> set = createLocalOnlySet("t:localOnlyReplace");
         try {
             set.add(5.0, "old");
             assertThat(set.replace("old", "newVal")).isTrue();
@@ -1235,7 +1229,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
         redis(name).add(1.0, "a");
         redis(name).add(2.0, "b");
         redis(name).add(3.0, "c");
-        RLocalScoredSortedSet<String> set = createPreloadSet(name);
+        RLocalCachedScoredSortedSet<String> set = createPreloadSet(name);
         try {
             assertThat(set.getCache()).containsEntry("a", 1.0)
                     .containsEntry("b", 2.0)
@@ -1248,7 +1242,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     @Test
     void testPreloadOnEmptySet() {
-        RLocalScoredSortedSet<String> set = createPreloadSet("t:preloadEmpty");
+        RLocalCachedScoredSortedSet<String> set = createPreloadSet("t:preloadEmpty");
         try {
             assertThat(set.getCache()).isEmpty();
             assertThat(set.getScoreCache()).isEmpty();
@@ -1262,7 +1256,7 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
         String name = "t:preloadRefresh";
         redis(name).add(5.0, "x");
         redis(name).add(10.0, "y");
-        RLocalScoredSortedSet<String> set = createPreloadSet(name);
+        RLocalCachedScoredSortedSet<String> set = createPreloadSet(name);
         try {
             assertThat(set.getCache()).hasSize(2);
             // Add more directly to Redis, then re-preload
@@ -1282,8 +1276,8 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
     void testCrossInstanceSync_AddAndRemove() {
         String name = "t:sync:addRemove";
         RedissonClient c2 = createInstance();
-        RLocalScoredSortedSet<String> s1 = createSet(redisson, name);
-        RLocalScoredSortedSet<String> s2 = createSet(c2, name);
+        RLocalCachedScoredSortedSet<String> s1 = createSet(redisson, name);
+        RLocalCachedScoredSortedSet<String> s2 = createSet(c2, name);
         try {
             s1.add(1.0, "one");
             awaitCacheContainsEntry(s2, "one", 1.0);
@@ -1311,8 +1305,8 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
     void testCrossInstanceSync_AddAll() {
         String name = "t:sync:addAll";
         RedissonClient c2 = createInstance();
-        RLocalScoredSortedSet<String> s1 = createSet(redisson, name);
-        RLocalScoredSortedSet<String> s2 = createSet(c2, name);
+        RLocalCachedScoredSortedSet<String> s1 = createSet(redisson, name);
+        RLocalCachedScoredSortedSet<String> s2 = createSet(c2, name);
         try {
             Map<String, Double> batch = new LinkedHashMap<>();
             batch.put("x", 1.0);
@@ -1334,8 +1328,8 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
     void testCrossInstanceSync_RemoveRangeByScore() {
         String name = "t:sync:rmByScore";
         RedissonClient c2 = createInstance();
-        RLocalScoredSortedSet<String> s1 = createSet(redisson, name);
-        RLocalScoredSortedSet<String> s2 = createSet(c2, name);
+        RLocalCachedScoredSortedSet<String> s1 = createSet(redisson, name);
+        RLocalCachedScoredSortedSet<String> s2 = createSet(c2, name);
         try {
             s1.add(1.0, "a");
             s1.add(2.0, "b");
@@ -1356,8 +1350,8 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
     void testCrossInstanceSync_RemoveRangeByRank() {
         String name = "t:sync:rmByRank";
         RedissonClient c2 = createInstance();
-        RLocalScoredSortedSet<String> s1 = createSet(redisson, name);
-        RLocalScoredSortedSet<String> s2 = createSet(c2, name);
+        RLocalCachedScoredSortedSet<String> s1 = createSet(redisson, name);
+        RLocalCachedScoredSortedSet<String> s2 = createSet(c2, name);
         try {
             s1.add(1.0, "a");
             s1.add(2.0, "b");
@@ -1379,8 +1373,8 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
     void testCrossInstanceSync_RemoveAll() {
         String name = "t:sync:removeAll";
         RedissonClient c2 = createInstance();
-        RLocalScoredSortedSet<String> s1 = createSet(redisson, name);
-        RLocalScoredSortedSet<String> s2 = createSet(c2, name);
+        RLocalCachedScoredSortedSet<String> s1 = createSet(redisson, name);
+        RLocalCachedScoredSortedSet<String> s2 = createSet(c2, name);
         try {
             s1.add(1.0, "a");
             s1.add(2.0, "b");
@@ -1401,8 +1395,8 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
     void testCrossInstanceSync_RetainAll() {
         String name = "t:sync:retainAll";
         RedissonClient c2 = createInstance();
-        RLocalScoredSortedSet<String> s1 = createSet(redisson, name);
-        RLocalScoredSortedSet<String> s2 = createSet(c2, name);
+        RLocalCachedScoredSortedSet<String> s1 = createSet(redisson, name);
+        RLocalCachedScoredSortedSet<String> s2 = createSet(c2, name);
         try {
             s1.add(1.0, "a");
             s1.add(2.0, "b");
@@ -1422,8 +1416,8 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
     void testCrossInstanceSync_Replace() {
         String name = "t:sync:replace";
         RedissonClient c2 = createInstance();
-        RLocalScoredSortedSet<String> s1 = createSet(redisson, name);
-        RLocalScoredSortedSet<String> s2 = createSet(c2, name);
+        RLocalCachedScoredSortedSet<String> s1 = createSet(redisson, name);
+        RLocalCachedScoredSortedSet<String> s2 = createSet(c2, name);
         try {
             s1.add(5.0, "old");
             awaitCacheContainsEntry(s2, "old", 5.0);
@@ -1441,8 +1435,8 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
     void testCrossInstanceSync_AddScore() {
         String name = "t:sync:addScore";
         RedissonClient c2 = createInstance();
-        RLocalScoredSortedSet<String> s1 = createSet(redisson, name);
-        RLocalScoredSortedSet<String> s2 = createSet(c2, name);
+        RLocalCachedScoredSortedSet<String> s1 = createSet(redisson, name);
+        RLocalCachedScoredSortedSet<String> s2 = createSet(c2, name);
         try {
             s1.add(1.0, "a");
             awaitCacheContainsEntry(s2, "a", 1.0);
@@ -1459,8 +1453,8 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
     void testCrossInstanceSync_PollFirst() {
         String name = "t:sync:pollFirst";
         RedissonClient c2 = createInstance();
-        RLocalScoredSortedSet<String> s1 = createSet(redisson, name);
-        RLocalScoredSortedSet<String> s2 = createSet(c2, name);
+        RLocalCachedScoredSortedSet<String> s1 = createSet(redisson, name);
+        RLocalCachedScoredSortedSet<String> s2 = createSet(c2, name);
         try {
             s1.add(1.0, "a");
             s1.add(2.0, "b");
@@ -1479,8 +1473,8 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
     void testCrossInstanceSync_PollFirstCount() {
         String name = "t:sync:pollFirstN";
         RedissonClient c2 = createInstance();
-        RLocalScoredSortedSet<String> s1 = createSet(redisson, name);
-        RLocalScoredSortedSet<String> s2 = createSet(c2, name);
+        RLocalCachedScoredSortedSet<String> s1 = createSet(redisson, name);
+        RLocalCachedScoredSortedSet<String> s2 = createSet(c2, name);
         try {
             s1.add(1.0, "a");
             s1.add(2.0, "b");
@@ -1500,8 +1494,8 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
     void testCrossInstanceSync_AddAllIfAbsent() {
         String name = "t:sync:addAllIfAbsent";
         RedissonClient c2 = createInstance();
-        RLocalScoredSortedSet<String> s1 = createSet(redisson, name);
-        RLocalScoredSortedSet<String> s2 = createSet(c2, name);
+        RLocalCachedScoredSortedSet<String> s1 = createSet(redisson, name);
+        RLocalCachedScoredSortedSet<String> s2 = createSet(c2, name);
         try {
             s1.add(1.0, "existing");
             awaitCacheContainsEntry(s2, "existing", 1.0);
@@ -1522,8 +1516,8 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
     void testCrossInstanceSync_AddAndGetRank() {
         String name = "t:sync:addGetRank";
         RedissonClient c2 = createInstance();
-        RLocalScoredSortedSet<String> s1 = createSet(redisson, name);
-        RLocalScoredSortedSet<String> s2 = createSet(c2, name);
+        RLocalCachedScoredSortedSet<String> s1 = createSet(redisson, name);
+        RLocalCachedScoredSortedSet<String> s2 = createSet(c2, name);
         try {
             s1.add(10.0, "high");
             awaitCacheContainsEntry(s2, "high", 10.0);
@@ -1541,8 +1535,8 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
     void testCrossInstanceSync_AddAllIfGreater() {
         String name = "t:sync:addAllIfGreater";
         RedissonClient c2 = createInstance();
-        RLocalScoredSortedSet<String> s1 = createSet(redisson, name);
-        RLocalScoredSortedSet<String> s2 = createSet(c2, name);
+        RLocalCachedScoredSortedSet<String> s1 = createSet(redisson, name);
+        RLocalCachedScoredSortedSet<String> s2 = createSet(c2, name);
         try {
             s1.add(10.0, "a");
             awaitCacheContainsEntry(s2, "a", 10.0);
@@ -1563,17 +1557,17 @@ class RLocalScoredSortedSetTest extends RedisDockerTest {
 
     private static final Duration SYNC_TIMEOUT = Duration.ofMillis(500);
 
-    private void awaitCacheContainsEntry(RLocalScoredSortedSet<String> set, String key, double val) {
+    private void awaitCacheContainsEntry(RLocalCachedScoredSortedSet<String> set, String key, double val) {
         Awaitility.await().atMost(SYNC_TIMEOUT).untilAsserted(() ->
                 assertThat(set.getCache()).containsEntry(key, val));
     }
 
-    private void awaitCacheNotContainsKey(RLocalScoredSortedSet<String> set, String key) {
+    private void awaitCacheNotContainsKey(RLocalCachedScoredSortedSet<String> set, String key) {
         Awaitility.await().atMost(SYNC_TIMEOUT).untilAsserted(() ->
                 assertThat(set.getCache()).doesNotContainKey(key));
     }
 
-    private void awaitCacheSize(RLocalScoredSortedSet<String> set, int size) {
+    private void awaitCacheSize(RLocalCachedScoredSortedSet<String> set, int size) {
         Awaitility.await().atMost(SYNC_TIMEOUT).untilAsserted(() ->
                 assertThat(set.getCache()).hasSize(size));
     }

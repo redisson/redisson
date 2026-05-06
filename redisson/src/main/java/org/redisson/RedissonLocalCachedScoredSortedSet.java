@@ -20,12 +20,12 @@ import com.github.benmanes.caffeine.cache.RemovalCause;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.redisson.api.RFuture;
-import org.redisson.api.RLocalScoredSortedSet;
+import org.redisson.api.RLocalCachedScoredSortedSet;
 import org.redisson.api.RTopic;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.listener.BaseStatusListener;
-import org.redisson.api.options.LocalScoreSortedSetOptions;
-import org.redisson.api.options.LocalScoreSortedSetParams;
+import org.redisson.api.options.LocalCachedScoredSortedSetOptions;
+import org.redisson.api.options.LocalCachedScoredSortedSetParams;
 import org.redisson.cache.AbstractCacheMap;
 import org.redisson.cache.LFUCacheMap;
 import org.redisson.cache.LRUCacheMap;
@@ -55,7 +55,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.TimeUnit;
 
-public class RedissonLocalScoredSortedSet<V> extends RedissonScoredSortedSet<V> implements RLocalScoredSortedSet<V> {
+public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedSet<V> implements RLocalCachedScoredSortedSet<V> {
 
     /**
      * Marker key used in pub/sub messages to signal a full local-cache invalidation.
@@ -70,7 +70,7 @@ public class RedissonLocalScoredSortedSet<V> extends RedissonScoredSortedSet<V> 
     private final boolean isLocalOnly;
     private final boolean readFromLocalCache;
     private final boolean preload;
-    private final LocalScoreSortedSetOptions.ReconnectionStrategy reconnectionStrategy;
+    private final LocalCachedScoredSortedSetOptions.ReconnectionStrategy reconnectionStrategy;
 
     /**
      * Creates a local-cached scored sorted set wrapper.
@@ -81,12 +81,12 @@ public class RedissonLocalScoredSortedSet<V> extends RedissonScoredSortedSet<V> 
      * @param redisson Redisson client instance
      * @param options local cache behavior options
      */
-    public RedissonLocalScoredSortedSet(Codec codec, CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson, LocalScoreSortedSetOptions<V> options) {
+    public RedissonLocalCachedScoredSortedSet(Codec codec, CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson, LocalCachedScoredSortedSetOptions<V> options) {
         super(codec, commandExecutor, name, redisson);
-        LocalScoreSortedSetParams<V> params = (LocalScoreSortedSetParams<V>) options;
-        isLocalOnly = params.getStoreMode() == LocalScoreSortedSetOptions.StoreMode.LOCALCACHE;
+        LocalCachedScoredSortedSetParams<V> params = (LocalCachedScoredSortedSetParams<V>) options;
+        isLocalOnly = params.getStoreMode() == LocalCachedScoredSortedSetOptions.StoreMode.LOCALCACHE;
         readFromLocalCache = isLocalOnly
-                || params.getReadMode() == LocalScoreSortedSetOptions.ReadMode.LOCALCACHE;
+                || params.getReadMode() == LocalCachedScoredSortedSetOptions.ReadMode.LOCALCACHE;
         reconnectionStrategy = params.getReconnectionStrategy();
         preload = params.isPreload();
         init(commandExecutor, name, params);
@@ -1482,7 +1482,7 @@ public class RedissonLocalScoredSortedSet<V> extends RedissonScoredSortedSet<V> 
         return new CompletableFutureWrapper<>(count);
     }
 
-    private void init(CommandAsyncExecutor commandExecutor, String name, LocalScoreSortedSetParams<V> params) {
+    private void init(CommandAsyncExecutor commandExecutor, String name, LocalCachedScoredSortedSetParams<V> params) {
         cache = createCache(params);
         try {
             this.topic = new RedissonTopic(LocalCachedMessageCodec.INSTANCE, commandExecutor, name + ":cache-sync-topic");
@@ -1494,7 +1494,7 @@ public class RedissonLocalScoredSortedSet<V> extends RedissonScoredSortedSet<V> 
             reconnectionListenerId = topic.addListener(new BaseStatusListener() {
                 @Override
                 public void onSubscribe(String channel) {
-                    if (reconnectionStrategy == LocalScoreSortedSetOptions.ReconnectionStrategy.PRE_LOAD) {
+                    if (reconnectionStrategy == LocalCachedScoredSortedSetOptions.ReconnectionStrategy.PRE_LOAD) {
                         preloadCache();
                     }
                 }
@@ -1506,23 +1506,23 @@ public class RedissonLocalScoredSortedSet<V> extends RedissonScoredSortedSet<V> 
     }
 
     @SuppressWarnings("unchecked")
-    private <K1, V1> ConcurrentMap<K1, V1> createCache(LocalScoreSortedSetParams<V> options) {
+    private <K1, V1> ConcurrentMap<K1, V1> createCache(LocalCachedScoredSortedSetParams<V> options) {
         if (options.getCacheSize() == -1) {
             return new NoOpCacheMap<>();
         }
-        if (options.getCacheProvider() == LocalScoreSortedSetOptions.CacheProvider.CAFFEINE) {
+        if (options.getCacheProvider() == LocalCachedScoredSortedSetOptions.CacheProvider.CAFFEINE) {
             return createCaffeineCache(options);
         }
         AbstractCacheMap<K1, V1> cacheMap;
-        if (options.getEvictionPolicy() == LocalScoreSortedSetOptions.EvictionPolicy.NONE) {
+        if (options.getEvictionPolicy() == LocalCachedScoredSortedSetOptions.EvictionPolicy.NONE) {
             cacheMap = new NoneCacheMap<>(options.getTimeToLiveInMillis(), options.getMaxIdleInMillis());
-        } else if (options.getEvictionPolicy() == LocalScoreSortedSetOptions.EvictionPolicy.LRU) {
+        } else if (options.getEvictionPolicy() == LocalCachedScoredSortedSetOptions.EvictionPolicy.LRU) {
             cacheMap = new LRUCacheMap<>(options.getCacheSize(), options.getTimeToLiveInMillis(), options.getMaxIdleInMillis());
-        } else if (options.getEvictionPolicy() == LocalScoreSortedSetOptions.EvictionPolicy.LFU) {
+        } else if (options.getEvictionPolicy() == LocalCachedScoredSortedSetOptions.EvictionPolicy.LFU) {
             cacheMap = new LFUCacheMap<>(options.getCacheSize(), options.getTimeToLiveInMillis(), options.getMaxIdleInMillis());
-        } else if (options.getEvictionPolicy() == LocalScoreSortedSetOptions.EvictionPolicy.SOFT) {
+        } else if (options.getEvictionPolicy() == LocalCachedScoredSortedSetOptions.EvictionPolicy.SOFT) {
             cacheMap = ReferenceCacheMap.soft(options.getTimeToLiveInMillis(), options.getMaxIdleInMillis());
-        } else if (options.getEvictionPolicy() == LocalScoreSortedSetOptions.EvictionPolicy.WEAK) {
+        } else if (options.getEvictionPolicy() == LocalCachedScoredSortedSetOptions.EvictionPolicy.WEAK) {
             cacheMap = ReferenceCacheMap.weak(options.getTimeToLiveInMillis(), options.getMaxIdleInMillis());
         } else {
             throw new IllegalArgumentException("Invalid eviction policy: " + options.getEvictionPolicy());
@@ -1535,7 +1535,7 @@ public class RedissonLocalScoredSortedSet<V> extends RedissonScoredSortedSet<V> 
     }
 
     @SuppressWarnings("unchecked")
-    private <K1, V1> ConcurrentMap<K1, V1> createCaffeineCache(LocalScoreSortedSetParams<V> options) {
+    private <K1, V1> ConcurrentMap<K1, V1> createCaffeineCache(LocalCachedScoredSortedSetParams<V> options) {
         Caffeine<Object, Object> caffeineBuilder = Caffeine.newBuilder();
         if (options.getTimeToLiveInMillis() > 0) {
             caffeineBuilder.expireAfterWrite(options.getTimeToLiveInMillis(), TimeUnit.MILLISECONDS);
@@ -1546,10 +1546,10 @@ public class RedissonLocalScoredSortedSet<V> extends RedissonScoredSortedSet<V> 
         if (options.getCacheSize() > 0) {
             caffeineBuilder.maximumSize(options.getCacheSize());
         }
-        if (options.getEvictionPolicy() == LocalScoreSortedSetOptions.EvictionPolicy.SOFT) {
+        if (options.getEvictionPolicy() == LocalCachedScoredSortedSetOptions.EvictionPolicy.SOFT) {
             caffeineBuilder.softValues();
         }
-        if (options.getEvictionPolicy() == LocalScoreSortedSetOptions.EvictionPolicy.WEAK) {
+        if (options.getEvictionPolicy() == LocalCachedScoredSortedSetOptions.EvictionPolicy.WEAK) {
             caffeineBuilder.weakValues();
         }
         caffeineBuilder.removalListener((K1 key, V1 value, RemovalCause cause) -> {

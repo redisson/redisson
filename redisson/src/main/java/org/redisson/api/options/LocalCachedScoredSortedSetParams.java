@@ -23,8 +23,8 @@ import java.time.Duration;
  * @param <V> value type
  * @author Nikita Koksharov
  */
-public final class LocalScoreSortedSetParams<V> extends BaseOptions<LocalScoreSortedSetOptions<V>, org.redisson.client.codec.Codec>
-        implements LocalScoreSortedSetOptions<V> {
+public final class LocalCachedScoredSortedSetParams<V> extends BaseOptions<LocalCachedScoredSortedSetOptions<V>, org.redisson.client.codec.Codec>
+        implements LocalCachedScoredSortedSetOptions<V> {
 
     private final String name;
     private ReconnectionStrategy reconnectionStrategy = ReconnectionStrategy.NONE;
@@ -37,7 +37,7 @@ public final class LocalScoreSortedSetParams<V> extends BaseOptions<LocalScoreSo
     private ReadMode readMode = ReadMode.LOCALCACHE;
     private boolean preload = false;
 
-    LocalScoreSortedSetParams(String name) {
+    LocalCachedScoredSortedSetParams(String name) {
         this.name = name;
     }
 
@@ -75,12 +75,12 @@ public final class LocalScoreSortedSetParams<V> extends BaseOptions<LocalScoreSo
      * @param cacheSize size of cache
      * @return LocalCachedMapOptions instance
      */
-    public LocalScoreSortedSetParams<V> cacheSize(int cacheSize) {
+    public LocalCachedScoredSortedSetParams<V> cacheSize(int cacheSize) {
         this.cacheSize = cacheSize;
         return this;
     }
 
-    public LocalScoreSortedSetParams<V> preload(boolean preload) {
+    public LocalCachedScoredSortedSetParams<V> preload(boolean preload) {
         this.preload = preload;
         return this;
     }
@@ -98,7 +98,7 @@ public final class LocalScoreSortedSetParams<V> extends BaseOptions<LocalScoreSo
      *                             <p><code>NONE</code> - Default. No reconnection handling
      * @return LocalCachedMapOptions instance
      */
-    public LocalScoreSortedSetParams<V> reconnectionStrategy(ReconnectionStrategy reconnectionStrategy) {
+    public LocalCachedScoredSortedSetParams<V> reconnectionStrategy(ReconnectionStrategy reconnectionStrategy) {
         if (reconnectionStrategy == null) {
             throw new NullPointerException("reconnectionStrategy can't be null");
         }
@@ -117,7 +117,7 @@ public final class LocalScoreSortedSetParams<V> extends BaseOptions<LocalScoreSo
      *                       <p><code>NONE</code> - doesn't use eviction policy, but timeToLive and maxIdleTime params are still working.
      * @return LocalCachedMapOptions instance
      */
-    public LocalScoreSortedSetParams<V> evictionPolicy(EvictionPolicy evictionPolicy) {
+    public LocalCachedScoredSortedSetParams<V> evictionPolicy(EvictionPolicy evictionPolicy) {
         if (evictionPolicy == null) {
             throw new NullPointerException("evictionPolicy can't be null");
         }
@@ -132,7 +132,7 @@ public final class LocalScoreSortedSetParams<V> extends BaseOptions<LocalScoreSo
      * @param ttl time to live in milliseconds
      * @return LocalCachedMapOptions instance
      */
-    public LocalScoreSortedSetParams<V> timeToLive(Duration ttl) {
+    public LocalCachedScoredSortedSetParams<V> timeToLive(Duration ttl) {
         this.timeToLiveInMillis = ttl.toMillis();
         return this;
     }
@@ -144,7 +144,7 @@ public final class LocalScoreSortedSetParams<V> extends BaseOptions<LocalScoreSo
      * @param idleTime time to live in milliseconds
      * @return LocalCachedMapOptions instance
      */
-    public LocalScoreSortedSetParams<V> maxIdle(Duration idleTime) {
+    public LocalCachedScoredSortedSetParams<V> maxIdle(Duration idleTime) {
         this.maxIdleInMillis = idleTime.toMillis();
         return this;
     }
@@ -164,7 +164,7 @@ public final class LocalScoreSortedSetParams<V> extends BaseOptions<LocalScoreSo
      *                  <p><code>LOCALCACHE_REDIS</code> - store data in both Redis and local cache.
      * @return LocalCachedMapOptions instance
      */
-    public LocalScoreSortedSetParams<V> storeMode(StoreMode storeMode) {
+    public LocalCachedScoredSortedSetParams<V> storeMode(StoreMode storeMode) {
         this.storeMode = storeMode;
         return this;
     }
@@ -176,7 +176,7 @@ public final class LocalScoreSortedSetParams<V> extends BaseOptions<LocalScoreSo
      *                      <p><code>CAFFEINE</code> - uses Caffeine implementation.
      * @return LocalCachedMapOptions instance
      */
-    public LocalScoreSortedSetParams<V> cacheProvider(CacheProvider cacheProvider) {
+    public LocalCachedScoredSortedSetParams<V> cacheProvider(CacheProvider cacheProvider) {
         this.cacheProvider = cacheProvider;
         return this;
     }
@@ -188,7 +188,7 @@ public final class LocalScoreSortedSetParams<V> extends BaseOptions<LocalScoreSo
      *                 <p><code>REDIS</code> - always serve reads directly from Redis.
      * @return LocalScoreSortedSetParams instance
      */
-    public LocalScoreSortedSetParams<V> readMode(ReadMode readMode) {
+    public LocalCachedScoredSortedSetParams<V> readMode(ReadMode readMode) {
         if (readMode == null) {
             throw new NullPointerException("readMode can't be null");
         }

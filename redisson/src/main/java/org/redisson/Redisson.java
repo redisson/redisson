@@ -817,20 +817,20 @@ public final class Redisson implements RedissonClient {
     }
 
     @Override
-    public <V> RLocalScoredSortedSet<V> getLocalScoredSortedSet(String name, org.redisson.api.options.LocalScoreSortedSetOptions<V> options) {
-        return getLocalScoredSortedSet(name, null, options);
+    public <V> RLocalCachedScoredSortedSet<V> getLocalCachedScoredSortedSet(String name, LocalCachedScoredSortedSetOptions<V> options) {
+        return getLocalCachedScoredSortedSet(name, null, options);
     }
 
     @Override
-    public <V> RLocalScoredSortedSet<V> getLocalScoredSortedSet(String name, Codec codec,
-                                                                org.redisson.api.options.LocalScoreSortedSetOptions<V> options) {
-        return new RedissonLocalScoredSortedSet<>(codec, commandExecutor, name, this, options);
+    public <V> RLocalCachedScoredSortedSet<V> getLocalCachedScoredSortedSet(String name, Codec codec,
+                                                                            LocalCachedScoredSortedSetOptions<V> options) {
+        return new RedissonLocalCachedScoredSortedSet<>(codec, commandExecutor, name, this, options);
     }
 
     @Override
-    public <V> RLocalScoredSortedSet<V> getLocalScoredSortedSet(org.redisson.api.options.LocalScoreSortedSetOptions<V> options) {
-        LocalScoreSortedSetParams<V> params = (LocalScoreSortedSetParams<V>) options;
-        return new RedissonLocalScoredSortedSet<>(params.getCodec(), commandExecutor.copy(params), params.getName(), this, options);
+    public <V> RLocalCachedScoredSortedSet<V> getLocalCachedScoredSortedSet(LocalCachedScoredSortedSetOptions<V> options) {
+        LocalCachedScoredSortedSetParams<V> params = (LocalCachedScoredSortedSetParams<V>) options;
+        return new RedissonLocalCachedScoredSortedSet<>(params.getCodec(), commandExecutor.copy(params), params.getName(), this, options);
     }
 
     @Override

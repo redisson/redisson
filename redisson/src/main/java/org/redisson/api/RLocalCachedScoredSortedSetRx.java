@@ -20,12 +20,12 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 /**
- * Reactive interface for scored sorted set object with local cache support.
+ * Rx interface for scored sorted set object with local cache support.
  *
  * @param <V> value type
  * @author Nikita Koksharov
  */
-public interface RLocalScoredSortedSetReactive<V> extends RScoredSortedSetReactive<V> {
+public interface RLocalCachedScoredSortedSetRx<V> extends RScoredSortedSetRx<V> {
 
     /**
      * Returns local value-to-score cache.

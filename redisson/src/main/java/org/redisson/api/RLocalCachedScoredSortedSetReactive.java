@@ -20,20 +20,12 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 /**
- * Scored sorted set object with local cache support.
- * <p>
- * Each instance maintains a local cache to speed up read operations and reduce
- * Redis round-trips for read-heavy workloads.
+ * Reactive interface for scored sorted set object with local cache support.
  *
  * @param <V> value type
  * @author Nikita Koksharov
  */
-public interface RLocalScoredSortedSet<V> extends RScoredSortedSet<V>, RDestroyable {
-
-    /**
-     * Reloads local cache state from Redis.
-     */
-    void preloadCache();
+public interface RLocalCachedScoredSortedSetReactive<V> extends RScoredSortedSetReactive<V> {
 
     /**
      * Returns local value-to-score cache.

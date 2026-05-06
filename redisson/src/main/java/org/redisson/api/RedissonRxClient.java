@@ -1093,8 +1093,8 @@ public interface RedissonRxClient {
      * @param options local scored sorted set options
      * @return local cached scored sorted set object
      */
-    <V> RLocalScoredSortedSetRx<V> getLocalScoredSortedSet(String name,
-            org.redisson.api.options.LocalScoreSortedSetOptions<V> options);
+    <V> RLocalCachedScoredSortedSetRx<V> getLocalScoredSortedSet(String name,
+                                                                 LocalCachedScoredSortedSetOptions<V> options);
 
     /**
      * Returns local cached scored sorted set instance by name using provided codec.
@@ -1106,8 +1106,8 @@ public interface RedissonRxClient {
      * @param options local scored sorted set options
      * @return local cached scored sorted set object
      */
-    <V> RLocalScoredSortedSetRx<V> getLocalScoredSortedSet(String name, Codec codec,
-            org.redisson.api.options.LocalScoreSortedSetOptions<V> options);
+    <V> RLocalCachedScoredSortedSetRx<V> getLocalScoredSortedSet(String name, Codec codec,
+                                                                 LocalCachedScoredSortedSetOptions<V> options);
 
     /**
      * Returns local cached scored sorted set instance with specified <code>options</code>.
@@ -1116,7 +1116,7 @@ public interface RedissonRxClient {
      * @param options instance options
      * @return local cached scored sorted set object
      */
-    <V> RLocalScoredSortedSetRx<V> getLocalScoredSortedSet(org.redisson.api.options.LocalScoreSortedSetOptions<V> options);
+    <V> RLocalCachedScoredSortedSetRx<V> getLocalScoredSortedSet(LocalCachedScoredSortedSetOptions<V> options);
 
     /**
      * Returns Redis Sorted Set instance by name

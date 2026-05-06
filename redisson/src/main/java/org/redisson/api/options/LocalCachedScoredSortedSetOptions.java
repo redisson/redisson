@@ -15,17 +15,18 @@
  */
 package org.redisson.api.options;
 
+import org.redisson.RedissonLocalCachedScoredSortedSet;
 import org.redisson.client.codec.Codec;
 
 import java.time.Duration;
 
 /**
- * {@link org.redisson.RedissonLocalScoredSortedSet} instance options.
+ * {@link RedissonLocalCachedScoredSortedSet} instance options.
  *
  * @param <V> value type
  * @author Nikita Koksharov
  */
-public interface LocalScoreSortedSetOptions<V> extends CodecOptions<LocalScoreSortedSetOptions<V>, Codec> {
+public interface LocalCachedScoredSortedSetOptions<V> extends CodecOptions<LocalCachedScoredSortedSetOptions<V>, Codec> {
 
     /**
      * Various strategies to avoid stale objects in local cache.
@@ -126,8 +127,8 @@ public interface LocalScoreSortedSetOptions<V> extends CodecOptions<LocalScoreSo
      * @param name of object instance
      * @return options instance
      */
-    static <V> LocalScoreSortedSetOptions<V> name(String name) {
-        return new LocalScoreSortedSetParams<>(name);
+    static <V> LocalCachedScoredSortedSetOptions<V> name(String name) {
+        return new LocalCachedScoredSortedSetParams<>(name);
     }
 
     /**
@@ -140,7 +141,7 @@ public interface LocalScoreSortedSetOptions<V> extends CodecOptions<LocalScoreSo
      * @param cacheSize size of cache
      * @return LocalScoreSortedSetOptions instance
      */
-    LocalScoreSortedSetOptions<V> cacheSize(int cacheSize);
+    LocalCachedScoredSortedSetOptions<V> cacheSize(int cacheSize);
 
     /**
      * Defines strategy for load missed local cache updates after Redis connection failure.
@@ -149,7 +150,7 @@ public interface LocalScoreSortedSetOptions<V> extends CodecOptions<LocalScoreSo
      *                             <p><code>NONE</code> - Default. No reconnection handling
      * @return LocalScoreSortedSetOptions instance
      */
-    LocalScoreSortedSetOptions<V> reconnectionStrategy(ReconnectionStrategy reconnectionStrategy);
+    LocalCachedScoredSortedSetOptions<V> reconnectionStrategy(ReconnectionStrategy reconnectionStrategy);
 
     /**
      * Defines local cache eviction policy.
@@ -161,7 +162,7 @@ public interface LocalScoreSortedSetOptions<V> extends CodecOptions<LocalScoreSo
      *                       <p><code>NONE</code> - doesn't use eviction policy, but timeToLive and maxIdleTime params are still working.
      * @return LocalScoreSortedSetOptions instance
      */
-    LocalScoreSortedSetOptions<V> evictionPolicy(EvictionPolicy evictionPolicy);
+    LocalCachedScoredSortedSetOptions<V> evictionPolicy(EvictionPolicy evictionPolicy);
 
     /**
      * Defines time to live in milliseconds of each map entry in local cache.
@@ -170,7 +171,7 @@ public interface LocalScoreSortedSetOptions<V> extends CodecOptions<LocalScoreSo
      * @param ttl - time to live in milliseconds
      * @return LocalScoreSortedSetOptions instance
      */
-    LocalScoreSortedSetOptions<V> timeToLive(Duration ttl);
+    LocalCachedScoredSortedSetOptions<V> timeToLive(Duration ttl);
 
     /**
      * Defines max idle time in milliseconds of each map entry in local cache.
@@ -179,7 +180,7 @@ public interface LocalScoreSortedSetOptions<V> extends CodecOptions<LocalScoreSo
      * @param idleTime time to live in milliseconds
      * @return LocalScoreSortedSetOptions instance
      */
-    LocalScoreSortedSetOptions<V> maxIdle(Duration idleTime);
+    LocalCachedScoredSortedSetOptions<V> maxIdle(Duration idleTime);
 
     /**
      * Defines store mode of cache data.
@@ -188,7 +189,7 @@ public interface LocalScoreSortedSetOptions<V> extends CodecOptions<LocalScoreSo
      *                  <p><code>LOCALCACHE_REDIS</code> - store data in both Redis and local cache.
      * @return LocalScoreSortedSetOptions instance
      */
-    LocalScoreSortedSetOptions<V> storeMode(StoreMode storeMode);
+    LocalCachedScoredSortedSetOptions<V> storeMode(StoreMode storeMode);
 
     /**
      * Defines Cache provider used as local cache store.
@@ -197,7 +198,7 @@ public interface LocalScoreSortedSetOptions<V> extends CodecOptions<LocalScoreSo
      *                      <p><code>CAFFEINE</code> - uses Caffeine implementation.
      * @return LocalScoreSortedSetOptions instance
      */
-    LocalScoreSortedSetOptions<V> cacheProvider(CacheProvider cacheProvider);
+    LocalCachedScoredSortedSetOptions<V> cacheProvider(CacheProvider cacheProvider);
 
     /**
      * Defines the read mode for this instance.
@@ -206,6 +207,6 @@ public interface LocalScoreSortedSetOptions<V> extends CodecOptions<LocalScoreSo
      *                 <p><code>REDIS</code> - always serve reads directly from Redis.
      * @return LocalScoreSortedSetOptions instance
      */
-    LocalScoreSortedSetOptions<V> readMode(ReadMode readMode);
+    LocalCachedScoredSortedSetOptions<V> readMode(ReadMode readMode);
 
 }
