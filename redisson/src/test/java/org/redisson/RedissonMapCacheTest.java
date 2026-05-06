@@ -1671,5 +1671,117 @@ public class RedissonMapCacheTest extends BaseMapTest {
 
         redisson.shutdown();
     }
+
+    @Test
+    public void testLeaseGet() {
+        RMapCache<String, String> map = redisson.getMapCache("testLeaseGet");
+
+        RLeaseGetResult<String, String> r1 = map.getWithLease("aaa", 10, TimeUnit.SECONDS);
+        assertThat(r1.getValue()).isNull();
+        assertThat(r1.getLeaseToken()).isNotNull();
+        assertThat(r1.isLeaseAcquired()).isTrue();
+
+        RLeaseGetResult<String, String> r2 = map.getWithLease("aaa", 10, TimeUnit.SECONDS);
+        assertThat(r2.getValue()).isNull();
+        assertThat(r2.getLeaseToken()).isNotNull();
+        assertThat(r2.isLeaseAcquired()).isFalse();
+        assertThat(r2.getLeaseToken()).isEqualTo(r1.getLeaseToken());
+    }
+
+    @Test
+    public void testLeasePutTTL() throws InterruptedException {
+        RMapCache<String, String> map = redisson.getMapCache("testLeaseGet");
+
+        RLeaseGetResult<String, String> r1 = map.getWithLease("aaa", 10, TimeUnit.SECONDS);
+        assertThat(r1.getValue()).isNull();
+        assertThat(r1.getLeaseToken()).isNotNull();
+        assertThat(r1.isLeaseAcquired()).isTrue();
+
+        map.putWithLease("aaa", "111", 1000, TimeUnit.MILLISECONDS, r1.getLeaseToken());
+
+        Thread.sleep(1100);
+
+        RLeaseGetResult<String, String> r2 = map.getWithLease("aaa", 10, TimeUnit.SECONDS);
+        assertThat(r2.getValue()).isNull();
+        assertThat(r2.getLeaseToken()).isNotNull();
+        assertThat(r2.isLeaseAcquired()).isTrue();
+        assertThat(r2.getLeaseToken()).isNotEqualTo(r1.getLeaseToken());
+    }
+
+    @Test
+    public void testLeaseStaleSet() {
+        RMapCache<String, String> map = redisson.getMapCache("testLeaseStaleSet");
+
+        RLeaseGetResult<String, String> r1 = map.getWithLease("aaa", 10, TimeUnit.SECONDS);
+        assertThat(r1.getValue()).isNull();
+        assertThat(r1.getLeaseToken()).isNotNull();
+        assertThat(r1.isLeaseAcquired()).isTrue();
+
+        map.removeWithLease("aaa");
+        assertThat(map.putWithLease("aaa", "111", r1.getLeaseToken())).isFalse();
+    }
+
+    @Test
+    public void testLeaseTimeout() throws InterruptedException {
+        RMapCache<String, String> map = redisson.getMapCache("testLeaseTimeout");
+
+        RLeaseGetResult<String, String> r1 = map.getWithLease("aaa", 1, TimeUnit.SECONDS);
+        assertThat(r1.getValue()).isNull();
+        assertThat(r1.getLeaseToken()).isNotNull();
+        assertThat(r1.isLeaseAcquired()).isTrue();
+
+        Thread.sleep(1100);
+
+        RLeaseGetResult<String, String> r2 = map.getWithLease("aaa", 10, TimeUnit.SECONDS);
+        assertThat(r2.getValue()).isNull();
+        assertThat(r2.getLeaseToken()).isNotNull();
+        assertThat(r2.isLeaseAcquired()).isTrue();
+        assertThat(r2.getLeaseToken()).isNotEqualTo(r1.getLeaseToken());
+    }
+
+    @Test
+    public void testLeaseDifferentKeys() throws InterruptedException {
+        RMapCache<String, String> map = redisson.getMapCache("testLeaseDifferentKeys");
+
+        RLeaseGetResult<String, String> r1 = map.getWithLease("aaa", 1, TimeUnit.SECONDS);
+        assertThat(r1.getValue()).isNull();
+        assertThat(r1.getLeaseToken()).isNotNull();
+        assertThat(r1.isLeaseAcquired()).isTrue();
+
+        RLeaseGetResult<String, String> r2 = map.getWithLease("bbb", 10, TimeUnit.SECONDS);
+        assertThat(r2.getValue()).isNull();
+        assertThat(r2.getLeaseToken()).isNotNull();
+        assertThat(r2.isLeaseAcquired()).isTrue();
+        assertThat(r2.getLeaseToken()).isNotEqualTo(r1.getLeaseToken());
+    }
+
+    @Test
+    public void testLeaseExpirationWithMaxSize() throws InterruptedException {
+        Config config = new Config();
+        config.useSingleServer().setAddress(redisson.getConfig().useSingleServer().getAddress());
+        config.setMaxCleanUpDelay(2);
+        config.setMinCleanUpDelay(1);
+        RedissonClient redisson = Redisson.create(config);
+
+        RMapCache<String, String> map = redisson.getMapCache("test", StringCodec.INSTANCE);
+        assertThat(map.trySetMaxSize(2)).isTrue();
+
+        RLeaseGetResult<String, String> r = map.getWithLease("1", 10, TimeUnit.SECONDS);
+        map.putWithLease("1", "1", r.getLeaseToken());
+
+        r = map.getWithLease("2", 10, TimeUnit.SECONDS);
+        map.putWithLease("2", "2", r.getLeaseToken());
+
+        r = map.getWithLease("3", 10, TimeUnit.SECONDS);
+        map.putWithLease("3", "3", r.getLeaseToken());
+
+        r = map.getWithLease("4", 10, TimeUnit.SECONDS);
+        map.putWithLease("4", "4", r.getLeaseToken());
+
+        Thread.sleep(8000);
+
+        assertThat(map.size()).isEqualTo(2);
+        redisson.shutdown();
+    }
 }
 
