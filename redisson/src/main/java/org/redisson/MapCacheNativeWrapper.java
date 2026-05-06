@@ -45,6 +45,56 @@ public class MapCacheNativeWrapper<K, V> implements RMapCache<K, V>, Supplier<RM
     }
 
     @Override
+    public RLeaseGetResult<K, V> getWithLease(K key, long leaseTimeToLive, TimeUnit leaseTimeUnit) {
+        throw new UnsupportedOperationException("getWithLease method is not supported in native cache");
+    }
+
+    @Override
+    public RFuture<RLeaseGetResult<K, V>> getWithLeaseAsync(K key, long leaseTimeToLive, TimeUnit leaseTimeUnit) {
+        throw new UnsupportedOperationException("getWithLeaseAsync method is not supported in native cache");
+    }
+
+    @Override
+    public boolean removeWithLease(K key) {
+        throw new UnsupportedOperationException("removeWithLease method is not supported in native cache");
+    }
+
+    @Override
+    public RFuture<Boolean> removeWithLeaseAsync(K key) {
+        throw new UnsupportedOperationException("removeWithLeaseAsync method is not supported in native cache");
+    }
+
+    @Override
+    public boolean putWithLease(K key, V value, String leaseToken) {
+        throw new UnsupportedOperationException("putWithLease method is not supported in native cache");
+    }
+
+    @Override
+    public RFuture<Boolean> putWithLeaseAsync(K key, V value, String leaseToken) {
+        throw new UnsupportedOperationException("putWithLease method is not supported in native cache");
+    }
+
+    @Override
+    public boolean putWithLease(K key, V value, long ttl, TimeUnit ttlUnit, String leaseToken) {
+        throw new UnsupportedOperationException("putWithLease method is not supported in native cache");
+    }
+
+    @Override
+    public RFuture<Boolean> putWithLeaseAsync(K key, V value, long ttl, TimeUnit ttlUnit, String leaseToken) {
+        throw new UnsupportedOperationException("putWithLease method is not supported in native cache");
+    }
+
+    @Override
+    public boolean putWithLease(K key, V value, long ttl, TimeUnit ttlUnit, long idleTime, TimeUnit idleTimeUnit,  String leaseToken) {
+        throw new UnsupportedOperationException("putWithLease method is not supported in native cache");
+    }
+
+    @Override
+    public RFuture<Boolean>  putWithLeaseAsync(K key, V value, long ttl, TimeUnit ttlUnit, long idleTime, TimeUnit idleTimeUnit,  String leaseToken) {
+        throw new UnsupportedOperationException("putWithLease method is not supported in native cache");
+    }
+
+    @Override
     public void setMaxSize(int maxSize) {
     }
 

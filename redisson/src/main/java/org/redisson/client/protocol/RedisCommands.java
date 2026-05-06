@@ -584,6 +584,8 @@ public interface RedisCommands {
             new ObjectMapEntryReplayDecoder());
     RedisCommand<Map<Object, Object>> EVAL_MAP = new RedisCommand<Map<Object, Object>>("EVAL",
             new ObjectMapReplayDecoder());
+    RedisCommand<List<Object>> EVAL_MAP_VALUE_LEASE = new RedisCommand<List<Object>>("EVAL",
+            new MapValueLeaseDecoder());
     RedisCommand<List<Object>> EVAL_MAP_VALUE_LIST = new RedisCommand<List<Object>>("EVAL",
             new MapValueDecoder(new ObjectListReplayDecoder<>()));
     RedisCommand<Set<Object>> EVAL_MAP_VALUE_SET = new RedisCommand<Set<Object>>("EVAL",

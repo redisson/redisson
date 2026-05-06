@@ -47,6 +47,76 @@ import java.util.function.Function;
 public interface RMapCache<K, V> extends RMap<K, V>, RMapCacheAsync<K, V> {
 
     /**
+     * Returns the cached value mapped by defined <code>key</code> or {@code null} if value is absent.
+     * <p>
+     * If value is absent then tries to acquire a lease and returns it together with {@code null} value.
+     * Lease is automatically released after {@code leaseTimeToLive} timeout.
+     *
+     * @param key map key
+     * @param leaseTimeToLive lease time to live
+     * @param leaseTimeUnit lease time unit
+     * @return cached value or lease on miss
+     */
+    RLeaseGetResult<K, V> getWithLease(K key, long leaseTimeToLive, TimeUnit leaseTimeUnit);
+
+    /**
+     * Invalidates the entry mapped by {@code key} and deletes current lease token (if any).
+     *
+     * @param key map key
+     * @return {@code true} if entry or lease token has been removed, otherwise {@code false}
+     */
+    boolean removeWithLease(K key);
+
+
+    /**
+     * Stores the specified {@code value} mapped by {@code key} only if the given {@code leaseToken} is still valid.
+     * <p>
+     * If the lease token is stale (for example the lease has been replaced or already released),
+     * then the value isn't stored.
+     *
+     * @param key map key
+     * @param value map value
+     * @param leaseToken lease token returned by {@link #getWithLease(Object, long, TimeUnit)}
+     * @return {@code true} if value has been stored, otherwise {@code false}
+     */
+    boolean putWithLease(K key, V value, String leaseToken);
+
+    /**
+     * Stores the specified {@code value} mapped by {@code key} only if the given {@code leaseToken} is still valid.
+     * <p>
+     * If the lease token is stale (for example the lease has been replaced or already released),
+     * then the value isn't stored.
+     *
+     * @param key map key
+     * @param value map value
+     * @param ttl - time to live for key\value entry.
+     *              If <code>0</code> then stores infinitely.
+     * @param ttlUnit - time unit
+     * @param leaseToken lease token returned by {@link #getWithLease(Object, long, TimeUnit)}
+     * @return {@code true} if value has been stored, otherwise {@code false}
+     */
+    boolean putWithLease(K key, V value, long ttl, TimeUnit ttlUnit, String leaseToken);
+
+    /**
+     * Stores the specified {@code value} mapped by {@code key} only if the given {@code leaseToken} is still valid.
+     * <p>
+     * If the lease token is stale (for example the lease has been replaced or already released),
+     * then the value isn't stored.
+     *
+     * @param key map key
+     * @param value map value
+     * @param ttl - time to live for key\value entry.
+     *              If <code>0</code> then stores infinitely.
+     * @param ttlUnit - time unit
+     * @param maxIdleTime - max idle time for key\value entry.
+     *              If <code>0</code> then max idle time doesn't affect entry expiration.
+     * @param maxIdleUnit - time unit
+     * @param leaseToken lease token returned by {@link #getWithLease(Object, long, TimeUnit)}
+     * @return {@code true} if value has been stored, otherwise {@code false}
+     */
+    boolean putWithLease(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit, String leaseToken);
+
+    /**
      * Sets max size of the map and overrides current value.
      * Superfluous elements are evicted using LRU algorithm.
      * 
