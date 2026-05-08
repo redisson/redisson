@@ -1,12 +1,12 @@
 /**
  * Copyright (c) 2013-2026 Nikita Koksharov
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -29,8 +29,10 @@ import org.redisson.api.options.LocalCachedScoredSortedSetParams;
 import org.redisson.cache.AbstractCacheMap;
 import org.redisson.cache.LFUCacheMap;
 import org.redisson.cache.LRUCacheMap;
+import org.redisson.cache.LocalCachedMapClear;
 import org.redisson.cache.LocalCachedMapUpdate;
 import org.redisson.cache.LocalCachedMessageCodec;
+import org.redisson.cache.LocalCachedScoreSortedSetInvalidate;
 import org.redisson.cache.NoOpCacheMap;
 import org.redisson.cache.NoneCacheMap;
 import org.redisson.cache.ReferenceCacheMap;
@@ -58,10 +60,28 @@ import java.util.concurrent.TimeUnit;
 public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedSet<V> implements RLocalCachedScoredSortedSet<V> {
 
     /**
-     * Marker key used in pub/sub messages to signal a full local-cache invalidation.
+     * Wrapper for cached values with pre-encoded bytes.
+     * Caches the encoded representation to avoid re-encoding on every comparison.
      */
-    public static final String DELETE_ALL = "__DELETE_ALL__";
-    private final ConcurrentSkipListMap<Double, ConcurrentSkipListSet<V>> scoreCache = new ConcurrentSkipListMap<>();
+    public final class CacheValue<T> {
+        final double score;
+        final T value;
+        final byte[] encoded;
+
+        public CacheValue(double score, T value) {
+            this.score = score;
+            this.value = value;
+            ByteBuf buf = encodeValue(value);
+            try {
+                this.encoded = new byte[buf.readableBytes()];
+                buf.getBytes(buf.readerIndex(), this.encoded);
+            } finally {
+                buf.release();
+            }
+        }
+    }
+
+    private final ConcurrentSkipListMap<Double, ConcurrentSkipListSet<CacheValue<V>>> scoreCache = new ConcurrentSkipListMap<>();
     private Map<V, Double> cache;
     private RTopic topic;
     private byte[] instanceId;
@@ -75,11 +95,11 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
     /**
      * Creates a local-cached scored sorted set wrapper.
      *
-     * @param codec codec used to encode/decode values and scores
+     * @param codec           codec used to encode/decode values and scores
      * @param commandExecutor command executor used by Redisson internals
-     * @param name Redis object name
-     * @param redisson Redisson client instance
-     * @param options local cache behavior options
+     * @param name            Redis object name
+     * @param redisson        Redisson client instance
+     * @param options         local cache behavior options
      */
     public RedissonLocalCachedScoredSortedSet(Codec codec, CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson, LocalCachedScoredSortedSetOptions<V> options) {
         super(codec, commandExecutor, name, redisson);
@@ -123,7 +143,7 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
      * @return local score-to-values cache
      */
     @Override
-    public ConcurrentMap<Double, ConcurrentSkipListSet<V>> getScoreCache() {
+    public ConcurrentMap<Double, ConcurrentSkipListSet<CacheValue<V>>> getScoreCache() {
         return scoreCache;
     }
 
@@ -268,7 +288,7 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
 
     @Override
     public RFuture<Boolean> removeAllAsync(Collection<?> c) {
-        List<LocalCachedMapUpdate.Entry> entries = new LinkedList<>();
+        List<LocalCachedScoreSortedSetInvalidate.Entry> entries = new LinkedList<>();
         boolean changed = false;
         for (Object o : c) {
             @SuppressWarnings("unchecked")
@@ -276,18 +296,15 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
             if (removed) {
                 changed = true;
                 ByteBuf bValue = encodeValue(o);
-                ByteBuf bDummy = getDummyStringByteBuf();
                 try {
-                    entries.add(new LocalCachedMapUpdate.Entry(bValue, bDummy));
+                    entries.add(new LocalCachedScoreSortedSetInvalidate.Entry(bValue));
                 } finally {
                     bValue.release();
-                    bDummy.release();
                 }
             }
         }
         if (!entries.isEmpty()) {
-            Object msg = new LocalCachedMapUpdate(instanceId, entries);
-            topic.publishAsync(msg);
+            topic.publishAsync(new LocalCachedScoreSortedSetInvalidate(instanceId, entries));
         }
         if (isLocalOnly) {
             return new CompletableFutureWrapper<>(changed);
@@ -300,25 +317,22 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
         if (startScore > endScore) {
             return new CompletableFutureWrapper<>(0);
         }
-        ConcurrentNavigableMap<Double, ConcurrentSkipListSet<V>> temp = scoreCache.subMap(startScore, startScoreInclusive, endScore, endScoreInclusive);
-        List<LocalCachedMapUpdate.Entry> entries = new LinkedList<>();
+        ConcurrentNavigableMap<Double, ConcurrentSkipListSet<CacheValue<V>>> temp = scoreCache.subMap(startScore, startScoreInclusive, endScore, endScoreInclusive);
+        List<LocalCachedScoreSortedSetInvalidate.Entry> entries = new LinkedList<>();
         temp.forEach((score, values) -> {
-            for (V value : values) {
-                cache.remove(value);
-                ByteBuf bValue = encodeValue(value);
-                ByteBuf bDummy = getDummyStringByteBuf();
+            for (CacheValue<V> ce : values) {
+                cache.remove(ce.value);
+                ByteBuf bValue = encodeValue(ce.value);
                 try {
-                    entries.add(new LocalCachedMapUpdate.Entry(bValue, bDummy));
+                    entries.add(new LocalCachedScoreSortedSetInvalidate.Entry(bValue));
                 } finally {
                     bValue.release();
-                    bDummy.release();
                 }
             }
         });
         temp.clear();
         if (!entries.isEmpty()) {
-            Object msg = new LocalCachedMapUpdate(instanceId, entries);
-            topic.publishAsync(msg);
+            topic.publishAsync(new LocalCachedScoreSortedSetInvalidate(instanceId, entries));
         }
         if (isLocalOnly) {
             return new CompletableFutureWrapper<>(entries.size());
@@ -362,23 +376,12 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
             addCache(score, newObject);
             // Broadcast remove of old and add of new
             ByteBuf bOld = encodeValue(oldObject);
-            ByteBuf bDummy = getDummyStringByteBuf();
             try {
-                List<LocalCachedMapUpdate.Entry> entries = new ArrayList<>(2);
-                entries.add(new LocalCachedMapUpdate.Entry(bOld, bDummy));
-                ByteBuf bNew = encodeValue(newObject);
-                ByteBuf bScore = encodeValue(score);
-                try {
-                    entries.add(new LocalCachedMapUpdate.Entry(bNew, bScore));
-                } finally {
-                    bNew.release();
-                    bScore.release();
-                }
-                topic.publishAsync(new LocalCachedMapUpdate(instanceId, entries));
+                topic.publishAsync(new LocalCachedScoreSortedSetInvalidate(instanceId, bOld));
             } finally {
                 bOld.release();
-                bDummy.release();
             }
+            broadcastUpdate(encodeValue(newObject), encodeValue(score));
             return new CompletableFutureWrapper<>(true);
         }
         return new CompletableFutureWrapper<>(
@@ -389,23 +392,12 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
                             removeElement(score, oldObject);
                             addCache(score, newObject);
                             ByteBuf bOld = encodeValue(oldObject);
-                            ByteBuf bDummy = getDummyStringByteBuf();
                             try {
-                                List<LocalCachedMapUpdate.Entry> entries = new ArrayList<>(2);
-                                entries.add(new LocalCachedMapUpdate.Entry(bOld, bDummy));
-                                ByteBuf bNew = encodeValue(newObject);
-                                ByteBuf bScore = encodeValue(score);
-                                try {
-                                    entries.add(new LocalCachedMapUpdate.Entry(bNew, bScore));
-                                } finally {
-                                    bNew.release();
-                                    bScore.release();
-                                }
-                                topic.publishAsync(new LocalCachedMapUpdate(instanceId, entries));
+                                topic.publishAsync(new LocalCachedScoreSortedSetInvalidate(instanceId, bOld));
                             } finally {
                                 bOld.release();
-                                bDummy.release();
                             }
+                            broadcastUpdate(encodeValue(newObject), encodeValue(score));
                         }
                     }
                     return replaced;
@@ -418,11 +410,11 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
             if (scoreCache.isEmpty()) {
                 return new CompletableFutureWrapper<>((V) null);
             }
-            Map.Entry<Double, ConcurrentSkipListSet<V>> firstEntry = scoreCache.firstEntry();
+            Map.Entry<Double, ConcurrentSkipListSet<CacheValue<V>>> firstEntry = scoreCache.firstEntry();
             if (firstEntry == null || firstEntry.getValue().isEmpty()) {
                 return new CompletableFutureWrapper<>((V) null);
             }
-            V first = firstEntry.getValue().first();
+            V first = firstEntry.getValue().first().value;
             removeCache(first);
             broadcastRemove(first);
             return new CompletableFutureWrapper<>(first);
@@ -443,11 +435,11 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
             if (scoreCache.isEmpty()) {
                 return new CompletableFutureWrapper<>((V) null);
             }
-            Map.Entry<Double, ConcurrentSkipListSet<V>> lastEntry = scoreCache.lastEntry();
+            Map.Entry<Double, ConcurrentSkipListSet<CacheValue<V>>> lastEntry = scoreCache.lastEntry();
             if (lastEntry == null || lastEntry.getValue().isEmpty()) {
                 return new CompletableFutureWrapper<>((V) null);
             }
-            V last = lastEntry.getValue().last();
+            V last = lastEntry.getValue().last().value;
             removeCache(last);
             broadcastRemove(last);
             return new CompletableFutureWrapper<>(last);
@@ -467,7 +459,7 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
         scoreCache.clear();
         cache.clear();
         // Broadcast delete/clear to other instances to invalidate their local caches
-        broadcastDelete();
+        topic.publishAsync(new LocalCachedMapClear(instanceId, new byte[16], false));
         if (isLocalOnly) {
             return new CompletableFutureWrapper<>(true);
         }
@@ -479,22 +471,20 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
         if (c.isEmpty()) {
             return deleteAsync();
         }
-        List<LocalCachedMapUpdate.Entry> entries = new LinkedList<>();
+        List<LocalCachedScoreSortedSetInvalidate.Entry> entries = new LinkedList<>();
         for (V key : new ArrayList<>(cache.keySet())) {
             if (!c.contains(key) && removeCache(key)) {
                 ByteBuf bValue = encodeValue(key);
-                ByteBuf bDummy = getDummyStringByteBuf();
                 try {
-                    entries.add(new LocalCachedMapUpdate.Entry(bValue, bDummy));
+                    entries.add(new LocalCachedScoreSortedSetInvalidate.Entry(bValue));
                 } finally {
                     bValue.release();
-                    bDummy.release();
                 }
             }
         }
         boolean changed = !entries.isEmpty();
         if (changed) {
-            topic.publishAsync(new LocalCachedMapUpdate(instanceId, entries));
+            topic.publishAsync(new LocalCachedScoreSortedSetInvalidate(instanceId, entries));
         }
         if (isLocalOnly) {
             return new CompletableFutureWrapper<>(changed);
@@ -766,71 +756,42 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
 
     @Override
     public RFuture<Double> getScoreAsync(V o) {
-        Double v = cache.get(o);
-        if (readFromLocalCache || v != null) {
-            return new CompletableFutureWrapper<>(v);
+        if (readFromLocalCache) {
+            return new CompletableFutureWrapper<>(cache.get(o));
         }
         return super.getScoreAsync(o);
     }
 
     @Override
     public RFuture<List<Double>> getScoreAsync(Collection<V> elements) {
-        List<V> elementList = new ArrayList<>(elements);
-        Double[] scores = new Double[elementList.size()];
-        List<V> missing = new ArrayList<>();
-        List<Integer> missingIndices = new ArrayList<>();
-
-        for (int i = 0; i < elementList.size(); i++) {
-            Double score = cache.get(elementList.get(i));
-            scores[i] = score;
-            if (score == null) {
-                missing.add(elementList.get(i));
-                missingIndices.add(i);
+        if (readFromLocalCache) {
+            List<V> elementList = new ArrayList<>(elements);
+            Double[] scores = new Double[elementList.size()];
+            for (int i = 0; i < elementList.size(); i++) {
+                Double score = cache.get(elementList.get(i));
+                scores[i] = score;
             }
-        }
-
-        if (missing.isEmpty() || readFromLocalCache) {
             return new CompletableFutureWrapper<>(Arrays.asList(scores));
         }
-
-        return new CompletableFutureWrapper<>(
-                super.getScoreAsync(missing).toCompletableFuture().thenApply(redisScores -> {
-                    List<Double> redisList = new ArrayList<>(redisScores);
-                    for (int i = 0; i < missingIndices.size(); i++) {
-                        Double redisScore = redisList.get(i);
-                        scores[missingIndices.get(i)] = redisScore;
-                        if (redisScore != null) {
-                            addCache(redisScore, elementList.get(missingIndices.get(i)));
-                        }
-                    }
-                    return Arrays.asList(scores);
-                }));
+        return super.getScoreAsync(elements);
     }
 
     @Override
+    @SuppressWarnings("SuspiciousMethodCalls")
     public RFuture<Boolean> containsAsync(Object o) {
-        boolean result = cache.containsKey(o);
-        if (readFromLocalCache || result) {
-            return new CompletableFutureWrapper<>(result);
+        if (readFromLocalCache) {
+            return new CompletableFutureWrapper<>(cache.containsKey(o));
         }
         return super.containsAsync(o);
     }
 
     @Override
+    @SuppressWarnings("SuspiciousMethodCalls")
     public RFuture<Boolean> containsAllAsync(Collection<?> c) {
         if (readFromLocalCache) {
             return new CompletableFutureWrapper<>(cache.keySet().containsAll(c));
         }
-        List<Object> missing = new ArrayList<>();
-        for (Object o : c) {
-            if (!cache.containsKey(o)) {
-                missing.add(o);
-            }
-        }
-        if (missing.isEmpty()) {
-            return new CompletableFutureWrapper<>(true);
-        }
-        return super.containsAllAsync(missing);
+        return super.containsAllAsync(c);
     }
 
     @Override
@@ -877,12 +838,12 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
             if (scoreCache.isEmpty()) {
                 return new CompletableFutureWrapper<>((V) null);
             }
-            ConcurrentSkipListSet<V> firstSet = scoreCache.firstEntry().getValue();
+            ConcurrentSkipListSet<CacheValue<V>> firstSet = scoreCache.firstEntry().getValue();
             V first;
             if (firstSet.isEmpty()) {
                 first = null;
             } else {
-                first = firstSet.first();
+                first = firstSet.first().value;
             }
             return new CompletableFutureWrapper<>(first);
         }
@@ -895,12 +856,12 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
             if (scoreCache.isEmpty()) {
                 return new CompletableFutureWrapper<>((V) null);
             }
-            ConcurrentSkipListSet<V> lastSet = scoreCache.lastEntry().getValue();
+            ConcurrentSkipListSet<CacheValue<V>> lastSet = scoreCache.lastEntry().getValue();
             V last;
             if (lastSet.isEmpty()) {
                 last = null;
             } else {
-                last = lastSet.last();
+                last = lastSet.last().value;
             }
             return new CompletableFutureWrapper<>(last);
         }
@@ -914,7 +875,7 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
                 return new CompletableFutureWrapper<>(0);
             }
             int count = 0;
-            for (ConcurrentSkipListSet<V> ts : scoreCache.subMap(startScore, startScoreInclusive, endScore, endScoreInclusive).values()) {
+            for (ConcurrentSkipListSet<CacheValue<V>> ts : scoreCache.subMap(startScore, startScoreInclusive, endScore, endScoreInclusive).values()) {
                 count += ts.size();
             }
             return new CompletableFutureWrapper<>(count);
@@ -929,8 +890,10 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
         }
         if (readFromLocalCache) {
             List<V> list = new ArrayList<>();
-            for (ConcurrentSkipListSet<V> ts : scoreCache.subMap(startScore, startScoreInclusive, endScore, endScoreInclusive).values()) {
-                list.addAll(ts);
+            for (ConcurrentSkipListSet<CacheValue<V>> ts : scoreCache.subMap(startScore, startScoreInclusive, endScore, endScoreInclusive).values()) {
+                for (CacheValue<V> ce : ts) {
+                    list.add(ce.value);
+                }
             }
             return new CompletableFutureWrapper<>(list);
         }
@@ -946,8 +909,8 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
             List<ScoredEntry<V>> list = new ArrayList<>();
             scoreCache.subMap(startScore, startScoreInclusive, endScore, endScoreInclusive)
                     .forEach((score, values) -> {
-                        for (V v : values) {
-                            list.add(new ScoredEntry<>(score, v));
+                        for (CacheValue<V> ce : values) {
+                            list.add(new ScoredEntry<>(score, ce.value));
                         }
                     });
             return new CompletableFutureWrapper<>(list);
@@ -961,13 +924,13 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
             if (scoreCache.isEmpty()) {
                 return new CompletableFutureWrapper<>((ScoredEntry<V>) null);
             }
-            Map.Entry<Double, ConcurrentSkipListSet<V>> first = scoreCache.firstEntry();
-            ConcurrentSkipListSet<V> values = first.getValue();
+            Map.Entry<Double, ConcurrentSkipListSet<CacheValue<V>>> first = scoreCache.firstEntry();
+            ConcurrentSkipListSet<CacheValue<V>> values = first.getValue();
             V v;
             if (values.isEmpty()) {
                 v = null;
             } else {
-                v = values.first();
+                v = values.first().value;
             }
             ScoredEntry<V> entry;
             if (v != null) {
@@ -986,13 +949,13 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
             if (scoreCache.isEmpty()) {
                 return new CompletableFutureWrapper<>((ScoredEntry<V>) null);
             }
-            Map.Entry<Double, ConcurrentSkipListSet<V>> last = scoreCache.lastEntry();
-            ConcurrentSkipListSet<V> values = last.getValue();
+            Map.Entry<Double, ConcurrentSkipListSet<CacheValue<V>>> last = scoreCache.lastEntry();
+            ConcurrentSkipListSet<CacheValue<V>> values = last.getValue();
             V v;
             if (values.isEmpty()) {
                 v = null;
             } else {
-                v = values.last();
+                v = values.last().value;
             }
             ScoredEntry<V> entry;
             if (v != null) {
@@ -1007,8 +970,8 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
 
     @Override
     public RFuture<Integer> rankAsync(V o) {
-        Double score = cache.get(o);
-        if (readFromLocalCache || score != null) {
+        if (readFromLocalCache) {
+            Double score = cache.get(o);
             if (score == null) return new CompletableFutureWrapper<>((Integer) null);
             return new CompletableFutureWrapper<>(computeRank(score, o));
         }
@@ -1017,8 +980,8 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
 
     @Override
     public RFuture<Integer> revRankAsync(V o) {
-        Double score = cache.get(o);
-        if (readFromLocalCache || score != null) {
+        if (readFromLocalCache) {
+            Double score = cache.get(o);
             if (score == null) return new CompletableFutureWrapper<>((Integer) null);
             return new CompletableFutureWrapper<>(computeRevRank(score, o));
         }
@@ -1069,7 +1032,11 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
             List<V> list = new ArrayList<>();
             scoreCache.subMap(startScore, startScoreInclusive, endScore, endScoreInclusive)
                     .descendingMap()
-                    .forEach((score, values) -> list.addAll(values.descendingSet()));
+                    .forEach((score, values) -> {
+                        for (CacheValue<V> ce : values.descendingSet()) {
+                            list.add(ce.value);
+                        }
+                    });
             return new CompletableFutureWrapper<>(list);
         }
         return super.valueRangeReversedAsync(startScore, startScoreInclusive, endScore, endScoreInclusive);
@@ -1079,9 +1046,8 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
     public RFuture<Collection<ScoredEntry<V>>> entryRangeAsync(int startIndex, int endIndex) {
         if (readFromLocalCache) {
             List<ScoredEntry<V>> result = new ArrayList<>();
-            for (V v : getValuesByRankRange(startIndex, endIndex, false)) {
-                Double s = cache.get(v);
-                if (s != null) result.add(new ScoredEntry<>(s, v));
+            for (CacheValue<V> value : getCacheValuesByRankRange(startIndex, endIndex, false)) {
+                result.add(new ScoredEntry<>(value.score, value.value));
             }
             return new CompletableFutureWrapper<>(result);
         }
@@ -1092,9 +1058,8 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
     public RFuture<Collection<ScoredEntry<V>>> entryRangeReversedAsync(int startIndex, int endIndex) {
         if (readFromLocalCache) {
             List<ScoredEntry<V>> result = new ArrayList<>();
-            for (V v : getValuesByRankRange(startIndex, endIndex, true)) {
-                Double s = cache.get(v);
-                if (s != null) result.add(new ScoredEntry<>(s, v));
+            for (CacheValue<V> value : getCacheValuesByRankRange(startIndex, endIndex, true)) {
+                result.add(new ScoredEntry<>(value.score, value.value));
             }
             return new CompletableFutureWrapper<>(result);
         }
@@ -1111,7 +1076,7 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
             scoreCache.subMap(startScore, startScoreInclusive, endScore, endScoreInclusive)
                     .descendingMap()
                     .forEach((score, values) ->
-                            values.descendingSet().forEach(v -> list.add(new ScoredEntry<>(score, v))));
+                            values.descendingSet().forEach(ce -> list.add(new ScoredEntry<>(score, ce.value))));
             return new CompletableFutureWrapper<>(list);
         }
         return super.entryRangeReversedAsync(startScore, startScoreInclusive, endScore, endScoreInclusive);
@@ -1148,17 +1113,13 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
     }
 
     private boolean addCache(double score, V value) {
-        Set<V> values = scoreCache.computeIfAbsent(score, key -> new ConcurrentSkipListSet<>((e1, e2) -> {
-            ByteBuf byteBuf1 = encodeValue(e1);
-            ByteBuf byteBuf2 = encodeValue(e2);
-            try {
-                return byteBuf1.compareTo(byteBuf2);
-            } finally {
-                byteBuf1.release();
-                byteBuf2.release();
-            }
-        }));
-        boolean result = values.add(value);
+        if (cache instanceof NoOpCacheMap) {
+            return false;
+        }
+        CacheValue<V> newEntry = new CacheValue<>(score, value);
+        Set<CacheValue<V>> entries = scoreCache.computeIfAbsent(score, key ->
+                new ConcurrentSkipListSet<>((e1, e2) -> compareBytes(e1.encoded, e2.encoded)));
+        boolean result = entries.add(newEntry);
         if (result) {
             Double previousScore = cache.put(value, score);
             if (previousScore != null && Double.compare(score, previousScore) != 0) {
@@ -1168,11 +1129,24 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
         return result;
     }
 
+    private int compareBytes(byte[] a, byte[] b) {
+        int minLen = Math.min(a.length, b.length);
+        for (int i = 0; i < minLen; i++) {
+            byte ba = a[i];
+            byte bb = b[i];
+            if (ba != bb) {
+                return Byte.compare(ba, bb);
+            }
+        }
+        return Integer.compare(a.length, b.length);
+    }
+
     private void removeElement(Double previousScore, V entry) {
         if (previousScore != null) {
-            Set<V> previousSet = scoreCache.get(previousScore);
+            Set<CacheValue<V>> previousSet = scoreCache.get(previousScore);
             if (previousSet != null) {
-                previousSet.remove(entry);
+                // Remove by finding the CacheEntry with matching value
+                previousSet.removeIf(ce -> ce.value.equals(entry));
                 if (previousSet.isEmpty()) {
                     scoreCache.remove(previousScore, previousSet);
                 }
@@ -1185,12 +1159,10 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
      */
     private void broadcastRemove(V value) {
         ByteBuf bValue = encodeValue(value);
-        ByteBuf bDummy = getDummyStringByteBuf();
         try {
-            topic.publishAsync(new LocalCachedMapUpdate(instanceId, bValue, bDummy));
+            topic.publishAsync(new LocalCachedScoreSortedSetInvalidate(instanceId, bValue));
         } finally {
             bValue.release();
-            bDummy.release();
         }
     }
 
@@ -1210,6 +1182,12 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
 
     @SuppressWarnings("unchecked")
     protected void syncUpdate(Object msg) {
+        if (syncClear(msg)) {
+            return;
+        }
+        if (syncInvalidate(msg)) {
+            return;
+        }
         if (!(msg instanceof LocalCachedMapUpdate)) {
             return;
         }
@@ -1222,20 +1200,8 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
             ByteBuf scoreBuf = Unpooled.wrappedBuffer(entry.getValue());
             try {
                 Object value = codec.getMapValueDecoder().decode(keyBuf, null);
-                // Check for special delete-all marker
-                if (DELETE_ALL.equals(value)) {
-                    scoreCache.clear();
-                    cache.clear();
-                } else {
-                    Object score = codec.getMapValueDecoder().decode(scoreBuf, null);
-                    if (score instanceof String) {
-                        // "Dummy" sentinel → remove
-                        removeCache((V) value);
-                    } else if (score instanceof Number) {
-                        // Numeric score → add/update
-                        addCache(((Number) score).doubleValue(), (V) value);
-                    }
-                }
+                Object score = codec.getMapValueDecoder().decode(scoreBuf, null);
+                addCache(((Number) score).doubleValue(), (V) value);
             } catch (IOException e) {
                 // ignore decode errors
             } finally {
@@ -1245,29 +1211,65 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
         }
     }
 
+    private boolean syncClear(Object msg) {
+        if (msg instanceof LocalCachedMapClear) {
+            LocalCachedMapClear clearMsg = (LocalCachedMapClear) msg;
+            if (Arrays.equals(clearMsg.getExcludedId(), instanceId)) {
+                return true;
+            }
+            scoreCache.clear();
+            cache.clear();
+            return true;
+        }
+        return false;
+    }
+
+    @SuppressWarnings("unchecked")
+    private boolean syncInvalidate(Object msg) {
+        if (msg instanceof LocalCachedScoreSortedSetInvalidate) {
+            LocalCachedScoreSortedSetInvalidate invalidateMsg = (LocalCachedScoreSortedSetInvalidate) msg;
+            if (Arrays.equals(invalidateMsg.getExcludedId(), instanceId)) {
+                return true;
+            }
+            for (LocalCachedScoreSortedSetInvalidate.Entry entry : invalidateMsg.getEntries()) {
+                ByteBuf valueBuf = Unpooled.wrappedBuffer(entry.getValue());
+                try {
+                    V value = (V) codec.getMapValueDecoder().decode(valueBuf, null);
+                    removeCache(value);
+                } catch (IOException e) {
+                    // ignore decode errors
+                } finally {
+                    valueBuf.release();
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+
     /**
      * Polls {@code count} values from front or back of scoreCache without touching Redis.
      */
     private List<V> pollFromCache(int count, boolean descending) {
         List<V> result = new ArrayList<>(count);
         while (result.size() < count && !scoreCache.isEmpty()) {
-            Map.Entry<Double, ConcurrentSkipListSet<V>> scoreEntry;
+            Map.Entry<Double, ConcurrentSkipListSet<CacheValue<V>>> scoreEntry;
             if (descending) {
                 scoreEntry = scoreCache.lastEntry();
             } else {
                 scoreEntry = scoreCache.firstEntry();
             }
             if (scoreEntry == null) break;
-            ConcurrentSkipListSet<V> values = scoreEntry.getValue();
+            ConcurrentSkipListSet<CacheValue<V>> values = scoreEntry.getValue();
             if (values.isEmpty()) {
                 scoreCache.remove(scoreEntry.getKey(), values);
                 continue;
             }
             V v;
             if (descending) {
-                v = values.last();
+                v = values.last().value;
             } else {
-                v = values.first();
+                v = values.first().value;
             }
             result.add(v);
             removeCache(v);
@@ -1281,23 +1283,23 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
     private List<ScoredEntry<V>> pollEntriesFromCache(int count, boolean descending) {
         List<ScoredEntry<V>> result = new ArrayList<>(count);
         while (result.size() < count && !scoreCache.isEmpty()) {
-            Map.Entry<Double, ConcurrentSkipListSet<V>> scoreEntry;
+            Map.Entry<Double, ConcurrentSkipListSet<CacheValue<V>>> scoreEntry;
             if (descending) {
                 scoreEntry = scoreCache.lastEntry();
             } else {
                 scoreEntry = scoreCache.firstEntry();
             }
             if (scoreEntry == null) break;
-            ConcurrentSkipListSet<V> values = scoreEntry.getValue();
+            ConcurrentSkipListSet<CacheValue<V>> values = scoreEntry.getValue();
             if (values.isEmpty()) {
                 scoreCache.remove(scoreEntry.getKey(), values);
                 continue;
             }
             V v;
             if (descending) {
-                v = values.last();
+                v = values.last().value;
             } else {
-                v = values.first();
+                v = values.first().value;
             }
             result.add(new ScoredEntry<>(scoreEntry.getKey(), v));
             removeCache(v);
@@ -1310,40 +1312,16 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
      */
     private void broadcastRemoveBatch(Collection<V> values) {
         if (values.isEmpty()) return;
-        List<LocalCachedMapUpdate.Entry> entries = new LinkedList<>();
+        List<LocalCachedScoreSortedSetInvalidate.Entry> entries = new ArrayList<>(values.size());
         for (V v : values) {
             ByteBuf bValue = encodeValue(v);
-            ByteBuf bDummy = getDummyStringByteBuf();
             try {
-                entries.add(new LocalCachedMapUpdate.Entry(bValue, bDummy));
+                entries.add(new LocalCachedScoreSortedSetInvalidate.Entry(bValue));
             } finally {
                 bValue.release();
-                bDummy.release();
             }
         }
-        topic.publishAsync(new LocalCachedMapUpdate(instanceId, entries));
-    }
-
-    /**
-     * Broadcasts a full delete/clear event to all other instances.
-     * Other instances will clear their local caches upon receiving this marker.
-     */
-    private void broadcastDelete() {
-        try {
-            ByteBuf marker = encodeValue(DELETE_ALL);
-            ByteBuf dummy = getDummyStringByteBuf();
-            try {
-                List<LocalCachedMapUpdate.Entry> entries = new ArrayList<>(1);
-                entries.add(new LocalCachedMapUpdate.Entry(marker, dummy));
-                Object msg = new LocalCachedMapUpdate(instanceId, entries);
-                topic.publishAsync(msg);
-            } finally {
-                marker.release();
-                dummy.release();
-            }
-        } catch (Exception e) {
-            // If broadcasting fails, log but continue anyway (local delete already done)
-        }
+        topic.publishAsync(new LocalCachedScoreSortedSetInvalidate(instanceId, entries));
     }
 
     /**
@@ -1352,6 +1330,18 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
      * If {@code descending} is true, iterates from highest to lowest score.
      */
     private List<V> getValuesByRankRange(int startIndex, int endIndex, boolean descending) {
+        List<CacheValue<V>> values = getCacheValuesByRankRange(startIndex, endIndex, descending);
+        if (values.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<V> result = new ArrayList<>(values.size());
+        for (CacheValue<V> value : values) {
+            result.add(value.value);
+        }
+        return result;
+    }
+
+    private List<CacheValue<V>> getCacheValuesByRankRange(int startIndex, int endIndex, boolean descending) {
         int totalSize = cache.size();
         if (totalSize == 0) {
             return Collections.emptyList();
@@ -1371,28 +1361,28 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
         if (startIndex > endIndex) {
             return Collections.emptyList();
         }
-        return getValuesRankRangeMain(startIndex, endIndex, descending);
+        return getCacheValuesRankRangeMain(startIndex, endIndex, descending);
     }
 
-    private List<V> getValuesRankRangeMain(int startIndex, int endIndex, boolean descending) {
-        List<V> result = new ArrayList<>(endIndex - startIndex + 1);
+    private List<CacheValue<V>> getCacheValuesRankRangeMain(int startIndex, int endIndex, boolean descending) {
+        List<CacheValue<V>> result = new ArrayList<>(endIndex - startIndex + 1);
         int currentRank = 0;
-        Iterable<ConcurrentSkipListSet<V>> buckets = getConcurrentSkipListSets(descending);
+        Iterable<ConcurrentSkipListSet<CacheValue<V>>> buckets = getConcurrentSkipListSets(descending);
         boolean needBreak = false;
-        for (ConcurrentSkipListSet<V> bucket : buckets) {
-            Iterable<V> iter;
+        for (ConcurrentSkipListSet<CacheValue<V>> bucket : buckets) {
+            Iterable<CacheValue<V>> iter;
             if (descending) {
                 iter = bucket.descendingSet();
             } else {
                 iter = bucket;
             }
-            for (V v : iter) {
+            for (CacheValue<V> ce : iter) {
                 if (currentRank > endIndex) {
                     needBreak = true;
                     break;
                 }
                 if (currentRank >= startIndex) {
-                    result.add(v);
+                    result.add(ce);
                 }
                 currentRank++;
             }
@@ -1403,8 +1393,8 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
         return result;
     }
 
-    private Iterable<ConcurrentSkipListSet<V>> getConcurrentSkipListSets(boolean descending) {
-        Iterable<ConcurrentSkipListSet<V>> buckets;
+    private Iterable<ConcurrentSkipListSet<CacheValue<V>>> getConcurrentSkipListSets(boolean descending) {
+        Iterable<ConcurrentSkipListSet<CacheValue<V>>> buckets;
         if (descending) {
             buckets = scoreCache.descendingMap().values();
         } else {
@@ -1418,12 +1408,18 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
      */
     private int computeRank(double score, V object) {
         int rank = 0;
-        for (Map.Entry<Double, ConcurrentSkipListSet<V>> entry : scoreCache.headMap(score, false).entrySet()) {
+        for (Map.Entry<Double, ConcurrentSkipListSet<CacheValue<V>>> entry : scoreCache.headMap(score, false).entrySet()) {
             rank += entry.getValue().size();
         }
-        ConcurrentSkipListSet<V> sameScore = scoreCache.get(score);
+        ConcurrentSkipListSet<CacheValue<V>> sameScore = scoreCache.get(score);
         if (sameScore != null) {
-            rank += sameScore.headSet(object, false).size();
+            // Count CacheEntries that come before `object` in the set
+            for (CacheValue<V> ce : sameScore) {
+                if (ce.value.equals(object)) {
+                    break;
+                }
+                rank++;
+            }
         }
         return rank;
     }
@@ -1433,12 +1429,18 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
      */
     private int computeRevRank(double score, V object) {
         int rank = 0;
-        for (Map.Entry<Double, ConcurrentSkipListSet<V>> entry : scoreCache.tailMap(score, false).entrySet()) {
+        for (Map.Entry<Double, ConcurrentSkipListSet<CacheValue<V>>> entry : scoreCache.tailMap(score, false).entrySet()) {
             rank += entry.getValue().size();
         }
-        ConcurrentSkipListSet<V> sameScore = scoreCache.get(score);
+        ConcurrentSkipListSet<CacheValue<V>> sameScore = scoreCache.get(score);
         if (sameScore != null) {
-            rank += sameScore.tailSet(object, false).size();
+            // Count CacheEntries that come after `object` in the set (reverse order)
+            for (CacheValue<V> ce : sameScore.descendingSet()) {
+                if (ce.value.equals(object)) {
+                    break;
+                }
+                rank++;
+            }
         }
         return rank;
     }
@@ -1566,10 +1568,6 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
         } catch (IOException e) {
             throw new IllegalArgumentException(e);
         }
-    }
-
-    private ByteBuf getDummyStringByteBuf() {
-        return encodeValue("Dummy");
     }
 
 }
