@@ -17,7 +17,6 @@ package org.redisson.client.protocol.decoder;
 
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
-import org.redisson.client.codec.StringCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 
@@ -28,7 +27,7 @@ import java.util.List;
  * <ul>
  *     <li>{@code status}: {@link Long}</li>
  *     <li>{@code value}: decoded using {@code codec.getMapValueDecoder()}</li>
- *     <li>{@code token}: {@link String}</li>
+ *     <li>{@code token}: {@link Long}</li>
  * </ul>
  *
  * @author nhancdt2602
@@ -44,7 +43,7 @@ public class MapValueLeaseDecoder implements MultiDecoder<List<Object>> {
             return codec.getMapValueDecoder();
         }
         if (paramNum == 2) {
-            return StringCodec.INSTANCE.getValueDecoder();
+            return LongCodec.INSTANCE.getValueDecoder();
         }
         return MultiDecoder.super.getDecoder(codec, paramNum, state, size, parts);
     }

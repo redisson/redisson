@@ -1678,12 +1678,12 @@ public class RedissonMapCacheTest extends BaseMapTest {
 
         RLeaseGetResult<String, String> r1 = map.getWithLease("aaa", 10, TimeUnit.SECONDS);
         assertThat(r1.getValue()).isNull();
-        assertThat(r1.getLeaseToken()).isNotNull();
+        assertThat(r1.getLeaseToken()).isNotEqualTo(0L);
         assertThat(r1.isLeaseAcquired()).isTrue();
 
         RLeaseGetResult<String, String> r2 = map.getWithLease("aaa", 10, TimeUnit.SECONDS);
         assertThat(r2.getValue()).isNull();
-        assertThat(r2.getLeaseToken()).isNotNull();
+        assertThat(r2.getLeaseToken()).isNotEqualTo(0L);
         assertThat(r2.isLeaseAcquired()).isFalse();
         assertThat(r2.getLeaseToken()).isEqualTo(r1.getLeaseToken());
     }
@@ -1694,7 +1694,7 @@ public class RedissonMapCacheTest extends BaseMapTest {
 
         RLeaseGetResult<String, String> r1 = map.getWithLease("aaa", 10, TimeUnit.SECONDS);
         assertThat(r1.getValue()).isNull();
-        assertThat(r1.getLeaseToken()).isNotNull();
+        assertThat(r1.getLeaseToken()).isNotEqualTo(0L);
         assertThat(r1.isLeaseAcquired()).isTrue();
 
         map.putWithLease("aaa", "111", 1000, TimeUnit.MILLISECONDS, r1.getLeaseToken());
@@ -1703,7 +1703,7 @@ public class RedissonMapCacheTest extends BaseMapTest {
 
         RLeaseGetResult<String, String> r2 = map.getWithLease("aaa", 10, TimeUnit.SECONDS);
         assertThat(r2.getValue()).isNull();
-        assertThat(r2.getLeaseToken()).isNotNull();
+        assertThat(r2.getLeaseToken()).isNotEqualTo(0L);
         assertThat(r2.isLeaseAcquired()).isTrue();
         assertThat(r2.getLeaseToken()).isNotEqualTo(r1.getLeaseToken());
     }
@@ -1714,7 +1714,7 @@ public class RedissonMapCacheTest extends BaseMapTest {
 
         RLeaseGetResult<String, String> r1 = map.getWithLease("aaa", 10, TimeUnit.SECONDS);
         assertThat(r1.getValue()).isNull();
-        assertThat(r1.getLeaseToken()).isNotNull();
+        assertThat(r1.getLeaseToken()).isNotEqualTo(0L);
         assertThat(r1.isLeaseAcquired()).isTrue();
 
         map.removeWithLease("aaa");
@@ -1727,14 +1727,14 @@ public class RedissonMapCacheTest extends BaseMapTest {
 
         RLeaseGetResult<String, String> r1 = map.getWithLease("aaa", 1, TimeUnit.SECONDS);
         assertThat(r1.getValue()).isNull();
-        assertThat(r1.getLeaseToken()).isNotNull();
+        assertThat(r1.getLeaseToken()).isNotEqualTo(0L);
         assertThat(r1.isLeaseAcquired()).isTrue();
 
         Thread.sleep(1100);
 
         RLeaseGetResult<String, String> r2 = map.getWithLease("aaa", 10, TimeUnit.SECONDS);
         assertThat(r2.getValue()).isNull();
-        assertThat(r2.getLeaseToken()).isNotNull();
+        assertThat(r2.getLeaseToken()).isNotEqualTo(0L);
         assertThat(r2.isLeaseAcquired()).isTrue();
         assertThat(r2.getLeaseToken()).isNotEqualTo(r1.getLeaseToken());
     }
@@ -1745,12 +1745,12 @@ public class RedissonMapCacheTest extends BaseMapTest {
 
         RLeaseGetResult<String, String> r1 = map.getWithLease("aaa", 1, TimeUnit.SECONDS);
         assertThat(r1.getValue()).isNull();
-        assertThat(r1.getLeaseToken()).isNotNull();
+        assertThat(r1.getLeaseToken()).isNotEqualTo(0L);
         assertThat(r1.isLeaseAcquired()).isTrue();
 
         RLeaseGetResult<String, String> r2 = map.getWithLease("bbb", 10, TimeUnit.SECONDS);
         assertThat(r2.getValue()).isNull();
-        assertThat(r2.getLeaseToken()).isNotNull();
+        assertThat(r2.getLeaseToken()).isNotEqualTo(0L);
         assertThat(r2.isLeaseAcquired()).isTrue();
         assertThat(r2.getLeaseToken()).isNotEqualTo(r1.getLeaseToken());
     }

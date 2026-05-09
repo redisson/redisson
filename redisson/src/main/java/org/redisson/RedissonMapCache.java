@@ -120,7 +120,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 
         String name = getRawName(key);
         String leaseName = getLeaseName(name);
-        String token = getServiceManager().generateId();
+        long token = System.currentTimeMillis();
 
         RFuture<List<Object>> res = commandExecutor.evalWriteAsync(name, codec, RedisCommands.EVAL_MAP_VALUE_LEASE,
                 // based on getOperationAsync with lease miss support
@@ -129,16 +129,16 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                             + "local leaseKey = KEYS[6] .. ARGV[2]; "
                             + "local currentLease = redis.call('get', leaseKey); "
                             + "if currentLease ~= false then "
-                                + "return {0, false, currentLease}; "
+                                + "return {0, false, tonumber(currentLease) or 0}; "
                             + "end; "
                             + "if redis.call('set', leaseKey, ARGV[3], 'px', ARGV[4], 'nx') then "
-                                + "return {0, false, ARGV[3]}; "
+                                + "return {0, false, tonumber(ARGV[3]) or 0}; "
                             + "end; "
                             + "currentLease = redis.call('get', leaseKey); "
                             + "if currentLease ~= false then "
-                                + "return {0, false, currentLease}; "
+                                + "return {0, false, tonumber(currentLease) or 0}; "
                             + "end; "
-                            + "return {0, false, false}; "
+                            + "return {0, false, 0}; "
                         + "end; "
                         + "local t, val = struct.unpack('dLc0', value); "
                         + "local expireDate = 92233720368547758; "
@@ -159,16 +159,16 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                             + "local leaseKey = KEYS[6] .. ARGV[2]; "
                             + "local currentLease = redis.call('get', leaseKey); "
                             + "if currentLease ~= false then "
-                                + "return {0, false, currentLease}; "
+                                + "return {0, false, tonumber(currentLease) or 0}; "
                             + "end; "
                             + "if redis.call('set', leaseKey, ARGV[3], 'px', ARGV[4], 'nx') then "
-                                + "return {0, false, ARGV[3]}; "
+                                + "return {0, false, tonumber(ARGV[3]) or 0}; "
                             + "end; "
                             + "currentLease = redis.call('get', leaseKey); "
                             + "if currentLease ~= false then "
-                                + "return {0, false, currentLease}; "
+                                + "return {0, false, tonumber(currentLease) or 0}; "
                             + "end; "
-                            + "return {0, false, false}; "
+                            + "return {0, false, 0}; "
                         + "end; "
                         + "local maxSize = tonumber(redis.call('hget', KEYS[5], 'max-size')); "
                         + "if maxSize ~= nil and maxSize ~= 0 then "
@@ -179,7 +179,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                                 + "redis.call('zincrby', KEYS[4], 1, ARGV[2]); "
                             + "end; "
                         + "end; "
-                        + "return {1, val, false}; ",
+                        + "return {1, val, 0}; ",
                 Arrays.asList(name, getTimeoutSetName(name), getIdleSetName(name),
                         getLastAccessTimeSetName(name), getOptionsName(name), leaseName),
                 System.currentTimeMillis(), encodeMapKey(key), token, leaseTimeUnit.toMillis(leaseTimeToLive));
@@ -187,13 +187,13 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         CompletionStage<RLeaseGetResult<K, V>> f = res.thenApply(r -> {
             long status = ((Number) r.get(0)).longValue();
             if (status == 1) {
-                return new RLeaseGetResult<>((V) r.get(1), false, null);
+                return new RLeaseGetResult<>((V) r.get(1), false, 0L);
             }
-            String t = (String) r.get(2);
-            if (t != null) {
-                return new RLeaseGetResult<>(null, t.equals(token), t);
+            long leaseFromRedis = decodeLeaseToken(r.get(2));
+            if (leaseFromRedis == 0L) {
+                return new RLeaseGetResult<>(null, false, 0L);
             }
-            return new RLeaseGetResult<>(null, false, null);
+            return new RLeaseGetResult<>(null, leaseFromRedis == token, leaseFromRedis);
         });
         return new CompletableFutureWrapper<>(f);
     }
@@ -225,32 +225,32 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     }
 
     @Override
-    public boolean putWithLease(K key, V value, String leaseToken) {
+    public boolean putWithLease(K key, V value, long leaseToken) {
         return get(putWithLeaseAsync(key, value, leaseToken));
     }
 
     @Override
-    public RFuture<Boolean> putWithLeaseAsync(K key, V value, String leaseToken) {
+    public RFuture<Boolean> putWithLeaseAsync(K key, V value, long leaseToken) {
         return putWithLeaseAsync(key, value, 0, null, leaseToken);
     }
 
     @Override
-    public boolean putWithLease(K key, V value, long ttl, TimeUnit ttlUnit, String leaseToken) {
+    public boolean putWithLease(K key, V value, long ttl, TimeUnit ttlUnit, long leaseToken) {
         return get(putWithLeaseAsync(key, value, ttl, ttlUnit, 0, null, leaseToken));
     }
 
     @Override
-    public RFuture<Boolean> putWithLeaseAsync(K key, V value, long ttl, TimeUnit ttlUnit, String leaseToken) {
+    public RFuture<Boolean> putWithLeaseAsync(K key, V value, long ttl, TimeUnit ttlUnit, long leaseToken) {
         return putWithLeaseAsync(key, value, ttl, ttlUnit, 0, null, leaseToken);
     }
 
     @Override
-    public boolean putWithLease(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit, String leaseToken) {
+    public boolean putWithLease(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit, long leaseToken) {
         return get(putWithLeaseAsync(key, value, ttl, ttlUnit, maxIdleTime, maxIdleUnit, leaseToken));
     }
 
     @Override
-    public RFuture<Boolean> putWithLeaseAsync(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit, String leaseToken) {
+    public RFuture<Boolean> putWithLeaseAsync(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit, long leaseToken) {
         if (ttl < 0) {
             throw new IllegalArgumentException("ttl can't be negative");
         }
@@ -269,9 +269,18 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         checkNotBatch();
         checkKey(key);
         checkValue(value);
-        Objects.requireNonNull(leaseToken);
 
         return fastPutOperationAsync(key, value, ttl, ttlUnit, maxIdleTime, maxIdleUnit, leaseToken);
+    }
+
+    private static long decodeLeaseToken(Object o) {
+        if (o == null || Boolean.FALSE.equals(o)) {
+            return 0L;
+        }
+        if (o instanceof Number) {
+            return ((Number) o).longValue();
+        }
+        throw new IllegalStateException("Unsupported lease token in Redis response: " + o);
     }
 
     protected String getLeaseName(String name) {
@@ -1321,7 +1330,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         return fastPutOperationAsync(key, value, ttl, ttlUnit, maxIdleTime, maxIdleUnit, null);
     }
 
-    protected RFuture<Boolean> fastPutOperationAsync(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit, String leaseToken) {
+    protected RFuture<Boolean> fastPutOperationAsync(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit, Long leaseToken) {
         long currentTime = System.currentTimeMillis();
         long ttlTimeout = 0;
         if (ttl > 0) {
@@ -1342,7 +1351,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 "local leaseKey = KEYS[9] .. ARGV[5]; "
                         + "local currentLease = redis.call('get', leaseKey); "
                         + "if ARGV[8] ~= nil then "
-                            + "if currentLease == false or currentLease ~= ARGV[8] then "
+                            + "if currentLease == false or tonumber(currentLease) ~= tonumber(ARGV[8]) then "
                                 + "return 0; "
                             + "end; "
                             + "redis.call('del', leaseKey); "

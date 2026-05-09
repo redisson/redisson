@@ -80,32 +80,32 @@ public class RedissonTransactionalMapCache<K, V> extends RedissonMapCache<K, V> 
     }
 
     @Override
-    public boolean putWithLease(K key, V value, String leaseToken) {
+    public boolean putWithLease(K key, V value, long leaseToken) {
         throw new UnsupportedOperationException("putWithLease method is not supported in transaction");
     }
 
     @Override
-    public RFuture<Boolean> putWithLeaseAsync(K key, V value, String leaseToken) {
+    public RFuture<Boolean> putWithLeaseAsync(K key, V value, long leaseToken) {
         throw new UnsupportedOperationException("putWithLease method is not supported in transaction");
     }
 
     @Override
-    public boolean putWithLease(K key, V value, long ttl, TimeUnit ttlUnit, String leaseToken) {
+    public boolean putWithLease(K key, V value, long ttl, TimeUnit ttlUnit, long leaseToken) {
         throw new UnsupportedOperationException("putWithLease method is not supported in transaction");
     }
 
     @Override
-    public RFuture<Boolean> putWithLeaseAsync(K key, V value, long ttl, TimeUnit ttlUnit, String leaseToken) {
+    public RFuture<Boolean> putWithLeaseAsync(K key, V value, long ttl, TimeUnit ttlUnit, long leaseToken) {
         throw new UnsupportedOperationException("putWithLease method is not supported in transaction");
     }
 
     @Override
-    public boolean putWithLease(K key, V value, long ttl, TimeUnit ttlUnit, long idleTime, TimeUnit idleTimeUnit,  String leaseToken) {
+    public boolean putWithLease(K key, V value, long ttl, TimeUnit ttlUnit, long idleTime, TimeUnit idleTimeUnit, long leaseToken) {
         throw new UnsupportedOperationException("putWithLease method is not supported in transaction");
     }
 
     @Override
-    public RFuture<Boolean>  putWithLeaseAsync(K key, V value, long ttl, TimeUnit ttlUnit, long idleTime, TimeUnit idleTimeUnit,  String leaseToken) {
+    public RFuture<Boolean>  putWithLeaseAsync(K key, V value, long ttl, TimeUnit ttlUnit, long idleTime, TimeUnit idleTimeUnit, long leaseToken) {
         throw new UnsupportedOperationException("putWithLease method is not supported in transaction");
     }
     

@@ -77,11 +77,11 @@ public interface RMapCacheRx<K, V> extends RMapRx<K, V>, RDestroyable {
      *
      * @param key map key
      * @param value map value
-     * @param leaseToken lease token returned by {@link #getWithLease(Object, long, TimeUnit)}
+     * @param leaseToken lease token (millisecond timestamp) returned by {@link #getWithLease(Object, long, TimeUnit)}
      * @return {@code true} if value has been stored, otherwise {@code false}
-     * @see RMapCache#putWithLease(Object, Object, String)
+     * @see RMapCache#putWithLease(Object, Object, long)
      */
-    Single<Boolean> putWithLease(K key, V value, String leaseToken);
+    Single<Boolean> putWithLease(K key, V value, long leaseToken);
 
     /**
      * Stores the specified {@code value} mapped by {@code key} only if the given {@code leaseToken} is still valid.
@@ -90,10 +90,10 @@ public interface RMapCacheRx<K, V> extends RMapRx<K, V>, RDestroyable {
      * @param value map value
      * @param ttl time to live for key/value entry. If {@code 0} then stores infinitely.
      * @param ttlUnit time unit
-     * @param leaseToken lease token returned by {@link #getWithLease(Object, long, TimeUnit)}
+     * @param leaseToken lease token (millisecond timestamp) returned by {@link #getWithLease(Object, long, TimeUnit)}
      * @return {@code true} if value has been stored, otherwise {@code false}
      */
-    Single<Boolean> putWithLease(K key, V value, long ttl, TimeUnit ttlUnit, String leaseToken);
+    Single<Boolean> putWithLease(K key, V value, long ttl, TimeUnit ttlUnit, long leaseToken);
 
     /**
      * Stores the specified {@code value} mapped by {@code key} only if the given {@code leaseToken} is still valid.
@@ -104,10 +104,10 @@ public interface RMapCacheRx<K, V> extends RMapRx<K, V>, RDestroyable {
      * @param ttlUnit time unit
      * @param maxIdleTime max idle time for key/value entry. If {@code 0} then doesn't affect expiration.
      * @param maxIdleUnit time unit
-     * @param leaseToken lease token returned by {@link #getWithLease(Object, long, TimeUnit)}
+     * @param leaseToken lease token (millisecond timestamp) returned by {@link #getWithLease(Object, long, TimeUnit)}
      * @return {@code true} if value has been stored, otherwise {@code false}
      */
-    Single<Boolean> putWithLease(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit, String leaseToken);
+    Single<Boolean> putWithLease(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit, long leaseToken);
 
     /**
      * Sets max size of the map.

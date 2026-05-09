@@ -51,6 +51,7 @@ public interface RMapCache<K, V> extends RMap<K, V>, RMapCacheAsync<K, V> {
      * <p>
      * If value is absent then tries to acquire a lease and returns it together with {@code null} value.
      * Lease is automatically released after {@code leaseTimeToLive} timeout.
+     * On miss, {@link RLeaseGetResult#getLeaseToken()} carries the lease identifier as a millisecond timestamp (epoch millis).
      *
      * @param key map key
      * @param leaseTimeToLive lease time to live
@@ -76,10 +77,10 @@ public interface RMapCache<K, V> extends RMap<K, V>, RMapCacheAsync<K, V> {
      *
      * @param key map key
      * @param value map value
-     * @param leaseToken lease token returned by {@link #getWithLease(Object, long, TimeUnit)}
+     * @param leaseToken lease token (millisecond timestamp) returned by {@link #getWithLease(Object, long, TimeUnit)}
      * @return {@code true} if value has been stored, otherwise {@code false}
      */
-    boolean putWithLease(K key, V value, String leaseToken);
+    boolean putWithLease(K key, V value, long leaseToken);
 
     /**
      * Stores the specified {@code value} mapped by {@code key} only if the given {@code leaseToken} is still valid.
@@ -92,10 +93,10 @@ public interface RMapCache<K, V> extends RMap<K, V>, RMapCacheAsync<K, V> {
      * @param ttl - time to live for key\value entry.
      *              If <code>0</code> then stores infinitely.
      * @param ttlUnit - time unit
-     * @param leaseToken lease token returned by {@link #getWithLease(Object, long, TimeUnit)}
+     * @param leaseToken lease token (millisecond timestamp) returned by {@link #getWithLease(Object, long, TimeUnit)}
      * @return {@code true} if value has been stored, otherwise {@code false}
      */
-    boolean putWithLease(K key, V value, long ttl, TimeUnit ttlUnit, String leaseToken);
+    boolean putWithLease(K key, V value, long ttl, TimeUnit ttlUnit, long leaseToken);
 
     /**
      * Stores the specified {@code value} mapped by {@code key} only if the given {@code leaseToken} is still valid.
@@ -111,10 +112,10 @@ public interface RMapCache<K, V> extends RMap<K, V>, RMapCacheAsync<K, V> {
      * @param maxIdleTime - max idle time for key\value entry.
      *              If <code>0</code> then max idle time doesn't affect entry expiration.
      * @param maxIdleUnit - time unit
-     * @param leaseToken lease token returned by {@link #getWithLease(Object, long, TimeUnit)}
+     * @param leaseToken lease token (millisecond timestamp) returned by {@link #getWithLease(Object, long, TimeUnit)}
      * @return {@code true} if value has been stored, otherwise {@code false}
      */
-    boolean putWithLease(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit, String leaseToken);
+    boolean putWithLease(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit, long leaseToken);
 
     /**
      * Sets max size of the map and overrides current value.
