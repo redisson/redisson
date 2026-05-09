@@ -76,6 +76,8 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
 
     private long dnsMonitoringInterval = 5000;
 
+    private int dnsMonitoringTimes = 1;
+
     private FailedNodeDetector failedSlaveNodeDetector = new FailedConnectionDetector();
     
     public BaseMasterSlaveServersConfig() {
@@ -94,6 +96,7 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
         setFallbackLoadingToMaster(config.isFallbackLoadingToMaster());
         setSubscriptionMode(config.getSubscriptionMode());
         setDnsMonitoringInterval(config.getDnsMonitoringInterval());
+        setDnsMonitoringTimes(config.getDnsMonitoringTimes());
         setFailedSlaveReconnectionInterval(config.getFailedSlaveReconnectionInterval());
         setFailedSlaveNodeDetector(config.getFailedSlaveNodeDetector());
     }
@@ -339,6 +342,24 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
     }
     public long getDnsMonitoringInterval() {
         return dnsMonitoringInterval;
+    }
+
+    public int getDnsMonitoringTimes() {
+        return dnsMonitoringTimes;
+    }
+    
+    /**
+     * The number of times per check the endpoint's DNS<p>
+     * Applications must ensure the JVM DNS cache TTL is low enough to support this.<p>
+     * <p>
+     * Default is <code>1</code>.
+     *
+     * @param dnsMonitoringTimes number of times
+     * @return config
+     */
+    public T setDnsMonitoringTimes(int dnsMonitoringTimes) {
+        this.dnsMonitoringTimes = dnsMonitoringTimes;
+        return (T) this;
     }
 
     /**

@@ -1223,6 +1223,14 @@ public class RedissonSearch implements RSearch {
                 knnArgs.add("EF_RUNTIME");
                 knnArgs.add(vsimParams.getEfRuntime());
             }
+            if (vsimParams.getYieldDistanceAs() != null) {
+                knnArgs.add("YIELD_DISTANCE_AS");
+                knnArgs.add(vsimParams.getYieldDistanceAs());
+            }
+            if (vsimParams.getShardKRatio() != null) {
+                knnArgs.add("SHARD_K_RATIO");
+                knnArgs.add(vsimParams.getShardKRatio());
+            }
             cmdArgs.add("KNN");
             cmdArgs.add(knnArgs.size());
             cmdArgs.addAll(knnArgs);

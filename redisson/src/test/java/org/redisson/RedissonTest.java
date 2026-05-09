@@ -20,12 +20,10 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.*;
 import org.redisson.api.redisnode.*;
-import org.redisson.api.redisnode.RedisNodes;
 import org.redisson.api.stream.StreamCreateGroupArgs;
 import org.redisson.client.*;
 import org.redisson.client.codec.BaseCodec;
 import org.redisson.client.codec.StringCodec;
-import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
 import org.redisson.client.protocol.RedisCommands;
@@ -1222,6 +1220,120 @@ public class RedissonTest extends RedisDockerTest {
 
             redisson.shutdown();
         });
+    }
+
+    @Test
+    public void testDNSMonitoringTimesInSingle() throws InterruptedException, ExecutionException {
+        SimpleDnsServer s = new SimpleDnsServer(List.of("127.0.0.1"));
+
+        Config config = new Config();
+        config.setAddressResolverGroupFactory(new SequentialDnsAddressResolverFactory() {
+            @Override
+            public AddressResolverGroup<InetSocketAddress> create(Class<? extends DatagramChannel> channelType, Class<? extends SocketChannel> socketChannelType, DnsServerAddressStreamProvider nameServerProvider) {
+                return super.create(channelType, socketChannelType, hostname ->
+                        DnsServerAddresses.singleton(s.getAddr()).stream());
+            }
+        });
+        config.useSingleServer()
+                .setDnsMonitoringInterval(2000)
+                .setDnsMonitoringTimes(10)
+                .setAddress("redis://masterhost:" + CONTAINER.getFirstMappedPort());
+
+        RedissonClient cc = Redisson.create(config);
+        RBucket<String> b = cc.getBucket("test");
+        b.set("1");
+        assertThat(b.get()).isEqualTo("1");
+
+        s.updateRotation(List.of("10.0.0.5", "10.0.0.3", "127.0.0.1", "10.0.0.4"));
+        Thread.sleep(3000);
+
+        MasterSlaveConnectionManager connectionManager = Reflect.on(cc).get("connectionManager");
+        DNSMonitor dnsMonitor = Reflect.on(connectionManager).get("dnsMonitor");
+        Map<RedisURI, InetSocketAddress> masters = Reflect.on(dnsMonitor).get("masters");
+        for (Map.Entry<RedisURI, InetSocketAddress> entry : masters.entrySet()) {
+            CompletableFuture<Boolean> result = Reflect.on(dnsMonitor).call("resolveTimes", entry, new HashSet<>(), 0).get();
+            assertThat(result.get()).isTrue();
+        }
+
+        b.set("2");
+        assertThat(b.get()).isEqualTo("2");
+
+        s.updateRotation(List.of("10.0.0.5", "10.0.0.3", "10.0.0.4"));
+
+        for (Map.Entry<RedisURI, InetSocketAddress> entry : masters.entrySet()) {
+            CompletableFuture<Boolean> result = Reflect.on(dnsMonitor).call("resolveTimes", entry, new HashSet<>(), 0).get();
+            assertThat(result.get()).isFalse();
+        }
+
+        Thread.sleep(3000);
+        b.set("3");
+        assertThat(b.get()).isEqualTo("3");
+
+        cc.shutdown();
+        s.stop();
+    }
+
+    @Test
+    public void testDNSMonitoringTimesMasterSlave() throws InterruptedException, ExecutionException {
+        SimpleDnsServer s = new SimpleDnsServer(List.of("127.0.0.1"));
+
+        Config config = new Config();
+        config.setAddressResolverGroupFactory(new SequentialDnsAddressResolverFactory() {
+            @Override
+            public AddressResolverGroup<InetSocketAddress> create(Class<? extends DatagramChannel> channelType, Class<? extends SocketChannel> socketChannelType, DnsServerAddressStreamProvider nameServerProvider) {
+                return super.create(channelType, socketChannelType, hostname ->
+                        DnsServerAddresses.singleton(s.getAddr()).stream());
+            }
+        });
+        config.useMasterSlaveServers()
+                .setDnsMonitoringInterval(2000)
+                .setDnsMonitoringTimes(10)
+                .setMasterAddress("redis://masterhost:" + CONTAINER.getFirstMappedPort())
+                .addSlaveAddress("redis://slavehost:" + CONTAINER.getFirstMappedPort());
+
+        RedissonClient cc = Redisson.create(config);
+        RBucket<String> b = cc.getBucket("test");
+        b.set("1");
+        assertThat(b.get()).isEqualTo("1");
+
+        s.updateRotation(List.of("10.0.0.5", "10.0.0.3", "127.0.0.1", "10.0.0.4"));
+        Thread.sleep(3000);
+
+        MasterSlaveConnectionManager connectionManager = Reflect.on(cc).get("connectionManager");
+        DNSMonitor dnsMonitor = Reflect.on(connectionManager).get("dnsMonitor");
+        Map<RedisURI, InetSocketAddress> masters = Reflect.on(dnsMonitor).get("masters");
+        for (Map.Entry<RedisURI, InetSocketAddress> entry : masters.entrySet()) {
+            CompletableFuture<Boolean> result = Reflect.on(dnsMonitor).call("resolveTimes", entry, new HashSet<>(), 0).get();
+            assertThat(result.get()).isTrue();
+        }
+
+        Map<RedisURI, InetSocketAddress> slaves = Reflect.on(dnsMonitor).get("slaves");
+        for (Map.Entry<RedisURI, InetSocketAddress> entry : slaves.entrySet()) {
+            CompletableFuture<Boolean> result = Reflect.on(dnsMonitor).call("resolveTimes", entry, new HashSet<>(), 0).get();
+            assertThat(result.get()).isTrue();
+        }
+
+        b.set("2");
+        assertThat(b.get()).isEqualTo("2");
+
+        s.updateRotation(List.of("10.0.0.5", "10.0.0.3", "10.0.0.4"));
+
+        for (Map.Entry<RedisURI, InetSocketAddress> entry : masters.entrySet()) {
+            CompletableFuture<Boolean> result = Reflect.on(dnsMonitor).call("resolveTimes", entry, new HashSet<>(), 0).get();
+            assertThat(result.get()).isFalse();
+        }
+
+        for (Map.Entry<RedisURI, InetSocketAddress> entry : slaves.entrySet()) {
+            CompletableFuture<Boolean> result = Reflect.on(dnsMonitor).call("resolveTimes", entry, new HashSet<>(), 0).get();
+            assertThat(result.get()).isFalse();
+        }
+
+        Thread.sleep(3000);
+        b.set("3");
+        assertThat(b.get()).isEqualTo("3");
+
+        cc.shutdown();
+        s.stop();
     }
 
 }

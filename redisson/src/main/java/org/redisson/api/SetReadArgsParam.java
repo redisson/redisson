@@ -20,7 +20,7 @@ package org.redisson.api;
  * @author seakider
  *
  */
-class SetReadArgsParam implements SetReadArgs {
+class SetReadArgsParam<T> implements SetReadArgs<T> {
     private String[] names;
     private RScoredSortedSet.Aggregate aggregate;
     private Double[] weights;
@@ -31,15 +31,15 @@ class SetReadArgsParam implements SetReadArgs {
     }
 
     @Override
-    public SetReadArgs weights(Double... weights) {
+    public T weights(Double... weights) {
         this.weights = weights;
-        return this;
+        return (T) this;
     }
 
     @Override
-    public SetReadArgs aggregate(RScoredSortedSet.Aggregate aggregate) {
+    public T aggregate(RScoredSortedSet.Aggregate aggregate) {
         this.aggregate = aggregate;
-        return this;
+        return (T) this;
     }
 
     public String[] getNames() {

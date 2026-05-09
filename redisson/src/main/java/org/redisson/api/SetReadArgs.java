@@ -22,7 +22,7 @@ package org.redisson.api;
 
 import org.redisson.api.RScoredSortedSet.Aggregate;
 
-public interface SetReadArgs {
+public interface SetReadArgs<T> {
 
     /**
      * Defines a weight multiplier for each ScoredSortedSet
@@ -30,7 +30,7 @@ public interface SetReadArgs {
      * @param weights weight multiplier
      * @return arguments object
      */
-    SetReadArgs weights(Double... weights);
+    T weights(Double... weights);
 
     /**
      * Defines aggregation method
@@ -38,6 +38,6 @@ public interface SetReadArgs {
      * @param aggregate score aggregation mode
      * @return arguments object
      */
-    SetReadArgs aggregate(Aggregate aggregate);
+    T aggregate(Aggregate aggregate);
 
 }

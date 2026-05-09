@@ -16,14 +16,18 @@
 package org.redisson.api;
 
 /**
+ * Floating-point homogeneous array precision type for JSON.SET FPHA argument.
+ * Requires <b>Redis 8.8.0 or higher.</b>
  *
- * @author seakider
- *
+ * @author Triet Nguyen
  */
-public class SetUnionParams extends SetReadArgsParam<SetUnionArgs> implements SetUnionArgs {
-
-    SetUnionParams(String... names) {
-        super(names);
-    }
-
+public enum FPHAType {
+    /** Brain Float 16-bit precision. */
+    BF16,
+    /** 16-bit floating-point precision. */
+    FP16,
+    /** 32-bit floating-point precision. */
+    FP32,
+    /** 64-bit floating-point precision. */
+    FP64
 }

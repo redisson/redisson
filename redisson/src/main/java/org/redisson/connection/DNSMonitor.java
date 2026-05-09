@@ -15,12 +15,8 @@
  */
 package org.redisson.connection;
 
-import io.netty.resolver.AddressResolver;
-import io.netty.resolver.AddressResolverGroup;
 import io.netty.util.NetUtil;
 import io.netty.util.Timeout;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 import org.redisson.client.RedisClient;
 import org.redisson.misc.RedisURI;
 import org.slf4j.Logger;
@@ -43,30 +39,28 @@ import java.util.concurrent.TimeUnit;
 public class DNSMonitor {
     
     private static final Logger log = LoggerFactory.getLogger(DNSMonitor.class);
-
-    private final AddressResolver<InetSocketAddress> resolver;
+    
     private final ConnectionManager connectionManager;
     private final Map<RedisURI, InetSocketAddress> masters = new HashMap<>();
     private final Map<RedisURI, InetSocketAddress> slaves = new HashMap<>();
     
     private volatile Timeout dnsMonitorFuture;
     private final long dnsMonitoringInterval;
+    private final int dnsMonitoringTimes;
 
     private boolean printed;
 
-    public DNSMonitor(ConnectionManager connectionManager, RedisClient masterHost, Collection<RedisURI> slaveHosts, long dnsMonitoringInterval, AddressResolverGroup<InetSocketAddress> resolverGroup) {
-        this.resolver = resolverGroup.getResolver(connectionManager.getServiceManager().getGroup().next());
-        
+    public DNSMonitor(ConnectionManager connectionManager, RedisClient masterHost, Collection<RedisClient> slaveHosts, long dnsMonitoringInterval, int dnsMonitoringTimes) {
         masterHost.resolveAddr().join();
         masters.put(masterHost.getConfig().getAddress(), masterHost.getAddr());
         
-        for (RedisURI host : slaveHosts) {
-            Future<InetSocketAddress> resolveFuture = resolver.resolve(InetSocketAddress.createUnresolved(host.getHost(), host.getPort()));
-            resolveFuture.syncUninterruptibly();
-            slaves.put(host, resolveFuture.getNow());
+        for (RedisClient slaveHost : slaveHosts) {
+            slaveHost.resolveAddr().join();
+            slaves.put(slaveHost.getConfig().getAddress(), slaveHost.getAddr());
         }
         this.connectionManager = connectionManager;
         this.dnsMonitoringInterval = dnsMonitoringInterval;
+        this.dnsMonitoringTimes = dnsMonitoringTimes;
     }
     
     public void start() {
@@ -98,32 +92,37 @@ public class DNSMonitor {
         for (Entry<RedisURI, InetSocketAddress> entry : masters.entrySet()) {
             CompletableFuture<Void> promise = new CompletableFuture<>();
             futures.add(promise);
-
-            CompletableFuture<List<RedisURI>> ipsFuture = connectionManager.getServiceManager().resolveAll(entry.getKey());
-            ipsFuture.whenComplete((addresses, ex) -> {
+            Set<RedisURI> addressSet = new HashSet<>();
+            CompletableFuture<Boolean> ipChanged = resolveTimes(entry, addressSet, 0);
+            ipChanged.whenComplete((flag, ex) -> {
                 if (ex != null) {
                     log.error("Unable to resolve {}", entry.getKey().getHost(), ex);
                     promise.complete(null);
                     return;
                 }
 
-                if (addresses.size() > 1) {
+                if (addressSet.isEmpty()) {
+                    log.debug("Unable to resolve {}", entry.getKey().getHost());
+                    promise.complete(null);
+                    return;
+                }
+
+                if (addressSet.size() > 1) {
                     if (!printed) {
                         log.warn("Use Redisson PRO version (https://redisson.pro/feature-comparison.html) with Proxy mode feature to utilize all ip addresses: {} resolved by: {}",
-                                addresses, entry.getKey());
+                                addressSet, entry.getKey());
                         printed = true;
                     }
                 }
 
-                for (RedisURI address : addresses) {
-                    if (address.equals(entry.getValue())) {
-                        log.debug("{} resolved to {}", entry.getKey().getHost(), addresses);
-                        promise.complete(null);
-                        return;
-                    }
+                if (flag) {
+                    log.debug("{} resolved to {}", entry.getKey().getHost(), addressSet);
+                    promise.complete(null);
+                    return;
                 }
 
                 int index = 0;
+                List<RedisURI> addresses = new ArrayList<>(addressSet);
                 if (addresses.size() > 1) {
                     addresses.sort(Comparator.comparing(RedisURI::getHost));
                 }
@@ -177,66 +176,110 @@ public class DNSMonitor {
             futures.add(promise);
             log.debug("Request sent to resolve ip address for slave host: {}", entry.getKey().getHost());
 
-            Future<InetSocketAddress> resolveFuture = resolver.resolve(InetSocketAddress.createUnresolved(entry.getKey().getHost(), entry.getKey().getPort()));
-            resolveFuture.addListener((FutureListener<InetSocketAddress>) future -> {
-                if (!future.isSuccess()) {
-                    log.error("Unable to resolve {}", entry.getKey().getHost(), future.cause());
+            Set<RedisURI> addressSet = new HashSet<>();
+            CompletableFuture<Boolean> ipChanged = resolveTimes(entry, addressSet, 0);
+            ipChanged.whenComplete((flag, ex) -> {
+                if (ex != null) {
+                    log.error("Unable to resolve {}", entry.getKey().getHost(), ex);
                     promise.complete(null);
                     return;
                 }
 
-                log.debug("Resolved ip: {} for slave host: {}", future.getNow().getAddress(), entry.getKey().getHost());
+                if (addressSet.isEmpty()) {
+                    log.debug("Unable to resolve {}", entry.getKey().getHost());
+                    promise.complete(null);
+                    return;
+                }
 
-                InetSocketAddress currentSlaveAddr = entry.getValue();
-                InetSocketAddress newSlaveAddr = future.getNow();
-                if (!newSlaveAddr.getAddress().equals(currentSlaveAddr.getAddress())) {
-                    log.info("Detected DNS change. Slave {} has changed ip from {} to {}",
-                            entry.getKey().getHost(), currentSlaveAddr.getAddress().getHostAddress(), newSlaveAddr.getAddress().getHostAddress());
-                    boolean slaveFound = false;
-                    for (MasterSlaveEntry masterSlaveEntry : connectionManager.getEntrySet()) {
-                        if (!masterSlaveEntry.hasSlave(currentSlaveAddr)) {
-                            continue;
-                        }
+                if (flag) {
+                    log.debug("{} resolved to {}", entry.getKey().getHost(), addressSet);
+                    promise.complete(null);
+                    return;
+                }
 
-                        slaveFound = true;
-                        if (masterSlaveEntry.hasSlave(newSlaveAddr)) {
-                            CompletableFuture<Boolean> slaveUpFuture = masterSlaveEntry.slaveUpAsync(newSlaveAddr);
-                            slaveUpFuture.whenComplete((r, e) -> {
-                                if (e != null) {
+                int index = 0;
+                List<RedisURI> addresses = new ArrayList<>(addressSet);
+                if (addresses.size() > 1) {
+                    addresses.sort(Comparator.comparing(RedisURI::getHost));
+                }
+                RedisURI address = addresses.get(index);
+
+                log.debug("{} resolved to {} and {} selected", entry.getKey().getHost(), addresses, address);
+
+                try {
+                    InetSocketAddress currentSlaveAddr = entry.getValue();
+                    byte[] addr = NetUtil.createByteArrayFromIpAddressString(address.getHost());
+                    InetSocketAddress newSlaveAddr = new InetSocketAddress(InetAddress.getByAddress(entry.getKey().getHost(), addr), address.getPort());
+                    log.debug("Resolved ip: {} for slave host: {}", newSlaveAddr.getAddress(), entry.getKey().getHost());
+                    if (!newSlaveAddr.getAddress().equals(currentSlaveAddr.getAddress())) {
+                        log.info("Detected DNS change. Slave {} has changed ip from {} to {}",
+                                entry.getKey().getHost(), currentSlaveAddr.getAddress().getHostAddress(), newSlaveAddr.getAddress().getHostAddress());
+                        boolean slaveFound = false;
+                        for (MasterSlaveEntry masterSlaveEntry : connectionManager.getEntrySet()) {
+                            if (!masterSlaveEntry.hasSlave(currentSlaveAddr)) {
+                                continue;
+                            }
+
+                            slaveFound = true;
+                            if (masterSlaveEntry.hasSlave(newSlaveAddr)) {
+                                CompletableFuture<Boolean> slaveUpFuture = masterSlaveEntry.slaveUpAsync(newSlaveAddr);
+                                slaveUpFuture.whenComplete((r, e) -> {
+                                    if (e != null) {
+                                        promise.complete(null);
+                                        return;
+                                    }
+                                    if (r) {
+                                        slaves.put(entry.getKey(), newSlaveAddr);
+                                        masterSlaveEntry.slaveDown(currentSlaveAddr);
+                                    }
                                     promise.complete(null);
-                                    return;
-                                }
-                                if (r) {
+                                });
+                            } else {
+                                CompletableFuture<Void> addFuture = masterSlaveEntry.addSlave(newSlaveAddr, entry.getKey());
+                                addFuture.whenComplete((res, e) -> {
+                                    if (e != null) {
+                                        log.error("Can't add slave: {}", newSlaveAddr, e);
+                                        promise.complete(null);
+                                        return;
+                                    }
+
                                     slaves.put(entry.getKey(), newSlaveAddr);
                                     masterSlaveEntry.slaveDown(currentSlaveAddr);
-                                }
-                                promise.complete(null);
-                            });
-                        } else {
-                            CompletableFuture<Void> addFuture = masterSlaveEntry.addSlave(newSlaveAddr, entry.getKey());
-                            addFuture.whenComplete((res, e) -> {
-                                if (e != null) {
-                                    log.error("Can't add slave: {}", newSlaveAddr, e);
                                     promise.complete(null);
-                                    return;
-                                }
-
-                                slaves.put(entry.getKey(), newSlaveAddr);
-                                masterSlaveEntry.slaveDown(currentSlaveAddr);
-                                promise.complete(null);
-                            });
+                                });
+                            }
+                            break;
                         }
-                        break;
-                    }
-                    if (!slaveFound) {
+                        if (!slaveFound) {
+                            promise.complete(null);
+                        }
+                    } else {
                         promise.complete(null);
                     }
-                } else {
+                } catch (UnknownHostException e) {
+                    log.error(e.getMessage(), e);
                     promise.complete(null);
                 }
             });
         }
         return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+    }
+    
+    private CompletableFuture<Boolean> resolveTimes(Entry<RedisURI, InetSocketAddress> entry, Set<RedisURI> addressSet, int times) {
+        CompletableFuture<List<RedisURI>> ipsFuture = connectionManager.getServiceManager().resolveAll(entry.getKey());
+        return ipsFuture.thenCompose(addresses -> {
+            for (RedisURI address : addresses) {
+                addressSet.add(address);
+                if (address.equals(entry.getValue())) {
+                    return CompletableFuture.completedFuture(true);
+                }
+            }
+            
+            if (times + 1 < dnsMonitoringTimes) {
+                return resolveTimes(entry, addressSet, times + 1);
+            }
+            return CompletableFuture.completedFuture(false);
+        });
     }
 
 }

@@ -37,9 +37,16 @@ import java.util.stream.Stream;
 public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<V>, RExpirable, RSortable<Set<V>> {
 
     enum Aggregate {
-        
-        SUM, MAX, MIN
-        
+
+        SUM, MAX, MIN,
+
+        /**
+         * Score of each member equals the count of input sets containing it,
+         * optionally scaled by WEIGHTS. Scores from input sets are ignored.
+         * Requires <b>Redis 8.8.0 or higher.</b>
+         */
+        COUNT
+
     }
     
     /**

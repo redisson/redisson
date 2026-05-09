@@ -1097,6 +1097,12 @@ Default value: `5000`
 
 DNS change monitoring interval. Set `-1` to disable. Multiple IP bindings for a single hostname are supported in [Proxy mode](#proxy-mode).
 
+**dnsMonitoringTimes**
+
+Default value: `1`
+
+Maximum number of address resolutions per DNS change monitoring. 
+
 **idleConnectionTimeout**
 
 Default value: `10000`
@@ -1214,6 +1220,7 @@ singleServerConfig:
   connectionPoolSize: 64
   database: 0
   dnsMonitoringInterval: 5000
+  dnsMonitoringTimes: 1
 password: null
 username: null
 threads: 16
@@ -1573,6 +1580,12 @@ Default value: `5000`
 
 Interval in milliseconds to check the endpoint’s DNS. Set `-1` to
 disable.
+
+**dnsMonitoringTimes**
+
+Default value: `1`
+
+Maximum number of address resolutions per DNS change monitoring.
 
 **masterAddress**
 

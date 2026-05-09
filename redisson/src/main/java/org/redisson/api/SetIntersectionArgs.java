@@ -21,7 +21,7 @@ package org.redisson.api;
  * @author seakider
  *
  */
-public interface SetIntersectionArgs extends SetReadArgs {
+public interface SetIntersectionArgs extends SetReadArgs<SetIntersectionArgs> {
     /**
      * Defines arguments object that
      * intersect with current ScoredSortedSet

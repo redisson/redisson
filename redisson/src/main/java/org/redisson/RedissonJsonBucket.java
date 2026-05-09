@@ -15,6 +15,7 @@
  */
 package org.redisson;
 
+import org.redisson.api.FPHAType;
 import org.redisson.api.JsonType;
 import org.redisson.api.RFuture;
 import org.redisson.api.RJsonBucket;
@@ -180,6 +181,16 @@ public class RedissonJsonBucket<V> extends RedissonExpirable implements RJsonBuc
     }
 
     @Override
+    public boolean setIfAbsent(String path, Object value, FPHAType fphaType) {
+        return get(setIfAbsentAsync(path, value, fphaType));
+    }
+
+    @Override
+    public RFuture<Boolean> setIfAbsentAsync(String path, Object value, FPHAType fphaType) {
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.JSON_SET_BOOLEAN, getRawName(), path, encode(value), "NX", "FPHA", fphaType.name());
+    }
+
+    @Override
     public boolean trySet(String path, Object value) {
         return get(trySetAsync(path, value));
     }
@@ -228,6 +239,16 @@ public class RedissonJsonBucket<V> extends RedissonExpirable implements RJsonBuc
     @Override
     public RFuture<Boolean> setIfExistsAsync(String path, Object value) {
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.JSON_SET_BOOLEAN, getRawName(), path, encode(value), "XX");
+    }
+
+    @Override
+    public boolean setIfExists(String path, Object value, FPHAType fphaType) {
+        return get(setIfExistsAsync(path, value, fphaType));
+    }
+
+    @Override
+    public RFuture<Boolean> setIfExistsAsync(String path, Object value, FPHAType fphaType) {
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.JSON_SET_BOOLEAN, getRawName(), path, encode(value), "XX", "FPHA", fphaType.name());
     }
 
     @Override
@@ -478,6 +499,16 @@ public class RedissonJsonBucket<V> extends RedissonExpirable implements RJsonBuc
     @Override
     public RFuture<Void> setAsync(String path, Object value) {
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.JSON_SET, getRawName(), path, encode(value));
+    }
+
+    @Override
+    public void set(String path, Object value, FPHAType fphaType) {
+        get(setAsync(path, value, fphaType));
+    }
+
+    @Override
+    public RFuture<Void> setAsync(String path, Object value, FPHAType fphaType) {
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.JSON_SET, getRawName(), path, encode(value), "FPHA", fphaType.name());
     }
 
     @Override

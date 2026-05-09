@@ -31,4 +31,21 @@ public interface VectorSimilarityNearestNeighbors extends VectorSimilarity {
      */
     VectorSimilarity efRuntime(int efRuntime);
 
+    /**
+     * Sets the alias for the distance field returned in the result set.
+     *
+     * @param field distance field alias
+     * @return vector similarity for further configuration
+     */
+    VectorSimilarity yieldDistanceAs(String field);
+
+    /**
+     * Sets the ratio of the shard K parameter for distributed KNN search.
+     * Determines how many extra candidates to fetch per shard.
+     *
+     * @param ratio shard K ratio value
+     * @return vector similarity for further configuration
+     */
+    VectorSimilarity shardKRatio(double ratio);
+
 }

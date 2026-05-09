@@ -33,7 +33,9 @@ public final class VectorSimilarityParams implements VectorSimilarityRange, Vect
     
     private Integer knnK;
     private Integer efRuntime;
-    
+    private String yieldDistanceAs;
+    private Double shardKRatio;
+
     private Double rangeRadius;
     private Double rangeEpsilon;
     
@@ -73,6 +75,18 @@ public final class VectorSimilarityParams implements VectorSimilarityRange, Vect
     }
 
     @Override
+    public VectorSimilarity yieldDistanceAs(String field) {
+        this.yieldDistanceAs = field;
+        return this;
+    }
+
+    @Override
+    public VectorSimilarity shardKRatio(double ratio) {
+        this.shardKRatio = ratio;
+        return this;
+    }
+
+    @Override
     public VectorSimilarityBasic scoreAlias(String value) {
         this.scoreAlias = value;
         return this;
@@ -102,6 +116,14 @@ public final class VectorSimilarityParams implements VectorSimilarityRange, Vect
 
     public Integer getEfRuntime() {
         return efRuntime;
+    }
+
+    public String getYieldDistanceAs() {
+        return yieldDistanceAs;
+    }
+
+    public Double getShardKRatio() {
+        return shardKRatio;
     }
 
     public Double getRangeRadius() {

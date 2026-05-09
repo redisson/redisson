@@ -295,9 +295,9 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
 
         if (config.getDnsMonitoringInterval() != -1) {
-            Set<RedisURI> slaveAddresses = config.getSlaveAddresses().stream().map(r -> new RedisURI(r)).collect(Collectors.toSet());
+            Set<RedisClient> slaveAddresses = masterSlaveEntry.getAllEntries().stream().filter(e -> e.getNodeType().equals(NodeType.SLAVE)).map(ClientConnectionsEntry::getClient).collect(Collectors.toSet());
             dnsMonitor = new DNSMonitor(this, masterHost,
-                                            slaveAddresses, config.getDnsMonitoringInterval(), serviceManager.getResolverGroup());
+                    slaveAddresses, config.getDnsMonitoringInterval(), config.getDnsMonitoringTimes());
             dnsMonitor.start();
         }
     }
@@ -396,6 +396,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         c.setReadMode(cfg.getReadMode());
         c.setSubscriptionMode(cfg.getSubscriptionMode());
         c.setDnsMonitoringInterval(cfg.getDnsMonitoringInterval());
+        c.setDnsMonitoringTimes(cfg.getDnsMonitoringTimes());
         c.setSubscriptionTimeout(cfg.getSubscriptionTimeout());
         
         return c;

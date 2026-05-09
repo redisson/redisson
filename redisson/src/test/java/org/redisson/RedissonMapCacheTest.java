@@ -1783,5 +1783,27 @@ public class RedissonMapCacheTest extends BaseMapTest {
         assertThat(map.size()).isEqualTo(2);
         redisson.shutdown();
     }
+
+    @Test
+    public void testCopyPreservesTTL() {
+        testInCluster(redisson -> {
+            RMapCache<String, String> map = redisson.getMapCache("testCopySrc");
+            map.put("key1", "val1", 10, TimeUnit.SECONDS);
+            map.put("key2", "val2");
+
+            map.copy("testCopyDst");
+
+            RMapCache<String, String> mapCopy = redisson.getMapCache("testCopyDst");
+            assertThat(mapCopy.get("key1")).isEqualTo("val1");
+            assertThat(mapCopy.get("key2")).isEqualTo("val2");
+
+            long ttl = mapCopy.remainTimeToLive("key1");
+            assertThat(ttl).isBetween(5000L, 10000L);
+            assertThat(mapCopy.remainTimeToLive("key2")).isEqualTo(-1);
+
+            map.destroy();
+            mapCopy.destroy();
+        });
+    }
 }
 

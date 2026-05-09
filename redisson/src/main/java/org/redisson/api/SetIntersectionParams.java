@@ -20,8 +20,10 @@ package org.redisson.api;
  * @author seakider
  *
  */
-public class SetIntersectionParams extends SetReadArgsParam implements SetIntersectionArgs {
+public class SetIntersectionParams extends SetReadArgsParam<SetIntersectionArgs> implements SetIntersectionArgs {
+
     SetIntersectionParams(String... names) {
         super(names);
     }
+
 }

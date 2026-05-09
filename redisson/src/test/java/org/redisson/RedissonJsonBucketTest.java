@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.redisson.api.FPHAType;
 import org.redisson.api.JsonType;
 import org.redisson.api.RJsonBucket;
 import org.redisson.api.RType;
@@ -528,6 +529,42 @@ public class RedissonJsonBucketTest extends RedisDockerTest {
 
         List<String> n3 = al.get(new JacksonCodec<>(new TypeReference<List<String>>(){}), "type.values");
         assertThat(n3).containsExactly("t1", "t2");
+    }
+
+    @Test
+    public void testSetWithFpha() {
+        RJsonBucket<List<Double>> al = redisson.getJsonBucket("test", new JacksonCodec<>(new TypeReference<List<Double>>(){}));
+        List<Double> values = Arrays.asList(1.5, 2.5, 3.5);
+        al.set("$", values, FPHAType.FP32);
+        List<Double> result = al.get();
+        assertThat(result).containsExactly(1.5, 2.5, 3.5);
+    }
+
+    @Test
+    public void testSetIfAbsentWithFpha() {
+        RJsonBucket<List<Double>> al = redisson.getJsonBucket("test", new JacksonCodec<>(new TypeReference<List<Double>>(){}));
+        List<Double> values = Arrays.asList(1.5, 2.5, 3.5);
+
+        assertThat(al.setIfAbsent("$", values, FPHAType.FP32)).isTrue();
+        List<Double> result = al.get();
+        assertThat(result).containsExactly(1.5, 2.5, 3.5);
+
+        assertThat(al.setIfAbsent("$", Arrays.asList(4.5, 5.5), FPHAType.FP32)).isFalse();
+        result = al.get();
+        assertThat(result).containsExactly(1.5, 2.5, 3.5);
+    }
+
+    @Test
+    public void testSetIfExistsWithFpha() {
+        RJsonBucket<List<Double>> al = redisson.getJsonBucket("test", new JacksonCodec<>(new TypeReference<List<Double>>(){}));
+        List<Double> values = Arrays.asList(1.5, 2.5, 3.5);
+
+        assertThat(al.setIfExists("$", values, FPHAType.FP32)).isFalse();
+
+        al.set("$", values, FPHAType.FP32);
+        assertThat(al.setIfExists("$", Arrays.asList(4.5, 5.5), FPHAType.FP32)).isTrue();
+        List<Double> result = al.get();
+        assertThat(result).containsExactly(4.5, 5.5);
     }
 
 

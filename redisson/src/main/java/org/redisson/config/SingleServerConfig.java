@@ -59,6 +59,8 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
      */
     private long dnsMonitoringInterval = 5000;
 
+    private int dnsMonitoringTimes = 1;
+
     SingleServerConfig() {
     }
 
@@ -68,6 +70,7 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
         setConnectionPoolSize(config.getConnectionPoolSize());
         setSubscriptionConnectionPoolSize(config.getSubscriptionConnectionPoolSize());
         setDnsMonitoringInterval(config.getDnsMonitoringInterval());
+        setDnsMonitoringTimes(config.getDnsMonitoringTimes());
         setSubscriptionConnectionMinimumIdleSize(config.getSubscriptionConnectionMinimumIdleSize());
         setConnectionMinimumIdleSize(config.getConnectionMinimumIdleSize());
         setDatabase(config.getDatabase());
@@ -137,6 +140,24 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
     }
     public long getDnsMonitoringInterval() {
         return dnsMonitoringInterval;
+    }
+
+    public int getDnsMonitoringTimes() {
+        return dnsMonitoringTimes;
+    }
+    
+    /**
+     * The number of times per check the endpoint's DNS<p>
+     * Applications must ensure the JVM DNS cache TTL is low enough to support this.<p>
+     * <p>
+     * Default is <code>1</code>.
+     *
+     * @param dnsMonitoringTimes number of times
+     * @return config
+     */
+    public SingleServerConfig setDnsMonitoringTimes(int dnsMonitoringTimes) {
+        this.dnsMonitoringTimes = dnsMonitoringTimes;
+        return this;
     }
 
     /**

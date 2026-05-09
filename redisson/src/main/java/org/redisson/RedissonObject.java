@@ -190,6 +190,19 @@ public abstract class RedissonObject implements RObject {
 
     protected final RFuture<Boolean> copyAsync(CommandAsyncExecutor commandExecutor, List<Object> keys,
                                                 int database, boolean replace) {
+        int pairCount = keys.size() / 2;
+        if (getServiceManager().getCfg().isClusterConfig()
+                && commandExecutor.getConnectionManager().calcSlot((String) keys.get(pairCount))
+                    != commandExecutor.getConnectionManager().calcSlot((String) keys.get(0))) {
+            if (commandExecutor instanceof BatchService) {
+                CompletableFuture<Boolean> f = new CompletableFuture<>();
+                f.completeExceptionally(new IllegalStateException(
+                        "COPY across different slots is not supported in batch/transaction mode"));
+                return new CompletableFutureWrapper<>(f);
+            }
+            return executeDumpRestoreCopy(commandExecutor, keys, replace);
+        }
+
         if (keys.size() == 2) {
             List<Object> args = new ArrayList<>();
             args.add(keys.get(0));
@@ -225,7 +238,74 @@ public abstract class RedissonObject implements RObject {
                     + "return math.min(res, 1); ",
                     keys,
                     database, Boolean.compare(replace, false));
+    }
 
+    private RFuture<Boolean> executeDumpRestoreCopy(CommandAsyncExecutor commandExecutor, List<Object> keys,
+                                                    boolean replace) {
+        int pairCount = keys.size() / 2;
+        List<CompletableFuture<Boolean>> perPairResults = new ArrayList<>(pairCount);
+
+        for (int i = 0; i < pairCount; i++) {
+            String sourceKey = (String) keys.get(i);
+            String destKey = (String) keys.get(pairCount + i);
+            perPairResults.add(copyOnePairAcrossSlots(commandExecutor, sourceKey, destKey, replace)
+                    .toCompletableFuture());
+        }
+
+        CompletableFuture<Boolean> result = CompletableFuture
+                .allOf(perPairResults.toArray(new CompletableFuture[0]))
+                .thenApply(v -> {
+                    for (CompletableFuture<Boolean> f : perPairResults) {
+                        if (Boolean.TRUE.equals(f.join())) {
+                            return true;
+                        }
+                    }
+                    return false;
+                });
+
+        return new CompletableFutureWrapper<>(result);
+    }
+
+    private RFuture<Boolean> copyOnePairAcrossSlots(CommandAsyncExecutor commandExecutor,
+                                                    String sourceKey, String destKey, boolean replace) {
+        RFuture<List<Object>> dumpFuture = commandExecutor.evalWriteAsync(
+                sourceKey, ByteArrayCodec.INSTANCE, RedisCommands.EVAL_LIST,
+                "local t = redis.call('pttl', KEYS[1]) "
+                        + "if t == -2 then "
+                        +     "return nil "
+                        + "end "
+                        + "return {t, redis.call('dump', KEYS[1])} ",
+                Collections.singletonList(sourceKey));
+
+        CompletionStage<Boolean> stage = dumpFuture.thenCompose(dumpResult -> {
+            if (dumpResult == null) {
+                return CompletableFuture.completedFuture(false);
+            }
+
+            long ttl = ((Number) dumpResult.get(0)).longValue();
+            byte[] dumpBytes = (byte[]) dumpResult.get(1);
+
+            // PTTL returns -1 for keys with no expiry; map to 0 (no TTL on RESTORE).
+            long ttlMs = 0;
+            if (ttl > 0) {
+                ttlMs = ttl;
+            }
+
+            return commandExecutor.evalWriteAsync(
+                    destKey, StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                    "if ARGV[1] == '1' then "
+                            +     "redis.call('restore', KEYS[1], tonumber(ARGV[2]), ARGV[3], 'REPLACE') "
+                            +     "return 1 "
+                            + "elseif redis.call('exists', KEYS[1]) == 0 then "
+                            +     "redis.call('restore', KEYS[1], tonumber(ARGV[2]), ARGV[3]) "
+                            +     "return 1 "
+                            + "end; "
+                            + "return 0 ",
+                    Collections.singletonList(destKey),
+                    Boolean.compare(replace, false), ttlMs, dumpBytes);
+        });
+
+        return new CompletableFutureWrapper<>(stage);
     }
 
     protected final RFuture<Void> renameAsync(CommandAsyncExecutor commandExecutor, List<Object> keys, Runnable runnable) {

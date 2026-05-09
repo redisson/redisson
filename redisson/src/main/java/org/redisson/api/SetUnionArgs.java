@@ -21,7 +21,7 @@ package org.redisson.api;
  * @author seakider
  *
  */
-public interface SetUnionArgs extends SetReadArgs{
+public interface SetUnionArgs extends SetReadArgs<SetUnionArgs> {
     /**
      * Define arguments object that
      * union with current ScoredSortedSet

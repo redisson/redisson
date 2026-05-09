@@ -20,7 +20,7 @@ public class SimpleDnsServer {
     private final Channel channel;
     private String ip = "127.0.0.1";
     private final int port;
-    private final List<String> rotation;
+    private volatile List<String> rotation;
     private final AtomicInteger rotationIndex = new AtomicInteger();
 
     public SimpleDnsServer() throws InterruptedException {
@@ -67,18 +67,23 @@ public class SimpleDnsServer {
         this.ip = ip;
     }
 
+    public void updateRotation(List<String> rotation) {
+        this.rotation = rotation;
+    }
+
     private class DnsMessageHandler extends SimpleChannelInboundHandler<DatagramDnsQuery> {
         @Override
         protected void channelRead0(ChannelHandlerContext ctx, DatagramDnsQuery query) throws Exception {
             DefaultDnsQuestion question = query.recordAt(DnsSection.QUESTION);
             String requestedDomain = question.name();
+            List<String> current = rotation;
 
             String answerIp;
-            if (rotation.isEmpty()) {
+            if (current == null || current.isEmpty()) {
                 answerIp = ip;
             } else {
-                int idx = Math.floorMod(rotationIndex.getAndIncrement(), rotation.size());
-                answerIp = rotation.get(idx);
+                int idx = Math.floorMod(rotationIndex.getAndIncrement(), current.size());
+                answerIp = current.get(idx);
             }
 
             DatagramDnsResponse response = new DatagramDnsResponse(query.recipient(), query.sender(), query.id());
