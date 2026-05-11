@@ -15,6 +15,8 @@
  */
 package org.redisson.api;
 
+import org.redisson.cache.CachedSortedSetEntry;
+
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -39,7 +41,7 @@ public interface RLocalCachedScoredSortedSetReactive<V> extends RScoredSortedSet
      *
      * @return cached scores mapped to values
      */
-    ConcurrentMap<Double, ConcurrentSkipListSet<V>> getScoreCache();
+    ConcurrentMap<Double, ConcurrentSkipListSet<CachedSortedSetEntry<V>>> getScoreCache();
 
 }
 

@@ -106,7 +106,9 @@ class RedissonLocalCachedScoredSortedSetTest extends RedisDockerTest {
         try {
             assertThat(set.add(1.0, "a")).isTrue();
             assertThat(set.add(1.0, "a")).isFalse();  // duplicate → false
-            assertThat(set.getCache()).containsEntry("a", 1.0);
+            assertThat(set.add(2.0, "a")).isFalse();  // duplicate → false
+            assertThat(set.add(2.0, "a")).isFalse();  // duplicate → false
+            assertThat(set.getCache()).containsEntry("a", 2.0);
             assertConsistent(set, redis("t:add"));
         } finally {
             set.destroy();

@@ -667,23 +667,23 @@ public final class RedissonReactive implements RedissonReactiveClient {
     }
 
     @Override
-    public <V> RLocalCachedScoredSortedSetReactive<V> getLocalScoredSortedSet(String name,
-                                                                              LocalCachedScoredSortedSetOptions<V> options) {
+    public <V> RLocalCachedScoredSortedSetReactive<V> getLocalCachedScoredSortedSet(String name,
+                                                                                    LocalCachedScoredSortedSetOptions<V> options) {
         RedissonLocalCachedScoredSortedSet<V> set = new RedissonLocalCachedScoredSortedSet<>(null, commandExecutor, name, null, options);
         return ReactiveProxyBuilder.create(commandExecutor, set,
                 new RedissonScoredSortedSetReactive<V>(commandExecutor, name), RLocalCachedScoredSortedSetReactive.class);
     }
 
     @Override
-    public <V> RLocalCachedScoredSortedSetReactive<V> getLocalScoredSortedSet(String name, Codec codec,
-                                                                              LocalCachedScoredSortedSetOptions<V> options) {
+    public <V> RLocalCachedScoredSortedSetReactive<V> getLocalCachedScoredSortedSet(String name, Codec codec,
+                                                                                    LocalCachedScoredSortedSetOptions<V> options) {
         RedissonLocalCachedScoredSortedSet<V> set = new RedissonLocalCachedScoredSortedSet<>(codec, commandExecutor, name, null, options);
         return ReactiveProxyBuilder.create(commandExecutor, set,
                 new RedissonScoredSortedSetReactive<V>(codec, commandExecutor, name), RLocalCachedScoredSortedSetReactive.class);
     }
 
     @Override
-    public <V> RLocalCachedScoredSortedSetReactive<V> getLocalScoredSortedSet(LocalCachedScoredSortedSetOptions<V> options) {
+    public <V> RLocalCachedScoredSortedSetReactive<V> getLocalCachedScoredSortedSet(LocalCachedScoredSortedSetOptions<V> options) {
         LocalCachedScoredSortedSetParams<V> params = (LocalCachedScoredSortedSetParams<V>) options;
         CommandReactiveExecutor ca = commandExecutor.copy(params);
         RedissonLocalCachedScoredSortedSet<V> set = new RedissonLocalCachedScoredSortedSet<>(params.getCodec(), ca, params.getName(), null, options);

@@ -1102,8 +1102,8 @@ public interface RedissonReactiveClient {
      * @param options local scored sorted set options
      * @return local cached scored sorted set object
      */
-    <V> RLocalCachedScoredSortedSetReactive<V> getLocalScoredSortedSet(String name,
-                                                                       LocalCachedScoredSortedSetOptions<V> options);
+    <V> RLocalCachedScoredSortedSetReactive<V> getLocalCachedScoredSortedSet(String name,
+                                                                             LocalCachedScoredSortedSetOptions<V> options);
 
     /**
      * Returns local cached scored sorted set instance by name using provided codec.
@@ -1115,8 +1115,8 @@ public interface RedissonReactiveClient {
      * @param options local scored sorted set options
      * @return local cached scored sorted set object
      */
-    <V> RLocalCachedScoredSortedSetReactive<V> getLocalScoredSortedSet(String name, Codec codec,
-                                                                       LocalCachedScoredSortedSetOptions<V> options);
+    <V> RLocalCachedScoredSortedSetReactive<V> getLocalCachedScoredSortedSet(String name, Codec codec,
+                                                                             LocalCachedScoredSortedSetOptions<V> options);
 
     /**
      * Returns local cached scored sorted set instance with specified <code>options</code>.
@@ -1125,7 +1125,7 @@ public interface RedissonReactiveClient {
      * @param options instance options
      * @return local cached scored sorted set object
      */
-    <V> RLocalCachedScoredSortedSetReactive<V> getLocalScoredSortedSet(LocalCachedScoredSortedSetOptions<V> options);
+    <V> RLocalCachedScoredSortedSetReactive<V> getLocalCachedScoredSortedSet(LocalCachedScoredSortedSetOptions<V> options);
 
     /**
      * Returns Redis Sorted Set instance by name
