@@ -300,8 +300,8 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
         List<LocalCachedScoreSortedSetInvalidate.Entry> entries = new LinkedList<>();
         temp.forEach((score, values) -> {
             for (CachedSortedSetEntry<V> ce : values) {
-                cache.remove(ce.value);
-                ByteBuf bValue = encode(ce.value);
+                cache.remove(ce.getValue());
+                ByteBuf bValue = encode(ce.getValue());
                 try {
                     entries.add(new LocalCachedScoreSortedSetInvalidate.Entry(bValue));
                 } finally {
@@ -393,7 +393,7 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
             if (firstEntry == null || firstEntry.getValue().isEmpty()) {
                 return new CompletableFutureWrapper<>((V) null);
             }
-            V first = firstEntry.getValue().first().value;
+            V first = firstEntry.getValue().first().getValue();
             removeCache(first);
             broadcastRemove(first);
             return new CompletableFutureWrapper<>(first);
@@ -418,7 +418,7 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
             if (lastEntry == null || lastEntry.getValue().isEmpty()) {
                 return new CompletableFutureWrapper<>((V) null);
             }
-            V last = lastEntry.getValue().last().value;
+            V last = lastEntry.getValue().last().getValue();
             removeCache(last);
             broadcastRemove(last);
             return new CompletableFutureWrapper<>(last);
@@ -822,7 +822,7 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
             if (firstSet.isEmpty()) {
                 first = null;
             } else {
-                first = firstSet.first().value;
+                first = firstSet.first().getValue();
             }
             return new CompletableFutureWrapper<>(first);
         }
@@ -840,7 +840,7 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
             if (lastSet.isEmpty()) {
                 last = null;
             } else {
-                last = lastSet.last().value;
+                last = lastSet.last().getValue();
             }
             return new CompletableFutureWrapper<>(last);
         }
@@ -871,7 +871,7 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
             List<V> list = new ArrayList<>();
             for (ConcurrentSkipListSet<CachedSortedSetEntry<V>> ts : scoreCache.subMap(startScore, startScoreInclusive, endScore, endScoreInclusive).values()) {
                 for (CachedSortedSetEntry<V> ce : ts) {
-                    list.add(ce.value);
+                    list.add(ce.getValue());
                 }
             }
             return new CompletableFutureWrapper<>(list);
@@ -889,7 +889,7 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
             scoreCache.subMap(startScore, startScoreInclusive, endScore, endScoreInclusive)
                     .forEach((score, values) -> {
                         for (CachedSortedSetEntry<V> ce : values) {
-                            list.add(new ScoredEntry<>(score, ce.value));
+                            list.add(new ScoredEntry<>(score, ce.getValue()));
                         }
                     });
             return new CompletableFutureWrapper<>(list);
@@ -909,7 +909,7 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
             if (values.isEmpty()) {
                 v = null;
             } else {
-                v = values.first().value;
+                v = values.first().getValue();
             }
             ScoredEntry<V> entry;
             if (v != null) {
@@ -934,7 +934,7 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
             if (values.isEmpty()) {
                 v = null;
             } else {
-                v = values.last().value;
+                v = values.last().getValue();
             }
             ScoredEntry<V> entry;
             if (v != null) {
@@ -1013,7 +1013,7 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
                     .descendingMap()
                     .forEach((score, values) -> {
                         for (CachedSortedSetEntry<V> ce : values.descendingSet()) {
-                            list.add(ce.value);
+                            list.add(ce.getValue());
                         }
                     });
             return new CompletableFutureWrapper<>(list);
@@ -1026,7 +1026,7 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
         if (readFromLocalCache) {
             List<ScoredEntry<V>> result = new ArrayList<>();
             for (CachedSortedSetEntry<V> value : getCacheValuesByRankRange(startIndex, endIndex, false)) {
-                result.add(new ScoredEntry<>(value.score, value.value));
+                result.add(new ScoredEntry<>(value.getScore(), value.getValue()));
             }
             return new CompletableFutureWrapper<>(result);
         }
@@ -1038,7 +1038,7 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
         if (readFromLocalCache) {
             List<ScoredEntry<V>> result = new ArrayList<>();
             for (CachedSortedSetEntry<V> value : getCacheValuesByRankRange(startIndex, endIndex, true)) {
-                result.add(new ScoredEntry<>(value.score, value.value));
+                result.add(new ScoredEntry<>(value.getScore(), value.getValue()));
             }
             return new CompletableFutureWrapper<>(result);
         }
@@ -1055,7 +1055,7 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
             scoreCache.subMap(startScore, startScoreInclusive, endScore, endScoreInclusive)
                     .descendingMap()
                     .forEach((score, values) ->
-                            values.descendingSet().forEach(ce -> list.add(new ScoredEntry<>(score, ce.value))));
+                            values.descendingSet().forEach(ce -> list.add(new ScoredEntry<>(score, ce.getValue()))));
             return new CompletableFutureWrapper<>(list);
         }
         return super.entryRangeReversedAsync(startScore, startScoreInclusive, endScore, endScoreInclusive);
@@ -1101,7 +1101,7 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
         }
         CachedSortedSetEntry<V> newEntry = new CachedSortedSetEntry<>(score, value, encode(value));
         Set<CachedSortedSetEntry<V>> entries = scoreCache.computeIfAbsent(score, key ->
-                new ConcurrentSkipListSet<>((e1, e2) -> compareBytes(e1.encoded, e2.encoded)));
+                new ConcurrentSkipListSet<>((e1, e2) -> compareBytes(e1.getEncoded(), e2.getEncoded())));
         entries.add(newEntry);
         Double previousScore = cache.put(value, score);
         if (previousScore != null && Double.compare(score, previousScore) != 0) {
@@ -1247,9 +1247,9 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
             }
             V v;
             if (descending) {
-                v = values.last().value;
+                v = values.last().getValue();
             } else {
-                v = values.first().value;
+                v = values.first().getValue();
             }
             result.add(v);
             removeCache(v);
@@ -1277,9 +1277,9 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
             }
             V v;
             if (descending) {
-                v = values.last().value;
+                v = values.last().getValue();
             } else {
-                v = values.first().value;
+                v = values.first().getValue();
             }
             result.add(new ScoredEntry<>(scoreEntry.getKey(), v));
             removeCache(v);
@@ -1316,7 +1316,7 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
         }
         List<V> result = new ArrayList<>(values.size());
         for (CachedSortedSetEntry<V> value : values) {
-            result.add(value.value);
+            result.add(value.getValue());
         }
         return result;
     }
@@ -1395,7 +1395,7 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
         if (sameScore != null) {
             // Count CacheEntries that come before `object` in the set
             for (CachedSortedSetEntry<V> ce : sameScore) {
-                if (ce.value.equals(object)) {
+                if (ce.getValue().equals(object)) {
                     break;
                 }
                 rank++;
@@ -1416,7 +1416,7 @@ public class RedissonLocalCachedScoredSortedSet<V> extends RedissonScoredSortedS
         if (sameScore != null) {
             // Count CacheEntries that come after `object` in the set (reverse order)
             for (CachedSortedSetEntry<V> ce : sameScore.descendingSet()) {
-                if (ce.value.equals(object)) {
+                if (ce.getValue().equals(object)) {
                     break;
                 }
                 rank++;

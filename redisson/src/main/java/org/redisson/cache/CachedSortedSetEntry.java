@@ -26,9 +26,9 @@ import java.util.Objects;
  */
 public final class CachedSortedSetEntry<T> {
 
-    public final double score;
-    public final T value;
-    public final byte[] encoded;
+    private final double score;
+    private final T value;
+    private final byte[] encoded;
 
     public CachedSortedSetEntry(double score, T value, ByteBuf encoded) {
         this.score = score;
@@ -39,6 +39,18 @@ public final class CachedSortedSetEntry<T> {
         } finally {
             encoded.release();
         }
+    }
+
+    public double getScore() {
+        return score;
+    }
+
+    public T getValue() {
+        return value;
+    }
+
+    public byte[] getEncoded() {
+        return encoded;
     }
 
     @Override
