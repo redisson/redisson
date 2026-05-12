@@ -16,7 +16,7 @@
 package org.redisson.api;
 
 /**
- * Result returned by {@link RMapCache#getWithLease(Object, long, java.util.concurrent.TimeUnit)} method.
+ * Result returned by {@link RLeasedMap#getWithLease(Object, java.time.Duration)} method.
  * <p>
  * If the entry is present in cache then {@link #getValue()} returns the value and {@link #getLeaseToken()} is {@code 0}.
  * If the entry is absent then {@link #getValue()} is {@code null} and {@link #getLeaseToken()} returns the lease token
@@ -27,13 +27,13 @@ package org.redisson.api;
  * @param <K> key type
  * @param <V> value type
  */
-public final class RLeaseGetResult<K, V> {
+public final class LeaseGetResult<K, V> {
 
     private final V value;
     private final boolean leaseAcquired;
     private final long leaseToken;
 
-    public RLeaseGetResult(V value, boolean leaseAcquired, long leaseToken) {
+    public LeaseGetResult(V value, boolean leaseAcquired, long leaseToken) {
         this.value = value;
         this.leaseAcquired = leaseAcquired;
         this.leaseToken = leaseToken;

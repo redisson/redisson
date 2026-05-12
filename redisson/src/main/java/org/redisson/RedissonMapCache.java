@@ -105,16 +105,16 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     }
 
     @Override
-    public RLeaseGetResult<K, V> getWithLease(K key, long leaseTimeToLive, TimeUnit leaseTimeUnit) {
-        return get(getWithLeaseAsync(key, leaseTimeToLive, leaseTimeUnit));
+    public LeaseGetResult<K, V> getWithLease(K key, Duration leaseTimeToLive) {
+        return get(getWithLeaseAsync(key, leaseTimeToLive));
     }
 
     @Override
-    public RFuture<RLeaseGetResult<K, V>> getWithLeaseAsync(K key, long leaseTimeToLive, TimeUnit leaseTimeUnit) {
+    public RFuture<LeaseGetResult<K, V>> getWithLeaseAsync(K key, Duration leaseTimeToLive) {
         checkNotBatch();
         checkKey(key);
-        Objects.requireNonNull(leaseTimeUnit);
-        if (leaseTimeToLive <= 0) {
+        Objects.requireNonNull(leaseTimeToLive);
+        if (leaseTimeToLive.isZero() || leaseTimeToLive.isNegative()) {
             throw new IllegalArgumentException("leaseTimeToLive should be positive");
         }
 
@@ -182,18 +182,18 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         + "return {1, val, 0}; ",
                 Arrays.asList(name, getTimeoutSetName(name), getIdleSetName(name),
                         getLastAccessTimeSetName(name), getOptionsName(name), leaseName),
-                System.currentTimeMillis(), encodeMapKey(key), token, leaseTimeUnit.toMillis(leaseTimeToLive));
+                System.currentTimeMillis(), encodeMapKey(key), token, leaseTimeToLive.toMillis());
 
-        CompletionStage<RLeaseGetResult<K, V>> f = res.thenApply(r -> {
+        CompletionStage<LeaseGetResult<K, V>> f = res.thenApply(r -> {
             long status = ((Number) r.get(0)).longValue();
             if (status == 1) {
-                return new RLeaseGetResult<>((V) r.get(1), false, 0L);
+                return new LeaseGetResult<>((V) r.get(1), false, 0L);
             }
             long leaseFromRedis = decodeLeaseToken(r.get(2));
             if (leaseFromRedis == 0L) {
-                return new RLeaseGetResult<>(null, false, 0L);
+                return new LeaseGetResult<>(null, false, 0L);
             }
-            return new RLeaseGetResult<>(null, leaseFromRedis == token, leaseFromRedis);
+            return new LeaseGetResult<>(null, leaseFromRedis == token, leaseFromRedis);
         });
         return new CompletableFutureWrapper<>(f);
     }
@@ -231,46 +231,51 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 
     @Override
     public RFuture<Boolean> putWithLeaseAsync(K key, V value, long leaseToken) {
-        return putWithLeaseAsync(key, value, 0, null, leaseToken);
+        return putWithLeaseAsync(key, value, Duration.ZERO, Duration.ZERO, leaseToken);
     }
 
     @Override
-    public boolean putWithLease(K key, V value, long ttl, TimeUnit ttlUnit, long leaseToken) {
-        return get(putWithLeaseAsync(key, value, ttl, ttlUnit, 0, null, leaseToken));
+    public boolean putWithLease(K key, V value, Duration ttl, long leaseToken) {
+        return get(putWithLeaseAsync(key, value, ttl, Duration.ZERO, leaseToken));
     }
 
     @Override
-    public RFuture<Boolean> putWithLeaseAsync(K key, V value, long ttl, TimeUnit ttlUnit, long leaseToken) {
-        return putWithLeaseAsync(key, value, ttl, ttlUnit, 0, null, leaseToken);
+    public RFuture<Boolean> putWithLeaseAsync(K key, V value, Duration ttl, long leaseToken) {
+        return putWithLeaseAsync(key, value, ttl, Duration.ZERO, leaseToken);
     }
 
     @Override
-    public boolean putWithLease(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit, long leaseToken) {
-        return get(putWithLeaseAsync(key, value, ttl, ttlUnit, maxIdleTime, maxIdleUnit, leaseToken));
+    public boolean putWithLease(K key, V value, Duration ttl, Duration maxIdleTime, long leaseToken) {
+        return get(putWithLeaseAsync(key, value, ttl, maxIdleTime, leaseToken));
     }
 
     @Override
-    public RFuture<Boolean> putWithLeaseAsync(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit, long leaseToken) {
-        if (ttl < 0) {
+    public RFuture<Boolean> putWithLeaseAsync(K key, V value, Duration ttl, Duration maxIdleTime, long leaseToken) {
+        Objects.requireNonNull(ttl);
+        Objects.requireNonNull(maxIdleTime);
+
+        if (ttl.isNegative()) {
             throw new IllegalArgumentException("ttl can't be negative");
         }
-        if (maxIdleTime < 0) {
+        if (maxIdleTime.isNegative()) {
             throw new IllegalArgumentException("maxIdleTime can't be negative");
-        }
-
-        if (ttl > 0 && ttlUnit == null) {
-            throw new NullPointerException("ttlUnit param can't be null");
-        }
-
-        if (maxIdleTime > 0 && maxIdleUnit == null) {
-            throw new NullPointerException("maxIdleUnit param can't be null");
         }
 
         checkNotBatch();
         checkKey(key);
         checkValue(value);
 
-        return fastPutOperationAsync(key, value, ttl, ttlUnit, maxIdleTime, maxIdleUnit, leaseToken);
+        long ttlMillis = ttl.toMillis();
+        long maxIdleMillis = maxIdleTime.toMillis();
+        TimeUnit ttlUnit = null;
+        if (ttlMillis > 0) {
+            ttlUnit = TimeUnit.MILLISECONDS;
+        }
+        TimeUnit maxIdleUnit = null;
+        if (maxIdleMillis > 0) {
+            maxIdleUnit = TimeUnit.MILLISECONDS;
+        }
+        return fastPutOperationAsync(key, value, ttlMillis, ttlUnit, maxIdleMillis, maxIdleUnit, leaseToken);
     }
 
     private static long decodeLeaseToken(Object o) {

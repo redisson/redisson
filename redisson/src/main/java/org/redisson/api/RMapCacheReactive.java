@@ -46,66 +46,7 @@ import java.util.function.Function;
  * @param <K> key
  * @param <V> value
  */
-public interface RMapCacheReactive<K, V> extends RMapReactive<K, V>, RDestroyable {
-
-    /**
-     * Returns the cached value mapped by defined <code>key</code> or {@code null} if value is absent.
-     * <p>
-     * If value is absent then tries to acquire a lease and returns it together with {@code null} value.
-     *
-     * @param key map key
-     * @param leaseTimeToLive lease time to live
-     * @param leaseTimeUnit lease time unit
-     * @return cached value or lease on miss
-     * @see RMapCache#getWithLease(Object, long, TimeUnit)
-     */
-    Mono<RLeaseGetResult<K, V>> getWithLease(K key, long leaseTimeToLive, TimeUnit leaseTimeUnit);
-
-    /**
-     * Invalidates the entry mapped by {@code key} and deletes current lease token (if any).
-     *
-     * @param key map key
-     * @return {@code true} if entry or lease token has been removed, otherwise {@code false}
-     * @see RMapCache#removeWithLease(Object)
-     */
-    Mono<Boolean> removeWithLease(K key);
-
-    /**
-     * Stores the specified {@code value} mapped by {@code key} only if the given {@code leaseToken} is still valid.
-     *
-     * @param key map key
-     * @param value map value
-     * @param leaseToken lease token (millisecond timestamp) returned by {@link #getWithLease(Object, long, TimeUnit)}
-     * @return {@code true} if value has been stored, otherwise {@code false}
-     * @see RMapCache#putWithLease(Object, Object, long)
-     */
-    Mono<Boolean> putWithLease(K key, V value, long leaseToken);
-
-    /**
-     * Stores the specified {@code value} mapped by {@code key} only if the given {@code leaseToken} is still valid.
-     *
-     * @param key map key
-     * @param value map value
-     * @param ttl time to live for key/value entry. If {@code 0} then stores infinitely.
-     * @param ttlUnit time unit
-     * @param leaseToken lease token (millisecond timestamp) returned by {@link #getWithLease(Object, long, TimeUnit)}
-     * @return {@code true} if value has been stored, otherwise {@code false}
-     */
-    Mono<Boolean> putWithLease(K key, V value, long ttl, TimeUnit ttlUnit, long leaseToken);
-
-    /**
-     * Stores the specified {@code value} mapped by {@code key} only if the given {@code leaseToken} is still valid.
-     *
-     * @param key map key
-     * @param value map value
-     * @param ttl time to live for key/value entry. If {@code 0} then stores infinitely.
-     * @param ttlUnit time unit
-     * @param maxIdleTime max idle time for key/value entry. If {@code 0} then doesn't affect expiration.
-     * @param maxIdleUnit time unit
-     * @param leaseToken lease token (millisecond timestamp) returned by {@link #getWithLease(Object, long, TimeUnit)}
-     * @return {@code true} if value has been stored, otherwise {@code false}
-     */
-    Mono<Boolean> putWithLease(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit, long leaseToken);
+public interface RMapCacheReactive<K, V> extends RMapReactive<K, V>, RDestroyable, RLeasedMapReactive<K, V> {
 
     /**
      * Sets max size of the map.
