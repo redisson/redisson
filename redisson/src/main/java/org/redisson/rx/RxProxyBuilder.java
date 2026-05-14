@@ -18,8 +18,11 @@ package org.redisson.rx;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Single;
+import org.redisson.api.annotation.EmptyAsAbsent;
 import org.redisson.misc.ProxyBuilder;
 
+import java.util.Collection;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionStage;
 
@@ -38,6 +41,9 @@ public class RxProxyBuilder {
     public static <T> T create(CommandRxExecutor commandExecutor, Object instance, Object implementation, Class<T> clazz) {
         return ProxyBuilder.create((callable, instanceMethod) -> {
             Flowable<Object> flowable = commandExecutor.flowable((Callable<CompletionStage<Object>>) (Object) callable);
+            if (instanceMethod.isAnnotationPresent(EmptyAsAbsent.class)) {
+                flowable = flowable.filter(RxProxyBuilder::isNotEmpty);
+            }
 
             if (instanceMethod.getReturnType() == Completable.class) {
                 return flowable.ignoreElements();
@@ -47,6 +53,16 @@ public class RxProxyBuilder {
             }
             return flowable.singleElement();
         }, instance, implementation, clazz, commandExecutor.getServiceManager());
+    }
+
+    private static boolean isNotEmpty(Object value) {
+        if (value instanceof Collection) {
+            return !((Collection<?>) value).isEmpty();
+        }
+        if (value instanceof Map) {
+            return !((Map<?, ?>) value).isEmpty();
+        }
+        return true;
     }
     
 }

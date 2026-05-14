@@ -15,10 +15,13 @@
  */
 package org.redisson.reactive;
 
+import org.redisson.api.annotation.EmptyAsAbsent;
 import org.redisson.misc.ProxyBuilder;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.Collection;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionStage;
 
@@ -36,12 +39,25 @@ public class ReactiveProxyBuilder {
     public static <T> T create(CommandReactiveExecutor commandExecutor, Object instance, Object implementation, Class<T> clazz) {
         return ProxyBuilder.create((callable, instanceMethod) -> {
             Mono<Object> result = commandExecutor.reactive((Callable<CompletionStage<Object>>) (Object) callable);
+            if (instanceMethod.isAnnotationPresent(EmptyAsAbsent.class)) {
+                result = result.filter(ReactiveProxyBuilder::isNotEmpty);
+            }
             if (instanceMethod.getReturnType().isAssignableFrom(Flux.class)) {
                 Mono<Iterable> monoListResult = result.cast(Iterable.class);
                 return monoListResult.flatMapMany(Flux::fromIterable);
             }
             return result;
         }, instance, implementation, clazz, commandExecutor.getServiceManager());
+    }
+
+    private static boolean isNotEmpty(Object value) {
+        if (value instanceof Collection) {
+            return !((Collection<?>) value).isEmpty();
+        }
+        if (value instanceof Map) {
+            return !((Map<?, ?>) value).isEmpty();
+        }
+        return true;
     }
     
 }
