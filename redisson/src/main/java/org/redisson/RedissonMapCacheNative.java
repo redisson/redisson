@@ -665,10 +665,12 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
     @Override
     public int addListener(ObjectListener listener) {
         if (listener instanceof MapExpiredListener) {
-            return addListener("__keyevent@*:hexpired", (MapExpiredListener) listener, MapExpiredListener::onExpired);
+            return addMapFieldListener("__subkeyevent@*:hexpired", "__keyevent@*:hexpired",
+                    (MapExpiredListener) listener, MapExpiredListener::onExpired);
         }
         if (listener instanceof MapClearExpireListener) {
-            return addListener("__keyevent@*:hpersist", (MapClearExpireListener) listener, MapClearExpireListener::onClearExpire);
+            return addMapFieldListener("__subkeyevent@*:hpersist", "__keyevent@*:hpersist",
+                    (MapClearExpireListener) listener, MapClearExpireListener::onClearExpire);
         }
 
         return super.addListener(listener);
@@ -677,10 +679,12 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
     @Override
     public RFuture<Integer> addListenerAsync(ObjectListener listener) {
         if (listener instanceof MapExpiredListener) {
-            return addListenerAsync("__keyevent@*:hexpired", (MapExpiredListener) listener, MapExpiredListener::onExpired);
+            return addMapFieldListenerAsync("__subkeyevent@*:hexpired", "__keyevent@*:hexpired",
+                    (MapExpiredListener) listener, MapExpiredListener::onExpired);
         }
         if (listener instanceof MapClearExpireListener) {
-            return addListenerAsync("__keyevent@*:hpersist", (MapClearExpireListener) listener, MapClearExpireListener::onClearExpire);
+            return addMapFieldListenerAsync("__subkeyevent@*:hpersist", "__keyevent@*:hpersist",
+                    (MapClearExpireListener) listener, MapClearExpireListener::onClearExpire);
         }
 
         return super.addListenerAsync(listener);
@@ -688,13 +692,16 @@ public class RedissonMapCacheNative<K, V> extends RedissonMap<K, V> implements R
 
     @Override
     public void removeListener(int listenerId) {
-        removeListener(listenerId, "__keyevent@*:hexpired", "__keyevent@*:hpersist");
+        removeListener(listenerId, "__subkeyevent@*:hexpired", "__keyevent@*:hexpired",
+                "__subkeyevent@*:hpersist", "__keyevent@*:hpersist");
         super.removeListener(listenerId);
     }
 
     @Override
     public RFuture<Void> removeListenerAsync(int listenerId) {
-        return removeListenerAsync(super.removeListenerAsync(listenerId), listenerId, "__keyevent@*:hexpired", "__keyevent@*:hpersist");
+        return removeListenerAsync(super.removeListenerAsync(listenerId), listenerId,
+                "__subkeyevent@*:hexpired", "__keyevent@*:hexpired",
+                "__subkeyevent@*:hpersist", "__keyevent@*:hpersist");
     }
 
     @Override

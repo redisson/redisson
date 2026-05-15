@@ -304,8 +304,8 @@ public class RedissonReactiveListMultimapTest extends BaseReactiveTest {
         testWithParams(redisson -> {
             Queue<Integer> nfs = new ConcurrentLinkedQueue<>();
             RListMultimapReactive<Object, Object> map = redisson.reactive().getListMultimap("test1");
-            sync(map.addListener((MapPutListener) name -> nfs.add(1)));
-            sync(map.addListener((MapRemoveListener) name -> nfs.add(2)));
+            sync(map.addListener((MapPutListener) (name, fieldName) -> nfs.add(1)));
+            sync(map.addListener((MapRemoveListener) (name, fieldName) -> nfs.add(2)));
             sync(map.addListener((ListAddListener) name -> nfs.add(3)));
             sync(map.addListener((ListRemoveListener) name -> nfs.add(4)));
             sync(map.put(1, 5));
@@ -315,7 +315,7 @@ public class RedissonReactiveListMultimapTest extends BaseReactiveTest {
 
             Awaitility.waitAtMost(Duration.ofSeconds(1))
                     .untilAsserted(() -> assertThat(nfs).containsExactlyInAnyOrder(1, 3, 3, 2, 4, 4));
-        }, NOTIFY_KEYSPACE_EVENTS, "Ehl");
+        }, NOTIFY_KEYSPACE_EVENTS, "TEhl");
     }
 
     @Test

@@ -582,10 +582,12 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
     @Override
     public int addListener(ObjectListener listener) {
         if (listener instanceof MapPutListener) {
-            return addListener("__keyevent@*:hset", (MapPutListener) listener, MapPutListener::onPut);
+            return addMapFieldListener("__subkeyevent@*:hset", "__keyevent@*:hset",
+                    (MapPutListener) listener, MapPutListener::onPut);
         }
         if (listener instanceof MapRemoveListener) {
-            return addListener("__keyevent@*:hdel", (MapRemoveListener) listener, MapRemoveListener::onRemove);
+            return addMapFieldListener("__subkeyevent@*:hdel", "__keyevent@*:hdel",
+                    (MapRemoveListener) listener, MapRemoveListener::onRemove);
         }
 
         return super.addListener(listener);
@@ -594,10 +596,12 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
     @Override
     public RFuture<Integer> addListenerAsync(ObjectListener listener) {
         if (listener instanceof MapPutListener) {
-            return addListenerAsync("__keyevent@*:hset", (MapPutListener) listener, MapPutListener::onPut);
+            return addMapFieldListenerAsync("__subkeyevent@*:hset", "__keyevent@*:hset",
+                    (MapPutListener) listener, MapPutListener::onPut);
         }
         if (listener instanceof MapRemoveListener) {
-            return addListenerAsync("__keyevent@*:hdel", (MapRemoveListener) listener, MapRemoveListener::onRemove);
+            return addMapFieldListenerAsync("__subkeyevent@*:hdel", "__keyevent@*:hdel",
+                    (MapRemoveListener) listener, MapRemoveListener::onRemove);
         }
 
         return super.addListenerAsync(listener);
@@ -605,13 +609,15 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
 
     @Override
     public void removeListener(int listenerId) {
-        removeListener(listenerId, "__keyevent@*:hset", "__keyevent@*:hdel");
+        removeListener(listenerId, "__subkeyevent@*:hset", "__keyevent@*:hset",
+                "__subkeyevent@*:hdel", "__keyevent@*:hdel");
         super.removeListener(listenerId);
     }
 
     @Override
     public RFuture<Void> removeListenerAsync(int listenerId) {
-        return removeListenerAsync(listenerId, "__keyevent@*:hset", "__keyevent@*:hdel");
+        return removeListenerAsync(listenerId, "__subkeyevent@*:hset", "__keyevent@*:hset",
+                "__subkeyevent@*:hdel", "__keyevent@*:hdel");
     }
 
 

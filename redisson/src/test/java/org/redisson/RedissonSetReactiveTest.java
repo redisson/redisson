@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.*;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RSetReactive;
+import reactor.test.StepVerifier;
 
 public class RedissonSetReactiveTest extends BaseReactiveTest {
 
@@ -42,6 +43,19 @@ public class RedissonSetReactiveTest extends BaseReactiveTest {
         RSetReactive<Integer> list2 = redisson.getSet("set2");
         Assertions.assertEquals(true, sync(list2.addAll(list.iterator())));
         Assertions.assertEquals(5, sync(list2.size()).intValue());
+    }
+
+    @Test
+    public void testEmptyCollectionResultsAsAbsent() {
+        RSetReactive<Integer> set = redisson.getSet("{simple}:empty");
+
+        set.removeRandom(1).as(StepVerifier::create).verifyComplete();
+        set.random(1).as(StepVerifier::create).verifyComplete();
+        set.readAll().as(StepVerifier::create).verifyComplete();
+        set.readUnion("{simple}:other").as(StepVerifier::create).verifyComplete();
+        set.readDiff("{simple}:other").as(StepVerifier::create).verifyComplete();
+        set.readIntersection("{simple}:other").as(StepVerifier::create).verifyComplete();
+        set.containsEach(Collections.singleton(1)).as(StepVerifier::create).verifyComplete();
     }
 
     @Test

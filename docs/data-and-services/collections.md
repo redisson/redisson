@@ -471,8 +471,8 @@ Redisson allows binding listeners per `RMap` object. This requires the `notify-k
 |Listener class name|Event description | Valkey or Redis<br/>`notify-keyspace-events` value|
 |:--:|:--:|:--:|
 |org.redisson.api.listener.TrackingListener|Entry created/removed/updated after read operation| - |
-|org.redisson.api.listener.MapPutListener|Entry created/updated|Eh|
-|org.redisson.api.listener.MapRemoveListener|Entry removed|Eh|
+|org.redisson.api.listener.MapPutListener|Entry created/updated|Eh or Th|
+|org.redisson.api.listener.MapRemoveListener|Entry removed|Eh or Th|
 |org.redisson.api.ExpiredObjectListener|`RMap` object expired|Ex|
 |org.redisson.api.DeletedObjectListener|`RMap` object deleted|Eg|
 
@@ -496,14 +496,14 @@ int listenerId = map.addListener(new ExpiredObjectListener() {
 
 int listenerId = map.addListener(new MapPutListener() {
      @Override
-     public void onPut(String name) {
+     public void onPut(String name, String fieldName) {
         // ...
      }
 });
 
 int listenerId = map.addListener(new MapRemoveListener() {
      @Override
-     public void onRemove(String name) {
+     public void onRemove(String name, String fieldName) {
         // ...
      }
 });
@@ -776,8 +776,8 @@ Redisson allows binding listeners per `RSetMultimap` or `RListMultimap` object. 
 |org.redisson.api.DeletedObjectListener|`RSetMultimap` object deleted| Eg|
 |org.redisson.api.listener.SetAddListener|Element added to entry| Es|
 |org.redisson.api.listener.SetRemoveListener|Element removed from entry| Es|
-|org.redisson.api.listener.MapPutListener|Entry created|Eh|
-|org.redisson.api.listener.MapRemoveListener|Entry removed|Eh|
+|org.redisson.api.listener.MapPutListener|Entry created|Eh or Th|
+|org.redisson.api.listener.MapRemoveListener|Entry removed|Eh or Th|
 
 `RListMultimap` listeners:
 
@@ -787,8 +787,8 @@ Redisson allows binding listeners per `RSetMultimap` or `RListMultimap` object. 
 |org.redisson.api.DeletedObjectListener|`RListMultimap` object deleted| Eg|
 |org.redisson.api.listener.ListAddListener|Element added to entry| Es|
 |org.redisson.api.listener.ListRemoveListener|Element removed from entry| Es|
-|org.redisson.api.listener.MapPutListener|Entry created|Eh|
-|org.redisson.api.listener.MapRemoveListener|Entry removed|Eh|
+|org.redisson.api.listener.MapPutListener|Entry created|Eh or Th|
+|org.redisson.api.listener.MapRemoveListener|Entry removed|Eh or Th|
 
 Usage example:
 
@@ -797,7 +797,7 @@ RListMultimap<Integer, Integer> lmap = redisson.getListMultimap("mymap");
 
 int listenerId = lmap.addListener(new MapPutListener() {
      @Override
-     public void onPut(String name) {
+     public void onPut(String name, String fieldName) {
         // ...
      }
 });

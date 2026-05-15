@@ -1,7 +1,5 @@
 package org.redisson;
 
-import java.time.Instant;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -18,9 +16,10 @@ import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -200,15 +199,16 @@ public class RedissonMapCacheNativeTest extends BaseMapTest {
     @Test
     public void testRemoveListener() {
         testWithParams(redisson -> {
-            RMapCacheNative<Long, String> rMapCache = redisson.getMapCacheNative("test");
-            AtomicBoolean removed = new AtomicBoolean();
-            rMapCache.addListener((MapRemoveListener) name -> removed.set(true));
+            RMapCacheNative<String, String> rMapCache = redisson.getMapCacheNative("testRemoveListener", StringCodec.INSTANCE);
+            Queue<String> removed = new ConcurrentLinkedQueue<>();
+            rMapCache.addListener((MapRemoveListener) (name, fieldName) -> removed.add(name + ":" + fieldName));
 
-            rMapCache.put(1L, "1");
-            rMapCache.remove(1L);
+            rMapCache.put("1", "1");
+            rMapCache.remove("1");
 
-            Awaitility.await().atMost(Duration.ofSeconds(5)).untilTrue(removed);
-        }, NOTIFY_KEYSPACE_EVENTS, "Eh");
+            Awaitility.await().atMost(Duration.ofSeconds(5))
+                    .untilAsserted(() -> assertThat(removed).contains("testRemoveListener:1"));
+        }, NOTIFY_KEYSPACE_EVENTS, "Th");
 
     }
 
@@ -752,27 +752,28 @@ public class RedissonMapCacheNativeTest extends BaseMapTest {
     @Test
     public void testExpiration() {
         testWithParams(redisson -> {
-            AtomicInteger executedCount = new AtomicInteger();
-            RMapCacheNative<String, String> map = redisson.getMapCacheNative("simple");
-            map.addListener((MapExpiredListener) name -> executedCount.incrementAndGet());
+            Queue<String> expired = new ConcurrentLinkedQueue<>();
+            RMapCacheNative<String, String> map = redisson.getMapCacheNative("simple", StringCodec.INSTANCE);
+            map.addListener((MapExpiredListener) (name, fieldName) -> expired.add(fieldName));
             map.put("1", "2", Duration.ofSeconds(1));
             map.put("3", "4", Instant.now().plusSeconds(2));
 
-            Awaitility.await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> assertThat(executedCount.get()).isGreaterThanOrEqualTo(2));
+            Awaitility.await().atMost(Duration.ofSeconds(10))
+                    .untilAsserted(() -> assertThat(expired).contains("1", "3"));
 
             redisson.shutdown();
-        }, NOTIFY_KEYSPACE_EVENTS, "Eh");
+        }, NOTIFY_KEYSPACE_EVENTS, "Th");
     }
 
     @Test
     public void testClearExpireListener() {
         testWithParams(redisson -> {
-            AtomicInteger executedCount = new AtomicInteger();
-            RMapCacheNative<String, String> map = redisson.getMapCacheNative("simple");
+            Queue<String> clearExpire = new ConcurrentLinkedQueue<>();
+            RMapCacheNative<String, String> map = redisson.getMapCacheNative("simple", StringCodec.INSTANCE);
             map.addListener(new MapClearExpireListener() {
                 @Override
-                public void onClearExpire(String name) {
-                    executedCount.incrementAndGet();
+                public void onClearExpire(String name, String fieldName) {
+                    clearExpire.add(fieldName);
                 }
             });
             map.put("1", "2", Duration.ofSeconds(60));
@@ -781,10 +782,11 @@ public class RedissonMapCacheNativeTest extends BaseMapTest {
             map.clearExpire("1");
             map.clearExpire(new HashSet<>(Arrays.asList("3")));
 
-            Awaitility.await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> assertThat(executedCount.get()).isGreaterThanOrEqualTo(2));
+            Awaitility.await().atMost(Duration.ofSeconds(10))
+                    .untilAsserted(() -> assertThat(clearExpire).contains("1", "3"));
 
             redisson.shutdown();
-        }, NOTIFY_KEYSPACE_EVENTS, "Eh");
+        }, NOTIFY_KEYSPACE_EVENTS, "Th");
     }
 
     @Test
@@ -1461,4 +1463,3 @@ public class RedissonMapCacheNativeTest extends BaseMapTest {
     }
 
 }
-

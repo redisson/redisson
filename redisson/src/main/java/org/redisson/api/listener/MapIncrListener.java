@@ -20,7 +20,7 @@ import org.redisson.api.ObjectListener;
 /**
  * Redisson Object Event listener for <b>hincrbyfloat</b> event published by Valkey or Redis.
  * <p>
- * Redis notify-keyspace-events setting should contain Eh letters
+ * Redis notify-keyspace-events setting should contain Eh or Th letters
  *
  * @author nhancdt2602
  */
@@ -30,6 +30,7 @@ public interface MapIncrListener extends ObjectListener {
      * Invoked when entry incremented
      *
      * @param name object name
+     * @param fieldName map entry field name. Can be null for keyevent notification.
      */
-    void onIncrement(String name);
+    void onIncrement(String name, String fieldName);
 }

@@ -1,4 +1,4 @@
-# Redisson - Valkey & Redis Java client.<br/>Real-Time Data Platform.
+# Redisson: the high-level Java client for Redis & Valkey.<br/>Real-time data platform features, no extra infrastructure.
 
 [Quick start](https://redisson.org/docs/getting-started/) | [Documentation](https://redisson.org/docs/) | [Changelog](https://github.com/redisson/redisson/blob/master/CHANGELOG.md) | [Code examples](https://github.com/redisson/redisson-examples) | [JavaDocs](https://www.javadoc.io/doc/org.redisson/redisson/latest/index.html)
 

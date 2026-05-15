@@ -9,7 +9,9 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
+import io.reactivex.rxjava3.observers.TestObserver;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.TestObject;
@@ -43,6 +45,26 @@ public class RedissonSetRxTest extends BaseRxTest {
         RSetRx<Integer> list2 = redisson.getSet("set2");
         Assertions.assertEquals(true, sync(list2.addAll(list.iterator())));
         Assertions.assertEquals(5, sync(list2.size()).intValue());
+    }
+
+    @Test
+    public void testEmptyCollectionResultsAsAbsent() {
+        RSetRx<Integer> set = redisson.getSet("{simple}:empty");
+
+        assertNoValues(set.removeRandom(1).test());
+        assertNoValues(set.random(1).test());
+        assertNoValues(set.readAll().test());
+        assertNoValues(set.readUnion("{simple}:other").test());
+        assertNoValues(set.readDiff("{simple}:other").test());
+        assertNoValues(set.readIntersection("{simple}:other").test());
+        assertNoValues(set.containsEach(Collections.singleton(1)).test());
+    }
+
+    private static void assertNoValues(TestObserver<?> observer) {
+        observer.awaitDone(1, TimeUnit.SECONDS);
+        observer.assertNoErrors();
+        observer.assertComplete();
+        observer.assertNoValues();
     }
 
     @Test

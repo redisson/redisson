@@ -102,7 +102,8 @@ public class ChannelName implements CharSequence {
     }
 
     public boolean isKeyspace() {
-        return str.startsWith("__keyspace") || str.startsWith("__keyevent");
+        return str.startsWith("__keyspace") || str.startsWith("__keyevent")
+                || str.startsWith("__subkeyspace") || str.startsWith("__subkeyevent");
     }
 
     public boolean isTracking() {
@@ -110,4 +111,3 @@ public class ChannelName implements CharSequence {
     }
 
 }
-

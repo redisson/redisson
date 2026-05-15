@@ -20,7 +20,7 @@ import org.redisson.api.ObjectListener;
 /**
  * Redisson Object Event listener for <b>hexpired</b> event published by Valkey or Redis.
  * <p>
- * Redis notify-keyspace-events setting should contain Eh letters
+ * Redis notify-keyspace-events setting should contain Eh or Th letters
  *
  * @author Nikita Koksharov
  */
@@ -31,7 +31,8 @@ public interface MapExpiredListener extends ObjectListener {
      * Invoked when entry expired
      *
      * @param name object name
+     * @param fieldName map entry field name. Can be null for keyevent notification.
      */
-    void onExpired(String name);
+    void onExpired(String name, String fieldName);
 
 }

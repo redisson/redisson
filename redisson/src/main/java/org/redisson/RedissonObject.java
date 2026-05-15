@@ -20,6 +20,7 @@ import io.netty.util.ReferenceCountUtil;
 import org.redisson.api.*;
 import org.redisson.api.listener.TrackingListener;
 import org.redisson.client.ChannelName;
+import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
@@ -33,11 +34,16 @@ import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.Hash;
 import org.redisson.pubsub.PublishSubscribeService;
 
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -53,10 +59,64 @@ import java.util.stream.StreamSupport;
  */
 public abstract class RedissonObject implements RObject {
 
+    private static final long MAP_FIELD_EVENT_DEDUPLICATION_TIMEOUT = 50;
+    private static final long MAP_FIELD_EVENT_DEDUPLICATION_TIMEOUT_NANOS =
+            TimeUnit.MILLISECONDS.toNanos(MAP_FIELD_EVENT_DEDUPLICATION_TIMEOUT);
+
     protected CommandAsyncExecutor commandExecutor;
     protected String name;
     protected final Codec codec;
     private final Map<String, Collection<Integer>> listeners = new ConcurrentHashMap<>();
+
+    @FunctionalInterface
+    protected interface MapFieldListener<T extends ObjectListener> {
+
+        void accept(T listener, String name, String fieldName);
+
+    }
+
+    private static final class SubkeyEventMessage {
+
+        private final String name;
+        private final List<String> fieldNames;
+
+        private SubkeyEventMessage(String name, List<String> fieldNames) {
+            this.name = name;
+            this.fieldNames = fieldNames;
+        }
+
+    }
+
+    private static final class MapFieldEvent {
+
+        private final long sequence;
+        private final long timestamp;
+
+        private MapFieldEvent(long sequence, long timestamp) {
+            this.sequence = sequence;
+            this.timestamp = timestamp;
+        }
+
+    }
+
+    private static final class MapFieldListenerContext<T extends ObjectListener> {
+
+        private final T listener;
+        private final MapFieldListener<T> consumer;
+        private final String keyEventName;
+        private final AtomicInteger listenerId = new AtomicInteger();
+        private final AtomicBoolean keyEventUnsubscribed = new AtomicBoolean();
+        private final AtomicLong sequence = new AtomicLong();
+        private final ConcurrentMap<String, MapFieldEvent> keyEvents = new ConcurrentHashMap<>();
+        private final ConcurrentMap<String, MapFieldEvent> subkeyEvents = new ConcurrentHashMap<>();
+
+        private MapFieldListenerContext(T listener, MapFieldListener<T> consumer, String keyEventName) {
+            this.listener = listener;
+            this.consumer = consumer;
+            this.keyEventName = keyEventName;
+        }
+
+    }
 
     public RedissonObject(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
         this.codec = commandExecutor.getServiceManager().getCodec(codec);
@@ -806,6 +866,25 @@ public abstract class RedissonObject implements RObject {
         return id;
     }
 
+    protected final <T extends ObjectListener> int addMapFieldListener(String subkeyEventName, String keyEventName,
+                                                                       T listener, MapFieldListener<T> consumer) {
+        MapFieldListenerContext<T> context = new MapFieldListenerContext<>(listener, consumer, keyEventName);
+        RedisPubSubListener<byte[]> pubSubListener = createMapFieldPubSubListener(subkeyEventName, keyEventName,
+                context);
+        int id = System.identityHashCode(pubSubListener);
+        context.listenerId.set(id);
+
+        CompletableFuture<?> subkeyFuture = getSubscribeService().psubscribe(new ChannelName(subkeyEventName),
+                ByteArrayCodec.INSTANCE, pubSubListener);
+        CompletableFuture<?> keyFuture = getSubscribeService().psubscribe(new ChannelName(keyEventName),
+                ByteArrayCodec.INSTANCE, pubSubListener);
+        commandExecutor.get(CompletableFuture.allOf(subkeyFuture, keyFuture));
+
+        addListenerId(subkeyEventName, id);
+        addListenerId(keyEventName, id);
+        return id;
+    }
+
     protected <T extends ObjectListener> RFuture<Integer> addListenerAsync(String name, T listener,
                                                                            BiConsumer<T, String> consumer) {
         return addListenerAsync(name, listener, consumer, m -> m.equals(getRawName()));
@@ -825,6 +904,184 @@ public abstract class RedissonObject implements RObject {
             return id;
         });
         return new CompletableFutureWrapper<>(r);
+    }
+
+    protected final <T extends ObjectListener> RFuture<Integer> addMapFieldListenerAsync(String subkeyEventName, String keyEventName,
+                                                                                         T listener, MapFieldListener<T> consumer) {
+        MapFieldListenerContext<T> context = new MapFieldListenerContext<>(listener, consumer, keyEventName);
+        RedisPubSubListener<byte[]> pubSubListener = createMapFieldPubSubListener(subkeyEventName, keyEventName,
+                context);
+        int listenerId = System.identityHashCode(pubSubListener);
+        context.listenerId.set(listenerId);
+
+        CompletableFuture<?> subkeyFuture = getSubscribeService().psubscribe(new ChannelName(subkeyEventName),
+                ByteArrayCodec.INSTANCE, pubSubListener);
+        CompletableFuture<?> keyFuture = getSubscribeService().psubscribe(new ChannelName(keyEventName),
+                ByteArrayCodec.INSTANCE, pubSubListener);
+        CompletableFuture<Integer> f = CompletableFuture.allOf(subkeyFuture, keyFuture).thenApply(r -> {
+            addListenerId(subkeyEventName, listenerId);
+            addListenerId(keyEventName, listenerId);
+            return listenerId;
+        });
+        return new CompletableFutureWrapper<>(f);
+    }
+
+    private <T extends ObjectListener> RedisPubSubListener<byte[]> createMapFieldPubSubListener(String subkeyEventName,
+                                                                                                 String keyEventName,
+                                                                                                 MapFieldListenerContext<T> context) {
+        return new RedisPubSubListener<byte[]>() {
+            @Override
+            public void onMessage(CharSequence channel, byte[] msg) {
+            }
+
+            @Override
+            public void onPatternMessage(CharSequence pattern, CharSequence channel, byte[] msg) {
+                String patternName = pattern.toString();
+                if (subkeyEventName.equals(patternName) || keyEventName.equals(patternName)) {
+                    onMapFieldMessage(channel, msg, context);
+                }
+            }
+        };
+    }
+
+    private <T extends ObjectListener> void onMapFieldMessage(CharSequence channel, byte[] msg,
+                                                              MapFieldListenerContext<T> context) {
+        if (!channel.toString().startsWith("__subkeyevent@")) {
+            onKeyEventMapFieldMessage(channel, msg, context);
+            return;
+        }
+
+        SubkeyEventMessage message = decodeSubkeyEventMessage(msg);
+        if (message != null && message.name.equals(getRawName())) {
+            String eventName = getEventName(channel);
+            long sequence = context.sequence.incrementAndGet();
+            long timestamp = System.nanoTime();
+            context.subkeyEvents.put(eventName, new MapFieldEvent(sequence, timestamp));
+            if (isDuplicateEvent(context.keyEvents.get(eventName), sequence, timestamp)) {
+                removeKeyEventMapFieldListener(context);
+            }
+            message.fieldNames.forEach(fieldName -> context.consumer.accept(context.listener, message.name, fieldName));
+        }
+    }
+
+    private <T extends ObjectListener> void onKeyEventMapFieldMessage(CharSequence channel, byte[] msg,
+                                                                      MapFieldListenerContext<T> context) {
+        String name = new String(msg, StandardCharsets.UTF_8);
+        if (!name.equals(getRawName())) {
+            return;
+        }
+
+        String eventName = getEventName(channel);
+        long sequence = context.sequence.incrementAndGet();
+        long timestamp = System.nanoTime();
+        context.keyEvents.put(eventName, new MapFieldEvent(sequence, timestamp));
+        if (isDuplicateEvent(context.subkeyEvents.get(eventName), sequence, timestamp)) {
+            removeKeyEventMapFieldListener(context);
+            return;
+        }
+
+        getServiceManager().newTimeout(timeout -> {
+            if (!isDuplicateEvent(context.subkeyEvents.get(eventName), sequence, timestamp)) {
+                context.consumer.accept(context.listener, name, null);
+            }
+        }, MAP_FIELD_EVENT_DEDUPLICATION_TIMEOUT, TimeUnit.MILLISECONDS);
+    }
+
+    private void removeKeyEventMapFieldListener(MapFieldListenerContext<?> context) {
+        if (!context.keyEventUnsubscribed.compareAndSet(false, true)) {
+            return;
+        }
+
+        CompletableFuture<Void> f = getSubscribeService().removeListenerAsync(PubSubType.PUNSUBSCRIBE,
+                ChannelName.newList(context.keyEventName), context.listenerId.get());
+        f.whenComplete((r, e) -> {
+            if (e == null) {
+                removeListenerId(context.keyEventName, context.listenerId.get());
+                return;
+            }
+            context.keyEventUnsubscribed.set(false);
+        });
+    }
+
+    private static boolean isDuplicateEvent(MapFieldEvent event, long sequence, long timestamp) {
+        return event != null
+                && event.sequence != sequence
+                && Math.abs(timestamp - event.timestamp) <= MAP_FIELD_EVENT_DEDUPLICATION_TIMEOUT_NANOS;
+    }
+
+    private static String getEventName(CharSequence channel) {
+        String name = channel.toString();
+        int index = name.lastIndexOf(':');
+        if (index == -1 || index == name.length() - 1) {
+            return name;
+        }
+        return name.substring(index + 1);
+    }
+
+    private static SubkeyEventMessage decodeSubkeyEventMessage(byte[] msg) {
+        int keyLengthEndIndex = indexOf(msg, (byte) ':', 0);
+        int keyLength = parseLength(msg, 0, keyLengthEndIndex);
+        int keyStartIndex = keyLengthEndIndex + 1;
+        int keyEndIndex = keyStartIndex + keyLength;
+        if (keyLength < 0 || keyEndIndex >= msg.length || msg[keyEndIndex] != '|') {
+            return null;
+        }
+
+        String name = new String(msg, keyStartIndex, keyLength, StandardCharsets.UTF_8);
+        List<String> fieldNames = decodeSubkeyNames(msg, keyEndIndex + 1);
+        if (fieldNames.isEmpty()) {
+            return null;
+        }
+        return new SubkeyEventMessage(name, fieldNames);
+    }
+
+    private static List<String> decodeSubkeyNames(byte[] msg, int startIndex) {
+        List<String> result = new ArrayList<>();
+        int index = startIndex;
+        while (index < msg.length) {
+            int fieldLengthEndIndex = indexOf(msg, (byte) ':', index);
+            int fieldLength = parseLength(msg, index, fieldLengthEndIndex);
+            int fieldStartIndex = fieldLengthEndIndex + 1;
+            int fieldEndIndex = fieldStartIndex + fieldLength;
+            if (fieldLength < 0 || fieldEndIndex > msg.length) {
+                return Collections.emptyList();
+            }
+
+            result.add(new String(msg, fieldStartIndex, fieldLength, StandardCharsets.UTF_8));
+            if (fieldEndIndex == msg.length) {
+                return result;
+            }
+            if (msg[fieldEndIndex] != ',') {
+                return Collections.emptyList();
+            }
+            index = fieldEndIndex + 1;
+        }
+        return Collections.emptyList();
+    }
+
+    private static int indexOf(byte[] value, byte separator, int startIndex) {
+        for (int i = startIndex; i < value.length; i++) {
+            if (value[i] == separator) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private static int parseLength(byte[] value, int startIndex, int endIndex) {
+        if (startIndex >= endIndex || endIndex > value.length) {
+            return -1;
+        }
+
+        try {
+            long result = Long.parseLong(new String(value, startIndex, endIndex - startIndex, StandardCharsets.US_ASCII));
+            if (result > Integer.MAX_VALUE) {
+                return -1;
+            }
+            return (int) result;
+        } catch (NumberFormatException e) {
+            return -1;
+        }
     }
 
     protected final void addListenerId(String name, Integer id) {

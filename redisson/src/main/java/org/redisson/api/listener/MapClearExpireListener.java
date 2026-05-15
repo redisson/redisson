@@ -20,7 +20,7 @@ import org.redisson.api.ObjectListener;
 /**
  * Redisson Object Event listener for <b>hpersist</b> event published by Valkey or Redis.
  * <p>
- * Redis notify-keyspace-events setting should contain Eh letters
+ * Redis notify-keyspace-events setting should contain Eh or Th letters
  *
  * @author Nikita Koksharov
  */
@@ -31,7 +31,8 @@ public interface MapClearExpireListener extends ObjectListener {
      * Invoked when entry's expiration is cleared
      *
      * @param name object name
+     * @param fieldName map entry field name. Can be null for keyevent notification.
      */
-    void onClearExpire(String name);
+    void onClearExpire(String name, String fieldName);
 
 }

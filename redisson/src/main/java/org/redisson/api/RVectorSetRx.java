@@ -62,7 +62,7 @@ public interface RVectorSetRx extends RExpirableRx {
      * @param name element name
      * @return list of vector coordinates
      */
-    Single<List<Double>> getVector(String name);
+    Maybe<List<Double>> getVector(String name);
 
     /**
      * Retrieves raw internal representation of
@@ -71,7 +71,7 @@ public interface RVectorSetRx extends RExpirableRx {
      * @param name element name
      * @return list of raw vector values
      */
-    Single<List<Object>> getRawVector(String name);
+    Maybe<List<Object>> getRawVector(String name);
 
     /**
      * Retrieves attributes associated with a given element name
@@ -95,7 +95,7 @@ public interface RVectorSetRx extends RExpirableRx {
      * @param element element name
      * @return list of neighbor element names
      */
-    Single<List<String>> getNeighbors(String element);
+    Maybe<List<String>> getNeighbors(String element);
 
     /**
      * Retrieves the neighbors with scores of a specified element by name
@@ -103,7 +103,7 @@ public interface RVectorSetRx extends RExpirableRx {
      * @param element element name
      * @return list of neighbor elements with scores
      */
-    Single<List<ScoredEntry<String>>> getNeighborEntries(String element);
+    Maybe<List<ScoredEntry<String>>> getNeighborEntries(String element);
 
     /**
      * Returns a random element name
@@ -118,7 +118,7 @@ public interface RVectorSetRx extends RExpirableRx {
      * @param count number of elements to return
      * @return list of random element names
      */
-    Single<List<String>> random(int count);
+    Maybe<List<String>> random(int count);
 
     /**
      * Removes an element by name
@@ -144,7 +144,7 @@ public interface RVectorSetRx extends RExpirableRx {
      * @param args vector similarity arguments
      * @return list of similar element names
      */
-    Single<List<String>> getSimilar(VectorSimilarArgs args);
+    Maybe<List<String>> getSimilar(VectorSimilarArgs args);
 
     /**
      * Retrieves element names with scores similar to a given vector or element
@@ -152,7 +152,7 @@ public interface RVectorSetRx extends RExpirableRx {
      * @param args similarity arguments
      * @return list of similar element names with scores
      */
-    Single<List<ScoredEntry<String>>> getSimilarEntries(VectorSimilarArgs args);
+    Maybe<List<ScoredEntry<String>>> getSimilarEntries(VectorSimilarArgs args);
 
     /**
      * Retrieves element names with scores and attributes similar to a given vector or element
@@ -160,5 +160,5 @@ public interface RVectorSetRx extends RExpirableRx {
      * @param args similarity arguments
      * @return list of similar element names with scores and attributes
      */
-    Single<List<ScoreAttributesEntry<String>>> getSimilarEntriesWithAttributes(VectorSimilarArgs args);
+    Maybe<List<ScoreAttributesEntry<String>>> getSimilarEntriesWithAttributes(VectorSimilarArgs args);
 }

@@ -16,6 +16,7 @@
 package org.redisson.api;
 
 import java.util.List;
+import org.redisson.api.annotation.EmptyAsAbsent;
 import org.redisson.api.vector.VectorAddArgs;
 import org.redisson.api.vector.VectorInfo;
 import org.redisson.api.vector.VectorSimilarArgs;
@@ -60,6 +61,7 @@ public interface RVectorSetReactive extends RExpirableReactive {
      * @param name element name
      * @return list of vector coordinates
      */
+    @EmptyAsAbsent
     Mono<List<Double>> getVector(String name);
 
     /**
@@ -69,6 +71,7 @@ public interface RVectorSetReactive extends RExpirableReactive {
      * @param name element name
      * @return list of raw vector values
      */
+    @EmptyAsAbsent
     Mono<List<Object>> getRawVector(String name);
 
     /**
@@ -93,6 +96,7 @@ public interface RVectorSetReactive extends RExpirableReactive {
      * @param element element name
      * @return list of neighbor element names
      */
+    @EmptyAsAbsent
     Mono<List<String>> getNeighbors(String element);
 
     /**
@@ -101,6 +105,7 @@ public interface RVectorSetReactive extends RExpirableReactive {
      * @param element element name
      * @return list of neighbor elements with scores
      */
+    @EmptyAsAbsent
     Mono<List<ScoredEntry<String>>> getNeighborEntries(String element);
 
     /**
@@ -116,6 +121,7 @@ public interface RVectorSetReactive extends RExpirableReactive {
      * @param count number of elements to return
      * @return list of random element names
      */
+    @EmptyAsAbsent
     Mono<List<String>> random(int count);
 
     /**
@@ -142,6 +148,7 @@ public interface RVectorSetReactive extends RExpirableReactive {
      * @param args vector similarity arguments
      * @return list of similar element names
      */
+    @EmptyAsAbsent
     Mono<List<String>> getSimilar(VectorSimilarArgs args);
 
     /**
@@ -150,6 +157,7 @@ public interface RVectorSetReactive extends RExpirableReactive {
      * @param args similarity arguments
      * @return list of similar element names with scores
      */
+    @EmptyAsAbsent
     Mono<List<ScoredEntry<String>>> getSimilarEntries(VectorSimilarArgs args);
 
     /**
@@ -158,5 +166,6 @@ public interface RVectorSetReactive extends RExpirableReactive {
      * @param args similarity arguments
      * @return list of similar element names with scores and attributes
      */
+    @EmptyAsAbsent
     Mono<List<ScoreAttributesEntry<String>>> getSimilarEntriesWithAttributes(VectorSimilarArgs args);
 }

@@ -15,6 +15,7 @@
  */
 package org.redisson.api;
 
+import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Single;
 import org.redisson.api.geo.GeoEntry;
 import org.redisson.api.geo.GeoPosition;
@@ -115,7 +116,7 @@ public interface RGeoRx<V> extends RScoredSortedSetRx<V> {
      * @param members - objects
      * @return hash mapped by object
      */
-    Single<Map<V, String>> hash(V... members);
+    Maybe<Map<V, String>> hash(V... members);
 
     /**
      * Returns geo-position mapped by defined member.
@@ -123,7 +124,7 @@ public interface RGeoRx<V> extends RScoredSortedSetRx<V> {
      * @param members - objects
      * @return geo position mapped by object
      */
-    Single<Map<V, GeoPosition>> pos(V... members);
+    Maybe<Map<V, GeoPosition>> pos(V... members);
 
     /**
      * Returns the members of a sorted set, which are within the
@@ -146,7 +147,7 @@ public interface RGeoRx<V> extends RScoredSortedSetRx<V> {
      * @param args - search conditions object
      * @return list of memebers
      */
-    Single<List<V>> search(GeoSearchArgs args);
+    Maybe<List<V>> search(GeoSearchArgs args);
 
     /**
      * Returns the distance mapped by member of a sorted set,
@@ -169,7 +170,7 @@ public interface RGeoRx<V> extends RScoredSortedSetRx<V> {
      * @param args - search conditions object
      * @return distance mapped by object
      */
-    Single<Map<V, Double>> searchWithDistance(GeoSearchArgs args);
+    Maybe<Map<V, Double>> searchWithDistance(GeoSearchArgs args);
 
     /**
      * Returns the position mapped by member of a sorted set,
@@ -192,7 +193,7 @@ public interface RGeoRx<V> extends RScoredSortedSetRx<V> {
      * @param args - search conditions object
      * @return position mapped by object
      */
-    Single<Map<V, GeoPosition>> searchWithPosition(GeoSearchArgs args);
+    Maybe<Map<V, GeoPosition>> searchWithPosition(GeoSearchArgs args);
 
     /**
      * Finds the members of a sorted set,

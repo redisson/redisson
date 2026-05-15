@@ -15,6 +15,7 @@
  */
 package org.redisson.api;
 
+import org.redisson.api.annotation.EmptyAsAbsent;
 import org.redisson.api.geo.GeoEntry;
 import org.redisson.api.geo.GeoPosition;
 import org.redisson.api.geo.GeoSearchArgs;
@@ -115,6 +116,7 @@ public interface RGeoReactive<V> extends RScoredSortedSetReactive<V> {
      * @param members - objects
      * @return hash mapped by object
      */
+    @EmptyAsAbsent
     Mono<Map<V, String>> hash(V... members);
 
     /**
@@ -123,6 +125,7 @@ public interface RGeoReactive<V> extends RScoredSortedSetReactive<V> {
      * @param members - objects
      * @return geo position mapped by object
      */
+    @EmptyAsAbsent
     Mono<Map<V, GeoPosition>> pos(V... members);
 
     /**
@@ -146,6 +149,7 @@ public interface RGeoReactive<V> extends RScoredSortedSetReactive<V> {
      * @param args - search conditions object
      * @return list of memebers
      */
+    @EmptyAsAbsent
     Mono<List<V>> search(GeoSearchArgs args);
 
     /**
@@ -169,6 +173,7 @@ public interface RGeoReactive<V> extends RScoredSortedSetReactive<V> {
      * @param args - search conditions object
      * @return distance mapped by object
      */
+    @EmptyAsAbsent
     Mono<Map<V, Double>> searchWithDistance(GeoSearchArgs args);
 
     /**
@@ -192,6 +197,7 @@ public interface RGeoReactive<V> extends RScoredSortedSetReactive<V> {
      * @param args - search conditions object
      * @return position mapped by object
      */
+    @EmptyAsAbsent
     Mono<Map<V, GeoPosition>> searchWithPosition(GeoSearchArgs args);
 
     /**

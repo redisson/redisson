@@ -15,6 +15,7 @@
  */
 package org.redisson.api;
 
+import org.redisson.api.annotation.EmptyAsAbsent;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -123,6 +124,7 @@ public interface RSetReactive<V> extends RCollectionReactive<V>, RSortableReacti
      * @param amount of random elements
      * @return random elements
      */
+    @EmptyAsAbsent
     Mono<Set<V>> removeRandom(int amount);
     
     /**
@@ -145,6 +147,7 @@ public interface RSetReactive<V> extends RCollectionReactive<V>, RSortableReacti
      * @param count - values amount to return
      * @return random elements
      */
+    @EmptyAsAbsent
     Mono<Set<V>> random(int count);
 
     /**
@@ -162,6 +165,7 @@ public interface RSetReactive<V> extends RCollectionReactive<V>, RSortableReacti
      *
      * @return values
      */
+    @EmptyAsAbsent
     Mono<Set<V>> readAll();
     
     /**
@@ -180,6 +184,7 @@ public interface RSetReactive<V> extends RCollectionReactive<V>, RSortableReacti
      * @param names - name of sets
      * @return size of union
      */
+    @EmptyAsAbsent
     Mono<Set<V>> readUnion(String... names);
     
     /**
@@ -198,6 +203,7 @@ public interface RSetReactive<V> extends RCollectionReactive<V>, RSortableReacti
      * @param names - name of sets
      * @return values
      */
+    @EmptyAsAbsent
     Mono<Set<V>> readDiff(String... names);
     
     /**
@@ -237,6 +243,7 @@ public interface RSetReactive<V> extends RCollectionReactive<V>, RSortableReacti
      * @param names - name of sets
      * @return values
      */
+    @EmptyAsAbsent
     Mono<Set<V>> readIntersection(String... names);
 
     /**
@@ -257,6 +264,7 @@ public interface RSetReactive<V> extends RCollectionReactive<V>, RSortableReacti
      * @param c - collection to check
      * @return contained elements
      */
+    @EmptyAsAbsent
     Mono<Set<V>> containsEach(Collection<V> c);
 
     /**

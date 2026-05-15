@@ -329,8 +329,8 @@ public class RedissonListMultimapTest extends RedisDockerTest {
         testWithParams(redisson -> {
             Queue<Integer> nfs = new ConcurrentLinkedQueue<>();
             RListMultimap<Integer, Integer> map = redisson.getListMultimap("test1");
-            map.addListener((MapPutListener) name -> nfs.add(1));
-            map.addListener((MapRemoveListener) name -> nfs.add(2));
+            map.addListener((MapPutListener) (name, fieldName) -> nfs.add(1));
+            map.addListener((MapRemoveListener) (name, fieldName) -> nfs.add(2));
             map.addListener((ListAddListener) name -> nfs.add(3));
             map.addListener((ListRemoveListener) name -> nfs.add(4));
             map.put(1, 5);
@@ -340,7 +340,7 @@ public class RedissonListMultimapTest extends RedisDockerTest {
 
             Awaitility.waitAtMost(Duration.ofSeconds(1))
                     .untilAsserted(() -> assertThat(nfs).containsExactlyInAnyOrder(1, 3, 3, 2, 4, 4));
-        }, NOTIFY_KEYSPACE_EVENTS, "Ehl");
+        }, NOTIFY_KEYSPACE_EVENTS, "TEhl");
     }
 
     @Test
