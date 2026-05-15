@@ -1321,6 +1321,8 @@ public class Config {
      * Defines the maximum amount of time in milliseconds that transmitted data may
      * remain unacknowledged, or buffered data may remain untransmitted
      * (due to zero window size) before TCP will forcibly close the connection.
+     * <p>
+     * This setting is applied only to Epoll and IoUring transport.
      *
      * @param tcpUserTimeout time in milliseconds
      * @return config
