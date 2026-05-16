@@ -16,6 +16,7 @@
 package org.redisson.api;
 
 import org.redisson.api.atomic.CompareAndDeleteArgs;
+import org.redisson.api.atomic.LongIncrementArgs;
 
 /**
  * Distributed async implementation of {@link java.util.concurrent.atomic.AtomicLong}
@@ -96,6 +97,14 @@ public interface RAtomicLongAsync extends RExpirableAsync {
      * @return the updated value
      */
     RFuture<Long> incrementAndGetAsync();
+
+    /**
+     * Atomically increments the current value according to the specified arguments.
+     *
+     * @param args increment arguments
+     * @return the updated value
+     */
+    RFuture<Long> incrementAndGetAsync(LongIncrementArgs args);
 
     /**
      * Atomically increments the current value by one.

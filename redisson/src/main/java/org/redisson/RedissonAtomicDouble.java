@@ -16,13 +16,18 @@
 package org.redisson;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 
 import org.redisson.api.ObjectListener;
 import org.redisson.api.RAtomicDouble;
 import org.redisson.api.RFuture;
 import org.redisson.api.atomic.CompareAndDeleteArgs;
+import org.redisson.api.atomic.BaseIncrementParams;
+import org.redisson.api.atomic.DoubleIncrementArgs;
+import org.redisson.api.atomic.DoubleIncrementParams;
 import org.redisson.api.listener.IncrByListener;
 import org.redisson.client.codec.DoubleCodec;
 import org.redisson.client.codec.StringCodec;
@@ -171,6 +176,66 @@ public class RedissonAtomicDouble extends RedissonExpirable implements RAtomicDo
     @Override
     public RFuture<Double> incrementAndGetAsync() {
         return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.INCRBYFLOAT, getRawName(), 1);
+    }
+
+    @Override
+    public double incrementAndGet(DoubleIncrementArgs args) {
+        return get(incrementAndGetAsync(args));
+    }
+
+    @Override
+    public RFuture<Double> incrementAndGetAsync(DoubleIncrementArgs args) {
+        return commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.INCREX_DOUBLE, createIncrementParams(args));
+    }
+
+    private Object[] createIncrementParams(DoubleIncrementArgs args) {
+        Objects.requireNonNull(args, "Args can't be null");
+        DoubleIncrementParams incrementParams = (DoubleIncrementParams) args;
+
+        List<Object> params = new ArrayList<>();
+        params.add(getRawName());
+        params.add("BYFLOAT");
+        if (incrementParams.getIncrement() != null) {
+            params.add(toPlainString(incrementParams.getIncrement()));
+        } else {
+            params.add("1");
+        }
+        if (incrementParams.getLowerBound() != null) {
+            params.add("LBOUND");
+            params.add(toPlainString(incrementParams.getLowerBound()));
+        }
+        if (incrementParams.getUpperBound() != null) {
+            params.add("UBOUND");
+            params.add(toPlainString(incrementParams.getUpperBound()));
+        }
+        if (incrementParams.getOverflowPolicy() != null) {
+            params.add("OVERFLOW");
+            params.add(incrementParams.getOverflowPolicy().name());
+        }
+        addExpirationParams(incrementParams, params);
+        return params.toArray();
+    }
+
+    private String toPlainString(Number value) {
+        if (value instanceof Double || value instanceof Float) {
+            return BigDecimal.valueOf(value.doubleValue()).toPlainString();
+        }
+        return BigDecimal.valueOf(value.longValue()).toPlainString();
+    }
+
+    private void addExpirationParams(BaseIncrementParams<?> args, List<Object> params) {
+        if (args.getTimeToLive() != null) {
+            params.add("PX");
+            params.add(args.getTimeToLive().toMillis());
+        } else if (args.getExpireAt() != null) {
+            params.add("PXAT");
+            params.add(args.getExpireAt().toEpochMilli());
+        } else if (args.isPersist()) {
+            params.add("PERSIST");
+        }
+        if (args.isExpireIfNotSet()) {
+            params.add("ENX");
+        }
     }
 
     @Override
