@@ -18,6 +18,7 @@ package org.redisson.api;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Single;
 import org.redisson.api.atomic.CompareAndDeleteArgs;
+import org.redisson.api.atomic.DoubleIncrementArgs;
 
 /**
  * Reactive interface for AtomicDouble object
@@ -98,6 +99,14 @@ public interface RAtomicDoubleRx extends RExpirableRx {
      * @return the updated value
      */
     Single<Double> incrementAndGet();
+
+    /**
+     * Atomically increments the current value according to the specified arguments.
+     *
+     * @param args increment arguments
+     * @return the updated value
+     */
+    Single<Double> incrementAndGet(DoubleIncrementArgs args);
 
     /**
      * Atomically increments the current value by one.
