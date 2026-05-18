@@ -31,12 +31,12 @@
                   <path>
                     <groupId>io.micronaut</groupId>
                     <artifactId>micronaut-inject-java</artifactId>
-                    <version>2.5.12</version>
+                    <version>3.10.6</version>
                   </path>
                   <path>
                     <groupId>io.micronaut</groupId>
                     <artifactId>micronaut-validation</artifactId>
-                    <version>2.5.12</version>
+                    <version>3.10.6</version>
                   </path>
             </annotationProcessorPaths>
           </configuration>
@@ -54,12 +54,12 @@
                   <path>
                     <groupId>io.micronaut</groupId>
                     <artifactId>micronaut-inject-java</artifactId>
-                    <version>2.5.12</version>
+                    <version>3.10.6</version>
                   </path>
                   <path>
                     <groupId>io.micronaut</groupId>
                     <artifactId>micronaut-validation</artifactId>
-                    <version>2.5.12</version>
+                    <version>3.10.6</version>
                   </path>
                 </annotationProcessorPaths>
               </configuration>
@@ -81,21 +81,21 @@
         <dependency>
             <groupId>io.micronaut</groupId>
             <artifactId>micronaut-session</artifactId>
-            <version>2.5.12</version>
+            <version>3.10.6</version>
             <optional>true</optional>
         </dependency>
 
         <dependency>
             <groupId>io.micronaut</groupId>
             <artifactId>micronaut-management</artifactId>
-            <version>2.5.12</version>
+            <version>3.10.6</version>
             <optional>true</optional>
         </dependency>
 
         <dependency>
             <groupId>io.micronaut</groupId>
             <artifactId>micronaut-inject-java</artifactId>
-            <version>2.5.12</version>
+            <version>3.10.6</version>
             <scope>test</scope>
         </dependency>
 
