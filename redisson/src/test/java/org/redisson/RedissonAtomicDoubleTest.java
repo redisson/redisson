@@ -3,10 +3,13 @@ package org.redisson;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RAtomicDouble;
 import org.redisson.api.atomic.CompareAndDeleteArgs;
+import org.redisson.api.atomic.DoubleIncrementArgs;
 
 import java.math.BigDecimal;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.redisson.api.atomic.BaseIncrementArgs.OverflowPolicy.REJECT;
+import static org.redisson.api.atomic.BaseIncrementArgs.OverflowPolicy.SAT;
 
 public class RedissonAtomicDoubleTest extends RedisDockerTest {
 
@@ -133,6 +136,18 @@ public class RedissonAtomicDoubleTest extends RedisDockerTest {
         RAtomicDouble al = redisson.getAtomicDouble("test");
         assertThat(al.incrementAndGet()).isEqualTo(1);
         assertThat(al.get()).isEqualTo(1);
+    }
+
+    @Test
+    public void testIncrementAndGetArgs() {
+        RAtomicDouble al = redisson.getAtomicDouble("test");
+        al.set(1.5);
+
+        assertThat(al.incrementAndGet(DoubleIncrementArgs.defaults())).isEqualTo(2.5);
+        assertThat(al.incrementAndGet(DoubleIncrementArgs.by(0.75).upperBound(3.0).overflow(SAT))).isEqualTo(3.0);
+        assertThat(al.incrementAndGet(DoubleIncrementArgs.by(1.0).upperBound(3.0).overflow(REJECT))).isEqualTo(3.0);
+        assertThat(al.get()).isEqualTo(3.0);
+        assertThat(al.incrementAndGet(DoubleIncrementArgs.by(-5.0).lowerBound(1.0).overflow(SAT))).isEqualTo(1.0);
     }
 
     @Test

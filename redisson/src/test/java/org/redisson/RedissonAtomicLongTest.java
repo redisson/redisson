@@ -4,8 +4,13 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RAtomicLong;
 import org.redisson.api.atomic.CompareAndDeleteArgs;
+import org.redisson.api.atomic.LongIncrementArgs;
+
+import java.time.Duration;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.redisson.api.atomic.BaseIncrementArgs.OverflowPolicy.REJECT;
+import static org.redisson.api.atomic.BaseIncrementArgs.OverflowPolicy.SAT;
 
 public class RedissonAtomicLongTest extends RedisDockerTest {
 
@@ -139,6 +144,36 @@ public class RedissonAtomicLongTest extends RedisDockerTest {
         RAtomicLong al = redisson.getAtomicLong("test");
         Assertions.assertEquals(1, al.incrementAndGet());
         Assertions.assertEquals(1, al.get());
+    }
+
+    @Test
+    public void testIncrementAndGetArgs() {
+        RAtomicLong al = redisson.getAtomicLong("test");
+
+        assertThat(al.incrementAndGet(LongIncrementArgs.by(10))).isEqualTo(10);
+        assertThat(al.incrementAndGet(LongIncrementArgs.by(5).upperBound(12).overflow(SAT))).isEqualTo(12);
+        assertThat(al.incrementAndGet(LongIncrementArgs.by(5).upperBound(12).overflow(REJECT))).isEqualTo(12);
+        assertThat(al.get()).isEqualTo(12);
+        assertThat(al.incrementAndGet(LongIncrementArgs.by(-20).lowerBound(0).overflow(SAT))).isZero();
+    }
+
+    @Test
+    public void testIncrementAndGetArgsExpiration() {
+        RAtomicLong al = redisson.getAtomicLong("test");
+
+        assertThat(al.incrementAndGet(LongIncrementArgs.defaults()
+                .timeToLive(Duration.ofSeconds(10))
+                .expireIfNotSet())).isEqualTo(1);
+        long ttl = al.remainTimeToLive();
+        assertThat(ttl).isGreaterThan(0);
+
+        assertThat(al.incrementAndGet(LongIncrementArgs.defaults()
+                .timeToLive(Duration.ofSeconds(60))
+                .expireIfNotSet())).isEqualTo(2);
+        assertThat(al.remainTimeToLive()).isLessThanOrEqualTo(ttl);
+
+        assertThat(al.incrementAndGet(LongIncrementArgs.defaults().persist())).isEqualTo(3);
+        assertThat(al.remainTimeToLive()).isEqualTo(-1);
     }
 
     @Test

@@ -16,6 +16,7 @@
 package org.redisson.api;
 
 import org.redisson.api.atomic.CompareAndDeleteArgs;
+import org.redisson.api.atomic.DoubleIncrementArgs;
 
 /**
  * Distributed implementation to the AtomicDouble
@@ -96,6 +97,14 @@ public interface RAtomicDoubleAsync extends RExpirableAsync {
      * @return the updated value
      */
     RFuture<Double> incrementAndGetAsync();
+
+    /**
+     * Atomically increments the current value according to the specified arguments.
+     *
+     * @param args increment arguments
+     * @return the updated value
+     */
+    RFuture<Double> incrementAndGetAsync(DoubleIncrementArgs args);
 
     /**
      * Atomically increments the current value by one.

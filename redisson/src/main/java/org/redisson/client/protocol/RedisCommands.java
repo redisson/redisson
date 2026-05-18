@@ -594,6 +594,8 @@ public interface RedisCommands {
     RedisStrictCommand<Long> INCR = new RedisStrictCommand<Long>("INCR");
     RedisStrictCommand<Long> INCRBY = new RedisStrictCommand<Long>("INCRBY");
     RedisStrictCommand<Double> INCRBYFLOAT = new RedisStrictCommand<Double>("INCRBYFLOAT", new DoubleNullSafeReplayConvertor());
+    RedisCommand<Long> INCREX_LONG = new RedisCommand("INCREX", new ListFirstObjectDecoder(), new LongReplayConvertor());
+    RedisCommand<Double> INCREX_DOUBLE = new RedisCommand("INCREX", new ListFirstObjectDecoder(), new DoubleNullSafeReplayConvertor());
     RedisStrictCommand<Long> DECR = new RedisStrictCommand<Long>("DECR");
 
 
@@ -932,8 +934,8 @@ public interface RedisCommands {
             Arrays.asList(RPOPLPUSH.getName(), LPOP.getName(), RPOP.getName(), LPUSH.getName(), RPUSH.getName(),
                     LPUSHX.getName(), RPUSHX.getName(), GEOADD.getName(), XADD.getName(), APPEND.getName(),
                     DECR.getName(), "DECRBY", INCR.getName(), INCRBY.getName(), ZINCRBY.getName(),
-                    "HINCRBYFLOAT", "HINCRBY", "INCRBYFLOAT", SETNX.getName(), MSETNX.getName(), HSETNX.getName(),
-                    GCRA.getName()));
+                    "HINCRBYFLOAT", "HINCRBY", "INCRBYFLOAT", "INCREX", SETNX.getName(), MSETNX.getName(),
+                    HSETNX.getName(), GCRA.getName()));
 
     RedisStrictCommand<Long> JSON_STRLEN = new RedisStrictCommand<>("JSON.STRLEN");
     RedisCommand<List<Long>> JSON_STRLEN_LIST = new RedisCommand("JSON.STRLEN", new ObjectListReplayDecoder<Long>(), new LongReplayConvertor());
