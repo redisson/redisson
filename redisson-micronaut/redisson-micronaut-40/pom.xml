@@ -100,7 +100,7 @@
         <dependency>
             <groupId>io.micronaut.session</groupId>
             <artifactId>micronaut-session</artifactId>
-            <version>4.8.0</version>
+            <version>5.0.0</version>
             <optional>true</optional>
         </dependency>
 
