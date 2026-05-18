@@ -67,7 +67,7 @@ public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
 
         RFuture<String> future;
         QueueCommand currentCommand = connection.getCurrentCommandData();
-        if (connection.getUsage() == 0 && (currentCommand == null || !currentCommand.isBlockingCommand())) {
+        if (currentCommand == null || !currentCommand.isBlockingCommand()) {
             int timeout = Math.max(config.getCommandTimeout(), config.getPingConnectionInterval() / 2);
             future = connection.async(timeout, StringCodec.INSTANCE, RedisCommands.PING);
         } else {
@@ -85,9 +85,8 @@ public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
                 return;
             }
 
-            if (connection.getUsage() == 0
-                    && future != null
-                        && (future.cancel(false) || cause(future) != null)) {
+            if (future != null
+                    && (future.cancel(false) || cause(future) != null)) {
 
                 Throwable cause = cause(future);
                 if (!(cause instanceof RedisRetryException)) {
@@ -101,8 +100,10 @@ public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
                     sendPing(ctx);
                 }
                 connection.getRedisClient().getConfig().getFailedNodeDetector().onPingFailed(cause);
-            } else {
+            } else if (future != null) {
                 connection.getRedisClient().getConfig().getFailedNodeDetector().onPingSuccessful();
+                sendPing(ctx);
+            } else {
                 sendPing(ctx);
             }
         }, config.getPingConnectionInterval(), TimeUnit.MILLISECONDS);
