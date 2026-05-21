@@ -36,6 +36,41 @@ import java.util.Collection;
 public interface RedissonRxClient {
 
     /**
+     * Returns Array instance by <code>name</code>
+     * <p>
+     * Requires <b>Redis 8.8 or higher.</b>
+     *
+     * @param <V> value type
+     * @param name name of instance
+     * @return RArrayRx object
+     */
+    <V> RArrayRx<V> getArray(String name);
+
+    /**
+     * Returns Array instance by <code>name</code>
+     * using provided <code>codec</code> for values.
+     * <p>
+     * Requires <b>Redis 8.8 or higher.</b>
+     *
+     * @param <V> value type
+     * @param name name of instance
+     * @param codec codec for values
+     * @return RArrayRx object
+     */
+    <V> RArrayRx<V> getArray(String name, Codec codec);
+
+    /**
+     * Returns Array instance with specified <code>options</code>.
+     * <p>
+     * Requires <b>Redis 8.8 or higher.</b>
+     *
+     * @param <V> value type
+     * @param options instance options
+     * @return RArrayRx object
+     */
+    <V> RArrayRx<V> getArray(PlainOptions options);
+
+    /**
      * Returns time-series instance by <code>name</code>
      *
      * @param <V> value type

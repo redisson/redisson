@@ -62,6 +62,23 @@ public final class RedissonRx implements RedissonRxClient {
     }
 
     @Override
+    public <V> RArrayRx<V> getArray(String name) {
+        return RxProxyBuilder.create(commandExecutor, new RedissonArray<V>(commandExecutor, name), RArrayRx.class);
+    }
+
+    @Override
+    public <V> RArrayRx<V> getArray(String name, Codec codec) {
+        return RxProxyBuilder.create(commandExecutor, new RedissonArray<V>(codec, commandExecutor, name), RArrayRx.class);
+    }
+
+    @Override
+    public <V> RArrayRx<V> getArray(PlainOptions options) {
+        PlainParams params = (PlainParams) options;
+        return RxProxyBuilder.create(commandExecutor,
+                new RedissonArray<V>(params.getCodec(), commandExecutor.copy(params), params.getName()), RArrayRx.class);
+    }
+
+    @Override
     public <K, V> RStreamRx<K, V> getStream(String name) {
         return RxProxyBuilder.create(commandExecutor, new RedissonStream<K, V>(commandExecutor, name), RStreamRx.class);
     }

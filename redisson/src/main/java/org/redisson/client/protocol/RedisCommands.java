@@ -31,6 +31,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.redisson.api.*;
+import org.redisson.api.array.ArrayEntry;
+import org.redisson.api.array.ArrayInfo;
 import org.redisson.api.bloomfilter.BloomFilterInfo;
 import org.redisson.api.bloomfilter.BloomFilterScanDumpInfo;
 import org.redisson.api.search.index.IndexInfo;
@@ -55,6 +57,27 @@ import org.redisson.codec.CompositeCodec;
  *
  */
 public interface RedisCommands {
+
+    RedisCommand<Long> ARSET = new RedisCommand<>("ARSET");
+    RedisCommand<Object> ARGET = new RedisCommand<>("ARGET");
+    RedisCommand<List<Object>> ARMGET = new RedisCommand<>("ARMGET", new ObjectListReplayDecoder<>());
+    RedisCommand<Long> ARMSET = new RedisCommand<>("ARMSET");
+    RedisCommand<Long> ARDEL = new RedisCommand<>("ARDEL");
+    RedisCommand<Long> ARDELRANGE = new RedisCommand<>("ARDELRANGE");
+    RedisCommand<Long> ARLEN = new RedisCommand<>("ARLEN");
+    RedisCommand<Long> ARCOUNT = new RedisCommand<>("ARCOUNT");
+    RedisCommand<List<Object>> ARGETRANGE = new RedisCommand<>("ARGETRANGE", new ObjectListReplayDecoder<>());
+    RedisCommand<List<ArrayEntry<Object>>> ARSCAN = new RedisCommand<>("ARSCAN", new ArrayEntryDecoder());
+    RedisCommand<List<Long>> ARGREP = new RedisCommand<>("ARGREP", new ObjectListReplayDecoder<>());
+    RedisCommand<List<ArrayEntry<Object>>> ARGREP_WITHVALUES = new RedisCommand<>("ARGREP", new ArrayEntryDecoder());
+    RedisCommand<Double> AROP_DOUBLE = new RedisCommand<>("AROP", new DoubleReplayConvertor());
+    RedisCommand<Long> AROP_LONG = new RedisCommand<>("AROP");
+    RedisCommand<Long> ARINSERT = new RedisCommand<>("ARINSERT");
+    RedisCommand<Long> ARRING = new RedisCommand<>("ARRING");
+    RedisCommand<Long> ARNEXT = new RedisCommand<>("ARNEXT");
+    RedisCommand<Boolean> ARSEEK = new RedisCommand<>("ARSEEK", new BooleanReplayConvertor());
+    RedisCommand<List<Object>> ARLASTITEMS = new RedisCommand<>("ARLASTITEMS", new ObjectListReplayDecoder<>());
+    RedisCommand<ArrayInfo> ARINFO = new RedisCommand<>("ARINFO", new ArrayInfoDecoder());
 
     RedisCommand<Boolean> VADD = new RedisCommand<>("VADD", new BooleanReplayConvertor());
     RedisCommand<Integer> VCARD = new RedisCommand<>("VCARD", new IntegerReplayConvertor());

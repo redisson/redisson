@@ -63,6 +63,23 @@ public final class RedissonReactive implements RedissonReactiveClient {
     public CommandReactiveExecutor getCommandExecutor() {
         return commandExecutor;
     }
+
+    @Override
+    public <V> RArrayReactive<V> getArray(String name) {
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonArray<V>(commandExecutor, name), RArrayReactive.class);
+    }
+
+    @Override
+    public <V> RArrayReactive<V> getArray(String name, Codec codec) {
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonArray<V>(codec, commandExecutor, name), RArrayReactive.class);
+    }
+
+    @Override
+    public <V> RArrayReactive<V> getArray(PlainOptions options) {
+        PlainParams params = (PlainParams) options;
+        return ReactiveProxyBuilder.create(commandExecutor,
+                new RedissonArray<V>(params.getCodec(), commandExecutor.copy(params), params.getName()), RArrayReactive.class);
+    }
     
     @Override
     public <K, V> RStreamReactive<K, V> getStream(String name) {
