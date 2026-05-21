@@ -33,6 +33,30 @@ import org.redisson.codec.JsonCodec;
 public interface RBatch {
 
     /**
+     * Returns Array instance by <code>name</code>.
+     * <p>
+     * Requires <b>Redis 8.8 or higher.</b>
+     *
+     * @param <V> value type
+     * @param name name of instance
+     * @return RArray object
+     */
+    <V> RArrayAsync<V> getArray(String name);
+
+    /**
+     * Returns Array instance by <code>name</code>
+     * using provided <code>codec</code> for values.
+     * <p>
+     * Requires <b>Redis 8.8 or higher.</b>
+     *
+     * @param <V> value type
+     * @param name name of instance
+     * @param codec codec for values
+     * @return RArray object
+     */
+    <V> RArrayAsync<V> getArray(String name, Codec codec);
+
+    /**
      * Returns bloom filter native instance by <code>name</code>.
      * Covers BF.* commands.
      *

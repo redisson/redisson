@@ -39,6 +39,16 @@ public class RedissonBatch implements RBatch {
     }
 
     @Override
+    public <V> RArrayAsync<V> getArray(String name) {
+        return new RedissonArray<V>(executorService, name);
+    }
+
+    @Override
+    public <V> RArrayAsync<V> getArray(String name, Codec codec) {
+        return new RedissonArray<V>(codec, executorService, name);
+    }
+
+    @Override
     public <V> RBucketAsync<V> getBucket(String name) {
         return new RedissonBucket<V>(executorService, name);
     }

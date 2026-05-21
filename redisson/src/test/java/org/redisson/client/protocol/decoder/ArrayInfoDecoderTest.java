@@ -42,4 +42,16 @@ public class ArrayInfoDecoderTest {
         assertThat(info.getSliceSize()).isZero();
     }
 
+    @Test
+    public void testDecodeStringValues() {
+        ArrayInfo info = new ArrayInfoDecoder().decode(Arrays.asList(
+                "count", "2",
+                "len", "5",
+                "avg-dense-size", "1.5"), null);
+
+        assertThat(info.getCount()).isEqualTo(2);
+        assertThat(info.getLength()).isEqualTo(5);
+        assertThat(info.getAverageDenseSize()).isEqualTo(1.5);
+    }
+
 }
