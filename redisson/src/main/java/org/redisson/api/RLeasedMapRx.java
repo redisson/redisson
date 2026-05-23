@@ -47,7 +47,9 @@ public interface RLeasedMapRx<K, V> {
      * Invalidates the entry mapped by {@code key} and deletes current lease token (if any).
      *
      * @param key map key
-     * @return {@code true} if entry or lease token has been removed, otherwise {@code false}
+     * @return {@code true} if the map entry was removed ({@code HDEL} removed a field), {@code false} otherwise.
+     *         The lease key is deleted in the same operation but does not affect this return value (the script result
+     *         list records {@code HDEL} counts only).
      */
     Single<Boolean> removeWithLease(K key);
 

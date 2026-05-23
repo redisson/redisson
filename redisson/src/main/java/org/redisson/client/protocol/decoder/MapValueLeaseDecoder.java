@@ -23,11 +23,12 @@ import org.redisson.client.protocol.Decoder;
 import java.util.List;
 
 /**
- * Decodes {@code EVAL} response shaped like {@code {status, value, token}} where:
+ * Decodes {@code EVAL} response shaped like {@code {status, value, token, leaseAcquired}} where:
  * <ul>
  *     <li>{@code status}: {@link Long}</li>
  *     <li>{@code value}: decoded using {@code codec.getMapValueDecoder()}</li>
  *     <li>{@code token}: {@link Long}</li>
+ *     <li>{@code leaseAcquired}: {@link Long} — {@code 1} if this script acquired the lease via {@code SET NX}</li>
  * </ul>
  *
  * @author nhancdt2602
@@ -42,7 +43,7 @@ public class MapValueLeaseDecoder implements MultiDecoder<List<Object>> {
         if (paramNum == 1) {
             return codec.getMapValueDecoder();
         }
-        if (paramNum == 2) {
+        if (paramNum == 2 || paramNum == 3) {
             return LongCodec.INSTANCE.getValueDecoder();
         }
         return MultiDecoder.super.getDecoder(codec, paramNum, state, size, parts);

@@ -123,22 +123,24 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         long token = System.currentTimeMillis();
 
         RFuture<List<Object>> res = commandExecutor.evalWriteAsync(name, codec, RedisCommands.EVAL_MAP_VALUE_LEASE,
-                // based on getOperationAsync with lease miss support
+                // The script returns a 4-tuple {status, value, leaseToken, leaseAcquired}
+                // status = 1 means the entry exists, entry value is set in the 2nd element
+                // status = 0 means the entry does not exist
                 "local value = redis.call('hget', KEYS[1], ARGV[2]); "
                         + "if value == false then "
                             + "local leaseKey = KEYS[6] .. ARGV[2]; "
                             + "local currentLease = redis.call('get', leaseKey); "
                             + "if currentLease ~= false then "
-                                + "return {0, false, tonumber(currentLease) or 0}; "
+                                + "return {0, false, tonumber(currentLease) or 0, 0}; "
                             + "end; "
                             + "if redis.call('set', leaseKey, ARGV[3], 'px', ARGV[4], 'nx') then "
-                                + "return {0, false, tonumber(ARGV[3]) or 0}; "
+                                + "return {0, false, tonumber(ARGV[3]) or 0, 1}; "
                             + "end; "
                             + "currentLease = redis.call('get', leaseKey); "
                             + "if currentLease ~= false then "
-                                + "return {0, false, tonumber(currentLease) or 0}; "
+                                + "return {0, false, tonumber(currentLease) or 0, 0}; "
                             + "end; "
-                            + "return {0, false, 0}; "
+                            + "return {0, false, 0, 0}; "
                         + "end; "
                         + "local t, val = struct.unpack('dLc0', value); "
                         + "local expireDate = 92233720368547758; "
@@ -159,16 +161,16 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                             + "local leaseKey = KEYS[6] .. ARGV[2]; "
                             + "local currentLease = redis.call('get', leaseKey); "
                             + "if currentLease ~= false then "
-                                + "return {0, false, tonumber(currentLease) or 0}; "
+                                + "return {0, false, tonumber(currentLease) or 0, 0}; "
                             + "end; "
                             + "if redis.call('set', leaseKey, ARGV[3], 'px', ARGV[4], 'nx') then "
-                                + "return {0, false, tonumber(ARGV[3]) or 0}; "
+                                + "return {0, false, tonumber(ARGV[3]) or 0, 1}; "
                             + "end; "
                             + "currentLease = redis.call('get', leaseKey); "
                             + "if currentLease ~= false then "
-                                + "return {0, false, tonumber(currentLease) or 0}; "
+                                + "return {0, false, tonumber(currentLease) or 0, 0}; "
                             + "end; "
-                            + "return {0, false, 0}; "
+                            + "return {0, false, 0, 0}; "
                         + "end; "
                         + "local maxSize = tonumber(redis.call('hget', KEYS[5], 'max-size')); "
                         + "if maxSize ~= nil and maxSize ~= 0 then "
@@ -179,7 +181,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                                 + "redis.call('zincrby', KEYS[4], 1, ARGV[2]); "
                             + "end; "
                         + "end; "
-                        + "return {1, val, 0}; ",
+                        + "return {1, val, 0, 0}; ",
                 Arrays.asList(name, getTimeoutSetName(name), getIdleSetName(name),
                         getLastAccessTimeSetName(name), getOptionsName(name), leaseName),
                 System.currentTimeMillis(), encodeMapKey(key), token, leaseTimeToLive.toMillis());
@@ -190,10 +192,11 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 return new LeaseGetResult<>((V) r.get(1), false, 0L);
             }
             long leaseFromRedis = decodeLeaseToken(r.get(2));
+            boolean leaseAcquired = ((Number) r.get(3)).longValue() == 1;
             if (leaseFromRedis == 0L) {
                 return new LeaseGetResult<>(null, false, 0L);
             }
-            return new LeaseGetResult<>(null, leaseFromRedis == token, leaseFromRedis);
+            return new LeaseGetResult<>(null, leaseAcquired, leaseFromRedis);
         });
         return new CompletableFutureWrapper<>(f);
     }
@@ -211,17 +214,50 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         String name = getRawName(key);
         String leaseName = getLeaseName(name);
 
-        return commandExecutor.evalWriteAsync(name, codec, RedisCommands.EVAL_BOOLEAN,
-                "local removed = 0; "
-              + "if redis.call('hdel', KEYS[1], ARGV[1]) == 1 then "
-                  + "removed = 1; "
-              + "end; "
-              + "if redis.call('del', KEYS[2] .. ARGV[1]) == 1 then "
-                  + "removed = 1; "
-              + "end; "
-              + "return removed; ",
-                Arrays.asList(name, leaseName),
-                encodeMapKey(key));
+        List<Object> args = new ArrayList<>(2);
+        args.add(publishCommand);
+        encodeMapKeys(args, Collections.singletonList(key));
+
+        RFuture<List<Long>> listFuture = commandExecutor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_LIST,
+                "local publishCommand = table.remove(ARGV, 1); "
+                        + "local maxSize = tonumber(redis.call('hget', KEYS[6], 'max-size')); "
+                        + "if maxSize ~= nil and maxSize ~= 0 then "
+                        + "    redis.call('zrem', KEYS[5], unpack(ARGV)); "
+                        + "end; "
+                        + "redis.call('zrem', KEYS[3], unpack(ARGV)); "
+                        + "redis.call('zrem', KEYS[2], unpack(ARGV)); "
+
+                        + "local hasListeners = redis.call('hget', KEYS[6], 'has-listeners'); "
+                        + "if hasListeners ~= false then "
+                        + "    for i, mapKey in ipairs(ARGV) do "
+                        + "        local v = redis.call('hget', KEYS[1], mapKey); "
+                        + "        if v ~= false then "
+                        + "            local t, val = struct.unpack('dLc0', v); "
+                        + "            local msg = struct.pack('Lc0Lc0', string.len(mapKey), mapKey, string.len(val), val); "
+                        + "            redis.call(publishCommand, KEYS[4], msg); "
+                        + "        end; "
+                        + "    end; "
+                        + "end; "
+
+                        + "local result = {}; "
+                        + "for i = 1, #ARGV, 1 do "
+                        + "    local val = redis.call('hdel', KEYS[1], ARGV[i]); "
+                        + "    redis.call('del', KEYS[7] .. ARGV[i]); "
+                        + "    table.insert(result, val); "
+                        + "end; "
+                        + "return result; ",
+                Arrays.asList(name, getTimeoutSetName(name), getIdleSetName(name),
+                        getRemovedChannelName(name), getLastAccessTimeSetName(name), getOptionsName(name), leaseName),
+                args.toArray());
+        CompletionStage<Boolean> mapped = listFuture.thenApply(removeResults -> {
+            for (Long v : removeResults) {
+                if (v != null && v != 0L) {
+                    return true;
+                }
+            }
+            return false;
+        });
+        return new CompletableFutureWrapper<>(mapped);
     }
 
     @Override
@@ -1355,7 +1391,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         RFuture<Boolean> future = commandExecutor.evalWriteAsync(name, codec, RedisCommands.EVAL_BOOLEAN,
                 "local leaseKey = KEYS[9] .. ARGV[5]; "
                         + "local currentLease = redis.call('get', leaseKey); "
-                        + "if ARGV[8] ~= nil then "
+                        + "if ARGV[8] ~= \"\" then "
                             + "if currentLease == false or tonumber(currentLease) ~= tonumber(ARGV[8]) then "
                                 + "return 0; "
                             + "end; "
