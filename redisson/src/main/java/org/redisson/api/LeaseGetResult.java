@@ -49,6 +49,15 @@ public final class LeaseGetResult<K, V> {
     }
 
     /**
+     * Returns {@code true} if there was no cached value for this lookup ({@link #getValue()} is {@code null}).
+     *
+     * @return {@code true} on cache miss, {@code false} if a value was present
+     */
+    public boolean isCacheMiss() {
+        return value == null;
+    }
+
+    /**
      * Returns {@code true} if lease has been acquired on cache miss.
      * <p>
      * If {@link #getValue()} is not {@code null} then this method always returns {@code false}.
