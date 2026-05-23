@@ -20,8 +20,7 @@ import org.redisson.eviction.EvictionScheduler;
 import java.time.Duration;
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -1782,6 +1781,63 @@ public class RedissonMapCacheTest extends BaseMapTest {
 
         assertThat(map.size()).isEqualTo(2);
         redisson.shutdown();
+    }
+
+    @Test
+    public void testLeaseRaceCondition() throws InterruptedException {
+        final int RUN = 10;
+        final int CONCURRENCY = 16;
+        ExecutorService executorService = Executors.newFixedThreadPool(CONCURRENCY);
+        for (int i = 0; i < RUN; i++) {
+            RMapCache<String, String> map = redisson.getMapCache("testLeaseRaceCondition", StringCodec.INSTANCE);
+            CountDownLatch latch = new CountDownLatch(CONCURRENCY);
+            AtomicInteger trueCount = new AtomicInteger();
+            final String key = "key:" + i;
+            for (int j = 0; j < CONCURRENCY; j++) {
+                executorService.submit(() -> {
+                    LeaseGetResult<String, String> r = map.getWithLease(key, Duration.ofSeconds(10));
+                    if (r.isLeaseAcquired()) {
+                        trueCount.incrementAndGet();
+                    }
+                    latch.countDown();
+                });
+            }
+
+
+            latch.await();
+
+            assertThat(trueCount.get()).isEqualTo(1);
+        }
+
+        executorService.shutdown();
+        executorService.awaitTermination(100, TimeUnit.SECONDS);
+    }
+
+    @Test
+    public void testLeaseCreatedListener() {
+        RMapCache<String, String> map = redisson.getMapCache("testLeaseCreatedListener");
+        AtomicBoolean created = new AtomicBoolean(false);
+
+        LeaseGetResult<String, String> r1 = map.getWithLease("aaa", Duration.ofSeconds(1));
+        map.addListener((EntryCreatedListener<Object, Object>) event -> created.set(true));
+
+        map.putWithLease("aaa", "111", r1.getLeaseToken());
+
+        Awaitility.await().atMost(5, TimeUnit.SECONDS).untilTrue(created);
+    }
+
+    @Test
+    public void testLeaseRemovedListener() {
+        RMapCache<String, String> map = redisson.getMapCache("testLeaseCreatedListener");
+        AtomicBoolean removed = new AtomicBoolean();
+
+        LeaseGetResult<String, String> r1 = map.getWithLease("aaa", Duration.ofSeconds(1));
+        map.addListener((EntryRemovedListener) event -> removed.set(true));
+
+        map.putWithLease("aaa", "111", r1.getLeaseToken());
+        map.removeWithLease("aaa");
+
+        Awaitility.await().atMost(5, TimeUnit.SECONDS).untilTrue(removed);
     }
 
     @Test
