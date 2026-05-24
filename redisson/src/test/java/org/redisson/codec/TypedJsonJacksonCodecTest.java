@@ -102,4 +102,32 @@ public class TypedJsonJacksonCodecTest extends RedisDockerTest {
         assertThat(mapCodec.getMapValueEncoder().encode("foo").toString(CharsetUtil.UTF_8))
                 .isEqualTo("\"foo\"");
     }
+
+    @Test
+    public void shouldSerializeUuidWithoutClassMetadata() throws Exception {
+        UUID uuid = UUID.fromString("00000000-0000-0000-0000-000000000001");
+        TypedJsonJacksonCodec uuidCodec = new TypedJsonJacksonCodec(UUID.class);
+
+        ByteBuf encoded = uuidCodec.getValueEncoder().encode(uuid);
+        try {
+            assertThat(encoded.toString(CharsetUtil.UTF_8))
+                    .isEqualTo("\"" + uuid.toString() + "\"");
+        } finally {
+            encoded.release();
+        }
+    }
+
+    @Test
+    public void shouldRoundTripUuidValue() throws Exception {
+        UUID uuid = UUID.randomUUID();
+        TypedJsonJacksonCodec uuidCodec = new TypedJsonJacksonCodec(UUID.class);
+
+        ByteBuf encoded = uuidCodec.getValueEncoder().encode(uuid);
+        try {
+            assertThat(uuidCodec.getValueDecoder().decode(encoded, new State()))
+                    .isEqualTo(uuid);
+        } finally {
+            encoded.release();
+        }
+    }
 }
