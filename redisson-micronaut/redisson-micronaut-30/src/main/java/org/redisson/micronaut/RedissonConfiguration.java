@@ -63,7 +63,7 @@ public class RedissonConfiguration extends Config {
     }
 
     @Override
-    @ConfigurationBuilder(value = "clusterServersConfig", includes = {"nodeAddresses"})
+    @ConfigurationBuilder("clusterServersConfig")
     protected void setClusterServersConfig(ClusterServersConfig clusterServersConfig) {
         super.setClusterServersConfig(clusterServersConfig);
     }
@@ -85,7 +85,7 @@ public class RedissonConfiguration extends Config {
     }
 
     @Override
-    @ConfigurationBuilder(value = "replicatedServersConfig", includes = {"nodeAddresses"})
+    @ConfigurationBuilder("replicatedServersConfig")
     protected void setReplicatedServersConfig(ReplicatedServersConfig replicatedServersConfig) {
         super.setReplicatedServersConfig(replicatedServersConfig);
     }
@@ -99,7 +99,7 @@ public class RedissonConfiguration extends Config {
     }
 
     @Override
-    @ConfigurationBuilder(value = "sentinelServersConfig", includes = {"sentinelAddresses"})
+    @ConfigurationBuilder("sentinelServersConfig")
     protected void setSentinelServersConfig(SentinelServersConfig sentinelConnectionConfig) {
         super.setSentinelServersConfig(sentinelConnectionConfig);
     }
@@ -113,7 +113,7 @@ public class RedissonConfiguration extends Config {
     }
 
     @Override
-    @ConfigurationBuilder(value = "masterSlaveServersConfig", includes = {"slaveAddresses"})
+    @ConfigurationBuilder("masterSlaveServersConfig")
     protected void setMasterSlaveServersConfig(MasterSlaveServersConfig masterSlaveConnectionConfig) {
         super.setMasterSlaveServersConfig(masterSlaveConnectionConfig);
     }
