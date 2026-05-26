@@ -371,7 +371,12 @@ public class RedissonSessionManager extends ManagerBase {
             try {
                 config = Config.fromYAML(new File(configPath), getClass().getClassLoader());
             } catch (IOException e) {
-                throw new LifecycleException("Can't parse yaml config " + configPath, e);
+                throw new LifecycleException(
+                        "Can't parse yaml config: " + configPath
+                                + ". Nested jar/classpath resources are not supported via configPath. "
+                                + "Use setConfig(Config) with a classpath resource InputStream instead.",
+                        e
+                );
             }
         }
 
