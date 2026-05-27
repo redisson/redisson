@@ -436,7 +436,11 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                         + ". channel: " + channel + " data: " + data));
             } else {
                 if (data != null) {
-                    data.tryFailure(new RedisException(error + ". channel: " + channel + " command: " + LogHelper.toString(data)));
+                    RedisServerRejectionException.Reason reason = RedisServerRejectionException.classifyReason(error);
+                    data.tryFailure(new RedisServerRejectionException(
+                            error + ". channel: " + channel + " command: " + LogHelper.toString(data),
+                            error,
+                            reason));
                 } else {
                     onError(channel, error);
                 }
