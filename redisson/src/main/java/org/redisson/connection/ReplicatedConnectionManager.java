@@ -100,10 +100,10 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
             if (Role.master.equals(role)) {
                 currentMaster.set(connection.getRedisClient().getAddr());
                 log.info("{} is the master", addr);
-                this.config.setMasterAddress(addr.toString());
+                this.config.setMasterAddress(addr.toURIString());
             } else {
                 log.info("{} is a slave", addr);
-                this.config.addSlaveAddress(addr.toString());
+                this.config.addSlaveAddress(addr.toURIString());
             }
         }
 

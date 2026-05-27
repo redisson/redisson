@@ -80,7 +80,7 @@ public class ReplicatedConnectionManagerTest {
 
         try {
             ReplicatedServersConfig serversConfig = new ReplicatedServersConfig();
-            serversConfig.addNodeAddress(uri.toString());
+            serversConfig.addNodeAddress(uri.toURIString());
 
             Set<InetSocketAddress> slaveIPs = Collections.newSetFromMap(new ConcurrentHashMap<>());
             CompletableFuture<?> future = manager.checkNode(uri, serversConfig, slaveIPs);
