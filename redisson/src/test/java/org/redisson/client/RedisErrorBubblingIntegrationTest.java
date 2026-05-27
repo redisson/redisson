@@ -8,6 +8,8 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.config.Config;
 import org.testcontainers.containers.GenericContainer;
 
+import java.util.concurrent.TimeUnit;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -60,52 +62,61 @@ public class RedisErrorBubblingIntegrationTest extends RedisDockerTest {
 
     /**
      * When Redis hits its maxclients limit, a new connection receives
-     * {@code "ERR max number of clients reached"} from the server.
-     * This must surface as a {@link RedisServerRejectionException} with
-     * {@code reason == MAX_CLIENTS}.
+     * {@code "ERR max number of clients reached"} as an unsolicited pre-command
+     * server message before AUTH or any other bootstrap command can complete.
      * <p>
-     * We use {@code --maxclients 1} so the first connection fills the limit
-     * and the second connection is immediately rejected.
+     * The error is stored on the channel via {@link CommandDecoder#UNSOLICITED_ERROR_KEY}
+     * and surfaced as a {@link RedisConnectionBootstrapException} whose cause is a
+     * {@link RedisServerRejectionException} with {@code reason == MAX_CLIENTS}.
+     * <p>
+     * Strategy: start Redis with a low {@code --maxclients}. Open connections one by one
+     * until one is rejected. Redis reserves a small number of extra slots for admin
+     * connections, so we open up to {@code maxclients + 5} before failing the test.
      */
     @Test
-    public void maxClientsReached_emitsRedisServerRejectionException() throws Exception {
-        // maxclients 1: first connected client fills the slot; second connection rejected
-        GenericContainer<?> redis = createContainer("--maxclients", "1");
+    public void maxClientsReached_bootstrapExceptionContainsServerRejection() throws Exception {
+        final int maxClients = 4;
+        GenericContainer<?> redis = createContainer("--maxclients", String.valueOf(maxClients));
         redis.start();
 
-        RedisClientConfig firstConfig = new RedisClientConfig();
-        firstConfig.setAddress("redis://127.0.0.1:" + redis.getFirstMappedPort());
-        RedisClient firstClient = RedisClient.create(firstConfig);
-        RedisConnection firstConn = firstClient.connect();
-        firstConn.sync(RedisCommands.PING); // establish and hold the slot
+        int port = redis.getFirstMappedPort();
+        java.util.List<RedisClient> openedClients = new java.util.ArrayList<>();
+        java.util.List<RedisConnection> openedConns = new java.util.ArrayList<>();
 
         try {
-            RedisClientConfig secondConfig = new RedisClientConfig();
-            secondConfig.setAddress("redis://127.0.0.1:" + redis.getFirstMappedPort());
-            RedisClient secondClient = RedisClient.create(secondConfig);
-
-            try {
-                Exception ex = assertThrows(Exception.class,
-                        () -> secondClient.connectAsync().toCompletableFuture().get());
-
-                Throwable cause = ex.getCause() != null ? ex.getCause() : ex;
-                RedisServerRejectionException rejection =
-                        (RedisServerRejectionException) findCause(cause, RedisServerRejectionException.class);
-
-                assertNotNull(rejection,
-                        "Expected RedisServerRejectionException in chain, got: " + cause);
-                assertEquals(RedisServerRejectionException.Reason.MAX_CLIENTS, rejection.getReason(),
-                        "Max-clients rejection must have MAX_CLIENTS reason");
-                assertNotNull(rejection.getServerError(),
-                        "serverError must not be null");
-                assertTrue(rejection.getServerError().toLowerCase().contains("clients"),
-                        "serverError should mention clients, was: " + rejection.getServerError());
-            } finally {
-                secondClient.shutdown();
+            Exception rejectionEx = null;
+            // Keep opening connections until we hit the limit (at most maxclients + 5 attempts)
+            for (int attempt = 0; attempt < maxClients + 5; attempt++) {
+                RedisClientConfig cfg = new RedisClientConfig();
+                cfg.setAddress("redis://127.0.0.1:" + port);
+                RedisClient client = RedisClient.create(cfg);
+                openedClients.add(client);
+                try {
+                    RedisConnection conn = client.connectAsync().toCompletableFuture().get(5, TimeUnit.SECONDS);
+                    conn.sync(RedisCommands.PING);
+                    openedConns.add(conn);
+                } catch (Exception e) {
+                    rejectionEx = e;
+                    break;
+                }
             }
+
+            assertNotNull(rejectionEx, "Expected a connection to be rejected after filling maxclients=" + maxClients);
+
+            Throwable cause = rejectionEx.getCause() != null ? rejectionEx.getCause() : rejectionEx;
+            RedisServerRejectionException rejection =
+                    (RedisServerRejectionException) findCause(cause, RedisServerRejectionException.class);
+
+            assertNotNull(rejection,
+                    "Expected RedisServerRejectionException in chain, got: " + cause);
+            assertEquals(RedisServerRejectionException.Reason.MAX_CLIENTS, rejection.getReason(),
+                    "Max-clients rejection must have MAX_CLIENTS reason");
+            assertNotNull(rejection.getServerError(), "serverError must not be null");
+            assertTrue(rejection.getServerError().toLowerCase().contains("clients"),
+                    "serverError should mention clients, was: " + rejection.getServerError());
         } finally {
-            firstConn.closeAsync();
-            firstClient.shutdown();
+            for (RedisConnection c : openedConns) c.closeAsync();
+            for (RedisClient c : openedClients) c.shutdown();
             redis.stop();
         }
     }

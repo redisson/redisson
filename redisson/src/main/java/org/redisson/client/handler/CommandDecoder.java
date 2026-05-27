@@ -58,13 +58,23 @@ import java.util.concurrent.CompletableFuture;
  *
  */
 public class CommandDecoder extends ReplayingDecoder<State> {
-    
+
     final Logger log = LoggerFactory.getLogger(getClass());
 
     private static final char CR = '\r';
     private static final char LF = '\n';
     private static final char ZERO = '0';
-    
+
+    /**
+     * Channel attribute that holds the last unsolicited server error (i.e. an error frame
+     * received when no command is pending on the queue). Stored so that handlers further
+     * up the pipeline — particularly {@link BaseConnectionHandler} — can use the original
+     * typed error when failing the connection promise on channel close, instead of producing
+     * a generic {@link org.redisson.client.RedisConnectionException}.
+     */
+    public static final io.netty.util.AttributeKey<RedisServerRejectionException>
+            UNSOLICITED_ERROR_KEY = io.netty.util.AttributeKey.valueOf("REDISSON_UNSOLICITED_ERROR");
+
     final String scheme;
 
     public CommandDecoder(String scheme) {
@@ -499,6 +509,12 @@ public class CommandDecoder extends ReplayingDecoder<State> {
 
     protected void onError(Channel channel, String error) {
         log.error("Error message from Redis: {} channel: {}", error, channel);
+        // Store on the channel so BaseConnectionHandler can surface it as a typed exception
+        // instead of a generic RedisConnectionException when the channel closes.
+        RedisServerRejectionException.Reason reason = RedisServerRejectionException.classifyReason(error);
+        RedisServerRejectionException ex = new RedisServerRejectionException(
+                "Server error: " + error + ". channel: " + channel, error, reason);
+        channel.attr(UNSOLICITED_ERROR_KEY).set(ex);
     }
 
     private String readString(ByteBuf in, Charset charset) {
