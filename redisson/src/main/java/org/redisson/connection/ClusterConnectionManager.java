@@ -139,7 +139,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 List<CompletableFuture<Void>> masterFutures = new ArrayList<>();
                 for (ClusterPartition partition : partitions) {
                     if (partition.isMasterFail()) {
-                        failedMasters.add(partition.getMasterAddress().toString());
+                        failedMasters.add(partition.getMasterAddress().toURIString());
                         continue;
                     }
                     if (partition.getMasterAddress() == null) {
@@ -339,7 +339,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         CompletionStage<RedisConnection> connectionFuture = connectToNode(cfg, partition.getMasterAddress(), configEndpointHostName);
         return connectionFuture.thenCompose(connection -> {
             MasterSlaveServersConfig config = create(cfg);
-            config.setMasterAddress(partition.getMasterAddress().toString());
+            config.setMasterAddress(partition.getMasterAddress().toURIString());
 
             MasterSlaveEntry entry;
             if (config.isSlaveNotUsed()) {
@@ -347,7 +347,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             } else {
                 Set<String> slaveAddresses = partition.getSlaveAddresses().stream()
                                                                             .filter(r -> !partition.getFailedSlaveAddresses().contains(r))
-                                                                            .map(r -> r.toString())
+                                                                            .map(r -> r.toURIString())
                                                                             .collect(Collectors.toSet());
                 config.setSlaveAddresses(slaveAddresses);
 
