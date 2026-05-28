@@ -29,28 +29,6 @@ public interface BaseIncrementArgs<T> {
 
     /**
      * Defines overflow policy used if the increment result is out of bounds.
-     */
-    enum OverflowPolicy {
-
-        /**
-         * Throws an error and leaves the value unchanged.
-         */
-        FAIL,
-
-        /**
-         * Caps the value at the lower or upper bound.
-         */
-        SAT,
-
-        /**
-         * Leaves the value and its expiration unchanged.
-         */
-        REJECT
-
-    }
-
-    /**
-     * Defines overflow policy used if the increment result is out of bounds.
      *
      * @param overflowPolicy overflow policy
      * @return arguments object

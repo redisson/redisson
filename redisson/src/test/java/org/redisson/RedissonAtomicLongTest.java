@@ -9,8 +9,8 @@ import org.redisson.api.atomic.LongIncrementArgs;
 import java.time.Duration;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.redisson.api.atomic.BaseIncrementArgs.OverflowPolicy.REJECT;
-import static org.redisson.api.atomic.BaseIncrementArgs.OverflowPolicy.SAT;
+import static org.redisson.api.atomic.OverflowPolicy.REJECT;
+import static org.redisson.api.atomic.OverflowPolicy.SAT;
 
 public class RedissonAtomicLongTest extends RedisDockerTest {
 
