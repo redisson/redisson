@@ -36,6 +36,41 @@ import java.util.List;
 public interface RedissonReactiveClient {
 
     /**
+     * Returns Array instance by <code>name</code>
+     * <p>
+     * Requires <b>Redis 8.8 or higher.</b>
+     *
+     * @param <V> value type
+     * @param name name of instance
+     * @return RArrayReactive object
+     */
+    <V> RArrayReactive<V> getArray(String name);
+
+    /**
+     * Returns Array instance by <code>name</code>
+     * using provided <code>codec</code> for values.
+     * <p>
+     * Requires <b>Redis 8.8 or higher.</b>
+     *
+     * @param <V> value type
+     * @param name name of instance
+     * @param codec codec for values
+     * @return RArrayReactive object
+     */
+    <V> RArrayReactive<V> getArray(String name, Codec codec);
+
+    /**
+     * Returns Array instance with specified <code>options</code>.
+     * <p>
+     * Requires <b>Redis 8.8 or higher.</b>
+     *
+     * @param <V> value type
+     * @param options instance options
+     * @return RArrayReactive object
+     */
+    <V> RArrayReactive<V> getArray(PlainOptions options);
+
+    /**
      * Returns time-series instance by <code>name</code>
      *
      * @param <V> value type

@@ -131,6 +131,22 @@ public final class Redisson implements RedissonClient {
     }
 
     @Override
+    public <V> RArray<V> getArray(String name) {
+        return new RedissonArray<>(commandExecutor, name);
+    }
+
+    @Override
+    public <V> RArray<V> getArray(String name, Codec codec) {
+        return new RedissonArray<>(codec, commandExecutor, name);
+    }
+
+    @Override
+    public <V> RArray<V> getArray(PlainOptions options) {
+        PlainParams params = (PlainParams) options;
+        return new RedissonArray<>(params.getCodec(), commandExecutor.copy(params), params.getName());
+    }
+
+    @Override
     public <V, L> RTimeSeries<V, L> getTimeSeries(String name) {
         return new RedissonTimeSeries<>(evictionScheduler, commandExecutor, name);
     }
