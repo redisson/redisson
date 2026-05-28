@@ -28,6 +28,7 @@ import org.redisson.api.atomic.CompareAndDeleteArgs;
 import org.redisson.api.atomic.BaseIncrementParams;
 import org.redisson.api.atomic.DoubleIncrementArgs;
 import org.redisson.api.atomic.DoubleIncrementParams;
+import org.redisson.api.atomic.OverflowPolicy;
 import org.redisson.api.listener.IncrByListener;
 import org.redisson.client.codec.DoubleCodec;
 import org.redisson.client.codec.StringCodec;
@@ -208,9 +209,8 @@ public class RedissonAtomicDouble extends RedissonExpirable implements RAtomicDo
             params.add("UBOUND");
             params.add(toPlainString(incrementParams.getUpperBound()));
         }
-        if (incrementParams.getOverflowPolicy() != null) {
-            params.add("OVERFLOW");
-            params.add(incrementParams.getOverflowPolicy().name());
+        if (incrementParams.getOverflowPolicy() == OverflowPolicy.SAT) {
+            params.add("SATURATE");
         }
         addExpirationParams(incrementParams, params);
         return params.toArray();

@@ -8,17 +8,15 @@ package org.redisson.api.atomic;
 public enum OverflowPolicy {
 
     /**
-     * Throws an error and leaves the value unchanged.
-     */
-    FAIL,
-
-    /**
-     * Caps the value at the lower or upper bound.
+     * Caps the value at the lower or upper bound
+     * (or the type limits when no explicit bound is given).
+     * Sent to the server as the SATURATE flag.
      */
     SAT,
 
     /**
-     * Leaves the value and its expiration unchanged.
+     * Default policy. Leaves the value and its expiration unchanged,
+     * replying with the current value and a zero increment.
      */
     REJECT
 
