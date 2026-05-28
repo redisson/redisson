@@ -9,6 +9,20 @@ BITCOUNT|RBitSet.<br/>cardinality()<br/>cardinalityAsync() | RBitSetReactive.<br
 BITOP|RBitSet.<br/>or()<br/>and()<br/>xor()<br/>orAsync()<br/>andAsync()<br/>xorAsync() | RBitSetReactive.<br/>or()<br/>and()<br/>xor() | RBitSetRx.<br/>or()<br/>and()<br/>xor() |
 BITPOS|RBitSet.<br/>length()<br/>lengthAsync() | RBitSetReactive.<br/>length() | RBitSetRx.<br/>length() |
 BITFIELD|RBitSet.<br/>getByte()<br/>setByte()<br/>incrementAndGetByte()<br/><br/>getShort()<br/>setShort()<br/>incrementAndGetShort()<br/><br/>getInteger()<br/>setInteger()<br/>incrementAndGetInteger()<br/><br/>getLong()<br/>setLong()<br/>incrementAndGetLong() | RBitSetReactive.<br/>getByte()<br/>setByte()<br/>incrementAndGetByte()<br/><br/>getShort()<br/>setShort()<br/>incrementAndGetShort()<br/><br/>getInteger()<br/>setInteger()<br/>incrementAndGetInteger()<br/><br/>getLong()<br/>setLong()<br/>incrementAndGetLong() | RBitSetRx.<br/>getByte()<br/>setByte()<br/>incrementAndGetByte()<br/><br/>getShort()<br/>setShort()<br/>incrementAndGetShort()<br/><br/>getInteger()<br/>setInteger()<br/>incrementAndGetInteger()<br/><br/>getLong()<br/>setLong()<br/>incrementAndGetLong() |
+BF.ADD|RBloomFilterNative.<br/>add()<br/>addAsync()|RBloomFilterNativeReactive.<br/>add()|RBloomFilterNativeRx.<br/>add()|
+BF.EXISTS|RBloomFilterNative.<br/>exists()<br/>existsAsync()|RBloomFilterNativeReactive.<br/>exists()|RBloomFilterNativeRx.<br/>exists()|
+BF.CARD|RBloomFilterNative.<br/>count()<br/>countAsync()|RBloomFilterNativeReactive.<br/>count()|RBloomFilterNativeRx.<br/>count()|
+BF.INFO|RBloomFilterNative.<br/>getInfo()<br/>getInfoAsync()|RBloomFilterNativeReactive.<br/>getInfo()|RBloomFilterNativeRx.<br/>getInfo()|
+BF.RESERVE|RBloomFilterNative.<br/>init()<br/>initAsync()|RBloomFilterNativeReactive.<br/>init()|RBloomFilterNativeRx.<br/>init()|
+BF.SCANDUMP|RBloomFilterNative.<br/>scanDump()<br/>scanDumpAsync()|RBloomFilterNativeReactive.<br/>scanDump()|RBloomFilterNativeRx.<br/>scanDump()|
+BF.LOADCHUNK|RBloomFilterNative.<br/>loadChunk()<br/>loadChunkAsync()|RBloomFilterNativeReactive.<br/>loadChunk()|RBloomFilterNativeRx.<br/>loadChunk()|
+CF.ADD|RCuckooFilter.<br/>add()<br/>addAsync()|RCuckooFilterReactive.<br/>add()|RCuckooFilterRx.<br/>add()|
+CF.ADDNX|RCuckooFilter.<br/>addIfAbsent()<br/>addIfAbsentAsync()|RCuckooFilterReactive.<br/>addIfAbsent()|RCuckooFilterRx.<br/>addIfAbsent()|
+CF.COUNT|RCuckooFilter.<br/>count()<br/>countAsync()|RCuckooFilterReactive.<br/>count()|RCuckooFilterRx.<br/>count()|
+CF.DEL|RCuckooFilter.<br/>remove()<br/>removeAsync()|RCuckooFilterReactive.<br/>remove()|RCuckooFilterRx.<br/>remove()|
+CF.EXISTS|RCuckooFilter.<br/>exists()<br/>existsAsync()|RCuckooFilterReactive.<br/>exists()|RCuckooFilterRx.<br/>exists()|
+CF.INFO|RCuckooFilter.<br/>getInfo()<br/>getInfoAsync()|RCuckooFilterReactive.<br/>getInfo()|RCuckooFilterRx.<br/>getInfo()|
+CF.RESERVE|RCuckooFilter.<br/>init()<br/>initAsync()|RCuckooFilterReactive.<br/>init()|RCuckooFilterRx.<br/>init()|
 BLMPOP|RBlockingQueue.<br/>pollLastFromAny()<br/>pollFirstFromAny()<br/>pollLastFromAnyAsync()<br/>pollFirstFromAnyAsync() | RBlockingQueueReactive.<br/>pollLastFromAny()<br/>pollFirstFromAny() |RBlockingQueueRx.<br/>pollLastFromAny()<br/>pollFirstFromAny() |
 BLPOP|RBlockingQueue.<br/>take()<br/>poll()<br/>pollFromAny()<br/>takeAsync()<br/>pollAsync()<br/>pollFromAnyAsync() | RBlockingQueueReactive.<br/>take()<br/>poll()<br/>pollFromAny() |RBlockingQueueRx.<br/>take()<br/>poll()<br/>pollFromAny() |
 BLMOVE|RBlockingDeque.<br/>move()<br/>moveAsync()| RBlockingDequeReactive.<br/>move()|RBlockingDequeRx.<br/>move()|
@@ -35,6 +49,35 @@ EXEC|RBatch.<br/>execute()<br/>executeAsync()| RBatchReactive.<br/>execute()| RB
 EXISTS|RObject.<br/>isExists()<br/>isExistsAsync()| RObjectReactive.<br/>isExists()| RObjectRx.<br/>isExists()|
 FLUSHALL|RKeys.<br/>flushall()<br/>flushallAsync()| RKeysReactive.<br/>flushall()| RKeysRx.<br/>flushall()|
 FLUSHDB|RKeys.<br/>flushdb()<br/>flushdbAsync()| RKeysReactive.<br/>flushdb()| RKeysRx.<br/>flushdb()|
+FT.CREATE|RSearch.<br/>createIndex()<br/>createIndexAsync()|RSearchReactive.<br/>createIndex()|RSearchRx.<br/>createIndex()|
+FT.SEARCH|RSearch.<br/>search()<br/>searchAsync()|RSearchReactive.<br/>search()|RSearchRx.<br/>search()|
+FT.AGGREGATE|RSearch.<br/>aggregate()<br/>aggregateAsync()|RSearchReactive.<br/>aggregate()|RSearchRx.<br/>aggregate()|
+FT.HYBRID|RSearch.<br/>hybridSearch()<br/>hybridSearchAsync()|RSearchReactive.<br/>hybridSearch()|RSearchRx.<br/>hybridSearch()|
+FT.INFO|RSearch.<br/>info()<br/>infoAsync()|RSearchReactive.<br/>info()|RSearchRx.<br/>info()|
+FT.ALTER|RSearch.<br/>alter()<br/>alterAsync()|RSearchReactive.<br/>alter()|RSearchRx.<br/>alter()|
+FT.DROPINDEX|RSearch.<br/>dropIndex()<br/>dropIndexAndDocuments()<br/>dropIndexAsync()<br/>dropIndexAndDocumentsAsync()|RSearchReactive.<br/>dropIndex()<br/>dropIndexAndDocuments()|RSearchRx.<br/>dropIndex()<br/>dropIndexAndDocuments()|
+FT.ALIASADD|RSearch.<br/>addAlias()<br/>addAliasAsync()|RSearchReactive.<br/>addAlias()|RSearchRx.<br/>addAlias()|
+FT.ALIASDEL|RSearch.<br/>delAlias()<br/>delAliasAsync()|RSearchReactive.<br/>delAlias()|RSearchRx.<br/>delAlias()|
+FT.ALIASUPDATE|RSearch.<br/>updateAlias()<br/>updateAliasAsync()|RSearchReactive.<br/>updateAlias()|RSearchRx.<br/>updateAlias()|
+FT.DICTADD|RSearch.<br/>addDict()<br/>addDictAsync()|RSearchReactive.<br/>addDict()|RSearchRx.<br/>addDict()|
+FT.DICTDEL|RSearch.<br/>delDict()<br/>delDictAsync()|RSearchReactive.<br/>delDict()|RSearchRx.<br/>delDict()|
+FT.DICTDUMP|RSearch.<br/>dumpDict()<br/>dumpDictAsync()|RSearchReactive.<br/>dumpDict()|RSearchRx.<br/>dumpDict()|
+FT.SYNUPDATE|RSearch.<br/>updateSynonyms()<br/>updateSynonymsAsync()|RSearchReactive.<br/>updateSynonyms()|RSearchRx.<br/>updateSynonyms()|
+FT.SYNDUMP|RSearch.<br/>dumpSynonyms()<br/>dumpSynonymsAsync()|RSearchReactive.<br/>dumpSynonyms()|RSearchRx.<br/>dumpSynonyms()|
+FT.SPELLCHECK|RSearch.<br/>spellcheck()<br/>spellcheckAsync()|RSearchReactive.<br/>spellcheck()|RSearchRx.<br/>spellcheck()|
+FT._LIST|RSearch.<br/>getIndexes()<br/>getIndexesAsync()|RSearchReactive.<br/>getIndexes()|RSearchRx.<br/>getIndexes()|
+FT.CONFIG GET|RSearch.<br/>getConfig()<br/>getConfigAsync()|RSearchReactive.<br/>getConfig()|RSearchRx.<br/>getConfig()|
+FT.CONFIG SET|RSearch.<br/>setConfig()<br/>setConfigAsync()|RSearchReactive.<br/>setConfig()|RSearchRx.<br/>setConfig()|
+FT.CURSOR DEL|RSearch.<br/>delCursor()<br/>delCursorAsync()|RSearchReactive.<br/>delCursor()|RSearchRx.<br/>delCursor()|
+FCALL|RFunction.<br/>call()<br/>callAsync()|RFunctionReactive.<br/>call()|RFunctionRx.<br/>call()|
+FUNCTION DELETE|RFunction.<br/>delete()<br/>deleteAsync()|RFunctionReactive.<br/>delete()|RFunctionRx.<br/>delete()|
+FUNCTION DUMP|RFunction.<br/>dump()<br/>dumpAsync()|RFunctionReactive.<br/>dump()|RFunctionRx.<br/>dump()|
+FUNCTION FLUSH|RFunction.<br/>flush()<br/>flushAsync()|RFunctionReactive.<br/>flush()|RFunctionRx.<br/>flush()|
+FUNCTION KILL|RFunction.<br/>kill()<br/>killAsync()|RFunctionReactive.<br/>kill()|RFunctionRx.<br/>kill()|
+FUNCTION LIST|RFunction.<br/>list()<br/>listAsync()|RFunctionReactive.<br/>list()|RFunctionRx.<br/>list()|
+FUNCTION LOAD|RFunction.<br/>load()<br/>loadAndReplace()<br/>loadAsync()<br/>loadAndReplaceAsync()|RFunctionReactive.<br/>load()<br/>loadAndReplace()|RFunctionRx.<br/>load()<br/>loadAndReplace()|
+FUNCTION RESTORE|RFunction.<br/>restore()<br/>restoreAndReplace()<br/>restoreAfterFlush()<br/>restoreAsync()|RFunctionReactive.<br/>restore()<br/>restoreAndReplace()<br/>restoreAfterFlush()|RFunctionRx.<br/>restore()<br/>restoreAndReplace()<br/>restoreAfterFlush()|
+FUNCTION STATS|RFunction.<br/>stats()<br/>statsAsync()|RFunctionReactive.<br/>stats()|RFunctionRx.<br/>stats()|
 GETRANGE|RBinaryStream.<br/>getChannel().read()|RBinaryStreamReactive.<br/>read()|RBinaryStreamRx.<br/>read()|
 GEOADD|RGeo.<br/>add()<br/>addAsync()| RGeoReactive.<br/>add()| RGeoRx.<br/>add()|
 GEODIST|RGeo.<br/>dist()<br/>distAsync()| RGeoReactive.<br/>dist()| RGeoRx.<br/>dist()|
@@ -81,8 +124,10 @@ JSON.ARRLEN|RJsonBucket.<br/>arraySize()<br/>arraySizeAsync()| RJsonBucketReacti
 JSON.ARRPOP|RJsonBucket.<br/>arrayPollLast()<br/>arrayPollFirst()<br/>arrayPop()<br/>arrayPollLastAsync()<br/>arrayPollFirstAsync()<br/>arrayPopAsync()| RJsonBucketReactive.<br/>arrayPollLast()<br/>arrayPollFirst()<br/>arrayPop()| RJsonBucketRx.<br/>arrayPollLast()<br/>arrayPollFirst()<br/>arrayPop()|
 JSON.ARRTRIM|RJsonBucket.<br/>arrayTrim()<br/>arrayTrimAsync()| RJsonBucketReactive.<br/>arrayTrim()| RJsonBucketRx.<br/>arrayTrim()|
 JSON.CLEAR|RJsonBucket.<br/>clear()<br/>clearAsync()| RJsonBucketReactive.<br/>clear()| RJsonBucketRx.<br/>clear()|
+JSON.DEL|RJsonBucket.<br/>delete()<br/>deleteAsync()|RJsonBucketReactive.<br/>delete()|RJsonBucketRx.<br/>delete()|
 JSON.GET|RJsonBucket.<br/>get()<br/>getAsync()| RJsonBucketReactive.<br/>get()| RJsonBucketRx.<br/>get()|
 JSON.MERGE|RJsonBucket.<br/>merge()<br/>mergeAsync()| RJsonBucketReactive.<br/>merge()| RJsonBucketRx.<br/>merge()|
+JSON.MSET|RJsonBuckets.<br/>set()<br/>setAsync()|RJsonBucketsReactive.<br/>set()|RJsonBucketsRx.<br/>set()|
 JSON.NUMINCRBY|RJsonBucket.<br/>incrementAndGet()<br/>incrementAndGetAsync()| RJsonBucketReactive.<br/>incrementAndGet()| RJsonBucketRx.<br/>incrementAndGet()|
 JSON.OBJLEN|RJsonBucket.<br/>countKeys()<br/>countKeysAsync()| RJsonBucketReactive.<br/>countKeys()| RJsonBucketRx.<br/>countKeys()|
 JSON.OBJKEYS|RJsonBucket.<br/>getKeys()<br/>getKeysAsync()| RJsonBucketReactive.<br/>getKeys()| RJsonBucketRx.<br/>getKeys()|
@@ -122,10 +167,12 @@ PSETEX|RBucket.<br/>set()<br/>setAsync()|RBucketReactive.<br/>set()|RBucketRx.<b
 PTTL|RExpirable.<br/>remainTimeToLive()<br/>remainTimeToLiveAsync()|RExpirableReactive.<br/>remainTimeToLive()|RExpirableRx.<br/>remainTimeToLive()|
 PUBLISH|RTopic.<br/>publish()|RTopicReactive.<br/>publish()|RTopicRx.<br/>publish()|
 PUBSUB NUMSUB|RTopic.<br/>countSubscribers()<br/>countSubscribersAsync()|RTopicReactive.<br/>countSubscribers()|RTopicRx.<br/>countSubscribers()|
+PUBSUB SHARDNUMSUB|RShardedTopic.<br/>countSubscribers()<br/>countSubscribersAsync()|RShardedTopicReactive.<br/>countSubscribers()|RShardedTopicRx.<br/>countSubscribers()|
 PUNSUBSCRIBE|RPatternTopic.<br/>removeListener()|RPatternTopicReactive.<br/>removeListener()|RPatternTopicRx.<br/>removeListener()|
 RANDOMKEY|RKeys.<br/>randomKey()<br/>randomKeyAsync()|RKeysReactive.<br/>randomKey()|RKeysRx.<br/>randomKey()|
 RESTORE|RObject.<br/>restore()<br/>restoreAsync()|RObjectReactive.<br/>restore()|RObjectRx.<br/>restore()|
 RENAME|RObject.<br/>rename()<br/>renameAsync()|RObjectReactive.<br/>rename()|RObjectRx.<br/>rename()|
+RENAMENX|RObject.<br/>renamenx()<br/>renamenxAsync()|RObjectReactive.<br/>renamenx()|RObjectRx.<br/>renamenx()|
 RPOP|RDeque.<br/>pollLast()<br/>removeLast()<br/>pollLastAsync()<br/>removeLastAsync()|RDequeReactive.<br/>pollLast()<br/>removeLast()|RDequeRx.<br/>pollLast()<br/>removeLast()|
 RPOPLPUSH|RDeque.<br/>pollLastAndOfferFirstTo()<br/>pollLastAndOfferFirstToAsync()|RDequeReactive.<br/>pollLastAndOfferFirstTo()|RDequeRx.<br/>pollLastAndOfferFirstTo()|
 RPUSH|RList.<br/>add()<br/>addAsync()|RListReactive.<br/>add()|RListRx.<br/>add()|
@@ -150,6 +197,7 @@ SISMEMBER|RSet.<br/>contains()<br/>containsAsync()|RSetReactive.<br/>contains()|
 SMISMEMBER|RSet.<br/>containsEach()<br/>containsEachAsync()|RSetReactive.<br/>containsEach()|RSetRx.<br/>containsEach()|
 SINTERSTORE|RSet.<br/>intersection()<br/>intersectionAsync()|RSetReactive.<br/>intersection()|RSetRx.<br/>intersection()|
 SINTER|RSet.<br/>readIntersection()<br/>readIntersectionAsync()|RSetReactive.<br/>readIntersection()|RSetRx.<br/>readIntersection()|
+SINTERCARD|RSet.<br/>countIntersection()<br/>countIntersectionAsync()|RSetReactive.<br/>countIntersection()|RSetRx.<br/>countIntersection()|
 SMEMBERS|RSet.<br/>readAll()<br/>readAllAsync()|RSetReactive.<br/>readAll()|RSetRx.<br/>readAll()|
 SMOVE|RSet.<br/>move()<br/>moveAsync()|RSetReactive.<br/>move()|RSetRx.<br/>move()|
 SORT|RList.<br/>readSort()<br/>sortTo()<br/>readSortAsync()<br/>sortToAsync()|RListReactive.<br/>readSort()<br/>sortTo()|RListRx.<br/>readSort()<br/>sortTo()|
@@ -157,6 +205,9 @@ SPOP|RSet.<br/>removeRandom()<br/>removeRandomAsync()|RSetReactive.<br/>removeRa
 SREM|RSet.<br/>remove()<br/>removeAsync()|RSetReactive.<br/>remove()|RSetRx.<br/>remove()|
 SSCAN|RSet.<br/>iterator()|RSetReactive.<br/>iterator()|RSetRx.<br/>iterator()|
 SUBSCRIBE|RTopic.<br/>addListener()|RTopicReactive.<br/>addListener()|RTopicRx.<br/>addListener()|
+SPUBLISH|RShardedTopic.<br/>publish()<br/>publishAsync()|RShardedTopicReactive.<br/>publish()|RShardedTopicRx.<br/>publish()|
+SSUBSCRIBE|RShardedTopic.<br/>addListener()|RShardedTopicReactive.<br/>addListener()|RShardedTopicRx.<br/>addListener()|
+SUNSUBSCRIBE|RShardedTopic.<br/>removeListener()<br/>removeAllListeners()|RShardedTopicReactive.<br/>removeListener()|RShardedTopicRx.<br/>removeListener()|
 SUNION|RSet.<br/>readUnion()<br/>readUnionAsync()|RSetReactive.<br/>readUnion()|RSetRx.<br/>readUnion()|
 SUNIONSTORE|RSet.<br/>union()<br/>unionAsync()|RSetReactive.<br/>union()|RSetRx.<br/>union()|
 SWAPDB|RKeys.<br/>swapdb()<br/>swapdbAsync()|RKeysReactive.<br/>swapdb()|RKeysRx.<br/>swapdb()|
@@ -164,6 +215,17 @@ TTL|RExpirable.<br/>remainTimeToLive()<br/>remainTimeToLiveAsync()|RExpirableRea
 TYPE|RKeys.<br/>getType()<br/>getTypeAsync()|RKeysReactive.<br/>getType()|RKeysRx.<br/>getType()|
 TOUCH|RObject.<br/>touch()<br/>touchAsync()|RObjectReactive.<br/>touch()|RObjectRx.<br/>touch()|
 UNSUBSCRIBE|RTopic.<br/>removeListener()|RTopicReactive.<br/>removeListener()|RTopicRx.<br/>removeListener()|
+VADD|RVectorSet.<br/>add()<br/>addAsync()|RVectorSetReactive.<br/>add()|RVectorSetRx.<br/>add()|
+VCARD|RVectorSet.<br/>size()<br/>sizeAsync()|RVectorSetReactive.<br/>size()|RVectorSetRx.<br/>size()|
+VDIM|RVectorSet.<br/>dimensions()<br/>dimensionsAsync()|RVectorSetReactive.<br/>dimensions()|RVectorSetRx.<br/>dimensions()|
+VEMB|RVectorSet.<br/>getVector()<br/>getRawVector()<br/>getVectorAsync()<br/>getRawVectorAsync()|RVectorSetReactive.<br/>getVector()<br/>getRawVector()|RVectorSetRx.<br/>getVector()<br/>getRawVector()|
+VGETATTR|RVectorSet.<br/>getAttributes()<br/>getAttributesAsync()|RVectorSetReactive.<br/>getAttributes()|RVectorSetRx.<br/>getAttributes()|
+VINFO|RVectorSet.<br/>getInfo()<br/>getInfoAsync()|RVectorSetReactive.<br/>getInfo()|RVectorSetRx.<br/>getInfo()|
+VLINKS|RVectorSet.<br/>getNeighbors()<br/>getNeighborEntries()<br/>getNeighborsAsync()<br/>getNeighborEntriesAsync()|RVectorSetReactive.<br/>getNeighbors()<br/>getNeighborEntries()|RVectorSetRx.<br/>getNeighbors()<br/>getNeighborEntries()|
+VRANDMEMBER|RVectorSet.<br/>random()<br/>randomAsync()|RVectorSetReactive.<br/>random()|RVectorSetRx.<br/>random()|
+VREM|RVectorSet.<br/>remove()<br/>removeAsync()|RVectorSetReactive.<br/>remove()|RVectorSetRx.<br/>remove()|
+VSETATTR|RVectorSet.<br/>setAttributes()<br/>setAttributesAsync()|RVectorSetReactive.<br/>setAttributes()|RVectorSetRx.<br/>setAttributes()|
+VSIM|RVectorSet.<br/>getSimilar()<br/>getSimilarEntries()<br/>getSimilarAsync()<br/>getSimilarEntriesAsync()|RVectorSetReactive.<br/>getSimilar()<br/>getSimilarEntries()|RVectorSetRx.<br/>getSimilar()<br/>getSimilarEntries()|
 UNLINK|RObject.<br/>unlink()<br/>unlinkAsync()|RObjectReactive.<br/>unlink()|RObjectRx.<br/>unlink()|
 WAIT|BatchOptions.<br/>sync()|BatchOptions.<br/>sync()|BatchOptions.<br/>sync()|
 WAITAOF|BatchOptions.<br/>syncAOF()|BatchOptions.<br/>syncAOF()|BatchOptions.<br/>syncAOF()|
