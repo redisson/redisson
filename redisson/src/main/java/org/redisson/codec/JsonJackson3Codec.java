@@ -138,6 +138,7 @@ public class JsonJackson3Codec extends BaseCodec {
                 .allowIfSubType(Object.class)
                 .build();
 
+        builder.addMixIn(UUID.class, UuidMixin.class);
         builder.activateDefaultTypingAsProperty(typeValidator,
                 DefaultTyping.NON_FINAL, "@class");
     }
@@ -176,8 +177,7 @@ public class JsonJackson3Codec extends BaseCodec {
                 // Mapper settings
                 .enable(MapperFeature.PROPAGATE_TRANSIENT_MARKER)
                 // Generator settings - don't close the stream, let Redisson handle it
-                .disable(StreamWriteFeature.AUTO_CLOSE_TARGET)
-                .addMixIn(UUID.class, UuidMixin.class);
+                .disable(StreamWriteFeature.AUTO_CLOSE_TARGET);
 
         initTypeInclusion(b);
         return b.build();
