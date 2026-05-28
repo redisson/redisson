@@ -15,10 +15,7 @@
  */
 package org.redisson.codec;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
-import io.netty.buffer.ByteBufInputStream;
-import io.netty.buffer.ByteBufOutputStream;
+import io.netty.buffer.*;
 import org.apache.commons.compress.compressors.lz4.BlockLZ4CompressorInputStream;
 import org.apache.commons.compress.compressors.lz4.BlockLZ4CompressorOutputStream;
 import org.redisson.client.codec.BaseCodec;
@@ -27,6 +24,7 @@ import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
 
+import java.io.DataInputStream;
 import java.io.IOException;
 
 /**
@@ -67,12 +65,13 @@ public class LZ4CodecV2 extends BaseCodec {
         @Override
         public Object decode(ByteBuf buf, State state) throws IOException {
             int decompressionSize = buf.readInt();
-            ByteBuf out = ByteBufAllocator.DEFAULT.buffer(decompressionSize);
+            byte[] bytes = new byte[decompressionSize];
+            ByteBufInputStream ios = new ByteBufInputStream(buf);
+            try (DataInputStream in = new DataInputStream(new BlockLZ4CompressorInputStream(ios))) {
+                in.readFully(bytes, 0, decompressionSize);
+            }
+            ByteBuf out = Unpooled.wrappedBuffer(bytes);
             try {
-                ByteBufInputStream ios = new ByteBufInputStream(buf);
-                BlockLZ4CompressorInputStream in = new BlockLZ4CompressorInputStream(ios);
-                out.writeBytes(in, buf.readableBytes());
-                in.close();
                 return innerCodec.getValueDecoder().decode(out, state);
             } finally {
                 out.release();
