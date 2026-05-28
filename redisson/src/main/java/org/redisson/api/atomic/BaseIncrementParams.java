@@ -28,15 +28,15 @@ import java.util.Objects;
  */
 public abstract class BaseIncrementParams<T> implements BaseIncrementArgs<T> {
 
-    private OverflowPolicy overflowPolicy;
+    private boolean saturate;
     private Duration timeToLive;
     private Instant expireAt;
     private boolean persist;
     private boolean expireIfNotSet;
 
     @Override
-    public T overflow(OverflowPolicy overflowPolicy) {
-        this.overflowPolicy = Objects.requireNonNull(overflowPolicy, "Overflow policy can't be null");
+    public T saturate() {
+        saturate = true;
         return (T) this;
     }
 
@@ -70,8 +70,8 @@ public abstract class BaseIncrementParams<T> implements BaseIncrementArgs<T> {
         return (T) this;
     }
 
-    public OverflowPolicy getOverflowPolicy() {
-        return overflowPolicy;
+    public boolean isSaturate() {
+        return saturate;
     }
 
     public Duration getTimeToLive() {

@@ -28,12 +28,15 @@ import java.time.Instant;
 public interface BaseIncrementArgs<T> {
 
     /**
-     * Defines overflow policy used if the increment result is out of bounds.
+     * Caps the increment result at the lower or upper bound (or the type
+     * limits when no explicit bound is given) instead of rejecting it.
+     * <p>
+     * Without this option, an out-of-bounds result leaves the value and its
+     * expiration unchanged, and the current value is returned.
      *
-     * @param overflowPolicy overflow policy
      * @return arguments object
      */
-    T overflow(OverflowPolicy overflowPolicy);
+    T saturate();
 
     /**
      * Defines the specified expiration time.

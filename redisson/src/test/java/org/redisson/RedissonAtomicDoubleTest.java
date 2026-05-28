@@ -8,8 +8,6 @@ import org.redisson.api.atomic.DoubleIncrementArgs;
 import java.math.BigDecimal;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.redisson.api.atomic.OverflowPolicy.REJECT;
-import static org.redisson.api.atomic.OverflowPolicy.SAT;
 
 public class RedissonAtomicDoubleTest extends RedisDockerTest {
 
@@ -144,10 +142,10 @@ public class RedissonAtomicDoubleTest extends RedisDockerTest {
         al.set(1.5);
 
         assertThat(al.incrementAndGet(DoubleIncrementArgs.defaults())).isEqualTo(2.5);
-        assertThat(al.incrementAndGet(DoubleIncrementArgs.by(0.75).upperBound(3.0).overflow(SAT))).isEqualTo(3.0);
-        assertThat(al.incrementAndGet(DoubleIncrementArgs.by(1.0).upperBound(3.0).overflow(REJECT))).isEqualTo(3.0);
+        assertThat(al.incrementAndGet(DoubleIncrementArgs.by(0.75).upperBound(3.0).saturate())).isEqualTo(3.0);
+        assertThat(al.incrementAndGet(DoubleIncrementArgs.by(1.0).upperBound(3.0))).isEqualTo(3.0);
         assertThat(al.get()).isEqualTo(3.0);
-        assertThat(al.incrementAndGet(DoubleIncrementArgs.by(-5.0).lowerBound(1.0).overflow(SAT))).isEqualTo(1.0);
+        assertThat(al.incrementAndGet(DoubleIncrementArgs.by(-5.0).lowerBound(1.0).saturate())).isEqualTo(1.0);
     }
 
     @Test

@@ -18,11 +18,10 @@ package org.redisson;
 import org.redisson.api.ObjectListener;
 import org.redisson.api.RAtomicLong;
 import org.redisson.api.RFuture;
-import org.redisson.api.atomic.CompareAndDeleteArgs;
 import org.redisson.api.atomic.BaseIncrementParams;
+import org.redisson.api.atomic.CompareAndDeleteArgs;
 import org.redisson.api.atomic.LongIncrementArgs;
 import org.redisson.api.atomic.LongIncrementParams;
-import org.redisson.api.atomic.OverflowPolicy;
 import org.redisson.api.listener.IncrByListener;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
@@ -204,7 +203,7 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
             params.add("UBOUND");
             params.add(incrementParams.getUpperBound().longValue());
         }
-        if (incrementParams.getOverflowPolicy() == OverflowPolicy.SAT) {
+        if (incrementParams.isSaturate()) {
             params.add("SATURATE");
         }
         addExpirationParams(incrementParams, params);
