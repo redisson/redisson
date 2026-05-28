@@ -1,6 +1,7 @@
 package org.redisson.codec;
 
 import java.io.IOException;
+import java.util.UUID;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -8,8 +9,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
+import io.netty.buffer.ByteBuf;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.redisson.client.handler.State;
 
 public class JsonJacksonCodecTest {
 
@@ -61,5 +64,19 @@ public class JsonJacksonCodecTest {
 
         Assertions.assertFalse(objectMapper.getDeserializationConfig().isEnabled(DeserializationFeature.UNWRAP_ROOT_VALUE));
         Assertions.assertFalse(codec.getObjectMapper().getDeserializationConfig().isEnabled(DeserializationFeature.UNWRAP_ROOT_VALUE));
+    }
+
+    @Test
+    public void shouldRoundTripUuidViaUntypedDecoder() throws IOException {
+        UUID uuid = UUID.randomUUID();
+        JsonJacksonCodec codec = new JsonJacksonCodec();
+
+        ByteBuf encoded = codec.getValueEncoder().encode(uuid);
+        try {
+            Object decoded = codec.getValueDecoder().decode(encoded, new State());
+            Assertions.assertEquals(uuid, decoded);
+        } finally {
+            encoded.release();
+        }
     }
 }

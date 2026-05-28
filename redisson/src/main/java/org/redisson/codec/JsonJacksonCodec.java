@@ -162,6 +162,7 @@ public class JsonJacksonCodec extends BaseCodec {
     }
 
     protected void initTypeInclusion(ObjectMapper mapObjectMapper) {
+        mapObjectMapper.addMixIn(UUID.class, UuidMixin.class);
         TypeResolverBuilder<?> mapTyper = new DefaultTypeResolverBuilder(DefaultTyping.NON_FINAL) {
             public boolean useForType(JavaType t) {
                 switch (_appliesFor) {
@@ -208,7 +209,6 @@ public class JsonJacksonCodec extends BaseCodec {
         objectMapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
         objectMapper.enable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY);
         objectMapper.addMixIn(Throwable.class, ThrowableMixIn.class);
-        objectMapper.addMixIn(UUID.class, UuidMixin.class);
     }
 
     @Override
