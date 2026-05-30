@@ -495,6 +495,13 @@ public class BaseTransactionalMap<K, V> extends BaseTransactionalObject {
                     counter.incrementAndGet();
                     state.put(keyHash, MapEntry.NULL);
                 }
+                // Release locks for keys that do not exist in Redis.
+                // Locks were acquired for all keys, but operations are only added for keys that exist.
+                for (K key : keyList) {
+                    if (!res.containsKey(key)) {
+                        getLock(key).unlockAsync(threadId);
+                    }
+                }
                 return counter.get();
             });
         }, locks);
