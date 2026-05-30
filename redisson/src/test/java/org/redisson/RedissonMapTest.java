@@ -274,6 +274,37 @@ public class RedissonMapTest extends BaseMapTest {
     }
 
     @Test
+    public void testKeysAsync() {
+        RMap<Integer, String> map = redisson.getMap("simple12");
+        map.put(1, "12");
+        map.put(2, "33");
+        map.put(3, "43");
+
+        List<Integer> list = new ArrayList<>();
+        AsyncIterator<Integer> iterator = map.keysAsync();
+        CompletionStage<Void> f = iterateAll(iterator, list);
+        f.toCompletableFuture().join();
+
+        assertThat(map.size()).isEqualTo(list.size());
+        assertThat(list).containsExactlyInAnyOrder(1, 2, 3);
+    }
+
+    @Test
+    public void testKeysByCountAsync() {
+        RMap<Integer, String> map = redisson.getMap("simple12");
+        map.put(1, "12");
+        map.put(2, "33");
+        map.put(3, "43");
+
+        List<Integer> list = new ArrayList<>();
+        AsyncIterator<Integer> iterator = map.keysAsync(2);
+        CompletionStage<Void> f = iterateAll(iterator, list);
+        f.toCompletableFuture().join();
+
+        assertThat(list).containsExactlyInAnyOrder(1, 2, 3);
+    }
+
+    @Test
     public void testValuesByPatternAsync() {
         RMap<String, String> map = getMap("simple", StringCodec.INSTANCE);
         map.put("10", "100");

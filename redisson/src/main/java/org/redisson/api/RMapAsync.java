@@ -285,6 +285,23 @@ public interface RMapAsync<K, V> extends RExpirableAsync {
     AsyncIterator<V> valuesAsync(int count);
 
     /**
+     * Returns keys of this map using iterable.
+     * Keys are loaded in batch. Batch size is <code>10</code>.
+     *
+     * @return Asynchronous Iterable object
+     */
+    AsyncIterator<K> keysAsync();
+
+    /**
+     * Returns keys of this map using iterable.
+     * Keys are loaded in batch. Batch size is defined by <code>count</code> param.
+     *
+     * @param count - size of keys batch
+     * @return Asynchronous Iterable object
+     */
+    AsyncIterator<K> keysAsync(int count);
+
+    /**
      * Returns map entries using iterable.
      * Map entries are loaded in batch. Batch size is <code>10</code>.
      *

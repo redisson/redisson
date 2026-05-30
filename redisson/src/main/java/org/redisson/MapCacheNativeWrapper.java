@@ -1062,6 +1062,16 @@ public class MapCacheNativeWrapper<K, V> implements RMapCache<K, V>, Supplier<RM
     }
 
     @Override
+    public AsyncIterator<K> keysAsync() {
+        return cache.keysAsync();
+    }
+
+    @Override
+    public AsyncIterator<K> keysAsync(int count) {
+        return cache.keysAsync(count);
+    }
+
+    @Override
     public AsyncIterator<Entry<K, V>> entrySetAsync() {
         return cache.entrySetAsync();
     }
