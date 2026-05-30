@@ -7,6 +7,9 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.*;
+import org.redisson.api.redisnode.RedisClusterMaster;
+import org.redisson.api.redisnode.RedisNode;
+import org.redisson.api.redisnode.RedisNodes;
 import org.redisson.api.search.SpellcheckOptions;
 import org.redisson.api.search.aggregate.*;
 import org.redisson.api.search.index.*;
@@ -14,7 +17,10 @@ import org.redisson.api.search.profile.AggregateProfileResult;
 import org.redisson.api.search.profile.ProfileAggregationOptions;
 import org.redisson.api.search.profile.ProfileQueryOptions;
 import org.redisson.api.search.profile.SearchProfileResult;
-import org.redisson.api.search.query.*;
+import org.redisson.api.search.query.Document;
+import org.redisson.api.search.query.QueryOptions;
+import org.redisson.api.search.query.ReturnAttribute;
+import org.redisson.api.search.query.SearchResult;
 import org.redisson.api.search.query.hybrid.Combine;
 import org.redisson.api.search.query.hybrid.HybridQueryArgs;
 import org.redisson.api.search.query.hybrid.HybridSearchResult;
@@ -22,14 +28,14 @@ import org.redisson.api.search.query.hybrid.VectorSimilarity;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.codec.CompositeCodec;
 import org.redisson.codec.JacksonCodec;
-import org.redisson.config.Config;
-import org.redisson.config.Protocol;
-import org.testcontainers.containers.GenericContainer;
 
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.time.Duration;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -1608,4 +1614,59 @@ public class RedissonSearchTest extends RedisDockerTest {
         }
 
     }
+
+    private static final Pattern CALLS_PATTERN = Pattern.compile("\\bcalls=(\\d+)");
+
+    private static long parseCalls(String commandStat) {
+        Matcher m = CALLS_PATTERN.matcher(commandStat);
+        if (m.find()) {
+            return Long.parseLong(m.group(1));
+        }
+        return 0;
+    }
+
+    private static Map<InetSocketAddress, Long> aggregateCallsPerMaster(RedissonClient redisson) {
+        Map<InetSocketAddress, Long> result = new HashMap<>();
+        for (RedisClusterMaster master : redisson.getRedisNodes(RedisNodes.CLUSTER).getMasters()) {
+            Map<String, String> stats = master.info(RedisNode.InfoSection.COMMANDSTATS);
+            long calls = 0;
+            for (Map.Entry<String, String> e : stats.entrySet()) {
+                if (e.getKey().equalsIgnoreCase("cmdstat_FT.AGGREGATE")) {
+                    calls += parseCalls(e.getValue());
+                }
+            }
+            result.put(master.getAddr(), calls);
+        }
+        return result;
+    }
+
+    @Test
+    public void testClusterAggregationAcrossMasters() {
+        withNewCluster(data -> {
+            RedissonClient clusterRedisson = data.redisson();
+            RSearch search = clusterRedisson.getSearch(StringCodec.INSTANCE);
+
+            search.createIndex("idx:iot:asset", IndexOptions.defaults()
+                            .on(IndexType.HASH)
+                            .prefix(Arrays.asList("asset:")),
+                    FieldIndex.numeric("value"));
+
+            for (int i = 0; i < 30; i++) {
+                RMap<String, Integer> m = clusterRedisson.getMap("asset:" + i, StringCodec.INSTANCE);
+                m.put("value", 3);
+            }
+
+            int queries = 90;
+            for (int i = 0; i < queries; i++) {
+                AggregationResult s = search.aggregate("idx:iot:asset", "*",
+                        AggregationOptions.defaults().groupBy(GroupBy.fieldNames()
+                                .reducers(Reducer.sum("@value").as("total"))));
+                assertThat(s.getAttributes().get(0).get("total")).isEqualTo("90");
+            }
+
+            Map<InetSocketAddress, Long> after = aggregateCallsPerMaster(clusterRedisson);
+            assertThat(after.values()).containsExactly(30L, 30L, 30L);
+        });
+    }
+
 }
