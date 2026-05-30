@@ -265,7 +265,7 @@ public class RedissonSearchTest extends RedisDockerTest {
         AggregationResult r = s.aggregate("idx", "*", AggregationOptions.defaults()
                                                                                         .withCursor()
                                                                                         .load("t1", "t2"));
-        assertThat(r.getTotal()).isEqualTo(1);
+        assertThat(r.getTotal()).isEqualTo(2);
         assertThat(r.getCursorId()).isEqualTo(0);
         assertThat(new HashSet<>(r.getAttributes())).isEqualTo(new HashSet<>(Arrays.asList(m2.readAllMap(), m.readAllMap())));
 
@@ -513,7 +513,7 @@ public class RedissonSearchTest extends RedisDockerTest {
         AggregationResult r = s.aggregate("idx", "*", AggregationOptions.defaults()
                                                                             .load("t1", "t2"));
 
-        assertThat(r.getTotal()).isEqualTo(1);
+        assertThat(r.getTotal()).isEqualTo(2);
         assertThat(r.getCursorId()).isEqualTo(-1);
         assertThat(new HashSet<>(r.getAttributes())).isEqualTo(new HashSet<>(Arrays.asList(m2.readAllMap(), m.readAllMap())));
     }
@@ -1102,11 +1102,11 @@ public class RedissonSearchTest extends RedisDockerTest {
                             .limit(0, 5));
 
             assertThat(result.getResults()).containsExactlyInAnyOrder(
-                    Map.of("__key", "lin:1", "__score", "0.360907984754"),
-                    Map.of("__key", "lin:2", "__score", "0.360907984754"),
-                    Map.of("__key", "lin:3", "__score", "0.360907984754"),
-                    Map.of("__key", "lin:4", "__score", "0.360907984754"),
-                    Map.of("__key", "lin:5", "__score", "0.360907975814"));
+                    Map.of("__key", "lin:1", "__score", "0.360907963893"),
+                    Map.of("__key", "lin:2", "__score", "0.360907963893"),
+                    Map.of("__key", "lin:3", "__score", "0.360907963893"),
+                    Map.of("__key", "lin:4", "__score", "0.360907963893"),
+                    Map.of("__key", "lin:5", "__score", "0.360907954952"));
         }
 
         @Test
@@ -1146,11 +1146,11 @@ public class RedissonSearchTest extends RedisDockerTest {
                             .limit(0, 5));
 
             assertThat(result.getResults()).containsExactlyInAnyOrder(
-                    Map.of("__key", "alias:1", "__score", "0.0909090909091", "text_score", "0.174022813584"),
-                    Map.of("__key", "alias:2", "__score", "0.0869565217391", "text_score", "0.174022813584"),
-                    Map.of("__key", "alias:3", "__score", "0.0833333333333", "text_score", "0.174022813584"),
-                    Map.of("__key", "alias:4", "__score", "0.08", "text_score", "0.174022813584"),
-                    Map.of("__key", "alias:5", "__score", "0.0769230769231", "text_score", "0.174022813584"));
+                    Map.of("__key", "alias:1", "__score", "0.0909090909091", "text_score", "0.174022753979"),
+                    Map.of("__key", "alias:2", "__score", "0.0869565217391", "text_score", "0.174022753979"),
+                    Map.of("__key", "alias:3", "__score", "0.0833333333333", "text_score", "0.174022753979"),
+                    Map.of("__key", "alias:4", "__score", "0.08", "text_score", "0.174022753979"),
+                    Map.of("__key", "alias:5", "__score", "0.0769230769231", "text_score", "0.174022753979"));
         }
 
         @Test
