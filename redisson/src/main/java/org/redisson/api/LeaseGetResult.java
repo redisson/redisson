@@ -18,9 +18,9 @@ package org.redisson.api;
 /**
  * Result returned by {@link RLeasedMap#getWithLease(Object, java.time.Duration)} method.
  * <p>
- * If the entry is present in cache then {@link #getValue()} returns the value and {@link #getLeaseToken()} is {@code 0}.
- * If the entry is absent then {@link #getValue()} is {@code null} and {@link #getLeaseToken()} returns the lease token
- * (a millisecond timestamp identifying the current lease), or {@code 0} if no lease information is available.
+ * If the entry is present in cache then {@link #getValue()} returns the value and {@link #getLeaseToken()} is {@code null}.
+ * If the entry is absent then {@link #getValue()} is {@code null} and {@link #getLeaseToken()} returns the lease token,
+ * or {@code null} if no lease information is available.
  *
  * @author nhancdt2602
  *
@@ -31,9 +31,9 @@ public final class LeaseGetResult<K, V> {
 
     private final V value;
     private final boolean leaseAcquired;
-    private final long leaseToken;
+    private final String leaseToken;
 
-    public LeaseGetResult(V value, boolean leaseAcquired, long leaseToken) {
+    public LeaseGetResult(V value, boolean leaseAcquired, String leaseToken) {
         this.value = value;
         this.leaseAcquired = leaseAcquired;
         this.leaseToken = leaseToken;
@@ -69,13 +69,11 @@ public final class LeaseGetResult<K, V> {
     }
 
     /**
-     * Returns lease token (Unix timestamp in milliseconds at lease grant) if cache miss happened,
-     * otherwise {@code 0}.
+     * Returns lease token if cache miss happened, otherwise {@code null}.
      *
-     * @return lease token or {@code 0}
+     * @return lease token or {@code null}
      */
-    public long getLeaseToken() {
+    public String getLeaseToken() {
         return leaseToken;
     }
 }
-

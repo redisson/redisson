@@ -20,7 +20,7 @@ import java.time.Duration;
 /**
  * Asynchronous API for lease-based cache operations.
  * <p>
- * Lease token is a millisecond timestamp (epoch millis).
+ * Lease token is an opaque string identifier generated on cache miss.
  *
  * @author nhancdt2602
  *
@@ -34,7 +34,7 @@ public interface RLeasedMapAsync<K, V> {
      * <p>
      * If value is absent then tries to acquire a lease and returns it together with {@code null} value.
      * Lease is automatically released after {@code leaseTimeToLive} timeout.
-     * On miss, {@link LeaseGetResult#getLeaseToken()} carries the lease identifier as a millisecond timestamp (epoch millis).
+     * On miss, {@link LeaseGetResult#getLeaseToken()} carries the lease identifier.
      *
      * @param key map key
      * @param leaseTimeToLive lease time to live
@@ -57,10 +57,10 @@ public interface RLeasedMapAsync<K, V> {
      *
      * @param key map key
      * @param value map value
-     * @param leaseToken lease token (millisecond timestamp) returned by {@link #getWithLeaseAsync(Object, Duration)}
+     * @param leaseToken lease token returned by {@link #getWithLeaseAsync(Object, Duration)}
      * @return {@code true} if value has been stored, otherwise {@code false}
      */
-    RFuture<Boolean> putWithLeaseAsync(K key, V value, long leaseToken);
+    RFuture<Boolean> putWithLeaseAsync(K key, V value, String leaseToken);
 
     /**
      * Stores the specified {@code value} mapped by {@code key} only if the given {@code leaseToken} is still valid.
@@ -68,10 +68,10 @@ public interface RLeasedMapAsync<K, V> {
      * @param key map key
      * @param value map value
      * @param ttl time to live for key/value entry. Use {@link Duration#ZERO} to store infinitely.
-     * @param leaseToken lease token (millisecond timestamp) returned by {@link #getWithLeaseAsync(Object, Duration)}
+     * @param leaseToken lease token returned by {@link #getWithLeaseAsync(Object, Duration)}
      * @return {@code true} if value has been stored, otherwise {@code false}
      */
-    RFuture<Boolean> putWithLeaseAsync(K key, V value, Duration ttl, long leaseToken);
+    RFuture<Boolean> putWithLeaseAsync(K key, V value, Duration ttl, String leaseToken);
 
     /**
      * Stores the specified {@code value} mapped by {@code key} only if the given {@code leaseToken} is still valid.
@@ -80,9 +80,9 @@ public interface RLeasedMapAsync<K, V> {
      * @param value map value
      * @param ttl time to live for key/value entry. Use {@link Duration#ZERO} to store infinitely.
      * @param maxIdleTime max idle time for key/value entry. Use {@link Duration#ZERO} to disable max-idle expiration.
-     * @param leaseToken lease token (millisecond timestamp) returned by {@link #getWithLeaseAsync(Object, Duration)}
+     * @param leaseToken lease token returned by {@link #getWithLeaseAsync(Object, Duration)}
      * @return {@code true} if value has been stored, otherwise {@code false}
      */
-    RFuture<Boolean> putWithLeaseAsync(K key, V value, Duration ttl, Duration maxIdleTime, long leaseToken);
+    RFuture<Boolean> putWithLeaseAsync(K key, V value, Duration ttl, Duration maxIdleTime, String leaseToken);
 }
 

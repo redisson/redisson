@@ -22,7 +22,7 @@ import java.time.Duration;
 /**
  * Reactive API for lease-based cache operations.
  * <p>
- * Lease token is a millisecond timestamp (epoch millis).
+ * Lease token is an opaque string identifier generated on cache miss.
  *
  * @author nhancdt2602
  *
@@ -58,10 +58,10 @@ public interface RLeasedMapReactive<K, V> {
      *
      * @param key map key
      * @param value map value
-     * @param leaseToken lease token (millisecond timestamp) returned by {@link #getWithLease(Object, Duration)}
+     * @param leaseToken lease token returned by {@link #getWithLease(Object, Duration)}
      * @return {@code true} if value has been stored, otherwise {@code false}
      */
-    Mono<Boolean> putWithLease(K key, V value, long leaseToken);
+    Mono<Boolean> putWithLease(K key, V value, String leaseToken);
 
     /**
      * Stores the specified {@code value} mapped by {@code key} only if the given {@code leaseToken} is still valid.
@@ -69,10 +69,10 @@ public interface RLeasedMapReactive<K, V> {
      * @param key map key
      * @param value map value
      * @param ttl time to live for key/value entry. If {@link Duration#ZERO} then stores infinitely.
-     * @param leaseToken lease token (millisecond timestamp) returned by {@link #getWithLease(Object, Duration)}
+     * @param leaseToken lease token returned by {@link #getWithLease(Object, Duration)}
      * @return {@code true} if value has been stored, otherwise {@code false}
      */
-    Mono<Boolean> putWithLease(K key, V value, Duration ttl, long leaseToken);
+    Mono<Boolean> putWithLease(K key, V value, Duration ttl, String leaseToken);
 
     /**
      * Stores the specified {@code value} mapped by {@code key} only if the given {@code leaseToken} is still valid.
@@ -81,9 +81,9 @@ public interface RLeasedMapReactive<K, V> {
      * @param value map value
      * @param ttl time to live for key/value entry. If {@link Duration#ZERO} then stores infinitely.
      * @param maxIdleTime max idle time for key/value entry. If {@link Duration#ZERO} then doesn't affect expiration.
-     * @param leaseToken lease token (millisecond timestamp) returned by {@link #getWithLease(Object, Duration)}
+     * @param leaseToken lease token returned by {@link #getWithLease(Object, Duration)}
      * @return {@code true} if value has been stored, otherwise {@code false}
      */
-    Mono<Boolean> putWithLease(K key, V value, Duration ttl, Duration maxIdleTime, long leaseToken);
+    Mono<Boolean> putWithLease(K key, V value, Duration ttl, Duration maxIdleTime, String leaseToken);
 }
 
