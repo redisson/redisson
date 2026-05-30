@@ -33,6 +33,7 @@ import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -65,6 +66,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     protected final AtomicReference<CompletableFuture<Void>> lazyConnectLatch = new AtomicReference<>();
 
     private boolean lastAttempt;
+
+    protected final AtomicInteger rrCounter = new AtomicInteger(0);
 
     MasterSlaveConnectionManager(BaseMasterSlaveServersConfig<?> cfg, Config configCopy) {
         if (cfg instanceof MasterSlaveServersConfig) {
@@ -156,6 +159,28 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             return Collections.singletonList(masterSlaveEntry);
         }
         return Collections.emptyList();
+    }
+
+    /**
+     * Selects the next master entry using round-robin strategy.
+     * In single-server mode returns the single master; in cluster mode
+     * distributes across all cluster masters.
+     */
+    public MasterSlaveEntry getNextEntry() {
+        lazyConnect();
+
+        if (masterSlaveEntry != null) {
+            return masterSlaveEntry;
+        }
+
+        Collection<MasterSlaveEntry> entries = getEntrySet();
+        if (entries.isEmpty()) {
+            return null;
+        }
+
+        List<MasterSlaveEntry> list = new ArrayList<>(entries);
+        int index = Math.floorMod(rrCounter.getAndIncrement(), list.size());
+        return list.get(index);
     }
 
     protected final void lazyConnect() {

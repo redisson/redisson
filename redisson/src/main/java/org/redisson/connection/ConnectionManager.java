@@ -50,6 +50,13 @@ public interface ConnectionManager {
 
     Collection<MasterSlaveEntry> getEntrySet();
 
+    /**
+     * Returns the next master entry using round-robin strategy.
+     * In single-server mode returns the single master; in cluster mode
+     * distributes across all cluster masters.
+     */
+    MasterSlaveEntry getNextEntry();
+
     MasterSlaveEntry getEntry(String name);
 
     MasterSlaveEntry getEntry(int slot);
