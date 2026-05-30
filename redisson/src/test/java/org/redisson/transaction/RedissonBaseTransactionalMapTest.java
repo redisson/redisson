@@ -310,5 +310,24 @@ public abstract class RedissonBaseTransactionalMapTest extends RedisDockerTest {
         assertThat(m.get("3")).isEqualTo("4");
     }
 
-    
+    @Test
+    public void testFastRemoveNonExistentKeyDoesNotLeakLock() {
+        RMap<String, String> m = getMap();
+
+        // Remove a non-existent key in a transaction and commit
+        RTransaction tx1 = redisson.createTransaction(TransactionOptions.defaults().timeout(5, TimeUnit.SECONDS));
+        RMap<String, String> map1 = getTransactionalMap(tx1);
+        map1.fastRemove("nonexistent-key");
+        tx1.commit();
+
+        // Second transaction removing the same non-existent key should NOT timeout
+        RTransaction tx2 = redisson.createTransaction(TransactionOptions.defaults().timeout(5, TimeUnit.SECONDS));
+        RMap<String, String> map2 = getTransactionalMap(tx2);
+        map2.fastRemove("nonexistent-key");
+        tx2.commit();
+
+        assertThat(m.size()).isZero();
+    }
+
+
 }
