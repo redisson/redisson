@@ -785,6 +785,29 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     @Override
+    public AsyncIterator<K> keysAsync() {
+        return keysAsync(10);
+    }
+
+    @Override
+    public AsyncIterator<K> keysAsync(int count) {
+        AsyncIterator<K> asyncIterator = new BaseAsyncIterator<K, Map.Entry<Object, Object>>() {
+
+            @Override
+            protected RFuture<ScanResult<Map.Entry<Object, Object>>> iterator(RedisClient client, String nextItPos) {
+                return scanIteratorAsync(name, client, nextItPos, null, count);
+            }
+
+            @Override
+            protected K getValue(java.util.Map.Entry<Object, Object> entry) {
+                return (K) entry.getKey();
+            }
+
+        };
+        return new CompositeAsyncIterator<>(Arrays.asList(asyncIterator), 0);
+    }
+
+    @Override
     public Set<java.util.Map.Entry<K, V>> entrySet() {
         return entrySet(null);
     }
