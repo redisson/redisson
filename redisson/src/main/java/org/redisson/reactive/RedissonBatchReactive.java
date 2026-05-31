@@ -423,4 +423,11 @@ public class RedissonBatchReactive implements RBatchReactive {
                 RCuckooFilterReactive.class);
     }
 
+    @Override
+    public RVectorSetReactive getVectorSet(String name) {
+        return ReactiveProxyBuilder.create(executorService,
+                new RedissonVectorSet(executorService, name),
+                RVectorSetReactive.class);
+    }
+
 }

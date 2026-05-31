@@ -53,6 +53,14 @@ public interface RBatchReactive {
     <V> RCuckooFilterReactive<V> getCuckooFilter(String name, Codec codec);
 
     /**
+     * Returns vector set instance by name.
+     * Stores vectors and associated elements in a set optimized for similarity search.
+     *
+     * @return RVectorSet object
+     */
+    RVectorSetReactive getVectorSet(String name);
+
+    /**
      * Returns bloom filter native instance by <code>name</code>.
      * Covers BF.* commands.
      *

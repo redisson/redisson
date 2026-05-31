@@ -368,5 +368,10 @@ public class RedissonBatch implements RBatch {
         return new RedissonCuckooFilter<V>(codec, executorService, name);
     }
 
+    @Override
+    public RVectorSetAsync getVectorSet(String name) {
+        return new RedissonVectorSet(executorService, name);
+    }
+
 
 }
