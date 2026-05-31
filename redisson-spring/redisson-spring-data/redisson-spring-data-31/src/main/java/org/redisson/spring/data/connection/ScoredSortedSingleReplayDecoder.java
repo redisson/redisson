@@ -42,6 +42,10 @@ public class ScoredSortedSingleReplayDecoder implements MultiDecoder<Tuple> {
     
     @Override
     public Tuple decode(List<Object> parts, State state) {
+        if (parts.isEmpty()) {
+            return null;
+        }
+
         return new DefaultTuple((byte[])parts.get(0), ((Number)parts.get(1)).doubleValue());
     }
 

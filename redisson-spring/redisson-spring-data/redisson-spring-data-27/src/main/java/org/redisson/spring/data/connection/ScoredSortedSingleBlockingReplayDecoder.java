@@ -42,6 +42,10 @@ public class ScoredSortedSingleBlockingReplayDecoder implements MultiDecoder<Red
     
     @Override
     public RedisZSetCommands.Tuple decode(List<Object> parts, State state) {
+        if (parts.isEmpty()) {
+            return null;
+        }
+
         return new DefaultTuple((byte[])parts.get(1), ((Number)parts.get(2)).doubleValue());
     }
 
