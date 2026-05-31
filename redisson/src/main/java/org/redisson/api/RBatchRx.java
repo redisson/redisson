@@ -54,6 +54,14 @@ public interface RBatchRx {
     <V> RCuckooFilterRx<V> getCuckooFilter(String name, Codec codec);
 
     /**
+     * Returns vector set instance by name.
+     * Stores vectors and associated elements in a set optimized for similarity search.
+     *
+     * @return RVectorSet object
+     */
+    RVectorSetRx getVectorSet(String name);
+
+    /**
      * Returns bloom filter native instance by <code>name</code>.
      * Covers BF.* commands.
      *

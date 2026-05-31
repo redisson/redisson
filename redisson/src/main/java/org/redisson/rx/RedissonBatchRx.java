@@ -440,4 +440,11 @@ public class RedissonBatchRx implements RBatchRx {
                 RCuckooFilterRx.class);
     }
 
+    @Override
+    public RVectorSetRx getVectorSet(String name) {
+        return RxProxyBuilder.create(executorService,
+                new RedissonVectorSet(executorService, name),
+                RVectorSetRx.class);
+    }
+
 }
