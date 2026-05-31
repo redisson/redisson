@@ -124,7 +124,7 @@ public class ForyCodec extends BaseCodec {
                 furyBuffer = MemoryUtils.wrap(out.array(), out.arrayOffset() + out.writerIndex(),
                   remainingSize);
             } else if (out.hasMemoryAddress()) {
-                furyBuffer =  MemoryUtils.buffer(out.memoryAddress() + out.writerIndex(), remainingSize);
+                furyBuffer = MemoryUtils.wrap(out.nioBuffer(out.writerIndex(), remainingSize));
             }
             if (furyBuffer != null) {
                 int size = furyBuffer.size();
