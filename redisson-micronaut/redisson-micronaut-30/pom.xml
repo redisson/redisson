@@ -132,7 +132,7 @@
         <dependency>
           <groupId>io.micronaut.test</groupId>
           <artifactId>micronaut-test-junit5</artifactId>
-          <version>3.9.2</version>
+          <version>5.0.0</version>
           <scope>test</scope>
         </dependency>
         <dependency>

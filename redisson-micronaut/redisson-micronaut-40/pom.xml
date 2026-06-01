@@ -14,7 +14,7 @@
     <properties>
         <micronaut.version>4.10.22</micronaut.version>
         <micronaut.plugin.version>4.12.0</micronaut.plugin.version>
-        <micronaut.test-plugin.version>4.10.3</micronaut.test-plugin.version>
+        <micronaut.test-plugin.version>5.0.0</micronaut.test-plugin.version>
         <main.basedir>${project.parent.parent.basedir}</main.basedir>
     </properties>
 
