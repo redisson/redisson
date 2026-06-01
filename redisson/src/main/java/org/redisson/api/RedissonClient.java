@@ -1905,6 +1905,40 @@ public interface RedissonClient {
     RBitSet getBitSet(CommonOptions options);
 
     /**
+     * Returns store of 64-bit vectors mapped by keys,
+     * with bitmask-based filtering.
+     *
+     * @param name name of object
+     * @return BitVectorStore object
+     *
+     * @param <K> type of key
+     */
+    <K> RBitVectorStore<K> getBitVectorStore(String name);
+
+    /**
+     * Returns store of 64-bit vectors mapped by keys,
+     * with bitmask-based filtering.
+     *
+     * @param name name of object
+     * @param codec codec for keys
+     * @return BitVectorStore object
+     *
+     * @param <K> type of key
+     */
+    <K> RBitVectorStore<K> getBitVectorStore(String name, Codec codec);
+
+    /**
+     * Returns store of 64-bit vectors mapped by keys,
+     * with bitmask-based filtering.
+     *
+     * @param options instance options
+     * @return BitVectorStore object
+     *
+     * @param <K> type of key
+     */
+    <K> RBitVectorStore<K> getBitVectorStore(PlainOptions options);
+
+    /**
      * Returns bloom filter instance by name.
      * 
      * @param <V> type of value

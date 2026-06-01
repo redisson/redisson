@@ -1200,6 +1200,21 @@ public final class Redisson implements RedissonClient {
     }
 
     @Override
+    public <K> RBitVectorStore<K> getBitVectorStore(String name) {
+        throw new UnsupportedOperationException("This feature is implemented in the Redisson PRO version. Please refer to https://redisson.pro/feature-comparison.html");
+    }
+
+    @Override
+    public <K> RBitVectorStore<K> getBitVectorStore(String name, Codec codec) {
+        throw new UnsupportedOperationException("This feature is implemented in the Redisson PRO version. Please refer to https://redisson.pro/feature-comparison.html");
+    }
+
+    @Override
+    public <K> RBitVectorStore<K> getBitVectorStore(PlainOptions options) {
+        throw new UnsupportedOperationException("This feature is implemented in the Redisson PRO version. Please refer to https://redisson.pro/feature-comparison.html");
+    }
+
+    @Override
     public RSemaphore getSemaphore(String name) {
         return new RedissonSemaphore(commandExecutor, name);
     }
