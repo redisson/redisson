@@ -73,7 +73,7 @@
         <dependency>
             <groupId>com.github.docker-java</groupId>
             <artifactId>docker-java-transport</artifactId>
-            <version>3.4.1</version>
+            <version>3.7.1</version>
         </dependency>
        </dependencies>
      </dependencyManagement>
