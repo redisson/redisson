@@ -2548,7 +2548,7 @@ Usage examples:
 	}).subscribe();
     ```
 
-### Similarity Search (HNSW Algorithm)
+### Similarity Search
 
 Vector sets use the Hierarchical Navigable Small World (HNSW) algorithm for approximate nearest neighbor search. HNSW provides sub-linear query time complexity and excellent recall rates, making it suitable for large-scale similarity search applications.
 
@@ -2794,7 +2794,7 @@ Usage examples:
 	}).subscribe();
     ```
 	
-### Use Cases (AI/ML Applications)
+### Use Cases
 
 Vector sets are particularly well-suited for AI and machine learning applications that require efficient similarity search over high-dimensional embeddings.
 
@@ -3085,3 +3085,5 @@ Usage examples:
 		return llm.generate(userQuestion, context);
 	}).subscribe();
     ```
+
+{% include 'data-and-services/bitvectorstore.md' %}
