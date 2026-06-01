@@ -75,6 +75,14 @@ public interface RBatch {
     <V> RCuckooFilterAsync<V> getCuckooFilter(String name, Codec codec);
 
     /**
+     * Returns vector set instance by name.
+     * Stores vectors and associated elements in a set optimized for similarity search.
+     *
+     * @return RVectorSet object
+     */
+    RVectorSetAsync getVectorSet(String name);
+
+    /**
      * Returns stream instance by <code>name</code>
      * 
      * @param <K> type of key
