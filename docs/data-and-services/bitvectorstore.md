@@ -1,6 +1,10 @@
 ## BitVectorStore
 
+*This feature is available only in [Redisson PRO](https://redisson.pro/feature-comparison.html) edition.*
+
 Java implementation of Valkey or Redis based [RBitVectorStore](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RBitVectorStore.html) object is a distributed store of 64-bit vectors mapped by keys, with fast server-side filtering by bitmask. Two distinct keys may map to vectors with identical values; they remain distinct entries. Maximum number of stored vectors is limited to `4 294 967 295`. This object is thread-safe.
+
+Requires Redis 7.0.0+ or any Valkey version.
 
 Supported match predicates (where `v` is a stored vector):
 

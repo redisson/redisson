@@ -292,3 +292,180 @@ Code examples:
 
     Single<CuckooFilterInfo> infoRx = filter.getInfo();
     ```
+
+### Use Cases
+
+Cuckoo filters provide fast, memory-efficient set membership testing where occasional false positives are acceptable but false negatives are not. Beyond what a Bloom filter offers, they support deletion and approximate counting, which makes them a fit for membership sets that change over time and for soft frequency limits.
+
+**Deduplication of Processed Items**
+
+Idempotent message handling, web-crawler URL frontiers, and "process each item once" pipelines need a compact record of what has already been seen. `addIfAbsent` both records and tests in a single call - it returns `true` only the first time an element is seen - so duplicates are skipped without a per-id lookup in a backing store. Because membership has no false negatives, a "seen" verdict is safe to act on, and unlike a Bloom filter an id can later be removed once it is safe to reprocess.
+
+=== "Sync"
+    ```java
+    RCuckooFilter<String> seen = redisson.getCuckooFilter("processed-events");
+    seen.init(1_000_000);
+
+    // addIfAbsent returns true only the first time this id is seen
+    if (seen.addIfAbsent(eventId)) {
+        process(event);          // first occurrence - handle it
+    }
+    // else: duplicate, already processed - skip
+
+    // allow the id to be processed again once the window has passed
+    seen.remove(eventId);
+    ```
+=== "Async"
+    ```java
+    RCuckooFilter<String> seen = redisson.getCuckooFilter("processed-events");
+
+    // true only on first sight of the id
+    RFuture<Boolean> firstSeen = seen.addIfAbsentAsync(eventId);
+    firstSeen.whenComplete((isNew, exception) -> {
+        if (isNew) {
+            process(event);
+        }
+    });
+
+    // allow reprocessing later
+    RFuture<Boolean> removed = seen.removeAsync(eventId);
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RCuckooFilterReactive<String> seen = redisson.getCuckooFilter("processed-events");
+
+    // true only on first sight of the id
+    Mono<Boolean> firstSeen = seen.addIfAbsent(eventId);
+
+    // allow reprocessing later
+    Mono<Boolean> removed = seen.remove(eventId);
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RCuckooFilterRx<String> seen = redisson.getCuckooFilter("processed-events");
+
+    // true only on first sight of the id
+    Single<Boolean> firstSeen = seen.addIfAbsent(eventId);
+
+    // allow reprocessing later
+    Single<Boolean> removed = seen.remove(eventId);
+    ```
+
+**Mutable Allow/Deny Lists**
+
+Revoked-token denylists, blocked IPs, and ban lists are membership sets that change over time. The cuckoo filter's defining advantage over a Bloom filter is deletion: when a token is reinstated or a ban is lifted, its entry is removed with `remove` instead of forcing a full rebuild. `exists` serves as a cheap gate - a `false` result is authoritative (the value was never added, so no backend call is needed), while a `true` result is a possible match that can be confirmed against the source of truth.
+
+=== "Sync"
+    ```java
+    RCuckooFilter<String> revoked = redisson.getCuckooFilter("revoked-tokens");
+    revoked.init(500_000);
+
+    // on revocation
+    revoked.add(tokenId);
+
+    // on validation - false is authoritative: the token was never revoked
+    if (revoked.exists(tokenId)) {
+        // possible match (or rare false positive) - confirm against the store
+    } else {
+        // definitely not revoked - accept without a backend lookup
+    }
+
+    // reinstating a token removes it - not possible with a Bloom filter
+    revoked.remove(tokenId);
+    ```
+=== "Async"
+    ```java
+    RCuckooFilter<String> revoked = redisson.getCuckooFilter("revoked-tokens");
+
+    RFuture<Boolean> addFuture = revoked.addAsync(tokenId);
+
+    // false is authoritative - the token was never revoked
+    RFuture<Boolean> mayBeRevoked = revoked.existsAsync(tokenId);
+
+    // reinstate
+    RFuture<Boolean> removed = revoked.removeAsync(tokenId);
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RCuckooFilterReactive<String> revoked = redisson.getCuckooFilter("revoked-tokens");
+
+    Mono<Boolean> added = revoked.add(tokenId);
+
+    // false is authoritative - the token was never revoked
+    Mono<Boolean> mayBeRevoked = revoked.exists(tokenId);
+
+    // reinstate
+    Mono<Boolean> removed = revoked.remove(tokenId);
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RCuckooFilterRx<String> revoked = redisson.getCuckooFilter("revoked-tokens");
+
+    Single<Boolean> added = revoked.add(tokenId);
+
+    // false is authoritative - the token was never revoked
+    Single<Boolean> mayBeRevoked = revoked.exists(tokenId);
+
+    // reinstate
+    Single<Boolean> removed = revoked.remove(tokenId);
+    ```
+
+**Frequency Capping with Approximate Counting**
+
+Soft limits - ad impressions per user, retries per key, showing a tip at most a few times - need an approximate occurrence count rather than exact accounting. Because `add` permits duplicates and `count` returns the approximate number of times an element was added, each occurrence is a single `add` and each cap check is a single `count`, with no separate per-key counter to maintain. Counts may slightly over-report, which suits soft caps well.
+
+=== "Sync"
+    ```java
+    RCuckooFilter<String> impressions = redisson.getCuckooFilter("ad-impressions");
+    impressions.init(2_000_000);
+
+    String key = userId + ":" + campaignId;
+
+    // stop before exceeding the cap (count is approximate)
+    if (impressions.count(key) < 3) {
+        showAd(campaignId);
+        impressions.add(key);   // record this impression (duplicates allowed)
+    }
+    ```
+=== "Async"
+    ```java
+    RCuckooFilter<String> impressions = redisson.getCuckooFilter("ad-impressions");
+    String key = userId + ":" + campaignId;
+
+    // approximate number of prior impressions
+    RFuture<Long> seen = impressions.countAsync(key);
+    seen.whenComplete((times, exception) -> {
+        if (times < 3) {
+            showAd(campaignId);
+            impressions.addAsync(key);
+        }
+    });
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RCuckooFilterReactive<String> impressions = redisson.getCuckooFilter("ad-impressions");
+    String key = userId + ":" + campaignId;
+
+    // approximate number of prior impressions
+    Mono<Long> seen = impressions.count(key);
+
+    // record an impression (duplicates allowed)
+    Mono<Boolean> recorded = impressions.add(key);
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RCuckooFilterRx<String> impressions = redisson.getCuckooFilter("ad-impressions");
+    String key = userId + ":" + campaignId;
+
+    // approximate number of prior impressions
+    Single<Long> seen = impressions.count(key);
+
+    // record an impression (duplicates allowed)
+    Single<Boolean> recorded = impressions.add(key);
+    ```
