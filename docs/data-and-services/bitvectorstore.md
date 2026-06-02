@@ -1,4 +1,4 @@
-## BitVectorStore
+## BitVector Store
 
 *This feature is available only in [Redisson PRO](https://redisson.pro/feature-comparison.html) edition.*
 

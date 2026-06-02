@@ -1,5 +1,5 @@
 ## Remote service
-Redisson provides Java Remote Services to execute remote procedure call using Redis or Valkey. Remote interface could have any type of method parameters and result object. Redis or Valkey is used to store method request and corresponding execution result.
+Redisson's Remote Service executes a remote procedure call (RPC) over Valkey or Redis: a method invoked on a Java interface is serialized and stored as a request, executed on another node, and its result is returned to the caller. The remote interface may use any serializable types for its parameters and return value. Because the request and its result travel through Valkey or Redis rather than a direct connection, the caller and the executor need not know about each other or be online at the same moment - which makes it a fit for distributing work across a pool of workers or invoking behaviour on a remote node.
 
 The RemoteService provides two types of [RRemoteService](https://www.javadoc.io/doc/org.redisson/redisson/latest/org/redisson/api/RRemoteService.html) instances:
 
@@ -30,7 +30,33 @@ Client and server side instances shall be using the same remote interface and ba
 
 Remote invocations executes in __parallel mode__ if __1+__ workers are available.
 
-<img src="https://redisson.org/remoteService.png" width="470">
+```mermaid
+flowchart LR
+    %% Define nodes
+    C["Client"]:::clientClass
+
+    subgraph SG1 ["Redisson"]
+        RQ("Request queue"):::queueClass
+    end
+
+    W1["Worker 1"]:::serverClass
+    W2["Worker 2"]:::serverClass
+    W3["Worker 3"]:::serverClass
+
+    %% Define connections
+    C -->|invocations| RQ
+    RQ -->|task| W1
+    RQ -->|task| W2
+    RQ -->|task| W3
+
+    %% Define styles
+    classDef queueClass fill:#FFFFFF,stroke:#333,stroke-width:2px
+    classDef clientClass fill:#FFFFFF,stroke:#333,stroke-width:2px
+    classDef serverClass fill:#FFFFFF,stroke:#333,stroke-width:2px
+    classDef redissonApiStyle fill:#F5F5F5,stroke:#333,stroke-width:2px
+    class SG1 redissonApiStyle
+    linkStyle default stroke-width:2px
+```
 
 The total number of parallel executors is calculated as such:
 `T` = `R` * `N`
@@ -43,14 +69,56 @@ Commands exceeding this number will be queued for the next available executor.
 
 Remote invocations executes in __sequential mode__ if only __1__ workers are available. Only one command can be handled concurrently in this case and the rest of commands will be queued.
 
-<img src="https://redisson.org/remoteService2.png" height="470">
+```mermaid
+flowchart LR
+    %% Define nodes
+    C["Client"]:::clientClass
+
+    subgraph SG1 ["Redisson"]
+        RQ("Request queue"):::queueClass
+    end
+
+    W1["Worker"]:::serverClass
+
+    %% Define connections
+    C -->|A, B, C| RQ
+    RQ -->|A, then B, then C| W1
+
+    %% Define styles
+    classDef queueClass fill:#FFFFFF,stroke:#333,stroke-width:2px
+    classDef clientClass fill:#FFFFFF,stroke:#333,stroke-width:2px
+    classDef serverClass fill:#FFFFFF,stroke:#333,stroke-width:2px
+    classDef redissonApiStyle fill:#F5F5F5,stroke:#333,stroke-width:2px
+    class SG1 redissonApiStyle
+    linkStyle default stroke-width:2px
+```
 
 ### Message flow
 RemoteService creates two queues per invocation. One queue for request (being listened by server side instance) and another one is for ack-response and result-response (being listened by client side instance). Ack-response used to determine if method executor has got a request. If it doesn't during ack timeout then `RemoteServiceAckTimeoutException` will be thrown.
 
  Below is depicted a message flow for each remote invocation.
 
-<img src="https://redisson.org/remoteService3.png" height="561">
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as Client
+    box rgb(245, 245, 245) Redisson
+        participant RQ as Request queue
+        participant PQ as Response queue
+    end
+    participant S as Server
+
+    C->>RQ: request
+    RQ->>S: request
+    activate S
+    S->>PQ: ack-response
+    PQ->>C: ack-response
+    Note over C: throws RemoteServiceAckTimeoutException<br/>if no ack-response within the ack timeout
+    Note over S: execute method
+    S->>PQ: result-response
+    deactivate S
+    PQ->>C: result-response
+```
 
 ### Fire-and-forget and ack-response modes
 RemoteService options for each remote invocation could be defined via [RemoteInvocationOptions](https://www.javadoc.io/doc/org.redisson/redisson/latest/org/redisson/api/RemoteInvocationOptions.html) object. Such options allow to change timeouts and skip ack-response and/or result-response. Examples:
@@ -81,7 +149,7 @@ Remote method could be executed using Async, Reactive and RxJava3 Api.
 
 **Reactive Remote interface**. Interface should be annotated with [@RRemoteReactive](https://www.javadoc.io/doc/org.redisson/redisson/latest/org/redisson/api/annotation/RRemoteReactive.html). Method signatures match with the methods in remote interface and return `reactor.core.publisher.Mono` object. 
 
-**RxJava3 Remote interface**. Interface should be annotated with [@RRemoteRx](https://www.javadoc.io/doc/org.redisson/redisson/latest/org/redisson/api/annotation/RRemoteRx.html). Method signatures match with the methods in remote interface and return one of the following object: `io.reactivex.Completable`, `io.reactivex.Single`, `io.reactivex.Maybe`. 
+**RxJava3 Remote interface**. Interface should be annotated with [@RRemoteRx](https://www.javadoc.io/doc/org.redisson/redisson/latest/org/redisson/api/annotation/RRemoteRx.html). Method signatures match with the methods in remote interface and return one of the following: `io.reactivex.rxjava3.core.Completable`, `io.reactivex.rxjava3.core.Single`, or `io.reactivex.rxjava3.core.Maybe`.
 
 It's not necessary to list all methods, only those which are needed. Below is an example of Remote Service interface:
 
@@ -149,7 +217,7 @@ public interface RemoteInterfaceRx {
 RedissonRxClient redisson = Redisson.createRx(config);
 
 RRemoteService remoteService = redisson.getRemoteService();
-RemoteInterfaceReactive rxService = remoteService.get(RemoteInterfaceRx.class);
+RemoteInterfaceRx rxService = remoteService.get(RemoteInterfaceRx.class);
 
 rxService.someMethod1(1L, "myparam");
 ```
@@ -158,7 +226,7 @@ rxService.someMethod1(1L, "myparam");
 Remote service provides ability to cancel invocation in any stages of its execution. There are three stages:
 
 1. Remote invocation request in queue
-2. Remote invocation request received by remote service but not lunched and Ack-response hasn't send yet
+2. Remote invocation request received by remote service but not launched yet, and the ack-response hasn't been sent
 3. Remote invocation execution in progress
 
 To handle third stage you need to check for `Thread.currentThread().isInterrupted()` status in your Remote service code. Here is an example:
@@ -197,12 +265,12 @@ public class MyRemoteServiceImpl implements MyRemoteInterface {
 
    public Long myBusyMethod(Long param1, String param2) {
        for (long i = 0; i < Long.MAX_VALUE; i++) {
-           iterations.incrementAndGet();
            if (Thread.currentThread().isInterrupted()) {
-                System.out.println("interrupted! " + i);
-                return;
+                System.out.println("interrupted at " + i);
+                return i;
            }
        }
+       return Long.MAX_VALUE;
    }
 
 }
@@ -228,8 +296,8 @@ Disposable disp = mono.doOnSubscribe(s -> s.request(1)).subscribe();
 disp.dispose();
 
 // call RxJava3 method
-MyRemoteInterfaceRx asyncService = remoteService.get(MyRemoteInterfaceRx.class);
-Single<Long> single = asyncService.myBusyMethod(1L, "someparam");
+MyRemoteInterfaceRx rxService = remoteService.get(MyRemoteInterfaceRx.class);
+Single<Long> single = rxService.myBusyMethod(1L, "someparam");
 Disposable disp = single.subscribe();
 // cancel invocation
 disp.dispose();
@@ -1221,186 +1289,192 @@ Below is word count example using MapReduce:
 
 ## RediSearch service
 
-Redisson provides RediSearch integration. Supports field indexing of [RMap](Distributed-collections.md/#map), [RJSONStore](Distributed-collections.md/#json-store) and [RJSONBucket](Distributed-objects.md/#json-object-holder) objects, query execution and aggregation.
+Redisson integrates with RediSearch to provide full-text search, secondary indexing, and aggregation over data already held in Valkey or Redis. It can index the fields of [Map](collections.md/#map), [JSON Store](collections.md/#json-store), and [JSON object holder](objects.md/#json-object-holder) objects, so documents written through those structures become searchable without keeping a separate search store in sync.
 
-It has [Async](https://www.javadoc.io/doc/org.redisson/redisson/latest/org/redisson/api/RSearchAsync.html), [Reactive](https://www.javadoc.io/doc/org.redisson/redisson/latest/org/redisson/api/RSearchReactive.html) and [RxJava3](https://www.javadoc.io/doc/org.redisson/redisson/latest/org/redisson/api/RSearchRx.html) interfaces.
+The entry point is [RSearch](https://www.javadoc.io/doc/org.redisson/redisson/latest/org/redisson/api/RSearch.html), obtained from `redisson.getSearch()` - or `getSearch(Codec)` to control how field values are decoded. The workflow is always the same: create an index over a set of keys with `createIndex`, then run queries, aggregations, or spellchecks against it. The index declares its source type - `IndexType.HASH` for `Map` objects or `IndexType.JSON` for JSON objects - the key prefix it covers, and the fields to index, each described with `FieldIndex.text`, `FieldIndex.numeric`, `FieldIndex.tag`, or `FieldIndex.geo`.
+
+`RSearch` also manages the indexes themselves: `alter` adds fields to an existing index, `info` returns its metadata, `getIndexes` lists every index, and `dropIndex` (or `dropIndexAndDocuments`) removes one. Aliases, dictionaries, and synonym groups are maintained with `addAlias`/`delAlias`, `addDict`/`delDict`, and `updateSynonyms`. Synchronous, [Async](https://www.javadoc.io/doc/org.redisson/redisson/latest/org/redisson/api/RSearchAsync.html), [Reactive](https://www.javadoc.io/doc/org.redisson/redisson/latest/org/redisson/api/RSearchReactive.html), and [RxJava3](https://www.javadoc.io/doc/org.redisson/redisson/latest/org/redisson/api/RSearchRx.html) interfaces are available.
 
 ### Query execution
 
-Code example for RMap object:
-```java
-RMap<String, SimpleObject> m = redisson.getMap("doc:1", new CompositeCodec(StringCodec.INSTANCE, redisson.getConfig().getCodec()));
-m.put("v1", new SimpleObject("name1"));
-m.put("v2", new SimpleObject("name2"));
-RMap<String, SimpleObject> m2 = redisson.getMap("doc:2", new CompositeCodec(StringCodec.INSTANCE, redisson.getConfig().getCodec()));
-m2.put("v1", new SimpleObject("name3"));
-m2.put("v2", new SimpleObject("name4"));
+`search` runs a query against an index and returns a `SearchResult`. The query string uses RediSearch syntax, where `*` matches every document, and `QueryOptions` selects which attributes to return with `returnAttributes`, narrows results with `filters`, and controls paging and sorting. The result reports the match count through `getTotal` and the matched documents through `getDocuments`, each a `Document` with an id (`getId`) and its indexed fields (`getAttributes`).
 
-RSearch s = redisson.getSearch();
+Code examples:
 
-// creates an index for documents with prefix "doc"
-s.createIndex("idx", IndexOptions.defaults()
-                                 .on(IndexType.HASH)
-                                 .prefix(Arrays.asList("doc:")),
-                                         FieldIndex.text("v1"),
-                                         FieldIndex.text("v2"));
+=== "Map"
+    ```java
+    RMap<String, SimpleObject> m = redisson.getMap("doc:1", new CompositeCodec(StringCodec.INSTANCE, redisson.getConfig().getCodec()));
+    m.put("v1", new SimpleObject("name1"));
+    m.put("v2", new SimpleObject("name2"));
+    RMap<String, SimpleObject> m2 = redisson.getMap("doc:2", new CompositeCodec(StringCodec.INSTANCE, redisson.getConfig().getCodec()));
+    m2.put("v1", new SimpleObject("name3"));
+    m2.put("v2", new SimpleObject("name4"));
 
-SearchResult r = s.search("idx", "*", QueryOptions.defaults()
-                                                  .returnAttributes(new ReturnAttribute("v1"), new ReturnAttribute("v2")));
+    RSearch s = redisson.getSearch();
 
-SearchResult r = s.search("idx", "*", QueryOptions.defaults()
-                                                  .filters(QueryFilter.geo("field")
-                                                                      .from(1, 1)
-                                                                      .radius(10, GeoUnit.FEET)));
+    // creates an index for documents with prefix "doc"
+    s.createIndex("idx", IndexOptions.defaults()
+                                     .on(IndexType.HASH)
+                                     .prefix(Arrays.asList("doc:")),
+                                             FieldIndex.text("v1"),
+                                             FieldIndex.text("v2"));
 
-```
+    SearchResult r = s.search("idx", "*", QueryOptions.defaults()
+                                                      .returnAttributes(new ReturnAttribute("v1"), new ReturnAttribute("v2")));
 
-Code example for JSON object:
-```java
-    public class TestClass {
+    SearchResult r = s.search("idx", "*", QueryOptions.defaults()
+                                                      .filters(QueryFilter.geo("field")
+                                                                          .from(1, 1)
+                                                                          .radius(10, GeoUnit.FEET)));
 
-        private List<Integer> arr;
-        private String value;
+    ```
+=== "JSON"
+    ```java
+        public class TestClass {
 
-        public TestClass() {
+            private List<Integer> arr;
+            private String value;
+
+            public TestClass() {
+            }
+
+            public TestClass(List<Integer> arr, String value) {
+                this.arr = arr;
+                this.value = value;
+            }
+
+            public List<Integer> getArr() {
+                return arr;
+            }
+
+            public TestClass setArr(List<Integer> arr) {
+                this.arr = arr;
+                return this;
+            }
+
+            public String getValue() {
+                return value;
+            }
+
+            public TestClass setValue(String value) {
+                this.value = value;
+                return this;
+            }
         }
 
-        public TestClass(List<Integer> arr, String value) {
-            this.arr = arr;
-            this.value = value;
-        }
 
-        public List<Integer> getArr() {
-            return arr;
-        }
+    RJsonBucket<TestClass> b = redisson.getJsonBucket("doc:1", new JacksonCodec<>(TestClass.class));
+    b.set(new TestClass(Arrays.asList(1, 2, 3), "hello"));
 
-        public TestClass setArr(List<Integer> arr) {
-            this.arr = arr;
-            return this;
-        }
+    RSearch s = redisson.getSearch(StringCodec.INSTANCE);
+    // creates an index for documents with prefix "doc"
+    s.createIndex("idx", IndexOptions.defaults()
+                                      .on(IndexType.JSON)
+                                      .prefix(Arrays.asList("doc:")),
+                                          FieldIndex.numeric("$..arr").as("arr"),
+                                          FieldIndex.text("$..value").as("val"));
 
-        public String getValue() {
-            return value;
-        }
+    SearchResult r = s.search("idx", "*", QueryOptions.defaults()
+                                                      .returnAttributes(new ReturnAttribute("arr"), new ReturnAttribute("val")));
+    // total amount of found documents
+    long total = r.getTotal();
+    // found documents
+    List<Document> docs = r.getDocuments();
 
-        public TestClass setValue(String value) {
-            this.value = value;
-            return this;
-        }
+    for (Document doc: docs) {
+       String id = doc.getId();
+       Map<String, Object> attrs = doc.getAttributes();
     }
-
-
-RJsonBucket<TestClass> b = redisson.getJsonBucket("doc:1", new JacksonCodec<>(TestClass.class));
-b.set(new TestClass(Arrays.asList(1, 2, 3), "hello"));
-
-RSearch s = redisson.getSearch(StringCodec.INSTANCE);
-// creates an index for documents with prefix "doc"
-s.createIndex("idx", IndexOptions.defaults()
-                                  .on(IndexType.JSON)
-                                  .prefix(Arrays.asList("doc:")),
-                                      FieldIndex.numeric("$..arr").as("arr"),
-                                      FieldIndex.text("$..value").as("val"));
-
-SearchResult r = s.search("idx", "*", QueryOptions.defaults()
-                                                  .returnAttributes(new ReturnAttribute("arr"), new ReturnAttribute("val")));
-// total amount of found documents
-long total = r.getTotal();
-// found documents
-List<Document> docs = r.getDocuments();
-
-for (Document doc: docs) {
-   String id = doc.getId();
-   Map<String, Object> attrs = doc.getAttributes();
-}
-```
+    ```
 
 ### Aggregation
 
-Code example for Map object:
+`aggregate` runs an aggregation pipeline over an index and returns an `AggregationResult`. `AggregationOptions` defines the pipeline - `load` selects the fields to pull from each document, with further stages to group, sort, and apply expressions. The result reports the number of rows through `getTotal` and the rows themselves through `getAttributes`, a list of attribute maps; large result sets can be read incrementally with a cursor via `readCursor`.
 
-```java
-RMap<String, SimpleObject> m = redisson.getMap("doc:1", new CompositeCodec(StringCodec.INSTANCE, redisson.getConfig().getCodec()));
-m.put("v1", new SimpleObject("name1"));
-m.put("v2", new SimpleObject("name2"));
-RMap<String, SimpleObject> m2 = redisson.getMap("doc:2", new CompositeCodec(StringCodec.INSTANCE, redisson.getConfig().getCodec()));
-m2.put("v1", new SimpleObject("name3"));
-m2.put("v2", new SimpleObject("name4"));
+Code examples:
 
-RSearch s = redisson.getSearch();
-// creates an index for documents with prefix "doc"
-s.createIndex("idx", IndexOptions.defaults()
-                                    .on(IndexType.HASH)
-                                    .prefix(Arrays.asList("doc:")),
-                                      FieldIndex.text("v1"),
-                                      FieldIndex.text("v2"));
+=== "Map"
+    ```java
+    RMap<String, SimpleObject> m = redisson.getMap("doc:1", new CompositeCodec(StringCodec.INSTANCE, redisson.getConfig().getCodec()));
+    m.put("v1", new SimpleObject("name1"));
+    m.put("v2", new SimpleObject("name2"));
+    RMap<String, SimpleObject> m2 = redisson.getMap("doc:2", new CompositeCodec(StringCodec.INSTANCE, redisson.getConfig().getCodec()));
+    m2.put("v1", new SimpleObject("name3"));
+    m2.put("v2", new SimpleObject("name4"));
 
-AggregationResult r = s.aggregate("idx", "*", AggregationOptions.defaults()
-                                                                .load("v1", "v2"));
-// total amount of attributes
-long total = r.getTotal();
-// list of attributes mapped by attribute name
-List<Map<String, Object>> attrs = r.getAttributes();
-```
+    RSearch s = redisson.getSearch();
+    // creates an index for documents with prefix "doc"
+    s.createIndex("idx", IndexOptions.defaults()
+                                        .on(IndexType.HASH)
+                                        .prefix(Arrays.asList("doc:")),
+                                          FieldIndex.text("v1"),
+                                          FieldIndex.text("v2"));
 
-Code example for JSON object:
+    AggregationResult r = s.aggregate("idx", "*", AggregationOptions.defaults()
+                                                                    .load("v1", "v2"));
+    // total amount of attributes
+    long total = r.getTotal();
+    // list of attributes mapped by attribute name
+    List<Map<String, Object>> attrs = r.getAttributes();
+    ```
+=== "JSON"
+    ```java
+        public class TestClass {
 
-```java
-    public class TestClass {
+            private List<Integer> arr;
+            private String value;
 
-        private List<Integer> arr;
-        private String value;
+            public TestClass() {
+            }
 
-        public TestClass() {
+            public TestClass(List<Integer> arr, String value) {
+                this.arr = arr;
+                this.value = value;
+            }
+
+            public List<Integer> getArr() {
+                return arr;
+            }
+
+            public TestClass setArr(List<Integer> arr) {
+                this.arr = arr;
+                return this;
+            }
+
+            public String getValue() {
+                return value;
+            }
+
+            public TestClass setValue(String value) {
+                this.value = value;
+                return this;
+            }
         }
 
-        public TestClass(List<Integer> arr, String value) {
-            this.arr = arr;
-            this.value = value;
-        }
+    RJsonBucket<TestClass> b = redisson.getJsonBucket("doc:1", new JacksonCodec<>(TestClass.class));
+    // stores object in JSON format
+    b.set(new TestClass(Arrays.asList(1, 2, 3), "hello"));
 
-        public List<Integer> getArr() {
-            return arr;
-        }
+    RSearch s = redisson.getSearch(StringCodec.INSTANCE);
+    // creates an index for documents with prefix "doc"
+    s.createIndex("idx", IndexOptions.defaults()
+                                     .on(IndexType.JSON)
+                                     .prefix(Arrays.asList("doc:")),
+                                 FieldIndex.numeric("$..arr").as("arr"),
+                                 FieldIndex.text("$..value").as("val"));
 
-        public TestClass setArr(List<Integer> arr) {
-            this.arr = arr;
-            return this;
-        }
+    AggregationResult r = s.aggregate("idx", "*", AggregationOptions.defaults()
+                                                                    .load("arr", "val"));
+    // total amount of attributes
+    long total = r.getTotal();
+    // list of attributes mapped by attribute name
+    List<Map<String, Object>> attrs = r.getAttributes();
 
-        public String getValue() {
-            return value;
-        }
-
-        public TestClass setValue(String value) {
-            this.value = value;
-            return this;
-        }
-    }
-
-RJsonBucket<TestClass> b = redisson.getJsonBucket("doc:1", new JacksonCodec<>(TestClass.class));
-// stores object in JSON format
-b.set(new TestClass(Arrays.asList(1, 2, 3), "hello"));
-
-RSearch s = redisson.getSearch(StringCodec.INSTANCE);
-// creates an index for documents with prefix "doc"
-s.createIndex("idx", IndexOptions.defaults()
-                                 .on(IndexType.JSON)
-                                 .prefix(Arrays.asList("doc:")),
-                             FieldIndex.numeric("$..arr").as("arr"),
-                             FieldIndex.text("$..value").as("val"));
-
-AggregationResult r = s.aggregate("idx", "*", AggregationOptions.defaults()
-                                                                .load("arr", "val"));
-// total amount of attributes
-long total = r.getTotal();
-// list of attributes mapped by attribute name
-List<Map<String, Object>> attrs = r.getAttributes();
-
-```
+    ```
 
 ### Spellcheck
 
-Code example.
+`spellcheck` suggests corrections for the terms of a query against an index, drawing on custom dictionaries built with `addDict`. It returns a map from each misspelled term to its suggested replacements and their scores. In the example below the dictionary `name` supplies the candidate words, and the query `Hocke sti` yields suggestions for `hocke` and `sti`.
 
 ```java
 RSearch s = redisson.getSearch();
@@ -1422,3 +1496,70 @@ Map<String, Double> m = res.get("hocke");
 // returns misspelled terms and their score - "stik", 0
 Map<String, Double> m = res.get("sti");
 ```
+
+### Index management
+
+The same `RSearch` instance maintains the indexes it creates. `info` returns an `IndexInfo` describing an index, `getIndexes` lists every index name, `alter` adds fields to an existing index (its boolean skips the initial re-scan when `true`), and `dropIndex` removes an index definition while `dropIndexAndDocuments` also deletes the indexed documents. An index can be referenced through an alias managed with `addAlias`, `delAlias`, and `updateAlias`, and search quality is tuned with dictionaries (`addDict`/`delDict`) and synonym groups (`updateSynonyms`).
+
+```java
+RSearch s = redisson.getSearch();
+
+// add a field to an existing index
+s.alter("idx", false, FieldIndex.tag("status"));
+
+// inspect a single index, or list them all
+IndexInfo info = s.info("idx");
+List<String> indexes = s.getIndexes();
+
+// point an alias at the index
+s.addAlias("products", "idx");
+
+// group terms so a query for either matches both
+s.updateSynonyms("idx", "group1", "phone", "smartphone");
+
+// drop the index definition (dropIndexAndDocuments also deletes documents)
+s.dropIndex("idx");
+```
+
+### Asynchronous, Reactive and RxJava3 calls
+
+Every operation shown above is also available through the asynchronous, reactive, and RxJava3 interfaces. The asynchronous methods live on the same `RSearch` instance (it extends `RSearchAsync`) and return `RFuture`, while the reactive and RxJava3 variants come from `redissonClient.reactive().getSearch()` and `redissonClient.rxJava().getSearch()` and return `Mono` and `Single` respectively (`createIndex` returns `Completable` in RxJava3).
+
+=== "Async"
+    ```java
+    RSearch s = redisson.getSearch();
+
+    RFuture<Void> createFuture = s.createIndexAsync("idx",
+            IndexOptions.defaults().on(IndexType.HASH).prefix(Arrays.asList("doc:")),
+            FieldIndex.text("v1"), FieldIndex.text("v2"));
+
+    RFuture<SearchResult> searchFuture = s.searchAsync("idx", "*", QueryOptions.defaults());
+    RFuture<AggregationResult> aggFuture = s.aggregateAsync("idx", "*", AggregationOptions.defaults().load("v1", "v2"));
+    RFuture<Map<String, Map<String, Double>>> spellFuture = s.spellcheckAsync("idx", "hello", SpellcheckOptions.defaults());
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RSearchReactive s = redisson.getSearch();
+
+    Mono<Void> createMono = s.createIndex("idx",
+            IndexOptions.defaults().on(IndexType.HASH).prefix(Arrays.asList("doc:")),
+            FieldIndex.text("v1"), FieldIndex.text("v2"));
+
+    Mono<SearchResult> searchMono = s.search("idx", "*", QueryOptions.defaults());
+    Mono<AggregationResult> aggMono = s.aggregate("idx", "*", AggregationOptions.defaults().load("v1", "v2"));
+    Mono<Map<String, Map<String, Double>>> spellMono = s.spellcheck("idx", "hello", SpellcheckOptions.defaults());
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RSearchRx s = redisson.getSearch();
+
+    Completable createRx = s.createIndex("idx",
+            IndexOptions.defaults().on(IndexType.HASH).prefix(Arrays.asList("doc:")),
+            FieldIndex.text("v1"), FieldIndex.text("v2"));
+
+    Single<SearchResult> searchRx = s.search("idx", "*", QueryOptions.defaults());
+    Single<AggregationResult> aggRx = s.aggregate("idx", "*", AggregationOptions.defaults().load("v1", "v2"));
+    Single<Map<String, Map<String, Double>>> spellRx = s.spellcheck("idx", "hello", SpellcheckOptions.defaults());
+    ```
