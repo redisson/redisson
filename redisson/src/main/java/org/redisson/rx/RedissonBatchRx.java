@@ -42,6 +42,16 @@ public class RedissonBatchRx implements RBatchRx {
     }
 
     @Override
+    public <V> RArrayRx<V> getArray(String name) {
+        return RxProxyBuilder.create(executorService, new RedissonArray<V>(executorService, name), RArrayRx.class);
+    }
+
+    @Override
+    public <V> RArrayRx<V> getArray(String name, Codec codec) {
+        return RxProxyBuilder.create(executorService, new RedissonArray<V>(codec, executorService, name), RArrayRx.class);
+    }
+
+    @Override
     public <K, V> RStreamRx<K, V> getStream(String name) {
         return RxProxyBuilder.create(executorService, new RedissonStream<K, V>(executorService, name), RStreamRx.class);
     }

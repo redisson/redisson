@@ -34,6 +34,30 @@ import org.redisson.codec.JsonCodec;
 public interface RBatchRx {
 
     /**
+     * Returns Array instance by <code>name</code>.
+     * <p>
+     * Requires <b>Redis 8.8 or higher.</b>
+     *
+     * @param <V> value type
+     * @param name name of instance
+     * @return RArray object
+     */
+    <V> RArrayRx<V> getArray(String name);
+
+    /**
+     * Returns Array instance by <code>name</code>
+     * using provided <code>codec</code> for values.
+     * <p>
+     * Requires <b>Redis 8.8 or higher.</b>
+     *
+     * @param <V> value type
+     * @param name name of instance
+     * @param codec codec for values
+     * @return RArray object
+     */
+    <V> RArrayRx<V> getArray(String name, Codec codec);
+
+    /**
      * Returns cuckoo filter instance by <code>name</code>.
      *
      * @param <V> type of value

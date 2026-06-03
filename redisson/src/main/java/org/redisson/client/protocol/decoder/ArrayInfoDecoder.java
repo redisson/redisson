@@ -60,15 +60,29 @@ public class ArrayInfoDecoder implements MultiDecoder<ArrayInfo> {
     private void setLong(Map<String, Object> map, String key, Consumer<Long> setter) {
         Object value = map.get(key);
         if (value != null) {
-            setter.accept(((Number) value).longValue());
+            setter.accept(toLong(value));
         }
     }
 
     private void setDouble(Map<String, Object> map, String key, Consumer<Double> setter) {
         Object value = map.get(key);
         if (value != null) {
-            setter.accept(((Number) value).doubleValue());
+            setter.accept(toDouble(value));
         }
+    }
+
+    private long toLong(Object value) {
+        if (value instanceof Number) {
+            return ((Number) value).longValue();
+        }
+        return Long.parseLong(value.toString());
+    }
+
+    private double toDouble(Object value) {
+        if (value instanceof Number) {
+            return ((Number) value).doubleValue();
+        }
+        return Double.parseDouble(value.toString());
     }
 
 }
