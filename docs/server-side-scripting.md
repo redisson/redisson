@@ -1,107 +1,202 @@
-## LUA Scripting
-Redisson provides `RScript` object to execute Lua script. It has atomicity property and used to process data on Redis or Valkey side. Script could be executed in two modes:
+## Lua scripting
 
-* `Mode.READ_ONLY` scripts are executed as read operation
-* `Mode.READ_WRITE` scripts are executed as write operation
+Redisson's `RScript` object runs a Lua script on the Valkey or Redis side, where it executes atomically. A script runs in one of two modes:
 
-One of the follow types returned as a script result object:
+* `Mode.READ_ONLY` - executed as a read operation
+* `Mode.READ_WRITE` - executed as a write operation
 
-* `ReturnType.BOOLEAN` - Boolean type.
-* `ReturnType.INTEGER` - Integer type.
-* `ReturnType.MULTI` - List type of user defined type.
-* `ReturnType.STATUS` - Lua String type.
-* `ReturnType.VALUE` - User defined type.
-* `ReturnType.MAPVALUE` - Map value type.
-* `ReturnType.MAPVALUELIST` - List of Map value type.
+The result is decoded according to a `ReturnType`:
 
-Code example:
+* `ReturnType.BOOLEAN` - boolean type
+* `ReturnType.LONG` - long type
+* `ReturnType.LIST` - list of the user-defined type
+* `ReturnType.STRING` - plain string type
+* `ReturnType.VALUE` - the user-defined type
+* `ReturnType.MAPVALUE` - map value type, decoded with the codec's map-value encoder/decoder
+* `ReturnType.MAPVALUELIST` - list of the map value type
 
-```java
-RBucket<String> bucket = redisson.getBucket("foo");
-bucket.set("bar");
+`eval` runs a script directly; the `keys` and `values` arguments are exposed inside the script as `KEYS` and `ARGV`. For repeated execution, `scriptLoad` caches the script on every master node and returns its SHA digest, which `evalSha` then runs without resending the body.
 
-RScript script = redisson.getScript(StringCodec.INSTANCE);
+=== "Sync"
+    ```java
+    RBucket<String> bucket = redisson.getBucket("foo");
+    bucket.set("bar");
+    
+    RScript script = redisson.getScript(StringCodec.INSTANCE);
+    
+    // run a script directly
+    String value = script.eval(RScript.Mode.READ_ONLY,
+            "return redis.call('get', KEYS[1])",
+            RScript.ReturnType.VALUE,
+            Collections.singletonList("foo"));
+    
+    // cache once, then run by SHA digest
+    String sha = script.scriptLoad("return redis.call('get', KEYS[1])");
+    String cached = script.evalSha(RScript.Mode.READ_ONLY,
+            sha,
+            RScript.ReturnType.VALUE,
+            Collections.singletonList("foo"));
+    ```
+=== "Async"
+    ```java
+    RScript script = redisson.getScript(StringCodec.INSTANCE);
+    
+    RFuture<String> valueFuture = script.evalAsync(RScript.Mode.READ_ONLY,
+            "return redis.call('get', KEYS[1])",
+            RScript.ReturnType.VALUE,
+            Collections.singletonList("foo"));
+    
+    RFuture<String> shaFuture = script.scriptLoadAsync("return redis.call('get', KEYS[1])");
+    RFuture<String> cachedFuture = script.evalShaAsync(RScript.Mode.READ_ONLY,
+            "282297a0228f48cd3fc6a55de6316f31422f5d17",
+            RScript.ReturnType.VALUE,
+            Collections.singletonList("foo"));
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RScriptReactive script = redisson.getScript(StringCodec.INSTANCE);
+    
+    Mono<String> value = script.eval(RScript.Mode.READ_ONLY,
+            "return redis.call('get', KEYS[1])",
+            RScript.ReturnType.VALUE,
+            Collections.singletonList("foo"));
+    
+    Mono<String> sha = script.scriptLoad("return redis.call('get', KEYS[1])");
+    Mono<String> cached = script.evalSha(RScript.Mode.READ_ONLY,
+            "282297a0228f48cd3fc6a55de6316f31422f5d17",
+            RScript.ReturnType.VALUE,
+            Collections.singletonList("foo"));
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RScriptRx script = redisson.getScript(StringCodec.INSTANCE);
+    
+    Maybe<String> value = script.eval(RScript.Mode.READ_ONLY,
+            "return redis.call('get', KEYS[1])",
+            RScript.ReturnType.VALUE,
+            Collections.singletonList("foo"));
+    
+    Single<String> sha = script.scriptLoad("return redis.call('get', KEYS[1])");
+    Maybe<String> cached = script.evalSha(RScript.Mode.READ_ONLY,
+            "282297a0228f48cd3fc6a55de6316f31422f5d17",
+            RScript.ReturnType.VALUE,
+            Collections.singletonList("foo"));
+    ```
 
-String r = script.eval(Mode.READ_ONLY,
-                       "return redis.call('get', 'foo')", 
-                       RScript.ReturnType.VALUE);
+## Functions
 
-// execute the same script stored in Redis or Valkey lua script cache
+Redisson's `RFunction` object runs a [Redis function](https://redis.io/docs/latest/develop/programmability/functions-intro/) - a named routine registered inside a library that, like a script, executes atomically on the server. A function runs in one of two modes:
 
-// load lua script into Redis or Valkey cache to all master instances
-String res = script.scriptLoad("return redis.call('get', 'foo')");
-// res == 282297a0228f48cd3fc6a55de6316f31422f5d17
+* `FunctionMode.READ` - executed as a read operation
+* `FunctionMode.WRITE` - executed as a write operation
 
-// call lua script by sha digest
-Future<Object> r1 = redisson.getScript().evalShaAsync(Mode.READ_ONLY,
-   "282297a0228f48cd3fc6a55de6316f31422f5d17",
-   RScript.ReturnType.VALUE, Collections.emptyList());
-```
+The result is decoded according to a `FunctionResult`:
 
-## Functions 
-Redisson provides `RFunction` object to execute [Functions](https://redis.io/topics/functions-intro). It has atomicity property and used to process data on Redis or Valkey side. Function can be executed in two modes:
+* `FunctionResult.BOOLEAN` - boolean type
+* `FunctionResult.LONG` - long type
+* `FunctionResult.LIST` - list of the user-defined type
+* `FunctionResult.STRING` - plain string type
+* `FunctionResult.VALUE` - the user-defined type
+* `FunctionResult.MAPVALUE` - map value type, decoded with the codec's map-value encoder/decoder
+* `FunctionResult.MAPVALUELIST` - list of the map value type
 
-* `Mode.READ` executes function as read operation
-* `Mode.WRITE` executes function as write operation
+Register a library with `load`, then invoke one of its functions with `call`. The `keys` and `values` arguments arrive as the function's `keys` and `args` parameters.
 
-One of the follow types returned as a script result object:
+=== "Sync"
+    ```java
+    RFunction function = redisson.getFunction();
+    
+    // register a library that defines a function
+    function.load("mylib",
+            "redis.register_function('myfun', function(keys, args) return args[1] end)");
+    
+    // invoke the function
+    String value = function.call(FunctionMode.READ, "myfun",
+            FunctionResult.STRING, Collections.emptyList(), "test");
+    ```
+=== "Async"
+    ```java
+    RFunction function = redisson.getFunction();
+    
+    RFuture<Void> loadFuture = function.loadAsync("mylib",
+            "redis.register_function('myfun', function(keys, args) return args[1] end)");
+    
+    RFuture<String> valueFuture = function.callAsync(FunctionMode.READ, "myfun",
+            FunctionResult.STRING, Collections.emptyList(), "test");
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RFunctionReactive function = redisson.getFunction();
+    
+    Mono<Void> load = function.load("mylib",
+            "redis.register_function('myfun', function(keys, args) return args[1] end)");
+    
+    Mono<String> value = function.call(FunctionMode.READ, "myfun",
+            FunctionResult.STRING, Collections.emptyList(), "test");
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RFunctionRx function = redisson.getFunction();
+    
+    Completable load = function.load("mylib",
+            "redis.register_function('myfun', function(keys, args) return args[1] end)");
+    
+    Maybe<String> value = function.call(FunctionMode.READ, "myfun",
+            FunctionResult.STRING, Collections.emptyList(), "test");
+    ```
 
-* `ReturnType.BOOLEAN` - Boolean type
-* `ReturnType.LONG` - Long type
-* `ReturnType.LIST` - List type of user defined type.
-* `ReturnType.STRING` - plain String type
-* `ReturnType.VALUE` - user defined type 
-* `ReturnType.MAPVALUE` - Map Value type. Codec.getMapValueDecoder() and Codec.getMapValueEncoder() methods are used for data deserialization or serialization
-* `ReturnType.MAPVALUELIST` - List type, which consists of objects of Map Value type. Codec.getMapValueDecoder() and Codec.getMapValueEncoder() methods are used for data deserialization or serialization
+### Managing libraries
 
-Code example:
+`RFunction` also manages the libraries themselves: `loadAndReplace` overwrites an existing library, `list` returns the registered libraries as `FunctionLibrary` objects, `delete` removes a single library, and `flush` removes them all. In addition, `dump` and `restore` serialize and reload the full function state, `stats` reports the running engine, and `kill` stops a function that is stuck.
 
-```java
-RFunction f = redisson.getFunction();
-
-// load function
-f.load("lib", "redis.register_function('myfun', function(keys, args) return args[1] end)");
-
-// execute function
-String value = f.call(RFunction.Mode.READ, "myfun", RFunction.ReturnType.STRING, Collections.emptyList(), "test");
-```
-
-Code example of <b>Async interface</b> usage:
-
-```java
-RFunction f = redisson.getFunction();
-
-// load function
-RFuture<Void> loadFuture = f.loadAsync("lib", "redis.register_function('myfun', function(keys, args) return args[1] end)");
-
-// execute function
-RFuture<String> valueFuture = f.callAsync(RFunction.Mode.READ, "myfun", RFunction.ReturnType.STRING, Collections.emptyList(), "test");
-```
-
-Code example of <b>Reactive interface</b> usage:
-
-```java
-RedissonReactiveClient redisson = redissonClient.reactive();
-RFunctionReactive f = redisson.getFunction();
-
-// load function
-Mono<Void> loadMono = f.load("lib", "redis.register_function('myfun', function(keys, args) return args[1] end)");
-
-// execute function
-Mono<String> valueMono = f.callAsync(RFunction.Mode.READ, "myfun", RFunction.ReturnType.STRING, Collections.emptyList(), "test");
-```
-
-Code example of <b>RxJava3 interface</b> usage:
-
-```java
-RedissonRxClient redisson = redissonClient.rxJava();
-RFunctionRx f = redisson.getFunction();
-
-// load function
-Completable loadMono = f.load("lib", "redis.register_function('myfun', function(keys, args) return args[1] end)");
-
-// execute function
-Maybe<String> valueMono = f.callAsync(RFunction.Mode.READ, "myfun", RFunction.ReturnType.STRING, Collections.emptyList(), "test");
-```
-
-
+=== "Sync"
+    ```java
+    RFunction function = redisson.getFunction();
+    
+    // overwrite an existing library
+    function.loadAndReplace("mylib",
+            "redis.register_function('myfun', function(keys, args) return args[1] end)");
+    
+    // inspect registered libraries
+    List<FunctionLibrary> libraries = function.list();
+    
+    // remove a single library, or all of them
+    function.delete("mylib");
+    function.flush();
+    ```
+=== "Async"
+    ```java
+    RFunction function = redisson.getFunction();
+    
+    RFuture<Void> replaceFuture = function.loadAndReplaceAsync("mylib",
+            "redis.register_function('myfun', function(keys, args) return args[1] end)");
+    RFuture<List<FunctionLibrary>> librariesFuture = function.listAsync();
+    RFuture<Void> deleteFuture = function.deleteAsync("mylib");
+    RFuture<Void> flushFuture = function.flushAsync();
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RFunctionReactive function = redisson.getFunction();
+    
+    Mono<Void> replace = function.loadAndReplace("mylib",
+            "redis.register_function('myfun', function(keys, args) return args[1] end)");
+    Mono<List<FunctionLibrary>> libraries = function.list();
+    Mono<Void> delete = function.delete("mylib");
+    Mono<Void> flush = function.flush();
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RFunctionRx function = redisson.getFunction();
+    
+    Completable replace = function.loadAndReplace("mylib",
+            "redis.register_function('myfun', function(keys, args) return args[1] end)");
+    Single<List<FunctionLibrary>> libraries = function.list();
+    Completable delete = function.delete("mylib");
+    Completable flush = function.flush();
+    ```
