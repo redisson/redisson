@@ -2,7 +2,7 @@
 
 Valkey or Redis based distributed [LexSortedSet](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RLexSortedSet.html) object for Java stores `String` elements only and implements `java.util.Set<String>` interface. Unlike regular sets, LexSortedSet maintains elements in lexicographical (alphabetical dictionary) order automatically. This makes it ideal for use cases requiring sorted string data such as autocomplete systems, alphabetical indexes, and dictionary-style lookups.
 
-This object is thread-safe. Set size is limited to `4 294 967 295` elements. Valkey or Redis uses serialized state to check value uniqueness instead of value's `hashCode()`/`equals()` methods.
+This object is thread-safe. Set size is limited to `4 294 967 295` elements. Valkey or Redis uses serialized state to check value uniqueness instead of value's `hashCode()`/`equals()` methods. It is an `RSortedSet<String>`, so `first`, `last`, and ordered iteration come for free; the inherited `java.util.SortedSet` range views (`subSet`, `headSet`, `tailSet`) are not supported - use the `range` methods below instead.
 
 ### Lexicographical Ordering
 
@@ -289,6 +289,86 @@ LexSortedSet provides powerful range query capabilities for retrieving elements 
     Single<Collection<String>> rangeReversedSingle = set.rangeReversed("apricot", true, "cherry", true);
     Single<Collection<String>> headReversedSingle = set.rangeHeadReversed("cherry", true);
     Single<Collection<String>> tailReversedSingle = set.rangeTailReversed("banana", true);
+    ```
+
+**Paginating Range Results**
+
+Every range method has an overload taking an `offset` and a `count` that skip and limit the results - the basis for autocomplete and paged browsing. For example, fetching matches ten at a time:
+
+=== "Sync"
+    ```java
+    RLexSortedSet set = redisson.getLexSortedSet("myLexSet");
+
+    // First 10 elements at or after "ap" - e.g. autocomplete page 1
+    Collection<String> page1 = set.rangeTail("ap", true, 0, 10);
+    // The next 10
+    Collection<String> page2 = set.rangeTail("ap", true, 10, 10);
+
+    // Paging within a bounded range
+    Collection<String> firstTen = set.range("a", true, "z", true, 0, 10);
+    ```
+=== "Async"
+    ```java
+    RLexSortedSet set = redisson.getLexSortedSet("myLexSet");
+
+    RFuture<Collection<String>> page1 = set.rangeTailAsync("ap", true, 0, 10);
+    RFuture<Collection<String>> page2 = set.rangeTailAsync("ap", true, 10, 10);
+    RFuture<Collection<String>> firstTen = set.rangeAsync("a", true, "z", true, 0, 10);
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RLexSortedSetReactive set = redisson.getLexSortedSet("myLexSet");
+
+    Mono<Collection<String>> page1 = set.rangeTail("ap", true, 0, 10);
+    Mono<Collection<String>> page2 = set.rangeTail("ap", true, 10, 10);
+    Mono<Collection<String>> firstTen = set.range("a", true, "z", true, 0, 10);
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RLexSortedSetRx set = redisson.getLexSortedSet("myLexSet");
+
+    Single<Collection<String>> page1 = set.rangeTail("ap", true, 0, 10);
+    Single<Collection<String>> page2 = set.rangeTail("ap", true, 10, 10);
+    Single<Collection<String>> firstTen = set.range("a", true, "z", true, 0, 10);
+    ```
+
+There is also a positional `range(int startIndex, int endIndex)` (with a `rangeAsync` form) that selects by index rather than by value - for example `range(0, 9)` returns the first ten elements. It is available on the synchronous and asynchronous interfaces.
+
+**Element Position**
+
+`rank` returns the 0-based position of an element in lexicographical order and `revRank` its position from the end; both are empty when the element is absent, which is handy for showing where a term falls in an index.
+
+=== "Sync"
+    ```java
+    RLexSortedSet set = redisson.getLexSortedSet("myLexSet");
+
+    Integer rank = set.rank("banana");        // position from the start, 0-based
+    Integer revRank = set.revRank("banana");  // position from the end
+    ```
+=== "Async"
+    ```java
+    RLexSortedSet set = redisson.getLexSortedSet("myLexSet");
+
+    RFuture<Integer> rank = set.rankAsync("banana");
+    RFuture<Integer> revRank = set.revRankAsync("banana");
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RLexSortedSetReactive set = redisson.getLexSortedSet("myLexSet");
+
+    Mono<Integer> rank = set.rank("banana");
+    Mono<Integer> revRank = set.revRank("banana");
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RLexSortedSetRx set = redisson.getLexSortedSet("myLexSet");
+
+    Maybe<Integer> rank = set.rank("banana");
+    Maybe<Integer> revRank = set.revRank("banana");
     ```
 
 **Counting Elements in Range**
