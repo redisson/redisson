@@ -4,6 +4,8 @@ This page maps each Valkey or Redis command to the Redisson object and methods t
 
 A dash (`-`) means the command has no direct equivalent on that API - for instance because it is set through `Config` rather than called at runtime, or is handled internally by Redisson.
 
+This table lists the commands that map directly to Redisson methods. Redisson also provides distributed features that don't correspond to any single Valkey or Redis command - such as [locks and synchronizers](data-and-services/locks-and-synchronizers.md), [rate limiters](data-and-services/objects.md#ratelimiter), [remote and executor services](data-and-services/services.md), and [near-caching](client-side-caching.md) - so they aren't listed here. It also provides higher-level messaging and standard-API layers, including [reliable pub/sub](data-and-services/publish-subscribe.md#reliable-pubsub), [reliable queues](data-and-services/queues.md), [JMS](messaging.md#jms-api-implementation), and [JCache (JSR-107)](cache-api-implementations.md#jcache-api-jsr-107).
+
 ## Strings
 
 | Valkey or Redis command | Sync / Async API<br/><sub>Redisson.create(config)</sub> | Reactive API<br/><sub>redisson.reactive()</sub> | RxJava3 API<br/><sub>redisson.rxJava()</sub> |
