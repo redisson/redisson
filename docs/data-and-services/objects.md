@@ -2238,11 +2238,6 @@ bloomFilter.add(new SomeObject("field5Value", "field8Value"));
 bloomFilter.contains(new SomeObject("field1Value", "field8Value"));
 ```
 
-{% include 'data-and-services/bloom-filter-native.md' %}
-
-{% include 'data-and-services/cuckoo-filter.md' %}
-
-
 ### Use Cases
 
 A Bloom filter is a compact probabilistic structure for set membership: `contains` may report a false positive but never a false negative, so a negative answer is definitive while a positive answer means the element is probably present. Elements are only ever added, never removed, which keeps it extremely space-efficient. The filter is sized up front with `tryInit(expectedInsertions, falseProbability)` for a target false-positive rate, and `count()` reports the approximate number of elements added. It suits workloads dominated by membership questions over very large sets, where a small, tunable false-positive rate is an acceptable trade for tiny, fixed memory.
@@ -2373,6 +2368,10 @@ For best-effort deduplication over a high-volume stream - notifications already 
 	// true if newly added, false if already seen
 	Single<Boolean> isNew = seen.add(notificationId);
 	```
+
+{% include 'data-and-services/bloom-filter-native.md' %}
+
+{% include 'data-and-services/cuckoo-filter.md' %}
 
 ## HyperLogLog
 Java implementation of Valkey or Redis based [RHyperLogLog](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RHyperLogLog.html) object is a probabilistic data structure that estimates the number of distinct elements (the cardinality) of a very large set using a small, fixed amount of memory - on the order of a few kilobytes - no matter how many elements are added. The estimate carries a small standard error of about 0.81%, and the object is thread-safe.

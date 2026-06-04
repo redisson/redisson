@@ -995,7 +995,7 @@ Entries can carry a per-entry `time to live` that is cleaned up on the server si
 
 ### When to use JSON Store
 
-Reach for `RJsonStore` instead of an `RMap` or `RBucket` of serialized objects when you need any of the following: updating part of a document in place - setting a field, pushing onto an array, incrementing a counter - without loading and rewriting the whole value, which also removes the read-modify-write race; a per-entry `time to live`; or field-level search through RediSearch. When documents are always read and written whole and none of those apply, a regular map with a JSON codec is simpler.
+Reach for `RJsonStore` instead of an `RMap` or `RBucket` of serialized objects when you need any of the following: updating part of a document in place - setting a field, pushing onto an array, incrementing a counter - without loading and rewriting the whole value, which also removes the read-modify-write race; a per-entry `time to live`; or field-level search through RediSearch.
 
 ### Basic usage
 
