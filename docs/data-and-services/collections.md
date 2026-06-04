@@ -3133,321 +3133,385 @@ Code example of adding Listeners:
 
 ## Time Series
 
-Java implementation of Valkey or Redis based [RTimeSeries](https://www.javadoc.io/doc/org.redisson/redisson/latest/org/redisson/api/RTimeSeries.html) object is a specialized data structure for storing and querying time-stamped data. It allows storing values indexed by timestamp with optional TTL (time-to-live) per entry. Values are automatically ordered by timestamp, making it ideal for metrics, sensor data, financial data, and event logging. 
+Redisson's `RTimeSeries` object is a distributed structure for storing and querying time-stamped data on Valkey or Redis. Each entry pairs a unique `long` timestamp with a value and, optionally, a *label* - a secondary value stored and returned alongside the entry. Entries are kept ordered by timestamp, which makes `RTimeSeries` a natural fit for metrics, sensor readings, financial ticks, and event logs.
 
-This object is thread-safe.
+The object is typed as `RTimeSeries<V, L>`, where `V` is the value type and `L` the label type (use any type, such as `Object`, when labels aren't needed). It is thread-safe and implements `Iterable<V>`.
 
-### Timestamp-based storage
+### Storing entries
 
-Time Series stores entries as value-timestamp pairs where each value is associated with a unique timestamp. Timestamps serve as keys for data retrieval and ordering. If an entry with the same timestamp already exists, it will be overwritten with the new value.
+Each value is stored against a unique timestamp; adding a value at an existing timestamp overwrites the previous one. A label can be attached per entry, and whole batches can be added in a single call.
 
 === "Sync"
     ```java
-    RTimeSeries<String> ts = redisson.getTimeSeries("myTimeSeries");
+    RTimeSeries<String, String> ts = redisson.getTimeSeries("myTimeSeries");
     
-    // Add entries with timestamps
-    ts.add(201908110501, "10%");
-    ts.add(201908110502, "30%");
-    ts.add(201908110504, "10%");
-    ts.add(201908110508, "75%");
+    // Add a value at a timestamp
+    ts.add(201908110501L, "10%");
+    ts.add(201908110502L, "30%");
     
-    // Add multiple entries at once
-    ts.addAll(Map.of(201908110601L, "15%", 
+    // Add a value together with a label
+    ts.add(201908110504L, "10%", "host-1");
+    
+    // Add several values at once
+    ts.addAll(Map.of(201908110601L, "15%",
                      201908110602L, "25%",
                      201908110603L, "35%"));
     
-    // Retrieve value by timestamp
-    String value = ts.get(201908110508);
-    
-    // Retrieve entry (value with timestamp) by timestamp
-    TimeSeriesEntry<String> entry = ts.getEntry(201908110508);
-    
-    // Remove entry by timestamp
-    ts.remove(201908110508);
+    // Add several labelled entries at once
+    ts.addAll(List.of(new TimeSeriesEntry<>(201908110701L, "40%", "host-1"),
+                      new TimeSeriesEntry<>(201908110702L, "45%", "host-2")));
     ```
 === "Async"
     ```java
-    RTimeSeries<String> ts = redisson.getTimeSeries("myTimeSeries");
+    RTimeSeries<String, String> ts = redisson.getTimeSeries("myTimeSeries");
     
-    // Add entries with timestamps
-    RFuture<Void> f1 = ts.addAsync(201908110501, "10%");
-    RFuture<Void> f2 = ts.addAsync(201908110502, "30%");
-    RFuture<Void> f3 = ts.addAsync(201908110504, "10%");
-    RFuture<Void> f4 = ts.addAsync(201908110508, "75%");
+    RFuture<Void> f1 = ts.addAsync(201908110501L, "10%");
+    RFuture<Void> f2 = ts.addAsync(201908110504L, "10%", "host-1");
     
-    // Add multiple entries at once
-    RFuture<Void> f5 = ts.addAllAsync(Map.of(201908110601L, "15%", 
-                                              201908110602L, "25%",
-                                              201908110603L, "35%"));
+    RFuture<Void> f3 = ts.addAllAsync(Map.of(201908110601L, "15%",
+                                             201908110602L, "25%"));
     
-    // Retrieve value by timestamp
-    RFuture<String> value = ts.getAsync(201908110508);
-    
-    // Retrieve entry (value with timestamp) by timestamp
-    RFuture<TimeSeriesEntry<String>> entry = ts.getEntryAsync(201908110508);
-    
-    // Remove entry by timestamp
-    RFuture<Boolean> removed = ts.removeAsync(201908110508);
+    RFuture<Void> f4 = ts.addAllAsync(List.of(
+            new TimeSeriesEntry<>(201908110701L, "40%", "host-1"),
+            new TimeSeriesEntry<>(201908110702L, "45%", "host-2")));
     ```
 === "Reactive"
     ```java
     RedissonReactiveClient redisson = redissonClient.reactive();
-    RTimeSeriesReactive<String> ts = redisson.getTimeSeries("myTimeSeries");
+    RTimeSeriesReactive<String, String> ts = redisson.getTimeSeries("myTimeSeries");
     
-    // Add entries with timestamps
-    Mono<Void> m1 = ts.add(201908110501, "10%");
-    Mono<Void> m2 = ts.add(201908110502, "30%");
-    Mono<Void> m3 = ts.add(201908110504, "10%");
-    Mono<Void> m4 = ts.add(201908110508, "75%");
+    Mono<Void> m1 = ts.add(201908110501L, "10%");
+    Mono<Void> m2 = ts.add(201908110504L, "10%", "host-1");
     
-    // Add multiple entries at once
-    Mono<Void> m5 = ts.addAll(Map.of(201908110601L, "15%", 
-                                      201908110602L, "25%",
-                                      201908110603L, "35%"));
+    Mono<Void> m3 = ts.addAll(Map.of(201908110601L, "15%",
+                                     201908110602L, "25%"));
     
-    // Retrieve value by timestamp
-    Mono<String> value = ts.get(201908110508);
-    
-    // Retrieve entry (value with timestamp) by timestamp
-    Mono<TimeSeriesEntry<String>> entry = ts.getEntry(201908110508);
-    
-    // Remove entry by timestamp
-    Mono<Boolean> removed = ts.remove(201908110508);
+    Mono<Void> m4 = ts.addAll(List.of(
+            new TimeSeriesEntry<>(201908110701L, "40%", "host-1"),
+            new TimeSeriesEntry<>(201908110702L, "45%", "host-2")));
     ```
 === "RxJava3"
     ```java
     RedissonRxClient redisson = redissonClient.rxJava();
-    RTimeSeriesRx<String> ts = redisson.getTimeSeries("myTimeSeries");
+    RTimeSeriesRx<String, String> ts = redisson.getTimeSeries("myTimeSeries");
     
-    // Add entries with timestamps
-    Completable c1 = ts.add(201908110501, "10%");
-    Completable c2 = ts.add(201908110502, "30%");
-    Completable c3 = ts.add(201908110504, "10%");
-    Completable c4 = ts.add(201908110508, "75%");
+    Completable c1 = ts.add(201908110501L, "10%");
+    Completable c2 = ts.add(201908110504L, "10%", "host-1");
     
-    // Add multiple entries at once
-    Completable c5 = ts.addAll(Map.of(201908110601L, "15%", 
-                                       201908110602L, "25%",
-                                       201908110603L, "35%"));
+    Completable c3 = ts.addAll(Map.of(201908110601L, "15%",
+                                      201908110602L, "25%"));
     
-    // Retrieve value by timestamp
-    Maybe<String> value = ts.get(201908110508);
-    
-    // Retrieve entry (value with timestamp) by timestamp
-    Maybe<TimeSeriesEntry<String>> entry = ts.getEntry(201908110508);
-    
-    // Remove entry by timestamp
-    Single<Boolean> removed = ts.remove(201908110508);
+    Completable c4 = ts.addAll(List.of(
+            new TimeSeriesEntry<>(201908110701L, "40%", "host-1"),
+            new TimeSeriesEntry<>(201908110702L, "45%", "host-2")));
     ```
 
-### TTL per entry
+### Per-entry TTL
 
-Time Series supports defining time-to-live (TTL) for each entry individually. Expired entries are automatically removed by Valkey or Redis. This is useful for implementing data retention policies where older data should be automatically cleaned up.
+Each entry can be given its own time-to-live, after which Valkey or Redis removes it automatically - useful for retention policies. A TTL can be expressed as an amount plus `TimeUnit` or as a `Duration`, and applies to single entries or whole batches. A label and a TTL are combined through the `Duration` overload.
 
 === "Sync"
     ```java
-    RTimeSeries<String> ts = redisson.getTimeSeries("myTimeSeries");
+    RTimeSeries<String, String> ts = redisson.getTimeSeries("myTimeSeries");
     
-    // Add entry with TTL of 10 hours
-    ts.add(201908110510, "85%", 10, TimeUnit.HOURS);
+    // TTL as amount + TimeUnit
+    ts.add(201908110510L, "85%", 10, TimeUnit.HOURS);
     
-    // Add entry with TTL of 30 minutes
-    ts.add(201908110520, "90%", 30, TimeUnit.MINUTES);
+    // TTL as Duration
+    ts.add(201908110530L, "95%", Duration.ofDays(1));
     
-    // Add entry with TTL as Duration
-    ts.add(201908110530, "95%", Duration.ofDays(1));
+    // Label together with a TTL
+    ts.add(201908110540L, "99%", "host-1", Duration.ofHours(6));
     
-    // Add multiple entries with the same TTL
-    ts.addAll(Map.of(201908110601L, "15%", 
+    // Same TTL for a whole batch
+    ts.addAll(Map.of(201908110601L, "15%",
                      201908110602L, "25%"), 1, TimeUnit.HOURS);
     ```
 === "Async"
     ```java
-    RTimeSeries<String> ts = redisson.getTimeSeries("myTimeSeries");
+    RTimeSeries<String, String> ts = redisson.getTimeSeries("myTimeSeries");
     
-    // Add entry with TTL of 10 hours
-    RFuture<Void> f1 = ts.addAsync(201908110510, "85%", 10, TimeUnit.HOURS);
-    
-    // Add entry with TTL of 30 minutes
-    RFuture<Void> f2 = ts.addAsync(201908110520, "90%", 30, TimeUnit.MINUTES);
-    
-    // Add entry with TTL as Duration
-    RFuture<Void> f3 = ts.addAsync(201908110530, "95%", Duration.ofDays(1));
-    
-    // Add multiple entries with the same TTL
-    RFuture<Void> f4 = ts.addAllAsync(Map.of(201908110601L, "15%", 
-                                              201908110602L, "25%"), 1, TimeUnit.HOURS);
+    RFuture<Void> f1 = ts.addAsync(201908110510L, "85%", 10, TimeUnit.HOURS);
+    RFuture<Void> f2 = ts.addAsync(201908110530L, "95%", Duration.ofDays(1));
+    RFuture<Void> f3 = ts.addAsync(201908110540L, "99%", "host-1", Duration.ofHours(6));
+    RFuture<Void> f4 = ts.addAllAsync(Map.of(201908110601L, "15%",
+                                             201908110602L, "25%"), 1, TimeUnit.HOURS);
     ```
 === "Reactive"
     ```java
     RedissonReactiveClient redisson = redissonClient.reactive();
-    RTimeSeriesReactive<String> ts = redisson.getTimeSeries("myTimeSeries");
+    RTimeSeriesReactive<String, String> ts = redisson.getTimeSeries("myTimeSeries");
     
-    // Add entry with TTL of 10 hours
-    Mono<Void> m1 = ts.add(201908110510, "85%", 10, TimeUnit.HOURS);
-    
-    // Add entry with TTL of 30 minutes
-    Mono<Void> m2 = ts.add(201908110520, "90%", 30, TimeUnit.MINUTES);
-    
-    // Add entry with TTL as Duration
-    Mono<Void> m3 = ts.add(201908110530, "95%", Duration.ofDays(1));
-    
-    // Add multiple entries with the same TTL
-    Mono<Void> m4 = ts.addAll(Map.of(201908110601L, "15%", 
-                                      201908110602L, "25%"), 1, TimeUnit.HOURS);
+    Mono<Void> m1 = ts.add(201908110510L, "85%", 10, TimeUnit.HOURS);
+    Mono<Void> m2 = ts.add(201908110530L, "95%", Duration.ofDays(1));
+    Mono<Void> m3 = ts.add(201908110540L, "99%", "host-1", Duration.ofHours(6));
+    Mono<Void> m4 = ts.addAll(Map.of(201908110601L, "15%",
+                                     201908110602L, "25%"), 1, TimeUnit.HOURS);
     ```
 === "RxJava3"
     ```java
     RedissonRxClient redisson = redissonClient.rxJava();
-    RTimeSeriesRx<String> ts = redisson.getTimeSeries("myTimeSeries");
+    RTimeSeriesRx<String, String> ts = redisson.getTimeSeries("myTimeSeries");
     
-    // Add entry with TTL of 10 hours
-    Completable c1 = ts.add(201908110510, "85%", 10, TimeUnit.HOURS);
+    Completable c1 = ts.add(201908110510L, "85%", 10, TimeUnit.HOURS);
+    Completable c2 = ts.add(201908110530L, "95%", Duration.ofDays(1));
+    Completable c3 = ts.add(201908110540L, "99%", "host-1", Duration.ofHours(6));
+    Completable c4 = ts.addAll(Map.of(201908110601L, "15%",
+                                      201908110602L, "25%"), 1, TimeUnit.HOURS);
+    ```
+
+### Reading and removing entries
+
+`get` returns a value by timestamp, while `getEntry` returns the full `TimeSeriesEntry` (its timestamp, value, and label). `getAndRemove` reads and deletes in one step, and `size` reports the entry count.
+
+=== "Sync"
+    ```java
+    RTimeSeries<String, String> ts = redisson.getTimeSeries("myTimeSeries");
     
-    // Add entry with TTL of 30 minutes
-    Completable c2 = ts.add(201908110520, "90%", 30, TimeUnit.MINUTES);
+    // Value at a timestamp
+    String value = ts.get(201908110504L);
     
-    // Add entry with TTL as Duration
-    Completable c3 = ts.add(201908110530, "95%", Duration.ofDays(1));
+    // Full entry: timestamp, value, label
+    TimeSeriesEntry<String, String> entry = ts.getEntry(201908110504L);
+    String label = entry.getLabel();
     
-    // Add multiple entries with the same TTL
-    Completable c4 = ts.addAll(Map.of(201908110601L, "15%", 
-                                       201908110602L, "25%"), 1, TimeUnit.HOURS);
+    // Number of entries
+    int size = ts.size();
+    
+    // Remove by timestamp
+    boolean removed = ts.remove(201908110504L);
+    
+    // Read and remove in one step
+    String taken = ts.getAndRemove(201908110501L);
+    TimeSeriesEntry<String, String> takenEntry = ts.getAndRemoveEntry(201908110502L);
+    ```
+=== "Async"
+    ```java
+    RTimeSeries<String, String> ts = redisson.getTimeSeries("myTimeSeries");
+    
+    RFuture<String> value = ts.getAsync(201908110504L);
+    RFuture<TimeSeriesEntry<String, String>> entry = ts.getEntryAsync(201908110504L);
+    RFuture<Integer> size = ts.sizeAsync();
+    RFuture<Boolean> removed = ts.removeAsync(201908110504L);
+    RFuture<String> taken = ts.getAndRemoveAsync(201908110501L);
+    RFuture<TimeSeriesEntry<String, String>> takenEntry = ts.getAndRemoveEntryAsync(201908110502L);
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RTimeSeriesReactive<String, String> ts = redisson.getTimeSeries("myTimeSeries");
+    
+    Mono<String> value = ts.get(201908110504L);
+    Mono<TimeSeriesEntry<String, String>> entry = ts.getEntry(201908110504L);
+    Mono<Integer> size = ts.size();
+    Mono<Boolean> removed = ts.remove(201908110504L);
+    Mono<String> taken = ts.getAndRemove(201908110501L);
+    Mono<TimeSeriesEntry<String, String>> takenEntry = ts.getAndRemoveEntry(201908110502L);
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RTimeSeriesRx<String, String> ts = redisson.getTimeSeries("myTimeSeries");
+    
+    Maybe<String> value = ts.get(201908110504L);
+    Maybe<TimeSeriesEntry<String, String>> entry = ts.getEntry(201908110504L);
+    Single<Integer> size = ts.size();
+    Single<Boolean> removed = ts.remove(201908110504L);
+    Maybe<String> taken = ts.getAndRemove(201908110501L);
+    Maybe<TimeSeriesEntry<String, String>> takenEntry = ts.getAndRemoveEntry(201908110502L);
     ```
 
 ### Range queries
 
-Time Series provides powerful range query capabilities for retrieving entries within a specified timestamp range. You can also poll entries (retrieve and remove) from the beginning or end of the series, making it suitable for queue-like processing of time-ordered data.
+Entries can be read over an inclusive timestamp range, in forward or reverse order, as values (`range`/`rangeReversed`) or as full entries (`entryRange`/`entryRangeReversed`). Each of these methods also has an overload that caps the number of results with a trailing `limit` argument.
 
 === "Sync"
     ```java
-    RTimeSeries<String> ts = redisson.getTimeSeries("myTimeSeries");
+    RTimeSeries<String, String> ts = redisson.getTimeSeries("myTimeSeries");
     
-    // Get values within timestamp range (inclusive)
-    Collection<String> values = ts.range(201908110501, 201908110508);
+    // Values within an inclusive timestamp range
+    Collection<String> values = ts.range(201908110501L, 201908110508L);
     
-    // Get entries (values with timestamps) within range
-    Collection<TimeSeriesEntry<String>> entries = ts.entryRange(201908110501, 201908110508);
+    // Values in reverse order
+    Collection<String> reversed = ts.rangeReversed(201908110501L, 201908110508L);
     
-    // Get entries in reverse order within range
-    Collection<TimeSeriesEntry<String>> reversed = ts.entryRangeReversed(201908110501, 201908110508);
+    // Cap the number of results
+    Collection<String> firstThree = ts.range(201908110501L, 201908110508L, 3);
     
-    // Poll (get and remove) first N entries
-    Collection<String> firstValues = ts.pollFirst(2);
-    Collection<TimeSeriesEntry<String>> firstEntries = ts.pollFirstEntries(2);
-    
-    // Poll (get and remove) last N entries
-    Collection<String> lastValues = ts.pollLast(2);
-    Collection<TimeSeriesEntry<String>> lastEntries = ts.pollLastEntries(2);
-    
-    // Poll entries within timestamp range with a limit
-    Collection<TimeSeriesEntry<String>> polled = ts.pollEntries(201908110501, 201908110508, 10);
-    
-    // Get first and last entries
-    TimeSeriesEntry<String> first = ts.first();
-    TimeSeriesEntry<String> last = ts.last();
-    
-    // Get first and last timestamps
-    Long firstTimestamp = ts.firstTimestamp();
-    Long lastTimestamp = ts.lastTimestamp();
+    // Full entries within a range (each carries timestamp, value, label)
+    Collection<TimeSeriesEntry<String, String>> entries =
+            ts.entryRange(201908110501L, 201908110508L);
+    Collection<TimeSeriesEntry<String, String>> entriesReversed =
+            ts.entryRangeReversed(201908110501L, 201908110508L);
     ```
 === "Async"
     ```java
-    RTimeSeries<String> ts = redisson.getTimeSeries("myTimeSeries");
+    RTimeSeries<String, String> ts = redisson.getTimeSeries("myTimeSeries");
     
-    // Get values within timestamp range (inclusive)
-    RFuture<Collection<String>> values = ts.rangeAsync(201908110501, 201908110508);
-    
-    // Get entries (values with timestamps) within range
-    RFuture<Collection<TimeSeriesEntry<String>>> entries = ts.entryRangeAsync(201908110501, 201908110508);
-    
-    // Get entries in reverse order within range
-    RFuture<Collection<TimeSeriesEntry<String>>> reversed = ts.entryRangeReversedAsync(201908110501, 201908110508);
-    
-    // Poll (get and remove) first N entries
-    RFuture<Collection<String>> firstValues = ts.pollFirstAsync(2);
-    RFuture<Collection<TimeSeriesEntry<String>>> firstEntries = ts.pollFirstEntriesAsync(2);
-    
-    // Poll (get and remove) last N entries
-    RFuture<Collection<String>> lastValues = ts.pollLastAsync(2);
-    RFuture<Collection<TimeSeriesEntry<String>>> lastEntries = ts.pollLastEntriesAsync(2);
-    
-    // Poll entries within timestamp range with a limit
-    RFuture<Collection<TimeSeriesEntry<String>>> polled = ts.pollEntriesAsync(201908110501, 201908110508, 10);
-    
-    // Get first and last entries
-    RFuture<TimeSeriesEntry<String>> first = ts.firstAsync();
-    RFuture<TimeSeriesEntry<String>> last = ts.lastAsync();
-    
-    // Get first and last timestamps
-    RFuture<Long> firstTimestamp = ts.firstTimestampAsync();
-    RFuture<Long> lastTimestamp = ts.lastTimestampAsync();
+    RFuture<Collection<String>> values = ts.rangeAsync(201908110501L, 201908110508L);
+    RFuture<Collection<String>> reversed = ts.rangeReversedAsync(201908110501L, 201908110508L);
+    RFuture<Collection<String>> firstThree = ts.rangeAsync(201908110501L, 201908110508L, 3);
+    RFuture<Collection<TimeSeriesEntry<String, String>>> entries =
+            ts.entryRangeAsync(201908110501L, 201908110508L);
+    RFuture<Collection<TimeSeriesEntry<String, String>>> entriesReversed =
+            ts.entryRangeReversedAsync(201908110501L, 201908110508L);
     ```
 === "Reactive"
     ```java
     RedissonReactiveClient redisson = redissonClient.reactive();
-    RTimeSeriesReactive<String> ts = redisson.getTimeSeries("myTimeSeries");
+    RTimeSeriesReactive<String, String> ts = redisson.getTimeSeries("myTimeSeries");
     
-    // Get values within timestamp range (inclusive)
-    Mono<Collection<String>> values = ts.range(201908110501, 201908110508);
-    
-    // Get entries (values with timestamps) within range
-    Mono<Collection<TimeSeriesEntry<String>>> entries = ts.entryRange(201908110501, 201908110508);
-    
-    // Get entries in reverse order within range
-    Mono<Collection<TimeSeriesEntry<String>>> reversed = ts.entryRangeReversed(201908110501, 201908110508);
-    
-    // Poll (get and remove) first N entries
-    Mono<Collection<String>> firstValues = ts.pollFirst(2);
-    Mono<Collection<TimeSeriesEntry<String>>> firstEntries = ts.pollFirstEntries(2);
-    
-    // Poll (get and remove) last N entries
-    Mono<Collection<String>> lastValues = ts.pollLast(2);
-    Mono<Collection<TimeSeriesEntry<String>>> lastEntries = ts.pollLastEntries(2);
-    
-    // Poll entries within timestamp range with a limit
-    Mono<Collection<TimeSeriesEntry<String>>> polled = ts.pollEntries(201908110501, 201908110508, 10);
-    
-    // Get first and last entries
-    Mono<TimeSeriesEntry<String>> first = ts.first();
-    Mono<TimeSeriesEntry<String>> last = ts.last();
-    
-    // Get first and last timestamps
-    Mono<Long> firstTimestamp = ts.firstTimestamp();
-    Mono<Long> lastTimestamp = ts.lastTimestamp();
+    Mono<Collection<String>> values = ts.range(201908110501L, 201908110508L);
+    Mono<Collection<String>> reversed = ts.rangeReversed(201908110501L, 201908110508L);
+    Mono<Collection<String>> firstThree = ts.range(201908110501L, 201908110508L, 3);
+    Mono<Collection<TimeSeriesEntry<String, String>>> entries =
+            ts.entryRange(201908110501L, 201908110508L);
+    Mono<Collection<TimeSeriesEntry<String, String>>> entriesReversed =
+            ts.entryRangeReversed(201908110501L, 201908110508L);
     ```
 === "RxJava3"
     ```java
     RedissonRxClient redisson = redissonClient.rxJava();
-    RTimeSeriesRx<String> ts = redisson.getTimeSeries("myTimeSeries");
+    RTimeSeriesRx<String, String> ts = redisson.getTimeSeries("myTimeSeries");
     
-    // Get values within timestamp range (inclusive)
-    Single<Collection<String>> values = ts.range(201908110501, 201908110508);
+    Single<Collection<String>> values = ts.range(201908110501L, 201908110508L);
+    Single<Collection<String>> reversed = ts.rangeReversed(201908110501L, 201908110508L);
+    Single<Collection<String>> firstThree = ts.range(201908110501L, 201908110508L, 3);
+    Single<Collection<TimeSeriesEntry<String, String>>> entries =
+            ts.entryRange(201908110501L, 201908110508L);
+    Single<Collection<TimeSeriesEntry<String, String>>> entriesReversed =
+            ts.entryRangeReversed(201908110501L, 201908110508L);
+    ```
+
+### Head, tail, and polling
+
+`first`/`last` return the value at the earliest/latest timestamp; `firstEntry`/`lastEntry` return the full entries, and `firstTimestamp`/`lastTimestamp` return just the timestamps. `first(count)`/`last(count)` read several head or tail values **without** removing them. The `poll*` methods, by contrast, **remove** what they return, and `removeRange` deletes every entry within a timestamp range.
+
+=== "Sync"
+    ```java
+    RTimeSeries<String, String> ts = redisson.getTimeSeries("myTimeSeries");
     
-    // Get entries (values with timestamps) within range
-    Single<Collection<TimeSeriesEntry<String>>> entries = ts.entryRange(201908110501, 201908110508);
+    // Earliest / latest value
+    String firstValue = ts.first();
+    String lastValue = ts.last();
     
-    // Get entries in reverse order within range
-    Single<Collection<TimeSeriesEntry<String>>> reversed = ts.entryRangeReversed(201908110501, 201908110508);
+    // Earliest / latest full entry
+    TimeSeriesEntry<String, String> firstEntry = ts.firstEntry();
+    TimeSeriesEntry<String, String> lastEntry = ts.lastEntry();
     
-    // Poll (get and remove) first N entries
-    Single<Collection<String>> firstValues = ts.pollFirst(2);
-    Single<Collection<TimeSeriesEntry<String>>> firstEntries = ts.pollFirstEntries(2);
+    // Earliest / latest timestamp
+    Long firstTs = ts.firstTimestamp();
+    Long lastTs = ts.lastTimestamp();
     
-    // Poll (get and remove) last N entries
-    Single<Collection<String>> lastValues = ts.pollLast(2);
-    Single<Collection<TimeSeriesEntry<String>>> lastEntries = ts.pollLastEntries(2);
+    // Peek at several head / tail values (no removal)
+    Collection<String> head = ts.first(3);
+    Collection<String> tail = ts.last(3);
     
-    // Poll entries within timestamp range with a limit
-    Single<Collection<TimeSeriesEntry<String>>> polled = ts.pollEntries(201908110501, 201908110508, 10);
+    // Poll = read AND remove, from the head or tail
+    Collection<String> polledHead = ts.pollFirst(2);
+    Collection<TimeSeriesEntry<String, String>> polledTail = ts.pollLastEntries(2);
+    String oldest = ts.pollFirst();
     
-    // Get first and last entries
-    Maybe<TimeSeriesEntry<String>> first = ts.first();
-    Maybe<TimeSeriesEntry<String>> last = ts.last();
+    // Delete every entry within a timestamp range
+    int deleted = ts.removeRange(201908110501L, 201908110508L);
+    ```
+=== "Async"
+    ```java
+    RTimeSeries<String, String> ts = redisson.getTimeSeries("myTimeSeries");
     
-    // Get first and last timestamps
-    Maybe<Long> firstTimestamp = ts.firstTimestamp();
-    Maybe<Long> lastTimestamp = ts.lastTimestamp();
+    RFuture<String> firstValue = ts.firstAsync();
+    RFuture<String> lastValue = ts.lastAsync();
+    RFuture<TimeSeriesEntry<String, String>> firstEntry = ts.firstEntryAsync();
+    RFuture<TimeSeriesEntry<String, String>> lastEntry = ts.lastEntryAsync();
+    RFuture<Long> firstTs = ts.firstTimestampAsync();
+    RFuture<Long> lastTs = ts.lastTimestampAsync();
+    
+    RFuture<Collection<String>> head = ts.firstAsync(3);
+    RFuture<Collection<String>> tail = ts.lastAsync(3);
+    
+    RFuture<Collection<String>> polledHead = ts.pollFirstAsync(2);
+    RFuture<Collection<TimeSeriesEntry<String, String>>> polledTail = ts.pollLastEntriesAsync(2);
+    RFuture<String> oldest = ts.pollFirstAsync();
+    
+    RFuture<Integer> deleted = ts.removeRangeAsync(201908110501L, 201908110508L);
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RTimeSeriesReactive<String, String> ts = redisson.getTimeSeries("myTimeSeries");
+    
+    Mono<String> firstValue = ts.first();
+    Mono<String> lastValue = ts.last();
+    Mono<TimeSeriesEntry<String, String>> firstEntry = ts.firstEntry();
+    Mono<TimeSeriesEntry<String, String>> lastEntry = ts.lastEntry();
+    Mono<Long> firstTs = ts.firstTimestamp();
+    Mono<Long> lastTs = ts.lastTimestamp();
+    
+    Mono<Collection<String>> head = ts.first(3);
+    Mono<Collection<String>> tail = ts.last(3);
+    
+    Mono<Collection<String>> polledHead = ts.pollFirst(2);
+    Mono<Collection<TimeSeriesEntry<String, String>>> polledTail = ts.pollLastEntries(2);
+    Mono<String> oldest = ts.pollFirst();
+    
+    Mono<Integer> deleted = ts.removeRange(201908110501L, 201908110508L);
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RTimeSeriesRx<String, String> ts = redisson.getTimeSeries("myTimeSeries");
+    
+    Maybe<String> firstValue = ts.first();
+    Maybe<String> lastValue = ts.last();
+    Maybe<TimeSeriesEntry<String, String>> firstEntry = ts.firstEntry();
+    Maybe<TimeSeriesEntry<String, String>> lastEntry = ts.lastEntry();
+    Single<Long> firstTs = ts.firstTimestamp();
+    Single<Long> lastTs = ts.lastTimestamp();
+    
+    Single<Collection<String>> head = ts.first(3);
+    Single<Collection<String>> tail = ts.last(3);
+    
+    Single<Collection<String>> polledHead = ts.pollFirst(2);
+    Single<Collection<TimeSeriesEntry<String, String>>> polledTail = ts.pollLastEntries(2);
+    Maybe<String> oldest = ts.pollFirst();
+    
+    Single<Integer> deleted = ts.removeRange(201908110501L, 201908110508L);
+    ```
+
+### Iteration
+
+`RTimeSeries` implements `Iterable<V>`, so the synchronous interface can be looped over directly or streamed with `stream()`; `iterator(int count)` controls the batch size used to fetch elements. On the Reactive and RxJava3 interfaces, `iterator()` returns a `Flux<V>` and `Flowable<V>` respectively. (There is no streaming iterator on the asynchronous interface.)
+
+=== "Sync"
+    ```java
+    RTimeSeries<String, String> ts = redisson.getTimeSeries("myTimeSeries");
+    
+    // Iterable<V> - values in timestamp order
+    for (String value : ts) {
+        System.out.println(value);
+    }
+    
+    // Java Stream
+    ts.stream().forEach(System.out::println);
+    
+    // Control the fetch batch size
+    Iterator<String> it = ts.iterator(10);
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RTimeSeriesReactive<String, String> ts = redisson.getTimeSeries("myTimeSeries");
+    
+    Flux<String> flux = ts.iterator();
+    flux.subscribe(value -> System.out.println(value));
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RTimeSeriesRx<String, String> ts = redisson.getTimeSeries("myTimeSeries");
+    
+    Flowable<String> flowable = ts.iterator();
+    flowable.subscribe(value -> System.out.println(value));
     ```
 
 ### Listeners
@@ -3464,7 +3528,7 @@ Redisson allows binding listeners per `RTimeSeries` object. This requires the `n
 
 === "Sync"
     ```java
-    RTimeSeries<String> ts = redisson.getTimeSeries("myTimeSeries");
+    RTimeSeries<String, String> ts = redisson.getTimeSeries("myTimeSeries");
     
     int listenerId = ts.addListener(new ScoredSortedSetAddListener() {
          @Override
@@ -3499,7 +3563,7 @@ Redisson allows binding listeners per `RTimeSeries` object. This requires the `n
     ```
 === "Async"
     ```java
-    RTimeSeries<String> ts = redisson.getTimeSeries("myTimeSeries");
+    RTimeSeries<String, String> ts = redisson.getTimeSeries("myTimeSeries");
     
     RFuture<Integer> listenerFuture = ts.addListenerAsync(new ScoredSortedSetAddListener() {
          @Override
@@ -3535,7 +3599,7 @@ Redisson allows binding listeners per `RTimeSeries` object. This requires the `n
 === "Reactive"
     ```java
     RedissonReactiveClient redisson = redissonClient.reactive();
-    RTimeSeriesReactive<String> ts = redisson.getTimeSeries("myTimeSeries");
+    RTimeSeriesReactive<String, String> ts = redisson.getTimeSeries("myTimeSeries");
     
     Mono<Integer> listenerMono = ts.addListener(new ScoredSortedSetAddListener() {
          @Override
@@ -3571,7 +3635,7 @@ Redisson allows binding listeners per `RTimeSeries` object. This requires the `n
 === "RxJava3"
     ```java
     RedissonRxClient redisson = redissonClient.rxJava();
-    RTimeSeriesRx<String> ts = redisson.getTimeSeries("myTimeSeries");
+    RTimeSeriesRx<String, String> ts = redisson.getTimeSeries("myTimeSeries");
     
     Single<Integer> listenerSingle = ts.addListener(new ScoredSortedSetAddListener() {
          @Override
