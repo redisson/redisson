@@ -1,3 +1,5 @@
+Getting started with Redisson takes two steps: add the dependency to your project, then create a client and obtain your first Valkey or Redis based object or service.
+
 1. Add dependency
 
     <div class="grid cards" markdown>
@@ -93,7 +95,7 @@
        
        // client side caching
        
-       RLocalCachedMap<MyKey, MyValue> map = redisson.getLocalCachedMap(LocalCachedMapOptions.<MyKey, MyValue>name("myMap"));
+       RLocalCachedMap<MyKey, MyValue> localCachedMap = redisson.getLocalCachedMap(LocalCachedMapOptions.<MyKey, MyValue>name("myMap"));
 
 
        // java.util.concurrent.locks.Lock
@@ -115,42 +117,16 @@
 
 More code examples can be found [here](https://github.com/redisson/redisson-examples).
 
-**Spring Boot Starter**
+## Framework and platform integrations
 
-- [Spring Boot Starter](integration-with-spring.md/#spring-boot-starter): Learn how to configure a Spring Boot Starter with Redisson.
-
-**Spring Data Redis**
-
-- [Spring Data Redis](integration-with-spring.md/#spring-data-redis): Learn how to configure a Spring Data Redis integration with Redisson.
-
-**Spring Cloud Stream**
-
-- [Spring Cloud Stream](integration-with-spring.md/#spring-cloud-stream): Learn how to configure a Spring Cloud Stream Binder for using Valkey or Redis as a message broker.
-
-**Quarkus Integration**
-
-- [Quarkus Integration](microservices-integration.md/#quarkus): Learn how to configure a Quarkus and Quarkus cache.
-
-**Micronaut Integration**
-
-- [Micronaut Integration](microservices-integration.md/#micronaut): Learn how to configure a Micronaut, Micronaut Session and Micronaut cache.
-
-**Helidon Integration**
-
-- [Helidon Integration](microservices-integration.md/#helidon): Learn how to configure a Helidon.
-
-**JCache API (JSR-107)**
-
-- [JCache API (JSR-107)](cache-api-implementations.md/#jcache-api-jsr-107): Learn how to configure a Redisson as a JCache provider.
-
-**MyBatis Cache**
-
-- [MyBatis Cache](cache-api-implementations.md/#mybatis-cache): Learn how to configure a Redisson as a second-level cache in MyBatis.
-
-**Hibernate Cache**
-
-- [Hibernate Cache](cache-api-implementations.md/#hibernate-cache): Learn how to configure a Redisson as a second-level cache in Hibernate.
-
-**Tomcat Integration**
-
-- [Tomcat Session Management](web-session-management.md/#tomcat-session): Learn how to configure Redisson as a session manager for Apache Tomcat, using Valkey or Redis based distributed session storage.
+- [Spring Boot Starter](integration-with-spring.md/#spring-boot-starter) — auto-configuration for Spring Boot
+- [Spring Data Redis](integration-with-spring.md/#spring-data-redis) — Spring Data Redis connector
+- [Spring Cloud Stream](integration-with-spring.md/#spring-cloud-stream) — binder for Valkey or Redis as a message broker
+- [Quarkus Integration](microservices-integration.md/#quarkus) — including Quarkus cache
+- [Micronaut Integration](microservices-integration.md/#micronaut) — including Micronaut session and cache
+- [Helidon Integration](microservices-integration.md/#helidon) — Helidon support
+- [JCache API (JSR-107)](cache-api-implementations.md/#jcache-api-jsr-107) — JCache provider
+- [MyBatis Cache](cache-api-implementations.md/#mybatis-cache) — second-level cache for MyBatis
+- [Hibernate Cache](cache-api-implementations.md/#hibernate-cache) — second-level cache for Hibernate
+- [Tomcat Session Management](web-session-management.md/#tomcat-session) — distributed session storage for Apache Tomcat
+- [JMS API](messaging.md/#jms-api-implementation) — Java Message Service provider

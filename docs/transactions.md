@@ -1,126 +1,122 @@
 ## Transactions management
-`RMap`, `RMapCache`, `RLocalCachedMap`, `RSet`, `RSetCache` and `RBucket` Redisson objects may participant in Transaction with ACID properties. It uses locks for write operations and maintains data modification operations list until `commit()` method is executed. Acquired locks are released after `rollback()` method execution. Implementation throws `org.redisson.transaction.TransactionException` in case of any error during commit/rollback execution.  
 
-Transaction isolation level is: `READ_COMMITTED`. 
+`RMap`, `RMapCache`, `RLocalCachedMap`, `RSet`, `RSetCache` and `RBucket` objects can participate in a transaction with ACID properties. The transaction takes locks for write operations and maintains a list of data-modification operations until `commit()` is called; the acquired locks are released after `commit()` or `rollback()`. If anything goes wrong during commit or rollback, an `org.redisson.transaction.TransactionException` is thrown.
 
-Follow Transaction options are available:
+The transaction isolation level is `READ_COMMITTED`.
+
+The following transaction options are available:
+
 ```java
 TransactionOptions options = TransactionOptions.defaults()
-// Synchronization data timeout between Redis or Valkey master participating in transaction and its slaves.
-// Default is 5000 milliseconds.
-.syncSlavesTimeout(5, TimeUnit.SECONDS)
+    // Data synchronization timeout between the master participating in the transaction and its replicas.
+    // Default is 5000 milliseconds.
+    .syncSlavesTimeout(5, TimeUnit.SECONDS)
 
-// Response timeout
-// Default is 3000 milliseconds.
-.responseTimeout(3, TimeUnit.SECONDS)
+    // Response timeout.
+    // Default is 3000 milliseconds.
+    .responseTimeout(3, TimeUnit.SECONDS)
 
-// Defines time interval for each attempt to send transaction if it hasn't been sent already.
-// Default is 1500 milliseconds.
-.retryInterval(2, TimeUnit.SECONDS)
+    // Interval between attempts to send the transaction if it hasn't been sent yet.
+    // Default is 1500 milliseconds.
+    .retryInterval(2, TimeUnit.SECONDS)
 
-// Defines attempts amount to send transaction if it hasn't been sent already.
-// Default is 3 attempts.
-.retryAttempts(3)
+    // Number of attempts to send the transaction if it hasn't been sent yet.
+    // Default is 3 attempts.
+    .retryAttempts(3)
 
-// If transaction hasn't committed within <code>timeout</code> it will rollback automatically.
-// Default is 5000 milliseconds.
-.timeout(5, TimeUnit.SECONDS);
+    // If the transaction isn't committed within this timeout it is rolled back automatically.
+    // Default is 5000 milliseconds.
+    .timeout(5, TimeUnit.SECONDS);
 ```
 
-For execution in Redis or Valkey cluster use {} brackets for collocation data on the same slot otherwise CROSSSLOT error is thrown by Redis.
-
-Code example for Redis or Valkey cluster: 
+In a Valkey or Redis cluster, use `{}` hash-tag braces to keep the keys on the same slot, otherwise the server throws a CROSSSLOT error:
 
 ```java
 RMap<String, String> map = transaction.getMap("myMap{user:1}");
 map.put("1", "2");
 String value = map.get("3");
-RSet<String> set = transaction.getSet("mySet{user:1}")
+RSet<String> set = transaction.getSet("mySet{user:1}");
 set.add(value);
 ```
 
-Code example of **Sync / Async** exection:
-```java
-RedissonClient redisson = Redisson.create(config);
-RTransaction transaction = redisson.createTransaction(TransactionOptions.defaults());
+The transaction is created from the client, the objects are obtained from it, and the changes are applied with `commit()` or discarded with `rollback()`:
 
-RMap<String, String> map = transaction.getMap("myMap");
-map.put("1", "2");
-String value = map.get("3");
-RSet<String> set = transaction.getSet("mySet")
-set.add(value);
-
-try {
-   transaction.commit();
-} catch(TransactionException e) {
-   transaction.rollback();
-}
-
-// or
-
-RFuture<Void> future = transaction.commitAsync();
-future.exceptionally(exception -> {
-   transaction.rollbackAsync();
-});
-```
-
-Code example of **Reactive** exection:
-```java
-RedissonReactiveClient redisson = Redisson.create(config).reactive();
-RTransactionReactive transaction = redisson.createTransaction(TransactionOptions.defaults());
-
-RMapReactive<String, String> map = transaction.getMap("myMap");
-map.put("1", "2");
-Mono<String> mapGet = map.get("3");
-RSetReactive<String> set = transaction.getSet("mySet")
-set.add(value);
-
-Mono<Void> mono = transaction.commit();
-mono.onErrorResume(exception -> {
-   return transaction.rollback();
-});
-```
-
-Code example of **RxJava3** exection:
-```java
-RedissonRxClient redisson = Redisson.create(config).rxJava();
-RTransactionRx transaction = redisson.createTransaction(TransactionOptions.defaults());
-
-RMapRx<String, String> map = transaction.getMap("myMap");
-map.put("1", "2");
-Maybe<String> mapGet = map.get("3");
-RSetRx<String> set = transaction.getSet("mySet")
-set.add(value);
-
-Completable res = transaction.commit();
-res.onErrorResumeNext(exception -> {
-   return transaction.rollback();
-});
-```
+=== "Sync / Async"
+    ```java
+    RedissonClient redisson = Redisson.create(config);
+    RTransaction transaction = redisson.createTransaction(TransactionOptions.defaults());
+    
+    RMap<String, String> map = transaction.getMap("myMap");
+    map.put("1", "2");
+    String value = map.get("3");
+    RSet<String> set = transaction.getSet("mySet");
+    set.add(value);
+    
+    try {
+        transaction.commit();
+    } catch (TransactionException e) {
+        transaction.rollback();
+    }
+    
+    // or
+    
+    RFuture<Void> future = transaction.commitAsync();
+    future.exceptionally(exception -> {
+        transaction.rollbackAsync();
+        return null;
+    });
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = Redisson.create(config).reactive();
+    RTransactionReactive transaction = redisson.createTransaction(TransactionOptions.defaults());
+    
+    RMapReactive<String, String> map = transaction.getMap("myMap");
+    map.put("1", "2");
+    Mono<String> value = map.get("3");
+    RSetReactive<String> set = transaction.getSet("mySet");
+    set.add("someValue");
+    
+    Mono<Void> mono = transaction.commit();
+    mono.onErrorResume(exception -> transaction.rollback()).subscribe();
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = Redisson.create(config).rxJava();
+    RTransactionRx transaction = redisson.createTransaction(TransactionOptions.defaults());
+    
+    RMapRx<String, String> map = transaction.getMap("myMap");
+    map.put("1", "2");
+    Maybe<String> value = map.get("3");
+    RSetRx<String> set = transaction.getSet("mySet");
+    set.add("someValue");
+    
+    Completable res = transaction.commit();
+    res.onErrorResumeNext(exception -> transaction.rollback()).subscribe();
+    ```
 
 ## XA Transactions
 
 _This feature is available only in [Redisson PRO](https://redisson.pro/feature-comparison.html) edition._
 
-Redisson provides [XAResource](https://docs.oracle.com/javaee/7/api/javax/transaction/xa/XAResource.html) implementation to participate in JTA transactions. `RMap`, `RMapCache`, `RLocalCachedMap`, `RSet`, `RSetCache` and `RBucket` Redisson objects may participant in Transaction.
+Redisson provides an [XAResource](https://docs.oracle.com/javaee/7/api/javax/transaction/xa/XAResource.html) implementation to participate in JTA transactions. `RMap`, `RMapCache`, `RLocalCachedMap`, `RSet`, `RSetCache` and `RBucket` objects can participate in the transaction.
 
-Transaction isolation level is: `READ_COMMITTED`.
+The transaction isolation level is `READ_COMMITTED`.
 
-For execution in Redis or Valkey cluster use {} brackets for collocation data on the same slot otherwise CROSSSLOT error is thrown by Redis.
-
-Code example for Redis or Valkey cluster: 
+In a Valkey or Redis cluster, use `{}` hash-tag braces to keep the keys on the same slot, otherwise the server throws a CROSSSLOT error:
 
 ```java
 RMap<String, String> map = transaction.getMap("myMap{user:1}");
 map.put("1", "2");
 String value = map.get("3");
-RSet<String> set = transaction.getSet("mySet{user:1}")
+RSet<String> set = transaction.getSet("mySet{user:1}");
 set.add(value);
 ```
 
 Code example:
+
 ```java
-// transaction obtained from JTA compatible transaction manager
+// transaction obtained from a JTA-compatible transaction manager
 Transaction globalTransaction = transactionManager.getTransaction();
 
 RXAResource xaResource = redisson.getXAResource();
@@ -131,10 +127,10 @@ RBucket<String> bucket = transaction.getBucket("myBucket");
 bucket.set("simple");
 RMap<String, String> map = transaction.getMap("myMap");
 map.put("myKey", "myValue");
-        
+
 transactionManager.commit();
 ```
 
 ## Spring Transaction Manager
 
-For Spring Transaction Manager usage please refer to [Spring Transaction Manager](integration-with-spring.md/#spring-transaction-manager) article.
+For Spring Transaction Manager usage, see the [Spring Transaction Manager](integration-with-spring.md#spring-transaction-manager) article.

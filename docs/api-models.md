@@ -1,10 +1,12 @@
+Redisson offers four API models — synchronous, asynchronous, reactive, and RxJava3 — described in the sections below.
+
 ## Synchronous and Asynchronous API
 
 Redisson instances are fully thread-safe. 
 
 Synchronous and Asynchronous API could be reached via [RedissonClient](https://www.javadoc.io/doc/org.redisson/redisson/latest/org/redisson/api/RedissonClient.html) interface.  
 
-Most Redisson objects extend asynchronous interface with asynchronous methods which mirrors synchronous methods. Like below:
+Most Redisson objects implement an asynchronous interface whose asynchronous methods mirror the synchronous ones, as shown below:
 ```java
 // RAtomicLong extends RAtomicLongAsync
 RAtomicLong obj = client.getAtomicLong("myLong");
@@ -37,7 +39,7 @@ future.thenAccept(res -> {
 ```
 
 !!! note
-    Avoid using blocking methods in RFuture listeners. Listeners executed by netty-threads and delays in listeners may cause errors in Redis or Valkey request/response processing. 
+    Avoid using blocking methods in RFuture listeners. Listeners are executed by netty threads, and delays in them may cause errors in Redis or Valkey request/response processing. 
 
 Use the following methods to execute blocking methods in listeners:
 
@@ -73,8 +75,8 @@ Usage example:
 RedissonReactiveClient client = redissonClient.reactive();
 
 RAtomicLongReactive atomicLong = client.getAtomicLong("myLong");
-Mono<Boolean> cs = longObject.compareAndSet(10, 91);
-Mono<Long> get = longObject.get();
+Mono<Boolean> cs = atomicLong.compareAndSet(10, 91);
+Mono<Long> get = atomicLong.get();
 
 get.doOnSuccess(res -> {
    // ...
@@ -93,8 +95,8 @@ Usage example:
 RedissonRxClient client = redissonClient.rxJava();
 
 RAtomicLongRx atomicLong = client.getAtomicLong("myLong");
-Single<Boolean> cs = longObject.compareAndSet(10, 91);
-Single<Long> get = longObject.get();
+Single<Boolean> cs = atomicLong.compareAndSet(10, 91);
+Single<Long> get = atomicLong.get();
 
 get.doOnSuccess(res -> {
    // ...

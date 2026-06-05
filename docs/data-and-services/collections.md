@@ -3131,6 +3131,440 @@ Code example of adding Listeners:
         .subscribe();
     ```
 
+## Array
+
+Redisson's [RArray](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RArray.html) is a distributed array that stores values by sparse, non-negative integer index, backed by a Redis array. It is thread-safe, cluster-compatible, and available through synchronous, [asynchronous](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RArrayAsync.html), [reactive](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RArrayReactive.html), and [RxJava3](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RArrayRx.html) interfaces.
+
+Indexes are sparse: only the indexes that are written occupy space, so an array can hold values at widely separated positions without allocating the gaps between them. Reads and scans return [ArrayEntry](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/array/ArrayEntry.html) objects that pair an index with its value. `RArray` also implements [RExpirable](common-methods.md#expiration), so an expiration can be set on the array as a whole.
+
+Requires **Redis 8.8+**.
+
+### Setting and reading values
+
+`set` writes a value at a single index, a run of values starting at an index, or a batch of index/value pairs supplied as a map; each form returns the number of values written. `get` reads the value at one index or, given several indexes, the values at each of them. `isSet` reports whether an index currently holds a value.
+
+=== "Sync"
+    ```java
+    RArray<Integer> array = redisson.getArray("myArray");
+    
+    long written = array.set(0, 100);
+    array.set(10, 200, 300);                 // values at indexes 10 and 11
+    array.set(Map.of(50L, 500, 99L, 999));   // values at indexes 50 and 99
+    
+    Integer value = array.get(0);
+    List<Integer> values = array.get(0, 10, 50);
+    boolean present = array.isSet(0);
+    ```
+=== "Async"
+    ```java
+    RArrayAsync<Integer> array = redisson.getArray("myArray");
+    
+    RFuture<Long> written = array.setAsync(0, 100);
+    RFuture<Long> run = array.setAsync(10, 200, 300);
+    RFuture<Long> batch = array.setAsync(Map.of(50L, 500, 99L, 999));
+    
+    RFuture<Integer> value = array.getAsync(0);
+    RFuture<List<Integer>> values = array.getAsync(0, 10, 50);
+    RFuture<Boolean> present = array.isSetAsync(0);
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RArrayReactive<Integer> array = redisson.getArray("myArray");
+    
+    Mono<Long> written = array.set(0, 100);
+    Mono<Long> run = array.set(10, 200, 300);
+    Mono<Long> batch = array.set(Map.of(50L, 500, 99L, 999));
+    
+    Mono<Integer> value = array.get(0);
+    Mono<List<Integer>> values = array.get(0, 10, 50);
+    Mono<Boolean> present = array.isSet(0);
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RArrayRx<Integer> array = redisson.getArray("myArray");
+    
+    Single<Long> written = array.set(0, 100);
+    Single<Long> run = array.set(10, 200, 300);
+    Single<Long> batch = array.set(Map.of(50L, 500, 99L, 999));
+    
+    Maybe<Integer> value = array.get(0);
+    Single<List<Integer>> values = array.get(0, 10, 50);
+    Single<Boolean> present = array.isSet(0);
+    ```
+
+### Ranges and counting
+
+`range` returns the values stored in an inclusive index range, while `scan` returns the same range as `ArrayEntry` objects and accepts an optional limit. `count` returns the number of stored values, either across the whole array or within a range, and `countMatches` counts values equal to a given value in a range. `length` returns the array length, one position past the highest occupied index.
+
+=== "Sync"
+    ```java
+    RArray<Integer> array = redisson.getArray("myArray");
+    
+    List<Integer> values = array.range(0, 100);
+    List<ArrayEntry<Integer>> entries = array.scan(0, 100);
+    List<ArrayEntry<Integer>> firstTen = array.scan(0, 100, 10);
+    
+    long total = array.count();
+    long inRange = array.count(0, 100);
+    long matches = array.countMatches(0, 100, 200);
+    long length = array.length();
+    ```
+=== "Async"
+    ```java
+    RArrayAsync<Integer> array = redisson.getArray("myArray");
+    
+    RFuture<List<Integer>> values = array.rangeAsync(0, 100);
+    RFuture<List<ArrayEntry<Integer>>> entries = array.scanAsync(0, 100);
+    RFuture<List<ArrayEntry<Integer>>> firstTen = array.scanAsync(0, 100, 10);
+    
+    RFuture<Long> total = array.countAsync();
+    RFuture<Long> inRange = array.countAsync(0, 100);
+    RFuture<Long> matches = array.countMatchesAsync(0, 100, 200);
+    RFuture<Long> length = array.lengthAsync();
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RArrayReactive<Integer> array = redisson.getArray("myArray");
+    
+    Mono<List<Integer>> values = array.range(0, 100);
+    Mono<List<ArrayEntry<Integer>>> entries = array.scan(0, 100);
+    Mono<List<ArrayEntry<Integer>>> firstTen = array.scan(0, 100, 10);
+    
+    Mono<Long> total = array.count();
+    Mono<Long> inRange = array.count(0, 100);
+    Mono<Long> matches = array.countMatches(0, 100, 200);
+    Mono<Long> length = array.length();
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RArrayRx<Integer> array = redisson.getArray("myArray");
+    
+    Single<List<Integer>> values = array.range(0, 100);
+    Single<List<ArrayEntry<Integer>>> entries = array.scan(0, 100);
+    Single<List<ArrayEntry<Integer>>> firstTen = array.scan(0, 100, 10);
+    
+    Single<Long> total = array.count();
+    Single<Long> inRange = array.count(0, 100);
+    Single<Long> matches = array.countMatches(0, 100, 200);
+    Single<Long> length = array.length();
+    ```
+
+### Deleting values
+
+`delete` removes the values at the given indexes, `deleteRange` removes everything in an inclusive index range, and `deleteRanges` removes several ranges at once, taking start/end index pairs. Each returns the number of values removed.
+
+=== "Sync"
+    ```java
+    RArray<Integer> array = redisson.getArray("myArray");
+    
+    long removed = array.delete(0, 10, 50);
+    long rangeRemoved = array.deleteRange(0, 100);
+    long rangesRemoved = array.deleteRanges(0, 10, 50, 60);   // ranges [0..10] and [50..60]
+    ```
+=== "Async"
+    ```java
+    RArrayAsync<Integer> array = redisson.getArray("myArray");
+    
+    RFuture<Long> removed = array.deleteAsync(0, 10, 50);
+    RFuture<Long> rangeRemoved = array.deleteRangeAsync(0, 100);
+    RFuture<Long> rangesRemoved = array.deleteRangesAsync(0, 10, 50, 60);
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RArrayReactive<Integer> array = redisson.getArray("myArray");
+    
+    Mono<Long> removed = array.delete(0, 10, 50);
+    Mono<Long> rangeRemoved = array.deleteRange(0, 100);
+    Mono<Long> rangesRemoved = array.deleteRanges(0, 10, 50, 60);
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RArrayRx<Integer> array = redisson.getArray("myArray");
+    
+    Single<Long> removed = array.delete(0, 10, 50);
+    Single<Long> rangeRemoved = array.deleteRange(0, 100);
+    Single<Long> rangesRemoved = array.deleteRanges(0, 10, 50, 60);
+    ```
+
+### Appending and the insert cursor
+
+Instead of choosing indexes explicitly, `insert` appends values at consecutive indexes starting from the array's current insert cursor and returns the index of the last value written. `next` returns the index the cursor will use next, or `null` when it is exhausted, and `seek` repositions the cursor. `ring` appends values into a fixed-size ring buffer, wrapping around once the size is reached. `lastItems` returns the most recently inserted values, optionally in reverse order.
+
+=== "Sync"
+    ```java
+    RArray<Integer> array = redisson.getArray("myArray");
+    
+    long lastIndex = array.insert(1, 2, 3);   // appended at the current cursor
+    Long nextIndex = array.next();
+    boolean moved = array.seek(0);
+    
+    array.ring(1000, 10, 20, 30);             // ring buffer of size 1000
+    List<Integer> recent = array.lastItems(5);
+    List<Integer> recentReversed = array.lastItems(5, true);
+    ```
+=== "Async"
+    ```java
+    RArrayAsync<Integer> array = redisson.getArray("myArray");
+    
+    RFuture<Long> lastIndex = array.insertAsync(1, 2, 3);
+    RFuture<Long> nextIndex = array.nextAsync();
+    RFuture<Boolean> moved = array.seekAsync(0);
+    
+    RFuture<Long> ringIndex = array.ringAsync(1000, 10, 20, 30);
+    RFuture<List<Integer>> recent = array.lastItemsAsync(5);
+    RFuture<List<Integer>> recentReversed = array.lastItemsAsync(5, true);
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RArrayReactive<Integer> array = redisson.getArray("myArray");
+    
+    Mono<Long> lastIndex = array.insert(1, 2, 3);
+    Mono<Long> nextIndex = array.next();
+    Mono<Boolean> moved = array.seek(0);
+    
+    Mono<Long> ringIndex = array.ring(1000, 10, 20, 30);
+    Mono<List<Integer>> recent = array.lastItems(5);
+    Mono<List<Integer>> recentReversed = array.lastItems(5, true);
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RArrayRx<Integer> array = redisson.getArray("myArray");
+    
+    Single<Long> lastIndex = array.insert(1, 2, 3);
+    Maybe<Long> nextIndex = array.next();
+    Single<Boolean> moved = array.seek(0);
+    
+    Single<Long> ringIndex = array.ring(1000, 10, 20, 30);
+    Single<List<Integer>> recent = array.lastItems(5);
+    Single<List<Integer>> recentReversed = array.lastItems(5, true);
+    ```
+
+### Iterating
+
+The synchronous API exposes the entries as an `Iterator` (optionally with a page-size hint that maps to the `ARSCAN COUNT` option) and as a `Stream`. The other APIs provide the same traversal as an `AsyncIterator`, a Reactor `Flux`, and an RxJava3 `Flowable`. Entries are always returned in ascending index order.
+
+=== "Sync"
+    ```java
+    RArray<Integer> array = redisson.getArray("myArray");
+    
+    for (ArrayEntry<Integer> entry : array) {
+        long index = entry.getIndex();
+        Integer value = entry.getValue();
+    }
+    
+    Iterator<ArrayEntry<Integer>> paged = array.iterator(100);
+    Stream<ArrayEntry<Integer>> stream = array.stream();
+    ```
+=== "Async"
+    ```java
+    RArrayAsync<Integer> array = redisson.getArray("myArray");
+    
+    AsyncIterator<ArrayEntry<Integer>> iterator = array.iteratorAsync();
+    AsyncIterator<ArrayEntry<Integer>> paged = array.iteratorAsync(100);
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RArrayReactive<Integer> array = redisson.getArray("myArray");
+    
+    Flux<ArrayEntry<Integer>> entries = array.iterator();
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RArrayRx<Integer> array = redisson.getArray("myArray");
+    
+    Flowable<ArrayEntry<Integer>> entries = array.iterator();
+    ```
+
+### Searching with grep
+
+`grep` returns the indexes of values matching an [ArrayGrepArgs](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/array/ArrayGrepArgs.html) predicate, and `grepEntries` returns the matching entries; both can be restricted to an index range. Predicates are built with the static factories `exact`, `match` (substring), `glob`, and `regex`, and can be combined and tuned with `and`, `or`, `limit`, and `noCase`.
+
+=== "Sync"
+    ```java
+    RArray<Integer> array = redisson.getArray("myArray");
+    
+    List<Long> indexes = array.grep(ArrayGrepArgs.exact(200));
+    List<Long> inRange = array.grep(0, 100, ArrayGrepArgs.glob("2*").limit(10));
+    List<ArrayEntry<Integer>> entries = array.grepEntries(ArrayGrepArgs.match(20));
+    ```
+=== "Async"
+    ```java
+    RArrayAsync<Integer> array = redisson.getArray("myArray");
+    
+    RFuture<List<Long>> indexes = array.grepAsync(ArrayGrepArgs.exact(200));
+    RFuture<List<Long>> inRange = array.grepAsync(0, 100, ArrayGrepArgs.glob("2*").limit(10));
+    RFuture<List<ArrayEntry<Integer>>> entries = array.grepEntriesAsync(ArrayGrepArgs.match(20));
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RArrayReactive<Integer> array = redisson.getArray("myArray");
+    
+    Mono<List<Long>> indexes = array.grep(ArrayGrepArgs.exact(200));
+    Mono<List<Long>> inRange = array.grep(0, 100, ArrayGrepArgs.glob("2*").limit(10));
+    Mono<List<ArrayEntry<Integer>>> entries = array.grepEntries(ArrayGrepArgs.match(20));
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RArrayRx<Integer> array = redisson.getArray("myArray");
+    
+    Single<List<Long>> indexes = array.grep(ArrayGrepArgs.exact(200));
+    Single<List<Long>> inRange = array.grep(0, 100, ArrayGrepArgs.glob("2*").limit(10));
+    Single<List<ArrayEntry<Integer>>> entries = array.grepEntries(ArrayGrepArgs.match(20));
+    ```
+
+### Aggregations
+
+For numeric values, `sum`, `min`, and `max` compute the corresponding aggregate over an index range, and `bitAnd`, `bitOr`, and `bitXor` compute bitwise reductions over the same range. In the RxJava3 API these return `Maybe`, since a range may contain no values.
+
+=== "Sync"
+    ```java
+    RArray<Integer> array = redisson.getArray("myArray");
+    
+    Double sum = array.sum(0, 100);
+    Double min = array.min(0, 100);
+    Double max = array.max(0, 100);
+    
+    Long and = array.bitAnd(0, 100);
+    Long or = array.bitOr(0, 100);
+    Long xor = array.bitXor(0, 100);
+    ```
+=== "Async"
+    ```java
+    RArrayAsync<Integer> array = redisson.getArray("myArray");
+    
+    RFuture<Double> sum = array.sumAsync(0, 100);
+    RFuture<Double> min = array.minAsync(0, 100);
+    RFuture<Double> max = array.maxAsync(0, 100);
+    
+    RFuture<Long> and = array.bitAndAsync(0, 100);
+    RFuture<Long> or = array.bitOrAsync(0, 100);
+    RFuture<Long> xor = array.bitXorAsync(0, 100);
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RArrayReactive<Integer> array = redisson.getArray("myArray");
+    
+    Mono<Double> sum = array.sum(0, 100);
+    Mono<Double> min = array.min(0, 100);
+    Mono<Double> max = array.max(0, 100);
+    
+    Mono<Long> and = array.bitAnd(0, 100);
+    Mono<Long> or = array.bitOr(0, 100);
+    Mono<Long> xor = array.bitXor(0, 100);
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RArrayRx<Integer> array = redisson.getArray("myArray");
+    
+    Maybe<Double> sum = array.sum(0, 100);
+    Maybe<Double> min = array.min(0, 100);
+    Maybe<Double> max = array.max(0, 100);
+    
+    Maybe<Long> and = array.bitAnd(0, 100);
+    Maybe<Long> or = array.bitOr(0, 100);
+    Maybe<Long> xor = array.bitXor(0, 100);
+    ```
+
+### Array information
+
+`getInfo` returns an [ArrayInfo](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/array/ArrayInfo.html) snapshot describing the array, including the number of stored values, the array length, and the next insert index. Calling it with `true` includes fuller internal statistics about the array's storage layout.
+
+=== "Sync"
+    ```java
+    RArray<Integer> array = redisson.getArray("myArray");
+    
+    ArrayInfo info = array.getInfo();
+    long count = info.getCount();
+    long length = info.getLength();
+    long nextInsertIndex = info.getNextInsertIndex();
+    
+    ArrayInfo full = array.getInfo(true);
+    ```
+=== "Async"
+    ```java
+    RArrayAsync<Integer> array = redisson.getArray("myArray");
+    
+    RFuture<ArrayInfo> info = array.getInfoAsync();
+    RFuture<ArrayInfo> full = array.getInfoAsync(true);
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RArrayReactive<Integer> array = redisson.getArray("myArray");
+    
+    Mono<ArrayInfo> info = array.getInfo();
+    Mono<ArrayInfo> full = array.getInfo(true);
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RArrayRx<Integer> array = redisson.getArray("myArray");
+    
+    Single<ArrayInfo> info = array.getInfo();
+    Single<ArrayInfo> full = array.getInfo(true);
+    ```
+
+### Use Cases
+
+`RArray` fits data that is naturally addressed by a numeric index and is often sparse — only some positions are populated — or that is appended and read back as a recent window. Values can be read or aggregated over index ranges in a single call, and numeric ranges support sum, min, max, and bitwise reductions.
+
+**Sparse Vectors and Feature Stores**
+
+Machine-learning feature vectors and embeddings are frequently sparse: only a few of many possible dimensions carry a value. Storing them by dimension index keeps the gaps free of cost, while individual dimensions or whole ranges can be read back directly.
+
+```java
+RArray<Double> features = redisson.getArray("features:user:1001");
+
+// only populated dimensions occupy space
+features.set(7, 0.91);
+features.set(2048, 0.34);
+features.set(50000, 0.12);
+
+Double weight = features.get(7);
+List<Double> window = features.range(0, 1024);
+```
+
+**Ring Buffers for Recent Items**
+
+A fixed-size ring buffer keeps the latest values and overwrites the oldest as new ones arrive — a natural fit for recent readings, rolling logs, or the last events seen. `ring` writes into the buffer and `lastItems` reads the most recent values, newest first.
+
+```java
+RArray<Integer> recent = redisson.getArray("readings:sensor:42");
+
+// keep the last 1000 readings
+recent.ring(1000, 21, 22, 23);
+
+// the five most recent readings, newest first
+List<Integer> latest = recent.lastItems(5, true);
+```
+
+**Range Analytics over Numeric Data**
+
+When values are numeric, an index range can be reduced without fetching the data: `sum`, `min`, and `max` compute aggregates, while `bitAnd`, `bitOr`, and `bitXor` combine values bitwise. `grep` locates the indexes whose values match a predicate.
+
+```java
+RArray<Integer> metrics = redisson.getArray("metrics:day");
+
+Double total = metrics.sum(0, 1439);   // e.g. one value per minute of the day
+Double peak = metrics.max(0, 1439);
+
+List<Long> spikes = metrics.grep(0, 1439, ArrayGrepArgs.glob("9*").limit(10));
+```
+
 ## Time Series
 
 Redisson's `RTimeSeries` object is a distributed structure for storing and querying time-stamped data on Valkey or Redis. Each entry pairs a unique `long` timestamp with a value and, optionally, a *label* - a secondary value stored and returned alongside the entry. Entries are kept ordered by timestamp, which makes `RTimeSeries` a natural fit for metrics, sensor readings, financial ticks, and event logs.

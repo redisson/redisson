@@ -14,11 +14,11 @@ Redisson implements a multi-layered approach to command execution reliability th
 
 **timeout**
 
-Defines Valkey or Redis server response timeout. Starts to countdown when a command was successfully sent. The default value is `3000` milliseconds.
+Defines the Valkey or Redis server response timeout. The countdown starts once a command has been successfully sent. The default value is `3000` milliseconds.
 
 **retryAttempts**  
 
-Defines the maximum number of retry attempts for failed commands. The default value is `4` attempts. This parameter determines how many times Redisson will attempt to execute a command throwing an exception.
+Defines the maximum number of retry attempts for failed commands. The default value is `4` attempts. This parameter determines how many times Redisson re-attempts a failed command before throwing an exception.
 
 **retryDelay**  
 
@@ -42,16 +42,15 @@ config.useSingleServer()
         .setTimeout(5000)
         .setAddress("redis://127.0.0.1:6789");
 
-
 RedissonClient client = Redisson.create(config);
 
-// instance uses global retryInterval and timeout parameters
-RBucket<MyObject> bucket = client.getBucket('myObject');
+// instance uses the global retryAttempts, retryDelay and timeout parameters
+RBucket<MyObject> bucket = client.getBucket("myObject");
 
-// instance with overridden retryInterval and timeout parameters
-RBucket<MyObject> bucket = client.getBucket(PlainOptions.name('myObject')
-                                                        .timeout(Duration.ofSeconds(3))
-                                                        .retryDelay(new EqualJitterDelay(Duration.ofSeconds(1), Duration.ofSeconds(2)));
+// instance with overridden retryDelay and timeout parameters
+RBucket<MyObject> bucket2 = client.getBucket(PlainOptions.name("myObject")
+        .timeout(Duration.ofSeconds(3))
+        .retryDelay(new EqualJitterDelay(Duration.ofSeconds(1), Duration.ofSeconds(2))));
 ```
 
 ## Reconnection Settings
@@ -71,7 +70,7 @@ Available implementations:
 
 **failedSlaveReconnectionInterval**
 
-Once the defined retry interval has elapsed, Redisson attempts to connect to the failed Redis node reported by the `failedSlaveNodeDetector`.
+Defines the interval, in milliseconds, between attempts to reconnect to a replica node that the `failedSlaveNodeDetector` has marked as failed. Once the interval has elapsed, Redisson attempts to reconnect to the failed Valkey or Redis node. The default value is `3000` milliseconds.
 
 **failedSlaveNodeDetector**
 

@@ -8,15 +8,6 @@ Beyond plain `put` and `get`, a vector can be modified atomically a few bits at 
 
 Requires Redis 7.0.0+ or any Valkey version.
 
-Supported match predicates (where `v` is a stored vector):
-
-- `matchAll(mask)` — every bit set in `mask` is set in `v`
-- `matchAny(mask)` — at least one bit set in `mask` is set in `v`
-- `matchNone(mask)` — no bit set in `mask` is set in `v`
-- `matchExact(mask, target)` — `(v & mask) == target`
-
-It has synchronous, [asynchronous](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RBitVectorStoreAsync.html), [reactive](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RBitVectorStoreReactive.html), and [RxJava3](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RBitVectorStoreRx.html) interfaces. The async, reactive, and RxJava3 methods mirror the synchronous ones, returning `RFuture`, `Mono`, and `Single`/`Maybe` for single values; the streaming results of `ids` and the `match*` queries are returned as an `AsyncIterator`, `Flux`, and `Flowable` respectively.
-
 Code examples:
 
 === "Sync"

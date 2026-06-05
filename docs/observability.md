@@ -4,7 +4,32 @@ _This feature is available only in [Redisson PRO](https://redisson.pro/feature-c
 
 ### Monitoring systems integration
 
-Redisson provides integration the most popular monitoring systems through [Micrometer](https://micrometer.io/) framework.
+Redisson provides integration with the most popular monitoring systems through the [Micrometer](https://micrometer.io/) framework.
+
+The supported systems are listed below. Each requires the Micrometer dependency with groupId `io.micrometer` and the artifactId shown, and is configured through the provider class shown (all in the `org.redisson.config.metrics` package):
+
+| System | Micrometer artifactId | Provider class |
+| --- | --- | --- |
+| AppOptics | `micrometer-registry-appoptics` | `AppOpticsMeterRegistryProvider` |
+| Atlas | `micrometer-registry-atlas` | `AtlasMeterRegistryProvider` |
+| Azure | `micrometer-registry-azure-monitor` | `AzureMonitorMeterRegistryProvider` |
+| Amazon CloudWatch | `micrometer-registry-cloudwatch` | `CloudWatchMeterRegistryProvider` |
+| Datadog | `micrometer-registry-datadog` | `DatadogMeterRegistryProvider` |
+| Dropwizard | - | `DropwizardMeterRegistryProvider` |
+| Dynatrace | - | `DynatraceMeterRegistryProvider` |
+| Elastic | `micrometer-registry-elastic` | `ElasticMeterRegistryProvider` |
+| Ganglia | `micrometer-registry-ganglia` | `GangliaMeterRegistryProvider` |
+| Graphite | `micrometer-registry-graphite` | `GraphiteMeterRegistryProvider` |
+| Humio | `micrometer-registry-humio` | `HumioMeterRegistryProvider` |
+| Influx | `micrometer-registry-influx` | `InfluxMeterRegistryProvider` |
+| JMX | `micrometer-registry-jmx` | `JmxMeterRegistryProvider` |
+| Kairos | `micrometer-registry-kairos` | `KairosMeterRegistryProvider` |
+| NewRelic | `micrometer-registry-new-relic` | `NewRelicMeterRegistryProvider` |
+| Prometheus | `micrometer-registry-prometheus` | `MeterRegistryWrapper` |
+| SingnalFx | `micrometer-registry-signalfx` | `SingnalFxMeterRegistryProvider` |
+| Stackdriver | `micrometer-registry-stackdriver` | `StackdriverMeterRegistryProvider` |
+| Statsd | `micrometer-registry-statsd` | `StatsdMeterRegistryProvider` |
+| Wavefront | `micrometer-registry-wavefront` | `WavefrontMeterRegistryProvider` |
 
 **1. AppOptics**  
 
@@ -334,76 +359,67 @@ Parameters:
 
 ### Config examples
 
-**JMX config**
-
-```java
-Config config = ... // Redisson PRO config object
-
-JmxMeterRegistryProvider provider = new JmxMeterRegistryProvider();
-provider.setDomain("appStats");
-config.setMeterRegistryProvider(provider);
-```
-
-**Prometheus config**
-
-```java
-Config config = ... // Redisson PRO config object
-
-PrometheusMeterRegistry registry = ...
-config.setMeterRegistryProvider(new MeterRegistryWrapper(registry));
-```
-
-**Dynatrace config**
-
-```java
-Config config = ... // Redisson PRO config object
-
-DynatraceMeterRegistryProvider p = new DynatraceMeterRegistryProvider();
-p.setApiToken("Hg3M0iadsQC2Pcjk6QIW0g");
-p.setUri("https://qtd9012301.live.dynatrace.com/");
-p.setDeviceId("myHost");
-config.setMeterRegistryProvider(p);
-```
-
-**Influx config**
-
-```java
-Config config = ... // Redisson PRO config object
-
-InfluxMeterRegistryProvider provider = new InfluxMeterRegistryProvider();
-provider.setUri("http://localhost:8086/");
-provider.setDb("myinfluxdb");
-provider.setUserName("admin");
-provider.setPassword("admin");
-config.setMeterRegistryProvider(provider);
-```
+=== "JMX"
+    ```java
+    Config config = ... // Redisson PRO config object
+    
+    JmxMeterRegistryProvider provider = new JmxMeterRegistryProvider();
+    provider.setDomain("appStats");
+    config.setMeterRegistryProvider(provider);
+    ```
+=== "Prometheus"
+    ```java
+    Config config = ... // Redisson PRO config object
+    
+    PrometheusMeterRegistry registry = ...
+    config.setMeterRegistryProvider(new MeterRegistryWrapper(registry));
+    ```
+=== "Dynatrace"
+    ```java
+    Config config = ... // Redisson PRO config object
+    
+    DynatraceMeterRegistryProvider p = new DynatraceMeterRegistryProvider();
+    p.setApiToken("Hg3M0iadsQC2Pcjk6QIW0g");
+    p.setUri("https://qtd9012301.live.dynatrace.com/");
+    p.setDeviceId("myHost");
+    config.setMeterRegistryProvider(p);
+    ```
+=== "Influx"
+    ```java
+    Config config = ... // Redisson PRO config object
+    
+    InfluxMeterRegistryProvider provider = new InfluxMeterRegistryProvider();
+    provider.setUri("http://localhost:8086/");
+    provider.setDb("myinfluxdb");
+    provider.setUserName("admin");
+    provider.setPassword("admin");
+    config.setMeterRegistryProvider(provider);
+    ```
 
 ### YAML config examples
 
 YAML config is appended to Redisson config.
 
-**JMX config**
-```yaml
-meterRegistryProvider: !<org.redisson.config.metrics.JmxMeterRegistryProvider> 
-               domain: "appStats"
-```
-
-**Dynatrace config**
-```yaml
-meterRegistryProvider: !<org.redisson.config.metrics.DynatraceMeterRegistryProvider>
-             apiToken: "Hg3M0iadsQC2Pcjk6QIW0g"
-                  uri: "https://qtd9012301.live.dynatrace.com"
-             deviceId: "myHost"
-```
-
-**Influx config**
-```yaml
-meterRegistryProvider: !<org.redisson.config.metrics.InfluxMeterRegistryProvider>
-                  uri: "http://localhost:8086/"
-                   db: "myinfluxdb"
-             userName: "admin"
-             password: "admin"
-```
+=== "JMX"
+    ```yaml
+    meterRegistryProvider: !<org.redisson.config.metrics.JmxMeterRegistryProvider> 
+                   domain: "appStats"
+    ```
+=== "Dynatrace"
+    ```yaml
+    meterRegistryProvider: !<org.redisson.config.metrics.DynatraceMeterRegistryProvider>
+                 apiToken: "Hg3M0iadsQC2Pcjk6QIW0g"
+                      uri: "https://qtd9012301.live.dynatrace.com"
+                 deviceId: "myHost"
+    ```
+=== "Influx"
+    ```yaml
+    meterRegistryProvider: !<org.redisson.config.metrics.InfluxMeterRegistryProvider>
+                      uri: "http://localhost:8086/"
+                       db: "myinfluxdb"
+                 userName: "admin"
+                 password: "admin"
+    ```
 
 ### Metrics list
 
