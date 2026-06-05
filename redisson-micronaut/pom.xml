@@ -22,6 +22,7 @@
         <module>redisson-micronaut-20</module>
         <module>redisson-micronaut-30</module>
         <module>redisson-micronaut-40</module>
+        <module>redisson-micronaut-50</module>
     </modules>
 
     <build>
