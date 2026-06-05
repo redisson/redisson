@@ -7,13 +7,13 @@ Upgrade to __[Redisson PRO](https://redisson.pro/feature-comparison.html)__ with
 
 Feature - [Array](https://redisson.pro/docs/data-and-services/collections/#array) object added (thanks to @lamnt2008)  
 Feature - [BitVector Store](https://redisson.pro/docs/data-and-services/collections/#bitvector-store) object added  
-Feature - Micronaut 5.0 module added  
+Feature - Fory lib upgraded to 1.0.0  
+Feature - Micronaut 5.0 support  
 Feature - `readMode` setting added for `MapOptions`, `PlainOptions`, `LocalCachedMapOptions` objects  
 Feature - extended `incrementAndGet()` method added to `RAtomicLong`, `RAtomicDouble` (thanks to @lamnt2008)  
+Feature - `contains()`, `range()`, `iterator()` methods added to `RVectorSet` object  
 Feature - `RMap.keysAsync()` method added (thanks to @sywu14)  
 Feature - `RVectorSet` added to `RBatch` object (thanks to @sywu14)  
-Feature - Fory lib upgraded to 1.0.0  
-Feature - `contains()`, `range()`, `iterator()` methods added to `RVectorSet` object  
 
 __Breaking change__ - map listeners signature changed, field name added (thanks to @lamnt2008)  
 
