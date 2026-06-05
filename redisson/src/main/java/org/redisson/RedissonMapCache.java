@@ -105,12 +105,12 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     }
 
     @Override
-    public LeaseGetResult<K, V> getWithLease(K key, Duration leaseTimeToLive) {
+    public LeaseGetResult<V> getWithLease(K key, Duration leaseTimeToLive) {
         return get(getWithLeaseAsync(key, leaseTimeToLive));
     }
 
     @Override
-    public RFuture<LeaseGetResult<K, V>> getWithLeaseAsync(K key, Duration leaseTimeToLive) {
+    public RFuture<LeaseGetResult<V>> getWithLeaseAsync(K key, Duration leaseTimeToLive) {
         checkNotBatch();
         checkKey(key);
         Objects.requireNonNull(leaseTimeToLive);
@@ -136,11 +136,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                             + "if redis.call('set', leaseKey, ARGV[3], 'px', ARGV[4], 'nx') then "
                                 + "return {0, false, ARGV[3], 1}; "
                             + "end; "
-                            + "currentLease = redis.call('get', leaseKey); "
-                            + "if currentLease ~= false then "
-                                + "return {0, false, currentLease, 0}; "
-                            + "end; "
-                            + "return {0, false, false, 0}; "
+                            + "return redis.error_reply('ERR unreachable: SET NX failed after GET returned nil, check script logic'); "
                         + "end; "
                         + "local t, val = struct.unpack('dLc0', value); "
                         + "local expireDate = 92233720368547758; "
@@ -166,11 +162,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                             + "if redis.call('set', leaseKey, ARGV[3], 'px', ARGV[4], 'nx') then "
                                 + "return {0, false, ARGV[3], 1}; "
                             + "end; "
-                            + "currentLease = redis.call('get', leaseKey); "
-                            + "if currentLease ~= false then "
-                                + "return {0, false, currentLease, 0}; "
-                            + "end; "
-                            + "return {0, false, false, 0}; "
+                            + "return redis.error_reply('ERR unreachable: SET NX failed after GET returned nil, check script logic'); "
                         + "end; "
                         + "local maxSize = tonumber(redis.call('hget', KEYS[5], 'max-size')); "
                         + "if maxSize ~= nil and maxSize ~= 0 then "
@@ -186,7 +178,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         getLastAccessTimeSetName(name), getOptionsName(name), leaseName),
                 System.currentTimeMillis(), encodeMapKey(key), token, leaseTimeToLive.toMillis());
 
-        CompletionStage<LeaseGetResult<K, V>> f = res.thenApply(r -> {
+        CompletionStage<LeaseGetResult<V>> f = res.thenApply(r -> {
             long status = ((Number) r.get(0)).longValue();
             if (status == 1) {
                 return new LeaseGetResult<>((V) r.get(1), false, null);

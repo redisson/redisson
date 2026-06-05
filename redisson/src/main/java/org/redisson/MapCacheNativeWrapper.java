@@ -45,12 +45,12 @@ public class MapCacheNativeWrapper<K, V> implements RMapCache<K, V>, Supplier<RM
     }
 
     @Override
-    public LeaseGetResult<K, V> getWithLease(K key, Duration leaseTimeToLive) {
+    public LeaseGetResult<V> getWithLease(K key, Duration leaseTimeToLive) {
         throw new UnsupportedOperationException("getWithLease method is not supported in native cache");
     }
 
     @Override
-    public RFuture<LeaseGetResult<K, V>> getWithLeaseAsync(K key, Duration leaseTimeToLive) {
+    public RFuture<LeaseGetResult<V>> getWithLeaseAsync(K key, Duration leaseTimeToLive) {
         throw new UnsupportedOperationException("getWithLeaseAsync method is not supported in native cache");
     }
 

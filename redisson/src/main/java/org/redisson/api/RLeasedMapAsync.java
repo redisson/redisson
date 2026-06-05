@@ -40,7 +40,7 @@ public interface RLeasedMapAsync<K, V> {
      * @param leaseTimeToLive lease time to live
      * @return cached value or lease on miss
      */
-    RFuture<LeaseGetResult<K, V>> getWithLeaseAsync(K key, Duration leaseTimeToLive);
+    RFuture<LeaseGetResult<V>> getWithLeaseAsync(K key, Duration leaseTimeToLive);
 
     /**
      * Invalidates the entry mapped by {@code key} and deletes current lease token (if any).

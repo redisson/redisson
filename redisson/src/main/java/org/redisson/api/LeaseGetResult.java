@@ -24,10 +24,9 @@ package org.redisson.api;
  *
  * @author nhancdt2602
  *
- * @param <K> key type
  * @param <V> value type
  */
-public final class LeaseGetResult<K, V> {
+public final class LeaseGetResult<V> {
 
     private final V value;
     private final boolean leaseAcquired;

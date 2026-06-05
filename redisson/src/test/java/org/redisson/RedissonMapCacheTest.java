@@ -1675,12 +1675,12 @@ public class RedissonMapCacheTest extends BaseMapTest {
     public void testLeaseGet() {
         RMapCache<String, String> map = redisson.getMapCache("testLeaseGet");
 
-        LeaseGetResult<String, String> r1 = map.getWithLease("aaa", Duration.ofSeconds(10));
+        LeaseGetResult<String> r1 = map.getWithLease("aaa", Duration.ofSeconds(10));
         assertThat(r1.getValue()).isNull();
         assertThat(r1.getLeaseToken()).isNotNull();
         assertThat(r1.isLeaseAcquired()).isTrue();
 
-        LeaseGetResult<String, String> r2 = map.getWithLease("aaa", Duration.ofSeconds(10));
+        LeaseGetResult<String> r2 = map.getWithLease("aaa", Duration.ofSeconds(10));
         assertThat(r2.getValue()).isNull();
         assertThat(r2.getLeaseToken()).isNotNull();
         assertThat(r2.isLeaseAcquired()).isFalse();
@@ -1691,7 +1691,7 @@ public class RedissonMapCacheTest extends BaseMapTest {
     public void testLeasePutTTL() throws InterruptedException {
         RMapCache<String, String> map = redisson.getMapCache("testLeaseGet");
 
-        LeaseGetResult<String, String> r1 = map.getWithLease("aaa", Duration.ofSeconds(10));
+        LeaseGetResult<String> r1 = map.getWithLease("aaa", Duration.ofSeconds(10));
         assertThat(r1.getValue()).isNull();
         assertThat(r1.getLeaseToken()).isNotNull();
         assertThat(r1.isLeaseAcquired()).isTrue();
@@ -1700,7 +1700,7 @@ public class RedissonMapCacheTest extends BaseMapTest {
 
         Thread.sleep(1100);
 
-        LeaseGetResult<String, String> r2 = map.getWithLease("aaa", Duration.ofSeconds(10));
+        LeaseGetResult<String> r2 = map.getWithLease("aaa", Duration.ofSeconds(10));
         assertThat(r2.getValue()).isNull();
         assertThat(r2.getLeaseToken()).isNotNull();
         assertThat(r2.isLeaseAcquired()).isTrue();
@@ -1711,7 +1711,7 @@ public class RedissonMapCacheTest extends BaseMapTest {
     public void testLeaseStaleSet() {
         RMapCache<String, String> map = redisson.getMapCache("testLeaseStaleSet");
 
-        LeaseGetResult<String, String> r1 = map.getWithLease("aaa", Duration.ofSeconds(10));
+        LeaseGetResult<String> r1 = map.getWithLease("aaa", Duration.ofSeconds(10));
         assertThat(r1.getValue()).isNull();
         assertThat(r1.getLeaseToken()).isNotNull();
         assertThat(r1.isLeaseAcquired()).isTrue();
@@ -1724,14 +1724,14 @@ public class RedissonMapCacheTest extends BaseMapTest {
     public void testLeaseTimeout() throws InterruptedException {
         RMapCache<String, String> map = redisson.getMapCache("testLeaseTimeout");
 
-        LeaseGetResult<String, String> r1 = map.getWithLease("aaa", Duration.ofSeconds(1));
+        LeaseGetResult<String> r1 = map.getWithLease("aaa", Duration.ofSeconds(1));
         assertThat(r1.getValue()).isNull();
         assertThat(r1.getLeaseToken()).isNotNull();
         assertThat(r1.isLeaseAcquired()).isTrue();
 
         Thread.sleep(1100);
 
-        LeaseGetResult<String, String> r2 = map.getWithLease("aaa", Duration.ofSeconds(10));
+        LeaseGetResult<String> r2 = map.getWithLease("aaa", Duration.ofSeconds(10));
         assertThat(r2.getValue()).isNull();
         assertThat(r2.getLeaseToken()).isNotNull();
         assertThat(r2.isLeaseAcquired()).isTrue();
@@ -1742,12 +1742,12 @@ public class RedissonMapCacheTest extends BaseMapTest {
     public void testLeaseDifferentKeys() throws InterruptedException {
         RMapCache<String, String> map = redisson.getMapCache("testLeaseDifferentKeys");
 
-        LeaseGetResult<String, String> r1 = map.getWithLease("aaa", Duration.ofSeconds(1));
+        LeaseGetResult<String> r1 = map.getWithLease("aaa", Duration.ofSeconds(1));
         assertThat(r1.getValue()).isNull();
         assertThat(r1.getLeaseToken()).isNotNull();
         assertThat(r1.isLeaseAcquired()).isTrue();
 
-        LeaseGetResult<String, String> r2 = map.getWithLease("bbb", Duration.ofSeconds(10));
+        LeaseGetResult<String> r2 = map.getWithLease("bbb", Duration.ofSeconds(10));
         assertThat(r2.getValue()).isNull();
         assertThat(r2.getLeaseToken()).isNotNull();
         assertThat(r2.isLeaseAcquired()).isTrue();
@@ -1765,7 +1765,7 @@ public class RedissonMapCacheTest extends BaseMapTest {
         RMapCache<String, String> map = redisson.getMapCache("test", StringCodec.INSTANCE);
         assertThat(map.trySetMaxSize(2)).isTrue();
 
-        LeaseGetResult<String, String> r = map.getWithLease("1", Duration.ofSeconds(10));
+        LeaseGetResult<String> r = map.getWithLease("1", Duration.ofSeconds(10));
         map.putWithLease("1", "1", r.getLeaseToken());
 
         r = map.getWithLease("2", Duration.ofSeconds(10));
@@ -1795,7 +1795,7 @@ public class RedissonMapCacheTest extends BaseMapTest {
             final String key = "key:" + i;
             for (int j = 0; j < CONCURRENCY; j++) {
                 executorService.submit(() -> {
-                    LeaseGetResult<String, String> r = map.getWithLease(key, Duration.ofSeconds(10));
+                    LeaseGetResult<String> r = map.getWithLease(key, Duration.ofSeconds(10));
                     if (r.isLeaseAcquired()) {
                         trueCount.incrementAndGet();
                     }
@@ -1818,7 +1818,7 @@ public class RedissonMapCacheTest extends BaseMapTest {
         RMapCache<String, String> map = redisson.getMapCache("testLeaseCreatedListener");
         AtomicBoolean created = new AtomicBoolean(false);
 
-        LeaseGetResult<String, String> r1 = map.getWithLease("aaa", Duration.ofSeconds(1));
+        LeaseGetResult<String> r1 = map.getWithLease("aaa", Duration.ofSeconds(1));
         map.addListener((EntryCreatedListener<Object, Object>) event -> created.set(true));
 
         map.putWithLease("aaa", "111", r1.getLeaseToken());
@@ -1831,7 +1831,7 @@ public class RedissonMapCacheTest extends BaseMapTest {
         RMapCache<String, String> map = redisson.getMapCache("testLeaseCreatedListener");
         AtomicBoolean removed = new AtomicBoolean();
 
-        LeaseGetResult<String, String> r1 = map.getWithLease("aaa", Duration.ofSeconds(1));
+        LeaseGetResult<String> r1 = map.getWithLease("aaa", Duration.ofSeconds(1));
         map.addListener((EntryRemovedListener) event -> removed.set(true));
 
         map.putWithLease("aaa", "111", r1.getLeaseToken());

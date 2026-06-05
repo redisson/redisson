@@ -41,7 +41,7 @@ public interface RLeasedMapRx<K, V> {
      * @param leaseTimeToLive lease time to live
      * @return cached value or lease on miss
      */
-    Single<LeaseGetResult<K, V>> getWithLease(K key, Duration leaseTimeToLive);
+    Single<LeaseGetResult<V>> getWithLease(K key, Duration leaseTimeToLive);
 
     /**
      * Invalidates the entry mapped by {@code key} and deletes current lease token (if any).
