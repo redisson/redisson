@@ -67,9 +67,9 @@ public interface RedisCommands {
     RedisCommand<Long> ARLEN = new RedisCommand<>("ARLEN");
     RedisCommand<Long> ARCOUNT = new RedisCommand<>("ARCOUNT");
     RedisCommand<List<Object>> ARGETRANGE = new RedisCommand<>("ARGETRANGE", new ObjectListReplayDecoder<>());
-    RedisCommand<List<ArrayEntry<Object>>> ARSCAN = new RedisCommand<>("ARSCAN", new ArrayEntryDecoder());
+    RedisCommand<List<ArrayEntry<Object>>> ARSCAN = new RedisCommand("ARSCAN", new UnboundedListMultiDecoder<>(new ArrayEntryDecoder()));
     RedisCommand<List<Long>> ARGREP = new RedisCommand<>("ARGREP", new ObjectListReplayDecoder<>());
-    RedisCommand<List<ArrayEntry<Object>>> ARGREP_WITHVALUES = new RedisCommand<>("ARGREP", new ArrayEntryDecoder());
+    RedisCommand<List<ArrayEntry<Object>>> ARGREP_WITHVALUES = new RedisCommand("ARGREP", new UnboundedListMultiDecoder<>(new ArrayEntryDecoder()));
     RedisCommand<Double> AROP_DOUBLE = new RedisCommand<>("AROP", new DoubleReplayConvertor());
     RedisCommand<Long> AROP_LONG = new RedisCommand<>("AROP");
     RedisCommand<Long> ARINSERT = new RedisCommand<>("ARINSERT");
