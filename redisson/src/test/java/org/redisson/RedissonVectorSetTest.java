@@ -13,7 +13,10 @@ import org.redisson.client.protocol.ScoreAttributesEntry;
 import org.redisson.client.protocol.ScoredEntry;
 import org.redisson.codec.JacksonCodec;
 
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.offset;
@@ -478,6 +481,77 @@ public class RedissonVectorSetTest extends RedisDockerTest {
         
         List<Double> vector = vectorSet.getVector("CAS");
         assertThat(vector).hasSize(2);
+    }
+
+    @Test
+    public void testContains() {
+        assertThat(vectorSet.contains(ELEMENT_A)).isTrue();
+        assertThat(vectorSet.contains(ELEMENT_B)).isTrue();
+        assertThat(vectorSet.contains(ELEMENT_C)).isTrue();
+        assertThat(vectorSet.contains(ELEMENT_D)).isTrue();
+
+        assertThat(vectorSet.contains("NON_EXISTENT")).isFalse();
+
+        vectorSet.remove(ELEMENT_A);
+        assertThat(vectorSet.contains(ELEMENT_A)).isFalse();
+    }
+
+    @Test
+    public void testRange() {
+        List<String> all = vectorSet.range("-", "+");
+        assertThat(all).containsExactly(ELEMENT_A, ELEMENT_B, ELEMENT_C, ELEMENT_D);
+
+        List<String> sub = vectorSet.range(ELEMENT_B, ELEMENT_C);
+        assertThat(sub).containsExactly(ELEMENT_B, ELEMENT_C);
+
+        List<String> exclusiveStart = vectorSet.range("(" + ELEMENT_A, "+");
+        assertThat(exclusiveStart).containsExactly(ELEMENT_B, ELEMENT_C, ELEMENT_D);
+
+        List<String> empty = vectorSet.range("(" + ELEMENT_D, "+");
+        assertThat(empty).isEmpty();
+    }
+
+    @Test
+    public void testRangeWithCount() {
+        List<String> firstTwo = vectorSet.range("-", "+", 2);
+        assertThat(firstTwo).containsExactly(ELEMENT_A, ELEMENT_B);
+
+        List<String> firstOne = vectorSet.range("-", "+", 1);
+        assertThat(firstOne).containsExactly(ELEMENT_A);
+
+        List<String> all = vectorSet.range("-", "+", 100);
+        assertThat(all).containsExactly(ELEMENT_A, ELEMENT_B, ELEMENT_C, ELEMENT_D);
+    }
+
+    @Test
+    public void testIterator() {
+        RVectorSet set = redisson.getVectorSet("iterator-set");
+        set.delete();
+
+        List<String> expected = new ArrayList<>();
+        for (int i = 0; i < 25; i++) {
+            String element = String.format("e%02d", i);
+            set.add(VectorAddArgs.element(element).vector(i + 1.0, i + 2.0));
+            expected.add(element);
+        }
+
+        List<String> collected = new ArrayList<>();
+        Iterator<String> iter = set.iterator();
+        while (iter.hasNext()) {
+            collected.add(iter.next());
+        }
+
+        assertThat(collected).containsExactlyElementsOf(expected);
+    }
+
+    @Test
+    public void testStream() {
+        List<String> collected = vectorSet.stream().collect(Collectors.toList());
+        assertThat(collected).containsExactly(ELEMENT_A, ELEMENT_B, ELEMENT_C, ELEMENT_D);
+
+        RVectorSet empty = redisson.getVectorSet("empty-stream-set");
+        empty.delete();
+        assertThat(empty.stream().collect(Collectors.toList())).isEmpty();
     }
 
     

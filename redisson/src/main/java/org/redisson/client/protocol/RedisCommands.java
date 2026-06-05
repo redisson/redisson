@@ -86,6 +86,7 @@ public interface RedisCommands {
     RedisCommand<List<Object>> VEMB_RAW = new RedisCommand<>("VEMB", new ListMultiDecoder2(new ObjectListReplayDecoder()), new EmptyListConvertor());
     RedisCommand<String> VGETATTR = new RedisCommand<>("VGETATTR");
     RedisCommand<VectorInfo> VINFO = new RedisCommand("VINFO", new VectorInfoDecoder());
+    RedisCommand<Boolean> VISMEMBER = new RedisCommand<>("VISMEMBER", new BooleanReplayConvertor());
     RedisCommand<List<String>> VLINKS = new RedisCommand("VLINKS", new StringListListReplayDecoder() {
         @Override
         public List<String> decode(List<Object> parts, State state) {
@@ -116,6 +117,7 @@ public interface RedisCommands {
     }, new EmptyListConvertor());
     RedisCommand<String> VRANDMEMBER = new RedisCommand<>("VRANDMEMBER");
     RedisCommand<List<String>> VRANDMEMBER_MULTI = new RedisCommand<>("VRANDMEMBER", new ListMultiDecoder2(new StringListReplayDecoder()));
+    RedisCommand<List<String>> VRANGE = new RedisCommand<>("VRANGE", new ListMultiDecoder2(new StringListReplayDecoder()));
     RedisCommand<Boolean> VREM = new RedisCommand<>("VREM", new BooleanReplayConvertor());
     RedisCommand<Boolean> VSETATTR = new RedisCommand<>("VSETATTR", new BooleanReplayConvertor());
     RedisCommand<List<String>> VSIM = new RedisCommand<>("VSIM", new ListMultiDecoder2(new StringListReplayDecoder()));

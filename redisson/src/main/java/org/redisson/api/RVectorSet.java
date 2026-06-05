@@ -15,7 +15,9 @@
  */
 package org.redisson.api;
 
+import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Stream;
 import org.redisson.api.vector.VectorAddArgs;
 import org.redisson.api.vector.VectorInfo;
 import org.redisson.api.vector.VectorSimilarArgs;
@@ -160,4 +162,59 @@ public interface RVectorSet extends RExpirable, RVectorSetAsync {
      * @return list of similar element names with scores and attributes
      */
     List<ScoreAttributesEntry<String>> getSimilarEntriesWithAttributes(VectorSimilarArgs args);
+
+    /**
+     * Checks whether an element is a member of this vector set
+     *
+     * @param element element name
+     * @return <code>true</code> if element is a member, <code>false</code> otherwise
+     */
+    boolean contains(String element);
+
+    /**
+     * Returns element names within the specified lexicographical range.
+     * <p>
+     * Each bound is an element name treated as an inclusive bound. Use
+     * <code>-</code> as <code>startElement</code> and <code>+</code> as
+     * <code>endElement</code> to span the whole vector set, or prefix an element
+     * name with <code>[</code> (inclusive) or <code>(</code> (exclusive) to set
+     * the bound explicitly.
+     *
+     * @param startElement lexicographical range start (inclusive)
+     * @param endElement lexicographical range end (inclusive)
+     * @return list of element names within the range
+     */
+    List<String> range(String startElement, String endElement);
+
+    /**
+     * Returns at most <code>count</code> element names within the specified lexicographical range.
+     * <p>
+     * Each bound is an element name treated as an inclusive bound. Use
+     * <code>-</code> as <code>startElement</code> and <code>+</code> as
+     * <code>endElement</code> to span the whole vector set, or prefix an element
+     * name with <code>[</code> (inclusive) or <code>(</code> (exclusive) to set
+     * the bound explicitly.
+     *
+     * @param startElement lexicographical range start (inclusive)
+     * @param endElement lexicographical range end (inclusive)
+     * @param count maximum number of elements to return
+     * @return list of element names within the range
+     */
+    List<String> range(String startElement, String endElement, int count);
+
+    /**
+     * Returns an iterator over all element names of this vector set in
+     * lexicographical order. Elements are fetched lazily in batches.
+     *
+     * @return iterator over element names
+     */
+    Iterator<String> iterator();
+
+    /**
+     * Returns a sequential stream over all element names of this vector set in
+     * lexicographical order. Elements are fetched lazily in batches.
+     *
+     * @return stream of element names
+     */
+    Stream<String> stream();
 }

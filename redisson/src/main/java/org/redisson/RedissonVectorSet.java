@@ -32,7 +32,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.stream.Stream;
 
 /**
  *
@@ -255,6 +258,103 @@ public final class RedissonVectorSet extends RedissonExpirable implements RVecto
         VectorSimilarParams prms = (VectorSimilarParams) vargs;
         List<Object> args = createArgs(prms, true, true);
         return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.VSIM_WITHSCORESATTRIBS, args.toArray());
+    }
+
+    @Override
+    public boolean contains(String element) {
+        return get(containsAsync(element));
+    }
+
+    public RFuture<Boolean> containsAsync(String element) {
+        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.VISMEMBER, getName(), element);
+    }
+
+    @Override
+    public List<String> range(String startElement, String endElement) {
+        return get(rangeAsync(startElement, endElement));
+    }
+
+    public RFuture<List<String>> rangeAsync(String startElement, String endElement) {
+        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.VRANGE, getName(),
+                rangeBound(startElement), rangeBound(endElement));
+    }
+
+    @Override
+    public List<String> range(String startElement, String endElement, int count) {
+        return get(rangeAsync(startElement, endElement, count));
+    }
+
+    public RFuture<List<String>> rangeAsync(String startElement, String endElement, int count) {
+        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.VRANGE, getName(),
+                rangeBound(startElement), rangeBound(endElement), count);
+    }
+
+    private static String rangeBound(String element) {
+        if (element == null) {
+            throw new IllegalArgumentException("range bound can't be null");
+        }
+        if ("-".equals(element) || "+".equals(element)
+                || element.startsWith("[") || element.startsWith("(")) {
+            return element;
+        }
+        return "[" + element;
+    }
+
+    @Override
+    public Iterator<String> iterator() {
+        return new Iterator<String>() {
+
+            private final int batchSize = 10;
+
+            private List<String> buffer;
+            private int bufferIndex;
+            private String lastElement;
+            private boolean finished;
+
+            private void fetch() {
+                String start;
+                if (lastElement == null) {
+                    start = "-";
+                } else {
+                    start = "(" + lastElement;
+                }
+                buffer = range(start, "+", batchSize);
+                bufferIndex = 0;
+                if (buffer.isEmpty()) {
+                    finished = true;
+                    return;
+                }
+                lastElement = buffer.get(buffer.size() - 1);
+                if (buffer.size() < batchSize) {
+                    finished = true;
+                }
+            }
+
+            @Override
+            public boolean hasNext() {
+                if (buffer != null && bufferIndex < buffer.size()) {
+                    return true;
+                }
+                if (finished) {
+                    return false;
+                }
+                fetch();
+                return buffer != null && bufferIndex < buffer.size();
+            }
+
+            @Override
+            public String next() {
+                if (!hasNext()) {
+                    throw new NoSuchElementException();
+                }
+                return buffer.get(bufferIndex++);
+            }
+        };
+    }
+
+    @Override
+    public Stream<String> stream() {
+        return toStream(iterator());
     }
 
     private List<Object> createArgs(VectorSimilarParams prms, boolean withscores, boolean withattribs) {

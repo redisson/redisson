@@ -1156,14 +1156,16 @@ public final class RedissonReactive implements RedissonReactiveClient {
 
     @Override
     public RVectorSetReactive getVectorSet(String name) {
-        return ReactiveProxyBuilder.create(commandExecutor, new RedissonVectorSet(commandExecutor, name), RVectorSetReactive.class);
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonVectorSet(commandExecutor, name),
+                new RedissonVectorSetReactive(commandExecutor, name), RVectorSetReactive.class);
     }
 
     @Override
     public RVectorSetReactive getVectorSet(CommonOptions options) {
         CommonParams params = (CommonParams) options;
         CommandReactiveExecutor ca = commandExecutor.copy(params);
-        return ReactiveProxyBuilder.create(commandExecutor, new RedissonVectorSet(ca, params.getName()), RVectorSetReactive.class);
+        return ReactiveProxyBuilder.create(ca, new RedissonVectorSet(ca, params.getName()),
+                new RedissonVectorSetReactive(ca, params.getName()), RVectorSetReactive.class);
     }
 
     @Override
