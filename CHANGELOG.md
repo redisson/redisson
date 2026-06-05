@@ -3,6 +3,33 @@ Redisson Releases History
 
 Upgrade to __[Redisson PRO](https://redisson.pro/feature-comparison.html)__ with **advanced features**.
 
+### 05-June-2026 - 4.5.0 released
+
+Feature - [Array](https://redisson.pro/docs/data-and-services/collections/#array) object added (thanks to @lamnt2008)  
+Feature - [BitVector Store](https://redisson.pro/docs/data-and-services/collections/#bitvector-store) object added  
+Feature - Micronaut 5.0 module added  
+Feature - `readMode` setting added for `MapOptions`, `PlainOptions`, `LocalCachedMapOptions` objects  
+Feature - extended `incrementAndGet()` method added to `RAtomicLong`, `RAtomicDouble` (thanks to @lamnt2008)  
+Feature - `RMap.keysAsync()` method added (thanks to @sywu14)  
+Feature - `RVectorSet` added to `RBatch` object (thanks to @sywu14)  
+Feature - Fory lib upgraded to 1.0.0  
+Feature - `contains()`, `range()`, `iterator()` methods added to `RVectorSet` object  
+
+__Breaking change__ - field name to map listeners (thanks to @lamnt2008)  
+
+Improvement - refactor: remove unnecessary boxing of primitives (thanks to @MukjepScarlet)  
+
+Fixed - `RScoredSortedSet` Rx and Reactive must handle empty results as absent (thanks to @ngyngcphu)  
+Fixed - `RGeo` Rx and Reactive must handle empty results as absent (thanks to @lamnt2008)  
+Fixed - `RSet` Rx and Reactive must handle empty results as absent (thanks to @lamnt2008)  
+Fixed - `RVectorSet` Rx and Reactive must handle empty results as absent (thanks to @lamnt2008)  
+Fixed - PingConnectionHandler race condition  
+Fixed - UUID type metadata leak in TypedJsonJacksonCodec (thanks to @wushiyuanmaimob)  
+Fixed - UUID type inclusion by TypedJsonJackson3Codec  
+Fixed - buffer truncation in LZ4CodecV2  
+Fixed - `WRONGPASS` error on cluster slaves with TLS when password is set at root Config level (regression since 4.4.0) (thanks to @seakider)  
+Fixed - release locks for non-existent keys in transactional RMap.fastRemove() (thanks to @sywu14)  
+
 ### 12-May-2026 - 4.4.0 released
 
 Feature - Hibernate 7.3.x support  
