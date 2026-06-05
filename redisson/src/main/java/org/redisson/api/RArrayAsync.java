@@ -28,6 +28,7 @@ import java.util.Map;
  * @param <V> value type
  *
  * @author lamnt2008
+ * @author Nikita Koksharov
  *
  */
 public interface RArrayAsync<V> extends RExpirableAsync {
@@ -39,6 +40,32 @@ public interface RArrayAsync<V> extends RExpirableAsync {
      * @return value stored at the specified array index
      */
     RFuture<V> getAsync(long index);
+
+    /**
+     * Returns {@code true} if a value is stored at the specified array index.
+     *
+     * @param index array index
+     * @return {@code true} if a value is stored at the specified array index, {@code false} otherwise
+     */
+    RFuture<Boolean> isSetAsync(long index);
+
+    /**
+     * Returns an async iterator over the entries stored in this array.
+     * Entries are returned in ascending array index order.
+     *
+     * @return entries iterator
+     */
+    AsyncIterator<ArrayEntry<V>> iteratorAsync();
+
+    /**
+     * Returns an async iterator over the entries stored in this array.
+     * Entries are returned in ascending array index order.
+     * Entries are fetched in batches with the specified page size.
+     *
+     * @param count page size hint, maps to the {@code ARSCAN COUNT} option
+     * @return entries iterator
+     */
+    AsyncIterator<ArrayEntry<V>> iteratorAsync(int count);
 
     /**
      * Returns values stored at the specified array indexes.

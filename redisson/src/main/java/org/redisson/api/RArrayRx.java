@@ -15,6 +15,7 @@
  */
 package org.redisson.api;
 
+import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Single;
 import org.redisson.api.array.ArrayEntry;
@@ -30,6 +31,7 @@ import java.util.Map;
  * @param <V> value type
  *
  * @author lamnt2008
+ * @author Nikita Koksharov
  *
  */
 public interface RArrayRx<V> extends RExpirableRx {
@@ -41,6 +43,22 @@ public interface RArrayRx<V> extends RExpirableRx {
      * @return value stored at the specified array index
      */
     Maybe<V> get(long index);
+
+    /**
+     * Returns {@code true} if a value is stored at the specified array index.
+     *
+     * @param index array index
+     * @return {@code true} if a value is stored at the specified array index, {@code false} otherwise
+     */
+    Single<Boolean> isSet(long index);
+
+    /**
+     * Returns a stream of the entries stored in this array.
+     * Entries are emitted in ascending array index order.
+     *
+     * @return entries flowable
+     */
+    Flowable<ArrayEntry<V>> iterator();
 
     /**
      * Returns values stored at the specified array indexes.

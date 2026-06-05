@@ -18,16 +18,21 @@ package org.redisson;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.redisson.api.AsyncIterator;
 import org.redisson.api.RArray;
+import org.redisson.api.RArrayReactive;
+import org.redisson.api.RArrayRx;
 import org.redisson.api.array.ArrayEntry;
 import org.redisson.api.array.ArrayGrepArgs;
 import org.redisson.api.array.ArrayInfo;
 import org.redisson.client.RedisException;
 import org.redisson.client.codec.StringCodec;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -160,6 +165,134 @@ public class RedissonArrayTest extends RedisDockerTest {
         array.set(0, "value");
 
         assertThat(array.get(0)).isEqualTo("value");
+    }
+
+    @Test
+    public void testIsSet() {
+        array.set(0, "a");
+        array.set(3, "d");
+
+        assertThat(array.isSet(0)).isTrue();
+        assertThat(array.isSet(1)).isFalse();
+        assertThat(array.isSet(2)).isFalse();
+        assertThat(array.isSet(3)).isTrue();
+        assertThat(array.isSet(100)).isFalse();
+    }
+
+    @Test
+    public void testIterator() {
+        array.set(0, "a");
+        array.set(3, "d");
+        array.set(5, "f");
+
+        List<ArrayEntry<String>> entries = new ArrayList<>();
+        array.iterator().forEachRemaining(entries::add);
+
+        assertThat(entries).containsExactly(
+                new ArrayEntry<>(0, "a"), new ArrayEntry<>(3, "d"), new ArrayEntry<>(5, "f"));
+    }
+
+    @Test
+    public void testIteratorEmpty() {
+        assertThat(array.iterator().hasNext()).isFalse();
+    }
+
+    @Test
+    public void testIteratorWithCount() {
+        Map<Long, String> values = new LinkedHashMap<>();
+        for (long i = 0; i < 25; i++) {
+            values.put(i, "v" + i);
+        }
+        array.set(values);
+
+        // page size smaller than the number of stored entries forces multiple ARSCAN pages
+        List<ArrayEntry<String>> entries = new ArrayList<>();
+        array.iterator(10).forEachRemaining(entries::add);
+
+        assertThat(entries).hasSize(25);
+        for (int i = 0; i < 25; i++) {
+            assertThat(entries.get(i)).isEqualTo(new ArrayEntry<>(i, "v" + i));
+        }
+    }
+
+    @Test
+    public void testIteratorWithCountSparse() {
+        array.set(0, "a");
+        array.set(7, "h");
+        array.set(99, "x");
+
+        List<ArrayEntry<String>> entries = new ArrayList<>();
+        array.iterator(2).forEachRemaining(entries::add);
+
+        assertThat(entries).containsExactly(
+                new ArrayEntry<>(0, "a"), new ArrayEntry<>(7, "h"), new ArrayEntry<>(99, "x"));
+    }
+
+    @Test
+    public void testStream() {
+        array.set(0, "a", "b", "c");
+        array.set(10, "k");
+
+        List<String> values = array.stream().map(ArrayEntry::getValue).collect(Collectors.toList());
+
+        assertThat(values).containsExactly("a", "b", "c", "k");
+    }
+
+    @Test
+    public void testIsSetAsync() {
+        array.set(2, "c");
+
+        assertThat(array.isSetAsync(2).toCompletableFuture().join()).isTrue();
+        assertThat(array.isSetAsync(1).toCompletableFuture().join()).isFalse();
+    }
+
+    @Test
+    public void testIteratorAsync() {
+        array.set(0, "a");
+        array.set(4, "e");
+        array.set(8, "i");
+
+        AsyncIterator<ArrayEntry<String>> iterator = array.iteratorAsync(2);
+
+        List<ArrayEntry<String>> entries = new ArrayList<>();
+        while (iterator.hasNext().toCompletableFuture().join()) {
+            entries.add(iterator.next().toCompletableFuture().join());
+        }
+
+        assertThat(entries).containsExactly(
+                new ArrayEntry<>(0, "a"), new ArrayEntry<>(4, "e"), new ArrayEntry<>(8, "i"));
+    }
+
+    @Test
+    public void testIteratorReactive() {
+        array.set(0, "a");
+        array.set(3, "d");
+        array.set(6, "g");
+
+        RArrayReactive<String> reactiveArray = redisson.reactive().getArray("test-array", StringCodec.INSTANCE);
+
+        List<ArrayEntry<String>> entries = reactiveArray.iterator().collectList().block();
+        assertThat(entries).containsExactly(
+                new ArrayEntry<>(0, "a"), new ArrayEntry<>(3, "d"), new ArrayEntry<>(6, "g"));
+
+        assertThat(reactiveArray.isSet(3).block()).isTrue();
+        assertThat(reactiveArray.isSet(1).block()).isFalse();
+    }
+
+    @Test
+    public void testIteratorRx() {
+        array.set(0, "a");
+        array.set(3, "d");
+        array.set(6, "g");
+
+        RArrayRx<String> rxArray = redisson.rxJava().getArray("test-array", StringCodec.INSTANCE);
+
+        List<ArrayEntry<String>> entries = rxArray.iterator().toList().blockingGet();
+        assertThat(entries).containsExactly(
+                new ArrayEntry<>(0, "a"), new ArrayEntry<>(3, "d"), new ArrayEntry<>(6, "g"));
+
+        assertThat(rxArray.isSet(3).blockingGet()).isTrue();
+        assertThat(rxArray.isSet(1).blockingGet()).isFalse();
     }
 
 }

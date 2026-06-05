@@ -19,6 +19,7 @@ import org.redisson.api.annotation.EmptyAsAbsent;
 import org.redisson.api.array.ArrayEntry;
 import org.redisson.api.array.ArrayGrepArgs;
 import org.redisson.api.array.ArrayInfo;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
@@ -30,6 +31,7 @@ import java.util.Map;
  * @param <V> value type
  *
  * @author lamnt2008
+ * @author Nikita Koksharov
  *
  */
 public interface RArrayReactive<V> extends RExpirableReactive {
@@ -42,6 +44,22 @@ public interface RArrayReactive<V> extends RExpirableReactive {
      */
     @EmptyAsAbsent
     Mono<V> get(long index);
+
+    /**
+     * Returns {@code true} if a value is stored at the specified array index.
+     *
+     * @param index array index
+     * @return {@code true} if a value is stored at the specified array index, {@code false} otherwise
+     */
+    Mono<Boolean> isSet(long index);
+
+    /**
+     * Returns a stream of the entries stored in this array.
+     * Entries are emitted in ascending array index order.
+     *
+     * @return entries flux
+     */
+    Flux<ArrayEntry<V>> iterator();
 
     /**
      * Returns values stored at the specified array indexes.

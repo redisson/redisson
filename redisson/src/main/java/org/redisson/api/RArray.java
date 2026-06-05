@@ -19,8 +19,10 @@ import org.redisson.api.array.ArrayEntry;
 import org.redisson.api.array.ArrayGrepArgs;
 import org.redisson.api.array.ArrayInfo;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 /**
  * Array object.
@@ -32,6 +34,7 @@ import java.util.Map;
  * @param <V> value type
  *
  * @author lamnt2008
+ * @author Nikita Koksharov
  *
  */
 public interface RArray<V> extends RExpirable, RArrayAsync<V> {
@@ -43,6 +46,40 @@ public interface RArray<V> extends RExpirable, RArrayAsync<V> {
      * @return value stored at the specified array index
      */
     V get(long index);
+
+    /**
+     * Returns {@code true} if a value is stored at the specified array index.
+     *
+     * @param index array index
+     * @return {@code true} if a value is stored at the specified array index, {@code false} otherwise
+     */
+    boolean isSet(long index);
+
+    /**
+     * Returns an iterator over the entries stored in this array.
+     * Entries are returned in ascending array index order.
+     *
+     * @return entries iterator
+     */
+    Iterator<ArrayEntry<V>> iterator();
+
+    /**
+     * Returns an iterator over the entries stored in this array.
+     * Entries are returned in ascending array index order.
+     * Entries are fetched in batches with the specified page size.
+     *
+     * @param count page size hint, maps to the {@code ARSCAN COUNT} option
+     * @return entries iterator
+     */
+    Iterator<ArrayEntry<V>> iterator(int count);
+
+    /**
+     * Returns a sequential stream of the entries stored in this array.
+     * Entries are returned in ascending array index order.
+     *
+     * @return entries stream
+     */
+    Stream<ArrayEntry<V>> stream();
 
     /**
      * Returns values stored at the specified array indexes.

@@ -15,6 +15,7 @@
  */
 package org.redisson;
 
+import org.redisson.api.AsyncIterator;
 import org.redisson.api.RArray;
 import org.redisson.api.RFuture;
 import org.redisson.api.array.ArrayEntry;
@@ -31,9 +32,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.stream.Stream;
 
 /**
  * Array object implementation.
@@ -41,6 +47,7 @@ import java.util.Objects;
  * @param <V> value type
  *
  * @author lamnt2008
+ * @author Nikita Koksharov
  *
  */
 public class RedissonArray<V> extends RedissonExpirable implements RArray<V> {
@@ -85,6 +92,150 @@ public class RedissonArray<V> extends RedissonExpirable implements RArray<V> {
             args.add(index);
         }
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.ARMGET, args.toArray());
+    }
+
+    @Override
+    public boolean isSet(long index) {
+        return get(isSetAsync(index));
+    }
+
+    @Override
+    public RFuture<Boolean> isSetAsync(long index) {
+        checkIndex(index);
+        CompletionStage<Boolean> f = countAsync(index, index).thenApply(c -> c != null && c > 0);
+        return new CompletableFutureWrapper<>(f);
+    }
+
+    @Override
+    public Iterator<ArrayEntry<V>> iterator() {
+        return iterator(10);
+    }
+
+    @Override
+    public Iterator<ArrayEntry<V>> iterator(int count) {
+        if (count <= 0) {
+            throw new IllegalArgumentException("Count must be positive");
+        }
+        return new Iterator<ArrayEntry<V>>() {
+
+            private Iterator<ArrayEntry<V>> buffer = Collections.emptyIterator();
+            private long nextStart;
+            private long endBound;
+            private boolean endResolved;
+            private boolean finished;
+
+            private void fill() {
+                while (!buffer.hasNext() && !finished) {
+                    if (!endResolved) {
+                        endBound = length() - 1;
+                        endResolved = true;
+                    }
+                    if (nextStart > endBound) {
+                        finished = true;
+                        return;
+                    }
+                    List<ArrayEntry<V>> page = scan(nextStart, endBound, count);
+                    if (page.isEmpty()) {
+                        finished = true;
+                        return;
+                    }
+                    nextStart = page.get(page.size() - 1).getIndex() + 1;
+                    buffer = page.iterator();
+                }
+            }
+
+            @Override
+            public boolean hasNext() {
+                fill();
+                return buffer.hasNext();
+            }
+
+            @Override
+            public ArrayEntry<V> next() {
+                fill();
+                if (!buffer.hasNext()) {
+                    throw new NoSuchElementException();
+                }
+                return buffer.next();
+            }
+        };
+    }
+
+    @Override
+    public AsyncIterator<ArrayEntry<V>> iteratorAsync() {
+        return iteratorAsync(10);
+    }
+
+    @Override
+    public AsyncIterator<ArrayEntry<V>> iteratorAsync(int count) {
+        if (count <= 0) {
+            throw new IllegalArgumentException("Count must be positive");
+        }
+        return new AsyncIterator<ArrayEntry<V>>() {
+
+            private Iterator<ArrayEntry<V>> buffer = Collections.emptyIterator();
+            private long nextStart;
+            private long endBound;
+            private boolean endResolved;
+            private boolean finished;
+
+            @Override
+            public CompletionStage<Boolean> hasNext() {
+                if (buffer.hasNext()) {
+                    return CompletableFuture.completedFuture(true);
+                }
+                if (finished) {
+                    return CompletableFuture.completedFuture(false);
+                }
+                return fill();
+            }
+
+            private CompletionStage<Boolean> fill() {
+                CompletionStage<Long> endStage;
+                if (!endResolved) {
+                    endStage = lengthAsync().thenApply(len -> {
+                        endBound = len - 1;
+                        endResolved = true;
+                        return endBound;
+                    });
+                } else {
+                    endStage = CompletableFuture.completedFuture(endBound);
+                }
+                return endStage.thenCompose(end -> {
+                    if (nextStart > end) {
+                        finished = true;
+                        return CompletableFuture.completedFuture(false);
+                    }
+                    return scanAsync(nextStart, end, count).thenCompose(page -> {
+                        if (page.isEmpty()) {
+                            finished = true;
+                            return CompletableFuture.completedFuture(false);
+                        }
+                        nextStart = page.get(page.size() - 1).getIndex() + 1;
+                        buffer = page.iterator();
+                        if (buffer.hasNext()) {
+                            return CompletableFuture.completedFuture(true);
+                        }
+                        return fill();
+                    });
+                });
+            }
+
+            @Override
+            public CompletionStage<ArrayEntry<V>> next() {
+                return hasNext().thenApply(has -> {
+                    if (!has) {
+                        throw new NoSuchElementException();
+                    }
+                    return buffer.next();
+                });
+            }
+        };
+    }
+
+    @Override
+    public Stream<ArrayEntry<V>> stream() {
+        return toStream(iterator());
     }
 
     @Override
