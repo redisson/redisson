@@ -15,11 +15,11 @@
  */
 package org.redisson.api;
 
-import io.micrometer.shaded.reactor.core.publisher.Mono;
 import org.redisson.api.annotation.EmptyAsAbsent;
 import org.redisson.api.bitvector.MatchArgs;
 import org.redisson.api.bitvector.MatchExactArgs;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.Map;
 import java.util.Set;
