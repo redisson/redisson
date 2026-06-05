@@ -145,7 +145,7 @@ public interface RBitVectorStoreRx<K> extends RExpirableRx {
      * @param mask the bitmask to test against
      * @return the count of matching vectors
      */
-    Flowable<Long> countMatchAll(long mask);
+    Single<Long> countMatchAll(long mask);
 
     /**
      * Returns the number of stored vectors {@code v} such that {@code (v & mask) != 0}
@@ -156,7 +156,7 @@ public interface RBitVectorStoreRx<K> extends RExpirableRx {
      * @param mask the bitmask to test against
      * @return the count of matching vectors
      */
-    Flowable<Long> countMatchAny(long mask);
+    Single<Long> countMatchAny(long mask);
 
     /**
      * Returns the number of stored vectors {@code v} such that {@code (v & mask) == 0}
