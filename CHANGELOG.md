@@ -15,7 +15,7 @@ Feature - `RVectorSet` added to `RBatch` object (thanks to @sywu14)
 Feature - Fory lib upgraded to 1.0.0  
 Feature - `contains()`, `range()`, `iterator()` methods added to `RVectorSet` object  
 
-__Breaking change__ - field name to map listeners (thanks to @lamnt2008)  
+__Breaking change__ - map listeners signature changed, field name added (thanks to @lamnt2008)  
 
 Improvement - refactor: remove unnecessary boxing of primitives (thanks to @MukjepScarlet)  
 
