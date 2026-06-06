@@ -1,0 +1,202 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="2594" viewBox="0 0 560 2594" font-family="Inter, 'Helvetica Neue', Arial, sans-serif">
+<defs><filter id="sh" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#0F172A" flood-opacity="0.06"/></filter></defs>
+<rect width="560" height="2594" fill="#FFFFFF"/>
+<text x="0" y="54" font-size="24" font-weight="800" fill="#0F172A">Redisson Feature Map</text>
+<text x="0" y="103" font-size="15" font-weight="700" letter-spacing="0.04em" fill="#3B6CB5">DATA STRUCTURES</text>
+<text x="0" y="987" font-size="15" font-weight="700" letter-spacing="0.04em" fill="#4F8A6B">CONCURRENCY &amp; MESSAGING</text>
+<text x="0" y="1395" font-size="15" font-weight="700" letter-spacing="0.04em" fill="#B5894A">DISTRIBUTED SERVICES</text>
+<text x="0" y="1675" font-size="15" font-weight="700" letter-spacing="0.04em" fill="#A2566B">INTEGRATIONS &amp; APIS</text>
+<rect x="0" y="114" width="560" height="238" rx="16" fill="#F2F6FB" stroke="#3B6CB5" stroke-opacity="0.25" stroke-width="1.5" filter="url(#sh)"/>
+<rect x="0" y="114" width="7" height="238" rx="3.5" fill="#3B6CB5"/>
+<text x="26" y="152" font-size="19" font-weight="700" fill="#0F172A">Objects</text>
+<rect x="20" y="166" width="129" height="34" rx="9" fill="#E2EBF5" stroke="#B7CBE5" stroke-width="1"/>
+<text x="84.5" y="187.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#284D80">Object holder</text>
+<rect x="159" y="166" width="184" height="34" rx="9" fill="#E2EBF5" stroke="#B7CBE5" stroke-width="1"/>
+<text x="251.0" y="187.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#284D80">Binary stream holder</text>
+<rect x="353" y="166" width="168" height="34" rx="9" fill="#E2EBF5" stroke="#B7CBE5" stroke-width="1"/>
+<text x="437.0" y="187.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#284D80">JSON object holder</text>
+<rect x="20" y="210" width="161" height="34" rx="9" fill="#E2EBF5" stroke="#B7CBE5" stroke-width="1"/>
+<text x="100.5" y="231.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#284D80">Geospatial holder</text>
+<rect x="191" y="210" width="74" height="34" rx="9" fill="#E2EBF5" stroke="#B7CBE5" stroke-width="1"/>
+<text x="228.0" y="231.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#284D80">BitSet</text>
+<rect x="275" y="210" width="121" height="34" rx="9" fill="#E2EBF5" stroke="#B7CBE5" stroke-width="1"/>
+<text x="335.5" y="231.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#284D80">Bloom filter</text>
+<rect x="20" y="254" width="129" height="34" rx="9" fill="#E2EBF5" stroke="#B7CBE5" stroke-width="1"/>
+<text x="84.5" y="275.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#284D80">Cuckoo filter</text>
+<rect x="159" y="254" width="114" height="34" rx="9" fill="#E2EBF5" stroke="#B7CBE5" stroke-width="1"/>
+<text x="216.0" y="275.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#284D80">HyperLogLog</text>
+<rect x="283" y="254" width="114" height="34" rx="9" fill="#E2EBF5" stroke="#B7CBE5" stroke-width="1"/>
+<text x="340.0" y="275.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#284D80">RateLimiter</text>
+<rect x="20" y="298" width="161" height="34" rx="9" fill="#E2EBF5" stroke="#B7CBE5" stroke-width="1"/>
+<text x="100.5" y="319.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#284D80">GCRA Rate Limiter</text>
+<rect x="0" y="374" width="560" height="150" rx="16" fill="#F2F6FB" stroke="#3B6CB5" stroke-opacity="0.25" stroke-width="1.5" filter="url(#sh)"/>
+<rect x="0" y="374" width="7" height="150" rx="3.5" fill="#3B6CB5"/>
+<text x="26" y="412" font-size="19" font-weight="700" fill="#0F172A">Counters</text>
+<rect x="20" y="426" width="121" height="34" rx="9" fill="#E2EBF5" stroke="#B7CBE5" stroke-width="1"/>
+<text x="80.5" y="447.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#284D80">Id generator</text>
+<rect x="151" y="426" width="106" height="34" rx="9" fill="#E2EBF5" stroke="#B7CBE5" stroke-width="1"/>
+<text x="204.0" y="447.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#284D80">AtomicLong</text>
+<rect x="267" y="426" width="121" height="34" rx="9" fill="#E2EBF5" stroke="#B7CBE5" stroke-width="1"/>
+<text x="327.5" y="447.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#284D80">AtomicDouble</text>
+<rect x="398" y="426" width="98" height="34" rx="9" fill="#E2EBF5" stroke="#B7CBE5" stroke-width="1"/>
+<text x="447.0" y="447.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#284D80">LongAdder</text>
+<rect x="20" y="470" width="114" height="34" rx="9" fill="#E2EBF5" stroke="#B7CBE5" stroke-width="1"/>
+<text x="77.0" y="491.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#284D80">DoubleAdder</text>
+<rect x="0" y="546" width="560" height="194" rx="16" fill="#F2F6FB" stroke="#3B6CB5" stroke-opacity="0.25" stroke-width="1.5" filter="url(#sh)"/>
+<rect x="0" y="546" width="7" height="194" rx="3.5" fill="#3B6CB5"/>
+<text x="26" y="584" font-size="19" font-weight="700" fill="#0F172A">Collections</text>
+<rect x="20" y="598" width="64" height="34" rx="9" fill="#E2EBF5" stroke="#B7CBE5" stroke-width="1"/>
+<text x="52.0" y="619.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#284D80">Map</text>
+<rect x="94" y="598" width="90" height="34" rx="9" fill="#E2EBF5" stroke="#B7CBE5" stroke-width="1"/>
+<text x="139.0" y="619.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#284D80">Multimap</text>
+<rect x="194" y="598" width="106" height="34" rx="9" fill="#E2EBF5" stroke="#B7CBE5" stroke-width="1"/>
+<text x="247.0" y="619.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#284D80">JSON Store</text>
+<rect x="310" y="598" width="64" height="34" rx="9" fill="#E2EBF5" stroke="#B7CBE5" stroke-width="1"/>
+<text x="342.0" y="619.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#284D80">Set</text>
+<rect x="384" y="598" width="98" height="34" rx="9" fill="#E2EBF5" stroke="#B7CBE5" stroke-width="1"/>
+<text x="433.0" y="619.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#284D80">SortedSet</text>
+<rect x="20" y="642" width="145" height="34" rx="9" fill="#E2EBF5" stroke="#B7CBE5" stroke-width="1"/>
+<text x="92.5" y="663.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#284D80">ScoredSortedSet</text>
+<rect x="175" y="642" width="121" height="34" rx="9" fill="#E2EBF5" stroke="#B7CBE5" stroke-width="1"/>
+<text x="235.5" y="663.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#284D80">LexSortedSet</text>
+<rect x="306" y="642" width="64" height="34" rx="9" fill="#E2EBF5" stroke="#B7CBE5" stroke-width="1"/>
+<text x="338.0" y="663.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#284D80">List</text>
+<rect x="380" y="642" width="67" height="34" rx="9" fill="#E2EBF5" stroke="#B7CBE5" stroke-width="1"/>
+<text x="413.5" y="663.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#284D80">Array</text>
+<rect x="20" y="686" width="114" height="34" rx="9" fill="#E2EBF5" stroke="#B7CBE5" stroke-width="1"/>
+<text x="77.0" y="707.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#284D80">Time Series</text>
+<rect x="144" y="686" width="106" height="34" rx="9" fill="#E2EBF5" stroke="#B7CBE5" stroke-width="1"/>
+<text x="197.0" y="707.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#284D80">Vector Set</text>
+<rect x="260" y="686" width="145" height="34" rx="9" fill="#E2EBF5" stroke="#B7CBE5" stroke-width="1"/>
+<text x="332.5" y="707.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#284D80">BitVector Store</text>
+<rect x="0" y="762" width="560" height="150" rx="16" fill="#F2F6FB" stroke="#3B6CB5" stroke-opacity="0.25" stroke-width="1.5" filter="url(#sh)"/>
+<rect x="0" y="762" width="7" height="150" rx="3.5" fill="#3B6CB5"/>
+<text x="26" y="800" font-size="19" font-weight="700" fill="#0F172A">Queues</text>
+<rect x="20" y="814" width="67" height="34" rx="9" fill="#E2EBF5" stroke="#B7CBE5" stroke-width="1"/>
+<text x="53.5" y="835.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#284D80">Queue</text>
+<rect x="97" y="814" width="67" height="34" rx="9" fill="#E2EBF5" stroke="#B7CBE5" stroke-width="1"/>
+<text x="130.5" y="835.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#284D80">Deque</text>
+<rect x="174" y="814" width="137" height="34" rx="9" fill="#E2EBF5" stroke="#B7CBE5" stroke-width="1"/>
+<text x="242.5" y="835.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#284D80">Priority Queue</text>
+<rect x="321" y="814" width="137" height="34" rx="9" fill="#E2EBF5" stroke="#B7CBE5" stroke-width="1"/>
+<text x="389.5" y="835.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#284D80">Priority Deque</text>
+<rect x="20" y="858" width="74" height="34" rx="9" fill="#E2EBF5" stroke="#B7CBE5" stroke-width="1"/>
+<text x="57.0" y="879.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#284D80">Stream</text>
+<rect x="104" y="858" width="114" height="34" rx="9" fill="#E2EBF5" stroke="#B7CBE5" stroke-width="1"/>
+<text x="161.0" y="879.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#284D80">Ring Buffer</text>
+<rect x="228" y="858" width="137" height="34" rx="9" fill="#E2EBF5" stroke="#B7CBE5" stroke-width="1"/>
+<text x="296.5" y="879.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#284D80">Transfer Queue</text>
+<rect x="0" y="998" width="560" height="150" rx="16" fill="#F1F8F4" stroke="#4F8A6B" stroke-opacity="0.25" stroke-width="1.5" filter="url(#sh)"/>
+<rect x="0" y="998" width="7" height="150" rx="3.5" fill="#4F8A6B"/>
+<text x="26" y="1036" font-size="19" font-weight="700" fill="#0F172A">Locks &amp; Synchronizers</text>
+<rect x="20" y="1050" width="64" height="34" rx="9" fill="#DEEEE4" stroke="#AAD3BC" stroke-width="1"/>
+<text x="52.0" y="1071.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#2E5A44">Lock</text>
+<rect x="94" y="1050" width="98" height="34" rx="9" fill="#DEEEE4" stroke="#AAD3BC" stroke-width="1"/>
+<text x="143.0" y="1071.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#2E5A44">Fair Lock</text>
+<rect x="202" y="1050" width="98" height="34" rx="9" fill="#DEEEE4" stroke="#AAD3BC" stroke-width="1"/>
+<text x="251.0" y="1071.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#2E5A44">MultiLock</text>
+<rect x="310" y="1050" width="129" height="34" rx="9" fill="#DEEEE4" stroke="#AAD3BC" stroke-width="1"/>
+<text x="374.5" y="1071.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#2E5A44">ReadWriteLock</text>
+<rect x="20" y="1094" width="98" height="34" rx="9" fill="#DEEEE4" stroke="#AAD3BC" stroke-width="1"/>
+<text x="69.0" y="1115.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#2E5A44">Semaphore</text>
+<rect x="128" y="1094" width="137" height="34" rx="9" fill="#DEEEE4" stroke="#AAD3BC" stroke-width="1"/>
+<text x="196.5" y="1115.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#2E5A44">CountDownLatch</text>
+<rect x="275" y="1094" width="98" height="34" rx="9" fill="#DEEEE4" stroke="#AAD3BC" stroke-width="1"/>
+<text x="324.0" y="1115.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#2E5A44">Spin Lock</text>
+<rect x="383" y="1094" width="114" height="34" rx="9" fill="#DEEEE4" stroke="#AAD3BC" stroke-width="1"/>
+<text x="440.0" y="1115.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#2E5A44">Fenced Lock</text>
+<rect x="0" y="1170" width="560" height="150" rx="16" fill="#F1F8F4" stroke="#4F8A6B" stroke-opacity="0.25" stroke-width="1.5" filter="url(#sh)"/>
+<rect x="0" y="1170" width="7" height="150" rx="3.5" fill="#4F8A6B"/>
+<text x="26" y="1208" font-size="19" font-weight="700" fill="#0F172A">Messaging</text>
+<rect x="20" y="1222" width="137" height="34" rx="9" fill="#DEEEE4" stroke="#AAD3BC" stroke-width="1"/>
+<text x="88.5" y="1243.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#2E5A44">Reliable Queue</text>
+<rect x="167" y="1222" width="153" height="34" rx="9" fill="#DEEEE4" stroke="#AAD3BC" stroke-width="1"/>
+<text x="243.5" y="1243.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#2E5A44">Reliable Pub/Sub</text>
+<rect x="330" y="1222" width="82" height="34" rx="9" fill="#DEEEE4" stroke="#AAD3BC" stroke-width="1"/>
+<text x="371.0" y="1243.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#2E5A44">JMS API</text>
+<rect x="20" y="1266" width="129" height="34" rx="9" fill="#DEEEE4" stroke="#AAD3BC" stroke-width="1"/>
+<text x="84.5" y="1287.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#2E5A44">Pub/Sub topic</text>
+<rect x="159" y="1266" width="192" height="34" rx="9" fill="#DEEEE4" stroke="#AAD3BC" stroke-width="1"/>
+<text x="255.0" y="1287.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#2E5A44">Sharded Pub/Sub topic</text>
+<rect x="0" y="1406" width="560" height="194" rx="16" fill="#FBF6EE" stroke="#B5894A" stroke-opacity="0.25" stroke-width="1.5" filter="url(#sh)"/>
+<rect x="0" y="1406" width="7" height="194" rx="3.5" fill="#B5894A"/>
+<text x="26" y="1444" font-size="19" font-weight="700" fill="#0F172A">Services</text>
+<rect x="20" y="1458" width="137" height="34" rx="9" fill="#F2E6D2" stroke="#DEC59A" stroke-width="1"/>
+<text x="88.5" y="1479.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#6F5021">Remote service</text>
+<rect x="167" y="1458" width="176" height="34" rx="9" fill="#F2E6D2" stroke="#DEC59A" stroke-width="1"/>
+<text x="255.0" y="1479.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#6F5021">Live Object service</text>
+<rect x="353" y="1458" width="153" height="34" rx="9" fill="#F2E6D2" stroke="#DEC59A" stroke-width="1"/>
+<text x="429.5" y="1479.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#6F5021">Executor service</text>
+<rect x="20" y="1502" width="231" height="34" rx="9" fill="#F2E6D2" stroke="#DEC59A" stroke-width="1"/>
+<text x="135.5" y="1523.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#6F5021">Scheduled executor service</text>
+<rect x="261" y="1502" width="161" height="34" rx="9" fill="#F2E6D2" stroke="#DEC59A" stroke-width="1"/>
+<text x="341.5" y="1523.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#6F5021">MapReduce service</text>
+<rect x="20" y="1546" width="137" height="34" rx="9" fill="#F2E6D2" stroke="#DEC59A" stroke-width="1"/>
+<text x="88.5" y="1567.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#6F5021">RediSearch API</text>
+<rect x="0" y="1686" width="560" height="194" rx="16" fill="#FBF2F5" stroke="#A2566B" stroke-opacity="0.25" stroke-width="1.5" filter="url(#sh)"/>
+<rect x="0" y="1686" width="7" height="194" rx="3.5" fill="#A2566B"/>
+<text x="26" y="1724" font-size="19" font-weight="700" fill="#0F172A">Spring Framework</text>
+<rect x="20" y="1738" width="176" height="34" rx="9" fill="#F2DEE6" stroke="#DEB0C0" stroke-width="1"/>
+<text x="108.0" y="1759.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#6E2B3E">Spring Boot Starter</text>
+<rect x="206" y="1738" width="121" height="34" rx="9" fill="#F2DEE6" stroke="#DEB0C0" stroke-width="1"/>
+<text x="266.5" y="1759.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#6E2B3E">Spring Cache</text>
+<rect x="337" y="1738" width="137" height="34" rx="9" fill="#F2DEE6" stroke="#DEB0C0" stroke-width="1"/>
+<text x="405.5" y="1759.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#6E2B3E">Spring Session</text>
+<rect x="20" y="1782" width="231" height="34" rx="9" fill="#F2DEE6" stroke="#DEB0C0" stroke-width="1"/>
+<text x="135.5" y="1803.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#6E2B3E">Spring Transaction Manager</text>
+<rect x="261" y="1782" width="176" height="34" rx="9" fill="#F2DEE6" stroke="#DEB0C0" stroke-width="1"/>
+<text x="349.0" y="1803.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#6E2B3E">Spring Cloud Stream</text>
+<rect x="20" y="1826" width="161" height="34" rx="9" fill="#F2DEE6" stroke="#DEB0C0" stroke-width="1"/>
+<text x="100.5" y="1847.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#6E2B3E">Spring Data Redis</text>
+<rect x="191" y="1826" width="200" height="34" rx="9" fill="#F2DEE6" stroke="#DEB0C0" stroke-width="1"/>
+<text x="291.0" y="1847.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#6E2B3E">Spring AI Vector Store</text>
+<rect x="0" y="1902" width="560" height="106" rx="16" fill="#FBF2F5" stroke="#A2566B" stroke-opacity="0.25" stroke-width="1.5" filter="url(#sh)"/>
+<rect x="0" y="1902" width="7" height="106" rx="3.5" fill="#A2566B"/>
+<text x="26" y="1940" font-size="19" font-weight="700" fill="#0F172A">Microservices</text>
+<rect x="20" y="1954" width="82" height="34" rx="9" fill="#F2DEE6" stroke="#DEB0C0" stroke-width="1"/>
+<text x="61.0" y="1975.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#6E2B3E">Helidon</text>
+<rect x="112" y="1954" width="98" height="34" rx="9" fill="#F2DEE6" stroke="#DEB0C0" stroke-width="1"/>
+<text x="161.0" y="1975.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#6E2B3E">Micronaut</text>
+<rect x="220" y="1954" width="82" height="34" rx="9" fill="#F2DEE6" stroke="#DEB0C0" stroke-width="1"/>
+<text x="261.0" y="1975.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#6E2B3E">Quarkus</text>
+<rect x="0" y="2030" width="560" height="106" rx="16" fill="#FBF2F5" stroke="#A2566B" stroke-opacity="0.25" stroke-width="1.5" filter="url(#sh)"/>
+<rect x="0" y="2030" width="7" height="106" rx="3.5" fill="#A2566B"/>
+<text x="26" y="2068" font-size="19" font-weight="700" fill="#0F172A">Web Session Management</text>
+<rect x="20" y="2082" width="192" height="34" rx="9" fill="#F2DEE6" stroke="#DEB0C0" stroke-width="1"/>
+<text x="116.0" y="2103.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#6E2B3E">Apache Tomcat Session</text>
+<rect x="222" y="2082" width="137" height="34" rx="9" fill="#F2DEE6" stroke="#DEB0C0" stroke-width="1"/>
+<text x="290.5" y="2103.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#6E2B3E">Spring Session</text>
+<rect x="369" y="2082" width="161" height="34" rx="9" fill="#F2DEE6" stroke="#DEB0C0" stroke-width="1"/>
+<text x="449.5" y="2103.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#6E2B3E">Micronaut Session</text>
+<rect x="0" y="2158" width="560" height="150" rx="16" fill="#FBF2F5" stroke="#A2566B" stroke-opacity="0.25" stroke-width="1.5" filter="url(#sh)"/>
+<rect x="0" y="2158" width="7" height="150" rx="3.5" fill="#A2566B"/>
+<text x="26" y="2196" font-size="19" font-weight="700" fill="#0F172A">Cache API Implementations</text>
+<rect x="20" y="2210" width="121" height="34" rx="9" fill="#F2DEE6" stroke="#DEB0C0" stroke-width="1"/>
+<text x="80.5" y="2231.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#6E2B3E">Spring Cache</text>
+<rect x="151" y="2210" width="184" height="34" rx="9" fill="#F2DEE6" stroke="#DEB0C0" stroke-width="1"/>
+<text x="243.0" y="2231.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#6E2B3E">JCache API (JSR-107)</text>
+<rect x="345" y="2210" width="145" height="34" rx="9" fill="#F2DEE6" stroke="#DEB0C0" stroke-width="1"/>
+<text x="417.5" y="2231.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#6E2B3E">Hibernate Cache</text>
+<rect x="20" y="2254" width="129" height="34" rx="9" fill="#F2DEE6" stroke="#DEB0C0" stroke-width="1"/>
+<text x="84.5" y="2275.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#6E2B3E">MyBatis Cache</text>
+<rect x="159" y="2254" width="129" height="34" rx="9" fill="#F2DEE6" stroke="#DEB0C0" stroke-width="1"/>
+<text x="223.5" y="2275.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#6E2B3E">Quarkus Cache</text>
+<rect x="298" y="2254" width="145" height="34" rx="9" fill="#F2DEE6" stroke="#DEB0C0" stroke-width="1"/>
+<text x="370.5" y="2275.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#6E2B3E">Micronaut Cache</text>
+<rect x="0" y="2330" width="560" height="106" rx="16" fill="#FBF2F5" stroke="#A2566B" stroke-opacity="0.25" stroke-width="1.5" filter="url(#sh)"/>
+<rect x="0" y="2330" width="7" height="106" rx="3.5" fill="#A2566B"/>
+<text x="26" y="2368" font-size="19" font-weight="700" fill="#0F172A">Programming APIs</text>
+<rect x="20" y="2382" width="184" height="34" rx="9" fill="#F2DEE6" stroke="#DEB0C0" stroke-width="1"/>
+<text x="112.0" y="2403.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#6E2B3E">Reactive Streams API</text>
+<rect x="214" y="2382" width="114" height="34" rx="9" fill="#F2DEE6" stroke="#DEB0C0" stroke-width="1"/>
+<text x="271.0" y="2403.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#6E2B3E">RxJava3 API</text>
+<rect x="338" y="2382" width="153" height="34" rx="9" fill="#F2DEE6" stroke="#DEB0C0" stroke-width="1"/>
+<text x="414.5" y="2403.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#6E2B3E">Asynchronous API</text>
+<rect x="0" y="2458" width="560" height="106" rx="16" fill="#FBF2F5" stroke="#A2566B" stroke-opacity="0.25" stroke-width="1.5" filter="url(#sh)"/>
+<rect x="0" y="2458" width="7" height="106" rx="3.5" fill="#A2566B"/>
+<text x="26" y="2496" font-size="19" font-weight="700" fill="#0F172A">Transactions &amp; Batching</text>
+<rect x="20" y="2510" width="153" height="34" rx="9" fill="#F2DEE6" stroke="#DEB0C0" stroke-width="1"/>
+<text x="96.5" y="2531.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#6E2B3E">Transactions API</text>
+<rect x="183" y="2510" width="294" height="34" rx="9" fill="#F2DEE6" stroke="#DEB0C0" stroke-width="1"/>
+<text x="330.0" y="2531.5" font-size="13.5" font-weight="500" text-anchor="middle" fill="#6E2B3E">Redis pipelining (command batches)</text>
+</svg>
