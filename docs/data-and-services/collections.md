@@ -2024,7 +2024,7 @@ Integer awaited = set.pollFirst(Duration.ofSeconds(10));
 
 ## ScoredSortedSet
 
-Redisson's [RScoredSortedSet](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RScoredSortedSet.html) is a distributed sorted set (a Valkey or Redis sorted set): every element is stored with an associated `double` score, and the set is kept ordered by that score. Elements are unique by their serialized state, the set holds up to 4,294,967,295 of them, and it is available through synchronous, [asynchronous](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RScoredSortedSetAsync.html), [reactive](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RScoredSortedSetReactive.html), and [RxJava3](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RScoredSortedSetRx.html) interfaces.
+Redisson's [RScoredSortedSet](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RScoredSortedSet.html) is a distributed sorted set (a Valkey or Redis sorted set): every element is stored with an associated `double` score, and the set is kept ordered by that score. Elements are unique by their serialized state, the set holds up to 4,294,967,295 of them. This object is thread-safe.
 
 Elements can be queried two ways - by **rank** (their 0-based position in score order) or by **score range**. Read methods come in a `value*` form that returns the elements and an `entry*` form that returns [ScoredEntry](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/ScoredEntry.html) objects pairing each value with its score.
 
@@ -2392,7 +2392,7 @@ set.removeListener(listenerId);
 
 ## List
 
-Redisson's `RList` object implements the [List](https://docs.oracle.com/javase/8/docs/api/java/util/List.html) interface, providing a distributed and concurrent list backed by Valkey or Redis. This allows multiple applications or servers to share and manipulate list data seamlessly.
+Redisson's `RList` object implements the [List](https://docs.oracle.com/javase/8/docs/api/java/util/List.html) interface, providing a distributed and concurrent list backed by Valkey or Redis. This allows multiple applications or servers to share and manipulate list data seamlessly. This object is thread-safe.
 
 ### Basic Operations
 
@@ -3133,9 +3133,9 @@ Code example of adding Listeners:
 
 ## Array
 
-Redisson's [RArray](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RArray.html) is a distributed array that stores values by sparse, non-negative integer index, backed by a Redis array. It is thread-safe, cluster-compatible, and available through synchronous, [asynchronous](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RArrayAsync.html), [reactive](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RArrayReactive.html), and [RxJava3](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RArrayRx.html) interfaces.
+Redisson's [RArray](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RArray.html) is a distributed array that stores values by sparse, non-negative integer index, backed by a Redis array. This object is thread-safe.
 
-Indexes are sparse: only the indexes that are written occupy space, so an array can hold values at widely separated positions without allocating the gaps between them. Reads and scans return [ArrayEntry](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/array/ArrayEntry.html) objects that pair an index with its value. `RArray` also implements [RExpirable](common-methods.md#expiration), so an expiration can be set on the array as a whole.
+Indexes are sparse: only the indexes that are written occupy space, so an array can hold values at widely separated positions without allocating the gaps between them.
 
 Requires **Redis 8.8+**.
 
@@ -4105,7 +4105,7 @@ Redisson allows binding listeners per `RTimeSeries` object. This requires the `n
 
 ## Vector Set 
 
-Java implementation of Redis based [Vector Set](https://www.javadoc.io/doc/org.redisson/redisson/latest/org/redisson/api/RVectorSet.html) object is a specialized data type designed for managing high-dimensional vector data and enabling fast vector similarity search. [Vector sets](https://redis.io/docs/latest/develop/ai/search-and-query/vectors/) are similar to sorted sets but instead of a score, each element has a string representation of a vector, making them ideal for AI applications, machine learning models, and semantic search use cases.
+Java implementation of Redis based [Vector Set](https://www.javadoc.io/doc/org.redisson/redisson/latest/org/redisson/api/RVectorSet.html) object is a specialized data type designed for managing high-dimensional vector data and enabling fast vector similarity search. [Vector sets](https://redis.io/docs/latest/develop/ai/search-and-query/vectors/) are similar to sorted sets but instead of a score, each element has a string representation of a vector, making them ideal for AI applications, machine learning models, and semantic search use cases. This object is thread-safe.
 
 Requires **Redis 8.0+**.
 
