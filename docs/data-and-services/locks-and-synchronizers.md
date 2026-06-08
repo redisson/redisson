@@ -42,7 +42,7 @@ Redisson closes this window by default, as the next subsection describes, so `RL
 
 ### Checking replica synchronization
 
-To close most of that window, Redisson can verify after each acquisition that the lock has propagated to the connected replicas. Two `Config` settings control this:
+Redisson can verify after each acquisition that the lock has propagated to the connected replicas. Two `Config` settings control this:
 
 * `checkLockSyncedSlaves` — whether to confirm, after acquisition, that the lock reached the connected replicas. Enabled by default.
 * `slavesSyncTimeout` — how long to wait for that synchronization, in milliseconds (default `1000`). The same timeout applies to `RLock`, `RSemaphore`, and `RPermitExpirableSemaphore`.
@@ -53,11 +53,11 @@ config.setCheckLockSyncedSlaves(true)   // default
       .setSlavesSyncTimeout(1000);       // milliseconds, default
 ```
 
-With checking enabled, Redisson waits after acquisition for the lock to reach the replicas. If the required replicas do not acknowledge within `slavesSyncTimeout`, Redisson releases the lock — it is unlocked again — and the acquisition fails, so a client never keeps a lock that was not safely replicated and could later be lost to a failover. This narrows the window but does not make a single-master deployment formally safe under every failure — which is where fencing tokens come in.
+With checking enabled, Redisson waits after acquisition for the lock to reach the replicas. If the required replicas do not acknowledge within `slavesSyncTimeout`, Redisson releases the lock and the acquisition fails, so a client never keeps a lock that was not safely replicated and could later be lost to a failover.
 
 ### Fencing tokens with RFencedLock
 
-A fencing token turns "I think I hold the lock" into something the protected resource can verify. [RFencedLock](#fenced-lock) returns a monotonically increasing token on each acquisition; the resource records the highest token it has seen and rejects any operation that carries a lower one. A client that paused — or whose lock was lost to a failover — and then resumes with a stale token is fenced out, even though it still believes it holds the lock.
+A fencing token turns "I think I hold the lock" into something the protected resource can verify. [RFencedLock](#fenced-lock) returns a monotonically increasing token on each acquisition; the resource records the highest token it has seen and rejects any operation that carries a lower one. A client that paused and then resumes with a stale token is fenced out, even though it still believes it holds the lock.
 
 ```java
 RFencedLock lock = redisson.getFencedLock("myLock");
