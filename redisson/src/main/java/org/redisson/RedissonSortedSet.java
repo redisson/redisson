@@ -461,37 +461,157 @@ public class RedissonSortedSet<V> extends RedissonExpirable implements RSortedSe
 
     @Override
     public boolean addAll(Collection<? extends V> c) {
-        boolean changed = false;
-        for (V v : c) {
-            if (add(v)) {
-                changed = true;
-            }
+        if (c.isEmpty()) {
+            return false;
         }
-        return changed;
+
+        lock.lock();
+        try {
+            checkComparator();
+
+            // Load existing elements
+            List<V> existing = new ArrayList<>(list);
+
+            // Sort new elements using the same comparator
+            List<V> toAdd = new ArrayList<>(c);
+            toAdd.sort(comparator);
+
+            // Merge two sorted lists, deduplicating
+            List<ByteBuf> merged = new ArrayList<>(existing.size() + toAdd.size());
+            int i = 0;
+            int j = 0;
+            boolean changed = false;
+            while (i < existing.size() && j < toAdd.size()) {
+                int cmp = comparator.compare(existing.get(i), toAdd.get(j));
+                if (cmp == 0) {
+                    merged.add(encode(existing.get(i)));
+                    i++;
+                    j++;
+                } else if (cmp < 0) {
+                    merged.add(encode(existing.get(i)));
+                    i++;
+                } else {
+                    merged.add(encode(toAdd.get(j)));
+                    changed = true;
+                    j++;
+                }
+            }
+            while (i < existing.size()) {
+                merged.add(encode(existing.get(i)));
+                i++;
+            }
+            while (j < toAdd.size()) {
+                merged.add(encode(toAdd.get(j)));
+                changed = true;
+                j++;
+            }
+
+            if (!changed) {
+                return false;
+            }
+
+            // Atomically replace the list
+            commandExecutor.get(commandExecutor.evalWriteNoRetryAsync(list.getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
+                    "redis.call('del', KEYS[1]); "
+                    + "if #ARGV > 0 then "
+                    + "redis.call('rpush', KEYS[1], unpack(ARGV)); "
+                    + "end; "
+                    + "return 1;",
+                    Collections.<Object>singletonList(list.getRawName()),
+                    merged.toArray()));
+            return true;
+        } finally {
+            lock.unlock();
+        }
     }
 
     @Override
     public boolean retainAll(Collection<?> c) {
-        boolean changed = false;
-        for (Iterator<?> iterator = iterator(); iterator.hasNext();) {
-            Object object = iterator.next();
-            if (!c.contains(object)) {
-                iterator.remove();
-                changed = true;
+        if (c.isEmpty()) {
+            // Retaining nothing → clear the set if it was non-empty
+            boolean wasNonEmpty = !list.isEmpty();
+            if (wasNonEmpty) {
+                delete();
             }
+            return wasNonEmpty;
         }
-        return changed;
+
+        lock.lock();
+        try {
+            // Load existing elements
+            List<V> existing = new ArrayList<>(list);
+
+            // Filter: keep only elements that are in the retention set
+            Set<Object> retainSet = new HashSet<>(c);
+            List<ByteBuf> retained = new ArrayList<>(existing.size());
+            boolean changed = false;
+            for (V v : existing) {
+                if (retainSet.contains(v)) {
+                    retained.add(encode(v));
+                } else {
+                    changed = true;
+                }
+            }
+
+            if (!changed) {
+                return false;
+            }
+
+            // Atomically replace the list
+            commandExecutor.get(commandExecutor.evalWriteNoRetryAsync(list.getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
+                    "redis.call('del', KEYS[1]); "
+                    + "if #ARGV > 0 then "
+                    + "redis.call('rpush', KEYS[1], unpack(ARGV)); "
+                    + "end; "
+                    + "return 1;",
+                    Collections.<Object>singletonList(list.getRawName()),
+                    retained.toArray()));
+            return true;
+        } finally {
+            lock.unlock();
+        }
     }
 
     @Override
     public boolean removeAll(Collection<?> c) {
-        boolean changed = false;
-        for (Object obj : c) {
-            if (remove(obj)) {
-                changed = true;
-            }
+        if (c.isEmpty()) {
+            return false;
         }
-        return changed;
+
+        lock.lock();
+        try {
+            // Load existing elements
+            List<V> existing = new ArrayList<>(list);
+
+            // Filter: remove elements in the removal set
+            Set<Object> removeSet = new HashSet<>(c);
+            List<ByteBuf> remaining = new ArrayList<>(existing.size());
+            boolean changed = false;
+            for (V v : existing) {
+                if (removeSet.contains(v)) {
+                    changed = true;
+                } else {
+                    remaining.add(encode(v));
+                }
+            }
+
+            if (!changed) {
+                return false;
+            }
+
+            // Atomically replace the list
+            commandExecutor.get(commandExecutor.evalWriteNoRetryAsync(list.getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
+                    "redis.call('del', KEYS[1]); "
+                    + "if #ARGV > 0 then "
+                    + "redis.call('rpush', KEYS[1], unpack(ARGV)); "
+                    + "end; "
+                    + "return 1;",
+                    Collections.<Object>singletonList(list.getRawName()),
+                    remaining.toArray()));
+            return true;
+        } finally {
+            lock.unlock();
+        }
     }
 
     @Override
