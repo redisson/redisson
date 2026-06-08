@@ -459,6 +459,18 @@ Default value: `true`
 
 Enables TCP noDelay for connections.
 
+## Common connection settings
+
+The settings below are shared by every connection mode. Each mode section lists only its mode-specific settings and refers here for the rest.
+
+{% include 'common-connection-settings.md' %}
+
+### Common replica settings
+
+The settings below additionally apply to the modes that manage replica nodes: [Cluster](#cluster-mode), [Replicated](#replicated-mode), [Sentinel](#sentinel-mode), [Master/Slave](#master-slave-mode), [Multi Cluster](#multi-cluster-mode), and [Multi Sentinel](#multi-sentinel-mode).
+
+{% include 'common-replica-settings.md' %}
+
 ## Cluster mode
 
 Compatible with:  
@@ -490,6 +502,7 @@ config.useClusterServers()
 RedissonClient redisson = Redisson.create(config);
 ```
 ### Cluster settings
+
 Cluster connection mode is activated by the following line:  
 
 `ClusterServersConfig clusterConfig = config.useClusterServers();`  
@@ -526,18 +539,7 @@ _This setting is available only in [Redisson PRO](https://redisson.pro/feature-c
 
 Default value: `231`
 
-Partitions amount used for data partitioning. Data partitioning supported by [Set](data-and-services/collections.md/#eviction-and-data-partitioning), [Map](data-and-services/collections.md/#eviction-local-cache-and-data-partitioning), [BitSet](data-and-services/objects.md/#data-partitioning), [Bloom filter](data-and-services/objects.md/#data-partitioning_1), [Spring Cache](cache-api-implementations.md/#eviction-local-cache-and-data-partitioning), [JCache](cache-api-implementations.md/#local-cache-and-data-partitioning), [Micronaut Cache](cache-api-implementations.md/#eviction-local-cache-and-data-partitioning_4), [Quarkus Cache](cache-api-implementations.md/#eviction-local-cache-and-data-partitioning_3) and [Hibernate Cache](cache-api-implementations.md/#eviction-local-cache-and-data-partitioning_1) structures.
-
-**readMode**
-
-Default value: `SLAVE`
-
-Set node type used for read operation.
-Available values:  
-
-* `SLAVE` - Read from slave nodes, uses `MASTER` if no `SLAVES` are available,  
-* `MASTER` - Read from master node,  
-* `MASTER_SLAVE` - Read from master and slave nodes
+Partitions amount used for data partitioning. Data partitioning supported by [Set](data-and-services/collections.md/#choosing-a-set-implementation), [Map](data-and-services/collections.md/#eviction-local-cache-and-data-partitioning), [BitSet](data-and-services/objects.md/#data-partitioning), [Bloom filter](data-and-services/objects.md/#data-partitioning_1), [Spring Cache](cache-api-implementations.md/#eviction-local-cache-and-data-partitioning), [JCache](cache-api-implementations.md/#local-cache-and-data-partitioning), [Micronaut Cache](cache-api-implementations.md/#eviction-local-cache-and-data-partitioning_4), [Quarkus Cache](cache-api-implementations.md/#eviction-local-cache-and-data-partitioning_3) and [Hibernate Cache](cache-api-implementations.md/#eviction-local-cache-and-data-partitioning_1) structures.
 
 **subscriptionMode**
 
@@ -549,164 +551,11 @@ Available values:
 * `SLAVE` - Subscribe to slave nodes,  
 * `MASTER` - Subscribe to master node,  
 
-**fallbackLoadingToMaster**
-
-Default value: `true`
-
-Defines whether a read command should be redirected to the master node if a slave node returns a `LOADING` error. A slave returns this error while it is loading the dataset into memory (for example, just after startup or after a failover). When set to `true`, the command is automatically retried on the master node; when set to `false`, the `LOADING` error is propagated to the caller.
-
-**loadBalancer**
-
-Default value: `org.redisson.connection.balancer.RoundRobinLoadBalancer`
-
-Сonnection load balancer for multiple Valkey or Redis servers.
-Available implementations:  
-
-* `org.redisson.connection.balancer.CommandsLoadBalancer`  
-* `org.redisson.connection.balancer.WeightedRoundRobinBalancer`  
-* `org.redisson.connection.balancer.RoundRobinLoadBalancer`  
-* `org.redisson.connection.balancer.RandomLoadBalancer`  
-
-**subscriptionConnectionMinimumIdleSize**
-
-Default value: `1`
-
-Minimum idle connection pool size for subscription (pub/sub) channels. Used by `RTopic`, `RPatternTopic`, `RLock`, `RSemaphore`, `RCountDownLatch`, `RClusteredLocalCachedMap`, `RClusteredLocalCachedMapCache`, `RLocalCachedMap`, `RLocalCachedMapCache` objects and Hibernate Local Cached Region Factories.
-
-**subscriptionConnectionPoolSize**
-
-Default value: `50`
-
-Maximum connection pool size for subscription (pub/sub) channels. Used by `RTopic`, `RPatternTopic`, `RLock`, `RSemaphore`, `RCountDownLatch`, `RClusteredLocalCachedMap`, `RClusteredLocalCachedMapCache`, `RLocalCachedMap`, `RLocalCachedMapCache` objects and Hibernate Local Cached Region Factories.
-
 **shardedSubscriptionMode**
 
 Default value: `AUTO`
 
 Defines whether to use the sharded subscription feature available in Valkey or Redis 7.0 and higher. Used by `RMapCache`, `RLocalCachedMap`, `RCountDownLatch`, `RLock`, `RPermitExpirableSemaphore`, `RSemaphore`, `RLongAdder`, `RDoubleAdder`, `Micronaut Session`, `Apache Tomcat Manager` objects.
-
-**slaveConnectionMinimumIdleSize**
-
-Default value: `24`
-
-Valkey or Redis `slave` node minimum idle connection amount for each slave node.
-
-**slaveConnectionPoolSize**
-
-Default value: `64`
-
-Valkey or Redis `slave` node maximum connection pool size for each slave node.
-
-**masterConnectionMinimumIdleSize**
-
-Default value: `24`
-
-Minimum idle connections amount per Valkey or Redis master node.
-
-**masterConnectionPoolSize**
-
-Default value: `64`
-
-Valkey or Redis `master` node maximum connection pool size.
-
-**idleConnectionTimeout**
-
-Default value: `10000`
-
-If a pooled connection is not used for a timeout time and the current connections amount is bigger than the minimum idle connections pool size, then it will be closed and removed from the pool. Value in milliseconds. 
-
-**connectTimeout**
-
-Default value: `10000`
-
-Timeout in milliseconds during connecting to any Valkey or Redis server. 
-
-**timeout**
-
-Default value: `3000`
-
-Valkey or Redis server response timeout in milliseconds. Starts countdown after a Valkey or Redis command is successfully sent. 
-
-**retryAttempts**
-
-Default value: `4`
-
-Error will be thrown if Valkey or Redis command can’t be sent to server
-after *retryAttempts*. But if it was sent successfully then *timeout* will be started.
-
-**retryDelay**
-
-Default value: `EqualJitterDelay(Duration.ofSeconds(1), Duration.ofSeconds(2))`
-
-Defines the delay strategy for a new attempt to send a command.
-
-Available implementations:  
-
-* `org.redisson.config.DecorrelatedJitterDelay` - Decorrelated jitter strategy that increases delay exponentially while introducing randomness influenced by the previous backoff duration.
-* `org.redisson.config.EqualJitterDelay` - Equal jitter strategy that introduces moderate randomness while maintaining some stability of delay value.
-* `org.redisson.config.FullJitterDelay` - Full jitter strategy that applies complete randomization to the exponential backoff delay.
-* `org.redisson.config.ConstantDelay` - A constant delay strategy that returns the same delay duration for every retry attempt.
-
-**reconnectionDelay**
-
-Default value: `EqualJitterDelay(Duration.ofMillis(100), Duration.ofSeconds(10))`
-
-Defines the delay strategy for a new attempt to reconnect a connection.
-
-Available implementations:  
-
-* `org.redisson.config.DecorrelatedJitterDelay` - Decorrelated jitter strategy that increases delay exponentially while introducing randomness influenced by the previous backoff duration.
-* `org.redisson.config.EqualJitterDelay` - Equal jitter strategy that introduces moderate randomness while maintaining some stability of delay value.
-* `org.redisson.config.FullJitterDelay` - Full jitter strategy that applies complete randomization to the exponential backoff delay.
-* `org.redisson.config.ConstantDelay` - A constant delay strategy that returns the same delay duration for every retry attempt.
-
-
-**failedSlaveReconnectionInterval**
-
-Default value: `3000`
-
-Interval of Valkey or Redis Slave reconnection attempts, when it was excluded from an internal list of available servers. On each timeout event, Redisson tries to connect to the disconnected Valkey or Redis server. Value in milliseconds.
-
-**failedSlaveNodeDetector**
-
-Default value: `org.redisson.client.FailedConnectionDetector`
-
-Defines the failed Valkey or Redis Slave node detector object which implements failed node detection logic via the `org.redisson.client.FailedNodeDetector` interface.
-
-Available implementations:  
-
-* `org.redisson.client.FailedConnectionDetector` - marks the Valkey or Redis node as failed if it has ongoing connection errors in the defined `checkInterval` interval (in milliseconds). Default is 180000 milliseconds.  
-* `org.redisson.client.FailedCommandsDetector` - marks the Valkey or Redis node as failed if it has certain amount of command execution errors defined by `failedCommandsLimit` in the defined `checkInterval` interval (in milliseconds).  
-* `org.redisson.client.FailedCommandsTimeoutDetector` - marks the Valkey or Redis node as failed if it has a certain amount of command execution timeout errors defined by `failedCommandsLimit` in the defined `checkInterval` interval in milliseconds.  
-
-**subscriptionsPerConnection**
-
-Default value: `5`
-
-Subscriptions per subscriber connection limit. Used by `RTopic`,
-`RPatternTopic`, `RLock`, `RSemaphore`, `RCountDownLatch`,
-`RClusteredLocalCachedMap`, `RClusteredLocalCachedMapCache`,
-`RLocalCachedMap`, `RLocalCachedMapCache` objectsi, and Hibernate Local
-Cached Region Factories. 
-
-**clientName**
-
-Default value: `null`
-
-Name of client connection.
-
-**pingConnectionInterval**
-
-Default value: `30000`
-
-This setting allows for detecting and reconnecting broken connections, using the PING command. PING command send interval is defined in milliseconds. Useful in cases when the netty lib doesn’t invoke `channelInactive` method for closed connections. Set to `0` to disable.
-
-**subscriptionTimeout**
-
-Default value: 7500
-
-Defines subscription timeout in milliseconds applied per channel
-subscription.
 
 **natMapper**
 
@@ -718,6 +567,8 @@ Available implementations:
 
 * `org.redisson.api.HostPortNatMapper`
 * `org.redisson.api.HostNatMapper`
+
+The remaining connection settings are shared across modes and are documented under [Common connection settings](#common-connection-settings) and [Common replica settings](#common-replica-settings).
 
 ### Cluster YAML config format
 Below is a cluster configuration example in YAML format. All property
@@ -786,6 +637,7 @@ config.useReplicatedServers()
 RedissonClient redisson = Redisson.create(config);
 ```
 ### Replicated settings
+
 Replicated connection mode is activated by follow line:  
 
 `ReplicatedServersConfig replicatedConfig = config.useReplicatedServers();`  
@@ -802,82 +654,12 @@ Default value: `1000`
 
 Replicated nodes scan interval in milliseconds.
 
-**loadBalancer**
-
-Default value: `org.redisson.connection.balancer.RoundRobinLoadBalancer`
-
-Сonnection load balancer for multiple Valkey or Redis servers.
-
-Available implementations:  
-
-* `org.redisson.connection.balancer.CommandsLoadBalancer`  
-* `org.redisson.connection.balancer.WeightedRoundRobinBalancer`  
-* `org.redisson.connection.balancer.RoundRobinLoadBalancer`  
-* `org.redisson.connection.balancer.RandomLoadBalancer`  
-
 **monitorIPChanges**
 
 Default value: `false`
 
 Check each Valkey or Redis hostname defined in the configuration for IP address
 changes during the scan process.
-
-**subscriptionConnectionMinimumIdleSize**
-
-Default value: `1`
-
-Minimum idle connection pool size for subscription (pub/sub) channels. Used by `RTopic`, `RPatternTopic`, `RLock`, `RSemaphore`, `RCountDownLatch`, `RClusteredLocalCachedMap`, `RClusteredLocalCachedMapCache`, `RLocalCachedMap`, `RLocalCachedMapCache` objects and Hibernate Local Cached Region Factories.
-
-**subscriptionConnectionPoolSize**
-
-Default value: `50`
-
-Maximum connection pool size for subscription (pub/sub) channels. Used
-by `RTopic`, `RPatternTopic`, `RLock`, `RSemaphore`, `RCountDownLatch`,
-`RClusteredLocalCachedMap`, `RClusteredLocalCachedMapCache`,
-`RLocalCachedMap`, `RLocalCachedMapCache` objects, and Hibernate Local
-Cached Region Factories.
-
-**slaveConnectionMinimumIdleSize**
-
-Default value: `24`
-
-Valkey or Redis `slave` node minimum idle connection amount for each slave node.
-
-**slaveConnectionPoolSize**
-
-Default value: `64`
-
-Valkey or Redis `slave` node maximum connection pool size for each slave node.
-
-**masterConnectionMinimumIdleSize**
-
-Default value: `24`
-
-The minimum idle connection amount is per Valkey or Redis master node.
-
-**masterConnectionPoolSize**
-
-Default value: `64`
-
-Valkey or Redis `master` node maximum connection pool size.
-
-**idleConnectionTimeout**
-
-Default value: `10000`
-
-If a pooled connection is not used for a timeout time and current connections amount bigger than minimum idle connections pool size, then it will be closed and removed from the pool. Value in milliseconds. 
-
-**readMode**
-
-Default value: `SLAVE`
-
-Set node type used for read operation.
-Available values:  
-
-* `SLAVE` - Read from slave nodes, uses MASTER if no SLAVES are available,  
-* `MASTER` - Read from the master node,  
-* `MASTER_SLAVE` - Read from master and slave nodes
 
 **subscriptionMode**
 
@@ -889,114 +671,13 @@ Available values:
 * `SLAVE` - Subscribe to slave nodes,  
 * `MASTER` - Subscribe to master node,  
 
-**fallbackLoadingToMaster**
-
-Default value: `true`
-
-Defines whether a read command should be redirected to the master node if a slave node returns a `LOADING` error. A slave returns this error while it is loading the dataset into memory (for example, just after startup or after a failover). When set to `true`, the command is automatically retried on the master node; when set to `false`, the `LOADING` error is propagated to the caller.
-
-**connectTimeout**
-
-Default value: `10000`
-
-Timeout during connecting to any Valkey or Redis server.
-
-**timeout**
-
-Default value: `3000`
-
-Valkey or Redis server response timeout. It starts to count down after a Valkey or Redis command is successfully sent. Value in milliseconds. 
-
-**retryAttempts**
-
-Default value: `4`
-
-An error will be thrown if a Valkey or Redis command can’t be sent to Valkey or Redis server
-after *retryAttempts*. But if it is sent successfully, then *timeout* will be
-started.
-
-**retryDelay**
-
-Default value: `EqualJitterDelay(Duration.ofSeconds(1), Duration.ofSeconds(2))`
-
-Defines the delay strategy for a new attempt to send a command.
-
-Available implementations:  
-
-* `org.redisson.config.DecorrelatedJitterDelay` - Decorrelated jitter strategy that increases delay exponentially while introducing randomness influenced by the previous backoff duration.
-* `org.redisson.config.EqualJitterDelay` - Equal jitter strategy that introduces moderate randomness while maintaining some stability of delay value.
-* `org.redisson.config.FullJitterDelay` - Full jitter strategy that applies complete randomization to the exponential backoff delay.
-* `org.redisson.config.ConstantDelay` - A constant delay strategy that returns the same delay duration for every retry attempt.
-
-**reconnectionDelay**
-
-Default value: `EqualJitterDelay(Duration.ofMillis(100), Duration.ofSeconds(10))`
-
-Defines the delay strategy for a new attempt to reconnect a connection.
-
-Available implementations:  
-
-* `org.redisson.config.DecorrelatedJitterDelay` - Decorrelated jitter strategy that increases delay exponentially while introducing randomness influenced by the previous backoff duration.
-* `org.redisson.config.EqualJitterDelay` - Equal jitter strategy that introduces moderate randomness while maintaining some stability of delay value.
-* `org.redisson.config.FullJitterDelay` - Full jitter strategy that applies complete randomization to the exponential backoff delay.
-* `org.redisson.config.ConstantDelay` - A constant delay strategy that returns the same delay duration for every retry attempt.
-
-**failedSlaveReconnectionInterval**
-
-Default value: `3000`
-
-The interval of Valkey or Redis Slave reconnection attempts when excluded from
-the internal list of available servers. On each timeout event, Redisson tries to connect to a disconnected Valkey or Redis server. Value in milliseconds.
-
-**failedSlaveNodeDetector**
-
-Default value: `org.redisson.client.FailedConnectionDetector`
-
-Defines failed Valkey or Redis Slave node detector object, which implements failed
-node detection logic via `org.redisson.client.FailedNodeDetector`
-interface.
-
-Available implementations:  
-
-* `org.redisson.client.FailedConnectionDetector` - marks the Valkey or Redis node as failed if it has ongoing connection errors in the defined `checkInterval` interval in milliseconds. The default is 180000 milliseconds. 
-* `org.redisson.client.FailedCommandsDetector` - marks the Valkey or Redis node as failed if it has a certain amount of command execution errors defined by the `failedCommandsLimit` in the defined `checkInterval` interval in milliseconds.
-* `org.redisson.client.FailedCommandsTimeoutDetector` - marks the Valkey or Redis node as failed if it has a certain amount of command execution timeout errors defined by the `failedCommandsLimit` in the defined `checkInterval` interval in milliseconds.
-
 **database**
 
 Default value: `0`
 
 Database index used for Valkey or Redis connection.
 
-**subscriptionsPerConnection**
-
-Default value: `5`
-
-Subscriptions per subscribe connection limit. Used by `RTopic`, `RPatternTopic`, `RLock`, `RSemaphore`, `RCountDownLatch`, `RClusteredLocalCachedMap`, `RClusteredLocalCachedMapCache`, `RLocalCachedMap`, `RLocalCachedMapCache` objects and Hibernate Local Cached Region Factories.
-
-**clientName**
-
-Default value: `null`
-
-Name of client connection.
-
-**pingConnectionInterval**
-
-Default value: `30000`
-
-PING command sending interval, per connection to Redis. Defined in milliseconds. Set to `0` to disable.
-
-**keepAlive**
-
-Default value: `false`
-
-Enables TCP keepAlive for connections.
-
-**tcpNoDelay**
-
-Default value: `true`
-
-Enables TCP noDelay for connections.
+The remaining connection settings are shared across modes and are documented under [Common connection settings](#common-connection-settings) and [Common replica settings](#common-replica-settings).
 
 ### Replicated YAML config format
 Below is a replicated configuration example in YAML format. All property
@@ -1069,6 +750,7 @@ RedissonClient redisson = Redisson.create(config);
 ```
 ### Single settings
 
+
 Documentation covering Valkey or Redis single server configuration is [here](https://redis.io/topics/config). 
 Multiple IP bindings for a single hostname are supported in [Proxy mode](#proxy-mode)  
 
@@ -1080,18 +762,6 @@ Single server connection mode is activated by the following line:
 **address**
 
 Valkey or Redis server address in `host:port` format. Use `rediss://` protocol for SSL connection.
-
-**subscriptionConnectionMinimumIdleSize**
-
-Default value: `1`
-
-Minimum idle connection pool size for subscription (pub/sub) channels. Used by `RTopic`, `RPatternTopic`, `RLock`, `RSemaphore`, `RCountDownLatch`, `RClusteredLocalCachedMap`, `RClusteredLocalCachedMapCache`, `RLocalCachedMap`, `RLocalCachedMapCache` objects and Hibernate Local Cached Region Factories.
-
-**subscriptionConnectionPoolSize**
-
-Default value: `50`
-
-Maximum connection pool size for subscription (pub/sub) channels. Used by `RTopic`, `RPatternTopic`, `RLock`, `RSemaphore`, `RCountDownLatch`, `RClusteredLocalCachedMap`, `RClusteredLocalCachedMapCache`, `RLocalCachedMap`, `RLocalCachedMapCache` objects and Hibernate Local Cached Region Factories.
 
 **connectionMinimumIdleSize**
 
@@ -1117,101 +787,13 @@ Default value: `1`
 
 Maximum number of address resolutions per DNS change monitoring. 
 
-**idleConnectionTimeout**
-
-Default value: `10000`
-
-If a pooled connection is not used for a timeout time and current connections amount bigger than minimum idle connection pool size, then it will be closed and removed from the pool. Value in milliseconds. 
-
-**connectTimeout**
-
-Default value: `10000`
-
-Timeout during connecting to any Valkey or Redis server
-
-**timeout**
-
-Default value: `3000`
-
-Valkey or Redis server response timeout. It starts to count down once a Valkey or Redis command is successfully sent. Value in milliseconds. 
-
-**retryAttempts**
-
-Default value: `4`
-
-Error will be thrown if Valkey or Redis command can’t be sent to Valkey or Redis server
-after the defined *retryAttempts*. But if it is sent successfully, then *timeout* will be started.
-
-**retryDelay**
-
-Default value: `EqualJitterDelay(Duration.ofSeconds(1), Duration.ofSeconds(2))`
-
-Defines the delay strategy for a new attempt to send a command.
-
-Available implementations:  
-
-* `org.redisson.config.DecorrelatedJitterDelay` - Decorrelated jitter strategy that increases delay exponentially while introducing randomness influenced by the previous backoff duration.
-* `org.redisson.config.EqualJitterDelay` - Equal jitter strategy that introduces moderate randomness while maintaining some stability of delay value.
-* `org.redisson.config.FullJitterDelay` - Full jitter strategy that applies complete randomization to the exponential backoff delay.
-* `org.redisson.config.ConstantDelay` - A constant delay strategy that returns the same delay duration for every retry attempt.
-
-**reconnectionDelay**
-
-Default value: `EqualJitterDelay(Duration.ofMillis(100), Duration.ofSeconds(10))`
-
-Defines the delay strategy for a new attempt to reconnect a connection.
-
-Available implementations:  
-
-* `org.redisson.config.DecorrelatedJitterDelay` - Decorrelated jitter strategy that increases delay exponentially while introducing randomness influenced by the previous backoff duration.
-* `org.redisson.config.EqualJitterDelay` - Equal jitter strategy that introduces moderate randomness while maintaining some stability of delay value.
-* `org.redisson.config.FullJitterDelay` - Full jitter strategy that applies complete randomization to the exponential backoff delay.
-* `org.redisson.config.ConstantDelay` - A constant delay strategy that returns the same delay duration for every retry attempt.
-
 **database**
 
 Default value: `0`
 
 Database index used for Valkey or Redis connection.
 
-**subscriptionsPerConnection**
-
-Default value: `5`
-
-Subscriptions per subscriber connection limit. Used by `RTopic`,
-`RPatternTopic`, `RLock`, `RSemaphore`, `RCountDownLatch`, `RClusteredLocalCachedMap`, `RClusteredLocalCachedMapCache`, `RLocalCachedMap`, `RLocalCachedMapCache` objects and Hibernate Local Cached Region Factories.
-
-**subscriptionTimeout**
-
-Default value: 7500
-
-Defines subscription timeout in milliseconds, applied per channel
-subscription.
-
-**clientName**
-
-Default value: `null`
-
-Name of client connection
-
-**pingConnectionInterval**
-
-Default value: `30000`
-
-PING command sending interval, per connection to Redis. Defined in
-milliseconds. Set `0` to disable.
-
-**keepAlive**
-
-Default value: `false`
-
-Enables TCP keepAlive for connections.
-
-**tcpNoDelay**
-
-Default value: `true`
-
-Enables TCP noDelay for connections.
+The remaining connection settings are shared across modes and are documented under [Common connection settings](#common-connection-settings).
 
 ### Single YAML config format
 
@@ -1269,6 +851,7 @@ RedissonClient redisson = Redisson.create(config);
 ```
 ### Sentinel settings
 
+
 Documentation covers Redis server sentinel configuration is [here](https://redis.io/topics/sentinel).  
 
 Sentinel connection mode is activated by follow line:  
@@ -1303,17 +886,6 @@ Master server name used by Valkey or Redis Sentinel servers and master change mo
 
 Add Valkey or Redis Sentinel node address in `host:port` format. Multiple nodes at once could be added.
 
-**readMode**
-
-Default value: `SLAVE`
-
-Set node type used for read operation.
-Available values:  
-
-* `SLAVE` - Read from slave nodes, uses MASTER if no SLAVES are available,  
-* `MASTER` - Read from master node,  
-* `MASTER_SLAVE` - Read from master and slave nodes
-
 **subscriptionMode**
 
 Default value: `SLAVE`
@@ -1323,131 +895,6 @@ Available values:
 
 * `SLAVE` - Subscribe to slave nodes,  
 * `MASTER` - Subscribe to master node,  
-
-**fallbackLoadingToMaster**
-
-Default value: `true`
-
-Defines whether a read command should be redirected to the master node if a slave node returns a `LOADING` error. A slave returns this error while it is loading the dataset into memory (for example, just after startup or after a failover). When set to `true`, the command is automatically retried on the master node; when set to `false`, the `LOADING` error is propagated to the caller.
-
-**loadBalancer**
-
-Default value: `org.redisson.connection.balancer.RoundRobinLoadBalancer`
-
-Сonnection load balancer for multiple Valkey or Redis servers.
-Available implementations:  
-
-* `org.redisson.connection.balancer.CommandsLoadBalancer`  
-* `org.redisson.connection.balancer.WeightedRoundRobinBalancer`  
-* `org.redisson.connection.balancer.RoundRobinLoadBalancer`  
-* `org.redisson.connection.balancer.RandomLoadBalancer`  
-
-**subscriptionConnectionMinimumIdleSize**
-
-Default value: `1`
-
-Minimum idle connection pool size for subscription (pub/sub) channels. Used by `RTopic`, `RPatternTopic`, `RLock`, `RSemaphore`, `RCountDownLatch`, `RClusteredLocalCachedMap`, `RClusteredLocalCachedMapCache`, `RLocalCachedMap`, `RLocalCachedMapCache` objects and Hibernate Local Cached Region Factories.
-
-**subscriptionConnectionPoolSize**
-
-Default value: `50`
-
-Maximum connection pool size for subscription (pub/sub) channels. Used by `RTopic`, `RPatternTopic`, `RLock`, `RSemaphore`, `RCountDownLatch`, `RClusteredLocalCachedMap`, `RClusteredLocalCachedMapCache`, `RLocalCachedMap`, `RLocalCachedMapCache` objects and Hibernate Local Cached Region Factories.
-
-**slaveConnectionMinimumIdleSize**
-
-Default value: `24`
-
-Valkey or Redis `slave` node minimum idle connection amount for each slave node.
-
-**slaveConnectionPoolSize**
-
-Default value: `64`
-
-Valkey or Redis `slave` node maximum connection pool size for each slave node
-
-
-**masterConnectionMinimumIdleSize**
-
-Default value: `24`
-
-Minimum idle connections amount per Valkey or Redis master node.
-
-**masterConnectionPoolSize**
-
-Default value: `64`
-
-Valkey or Redis `master` node maximum connection pool size.
-
-**idleConnectionTimeout**
-
-Default value: `10000`
-
-If a pooled connection is not used for a timeout time and current connections amount bigger than minimum idle connections pool size, then it will be closed and removed from the pool. Value in milliseconds. 
-
-**connectTimeout**
-
-Default value: `10000`
-
-Timeout during connecting to any Valkey or Redis server. 
-
-**timeout**
-
-Default value: `3000`
-
-Valkey or Redis server response timeout. Starts to count down when a command was successfully sent. Value in milliseconds. 
-
-**retryAttempts**
-
-Default value: `4`
-
-Error will be thrown if Valkey or Redis command can’t be sent to Redis server after *retryAttempts*. But if it was sent successfully then *timeout* will be started.
-
-**retryDelay**
-
-Default value: `EqualJitterDelay(Duration.ofSeconds(1), Duration.ofSeconds(2))`
-
-Defines the delay strategy for a new attempt to send a command.
-
-Available implementations:  
-
-* `org.redisson.config.DecorrelatedJitterDelay` - Decorrelated jitter strategy that increases delay exponentially while introducing randomness influenced by the previous backoff duration.
-* `org.redisson.config.EqualJitterDelay` - Equal jitter strategy that introduces moderate randomness while maintaining some stability of delay value.
-* `org.redisson.config.FullJitterDelay` - Full jitter strategy that applies complete randomization to the exponential backoff delay.
-* `org.redisson.config.ConstantDelay` - A constant delay strategy that returns the same delay duration for every retry attempt.
-
-**reconnectionDelay**
-
-Default value: `EqualJitterDelay(Duration.ofMillis(100), Duration.ofSeconds(10))`
-
-Defines the delay strategy for a new attempt to reconnect a connection.
-
-Available implementations:  
-
-* `org.redisson.config.DecorrelatedJitterDelay` - Decorrelated jitter strategy that increases delay exponentially while introducing randomness influenced by the previous backoff duration.
-* `org.redisson.config.EqualJitterDelay` - Equal jitter strategy that introduces moderate randomness while maintaining some stability of delay value.
-* `org.redisson.config.FullJitterDelay` - Full jitter strategy that applies complete randomization to the exponential backoff delay.
-* `org.redisson.config.ConstantDelay` - A constant delay strategy that returns the same delay duration for every retry attempt.
-
-**failedSlaveReconnectionInterval**
-
-
-Default value: `3000`
-
-The interval of Valkey or Redis Slave reconnection attempts when it was excluded from internal list of available servers. On each timeout event Redisson tries to connect to disconnected server. Value in milliseconds.
-
-**failedSlaveNodeDetector**
-
-Default value: `org.redisson.client.FailedConnectionDetector`
-
-Defines failed Valkey or Redis Slave node detector object which implements failed node detection logic via `org.redisson.client.FailedNodeDetector`
-interface.
-
-Available implementations:  
-
-* `org.redisson.client.FailedConnectionDetector` - marks the Valkey or Redis node as failed if it has ongoing connection errors in defined `checkInterval` interval in milliseconds. Default is 180000 milliseconds.  
-* `org.redisson.client.FailedCommandsDetector` - marks the Valkey or Redis node as failed if it has certain amount of command execution errors defined by `failedCommandsLimit` in defined `checkInterval` interval in milliseconds.  
-* `org.redisson.client.FailedCommandsTimeoutDetector` - marks the Valkey or Redis node as failed if it has certain amount of command execution timeout errors defined by `failedCommandsLimit` in defined `checkInterval` interval in milliseconds.  
 
 **database**
 
@@ -1478,44 +925,6 @@ Default value: `true`
 
 Enables sentinels discovery.
 
-**subscriptionsPerConnection**
-
-Default value: `5`
-
-Subscriptions per subscribe connection limit. Used by `RTopic`, `RPatternTopic`, `RLock`, `RSemaphore`, `RCountDownLatch`, `RClusteredLocalCachedMap`, `RClusteredLocalCachedMapCache`, `RLocalCachedMap`, `RLocalCachedMapCache` objects and Hibernate Local Cached Region Factories.
-
-**subscriptionTimeout**
-
-Default value: 7500
-
-Defines subscription timeout in milliseconds applied per channel
-subscription.
-
-**clientName**
-
-Default value: `null`
-
-Name of client connection.
-
-**pingConnectionInterval**
-
-Default value: `30000`
-
-PING command sending interval per connection to Redis. Defined in
-milliseconds. Set `0` to disable.
-
-**keepAlive**
-
-Default value: `false`
-
-Enables TCP keepAlive for connections.
-
-**tcpNoDelay**
-
-Default value: `true`
-
-Enables TCP noDelay for connections.
-
 **natMapper**
 
 Default value: no mapper
@@ -1526,6 +935,8 @@ Available implementations:
 
 * `org.redisson.api.HostPortNatMapper`  
 * `org.redisson.api.HostNatMapper`  
+
+The remaining connection settings are shared across modes and are documented under [Common connection settings](#common-connection-settings) and [Common replica settings](#common-replica-settings).
 
 ### Sentinel YAML config format
 
@@ -1586,13 +997,13 @@ RedissonClient redisson = Redisson.create(config);
 ```
 ### Master slave settings
 
+
 Documentation covering Valkey or Redis server master/slave configuration is [here](https://redis.io/topics/replication).  
 
 Master slave connection mode is activated by the following line:  
 `MasterSlaveServersConfig masterSlaveConfig = config.useMasterSlaveServers();`  
 
 `MasterSlaveServersConfig` settings listed below:
-
 
 **dnsMonitoringInterval**
 
@@ -1616,18 +1027,6 @@ Valkey or Redis master node address in `host:port` format. Use `rediss://` proto
 Add Valkey or Redis slave node address in `host:port` format. Multiple nodes at
 once could be added. Use `rediss://` protocol for SSL connection.
 
-**readMode**
-
-Default value: `SLAVE`
-
-Set node type used for read operation.
-Available values:  
-
-* `SLAVE` - Read from slave nodes, uses MASTER if no SLAVES are
-available, 
-* `MASTER` - Read from master node, 
-* `MASTER_SLAVE` - Read from master and slave nodes
-
 **subscriptionMode**
 
 Default value: `SLAVE`
@@ -1638,175 +1037,13 @@ Available values:
 * `SLAVE` - Subscribe to slave nodes, 
 * `MASTER` - Subscribe to master node
 
-**fallbackLoadingToMaster**
-
-Default value: `true`
-
-Defines whether a read command should be redirected to the master node if a slave node returns a `LOADING` error. A slave returns this error while it is loading the dataset into memory (for example, just after startup or after a failover). When set to `true`, the command is automatically retried on the master node; when set to `false`, the `LOADING` error is propagated to the caller.
-
-**loadBalancer**
-
-Default value: `org.redisson.connection.balancer.RoundRobinLoadBalancer`
-
-Сonnection load balancer for multiple Valkey or Redis servers.
-Available implementations:  
-
-* `org.redisson.connection.balancer.CommandsLoadBalancer`  
-* `org.redisson.connection.balancer.WeightedRoundRobinBalancer`  
-* `org.redisson.connection.balancer.RoundRobinLoadBalancer`  
-* `org.redisson.connection.balancer.RandomLoadBalancer`  
-
-**subscriptionConnectionMinimumIdleSize**
-
-Default value: `1`
-
-Minimum idle connection pool size for subscription (pub/sub) channels. Used by `RTopic`, `RPatternTopic`, `RLock`, `RSemaphore`, `RCountDownLatch`, `RClusteredLocalCachedMap`, `RClusteredLocalCachedMapCache`, `RLocalCachedMap`, `RLocalCachedMapCache` objects and Hibernate Local Cached Region Factories.
-
-**subscriptionConnectionPoolSize**
-
-Default value: `50`
-
-Maximum connection pool size for subscription (pub/sub) channels. Used by `RTopic`, `RPatternTopic`, `RLock`, `RSemaphore`, `RCountDownLatch`, `RClusteredLocalCachedMap`, `RClusteredLocalCachedMapCache`, `RLocalCachedMap`, `RLocalCachedMapCache` objects and Hibernate Local Cached Region Factories.
-
-**slaveConnectionMinimumIdleSize**
-
-Default value: `24`
-
-Valkey or Redis `slave` node minimum idle connection amount for each slave node.
-
-**slaveConnectionPoolSize**
-
-Default value: `64`
-
-Valkey or Redis `slave` node maximum connection pool size for each slave node.
-
-**masterConnectionMinimumIdleSize**
-
-Default value: `24`
-
-Minimum idle connections amount per Valkey or Redis master node.
-
-**masterConnectionPoolSize**
-
-Default value: `64`
-
-Valkey or Redis `master` node maximum connection pool size.
-
-**idleConnectionTimeout**
-
-Default value: `10000`
-
-If a pooled connection is not used for a timeout time and current connections amount bigger than minimum idle connections pool size, then it will be closed and removed from the pool. Value in milliseconds. 
-
-**connectTimeout**
-
-Default value: `10000`
-
-Timeout during connecting to any Valkey or Redis server. 
-
-**timeout**
-
-Default value: `3000`
-
-Valkey or Redis server response timeout. Starts to count down when a command was successfully sent. Value in milliseconds. 
-
-**retryAttempts**
-
-Default value: `4`
-
-Error will be thrown if Valkey or Redis command can’t be sent to server after *retryAttempts*. But if it was sent successfully then *timeout* will be started.
-
-**retryDelay**
-
-Default value: `EqualJitterDelay(Duration.ofSeconds(1), Duration.ofSeconds(2))`
-
-Defines the delay strategy for a new attempt to send a command.
-
-Available implementations:  
-
-* `org.redisson.config.DecorrelatedJitterDelay` - Decorrelated jitter strategy that increases delay exponentially while introducing randomness influenced by the previous backoff duration.
-* `org.redisson.config.EqualJitterDelay` - Equal jitter strategy that introduces moderate randomness while maintaining some stability of delay value.
-* `org.redisson.config.FullJitterDelay` - Full jitter strategy that applies complete randomization to the exponential backoff delay.
-* `org.redisson.config.ConstantDelay` - A constant delay strategy that returns the same delay duration for every retry attempt.
-
-**reconnectionDelay**
-
-Default value: `EqualJitterDelay(Duration.ofMillis(100), Duration.ofSeconds(10))`
-
-Defines the delay strategy for a new attempt to reconnect a connection.
-
-Available implementations:  
-
-* `org.redisson.config.DecorrelatedJitterDelay` - Decorrelated jitter strategy that increases delay exponentially while introducing randomness influenced by the previous backoff duration.
-* `org.redisson.config.EqualJitterDelay` - Equal jitter strategy that introduces moderate randomness while maintaining some stability of delay value.
-* `org.redisson.config.FullJitterDelay` - Full jitter strategy that applies complete randomization to the exponential backoff delay.
-* `org.redisson.config.ConstantDelay` - A constant delay strategy that returns the same delay duration for every retry attempt.
-
-**failedSlaveReconnectionInterval**
-
-Default value: `3000`
-
-Interval of Valkey or Redis Slave reconnection attempts when it was excluded from internal list of available servers. On each timeout event Redisson tries to connect to disconnected server. Value in milliseconds.
-
-**failedSlaveNodeDetector**
-
-Default value: `org.redisson.client.FailedConnectionDetector`
-
-Defines failed Valkey or Redis Slave node detector object which implements failed node detection logic via `org.redisson.client.FailedNodeDetector` interface.
-
-Available implementations:  
-
-* `org.redisson.client.FailedConnectionDetector` - marks the Valkey or Redis node as failed if it has ongoing connection errors in defined `checkInterval` interval in milliseconds. Default is 180000 milliseconds. 
-* `org.redisson.client.FailedCommandsDetector` - marks the Valkey or Redis node as failed if it has certain amount of command execution errors defined by `failedCommandsLimit` in defined `checkInterval` interval in milliseconds.
-* `org.redisson.client.FailedCommandsTimeoutDetector` - marks the Valkey or Redis node as failed if it has certain amount of command execution timeout errors defined by `failedCommandsLimit` in defined `checkInterval` interval in milliseconds.
-
 **database**
 
 Default value: `0`
 
 Database index used for Valkey or Redis connection.
 
-**subscriptionsPerConnection**
-
-Default value: `5`
-
-Subscriptions per subscriber connection limit. Used by `RTopic`,
-`RPatternTopic`, `RLock`, `RSemaphore`, `RCountDownLatch`,
-`RClusteredLocalCachedMap`, `RClusteredLocalCachedMapCache`,
-`RLocalCachedMap`, `RLocalCachedMapCache` objects and Hibernate Local
-Cached Region Factories.
-
-**subscriptionTimeout**
-
-Default value: 7500
-
-Defines subscription timeout in milliseconds applied per channel
-subscription.
-
-**clientName**
-
-Default value: `null`
-
-Name of client connection.
-
-**pingConnectionInterval**
-
-Default value: `30000`
-
-PING command sending interval per connection to Redis. Defined in
-milliseconds. Set `0` to disable.
-
-**keepAlive**
-
-Default value: `false`
-
-Enables TCP keepAlive for connections.
-
-**tcpNoDelay**
-
-Default value: `true`
-
-Enables TCP noDelay for connection.
+The remaining connection settings are shared across modes and are documented under [Common connection settings](#common-connection-settings) and [Common replica settings](#common-replica-settings).
 
 ### Master slave YAML config format
 
@@ -1881,6 +1118,7 @@ RedissonClient redisson = Redisson.create(config);
 
 ### Proxy mode settings
 
+
 Proxy servers connection mode is activated by the following line:  
 
 `ProxyServersConfig proxyConfig = config.useProxyServers();`  
@@ -1890,18 +1128,6 @@ Proxy servers connection mode is activated by the following line:
 **addresses**
 
 Valkey or Redis proxy servers addresses in `host:port` format. If single hostname is defined and DNS monitoring is enabled then all resolved ips are considered as proxy nodes and used by load balancer. Use `rediss://` protocol for SSL connection.
-
-**subscriptionConnectionMinimumIdleSize**
-
-Default value: `1`
-
-Minimum idle connection pool size for subscription (pub/sub) channels. Used by `RTopic`, `RPatternTopic`, `RLock`, `RSemaphore`, `RCountDownLatch`, `RClusteredLocalCachedMap`, `RClusteredLocalCachedMapCache`, `RLocalCachedMap`, `RLocalCachedMapCache` objects and Hibernate Local Cached Region Factories.
-
-**subscriptionConnectionPoolSize**
-
-Default value: `50`
-
-Maximum connection pool size for subscription (pub/sub) channels. Used by `RTopic`, `RPatternTopic`, `RLock`, `RSemaphore`, `RCountDownLatch`, `RClusteredLocalCachedMap`, `RClusteredLocalCachedMapCache`, `RLocalCachedMap`, `RLocalCachedMapCache` objects and Hibernate Local Cached Region Factories.
 
 **connectionMinimumIdleSize**
 
@@ -1953,56 +1179,6 @@ Default value: `5000`
 
 DNS change monitoring interval. Set `-1` to disable.
 
-**idleConnectionTimeout**
-
-Default value: `10000`
-
-If a pooled connection is not used for a timeout time and current connections amount bigger than minimum idle connections pool size, then it will be closed and removed from the pool. Value in milliseconds. 
-
-**connectTimeout**
-
-Default value: `10000`
-
-Timeout during connecting to any Valkey or Redis server.
-
-**timeout**
-
-Default value: `3000`
-
-Valkey or Redis server response timeout. Starts to count down when a command was successfully sent. Value in milliseconds. 
-
-**retryAttempts**
-
-Default value: `4`
-
-Error will be thrown if Valkey or Redis  ommand can’t be sent to a server after *retryAttempts*. But if it was sent successfully then *timeout* will be started.
-
-**retryDelay**
-
-Default value: `EqualJitterDelay(Duration.ofSeconds(1), Duration.ofSeconds(2))`
-
-Defines the delay strategy for a new attempt to send a command.
-
-Available implementations:  
-
-* `org.redisson.config.DecorrelatedJitterDelay` - Decorrelated jitter strategy that increases delay exponentially while introducing randomness influenced by the previous backoff duration.
-* `org.redisson.config.EqualJitterDelay` - Equal jitter strategy that introduces moderate randomness while maintaining some stability of delay value.
-* `org.redisson.config.FullJitterDelay` - Full jitter strategy that applies complete randomization to the exponential backoff delay.
-* `org.redisson.config.ConstantDelay` - A constant delay strategy that returns the same delay duration for every retry attempt.
-
-**reconnectionDelay**
-
-Default value: `EqualJitterDelay(Duration.ofMillis(100), Duration.ofSeconds(10))`
-
-Defines the delay strategy for a new attempt to reconnect a connection.
-
-Available implementations:  
-
-* `org.redisson.config.DecorrelatedJitterDelay` - Decorrelated jitter strategy that increases delay exponentially while introducing randomness influenced by the previous backoff duration.
-* `org.redisson.config.EqualJitterDelay` - Equal jitter strategy that introduces moderate randomness while maintaining some stability of delay value.
-* `org.redisson.config.FullJitterDelay` - Full jitter strategy that applies complete randomization to the exponential backoff delay.
-* `org.redisson.config.ConstantDelay` - A constant delay strategy that returns the same delay duration for every retry attempt.
-
 **database**
 
 Default value: `0`
@@ -2028,42 +1204,6 @@ Available implementations:
 milliseconds.
 * `org.redisson.client.FailedCommandsTimeoutDetector` - marks the Valkey or Redis node as failed if it has certain amount of command execution timeout errors defined by `failedCommandsLimit` in defined `checkInterval` interval in milliseconds.
 
-**subscriptionsPerConnection**
-
-Default value: `5`
-
-Subscriptions per subscribe connection limit. Used by `RTopic`, `RPatternTopic`, `RLock`, `RSemaphore`, `RCountDownLatch`, `RClusteredLocalCachedMap`, `RClusteredLocalCachedMapCache`, `RLocalCachedMap`, `RLocalCachedMapCache` objects and Hibernate Local Cached Region Factories.
-
-**subscriptionTimeout**
-
-Default value: 7500
-
-Defines subscription timeout in milliseconds applied per channel subscription.
-
-**clientName**
-
-Default value: `null`
-
-Name of client connection
-
-**pingConnectionInterval**
-
-Default value: `30000`
-
-PING command sending interval per connection to Redis. Defined in milliseconds. Set `0` to disable.
-
-**keepAlive**
-
-Default value: `false`
-
-Enables TCP keepAlive for connection. 
-
-**tcpNoDelay**
-
-Default value: `true`
-
-Enables TCP noDelay for connection.
-
 **loadBalancer**
 
 Default value: `org.redisson.connection.balancer.RoundRobinLoadBalancer`
@@ -2075,6 +1215,8 @@ Available implementations:
 * `org.redisson.connection.balancer.WeightedRoundRobinBalancer`  
 * `org.redisson.connection.balancer.RoundRobinLoadBalancer`  
 * `org.redisson.connection.balancer.RandomLoadBalancer`  
+
+The remaining connection settings are shared across modes and are documented under [Common connection settings](#common-connection-settings).
 
 ### Proxy mode YAML config format
 
@@ -2135,6 +1277,7 @@ RedissonClient redisson = Redisson.create(config);
 ```
 ### Multi Cluster settings
 
+
 Multi clusters connection mode is activated by follow line:  
 
 `ClusterServersConfig clusterConfig = config.useMultiClusterServers();`  
@@ -2160,19 +1303,7 @@ Scan interval in milliseconds. Applied to clusters topology scan and primary and
 
 Default value: `231`
 
-Partitions amount used for data partitioning. Data partitioning supported by [Set](data-and-services/collections.md/#eviction-and-data-partitioning), [Map](data-and-services/collections.md/#eviction-local-cache-and-data-partitioning), [BitSet](data-and-services/objects.md/#data-partitioning), [Bloom filter](data-and-services/objects.md/#data-partitioning_1), [Spring Cache](cache-api-implementations.md/#eviction-local-cache-and-data-partitioning), [JCache](cache-api-implementations.md/#local-cache-and-data-partitioning), [Micronaut Cache](cache-api-implementations.md/#eviction-local-cache-and-data-partitioning_4), [Quarkus Cache](cache-api-implementations.md/#eviction-local-cache-and-data-partitioning_3) and [Hibernate Cache](cache-api-implementations.md/#eviction-local-cache-and-data-partitioning_1) structures.
-
-
-**readMode**
-
-Default value: `SLAVE`
-
-Set node type used for read operation.
-Available values:  
-
-* `SLAVE` - Read from slave nodes, uses MASTER if no SLAVES are available,  
-* `MASTER` - Read from master node,  
-* `MASTER_SLAVE` - Read from master and slave nodes
+Partitions amount used for data partitioning. Data partitioning supported by [Set](data-and-services/collections.md/#choosing-a-set-implementation), [Map](data-and-services/collections.md/#eviction-local-cache-and-data-partitioning), [BitSet](data-and-services/objects.md/#data-partitioning), [Bloom filter](data-and-services/objects.md/#data-partitioning_1), [Spring Cache](cache-api-implementations.md/#eviction-local-cache-and-data-partitioning), [JCache](cache-api-implementations.md/#local-cache-and-data-partitioning), [Micronaut Cache](cache-api-implementations.md/#eviction-local-cache-and-data-partitioning_4), [Quarkus Cache](cache-api-implementations.md/#eviction-local-cache-and-data-partitioning_3) and [Hibernate Cache](cache-api-implementations.md/#eviction-local-cache-and-data-partitioning_1) structures.
 
 **datastoreMode**
 
@@ -2195,12 +1326,6 @@ Available values:
 * `SLAVE` - Subscribe to slave nodes,  
 * `MASTER` - Subscribe to master node,  
 
-**fallbackLoadingToMaster**
-
-Default value: `true`
-
-Defines whether a read command should be redirected to the master node if a slave node returns a `LOADING` error. A slave returns this error while it is loading the dataset into memory (for example, just after startup or after a failover). When set to `true`, the command is automatically retried on the master node; when set to `false`, the `LOADING` error is propagated to the caller.
-
 **shardedSubscriptionMode**
 
 Default value: `AUTO`
@@ -2219,18 +1344,6 @@ Available values:
 * `SYNC` - Each Redisson method invocation which modifies data is completed only if it has been replicated to all Valkey or Redis deployments,  
 * `ASYNC` - Each Redisson method invocation which modifies data doesn't wait for replication to complete on other Valkey or Redis deployments  
 
-**loadBalancer**
-
-Default value: `org.redisson.connection.balancer.RoundRobinLoadBalancer`
-
-Сonnection load balancer for multiple Valkey or Redis servers.
-Available implementations:  
-
-* `org.redisson.connection.balancer.CommandsLoadBalancer`  
-* `org.redisson.connection.balancer.WeightedRoundRobinBalancer`  
-* `org.redisson.connection.balancer.RoundRobinLoadBalancer`  
-* `org.redisson.connection.balancer.RandomLoadBalancer`  
-
 **primaryDiscoveryMode**
 
 Default value: `AUTO`
@@ -2243,149 +1356,6 @@ Available values:
 * `FIRST_PRIMARY` - The primary cluster is the first address in the list of specified addresses in configuration. No primary cluster failover detection.
 * `FIRST_PRIMARY_PUBSUB_NOTIFICATION` - The primary cluster is the first address in the list of specified addresses in the configuration. The new primary cluster is switched manually by connecting to the current primary cluster and publishing a message with the new primary database address in the format `<hostname:port>` to the 'redisson:multicluster:primary' channel. This mode is useful for data migration between clusters.
 
-**subscriptionConnectionMinimumIdleSize**
-
-Default value: `1`
-
-Minimum idle connection pool size for subscription (pub/sub) channels. Used by `RTopic`, `RPatternTopic`, `RLock`, `RSemaphore`, `RCountDownLatch`, `RClusteredLocalCachedMap`, `RClusteredLocalCachedMapCache`, `RLocalCachedMap`, `RLocalCachedMapCache` objects and Hibernate Local Cached Region Factories.
-
-**subscriptionConnectionPoolSize**
-
-Default value: `50`
-
-Maximum connection pool size for subscription (pub/sub) channels. Used by `RTopic`, `RPatternTopic`, `RLock`, `RSemaphore`, `RCountDownLatch`, `RClusteredLocalCachedMap`, `RClusteredLocalCachedMapCache`, `RLocalCachedMap`, `RLocalCachedMapCache` objects and Hibernate Local Cached Region Factories
-
-**slaveConnectionMinimumIdleSize**
-
-Default value: `24`
-
-Valkey or Redis `slave` node minimum idle connection amount for each slave node.
-
-**slaveConnectionPoolSize**
-
-Default value: `64`
-
-Valkey or Redis `slave` node maximum connection pool size for each slave node.
-
-**masterConnectionMinimumIdleSize**
-
-Default value: `24`
-
-Minimum idle connections amount per Valkey or Redis master node.
-
-**masterConnectionPoolSize**
-
-Default value: `64`
-
-Valkey or Redis `master' node maximum connection pool size.
-
-**idleConnectionTimeout**
-
-Default value: `10000`
-
-If a pooled connection is not used for a timeout time and current connections amount bigger than minimum idle connections pool size, then it will be closed and removed from the pool. Value in milliseconds. 
-
-**connectTimeout**
-
-Default value: `10000`
-
-Timeout in milliseconds during connecting to any Valkey or Redis server
-
-**timeout**
-
-Default value: `3000`
-
-Valkey or Redis server response timeout in milliseconds. Starts to count down when a command was successfully sent. 
-
-**retryAttempts**
-
-Default value: `4`
-
-Error will be thrown if Valkey or Redis command can’t be sent to a server after *retryAttempts*. But if it was sent successfully then *timeout* will be started.
-
-**retryDelay**
-
-Default value: `EqualJitterDelay(Duration.ofSeconds(1), Duration.ofSeconds(2))`
-
-Defines the delay strategy for a new attempt to send a command.
-
-Available implementations:  
-
-* `org.redisson.config.DecorrelatedJitterDelay` - Decorrelated jitter strategy that increases delay exponentially while introducing randomness influenced by the previous backoff duration.
-* `org.redisson.config.EqualJitterDelay` - Equal jitter strategy that introduces moderate randomness while maintaining some stability of delay value.
-* `org.redisson.config.FullJitterDelay` - Full jitter strategy that applies complete randomization to the exponential backoff delay.
-* `org.redisson.config.ConstantDelay` - A constant delay strategy that returns the same delay duration for every retry attempt.
-
-**reconnectionDelay**
-
-Default value: `EqualJitterDelay(Duration.ofMillis(100), Duration.ofSeconds(10))`
-
-Defines the delay strategy for a new attempt to reconnect a connection.
-
-Available implementations:  
-
-* `org.redisson.config.DecorrelatedJitterDelay` - Decorrelated jitter strategy that increases delay exponentially while introducing randomness influenced by the previous backoff duration.
-* `org.redisson.config.EqualJitterDelay` - Equal jitter strategy that introduces moderate randomness while maintaining some stability of delay value.
-* `org.redisson.config.FullJitterDelay` - Full jitter strategy that applies complete randomization to the exponential backoff delay.
-* `org.redisson.config.ConstantDelay` - A constant delay strategy that returns the same delay duration for every retry attempt.
-
-**failedSlaveReconnectionInterval**
-
-Default value: `3000`
-
-Interval of Valkey or Redis Slave reconnection attempts when it was excluded from internal list of available servers. On each timeout event Redisson tries to connect to disconnected server. Value in milliseconds.
-
-**failedSlaveNodeDetector**
-
-Default value: `org.redisson.client.FailedConnectionDetector`
-
-Defines failed Valkey or Redis Slave node detector object which implements failed node detection logic via `org.redisson.client.FailedNodeDetector` interface.  
-
-Available implementations:  
-
-* `org.redisson.client.FailedConnectionDetector` - marks the Valkey or Redis node as failed if it has ongoing connection errors in defined `checkInterval` interval in milliseconds. Default is 180000 milliseconds.  
-* `org.redisson.client.FailedCommandsDetector` - marks the Valkey or Redis node as failed if it has certain amount of command execution errors defined by `failedCommandsLimit` in defined `checkInterval` interval in milliseconds.  
-* `org.redisson.client.FailedCommandsTimeoutDetector` - marks the Redis node as failed if it has certain amount of command execution timeout errors defined by `failedCommandsLimit` in defined `checkInterval` interval in milliseconds.  
-
-**subscriptionsPerConnection**
-
-Default value: `5`
-
-Subscriptions per subscribe connection limit. Used by `RTopic`, `RPatternTopic`, `RLock`, `RSemaphore`, `RCountDownLatch`, `RClusteredLocalCachedMap`, `RClusteredLocalCachedMapCache`, `RLocalCachedMap`, `RLocalCachedMapCache` objects and Hibernate Local Cached Region Factories.
-
-**subscriptionTimeout**
-
-Default value: 7500
-
-Defines subscription timeout in milliseconds applied per channel subscription.
-
-**clientName**
-
-Default value: `null`
-
-Name of client connection.
-
-**pingConnectionInterval**
-
-Default value: `30000`
-
-This setting allows to detect and reconnect broken connections using
-PING command. PING command sending interval defined in milliseconds.
-Useful in cases when netty lib doesn’t invoke `channelInactive` method
-for closed connections. Set `0` to disable.
-
-**keepAlive**
-
-Default value: `false`
-
-Enables TCP keepAlive for connection. 
-
-**tcpNoDelay**
-
-Default value: `true`
-
-Enables TCP noDelay for connection.
-
 **natMapper**
 
 Default value: no mapper
@@ -2394,6 +1364,8 @@ Defines NAT mapper interface which maps Valkey or Redis URI object and applied t
 
 * `org.redisson.api.HostPortNatMapper`  
 * `org.redisson.api.HostNatMapper`  
+
+The remaining connection settings are shared across modes and are documented under [Common connection settings](#common-connection-settings) and [Common replica settings](#common-replica-settings).
 
 ### Multi Cluster YAML config format
 
@@ -2466,6 +1438,7 @@ RedissonClient redisson = Redisson.create(config);
 ```
 ### Multi Sentinel settings
 
+
 Documentation covering Valkey or Redis server sentinel configuration is [here](https://redis.io/topics/sentinel).  
 
 Multi Sentinel connection mode is activated by follow line:  
@@ -2511,17 +1484,6 @@ Master server name used by Sentinel servers and master change monitoring task.
 
 Add Sentinel node address in `host:port` format. Multiple nodes at once could be added.
 
-**readMode**
-
-Default value: `SLAVE`
-
-Set node type used for read operation.
-Available values:  
-
-* `SLAVE` - Read from slave nodes, uses MASTER if no SLAVES are available,  
-* `MASTER` - Read from master node,  
-* `MASTER_SLAVE` - Read from master and slave nodes
-
 **subscriptionMode**
 
 Default value: `SLAVE`
@@ -2531,129 +1493,6 @@ Available values:
 
 * `SLAVE` - Subscribe to slave nodes,  
 * `MASTER` - Subscribe to master node,  
-
-**fallbackLoadingToMaster**
-
-Default value: `true`
-
-Defines whether a read command should be redirected to the master node if a slave node returns a `LOADING` error. A slave returns this error while it is loading the dataset into memory (for example, just after startup or after a failover). When set to `true`, the command is automatically retried on the master node; when set to `false`, the `LOADING` error is propagated to the caller.
-
-**loadBalancer**
-
-Default value: `org.redisson.connection.balancer.RoundRobinLoadBalancer`
-
-Сonnection load balancer for multiple Valkey or Redis servers.
-Available implementations:  
-
-* `org.redisson.connection.balancer.CommandsLoadBalancer`  
-* `org.redisson.connection.balancer.WeightedRoundRobinBalancer`  
-* `org.redisson.connection.balancer.RoundRobinLoadBalancer`  
-* `org.redisson.connection.balancer.RandomLoadBalancer`  
-
-**subscriptionConnectionMinimumIdleSize**
-
-Default value: `1`
-
-Minimum idle connection pool size for subscription (pub/sub) channels. Used by `RTopic`, `RPatternTopic`, `RLock`, `RSemaphore`, `RCountDownLatch`, `RClusteredLocalCachedMap`, `RClusteredLocalCachedMapCache`, `RLocalCachedMap`, `RLocalCachedMapCache` objects and Hibernate Local Cached Region Factories.
-
-**subscriptionConnectionPoolSize**
-
-Default value: `50`
-
-Maximum connection pool size for subscription (pub/sub) channels. Used by `RTopic`, `RPatternTopic`, `RLock`, `RSemaphore`, `RCountDownLatch`, `RClusteredLocalCachedMap`, `RClusteredLocalCachedMapCache`, `RLocalCachedMap`, `RLocalCachedMapCache` objects and Hibernate Local Cached Region Factories.
-
-**slaveConnectionMinimumIdleSize**
-
-Default value: `24`
-
-Valkey or Redis `slave` node minimum idle connection amount for each slave node.
-
-**slaveConnectionPoolSize**
-
-Default value: `64`
-
-Valkey or Redis `slave` node maximum connection pool size for <b>each</b> slave node.
-
-**masterConnectionMinimumIdleSize**
-
-Default value: `24`
-
-Minimum idle connections amount per Valkey or Redis master node.
-
-**masterConnectionPoolSize**
-
-Default value: `64`
-
-Valkey or Redis `master` node maximum connection pool size.
-
-**idleConnectionTimeout**
-
-Default value: `10000`
-
-If a pooled connection is not used for a timeout time and current connections amount bigger than minimum idle connections pool size, then it will be closed and removed from the pool. Value in milliseconds. 
-
-**connectTimeout**
-
-Default value: `10000`
-
-Timeout during connecting to any Valkey or Redis server.
-
-**timeout**
-
-Default value: `3000`
-
-Valkey or Redis server response timeout. Starts to count down when a command was successfully sent. Value in milliseconds. 
-
-**retryAttempts**
-
-Default value: `4`
-
-Error will be thrown if Valkey or Redis command can’t be sent to a server after *retryAttempts*. But if it was sent successfully then *timeout* will be started.
-
-**retryDelay**
-
-Default value: `EqualJitterDelay(Duration.ofSeconds(1), Duration.ofSeconds(2))`
-
-Defines the delay strategy for a new attempt to send a command.
-
-Available implementations:  
-
-* `org.redisson.config.DecorrelatedJitterDelay` - Decorrelated jitter strategy that increases delay exponentially while introducing randomness influenced by the previous backoff duration.
-* `org.redisson.config.EqualJitterDelay` - Equal jitter strategy that introduces moderate randomness while maintaining some stability of delay value.
-* `org.redisson.config.FullJitterDelay` - Full jitter strategy that applies complete randomization to the exponential backoff delay.
-* `org.redisson.config.ConstantDelay` - A constant delay strategy that returns the same delay duration for every retry attempt.
-
-**reconnectionDelay**
-
-Default value: `EqualJitterDelay(Duration.ofMillis(100), Duration.ofSeconds(10))`
-
-Defines the delay strategy for a new attempt to reconnect a connection.
-
-Available implementations:  
-
-* `org.redisson.config.DecorrelatedJitterDelay` - Decorrelated jitter strategy that increases delay exponentially while introducing randomness influenced by the previous backoff duration.
-* `org.redisson.config.EqualJitterDelay` - Equal jitter strategy that introduces moderate randomness while maintaining some stability of delay value.
-* `org.redisson.config.FullJitterDelay` - Full jitter strategy that applies complete randomization to the exponential backoff delay.
-* `org.redisson.config.ConstantDelay` - A constant delay strategy that returns the same delay duration for every retry attempt.
-
-
-**failedSlaveReconnectionInterval**
-
-Default value: `3000`
-
-Interval of Valkey or Redis Slave reconnection attempts when it was excluded from internal list of available servers. On each timeout event Redisson tries to connect to disconnected server. Value in milliseconds.
-
-**failedSlaveNodeDetector**
-
-Default value: `org.redisson.client.FailedConnectionDetector`
-
-Defines failed Valkey or Redis Slave node detector object which implements failed node detection logic via `org.redisson.client.FailedNodeDetector` interface.
-
-Available implementations:  
-
-* `org.redisson.client.FailedConnectionDetector` - marks the Valkey or Redis node as failed if it has ongoing connection errors in defined `checkInterval` interval in milliseconds. Default is 180000 milliseconds. 
-* `org.redisson.client.FailedCommandsDetector` - marks the Valkey or Redis node as failed if it has certain amount of command execution errors defined by `failedCommandsLimit` in defined `checkInterval` interval in milliseconds.
-* `org.redisson.client.FailedCommandsTimeoutDetector` - marks the Valkey or Redis node as failed if it has certain amount of command execution timeout errors defined by `failedCommandsLimit` in defined `checkInterval` interval in milliseconds.
 
 **database**
 
@@ -2679,42 +1518,6 @@ Default value: `true`
 
 Enables sentinels discovery.
 
-**subscriptionsPerConnection**
-
-Default value: `5`
-
-Subscriptions per subscribe connection limit. Used by `RTopic`, `RPatternTopic`, `RLock`, `RSemaphore`, `RCountDownLatch`, `RClusteredLocalCachedMap`, `RClusteredLocalCachedMapCache`, `RLocalCachedMap`, `RLocalCachedMapCache` objects and Hibernate Local Cached Region Factories.
-
-**subscriptionTimeout**
-
-Default value: 7500
-
-Defines subscription timeout in milliseconds applied per channel subscription.
-
-**clientName**
-
-Default value: `null`
-
-Name of client connection.
-
-**pingConnectionInterval**
-
-Default value: `30000`
-
-PING command sending interval per connection to Redis. Defined in milliseconds. Set `0` to disable.
-
-**keepAlive**
-
-Default value: `false`
-
-Enables TCP keepAlive for connection. 
-
-**tcpNoDelay**
-
-Default value: `true`
-
-Enables TCP noDelay for connection.
-
 **natMapper**
 
 Default value: no mapper
@@ -2723,6 +1526,8 @@ Defines NAT mapper interface which maps Valkey or Redis URI object and applied t
 
 * `org.redisson.api.HostPortNatMapper`  
 * `org.redisson.api.HostNatMapper`  
+
+The remaining connection settings are shared across modes and are documented under [Common connection settings](#common-connection-settings) and [Common replica settings](#common-replica-settings).
 
 ### Multi Sentinel YAML config format
 

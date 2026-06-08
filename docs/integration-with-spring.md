@@ -10,6 +10,25 @@ Supports Spring Boot 1.3.x - 4.0.x
 
     <div class="grid cards" markdown>
 
+    -   **Community Edition**
+
+        Maven
+
+        ```xml  
+        <dependency>
+           <groupId>org.redisson</groupId>
+           <artifactId>redisson-spring-boot-starter</artifactId>
+           <version>xVERSIONx</version>
+        </dependency>
+        ```
+
+        Gradle
+
+        ```groovy
+        compile 'org.redisson:redisson-spring-boot-starter:xVERSIONx'
+        ```
+
+
     -   **Redisson PRO**
 
         Maven
@@ -29,25 +48,6 @@ Supports Spring Boot 1.3.x - 4.0.x
         ```
 
         [License key configuration](configuration.md/#license-key-configuration)
-
-
-    -   **Community Edition**
-
-        Maven
-
-        ```xml  
-        <dependency>
-           <groupId>org.redisson</groupId>
-           <artifactId>redisson-spring-boot-starter</artifactId>
-           <version>xVERSIONx</version>
-        </dependency>
-        ```
-
-        Gradle
-
-        ```groovy
-        compile 'org.redisson:redisson-spring-boot-starter:xVERSIONx'
-        ```
 
     </div>
 
@@ -310,16 +310,35 @@ Ensure you have Spring Session library in your classpath, add it if necessary:
     <dependency>
       <groupId>org.springframework.session</groupId>
       <artifactId>spring-session-data-redis</artifactId>
-      <version>4.0.0</version>
+      <version>xVERSIONx</version>
     </dependency>
     ```
     Gradle:
     ```gradle
-    compile 'org.springframework.session:spring-session-data-redis:4.0.0'  
+    compile 'org.springframework.session:spring-session-data-redis:xVERSIONx'  
     ```
 2. Add [Redisson Spring Data Redis](#spring-data-redis) library in classpath:  
 
     <div class="grid cards" markdown>
+
+    -   **Community Edition**
+
+        Maven
+
+        ```xml  
+        <dependency>
+           <groupId>org.redisson</groupId>
+           <artifactId>redisson-spring-data-40</artifactId>
+           <version>xVERSIONx</version>
+        </dependency>
+        ```
+
+        Gradle
+
+        ```groovy
+        compile 'org.redisson:redisson-spring-data-40:xVERSIONx'
+        ```
+
 
     -   **Redisson PRO**
 
@@ -340,25 +359,6 @@ Ensure you have Spring Session library in your classpath, add it if necessary:
         ```
 
         [License key configuration](configuration.md/#license-key-configuration)
-
-
-    -   **Community Edition**
-
-        Maven
-
-        ```xml  
-        <dependency>
-           <groupId>org.redisson</groupId>
-           <artifactId>redisson-spring-data-40</artifactId>
-           <version>xVERSIONx</version>
-        </dependency>
-        ```
-
-        Gradle
-
-        ```groovy
-        compile 'org.redisson:redisson-spring-data-40:xVERSIONx'
-        ```
 
     </div>
 
@@ -533,24 +533,6 @@ Redisson provides implementation of both `org.springframework.transaction.Platfo
 
 <div class="grid cards" markdown>
 
--   **Redisson PRO**
-
-    Maven
-
-    ```xml  
-    <dependency>
-       <groupId>pro.redisson</groupId>
-       <artifactId>redisson-spring-transaction</artifactId>
-       <version>xVERSIONx</version>
-    </dependency>
-    ```
-
-    Gradle
-
-    ```groovy
-    compile 'pro.redisson:redisson-spring-transaction:xVERSIONx'
-    ```
-
 -   **Community Edition**
 
     Maven
@@ -567,6 +549,24 @@ Redisson provides implementation of both `org.springframework.transaction.Platfo
 
     ```groovy
     compile 'org.redisson:redisson-spring-transaction:xVERSIONx'
+    ```
+
+-   **Redisson PRO**
+
+    Maven
+
+    ```xml  
+    <dependency>
+       <groupId>pro.redisson</groupId>
+       <artifactId>redisson-spring-transaction</artifactId>
+       <version>xVERSIONx</version>
+    </dependency>
+    ```
+
+    Gradle
+
+    ```groovy
+    compile 'pro.redisson:redisson-spring-transaction:xVERSIONx'
     ```
 
 </div>
@@ -795,6 +795,95 @@ Redisson implements `RedisConnectionFactory` and `ReactiveRedisConnectionFactory
 
     <div class="grid cards" markdown>
 
+    -   **Community Edition**
+
+        Maven
+
+        ```xml
+        <dependency>
+            <groupId>org.redisson</groupId>
+            <!-- for Spring Data Redis v.1.6.x -->
+            <artifactId>redisson-spring-data-16</artifactId>
+            <!-- for Spring Data Redis v.1.7.x -->
+            <artifactId>redisson-spring-data-17</artifactId>
+            <!-- for Spring Data Redis v.1.8.x -->
+            <artifactId>redisson-spring-data-18</artifactId>
+            <!-- for Spring Data Redis v.2.0.x -->
+            <artifactId>redisson-spring-data-20</artifactId>
+            <!-- for Spring Data Redis v.2.1.x -->
+            <artifactId>redisson-spring-data-21</artifactId>
+            <!-- for Spring Data Redis v.2.2.x -->
+            <artifactId>redisson-spring-data-22</artifactId>
+            <!-- for Spring Data Redis v.2.3.x -->
+            <artifactId>redisson-spring-data-23</artifactId>
+            <!-- for Spring Data Redis v.2.4.x -->
+            <artifactId>redisson-spring-data-24</artifactId>
+            <!-- for Spring Data Redis v.2.5.x -->
+            <artifactId>redisson-spring-data-25</artifactId>
+            <!-- for Spring Data Redis v.2.6.x -->
+            <artifactId>redisson-spring-data-26</artifactId>
+            <!-- for Spring Data Redis v.2.7.x -->
+            <artifactId>redisson-spring-data-27</artifactId>
+            <!-- for Spring Data Redis v.3.0.x -->
+            <artifactId>redisson-spring-data-30</artifactId>
+            <!-- for Spring Data Redis v.3.1.x -->
+            <artifactId>redisson-spring-data-31</artifactId>
+            <!-- for Spring Data Redis v.3.2.x -->
+            <artifactId>redisson-spring-data-32</artifactId>
+            <!-- for Spring Data Redis v.3.3.x -->
+            <artifactId>redisson-spring-data-33</artifactId>
+            <!-- for Spring Data Redis v.3.4.x -->
+            <artifactId>redisson-spring-data-34</artifactId>
+            <!-- for Spring Data Redis v.3.5.x -->
+            <artifactId>redisson-spring-data-35</artifactId>
+            <!-- for Spring Data Redis v.4.0.x -->
+            <artifactId>redisson-spring-data-40</artifactId>
+            <version>xVERSIONx</version>
+        </dependency>
+        ```
+
+        Gradle
+
+        ```groovy
+        // for Spring Data Redis v.1.6.x
+        compile 'org.redisson:redisson-spring-data-16:xVERSIONx'
+        // for Spring Data Redis v.1.7.x
+        compile 'org.redisson:redisson-spring-data-17:xVERSIONx'
+        // for Spring Data Redis v.1.8.x
+        compile 'org.redisson:redisson-spring-data-18:xVERSIONx'
+        // for Spring Data Redis v.2.0.x
+        compile 'org.redisson:redisson-spring-data-20:xVERSIONx'
+        // for Spring Data Redis v.2.1.x
+        compile 'org.redisson:redisson-spring-data-21:xVERSIONx'
+        // for Spring Data Redis v.2.2.x
+        compile 'org.redisson:redisson-spring-data-22:xVERSIONx'
+        // for Spring Data Redis v.2.3.x
+        compile 'org.redisson:redisson-spring-data-23:xVERSIONx'
+        // for Spring Data Redis v.2.4.x
+        compile 'org.redisson:redisson-spring-data-24:xVERSIONx'
+        // for Spring Data Redis v.2.5.x
+        compile 'org.redisson:redisson-spring-data-25:xVERSIONx'
+        // for Spring Data Redis v.2.6.x
+        compile 'org.redisson:redisson-spring-data-26:xVERSIONx'
+        // for Spring Data Redis v.2.7.x
+        compile 'org.redisson:redisson-spring-data-27:xVERSIONx'
+        // for Spring Data Redis v.3.0.x
+        compile 'org.redisson:redisson-spring-data-30:xVERSIONx'
+        // for Spring Data Redis v.3.1.x
+        compile 'org.redisson:redisson-spring-data-31:xVERSIONx'
+        // for Spring Data Redis v.3.2.x
+        compile 'org.redisson:redisson-spring-data-32:xVERSIONx'
+        // for Spring Data Redis v.3.3.x
+        compile 'org.redisson:redisson-spring-data-33:xVERSIONx'
+        // for Spring Data Redis v.3.4.x
+        compile 'org.redisson:redisson-spring-data-34:xVERSIONx'
+        // for Spring Data Redis v.3.5.x
+        compile 'org.redisson:redisson-spring-data-35:xVERSIONx'
+        // for Spring Data Redis v.4.0.x
+        compile 'org.redisson:redisson-spring-data-40:xVERSIONx'
+        ```
+
+
     -   **Redisson PRO**
 
         Maven
@@ -884,95 +973,6 @@ Redisson implements `RedisConnectionFactory` and `ReactiveRedisConnectionFactory
         ```
 
         [License key configuration](configuration.md/#license-key-configuration)
-
-
-    -   **Community Edition**
-
-        Maven
-
-        ```xml
-        <dependency>
-            <groupId>org.redisson</groupId>
-            <!-- for Spring Data Redis v.1.6.x -->
-            <artifactId>redisson-spring-data-16</artifactId>
-            <!-- for Spring Data Redis v.1.7.x -->
-            <artifactId>redisson-spring-data-17</artifactId>
-            <!-- for Spring Data Redis v.1.8.x -->
-            <artifactId>redisson-spring-data-18</artifactId>
-            <!-- for Spring Data Redis v.2.0.x -->
-            <artifactId>redisson-spring-data-20</artifactId>
-            <!-- for Spring Data Redis v.2.1.x -->
-            <artifactId>redisson-spring-data-21</artifactId>
-            <!-- for Spring Data Redis v.2.2.x -->
-            <artifactId>redisson-spring-data-22</artifactId>
-            <!-- for Spring Data Redis v.2.3.x -->
-            <artifactId>redisson-spring-data-23</artifactId>
-            <!-- for Spring Data Redis v.2.4.x -->
-            <artifactId>redisson-spring-data-24</artifactId>
-            <!-- for Spring Data Redis v.2.5.x -->
-            <artifactId>redisson-spring-data-25</artifactId>
-            <!-- for Spring Data Redis v.2.6.x -->
-            <artifactId>redisson-spring-data-26</artifactId>
-            <!-- for Spring Data Redis v.2.7.x -->
-            <artifactId>redisson-spring-data-27</artifactId>
-            <!-- for Spring Data Redis v.3.0.x -->
-            <artifactId>redisson-spring-data-30</artifactId>
-            <!-- for Spring Data Redis v.3.1.x -->
-            <artifactId>redisson-spring-data-31</artifactId>
-            <!-- for Spring Data Redis v.3.2.x -->
-            <artifactId>redisson-spring-data-32</artifactId>
-            <!-- for Spring Data Redis v.3.3.x -->
-            <artifactId>redisson-spring-data-33</artifactId>
-            <!-- for Spring Data Redis v.3.4.x -->
-            <artifactId>redisson-spring-data-34</artifactId>
-            <!-- for Spring Data Redis v.3.5.x -->
-            <artifactId>redisson-spring-data-35</artifactId>
-            <!-- for Spring Data Redis v.4.0.x -->
-            <artifactId>redisson-spring-data-40</artifactId>
-            <version>xVERSIONx</version>
-        </dependency>
-        ```
-
-        Gradle
-
-        ```groovy
-        // for Spring Data Redis v.1.6.x
-        compile 'org.redisson:redisson-spring-data-16:xVERSIONx'
-        // for Spring Data Redis v.1.7.x
-        compile 'org.redisson:redisson-spring-data-17:xVERSIONx'
-        // for Spring Data Redis v.1.8.x
-        compile 'org.redisson:redisson-spring-data-18:xVERSIONx'
-        // for Spring Data Redis v.2.0.x
-        compile 'org.redisson:redisson-spring-data-20:xVERSIONx'
-        // for Spring Data Redis v.2.1.x
-        compile 'org.redisson:redisson-spring-data-21:xVERSIONx'
-        // for Spring Data Redis v.2.2.x
-        compile 'org.redisson:redisson-spring-data-22:xVERSIONx'
-        // for Spring Data Redis v.2.3.x
-        compile 'org.redisson:redisson-spring-data-23:xVERSIONx'
-        // for Spring Data Redis v.2.4.x
-        compile 'org.redisson:redisson-spring-data-24:xVERSIONx'
-        // for Spring Data Redis v.2.5.x
-        compile 'org.redisson:redisson-spring-data-25:xVERSIONx'
-        // for Spring Data Redis v.2.6.x
-        compile 'org.redisson:redisson-spring-data-26:xVERSIONx'
-        // for Spring Data Redis v.2.7.x
-        compile 'org.redisson:redisson-spring-data-27:xVERSIONx'
-        // for Spring Data Redis v.3.0.x
-        compile 'org.redisson:redisson-spring-data-30:xVERSIONx'
-        // for Spring Data Redis v.3.1.x
-        compile 'org.redisson:redisson-spring-data-31:xVERSIONx'
-        // for Spring Data Redis v.3.2.x
-        compile 'org.redisson:redisson-spring-data-32:xVERSIONx'
-        // for Spring Data Redis v.3.3.x
-        compile 'org.redisson:redisson-spring-data-33:xVERSIONx'
-        // for Spring Data Redis v.3.4.x
-        compile 'org.redisson:redisson-spring-data-34:xVERSIONx'
-        // for Spring Data Redis v.3.5.x
-        compile 'org.redisson:redisson-spring-data-35:xVERSIONx'
-        // for Spring Data Redis v.4.0.x
-        compile 'org.redisson:redisson-spring-data-40:xVERSIONx'
-        ```
 
     </div>
 

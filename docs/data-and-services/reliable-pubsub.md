@@ -1047,74 +1047,106 @@ Code examples of synchronization parameters usage:
     ```
 === "Async"
     ```java
-    RReliableQueue<MyObject> rq = redisson.getReliableQueue("test");
+    RReliablePubSubTopicAsync<MyObject> topic = redisson.getReliablePubSubTopic("test");
 
-    RFuture<Message<MyObject>> arf = rq.addAsync(QueueAddArgs.messages(MessageArgs.payload(data))
-                                                        .syncMode(SyncMode.ACK_AOF)
-                                                        .syncTimeout(Duration.ofSeconds(15))
-                                                        .syncFailureMode(SyncFailureMode.LOG_WARNING));
-    
-    RFuture<Message<MyObject>> prf = rq.pollAsync(QueuePollArgs.defaults()
-                                                        .syncMode(SyncMode.ACK)
-                                                        .syncTimeout(Duration.ofSeconds(10))
-                                                        .syncFailureMode(SyncFailureMode.THROW_EXCEPTION));
-    
-    RFuture<Void> ack = rq.acknowledgeAsync(QueueAckArgs.ids(msg.getId())
-                                                .syncMode(SyncMode.AUTO)
-                                                .syncTimeout(Duration.ofSeconds(20)));
-    
-    RFuture<Void> nack = rq.negativeAcknowledgeAsync(QueueNegativeAckArgs.rejected(msg.getId())
-                                                        .syncMode(SyncMode.ACK)
-                                                        .syncTimeout(Duration.ofSeconds(15)));
-    
+    // Publishing
+    RFuture<Message<MyObject>> publishFuture = topic.publishAsync(
+            PublishArgs.messages(MessageArgs.payload(data))
+                       .syncMode(SyncMode.ACK_AOF)
+                       .syncTimeout(Duration.ofSeconds(15))
+                       .syncFailureMode(SyncFailureMode.LOG_WARNING));
+
+    // Get subscription and pull consumer for pull/acknowledge operations
+    Subscription<MyObject> sub = topic.getSubscriptionAsync("my-subscription").toCompletableFuture().join();
+    PullConsumer<MyObject> consumer = sub.createPullConsumer();
+
+    // Pulling
+    RFuture<Message<MyObject>> pullFuture = consumer.pullAsync(
+            PullArgs.defaults()
+                    .syncMode(SyncMode.ACK)
+                    .syncTimeout(Duration.ofSeconds(10))
+                    .syncFailureMode(SyncFailureMode.THROW_EXCEPTION));
+
+    // Acknowledge
+    RFuture<Void> ackFuture = consumer.acknowledgeAsync(
+            MessageAckArgs.ids(msg.getId())
+                          .syncMode(SyncMode.AUTO)
+                          .syncTimeout(Duration.ofSeconds(20)));
+
+    // Negative acknowledge
+    RFuture<Void> nackFuture = consumer.negativeAcknowledgeAsync(
+            MessageNegativeAckArgs.rejected(msg.getId())
+                                  .syncMode(SyncMode.ACK)
+                                  .syncTimeout(Duration.ofSeconds(15)));
     ```
 === "Reactive"
     ```java
     RedissonReactiveClient redisson = redissonClient.reactive();
-    RReliableQueueReactive<MyObject> rq = redisson.getReliableQueue("test");
-    ```
+    RReliablePubSubTopicReactive<MyObject> topic = redisson.getReliablePubSubTopic("test");
 
-    Mono<Message<MyObject>> arf = rq.add(QueueAddArgs.messages(MessageArgs.payload(data))
-                                                .syncMode(SyncMode.ACK_AOF)
-                                                .syncTimeout(Duration.ofSeconds(15))
-                                                .syncFailureMode(SyncFailureMode.LOG_WARNING));
-    
-    Mono<Message<MyObject>> prf = rq.poll(QueuePollArgs.defaults()
-                                            .syncMode(SyncMode.ACK)
-                                            .syncTimeout(Duration.ofSeconds(10))
-                                            .syncFailureMode(SyncFailureMode.THROW_EXCEPTION));
-    
-    Mono<Void> ack = rq.acknowledge(QueueAckArgs.ids(msg.getId())
-                                        .syncMode(SyncMode.AUTO)
-                                        .syncTimeout(Duration.ofSeconds(20)));
-    
-    Mono<Void> nack =     rq.negativeAcknowledge(QueueNegativeAckArgs.rejected(msg.getId())
-                                                        .syncMode(SyncMode.ACK)
-                                                        .syncTimeout(Duration.ofSeconds(15)));
-    
+    // Publishing
+    Mono<Message<MyObject>> publishResult = topic.publish(
+            PublishArgs.messages(MessageArgs.payload(data))
+                       .syncMode(SyncMode.ACK_AOF)
+                       .syncTimeout(Duration.ofSeconds(15))
+                       .syncFailureMode(SyncFailureMode.LOG_WARNING));
+
+    // Get subscription and pull consumer for pull/acknowledge operations
+    SubscriptionReactive<MyObject> sub = topic.getSubscription("my-subscription").block();
+    PullConsumerReactive<MyObject> consumer = sub.createPullConsumer().block();
+
+    // Pulling
+    Mono<Message<MyObject>> pullResult = consumer.pull(
+            PullArgs.defaults()
+                    .syncMode(SyncMode.ACK)
+                    .syncTimeout(Duration.ofSeconds(10))
+                    .syncFailureMode(SyncFailureMode.THROW_EXCEPTION));
+
+    // Acknowledge
+    Mono<Void> ackResult = consumer.acknowledge(
+            MessageAckArgs.ids(msg.getId())
+                          .syncMode(SyncMode.AUTO)
+                          .syncTimeout(Duration.ofSeconds(20)));
+
+    // Negative acknowledge
+    Mono<Void> nackResult = consumer.negativeAcknowledge(
+            MessageNegativeAckArgs.rejected(msg.getId())
+                                  .syncMode(SyncMode.ACK)
+                                  .syncTimeout(Duration.ofSeconds(15)));
     ```
 === "RxJava3"
     ```java
     RedissonRxClient redisson = redissonClient.rxJava();
-    RReliableQueueRx<MyObject> rq = redisson.getReliableQueue("test");
+    RReliablePubSubTopicRx<MyObject> topic = redisson.getReliablePubSubTopic("test");
 
-    Maybe<Message<MyObject>> arf =     rq.add(QueueAddArgs.messages(MessageArgs.payload(data))
-                                                .syncMode(SyncMode.ACK_AOF)
-                                                .syncTimeout(Duration.ofSeconds(15))
-                                                .syncFailureMode(SyncFailureMode.LOG_WARNING));
-    
-    Maybe<Message<MyObject>> prf = rq.poll(QueuePollArgs.defaults()
-                                            .syncMode(SyncMode.ACK)
-                                            .syncTimeout(Duration.ofSeconds(10))
-                                            .syncFailureMode(SyncFailureMode.THROW_EXCEPTION));
-    
-    Completable ack = rq.acknowledge(QueueAckArgs.ids(msg.getId())
-                                        .syncMode(SyncMode.AUTO)
-                                        .syncTimeout(Duration.ofSeconds(20)));
-    
-    Completable nack =     rq.negativeAcknowledge(QueueNegativeAckArgs.rejected(msg.getId())
-                                                    .syncMode(SyncMode.ACK)
-                                                    .syncTimeout(Duration.ofSeconds(15)));
-    
+    // Publishing
+    Maybe<Message<MyObject>> publishResult = topic.publish(
+            PublishArgs.messages(MessageArgs.payload(data))
+                       .syncMode(SyncMode.ACK_AOF)
+                       .syncTimeout(Duration.ofSeconds(15))
+                       .syncFailureMode(SyncFailureMode.LOG_WARNING));
+
+    // Get subscription and pull consumer for pull/acknowledge operations
+    SubscriptionRx<MyObject> sub = topic.getSubscription("my-subscription").blockingGet();
+    PullConsumerRx<MyObject> consumer = sub.createPullConsumer().blockingGet();
+
+    // Pulling
+    Maybe<Message<MyObject>> pullResult = consumer.pull(
+            PullArgs.defaults()
+                    .syncMode(SyncMode.ACK)
+                    .syncTimeout(Duration.ofSeconds(10))
+                    .syncFailureMode(SyncFailureMode.THROW_EXCEPTION));
+
+    // Acknowledge
+    Completable ackResult = consumer.acknowledge(
+            MessageAckArgs.ids(msg.getId())
+                          .syncMode(SyncMode.AUTO)
+                          .syncTimeout(Duration.ofSeconds(20)));
+
+    // Negative acknowledge
+    Completable nackResult = consumer.negativeAcknowledge(
+            MessageNegativeAckArgs.rejected(msg.getId())
+                                  .syncMode(SyncMode.ACK)
+                                  .syncTimeout(Duration.ofSeconds(15)));
     ```
 

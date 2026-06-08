@@ -4,6 +4,24 @@ Getting started with Redisson takes two steps: add the dependency to your projec
 
     <div class="grid cards" markdown>
 
+    -   **Community Edition**
+
+        Maven
+
+        ```xml
+        <dependency>
+           <groupId>org.redisson</groupId>
+           <artifactId>redisson</artifactId>
+           <version>xVERSIONx</version>
+        </dependency>  
+        ```
+
+        Gradle
+
+        ```groovy
+        compile 'org.redisson:redisson:xVERSIONx'
+        ```
+
     -   **Redisson PRO**
 
         Maven
@@ -23,24 +41,6 @@ Getting started with Redisson takes two steps: add the dependency to your projec
         ```
 
         [License key configuration](configuration.md/#license-key-configuration)
-
-    -   **Community Edition**
-
-        Maven
-
-        ```xml
-        <dependency>
-           <groupId>org.redisson</groupId>
-           <artifactId>redisson</artifactId>
-           <version>xVERSIONx</version>
-        </dependency>  
-        ```
-
-        Gradle
-
-        ```groovy
-        compile 'org.redisson:redisson:xVERSIONx'
-        ```
 
     </div>
 
@@ -81,6 +81,11 @@ Getting started with Redisson takes two steps: add the dependency to your projec
        
        // RxJava3 API
        RedissonRxClient redissonRx = redisson.rxJava();
+       ```
+       `RedissonClient` is thread-safe, so create a single instance and reuse it as a shared singleton across your application. It is a common pattern for Redisson to start and stop together with the application, so shut the client down when the application stops:
+       ```java
+       // on application shutdown
+       redisson.shutdown();
        ```
 
     * Get Redis or Valkey based object or service.

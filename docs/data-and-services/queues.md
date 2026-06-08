@@ -1,569 +1,3 @@
-## Queue
-
-Valkey or Redis based unbounded [Queue](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RQueue.html) object for Java implements [java.util.Queue](https://docs.oracle.com/javase/8/docs/api/java/util/Queue.html) interface. It wraps Valkey or Redis queue commands and extends them by implementing new methods. This object is thread-safe.
-
-This queue lacks the reliability features of the [Reliable Queue](#reliable-queue), such as message acknowledgments, visibility timeouts, delivery guarantees and many more.
-
-Code examples:
-
-=== "Sync"
-	```java
-	RQueue<SomeObject> queue = redisson.getQueue("anyQueue");
-	
-	queue.add(new SomeObject());
-	
-	SomeObject obj = queue.peek();
-	SomeObject someObj = queue.poll();
-	```
-=== "Async"
-	```java
-	RQueueAsync<SomeObject> queue = redisson.getQueue("anyQueue");
-	
-	RFuture<Boolean> af = queue.addAsync(new SomeObject());
-	
-	RFuture<SomeObject> objf = queue.peekAsync();
-	RFuture<SomeObject> someObjf = queue.pollAsync();
-	```
-=== "Reactive"
-	```java
-	RedissonReactiveClient redissonReactive = redisson.reactive();
-	RQueueRx<String, String> queue = redissonReactive.getQueue("myMultimap");
-
-	Mono<Boolean> af = queue.add(new SomeObject());
-	
-	Mono<SomeObject> objf = queue.peek();
-	Mono<SomeObject> someObjf = queue.poll();
-	```
-=== "RxJava3"
-	```java
-	RedissonRxClient redissonRx = redisson.rxJava();
-	RQueueRx<SomeObject> queue = redissonRx.getQueue("anyQueue");
-
-	Single<Boolean> af = queue.add(new SomeObject());
-
-	Maybe<SomeObject> objf = queue.peek();
-	Maybe<SomeObject> someObjf = queue.poll();
-	```
-
-### Listeners
-
-Redisson allows binding listeners per `RQueue` object. This requires the `notify-keyspace-events` setting to be enabled on Redis or Valkey side.
-
-|Listener class name|Event description | Valkey or Redis<br/>`notify-keyspace-events` value|
-|:--:|:--:|:--:|
-|org.redisson.api.listener.TrackingListener|Element created/removed/updated after read operation|-|
-|org.redisson.api.listener.ListAddListener|Element created|El|
-|org.redisson.api.listener.ListRemoveListener|Element removed|El|
-|org.redisson.api.ExpiredObjectListener|`RQueue` object expired|Ex|
-|org.redisson.api.DeletedObjectListener|`RQueue` object deleted|Eg|
-
-Code examples:
-
-=== "Sync"
-    ```
-    RQueue<String> queue = redisson.getQueue("anyQueue");
-
-    int listenerId = queue.addListener(new DeletedObjectListener() {
-         @Override
-         public void onDeleted(String name) {
-            // ...
-         }
-    });
-
-    // Add other listener types
-    int addListenerId = queue.addListener(new ListAddListener() {
-         @Override
-         public void onListAdd(ListAddEvent event) {
-            // ...
-         }
-    });
-
-    // Remove listeners
-    queue.removeListener(listenerId);
-    queue.removeListener(addListenerId);
-    ```
-
-=== "Async"
-    ```
-    RQueueAsync<String> queue = redisson.getQueue("anyQueue");
-
-    RFuture<Integer> listenerFuture = queue.addListenerAsync(new DeletedObjectListener() {
-         @Override
-         public void onDeleted(String name) {
-            // ...
-         }
-    });
-
-    // Add other listener types
-    RFuture<Integer> addListenerFuture = queue.addListenerAsync(new ListAddListener() {
-         @Override
-         public void onListAdd(ListAddEvent event) {
-            // ...
-         }
-    });
-
-    // Remove listeners
-    listenerFuture.whenComplete((listenerId, exception) -> {
-        if (exception == null) {
-            RFuture<Void> removeFuture = queue.removeListenerAsync(listenerId);
-            removeFuture.whenComplete((result, ex) -> {
-                // Listener removed
-            });
-        }
-    });
-    ```
-
-=== "Reactive"
-    ```
-    RedissonReactiveClient redisson = redissonClient.reactive();
-    RQueueReactive<String> queue = redisson.getQueue("anyQueue");
-
-    Mono<Integer> listenerMono = queue.addListener(new DeletedObjectListener() {
-         @Override
-         public void onDeleted(String name) {
-            // ...
-         }
-    });
-
-    // Add other listener types
-    Mono<Integer> addListenerMono = queue.addListener(new ListAddListener() {
-         @Override
-         public void onListAdd(ListAddEvent event) {
-            // ...
-         }
-    });
-
-    // Remove listeners
-    listenerMono.flatMap(listenerId -> 
-        queue.removeListener(listenerId)
-    ).subscribe();
-    ```
-
-=== "RxJava3"
-    ```
-    RedissonRxClient redisson = redissonClient.rxJava();
-    RQueueRx<String> queue = redisson.getQueue("anyQueue");
-
-    Single<Integer> listenerSingle = queue.addListener(new DeletedObjectListener() {
-         @Override
-         public void onDeleted(String name) {
-            // ...
-         }
-    });
-
-    // Add other listener types
-    Single<Integer> addListenerSingle = queue.addListener(new ListAddListener() {
-         @Override
-         public void onListAdd(ListAddEvent event) {
-            // ...
-         }
-    });
-
-    // Remove listeners
-    listenerSingle.flatMapCompletable(listenerId -> 
-        queue.removeListener(listenerId)
-    ).subscribe();
-    ```
-	
-## Deque
-Redis or Valkey based distributed unbounded [Deque](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RDeque.html) object for Java implements [java.util.Deque](https://docs.oracle.com/javase/8/docs/api/java/util/Deque.html) interface. It wraps Valkey or Redis deque commands and extends them by implementing new methods. This object is thread-safe.
-
-Code examples:
-
-=== "Sync"
-    ```
-    RDeque<SomeObject> deque = redisson.getDeque("anyDeque");
-    
-	deque.addFirst(new SomeObject());
-    deque.addLast(new SomeObject());
-    
-	SomeObject obj = deque.removeFirst();
-    SomeObject someObj = deque.removeLast();
-    ```
-=== "Async"
-    ```
-    RDequeAsync<SomeObject> deque = redisson.getDeque("anyDeque");
-	
-    RFuture<Boolean> addFirstF = deque.addFirstAsync(new SomeObject());
-    RFuture<Boolean> addLastF = deque.addLastAsync(new SomeObject());
-    
-	RFuture<SomeObject> objF = deque.removeFirstAsync();
-    RFuture<SomeObject> someObjF = deque.removeLastAsync();
-    ```
-=== "Reactive"
-    ```
-    RedissonReactiveClient redissonReactive = redisson.reactive();
-    RDequeReactive<SomeObject> deque = redissonReactive.getDeque("anyDeque");
-
-    Mono<Boolean> addFirstMono = deque.addFirst(new SomeObject());
-    Mono<Boolean> addLastMono = deque.addLast(new SomeObject());
-
-    Mono<SomeObject> objMono = deque.removeFirst();
-    Mono<SomeObject> someObjMono = deque.removeLast();
-    ```
-=== "RxJava3"
-    ```
-    RedissonRxClient redissonRx = redisson.rxJava();
-    RDequeRx<SomeObject> deque = redissonRx.getDeque("anyDeque");
-	
-    Single<Boolean> addFirstRx = deque.addFirst(new SomeObject());
-    Single<Boolean> addLastRx = deque.addLast(new SomeObject());
-    
-	Maybe<SomeObject> objRx = deque.removeFirst();
-    Maybe<SomeObject> someObjRx = deque.removeLast();
-    ```
-
-### Listeners
-
-Redisson allows binding listeners per `RDeque` object. This requires the `notify-keyspace-events` setting to be enabled on Redis or Valkey side.
-
-|Listener class name|Event description | Valkey or Redis<br/>`notify-keyspace-events` value|
-|:--:|:--:|:--:|
-|org.redisson.api.listener.TrackingListener|Element created/removed/updated after read operation|-|
-|org.redisson.api.listener.ListAddListener|Element created|El|
-|org.redisson.api.listener.ListRemoveListener|Element removed|El|
-|org.redisson.api.ExpiredObjectListener|`RDeque` object expired|Ex|
-|org.redisson.api.DeletedObjectListener|`RDeque` object deleted|Eg|
-
-Code examples:
-
-=== "Sync"
-	```
-	RDeque<String> deque = redisson.getDeque("anyDeque");
-
-	int listenerId = deque.addListener(new DeletedObjectListener() {
-		 @Override
-		 public void onDeleted(String name) {
-			// ...
-		 }
-	});
-
-	// ...
-
-	deque.removeListener(listenerId);
-	```
-=== "Async"
-	```
-	RDequeAsync<String> deque = redisson.getDeque("anyDeque");
-
-	RFuture<Integer> listenerFuture = deque.addListenerAsync(new DeletedObjectListener() {
-		 @Override
-		 public void onDeleted(String name) {
-			// ...
-		 }
-	});
-
-	// ...
-
-	RFuture<Void> removeFuture = deque.removeListenerAsync(listenerId);
-	```
-=== "Reactive"
-	```
-	RedissonReactiveClient redisson = redissonClient.reactive();
-	RDequeReactive<String> deque = redisson.getDeque("anyDeque");
-
-	Mono<Integer> listenerMono = deque.addListener(new DeletedObjectListener() {
-		 @Override
-		 public void onDeleted(String name) {
-			// ...
-		 }
-	});
-
-	// ...
-
-	Mono<Void> removeMono = deque.removeListener(listenerId);
-	```
-=== "RxJava3"
-	```
-	RedissonRxClient redisson = redissonClient.rxJava();
-	RDequeRx<String> deque = redisson.getDeque("anyDeque");
-
-	Single<Integer> listenerRx = deque.addListener(new DeletedObjectListener() {
-		 @Override
-		 public void onDeleted(String name) {
-			// ...
-		 }
-	});
-
-	// ...
-
-	Completable removeRx = deque.removeListener(listenerId);
-	```
-
-## Blocking Queue
-Redis or Valkey based distributed unbounded [BlockingQueue](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RBlockingQueue.html) object for Java implements  [java.util.concurrent.BlockingQueue](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/BlockingQueue.html) interface. It wraps Valkey or Redis blocking queue commands and extends them by implementing new methods. This object is thread-safe.  
-
-This queue lacks the reliability features of the [Reliable Queue](#reliable-queue), such as message acknowledgments, visibility timeouts, delivery guarantees and many more.
-
-Code examples:
-
-=== "Sync"
-    ```
-    RBlockingQueue<SomeObject> queue = redisson.getBlockingQueue("anyQueue");
-    
-	queue.offer(new SomeObject());
-    SomeObject obj = queue.peek();
-    
-	SomeObject obj2 = queue.poll();
-    SomeObject obj3 = queue.poll(10, TimeUnit.MINUTES);
-    ```
-=== "Async"
-    ```
-    RBlockingQueueAsync<SomeObject> queue = redisson.getBlockingQueue("anyQueue");
-    
-	RFuture<Boolean> offerF = queue.offerAsync(new SomeObject());
-	
-    RFuture<SomeObject> peekF = queue.peekAsync();
-    RFuture<SomeObject> pollF = queue.pollAsync();
-	
-    RFuture<SomeObject> pollTimeoutF = queue.pollAsync(10, TimeUnit.MINUTES);
-    ```
-=== "Reactive"
-    ```
-    RedissonReactiveClient redissonReactive = redisson.reactive();
-    RBlockingQueueReactive<SomeObject> queue = redissonReactive.getBlockingQueue("anyQueue");
-	
-    Mono<Boolean> offerMono = queue.offer(new SomeObject());
-    
-	Mono<SomeObject> peekMono = queue.peek();
-    Mono<SomeObject> pollMono = queue.poll();
-    
-	Mono<SomeObject> pollTimeoutMono = queue.poll(10, TimeUnit.MINUTES);
-    ```
-=== "RxJava3"
-    ```
-    RedissonRxClient redissonRx = redisson.rxJava();
-    RBlockingQueueRx<SomeObject> queue = redissonRx.getBlockingQueue("anyQueue");
-
-    Single<Boolean> offerRx = queue.offer(new SomeObject());
-
-    Maybe<SomeObject> peekRx = queue.peek();
-    Maybe<SomeObject> pollRx = queue.poll();
-
-    Maybe<SomeObject> pollTimeoutRx = queue.poll(10, TimeUnit.MINUTES);
-    ```
-
-`poll`, `pollFromAny`, `pollLastAndOfferFirstTo` and `take` methods are resubscribed automatically during re-connection to server or failover.
-
-## Blocking Deque
-Java implementation of Redis or Valkey based [BlockingDeque](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RBlockingDeque.html) implements `java.util.concurrent.BlockingDeque` interface. This object is thread-safe.
-
-Code examples:
-
-=== "Sync"
-    ```
-    RBlockingDeque<Integer> deque = redisson.getBlockingDeque("anyDeque");
-    
-	deque.putFirst(1);
-    deque.putLast(2);
-	
-    Integer firstValue = deque.takeFirst();
-    Integer lastValue = deque.takeLast();
-    
-	Integer firstValueTimeout = deque.pollFirst(10, TimeUnit.MINUTES);
-    Integer lastValueTimeout = deque.pollLast(3, TimeUnit.MINUTES);
-    ```
-=== "Async"
-    ```
-    RBlockingDequeAsync<Integer> deque = redisson.getBlockingDeque("anyDeque");
-    
-	RFuture<Void> putFirstF = deque.putFirstAsync(1);
-    RFuture<Void> putLastF = deque.putLastAsync(2);
-    
-	RFuture<Integer> takeFirstF = deque.takeFirstAsync();
-    RFuture<Integer> takeLastF = deque.takeLastAsync();
-    
-	RFuture<Integer> pollFirstTimeoutF = deque.pollFirstAsync(10, TimeUnit.MINUTES);
-    RFuture<Integer> pollLastTimeoutF = deque.pollLastAsync(3, TimeUnit.MINUTES);
-    ```
-=== "Reactive"
-    ```
-    RedissonReactiveClient redissonReactive = redisson.reactive();
-    RBlockingDequeReactive<Integer> deque = redissonReactive.getBlockingDeque("anyDeque");
-	
-    Mono<Void> putFirstMono = deque.putFirst(1);
-    Mono<Void> putLastMono = deque.putLast(2);
-    
-	Mono<Integer> takeFirstMono = deque.takeFirst();
-    Mono<Integer> takeLastMono = deque.takeLast();
-    
-	Mono<Integer> pollFirstTimeoutMono = deque.pollFirst(10, TimeUnit.MINUTES);
-    Mono<Integer> pollLastTimeoutMono = deque.pollLast(3, TimeUnit.MINUTES);
-    ```
-=== "RxJava3"
-    ```
-    RedissonRxClient redissonRx = redisson.rxJava();
-    RBlockingDequeRx<Integer> deque = redissonRx.getBlockingDeque("anyDeque");
-	
-    Completable putFirstRx = deque.putFirst(1);
-    Completable putLastRx = deque.putLast(2);
-    
-	Single<Integer> takeFirstRx = deque.takeFirst();
-    Single<Integer> takeLastRx = deque.takeLast();
-    
-	Maybe<Integer> pollFirstTimeoutRx = deque.pollFirst(10, TimeUnit.MINUTES);
-    Maybe<Integer> pollLastTimeoutRx = deque.pollLast(3, TimeUnit.MINUTES);
-    ```
-	
-`poll`, `pollFromAny`, `pollLastAndOfferFirstTo` and `take` methods are resubscribed automatically during re-connection to server or failover.
-
-## Delayed Queue
-
-_This object is deprecated. Superseded by [RReliableQueue](#reliable-queue) with delay._
-
-## Bounded Blocking Queue
-
-_This object is deprecated. Superseded by [RReliableQueue](#reliable-queue) with queue size limit._
-
-
-## Priority Queue
-Java implementation of Redis or Valkey based [PriorityQueue](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RPriorityQueue.html) implements [java.util.Queue](https://docs.oracle.com/javase/8/docs/api/java/util/Queue.html) interface. Elements are ordered according to natural order of [Comparable](https://docs.oracle.com/javase/8/docs/api/java/lang/Comparable.html) interface or defined [Comparator](https://docs.oracle.com/javase/8/docs/api/java/util/Comparator.html). This object is thread-safe.  
-
-This queue lacks the reliability features of the [Reliable Queue](#reliable-queue), which implements message priorities, message acknowledgments, visibility timeouts, delivery guarantees and many more.
-
-Use `trySetComparator()` method to define own [Comparator](https://docs.oracle.com/javase/8/docs/api/java/util/Comparator.html). 
-
-Code example:
-```java
-public class Entry implements Comparable<Entry>, Serializable {
-
-    private String key;
-    private Integer value;
-
-    public Entry(String key, Integer value) {
-        this.key = key;
-        this.value = value;
-    }
-
-    @Override
-    public int compareTo(Entry o) {
-        return key.compareTo(o.key);
-    }
-
-}
-
-RPriorityQueue<Entry> queue = redisson.getPriorityQueue("anyQueue");
-queue.add(new Entry("b", 1));
-queue.add(new Entry("c", 1));
-queue.add(new Entry("a", 1));
-
-// Entry [a:1]
-Entry e = queue.poll();
-// Entry [b:1]
-Entry e = queue.poll();
-// Entry [c:1]
-Entry e = queue.poll();
-```
-
-## Priority Deque
-Java implementation of Redis or Valkey based [PriorityDeque](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RPriorityDeque.html) implements [java.util.Deque](https://docs.oracle.com/javase/8/docs/api/java/util/Deque.html) interface. Elements are ordered according to natural order of [java.lang.Comparable](https://docs.oracle.com/javase/8/docs/api/java/lang/Comparable.html) interface or defined [java.util.Comparator](https://docs.oracle.com/javase/8/docs/api/java/util/Comparator.html). This object is thread-safe.  
-
-Use `trySetComparator()` method to define own [Comparator](https://docs.oracle.com/javase/8/docs/api/java/util/Comparator.html). 
-
-Code example:
-```java
-public class Entry implements Comparable<Entry>, Serializable {
-
-    private String key;
-    private Integer value;
-
-    public Entry(String key, Integer value) {
-        this.key = key;
-        this.value = value;
-    }
-
-    @Override
-    public int compareTo(Entry o) {
-        return key.compareTo(o.key);
-    }
-
-}
-
-RPriorityDeque<Entry> queue = redisson.getPriorityDeque("anyQueue");
-queue.add(new Entry("b", 1));
-queue.add(new Entry("c", 1));
-queue.add(new Entry("a", 1));
-
-// Entry [a:1]
-Entry e = queue.pollFirst();
-// Entry [c:1]
-Entry e = queue.pollLast();
-```
-
-## Priority Blocking Queue
-Java implementation of Redis or Valkey based [PriorityBlockingQueue](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RPriorityBlockingQueue.html) similar to JDK [java.util.concurrent.PriorityBlockingQueue](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/PriorityBlockingQueue.html) object. Elements are ordered according to natural order of [java.lang.Comparable](https://docs.oracle.com/javase/8/docs/api/java/lang/Comparable.html) interface or defined [java.util.Comparator](https://docs.oracle.com/javase/8/docs/api/java/util/Comparator.html). This object is thread-safe.  
-
-This queue lacks the reliability features of the [Reliable Queue](#reliable-queue), which implements message priorities, message acknowledgments, visibility timeouts, delivery guarantees and many more.
-
-Use `trySetComparator()` method to define own [java.util.Comparator](https://docs.oracle.com/javase/8/docs/api/java/util/Comparator.html). 
-
-`poll`, `pollLastAndOfferFirstTo` and `take` methods are resubscribed automatically during re-connection to a server or failover.
-
-Code example:
-```java
-public class Entry implements Comparable<Entry>, Serializable {
-
-    private String key;
-    private Integer value;
-
-    public Entry(String key, Integer value) {
-        this.key = key;
-        this.value = value;
-    }
-
-    @Override
-    public int compareTo(Entry o) {
-        return key.compareTo(o.key);
-    }
-
-}
-
-RPriorityBlockingQueue<Entry> queue = redisson.getPriorityBlockingQueue("anyQueue");
-queue.add(new Entry("b", 1));
-queue.add(new Entry("c", 1));
-queue.add(new Entry("a", 1));
-
-// Entry [a:1]
-Entry e = queue.take();
-```
-
-## Priority Blocking Deque
-Java implementation of Redis or Valkey based [PriorityBlockingDeque](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RPriorityBlockingDeque.html) implements [java.util.concurrent.BlockingDeque](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/BlockingDeque.html) interface. Elements are ordered according to natural order of [java.lang.Comparable](https://docs.oracle.com/javase/8/docs/api/java/lang/Comparable.html) interface or defined [java.util.Comparator](https://docs.oracle.com/javase/8/docs/api/java/util/Comparator.html). This object is thread-safe.  
-
-Use `trySetComparator()` method to define own [java.util.Comparator](https://docs.oracle.com/javase/8/docs/api/java/util/Comparator.html). 
-
-`poll`, `pollLastAndOfferFirstTo`, `take` methods are resubscribed automatically during re-connection to Redis or Valkey server or failover.
-
-Code example:
-```java
-public class Entry implements Comparable<Entry>, Serializable {
-
-    private String key;
-    private Integer value;
-
-    public Entry(String key, Integer value) {
-        this.key = key;
-        this.value = value;
-    }
-
-    @Override
-    public int compareTo(Entry o) {
-        return key.compareTo(o.key);
-    }
-
-}
-
-RPriorityBlockingDeque<Entry> queue = redisson.getPriorityBlockingDeque("anyQueue");
-queue.add(new Entry("b", 1));
-queue.add(new Entry("c", 1));
-queue.add(new Entry("a", 1));
-
-// Entry [a:1]
-Entry e = queue.takeFirst();
-// Entry [c:1]
-Entry e = queue.takeLast();
-```
-
 ## Reliable Queue
 
 _This feature is available only in [Redisson PRO](https://redisson.pro/feature-comparison.html) edition._
@@ -2350,6 +1784,572 @@ Code examples of synchronization parameters usage:
 																		  .syncFailureMode(SyncFailureMode.THROW_EXCEPTION));
     ```
 
+
+## Queue
+
+Valkey or Redis based unbounded [Queue](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RQueue.html) object for Java implements [java.util.Queue](https://docs.oracle.com/javase/8/docs/api/java/util/Queue.html) interface. It wraps Valkey or Redis queue commands and extends them by implementing new methods. This object is thread-safe.
+
+This queue lacks the reliability features of the [Reliable Queue](#reliable-queue), such as message acknowledgments, visibility timeouts, delivery guarantees and many more.
+
+Code examples:
+
+=== "Sync"
+	```java
+	RQueue<SomeObject> queue = redisson.getQueue("anyQueue");
+	
+	queue.add(new SomeObject());
+	
+	SomeObject obj = queue.peek();
+	SomeObject someObj = queue.poll();
+	```
+=== "Async"
+	```java
+	RQueueAsync<SomeObject> queue = redisson.getQueue("anyQueue");
+	
+	RFuture<Boolean> af = queue.addAsync(new SomeObject());
+	
+	RFuture<SomeObject> objf = queue.peekAsync();
+	RFuture<SomeObject> someObjf = queue.pollAsync();
+	```
+=== "Reactive"
+	```java
+	RedissonReactiveClient redissonReactive = redisson.reactive();
+	RQueueRx<String, String> queue = redissonReactive.getQueue("myMultimap");
+
+	Mono<Boolean> af = queue.add(new SomeObject());
+	
+	Mono<SomeObject> objf = queue.peek();
+	Mono<SomeObject> someObjf = queue.poll();
+	```
+=== "RxJava3"
+	```java
+	RedissonRxClient redissonRx = redisson.rxJava();
+	RQueueRx<SomeObject> queue = redissonRx.getQueue("anyQueue");
+
+	Single<Boolean> af = queue.add(new SomeObject());
+
+	Maybe<SomeObject> objf = queue.peek();
+	Maybe<SomeObject> someObjf = queue.poll();
+	```
+
+### Listeners
+
+Redisson allows binding listeners per `RQueue` object. This requires the `notify-keyspace-events` setting to be enabled on Redis or Valkey side.
+
+|Listener class name|Event description | Valkey or Redis<br/>`notify-keyspace-events` value|
+|:--:|:--:|:--:|
+|org.redisson.api.listener.TrackingListener|Element created/removed/updated after read operation|-|
+|org.redisson.api.listener.ListAddListener|Element created|El|
+|org.redisson.api.listener.ListRemoveListener|Element removed|El|
+|org.redisson.api.ExpiredObjectListener|`RQueue` object expired|Ex|
+|org.redisson.api.DeletedObjectListener|`RQueue` object deleted|Eg|
+
+Code examples:
+
+=== "Sync"
+    ```
+    RQueue<String> queue = redisson.getQueue("anyQueue");
+
+    int listenerId = queue.addListener(new DeletedObjectListener() {
+         @Override
+         public void onDeleted(String name) {
+            // ...
+         }
+    });
+
+    // Add other listener types
+    int addListenerId = queue.addListener(new ListAddListener() {
+         @Override
+         public void onListAdd(ListAddEvent event) {
+            // ...
+         }
+    });
+
+    // Remove listeners
+    queue.removeListener(listenerId);
+    queue.removeListener(addListenerId);
+    ```
+
+=== "Async"
+    ```
+    RQueueAsync<String> queue = redisson.getQueue("anyQueue");
+
+    RFuture<Integer> listenerFuture = queue.addListenerAsync(new DeletedObjectListener() {
+         @Override
+         public void onDeleted(String name) {
+            // ...
+         }
+    });
+
+    // Add other listener types
+    RFuture<Integer> addListenerFuture = queue.addListenerAsync(new ListAddListener() {
+         @Override
+         public void onListAdd(ListAddEvent event) {
+            // ...
+         }
+    });
+
+    // Remove listeners
+    listenerFuture.whenComplete((listenerId, exception) -> {
+        if (exception == null) {
+            RFuture<Void> removeFuture = queue.removeListenerAsync(listenerId);
+            removeFuture.whenComplete((result, ex) -> {
+                // Listener removed
+            });
+        }
+    });
+    ```
+
+=== "Reactive"
+    ```
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RQueueReactive<String> queue = redisson.getQueue("anyQueue");
+
+    Mono<Integer> listenerMono = queue.addListener(new DeletedObjectListener() {
+         @Override
+         public void onDeleted(String name) {
+            // ...
+         }
+    });
+
+    // Add other listener types
+    Mono<Integer> addListenerMono = queue.addListener(new ListAddListener() {
+         @Override
+         public void onListAdd(ListAddEvent event) {
+            // ...
+         }
+    });
+
+    // Remove listeners
+    listenerMono.flatMap(listenerId -> 
+        queue.removeListener(listenerId)
+    ).subscribe();
+    ```
+
+=== "RxJava3"
+    ```
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RQueueRx<String> queue = redisson.getQueue("anyQueue");
+
+    Single<Integer> listenerSingle = queue.addListener(new DeletedObjectListener() {
+         @Override
+         public void onDeleted(String name) {
+            // ...
+         }
+    });
+
+    // Add other listener types
+    Single<Integer> addListenerSingle = queue.addListener(new ListAddListener() {
+         @Override
+         public void onListAdd(ListAddEvent event) {
+            // ...
+         }
+    });
+
+    // Remove listeners
+    listenerSingle.flatMapCompletable(listenerId -> 
+        queue.removeListener(listenerId)
+    ).subscribe();
+    ```
+	
+## Deque
+Redis or Valkey based distributed unbounded [Deque](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RDeque.html) object for Java implements [java.util.Deque](https://docs.oracle.com/javase/8/docs/api/java/util/Deque.html) interface. It wraps Valkey or Redis deque commands and extends them by implementing new methods. This object is thread-safe.
+
+Code examples:
+
+=== "Sync"
+    ```
+    RDeque<SomeObject> deque = redisson.getDeque("anyDeque");
+    
+	deque.addFirst(new SomeObject());
+    deque.addLast(new SomeObject());
+    
+	SomeObject obj = deque.removeFirst();
+    SomeObject someObj = deque.removeLast();
+    ```
+=== "Async"
+    ```
+    RDequeAsync<SomeObject> deque = redisson.getDeque("anyDeque");
+	
+    RFuture<Boolean> addFirstF = deque.addFirstAsync(new SomeObject());
+    RFuture<Boolean> addLastF = deque.addLastAsync(new SomeObject());
+    
+	RFuture<SomeObject> objF = deque.removeFirstAsync();
+    RFuture<SomeObject> someObjF = deque.removeLastAsync();
+    ```
+=== "Reactive"
+    ```
+    RedissonReactiveClient redissonReactive = redisson.reactive();
+    RDequeReactive<SomeObject> deque = redissonReactive.getDeque("anyDeque");
+
+    Mono<Boolean> addFirstMono = deque.addFirst(new SomeObject());
+    Mono<Boolean> addLastMono = deque.addLast(new SomeObject());
+
+    Mono<SomeObject> objMono = deque.removeFirst();
+    Mono<SomeObject> someObjMono = deque.removeLast();
+    ```
+=== "RxJava3"
+    ```
+    RedissonRxClient redissonRx = redisson.rxJava();
+    RDequeRx<SomeObject> deque = redissonRx.getDeque("anyDeque");
+	
+    Single<Boolean> addFirstRx = deque.addFirst(new SomeObject());
+    Single<Boolean> addLastRx = deque.addLast(new SomeObject());
+    
+	Maybe<SomeObject> objRx = deque.removeFirst();
+    Maybe<SomeObject> someObjRx = deque.removeLast();
+    ```
+
+### Listeners
+
+Redisson allows binding listeners per `RDeque` object. This requires the `notify-keyspace-events` setting to be enabled on Redis or Valkey side.
+
+|Listener class name|Event description | Valkey or Redis<br/>`notify-keyspace-events` value|
+|:--:|:--:|:--:|
+|org.redisson.api.listener.TrackingListener|Element created/removed/updated after read operation|-|
+|org.redisson.api.listener.ListAddListener|Element created|El|
+|org.redisson.api.listener.ListRemoveListener|Element removed|El|
+|org.redisson.api.ExpiredObjectListener|`RDeque` object expired|Ex|
+|org.redisson.api.DeletedObjectListener|`RDeque` object deleted|Eg|
+
+Code examples:
+
+=== "Sync"
+	```
+	RDeque<String> deque = redisson.getDeque("anyDeque");
+
+	int listenerId = deque.addListener(new DeletedObjectListener() {
+		 @Override
+		 public void onDeleted(String name) {
+			// ...
+		 }
+	});
+
+	// ...
+
+	deque.removeListener(listenerId);
+	```
+=== "Async"
+	```
+	RDequeAsync<String> deque = redisson.getDeque("anyDeque");
+
+	RFuture<Integer> listenerFuture = deque.addListenerAsync(new DeletedObjectListener() {
+		 @Override
+		 public void onDeleted(String name) {
+			// ...
+		 }
+	});
+
+	// ...
+
+	RFuture<Void> removeFuture = deque.removeListenerAsync(listenerId);
+	```
+=== "Reactive"
+	```
+	RedissonReactiveClient redisson = redissonClient.reactive();
+	RDequeReactive<String> deque = redisson.getDeque("anyDeque");
+
+	Mono<Integer> listenerMono = deque.addListener(new DeletedObjectListener() {
+		 @Override
+		 public void onDeleted(String name) {
+			// ...
+		 }
+	});
+
+	// ...
+
+	Mono<Void> removeMono = deque.removeListener(listenerId);
+	```
+=== "RxJava3"
+	```
+	RedissonRxClient redisson = redissonClient.rxJava();
+	RDequeRx<String> deque = redisson.getDeque("anyDeque");
+
+	Single<Integer> listenerRx = deque.addListener(new DeletedObjectListener() {
+		 @Override
+		 public void onDeleted(String name) {
+			// ...
+		 }
+	});
+
+	// ...
+
+	Completable removeRx = deque.removeListener(listenerId);
+	```
+
+## Blocking Queue
+Redis or Valkey based distributed unbounded [BlockingQueue](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RBlockingQueue.html) object for Java implements  [java.util.concurrent.BlockingQueue](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/BlockingQueue.html) interface. It wraps Valkey or Redis blocking queue commands and extends them by implementing new methods. This object is thread-safe.  
+
+This queue lacks the reliability features of the [Reliable Queue](#reliable-queue), such as message acknowledgments, visibility timeouts, delivery guarantees and many more.
+
+Code examples:
+
+=== "Sync"
+    ```
+    RBlockingQueue<SomeObject> queue = redisson.getBlockingQueue("anyQueue");
+    
+	queue.offer(new SomeObject());
+    SomeObject obj = queue.peek();
+    
+	SomeObject obj2 = queue.poll();
+    SomeObject obj3 = queue.poll(10, TimeUnit.MINUTES);
+    ```
+=== "Async"
+    ```
+    RBlockingQueueAsync<SomeObject> queue = redisson.getBlockingQueue("anyQueue");
+    
+	RFuture<Boolean> offerF = queue.offerAsync(new SomeObject());
+	
+    RFuture<SomeObject> peekF = queue.peekAsync();
+    RFuture<SomeObject> pollF = queue.pollAsync();
+	
+    RFuture<SomeObject> pollTimeoutF = queue.pollAsync(10, TimeUnit.MINUTES);
+    ```
+=== "Reactive"
+    ```
+    RedissonReactiveClient redissonReactive = redisson.reactive();
+    RBlockingQueueReactive<SomeObject> queue = redissonReactive.getBlockingQueue("anyQueue");
+	
+    Mono<Boolean> offerMono = queue.offer(new SomeObject());
+    
+	Mono<SomeObject> peekMono = queue.peek();
+    Mono<SomeObject> pollMono = queue.poll();
+    
+	Mono<SomeObject> pollTimeoutMono = queue.poll(10, TimeUnit.MINUTES);
+    ```
+=== "RxJava3"
+    ```
+    RedissonRxClient redissonRx = redisson.rxJava();
+    RBlockingQueueRx<SomeObject> queue = redissonRx.getBlockingQueue("anyQueue");
+
+    Single<Boolean> offerRx = queue.offer(new SomeObject());
+
+    Maybe<SomeObject> peekRx = queue.peek();
+    Maybe<SomeObject> pollRx = queue.poll();
+
+    Maybe<SomeObject> pollTimeoutRx = queue.poll(10, TimeUnit.MINUTES);
+    ```
+
+`poll`, `pollFromAny`, `pollLastAndOfferFirstTo` and `take` methods are resubscribed automatically during re-connection to server or failover.
+
+## Blocking Deque
+Java implementation of Redis or Valkey based [BlockingDeque](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RBlockingDeque.html) implements `java.util.concurrent.BlockingDeque` interface. This object is thread-safe.
+
+Code examples:
+
+=== "Sync"
+    ```
+    RBlockingDeque<Integer> deque = redisson.getBlockingDeque("anyDeque");
+    
+	deque.putFirst(1);
+    deque.putLast(2);
+	
+    Integer firstValue = deque.takeFirst();
+    Integer lastValue = deque.takeLast();
+    
+	Integer firstValueTimeout = deque.pollFirst(10, TimeUnit.MINUTES);
+    Integer lastValueTimeout = deque.pollLast(3, TimeUnit.MINUTES);
+    ```
+=== "Async"
+    ```
+    RBlockingDequeAsync<Integer> deque = redisson.getBlockingDeque("anyDeque");
+    
+	RFuture<Void> putFirstF = deque.putFirstAsync(1);
+    RFuture<Void> putLastF = deque.putLastAsync(2);
+    
+	RFuture<Integer> takeFirstF = deque.takeFirstAsync();
+    RFuture<Integer> takeLastF = deque.takeLastAsync();
+    
+	RFuture<Integer> pollFirstTimeoutF = deque.pollFirstAsync(10, TimeUnit.MINUTES);
+    RFuture<Integer> pollLastTimeoutF = deque.pollLastAsync(3, TimeUnit.MINUTES);
+    ```
+=== "Reactive"
+    ```
+    RedissonReactiveClient redissonReactive = redisson.reactive();
+    RBlockingDequeReactive<Integer> deque = redissonReactive.getBlockingDeque("anyDeque");
+	
+    Mono<Void> putFirstMono = deque.putFirst(1);
+    Mono<Void> putLastMono = deque.putLast(2);
+    
+	Mono<Integer> takeFirstMono = deque.takeFirst();
+    Mono<Integer> takeLastMono = deque.takeLast();
+    
+	Mono<Integer> pollFirstTimeoutMono = deque.pollFirst(10, TimeUnit.MINUTES);
+    Mono<Integer> pollLastTimeoutMono = deque.pollLast(3, TimeUnit.MINUTES);
+    ```
+=== "RxJava3"
+    ```
+    RedissonRxClient redissonRx = redisson.rxJava();
+    RBlockingDequeRx<Integer> deque = redissonRx.getBlockingDeque("anyDeque");
+	
+    Completable putFirstRx = deque.putFirst(1);
+    Completable putLastRx = deque.putLast(2);
+    
+	Single<Integer> takeFirstRx = deque.takeFirst();
+    Single<Integer> takeLastRx = deque.takeLast();
+    
+	Maybe<Integer> pollFirstTimeoutRx = deque.pollFirst(10, TimeUnit.MINUTES);
+    Maybe<Integer> pollLastTimeoutRx = deque.pollLast(3, TimeUnit.MINUTES);
+    ```
+	
+`poll`, `pollFromAny`, `pollLastAndOfferFirstTo` and `take` methods are resubscribed automatically during re-connection to server or failover.
+
+## Delayed Queue
+
+_This object is deprecated. Superseded by [RReliableQueue](#reliable-queue) with delay._
+
+## Bounded Blocking Queue
+
+_This object is deprecated. Superseded by [RReliableQueue](#reliable-queue) with queue size limit._
+
+
+## Priority Queue
+Java implementation of Redis or Valkey based [PriorityQueue](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RPriorityQueue.html) implements [java.util.Queue](https://docs.oracle.com/javase/8/docs/api/java/util/Queue.html) interface. Elements are ordered according to natural order of [Comparable](https://docs.oracle.com/javase/8/docs/api/java/lang/Comparable.html) interface or defined [Comparator](https://docs.oracle.com/javase/8/docs/api/java/util/Comparator.html). This object is thread-safe.  
+
+This queue lacks the reliability features of the [Reliable Queue](#reliable-queue), which implements message priorities, message acknowledgments, visibility timeouts, delivery guarantees and many more.
+
+Use `trySetComparator()` method to define own [Comparator](https://docs.oracle.com/javase/8/docs/api/java/util/Comparator.html). 
+
+Code example:
+```java
+public class Entry implements Comparable<Entry>, Serializable {
+
+    private String key;
+    private Integer value;
+
+    public Entry(String key, Integer value) {
+        this.key = key;
+        this.value = value;
+    }
+
+    @Override
+    public int compareTo(Entry o) {
+        return key.compareTo(o.key);
+    }
+
+}
+
+RPriorityQueue<Entry> queue = redisson.getPriorityQueue("anyQueue");
+queue.add(new Entry("b", 1));
+queue.add(new Entry("c", 1));
+queue.add(new Entry("a", 1));
+
+// Entry [a:1]
+Entry e = queue.poll();
+// Entry [b:1]
+Entry e = queue.poll();
+// Entry [c:1]
+Entry e = queue.poll();
+```
+
+## Priority Deque
+Java implementation of Redis or Valkey based [PriorityDeque](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RPriorityDeque.html) implements [java.util.Deque](https://docs.oracle.com/javase/8/docs/api/java/util/Deque.html) interface. Elements are ordered according to natural order of [java.lang.Comparable](https://docs.oracle.com/javase/8/docs/api/java/lang/Comparable.html) interface or defined [java.util.Comparator](https://docs.oracle.com/javase/8/docs/api/java/util/Comparator.html). This object is thread-safe.  
+
+Use `trySetComparator()` method to define own [Comparator](https://docs.oracle.com/javase/8/docs/api/java/util/Comparator.html). 
+
+Code example:
+```java
+public class Entry implements Comparable<Entry>, Serializable {
+
+    private String key;
+    private Integer value;
+
+    public Entry(String key, Integer value) {
+        this.key = key;
+        this.value = value;
+    }
+
+    @Override
+    public int compareTo(Entry o) {
+        return key.compareTo(o.key);
+    }
+
+}
+
+RPriorityDeque<Entry> queue = redisson.getPriorityDeque("anyQueue");
+queue.add(new Entry("b", 1));
+queue.add(new Entry("c", 1));
+queue.add(new Entry("a", 1));
+
+// Entry [a:1]
+Entry e = queue.pollFirst();
+// Entry [c:1]
+Entry e = queue.pollLast();
+```
+
+## Priority Blocking Queue
+Java implementation of Redis or Valkey based [PriorityBlockingQueue](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RPriorityBlockingQueue.html) similar to JDK [java.util.concurrent.PriorityBlockingQueue](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/PriorityBlockingQueue.html) object. Elements are ordered according to natural order of [java.lang.Comparable](https://docs.oracle.com/javase/8/docs/api/java/lang/Comparable.html) interface or defined [java.util.Comparator](https://docs.oracle.com/javase/8/docs/api/java/util/Comparator.html). This object is thread-safe.  
+
+This queue lacks the reliability features of the [Reliable Queue](#reliable-queue), which implements message priorities, message acknowledgments, visibility timeouts, delivery guarantees and many more.
+
+Use `trySetComparator()` method to define own [java.util.Comparator](https://docs.oracle.com/javase/8/docs/api/java/util/Comparator.html). 
+
+`poll`, `pollLastAndOfferFirstTo` and `take` methods are resubscribed automatically during re-connection to a server or failover.
+
+Code example:
+```java
+public class Entry implements Comparable<Entry>, Serializable {
+
+    private String key;
+    private Integer value;
+
+    public Entry(String key, Integer value) {
+        this.key = key;
+        this.value = value;
+    }
+
+    @Override
+    public int compareTo(Entry o) {
+        return key.compareTo(o.key);
+    }
+
+}
+
+RPriorityBlockingQueue<Entry> queue = redisson.getPriorityBlockingQueue("anyQueue");
+queue.add(new Entry("b", 1));
+queue.add(new Entry("c", 1));
+queue.add(new Entry("a", 1));
+
+// Entry [a:1]
+Entry e = queue.take();
+```
+
+## Priority Blocking Deque
+Java implementation of Redis or Valkey based [PriorityBlockingDeque](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RPriorityBlockingDeque.html) implements [java.util.concurrent.BlockingDeque](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/BlockingDeque.html) interface. Elements are ordered according to natural order of [java.lang.Comparable](https://docs.oracle.com/javase/8/docs/api/java/lang/Comparable.html) interface or defined [java.util.Comparator](https://docs.oracle.com/javase/8/docs/api/java/util/Comparator.html). This object is thread-safe.  
+
+Use `trySetComparator()` method to define own [java.util.Comparator](https://docs.oracle.com/javase/8/docs/api/java/util/Comparator.html). 
+
+`poll`, `pollLastAndOfferFirstTo`, `take` methods are resubscribed automatically during re-connection to Redis or Valkey server or failover.
+
+Code example:
+```java
+public class Entry implements Comparable<Entry>, Serializable {
+
+    private String key;
+    private Integer value;
+
+    public Entry(String key, Integer value) {
+        this.key = key;
+        this.value = value;
+    }
+
+    @Override
+    public int compareTo(Entry o) {
+        return key.compareTo(o.key);
+    }
+
+}
+
+RPriorityBlockingDeque<Entry> queue = redisson.getPriorityBlockingDeque("anyQueue");
+queue.add(new Entry("b", 1));
+queue.add(new Entry("c", 1));
+queue.add(new Entry("a", 1));
+
+// Entry [a:1]
+Entry e = queue.takeFirst();
+// Entry [c:1]
+Entry e = queue.takeLast();
+```
 
 ## Stream
 Java implementation of Redis or Valkey based [Stream](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RStream.html) object wraps [Stream](https://redis.io/topics/streams-intro) feature. Basically it allows to create Consumers Group which consume data added by Producers. This object is thread-safe.  

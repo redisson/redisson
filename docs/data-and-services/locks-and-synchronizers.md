@@ -1,3 +1,80 @@
+## Choosing a lock
+
+Redisson offers several distributed lock types. They share the same `RLock`-style API and watchdog behavior, and differ mainly in ordering guarantees, whether they hand out a fencing token, and how a waiting thread is notified. The table below summarizes the trade-offs; each type is documented in its own section further down.
+
+| Lock type | Reentrant | Fair / FIFO | Fencing token | Waiting mechanism | Typical use case |
+| --- | --- | --- | --- | --- | --- |
+| [Lock](#lock) | ✔️ | ❌ | ❌ | Pub/sub | General mutual exclusion |
+| [Non-Reentrant Lock](#non-reentrant-lock) | ❌ | ❌ | ❌ | Pub/sub | Mutual exclusion where the same thread must not re-enter |
+| [Fair Lock](#fair-lock) | ✔️ | ✔️ | ❌ | Pub/sub | Acquisition must follow request order (FIFO) |
+| [Non-Reentrant Fair Lock](#non-reentrant-fair-lock) | ❌ | ✔️ | ❌ | Pub/sub | FIFO ordering without reentrancy |
+| [MultiLock](#multilock) | ✔️ | ❌ | ❌ | Pub/sub | Lock several keys together as a single unit |
+| [ReadWriteLock](#readwritelock) | ✔️ | ❌ | ❌ | Pub/sub | Many concurrent readers, one exclusive writer |
+| [Spin Lock](#spin-lock) | ✔️ | ❌ | ❌ | Backoff polling | Very large numbers of locks, where one pub/sub subscription per lock is too costly |
+| [Fenced Lock](#fenced-lock) | ✔️ | ❌ | ✔️ | Pub/sub | Guarding an external resource against a stale lock holder |
+
+## Lock reliability and fencing
+
+Redisson's distributed locks are built on Valkey or Redis and are *advisory*: they coordinate only the clients that acquire the same lock object, and their safety depends on the deployment topology. The subsections below walk through the failover hazard that arises when a lock is returned before it has replicated, how Redisson's replica-synchronization check — on by default — closes it, and the residual risk that fencing tokens address.
+
+### The failover hazard
+
+Acquiring an `RLock` writes the lock entry to the master. A naive distributed lock returns to the caller as soon as the master accepts that write — before it has reached any replica. If the master then fails over to a replica that has not yet received the write, the new master has no record of the lock and a second client can acquire it, leaving two clients that each believe they hold the same lock. The sequence below shows this hazard with the synced-slaves check disabled:
+
+```mermaid
+sequenceDiagram
+    participant A as Client A
+    participant M as Master
+    participant R as Replica
+    participant B as Client B
+    A->>M: acquire myLock
+    M-->>A: OK (lock held)
+    Note over M,R: lock write not yet replicated
+    M-xM: master crashes
+    R->>R: replica promoted to master
+    Note over R: new master has no record of myLock
+    B->>R: acquire myLock
+    R-->>B: OK (lock held)
+    Note over A,B: both clients now hold "the same" lock
+```
+
+Redisson closes this window by default, as the next subsection describes, so `RLock` does not rely on the application to avoid it.
+
+### Checking replica synchronization
+
+To close most of that window, Redisson can verify after each acquisition that the lock has propagated to the connected replicas. Two `Config` settings control this:
+
+* `checkLockSyncedSlaves` — whether to confirm, after acquisition, that the lock reached the connected replicas. Enabled by default.
+* `slavesSyncTimeout` — how long to wait for that synchronization, in milliseconds (default `1000`). The same timeout applies to `RLock`, `RSemaphore`, and `RPermitExpirableSemaphore`.
+
+```java
+Config config = new Config();
+config.setCheckLockSyncedSlaves(true)   // default
+      .setSlavesSyncTimeout(1000);       // milliseconds, default
+```
+
+With checking enabled, Redisson waits after acquisition for the lock to reach the replicas. If the required replicas do not acknowledge within `slavesSyncTimeout`, Redisson releases the lock — it is unlocked again — and the acquisition fails, so a client never keeps a lock that was not safely replicated and could later be lost to a failover. This narrows the window but does not make a single-master deployment formally safe under every failure — which is where fencing tokens come in.
+
+### Fencing tokens with RFencedLock
+
+A fencing token turns "I think I hold the lock" into something the protected resource can verify. [RFencedLock](#fenced-lock) returns a monotonically increasing token on each acquisition; the resource records the highest token it has seen and rejects any operation that carries a lower one. A client that paused — or whose lock was lost to a failover — and then resumes with a stale token is fenced out, even though it still believes it holds the lock.
+
+```java
+RFencedLock lock = redisson.getFencedLock("myLock");
+
+// acquire the lock and obtain a monotonically increasing fencing token
+Long token = lock.lockAndGetToken();
+try {
+    // pass the token to the protected resource, which must reject any write
+    // whose token is lower than the highest it has already accepted
+    storage.write(data, token);
+} finally {
+    lock.unlock();
+}
+```
+
+`getToken()` returns the current token without acquiring, and `tryLockAndGetToken()` returns `null` when the lock is not acquired. Reach for a fenced lock whenever the lock guards writes to an external system that can enforce the token; for purely in-process coordination a plain [RLock](#lock) is enough.
+
 ## Lock
 Valkey or Redis based distributed reentrant [Lock](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RLock.html) object for Java and implements [Lock](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/locks/Lock.html) interface. Uses pub/sub channel to notify other threads across all Redisson instances waiting to acquire a lock.
 
@@ -6,6 +83,9 @@ If Redisson instance which acquired lock crashes then such lock could hang forev
 `leaseTime` parameter during lock acquisition can be defined. After specified time interval locked lock will be released automatically.
 
 `RLock` object behaves according to the Java Lock specification. It means only lock owner thread can unlock it otherwise `IllegalMonitorStateException` would be thrown. Otherwise consider to use [RSemaphore](#semaphore) object.
+
+!!! note
+    In the asynchronous, reactive, and RxJava3 APIs a single logical operation may run across more than one thread, so the thread that acquires a lock may not be the one that releases it. Because lock ownership is tied to a thread id, pin it explicitly: capture `Thread.currentThread().getId()` and pass the same `threadId` to the `lock`, `tryLock`, and `unlock` calls, as shown in the Reactive and RxJava3 examples below.
 
 Code examples:
 
@@ -51,18 +131,19 @@ Code examples:
     RedissonReactiveClient redisson = redissonClient.reactive();
     RLockReactive lock = redisson.getLock("myLock");
 
-    Mono<Void> lockMono = lock.lock();
+    long threadId = Thread.currentThread().getId();
+    Mono<Void> lockMono = lock.lock(threadId);
 
     // or acquire lock and automatically unlock it after 10 seconds
-    Mono<Void> lockMono = lock.lock(10, TimeUnit.SECONDS);
+    Mono<Void> lockMono = lock.lock(10, TimeUnit.SECONDS, threadId);
 
     // or wait for lock acquisition up to 100 seconds and auto-unlock after 10 seconds
-    Mono<Boolean> lockMono = lock.tryLock(100, 10, TimeUnit.SECONDS);
+    Mono<Boolean> lockMono = lock.tryLock(100, 10, TimeUnit.SECONDS, threadId);
 
     lockMono.doOnNext(res -> {
         // ...
     })
-    .doFinally(signalType -> lock.unlock().subscribe())
+    .doFinally(signalType -> lock.unlock(threadId).subscribe())
     .subscribe();
     ```
 === "RxJava3"
@@ -70,18 +151,19 @@ Code examples:
     RedissonRxClient redisson = redissonClient.rxJava();
     RLockRx lock = redisson.getLock("myLock");
 
-    Completable lockRes = lock.lock();
+    long threadId = Thread.currentThread().getId();
+    Completable lockRes = lock.lock(threadId);
 
     // or acquire lock and automatically unlock it after 10 seconds
-    Completable lockRes = lock.lock(10, TimeUnit.SECONDS);
+    Completable lockRes = lock.lock(10, TimeUnit.SECONDS, threadId);
 
     // or wait for lock acquisition up to 100 seconds and auto-unlock after 10 seconds
-    Single<Boolean> lockRes = lock.tryLock(100, 10, TimeUnit.SECONDS);
+    Single<Boolean> lockRes = lock.tryLock(100, 10, TimeUnit.SECONDS, threadId);
 
     lockRes.doOnSuccess(res -> {
         // ...
     })
-    .doFinally(() -> lock.unlock().subscribe())
+    .doFinally(() -> lock.unlock(threadId).subscribe())
     .subscribe();
     ```
 
@@ -491,7 +573,9 @@ Code examples:
     ```
 
 ## RedLock
-_This object is deprecated. Refer to this [article](https://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html) for more details. Superseded by [RLock](#lock) and [RFencedLock](#fair-lock) objects._
+_This object is deprecated. Superseded by [RLock](#lock) and [RFencedLock](#fenced-lock) objects._
+
+`RedLock` implemented the [Redlock algorithm](https://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html) across several independent masters. The algorithm's safety guarantees are contested, and it adds significant operational cost — a quorum of independent Valkey or Redis instances — for what is usually a single master with replicas. It is therefore deprecated and superseded by [RLock](#lock) together with replica-synchronization checking, and by [RFencedLock](#fenced-lock) when a fencing token is required.
 
 ## ReadWriteLock
 Valkey or Redis based distributed reentrant [ReadWriteLock](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RReadWriteLock.html) object for Java implements [ReadWriteLock](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/locks/ReadWriteLock.html) interface. Both Read and Write locks implement [RLock](#lock) interface.

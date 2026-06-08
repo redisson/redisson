@@ -67,50 +67,6 @@ Redisson provides various Hibernate Cache factories including those with feature
 
     <div class="grid cards" markdown>
 
-    -   **Redisson PRO**
-
-        Maven
-
-        ```xml
-        <dependency>
-            <groupId>pro.redisson</groupId>
-            <!-- for Hibernate v4.x -->
-            <artifactId>redisson-hibernate-4</artifactId>
-            <!-- for Hibernate v5.0.x - v5.1.x -->
-            <artifactId>redisson-hibernate-5</artifactId>
-            <!-- for Hibernate v5.2.x -->
-            <artifactId>redisson-hibernate-52</artifactId>
-            <!-- for Hibernate v5.3.3+ - v5.6.x -->
-            <artifactId>redisson-hibernate-53</artifactId>
-            <!-- for Hibernate v6.0.2+ - v6.x.x -->
-            <artifactId>redisson-hibernate-6</artifactId>
-            <!-- for Hibernate v7.0.x - 7.1.x -->
-            <artifactId>redisson-hibernate-7</artifactId>
-            <!-- for Hibernate v7.2.x - 7.3.x -->
-            <artifactId>redisson-hibernate-72</artifactId>
-            <version>xVERSIONx</version>
-        </dependency>
-        ```
-
-        Gradle
-
-        ```groovy
-        // for Hibernate v4.x
-        compile 'pro.redisson:redisson-hibernate-4:xVERSIONx'
-        // for Hibernate v5.0.x - v5.1.x
-        compile 'pro.redisson:redisson-hibernate-5:xVERSIONx'
-        // for Hibernate v5.2.x
-        compile 'pro.redisson:redisson-hibernate-52:xVERSIONx'
-        // for Hibernate v5.3.3+ - v5.6.x
-        compile 'pro.redisson:redisson-hibernate-53:xVERSIONx'
-        // for Hibernate v6.0.2+ - v6.x.x
-        compile 'pro.redisson:redisson-hibernate-6:xVERSIONx'
-        // for Hibernate v7.0.x - 7.1.x
-        compile 'pro.redisson:redisson-hibernate-7:xVERSIONx'
-        // for Hibernate v7.2.x - 7.3.x
-        compile 'pro.redisson:redisson-hibernate-72:xVERSIONx'
-        ```
-
     -   **Community Edition**
 
         Maven
@@ -153,6 +109,50 @@ Redisson provides various Hibernate Cache factories including those with feature
         compile 'org.redisson:redisson-hibernate-7:xVERSIONx'
         // for Hibernate v7.2.x - 7.3.x
         compile 'org.redisson:redisson-hibernate-72:xVERSIONx'
+        ```
+
+    -   **Redisson PRO**
+
+        Maven
+
+        ```xml
+        <dependency>
+            <groupId>pro.redisson</groupId>
+            <!-- for Hibernate v4.x -->
+            <artifactId>redisson-hibernate-4</artifactId>
+            <!-- for Hibernate v5.0.x - v5.1.x -->
+            <artifactId>redisson-hibernate-5</artifactId>
+            <!-- for Hibernate v5.2.x -->
+            <artifactId>redisson-hibernate-52</artifactId>
+            <!-- for Hibernate v5.3.3+ - v5.6.x -->
+            <artifactId>redisson-hibernate-53</artifactId>
+            <!-- for Hibernate v6.0.2+ - v6.x.x -->
+            <artifactId>redisson-hibernate-6</artifactId>
+            <!-- for Hibernate v7.0.x - 7.1.x -->
+            <artifactId>redisson-hibernate-7</artifactId>
+            <!-- for Hibernate v7.2.x - 7.3.x -->
+            <artifactId>redisson-hibernate-72</artifactId>
+            <version>xVERSIONx</version>
+        </dependency>
+        ```
+
+        Gradle
+
+        ```groovy
+        // for Hibernate v4.x
+        compile 'pro.redisson:redisson-hibernate-4:xVERSIONx'
+        // for Hibernate v5.0.x - v5.1.x
+        compile 'pro.redisson:redisson-hibernate-5:xVERSIONx'
+        // for Hibernate v5.2.x
+        compile 'pro.redisson:redisson-hibernate-52:xVERSIONx'
+        // for Hibernate v5.3.3+ - v5.6.x
+        compile 'pro.redisson:redisson-hibernate-53:xVERSIONx'
+        // for Hibernate v6.0.2+ - v6.x.x
+        compile 'pro.redisson:redisson-hibernate-6:xVERSIONx'
+        // for Hibernate v7.0.x - 7.1.x
+        compile 'pro.redisson:redisson-hibernate-7:xVERSIONx'
+        // for Hibernate v7.2.x - 7.3.x
+        compile 'pro.redisson:redisson-hibernate-72:xVERSIONx'
         ```
 
     </div>
@@ -1111,24 +1111,6 @@ Redisson provides multiple MyBatis Cache implementations which support features 
 
     <div class="grid cards" markdown>
 
-    -   **Redisson PRO**
-
-        Maven
-
-        ```xml  
-        <dependency>
-             <groupId>pro.redisson</groupId>
-             <artifactId>redisson-mybatis</artifactId>
-             <version>xVERSIONx</version>
-        </dependency>
-        ```
-
-        Gradle
-
-        ```groovy
-        compile 'pro.redisson:redisson-mybatis:xVERSIONx'
-        ```
-
     -   **Community Edition**
 
         Maven
@@ -1145,6 +1127,24 @@ Redisson provides multiple MyBatis Cache implementations which support features 
 
         ```groovy
         compile 'org.redisson:redisson-mybatis:xVERSIONx'
+        ```
+
+    -   **Redisson PRO**
+
+        Maven
+
+        ```xml  
+        <dependency>
+             <groupId>pro.redisson</groupId>
+             <artifactId>redisson-mybatis</artifactId>
+             <version>xVERSIONx</version>
+        </dependency>
+        ```
+
+        Gradle
+
+        ```groovy
+        compile 'pro.redisson:redisson-mybatis:xVERSIONx'
         ```
 
     </div>
@@ -1327,26 +1327,6 @@ Redisson provides various [Quarkus Cache](https://quarkus.io/guides/cache) imple
 
     <div class="grid cards" markdown>
 
-    -   **Redisson PRO**
-
-        Maven
-
-        ```xml  
-        <dependency>
-            <groupId>pro.redisson</groupId>
-            <!-- for Quarkus v3.x.x -->
-            <artifactId>redisson-quarkus-30-cache</artifactId>
-            <version>xVERSIONx</version>
-        </dependency>
-        ```
-
-        Gradle
-
-        ```groovy
-        // for Quarkus v3.x.x
-        compile 'pro.redisson:redisson-quarkus-30-cache:xVERSIONx'
-        ```
-
     -   **Community Edition**
 
         Maven
@@ -1365,6 +1345,26 @@ Redisson provides various [Quarkus Cache](https://quarkus.io/guides/cache) imple
         ```groovy
         // for Quarkus v3.x.x
         compile 'org.redisson:redisson-quarkus-30-cache:xVERSIONx'
+        ```
+
+    -   **Redisson PRO**
+
+        Maven
+
+        ```xml  
+        <dependency>
+            <groupId>pro.redisson</groupId>
+            <!-- for Quarkus v3.x.x -->
+            <artifactId>redisson-quarkus-30-cache</artifactId>
+            <version>xVERSIONx</version>
+        </dependency>
+        ```
+
+        Gradle
+
+        ```groovy
+        // for Quarkus v3.x.x
+        compile 'pro.redisson:redisson-quarkus-30-cache:xVERSIONx'
         ```
 
     </div>

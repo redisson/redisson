@@ -128,6 +128,25 @@ LocalCachedMapOptions options = LocalCachedMapOptions.defaults()
 
     <div class="grid cards" markdown>
 
+    -   **Community Edition**
+
+        Maven
+
+        ```xml  
+        <dependency>
+        	<groupId>org.redisson</groupId>
+        	<artifactId>redisson-spring-cache</artifactId>
+        	<version>xVERSIONx</version>
+        </dependency>
+        ```
+
+        Gradle
+
+        ```groovy
+        compile 'org.redisson:redisson-spring-cache:xVERSIONx'
+        ```
+
+
     -   **Redisson PRO**
 
         Maven
@@ -147,25 +166,6 @@ LocalCachedMapOptions options = LocalCachedMapOptions.defaults()
         ```
 
         [License key configuration](configuration.md/#license-key-configuration)
-
-
-    -   **Community Edition**
-
-        Maven
-
-        ```xml  
-        <dependency>
-        	<groupId>org.redisson</groupId>
-        	<artifactId>redisson-spring-cache</artifactId>
-        	<version>xVERSIONx</version>
-        </dependency>
-        ```
-
-        Gradle
-
-        ```groovy
-        compile 'org.redisson:redisson-spring-cache:xVERSIONx'
-        ```
 
     </div>
 

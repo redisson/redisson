@@ -1,3 +1,5 @@
+## Common methods
+
 Every Redisson object supports a set of generic operations that don't depend on its data type - reading the key it is stored under, copying or renaming it, expiring it, dumping and restoring its binary state, and reacting to changes through listeners. These map onto the generic key commands of Valkey and Redis (such as `COPY`, `RENAME`, `UNLINK`, `DUMP`/`RESTORE`, and `EXPIRE`) and come from two interfaces that every object implements: [RObject](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RObject.html) for the type-independent operations and [RExpirable](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RExpirable.html) for expiration (`RExpirable` extends `RObject`).
 
 Operations that work across the whole key space - iterating, counting, and bulk-deleting keys - are not tied to a single object and are exposed through the [RKeys](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RKeys.html) interface, obtained from `redisson.getKeys()`.

@@ -17,7 +17,7 @@ Complex commands such as `keys`, `hmget` and big loops in Lua scripts are more l
 
 **Q: When do I need to shut down a Redisson instance, at the end of each request or the end of the life of a thread?**
 
-**A** : Redisson instance requires manual shutdown only if you want to stop using all of its features. It is a common pattern that Redisson starts and stops along with the application. Since it is completely thread safe, you may treat a Redisson instance as a singleton. The shutdown sequence will disconnect all the active connections held in each connection pool, and it will clean up certain types of Redisson objects require a manual destroy action upon disposal, it will then stop the event loops. Please be advised, the entire shutdown process is not instant.
+**A** : Redisson instance requires manual shutdown only if you want to stop using all of its features. Treating the client as a shared singleton that starts and stops with the application is covered in the [Getting Started](getting-started.md) guide. The shutdown sequence will disconnect all the active connections held in each connection pool, and it will clean up certain types of Redisson objects require a manual destroy action upon disposal, it will then stop the event loops. Please be advised, the entire shutdown process is not instant.
 
 **Q: In MapCache/SetCache/SpringCache/JCache, I have set an expiry time to an entry, why is it still in Redis or Valkey when it should be disappeared?**
 
