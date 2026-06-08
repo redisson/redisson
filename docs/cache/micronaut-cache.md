@@ -16,7 +16,7 @@ Redisson provides various [Micronaut Cache](https://guides.micronaut.io/latest/m
 
     Allows to define `time to live` or `max idle time` parameters per map entry. Eviction is done on Redisson side through a custom scheduled task which removes expired entries using Lua script. Eviction task is started once per unique object name at the moment of getting Map instance. If instance isn't used and has expired entries it should be get again to start the eviction process. This leads to extra Redis or Valkey calls and eviction task per unique map object name. 
 
-    Entries are cleaned time to time by `org.redisson.eviction.EvictionScheduler`. By default, it removes 100 expired entries at a time. This can be changed through [cleanUpKeysAmount](../configuration.md) setting. Task launch time tuned automatically and depends on expired entries amount deleted in previous time and varies between 5 second to 30 minutes by default. This time interval can be changed through [minCleanUpDelay](../configuration.md) and [maxCleanUpDelay](../configuration.md). For example, if clean task deletes 100 entries each time it will be executed every 5 seconds (minimum execution delay). But if current expired entries amount is lower than previous one then execution delay will be increased by 1.5 times and decreased otherwise.
+    Entries are cleaned time to time by `org.redisson.eviction.EvictionScheduler`. By default, it removes 100 expired entries at a time. This can be changed through [cleanUpKeysAmount](configuration.md) setting. Task launch time tuned automatically and depends on expired entries amount deleted in previous time and varies between 5 second to 30 minutes by default. This time interval can be changed through [minCleanUpDelay](configuration.md) and [maxCleanUpDelay](configuration.md). For example, if clean task deletes 100 entries each time it will be executed every 5 seconds (minimum execution delay). But if current expired entries amount is lower than previous one then execution delay will be increased by 1.5 times and decreased otherwise.
 
     Available implementations:
 
@@ -127,13 +127,13 @@ Redisson provides various [Micronaut Cache](https://guides.micronaut.io/latest/m
 2. **Add settings into application.yml file**
 
 	Config structure is a Redisson YAML configuration - 
-	([single mode](../configuration.md/#single-settings),
-	[replicated mode](../configuration.md/#replicated-settings),
-	[cluster mode](../configuration.md/#cluster-settings),
-	[sentinel mode](../configuration.md/#sentinel-settings),
-	[proxy mode](../configuration.md/#proxy-mode-settings),
-	[multi cluster mode](../configuration.md/#multi-cluster-settings), 
-	[multi sentinel mode](../configuration.md/#multi-sentinel-settings))
+	([single mode](configuration.md/#single-settings),
+	[replicated mode](configuration.md/#replicated-settings),
+	[cluster mode](configuration.md/#cluster-settings),
+	[sentinel mode](configuration.md/#sentinel-settings),
+	[proxy mode](configuration.md/#proxy-mode-settings),
+	[multi cluster mode](configuration.md/#multi-cluster-settings), 
+	[multi sentinel mode](configuration.md/#multi-sentinel-settings))
 
 	NOTE: Setting names in camel case should be joined with hyphens (-).
 

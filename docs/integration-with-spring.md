@@ -294,7 +294,7 @@ spring:
       - org.redisson.spring.starter.RedissonAutoConfiguration
 ```
 
-{% include 'cache/Spring-cache.md' %}
+{% include 'cache/spring-cache.md' %}
 
 ## Spring Session
 
@@ -527,7 +527,7 @@ To utilize this feature follow the steps below.
 
 ## Spring Transaction Manager
 
-Redisson provides implementation of both `org.springframework.transaction.PlatformTransactionManager` and `org.springframework.transaction.ReactiveTransactionManager` interfaces to participant in Spring transactions. See also [Transactions](/transactions) section.
+Redisson provides implementation of both `org.springframework.transaction.PlatformTransactionManager` and `org.springframework.transaction.ReactiveTransactionManager` interfaces to participant in Spring transactions. See also [Transactions](transactions.md) section.
 
 **Add `redisson-spring-transaction` dependency into your project:**
 

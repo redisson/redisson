@@ -123,7 +123,7 @@ Available implementations:
 |getClusteredMapCacheNativeV2()<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ❌ | ✔️ | ✔️ | ✔️ | ✔️ |
 |getClusteredLocalCachedMapCacheNativeV2()<br/><sub><i>available only in [Redisson PRO](https://redisson.pro/feature-comparison.html)</i></sub> | ✔️ | ✔️ | ✔️ | ✔️ | ✔️ |
 
-Redisson also provides various [Cache API](../cache-API-implementations.md) implementations.
+Redisson also provides various [Cache API](../cache-api-implementations.md) implementations.
 
 Code example:
 ```java

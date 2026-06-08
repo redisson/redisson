@@ -6,7 +6,7 @@ This technique is used for performance optimization of read operations and avoid
 
 Requires [protocol](configuration.md) setting value set to `RESP3`.
 
-Available for [RBucket](data-and-services/objects.md/#object-holder), [RStream](data-and-services/objects.md/#stream), [RSet](data-and-services/objects.md/#set), [RMap](data-and-services/objects.md/#map), [RScoredSortedSet](data-and-services/collections.md/#scoredsortedset), [RList](data-and-services/collections.md/#list), [RQueue](data-and-services/collections.md/#queue), [RDeque](data-and-services/collections.md/#deque), [RBlockingQueue](data-and-services/collections.md/#blocking-queue), [RBlockingDeque](data-and-services/collections.md/#blocking-deque) objects.
+Available for [RBucket](data-and-services/objects.md/#object-holder), [RStream](data-and-services/queues.md/#stream), [RSet](data-and-services/collections.md/#set), [RMap](data-and-services/collections.md/#map), [RScoredSortedSet](data-and-services/collections.md/#scoredsortedset), [RList](data-and-services/collections.md/#list), [RQueue](data-and-services/queues.md/#queue), [RDeque](data-and-services/queues.md/#deque), [RBlockingQueue](data-and-services/queues.md/#blocking-queue), [RBlockingDeque](data-and-services/queues.md/#blocking-deque) objects.
 
 !!! warning
     Client side caching feature invalidates whole object per entry change which is ineffective.  
@@ -37,9 +37,9 @@ To address this issue Redisson provides own client cache aka `local cache` imple
 
 * [Map](data-and-services/collections.md/#eviction-local-cache-and-data-partitioning)
 * [JSON Store](data-and-services/collections.md/#local-cache)
-* [JCache](cache-api-implementations.md/#local-cache-and-data-partitioning)
+* [JCache](cache-api-implementations.md/#eviction-local-cache-and-data-partitioning_2)
 * [Spring cache](cache-api-implementations.md/#eviction-local-cache-and-data-partitioning)
 * [Hibernate cache](cache-api-implementations.md/#eviction-local-cache-and-data-partitioning_1)
-* [MyBatis cache](cache-api-implementations.md/#eviction-local-cache-and-data-partitioning_2)
-* [Quarkus cache](cache-api-implementations.md/#eviction-local-cache-and-data-partitioning_3)
-* [Micronaut cache](cache-api-implementations.md/#eviction-local-cache-and-data-partitioning_4)
+* [MyBatis cache](cache-api-implementations.md/#eviction-local-cache-and-data-partitioning_3)
+* [Quarkus cache](cache-api-implementations.md/#eviction-local-cache-and-data-partitioning_4)
+* [Micronaut cache](cache-api-implementations.md/#eviction-local-cache-and-data-partitioning_5)

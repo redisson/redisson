@@ -82,11 +82,11 @@ High-performance async and lock-free Java client for Redis and Valkey based on [
 * 2000+ unit tests  
 
 ## Comparing solutions
-- [Redisson vs Jedis](https://redisson.org/feature-comparison-redisson-vs-jedis.html)
-- [Redisson vs Lettuce](https://redisson.org/feature-comparison-redisson-vs-lettuce.html)
-- [Redis vs Apache Ignite](https://redisson.org/feature-comparison-redis-vs-ignite.html)
-- [Redis vs Hazelcast](https://redisson.org/feature-comparison-redis-vs-hazelcast.html)
-- [Redis vs Ehcache](https://redisson.org/feature-comparison-redis-vs-ehcache.html)
+- [Redisson vs Jedis](https://redisson.pro/feature-comparison-redisson-vs-jedis.html)
+- [Redisson vs Lettuce](https://redisson.pro/feature-comparison-redisson-vs-lettuce.html)
+- [Redis vs Apache Ignite](https://redisson.pro/feature-comparison-redis-vs-ignite.html)
+- [Redis vs Hazelcast](https://redisson.pro/feature-comparison-redis-vs-hazelcast.html)
+- [Redis vs Ehcache](https://redisson.pro/feature-comparison-redis-vs-ehcache.html)
 
 ## Success stories
 

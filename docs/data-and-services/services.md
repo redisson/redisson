@@ -597,7 +597,7 @@ Redis or Valkey based [RExecutorService](https://www.javadoc.io/doc/org.redisson
 
 Worker runs task submitted through [RExecutorService](https://www.javadoc.io/doc/org.redisson/redisson/latest/org/redisson/api/RExecutorService.html) interface. Worker should be registered with `WorkerOptions` settings object. Each worker polls a task from a head of Redis or Valkey queue in order it requested it. Polled tasks are executed with ExecutorService. Global default ExecutorService from Redisson configuration is used if ExecutorService in `WorkerOptions` isn't defined.
 
-Consider to use [Redisson node](./12.-Standalone-node) if you need standalone jar which register and executes workers.
+Consider to use [Redisson node](../standalone-node.md) if you need standalone jar which register and executes workers.
 
 WorkerOptions exposes follow settings:
 ```java
@@ -825,7 +825,7 @@ Redis or Valkey based [RScheduledExecutorService](https://www.javadoc.io/doc/org
 
 Worker runs task submitted through [RScheduledExecutorService](https://www.javadoc.io/doc/org.redisson/redisson/latest/org/redisson/api/RScheduledExecutorService.html) interface. Worker should be registered with `WorkerOptions` settings object. Each worker polls a task from head of Redis or Valkey queue in order it requested it. Polled tasks are executed with ExecutorService. Global default ExecutorService from Redisson configuration is used if ExecutorService in `WorkerOptions` isn't defined.
 
-Consider to use [Redisson node](./12.-Standalone-node) if you need standalone jar which register and executes workers.
+Consider to use [Redisson node](../standalone-node.md) if you need standalone jar which register and executes workers.
 
 WorkerOptions exposes follow settings:
 ```java

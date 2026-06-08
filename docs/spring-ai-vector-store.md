@@ -69,7 +69,7 @@ Gradle
 compile 'pro.redisson:redisson-spring-ai-store-10:xVERSIONx'
 ```
 
-[License key configuration](../configuration/#license-key-configuration)
+[License key configuration](configuration.md/#license-key-configuration)
 
 **2. Add settings into `application.yaml` file**
 
