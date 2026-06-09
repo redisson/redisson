@@ -1224,6 +1224,9 @@ public class RedissonMapCacheTest extends BaseMapTest {
         map.put(14, 1);
         checkUpdatedListener(map, 14, 2, 1, () -> map.replace(14, 2));
         checkUpdatedListener(map, 14, 3, 2, () -> map.replace(14, 2, 3));
+
+        map.put(15, 1);
+        checkUpdatedListener(map, 15, 9, 1, () -> map.fastPutIfExists(15, 9));
         map.destroy();
         
         RMapCache<Integer, Integer> map2 = redisson.getMapCache("simple2", new CompositeCodec(redisson.getConfig().getCodec(), IntegerCodec.INSTANCE));
