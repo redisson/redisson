@@ -15,7 +15,7 @@ This table lists the commands that map directly to Redisson methods. Redisson al
 | DECRBY | RAtomicLong.<br/>addAndGet()<br/>addAndGetAsync() | RAtomicLongReactive.<br/>addAndGet() | RAtomicLongRx.<br/>addAndGet() |
 | GET | RBucket.<br/>get()<br/>getAsync()<br/><br/>RBinaryStream.<br/>get()<br/>getAsync() | RBucketReactive.<br/>get()<br/><br/>RBinaryStreamReactive.<br/>get() | RBucketRx.<br/>get()<br/><br/>RBinaryStreamRx.<br/>get() |
 | GETEX | RBucket.<br/>getAndExpire()<br/>getAndExpireAsync()<br/>getAndClearExpire()<br/>getAndClearExpireAsync() | RBucketReactive.<br/>getAndExpire()<br/>getAndClearExpire() | RBucketRx.<br/>getAndExpire()<br/>getAndClearExpire() |
-| GETRANGE | RBinaryStream.<br/>getChannel().read() | RBinaryStreamReactive.<br/>read() | RBinaryStreamRx.<br/>read() |
+| GETRANGE | RBinaryStream.<br/>getAsynchronousChannel().read()<br/>getChannel().read() | RBinaryStreamReactive.<br/>read() | RBinaryStreamRx.<br/>read() |
 | GETSET | RBucket.<br/>getAndSet()<br/>getAndSetAsync()<br/><br/>RAtomicLong.<br/>getAndSet()<br/>getAndSetAsync()<br/><br/>RAtomicDouble.<br/>getAndSet()<br/>getAndSetAsync() | RBucketReactive.<br/>getAndSet()<br/><br/>RAtomicLongReactive.<br/>getAndSet()<br/><br/>RAtomicDoubleReactive.<br/>getAndSet() | RBucketRx.<br/>getAndSet()<br/><br/>RAtomicLongRx.<br/>getAndSet()<br/><br/>RAtomicDoubleRx.<br/>getAndSet() |
 | INCR | RAtomicLong.<br/>incrementAndGet()<br/>incrementAndGetAsync() | RAtomicLongReactive.<br/>incrementAndGet() | RAtomicLongRx.<br/>incrementAndGet() |
 | INCRBY | RAtomicLong.<br/>addAndGet()<br/>addAndGetAsync() | RAtomicLongReactive.<br/>addAndGet() | RAtomicLongRx.<br/>addAndGet() |
@@ -28,7 +28,7 @@ This table lists the commands that map directly to Redisson methods. Redisson al
 | SET | RBucket.<br/>set()<br/>setAsync() | RBucketReactive.<br/>set() | RBucketRx.<br/>set() |
 | SETEX | RBucket.<br/>set()<br/>setAsync() | RBucketReactive.<br/>set() | RBucketRx.<br/>set() |
 | SETNX | RBucket.<br/>setIfAbsent()<br/>setIfAbsentAsync() | RBucketReactive.<br/>setIfAbsent() | RBucketRx.<br/>setIfAbsent() |
-| SETRANGE | RBinaryStream.<br/>getChannel().write() | RBinaryStreamReactive.<br/>write() | RBinaryStreamRx.<br/>write() |
+| SETRANGE | RBinaryStream.<br/>getAsynchronousChannel().write()<br/>getChannel().write() | RBinaryStreamReactive.<br/>write() | RBinaryStreamRx.<br/>write() |
 | STRLEN | RBucket.<br/>size()<br/>sizeAsync() | RBucketReactive.<br/>size() | RBucketRx.<br/>size() |
 
 ## Bitmaps

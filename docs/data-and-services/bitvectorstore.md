@@ -2,9 +2,9 @@
 
 *This feature is available only in [Redisson PRO](https://redisson.pro/feature-comparison.html) edition.*
 
-Java implementation of Valkey or Redis based [RBitVectorStore](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RBitVectorStore.html) object is a distributed store of 64-bit vectors mapped by keys, with fast server-side filtering by bitmask. Each entry packs up to 64 independent boolean attributes into a single `long`, and queries select entries by testing those bits - all evaluated on the server, so a query never transfers the whole data set to the client. Two distinct keys may map to identical vector values yet remain separate entries. The number of stored vectors is limited to `4 294 967 295`, and the object is thread-safe.
+Java implementation of Valkey or Redis based [RBitVectorStore](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RBitVectorStore.html) object is a distributed and highly efficient store of 64-bit vectors mapped by keys, with fast server-side filtering by bitmask. Each entry packs up to 64 independent boolean attributes into a single `long`, and queries select entries by testing those bits - all evaluated on the server, so a query never transfers the whole data set to the client. Two distinct keys may map to identical vector values yet remain separate entries. The number of stored vectors is limited to `4 294 967 295`, and the object is thread-safe.
 
-Beyond plain `put` and `get`, a vector can be modified atomically a few bits at a time - setting, clearing, flipping, or replacing masked bits, with read-before/after and compare-and-set variants - so concurrent clients can update disjoint attributes of the same entry without overwriting each other. Stored vectors are queried with four bitmask predicates and either counted or iterated.
+Beyond plain `put` and `get`, a vector can be modified atomically a few bits at a time - setting, clearing, flipping, or replacing masked bits, with read-before/after and compare-and-set variants - so concurrent clients can update disjoint attributes of the same entry without overwriting each other.
 
 Requires Redis 7.0.0+ or any Valkey version.
 
@@ -179,7 +179,7 @@ for (String id : store.ids()) {
 
 ### Use Cases
 
-Bit Vector Store is well-suited to applications that filter many records by combinations of discrete boolean attributes — feature flags, permissions, categorical tags, audience segments, and similar low-cardinality dimensions. Up to 64 such attributes can be packed into a single vector per key, and queries combine them with bitmask predicates evaluated server-side.
+Bit Vector Store is well-suited to applications that filter many records by combinations of discrete boolean attributes — feature flags, permissions, categorical tags, audience segments, and similar low-cardinality dimensions. Up to 64 such attributes can be packed into a single vector, and queries combine them with bitmask predicates evaluated server-side.
 
 **Feature Flags and Permissions**
 
