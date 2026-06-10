@@ -2371,7 +2371,8 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                             + "redis.call('hset', KEYS[1], ARGV[2], val); "
 
                             + "if hasListeners ~= false then "
-                                + "local msg = struct.pack('Lc0Lc0', string.len(ARGV[2]), ARGV[2], string.len(ARGV[3]), ARGV[3]); "
+                                + "local t, oldval = struct.unpack('dLc0', value); "
+                                + "local msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[2]), ARGV[2], string.len(ARGV[3]), ARGV[3], string.len(oldval), oldval); "
                                 + "redis.call(ARGV[4], KEYS[4], msg); "
                             + "end; " +
 
