@@ -32,6 +32,7 @@
         <module>redisson-spring-data-34</module>
         <module>redisson-spring-data-35</module>
         <module>redisson-spring-data-40</module>
+        <module>redisson-spring-data-41</module>
     </modules>
 
     <properties>
