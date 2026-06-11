@@ -24,7 +24,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.data.redis.core.RedisOperations;
 
 /**
- * Spring configuration used with Spring Boot 2.7+
+ * Spring configuration used with Spring Boot 2.7 - 3.5
  *
  * @author Nikita Koksharov
  *
