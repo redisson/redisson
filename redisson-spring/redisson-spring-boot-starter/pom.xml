@@ -9,7 +9,7 @@
     </parent>
 
     <properties>
-        <spring-boot.version>4.0.6</spring-boot.version>
+        <spring-boot.version>4.1.0</spring-boot.version>
         <main.basedir>${project.parent.parent.basedir}</main.basedir>
     </properties>
 
@@ -210,7 +210,7 @@
 
         <dependency>
             <groupId>org.redisson</groupId>
-            <artifactId>redisson-spring-data-40</artifactId>
+            <artifactId>redisson-spring-data-41</artifactId>
             <version>${project.version}</version>
         </dependency>
 
