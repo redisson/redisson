@@ -20,6 +20,7 @@ import org.redisson.api.RedissonNodeInitializer;
 import org.redisson.client.FailedNodeDetector;
 import org.redisson.client.NettyHook;
 import org.redisson.client.codec.Codec;
+import org.redisson.codec.Kryo5Codec;
 import org.redisson.codec.ReferenceCodecProvider;
 import org.redisson.connection.AddressResolverGroupFactory;
 import org.redisson.connection.ConnectionListener;
@@ -410,6 +411,8 @@ public class ConfigSupport {
             this.yamlConstructors.put(new Tag("tag:yaml.org,2002:org.redisson.config.FullJitterDelay"), delayConstructor);
             this.yamlConstructors.put(new Tag("tag:yaml.org,2002:org.redisson.config.DecorrelatedJitterDelay"), delayConstructor);
             this.yamlConstructors.put(new Tag("tag:yaml.org,2002:org.redisson.config.ConstantDelay"), delayConstructor);
+
+            this.yamlConstructors.put(new Tag("tag:yaml.org,2002:org.redisson.codec.Kryo5Codec"), new ConstructKryo5Codec());
         }
 
         @Override
@@ -513,6 +516,48 @@ public class ConfigSupport {
                 } catch (Exception e) {
                     throw new IllegalStateException("Failed to construct " + clazz.getName(), e);
                 }
+            }
+        }
+
+        private final class ConstructKryo5Codec extends ConstructMapping {
+            @Override
+            public Object construct(Node node) {
+                MappingNode mappingNode = (MappingNode) node;
+
+                List<NodeTuple> tuples = mappingNode.getValue();
+                if (tuples.isEmpty()) {
+                    flattenMapping(mappingNode);
+                    tuples = mappingNode.getValue();
+                }
+
+                boolean useReferences = false;
+                Set<String> allowedClasses = new LinkedHashSet<>();
+
+                for (NodeTuple tuple : tuples) {
+                    Node keyNode = tuple.getKeyNode();
+                    if (!(keyNode instanceof org.yaml.snakeyaml.nodes.ScalarNode)) {
+                        continue;
+                    }
+
+                    String key = ((org.yaml.snakeyaml.nodes.ScalarNode) keyNode).getValue();
+                    Object value = constructObject(tuple.getValueNode());
+
+                    if ("useReferences".equals(key)) {
+                        if (value instanceof Boolean) {
+                            useReferences = (Boolean) value;
+                        } else if (value != null) {
+                            useReferences = Boolean.parseBoolean(value.toString());
+                        }
+                    } else if ("allowedClasses".equals(key) && value instanceof Collection) {
+                        for (Object item : (Collection<?>) value) {
+                            if (item != null) {
+                                allowedClasses.add(item.toString());
+                            }
+                        }
+                    }
+                }
+
+                return new Kryo5Codec(allowedClasses, useReferences);
             }
         }
     }

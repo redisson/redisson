@@ -5,6 +5,7 @@ import mockit.Mock;
 import mockit.MockUp;
 import org.junit.jupiter.api.Test;
 import org.redisson.codec.JsonJacksonCodec;
+import org.redisson.codec.Kryo5Codec;
 
 import java.io.IOException;
 
@@ -124,6 +125,34 @@ public class ConfigSupportTest {
     private SingleServerConfig mkConfig(String authorityValue) throws IOException {
         String config = "singleServerConfig:\n  address: redis://" + authorityValue;
         return new ConfigSupport().fromYAML(config, Config.class).getSingleServerConfig();
+    }
+
+    @Test
+    public void testKryo5CodecUseReferences() throws Exception {
+        String yaml = "codec: !<org.redisson.codec.Kryo5Codec> {useReferences: true}\n"
+                + "singleServerConfig:\n  address: redis://127.0.0.1";
+
+        Config config = new ConfigSupport().fromYAML(yaml, Config.class);
+
+        assertThat(config.getCodec()).isInstanceOf(Kryo5Codec.class);
+        assertThat(readUseReferences((Kryo5Codec) config.getCodec())).isTrue();
+    }
+
+    @Test
+    public void testKryo5CodecUseReferencesDefault() throws Exception {
+        String yaml = "codec: !<org.redisson.codec.Kryo5Codec> {}\n"
+                + "singleServerConfig:\n  address: redis://127.0.0.1";
+
+        Config config = new ConfigSupport().fromYAML(yaml, Config.class);
+
+        assertThat(config.getCodec()).isInstanceOf(Kryo5Codec.class);
+        assertThat(readUseReferences((Kryo5Codec) config.getCodec())).isFalse();
+    }
+
+    private static boolean readUseReferences(Kryo5Codec codec) throws Exception {
+        java.lang.reflect.Field field = Kryo5Codec.class.getDeclaredField("useReferences");
+        field.setAccessible(true);
+        return field.getBoolean(codec);
     }
     
     private void mockHostEnv(String host, String port) {
