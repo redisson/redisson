@@ -45,6 +45,56 @@ public class MapCacheNativeWrapper<K, V> implements RMapCache<K, V>, Supplier<RM
     }
 
     @Override
+    public LeaseGetResult<V> getWithLease(K key, Duration leaseTimeToLive) {
+        throw new UnsupportedOperationException("getWithLease method is not supported in native cache");
+    }
+
+    @Override
+    public RFuture<LeaseGetResult<V>> getWithLeaseAsync(K key, Duration leaseTimeToLive) {
+        throw new UnsupportedOperationException("getWithLeaseAsync method is not supported in native cache");
+    }
+
+    @Override
+    public boolean removeWithLease(K key) {
+        throw new UnsupportedOperationException("removeWithLease method is not supported in native cache");
+    }
+
+    @Override
+    public RFuture<Boolean> removeWithLeaseAsync(K key) {
+        throw new UnsupportedOperationException("removeWithLeaseAsync method is not supported in native cache");
+    }
+
+    @Override
+    public boolean putWithLease(K key, V value, String leaseToken) {
+        throw new UnsupportedOperationException("putWithLease method is not supported in native cache");
+    }
+
+    @Override
+    public RFuture<Boolean> putWithLeaseAsync(K key, V value, String leaseToken) {
+        throw new UnsupportedOperationException("putWithLease method is not supported in native cache");
+    }
+
+    @Override
+    public boolean putWithLease(K key, V value, Duration ttl, String leaseToken) {
+        throw new UnsupportedOperationException("putWithLease method is not supported in native cache");
+    }
+
+    @Override
+    public RFuture<Boolean> putWithLeaseAsync(K key, V value, Duration ttl, String leaseToken) {
+        throw new UnsupportedOperationException("putWithLease method is not supported in native cache");
+    }
+
+    @Override
+    public boolean putWithLease(K key, V value, Duration ttl, Duration maxIdleTime, String leaseToken) {
+        throw new UnsupportedOperationException("putWithLease method is not supported in native cache");
+    }
+
+    @Override
+    public RFuture<Boolean> putWithLeaseAsync(K key, V value, Duration ttl, Duration maxIdleTime, String leaseToken) {
+        throw new UnsupportedOperationException("putWithLease method is not supported in native cache");
+    }
+
+    @Override
     public void setMaxSize(int maxSize) {
     }
 

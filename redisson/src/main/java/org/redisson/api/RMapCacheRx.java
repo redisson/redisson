@@ -48,7 +48,7 @@ import java.util.function.Function;
  * @param <K> key
  * @param <V> value
  */
-public interface RMapCacheRx<K, V> extends RMapRx<K, V>, RDestroyable {
+public interface RMapCacheRx<K, V> extends RMapRx<K, V>, RDestroyable, RLeasedMapRx<K, V> {
 
     /**
      * Sets max size of the map.
