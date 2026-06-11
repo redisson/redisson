@@ -24,6 +24,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.transaction.operation.TransactionalOperation;
 
+import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -57,6 +58,56 @@ public class RedissonTransactionalMapCache<K, V> extends RedissonMapCache<K, V> 
         this.executed = executed;
         RedissonMapCache<K, V> innerMap = new RedissonMapCache<K, V>(codec, null, commandExecutor, name, null, null, null);
         this.transactionalMap = new BaseTransactionalMapCache<K, V>(commandExecutor, timeout, operations, innerMap, transactionId);
+    }
+
+    @Override
+    public LeaseGetResult<V> getWithLease(K key, Duration leaseTimeToLive) {
+        throw new UnsupportedOperationException("getWithLease method is not supported in transaction");
+    }
+
+    @Override
+    public RFuture<LeaseGetResult<V>> getWithLeaseAsync(K key, Duration leaseTimeToLive) {
+        throw new UnsupportedOperationException("getWithLeaseAsync method is not supported in transaction");
+    }
+
+    @Override
+    public boolean removeWithLease(K key) {
+        throw new UnsupportedOperationException("removeWithLease method is not supported in transaction");
+    }
+
+    @Override
+    public RFuture<Boolean> removeWithLeaseAsync(K key) {
+        throw new UnsupportedOperationException("removeWithLeaseAsync method is not supported in transaction");
+    }
+
+    @Override
+    public boolean putWithLease(K key, V value, String leaseToken) {
+        throw new UnsupportedOperationException("putWithLease method is not supported in transaction");
+    }
+
+    @Override
+    public RFuture<Boolean> putWithLeaseAsync(K key, V value, String leaseToken) {
+        throw new UnsupportedOperationException("putWithLease method is not supported in transaction");
+    }
+
+    @Override
+    public boolean putWithLease(K key, V value, Duration ttl, String leaseToken) {
+        throw new UnsupportedOperationException("putWithLease method is not supported in transaction");
+    }
+
+    @Override
+    public RFuture<Boolean> putWithLeaseAsync(K key, V value, Duration ttl, String leaseToken) {
+        throw new UnsupportedOperationException("putWithLease method is not supported in transaction");
+    }
+
+    @Override
+    public boolean putWithLease(K key, V value, Duration ttl, Duration maxIdleTime, String leaseToken) {
+        throw new UnsupportedOperationException("putWithLease method is not supported in transaction");
+    }
+
+    @Override
+    public RFuture<Boolean> putWithLeaseAsync(K key, V value, Duration ttl, Duration maxIdleTime, String leaseToken) {
+        throw new UnsupportedOperationException("putWithLease method is not supported in transaction");
     }
     
     @Override

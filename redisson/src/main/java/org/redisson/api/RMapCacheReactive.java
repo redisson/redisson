@@ -46,7 +46,7 @@ import java.util.function.Function;
  * @param <K> key
  * @param <V> value
  */
-public interface RMapCacheReactive<K, V> extends RMapReactive<K, V>, RDestroyable {
+public interface RMapCacheReactive<K, V> extends RMapReactive<K, V>, RDestroyable, RLeasedMapReactive<K, V> {
 
     /**
      * Sets max size of the map.

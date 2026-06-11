@@ -44,7 +44,7 @@ import java.util.function.Function;
  * @param <K> key
  * @param <V> value
  */
-public interface RMapCacheAsync<K, V> extends RMapAsync<K, V> {
+public interface RMapCacheAsync<K, V> extends RMapAsync<K, V>, RLeasedMapAsync<K, V> {
 
     /**
      * Sets max size of the map and overrides current value.
