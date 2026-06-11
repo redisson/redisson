@@ -879,6 +879,18 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
     }
 
     @Test
+    public void testPutAllRMap() {
+        RLocalCachedMap<Integer, String> map = redisson.getLocalCachedMap(LocalCachedMapOptions.name("test"));
+        RLocalCachedMap<Integer, String> map1 = redisson.getLocalCachedMap(LocalCachedMapOptions.name("test01"));
+        map.put(1, "1");
+        map.put(2, "2");
+        map.put(3, "3");
+        map1.putAll(map);
+        assertThat(map).hasSize(3);
+        assertThat(map1).hasSize(3);
+    }
+
+    @Test
     public void testGetBeforePut() {
         RLocalCachedMap<String, String> map1 = redisson.getLocalCachedMap(LocalCachedMapOptions.name("test"));
         for (int i = 0; i < 1_000; i++) {
