@@ -3334,4 +3334,146 @@ public class RedissonConnection extends AbstractRedisConnection {
     public RedisZSetCommands zSetCommands() {
         return this;
     }
+
+    private static void appendSetCondition(List<Object> params, SetCondition condition) {
+        CompareCondition compareCondition = condition.getCompareCondition();
+        if (compareCondition != null) {
+            boolean equals = compareCondition.getOperator() == CompareCondition.ComparisonOperator.EQUALS;
+            if (compareCondition.getComparison() == CompareCondition.ComparisonFunction.DIGEST) {
+                params.add(equals ? "IFDEQ" : "IFDNE");
+            } else {
+                params.add(equals ? "IFEQ" : "IFNE");
+            }
+            params.add(compareCondition.getValue().asBytes());
+        } else if (condition.getKeyCondition() == SetCondition.KeyCondition.IF_ABSENT) {
+            params.add("NX");
+        } else if (condition.getKeyCondition() == SetCondition.KeyCondition.IF_PRESENT) {
+            params.add("XX");
+        }
+    }
+
+    private static void appendSetExpiration(List<Object> params, Expiration expiration) {
+        if (expiration.isUnixTimestamp()) {
+            if (expiration.getTimeUnit() == TimeUnit.MILLISECONDS) {
+                params.add("PXAT");
+                params.add(expiration.getExpirationTimeInMilliseconds());
+            } else {
+                params.add("EXAT");
+                params.add(expiration.getExpirationTimeInSeconds());
+            }
+        } else if (!expiration.isPersistent()) {
+            if (expiration.isKeepTtl()) {
+                params.add("KEEPTTL");
+            } else if (expiration.getTimeUnit() == TimeUnit.MILLISECONDS) {
+                params.add("PX");
+                params.add(expiration.getExpirationTime());
+            } else {
+                params.add("EX");
+                params.add(expiration.getConverted(TimeUnit.SECONDS));
+            }
+        }
+    }
+
+    @Override
+    public Boolean set(byte[] key, byte[] value, SetCondition condition, Expiration expiration) {
+        Assert.notNull(key, "Key must not be null");
+        Assert.notNull(value, "Value must not be null");
+        Assert.notNull(condition, "Condition must not be null");
+        Assert.notNull(expiration, "Expiration must not be null");
+
+        List<Object> params = new ArrayList<>();
+        params.add(key);
+        params.add(value);
+        appendSetCondition(params, condition);
+        appendSetExpiration(params, expiration);
+
+        return write(key, StringCodec.INSTANCE, SET, params.toArray());
+    }
+
+    @Override
+    public byte[] setGet(byte[] key, byte[] value, SetCondition condition, Expiration expiration) {
+        Assert.notNull(key, "Key must not be null");
+        Assert.notNull(value, "Value must not be null");
+        Assert.notNull(condition, "Condition must not be null");
+        Assert.notNull(expiration, "Expiration must not be null");
+
+        List<Object> params = new ArrayList<>();
+        params.add(key);
+        params.add(value);
+        appendSetCondition(params, condition);
+        params.add("GET");
+        appendSetExpiration(params, expiration);
+
+        return read(key, ByteArrayCodec.INSTANCE, SET_VALUE, params.toArray());
+    }
+
+    @Override
+    public Boolean delex(byte[] key, CompareCondition condition) {
+        Assert.notNull(key, "Key must not be null");
+        Assert.notNull(condition, "Condition must not be null");
+
+        boolean equals = condition.getOperator() == CompareCondition.ComparisonOperator.EQUALS;
+        String token;
+        if (condition.getComparison() == CompareCondition.ComparisonFunction.DIGEST) {
+            token = equals ? "IFDEQ" : "IFDNE";
+        } else {
+            token = equals ? "IFEQ" : "IFNE";
+        }
+        return write(key, StringCodec.INSTANCE, RedisCommands.DELEX, key, token, condition.getValue().asBytes());
+    }
+
+    @Override
+    public String digest(byte[] key) {
+        Assert.notNull(key, "Key must not be null");
+        return read(key, StringCodec.INSTANCE, RedisCommands.DIGEST, key);
+    }
+
+    @Override
+    public Long time() {
+        return time(TimeUnit.MILLISECONDS);
+    }
+
+    @Override
+    public Long zInterStore(byte[] destKey, Aggregate aggregate, int[] weights, byte[]... sets) {
+        return zInterStore(destKey, aggregate, Weights.of(weights), sets);
+    }
+
+    @Override
+    public Long zUnionStore(byte[] destKey, Aggregate aggregate, int[] weights, byte[]... sets) {
+        return zUnionStore(destKey, aggregate, Weights.of(weights), sets);
+    }
+
+    @Override
+    public Set<Tuple> zInterWithScores(Aggregate aggregate, int[] weights, byte[]... sets) {
+        return zInterWithScores(aggregate, Weights.of(weights), sets);
+    }
+
+    @Override
+    public Set<Tuple> zUnionWithScores(Aggregate aggregate, int[] weights, byte[]... sets) {
+        return zUnionWithScores(aggregate, Weights.of(weights), sets);
+    }
+
+    @Override
+    public List<Long> applyHashFieldExpiration(byte[] key, Expiration expiration, ExpirationOptions options, byte[]... fields) {
+        Assert.notNull(key, "Key must not be null");
+        Assert.notNull(expiration, "Expiration must not be null");
+        Assert.notNull(options, "Options must not be null");
+
+        if (expiration.isPersistent()) {
+            return hPersist(key, fields);
+        }
+
+        ExpirationOptions.Condition condition = options.getCondition();
+        if (expiration.isUnixTimestamp()) {
+            if (expiration.getTimeUnit() == TimeUnit.MILLISECONDS) {
+                return hpExpireAt(key, expiration.getExpirationTimeInMilliseconds(), condition, fields);
+            }
+            return hExpireAt(key, expiration.getExpirationTimeInSeconds(), condition, fields);
+        }
+        if (expiration.getTimeUnit() == TimeUnit.MILLISECONDS) {
+            return hpExpire(key, expiration.getExpirationTimeInMilliseconds(), condition, fields);
+        }
+        return hExpire(key, expiration.getExpirationTimeInSeconds(), condition, fields);
+    }
+
 }
