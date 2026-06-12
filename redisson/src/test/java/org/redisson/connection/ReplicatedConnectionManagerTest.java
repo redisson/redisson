@@ -2,14 +2,19 @@ package org.redisson.connection;
 
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.embedded.EmbeddedChannel;
+import mockit.Invocation;
+import mockit.Mock;
+import mockit.MockUp;
 import org.assertj.core.api.Assertions;
 import org.joor.Reflect;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.redisson.api.NodeType;
 import org.redisson.api.RFuture;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisClientConfig;
 import org.redisson.client.RedisConnection;
+import org.redisson.client.RedisConnectionException;
 import org.redisson.client.RedisTimeoutException;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
@@ -20,6 +25,7 @@ import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.RedisURI;
 
 import java.net.InetSocketAddress;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Map;
@@ -28,6 +34,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 public class ReplicatedConnectionManagerTest {
 
@@ -96,11 +105,45 @@ public class ReplicatedConnectionManagerTest {
         }
     }
 
+    @Test
+    public void testDoConnectBoundsWaitWhenSeedConnectionStalls() {
+        Config config = new Config();
+        ReplicatedServersConfig serversConfig = config.useReplicatedServers();
+        serversConfig.addNodeAddress("redis://127.0.0.1:6379");
+        // a stalled seed must surface a bounded-wait timeout rather than parking the caller forever
+        serversConfig.setConnectTimeout(100);
+
+        manager = buildStuckManager(serversConfig, config);
+
+        assertTimeoutPreemptively(Duration.ofSeconds(10), () ->
+                Assertions.assertThatThrownBy(() -> manager.doConnect(u -> null))
+                        .isInstanceOf(RedisConnectionException.class)
+                        .hasCauseInstanceOf(TimeoutException.class));
+    }
+
     private ReplicatedConnectionManager createManager() {
         Config config = new Config();
         ReplicatedServersConfig serversConfig = new ReplicatedServersConfig();
         serversConfig.addNodeAddress("redis://127.0.0.1:6379");
         return new ReplicatedConnectionManager(serversConfig, config);
+    }
+
+    private static ReplicatedConnectionManager buildStuckManager(ReplicatedServersConfig serversConfig, Config config) {
+        // resolveAddr returns a future that never completes, so connectToNode never finishes and
+        // the seed-node join in doConnect must time out instead of parking forever
+        return new ReplicatedConnectionManager(serversConfig, config) {
+            @Override
+            protected RedisClient createClient(NodeType type, RedisURI address, int timeout, int commandTimeout, String sslHostname) {
+                RedisClient client = super.createClient(type, address, timeout, commandTimeout, sslHostname);
+                new MockUp<RedisClient>(client) {
+                    @Mock
+                    public CompletableFuture<InetSocketAddress> resolveAddr(Invocation inv) {
+                        return new CompletableFuture<>();
+                    }
+                };
+                return client;
+            }
+        };
     }
 
     private static Map<RedisURI, RedisConnection> nodeConnections(ReplicatedConnectionManager manager) {
