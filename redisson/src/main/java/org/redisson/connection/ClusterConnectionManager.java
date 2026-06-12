@@ -68,6 +68,10 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
     private final Map<RedisClient, MasterSlaveEntry> client2entry = new ConcurrentHashMap<>();
 
+    // Invalidated when an init attempt ends, so a straggler addMasterEntry shuts down its own entry
+    // instead of leaking a connection pool into a manager that already gave up.
+    private final AtomicReference<Object> activeInitAttempt = new AtomicReference<>();
+
     private ClusterServersConfig cfg;
 
     ClusterConnectionManager(ClusterServersConfig cfg, Config configCopy) {
@@ -97,6 +101,9 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         List<String> failedMasters = new ArrayList<>();
         boolean skipCommandsDetection = false;
         for (String address : cfg.getNodeAddresses()) {
+            // New token per seed so a failed attempt's stragglers self-clean without disabling the next.
+            Object initAttempt = new Object();
+            activeInitAttempt.set(initAttempt);
             RedisURI addr = new RedisURI(address);
             CompletionStage<RedisConnection> connectionFuture = connectToNode(cfg, addr, addr.getHost());
             try {
@@ -146,15 +153,26 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                         throw new IllegalStateException("Master node: " + partition.getNodeId() + " doesn't have an address.");
                     }
 
-                    CompletionStage<Void> masterFuture = addMasterEntry(partition, cfg);
+                    CompletionStage<Void> masterFuture = addMasterEntry(partition, cfg, initAttempt);
                     masterFutures.add(masterFuture.toCompletableFuture());
                 }
 
                 CompletableFuture<Void> masterFuture = CompletableFuture.allOf(masterFutures.toArray(new CompletableFuture[0]));
+                long timeoutMillis = (long) config.getConnectTimeout()
+                        * (Math.max(1, config.getMasterConnectionMinimumIdleSize())
+                         + Math.max(1, config.getSlaveConnectionMinimumIdleSize())
+                         + Math.max(1, config.getSubscriptionConnectionMinimumIdleSize()));
                 try {
-                    masterFuture.join();
-                } catch (CompletionException e) {
+                    masterFuture.get(timeoutMillis, TimeUnit.MILLISECONDS);
+                } catch (ExecutionException e) {
                     lastException = e.getCause();
+                } catch (TimeoutException e) {
+                    lastException = new RedisConnectionException(
+                            "Timed out after " + timeoutMillis
+                                    + "ms waiting for cluster master entries to initialize", e);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new RedisConnectionException(e);
                 }
                 break;
             } catch (Exception e) {
@@ -168,6 +186,9 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 if (e.getMessage() != null) {
                     log.warn(e.getMessage());
                 }
+            } finally {
+                // Invalidate so any still-in-flight addMasterEntry straggler shuts down its own entry.
+                activeInitAttempt.compareAndSet(initAttempt, null);
             }
         }
 
@@ -321,7 +342,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         return result;
     }
     
-    private CompletionStage<Void> addMasterEntry(ClusterPartition partition, ClusterServersConfig cfg) {
+    private CompletionStage<Void> addMasterEntry(ClusterPartition partition, ClusterServersConfig cfg, Object initAttempt) {
         if (partition.isMasterFail()) {
             RedisException e = new RedisException("Failed to add master: " +
                     partition.getMasterAddress() + " for slot ranges: " +
@@ -356,6 +377,13 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
             CompletableFuture<RedisClient> f = entry.setupMasterEntry(new RedisURI(config.getMasterAddress()), configEndpointHostName);
             return f.thenCompose(masterClient -> {
+                // null for topology-change callers (always register); during init, bail if doConnect
+                // already abandoned this attempt, shutting the just-created entry so its pool doesn't linger.
+                if (initAttempt != null && activeInitAttempt.get() != initAttempt) {
+                    entry.shutdownAsync();
+                    throw new CompletionException(new RedisConnectionException(
+                            "Cluster initialization attempt is no longer active"));
+                }
                 for (Integer slot : partition.getSlots()) {
                     addEntry(slot, entry);
                     addPartition(slot, partition);
@@ -723,7 +751,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
         addedPartitions.keySet().removeAll(mastersElected);
         for (ClusterPartition newPart : addedPartitions.values()) {
-            CompletionStage<Void> future = addMasterEntry(newPart, cfg);
+            CompletionStage<Void> future = addMasterEntry(newPart, cfg, null);
             futures.add(future.toCompletableFuture());
         }
         return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
