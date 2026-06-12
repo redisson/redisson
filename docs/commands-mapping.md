@@ -102,6 +102,29 @@ This table lists the commands that map directly to Redisson methods. Redisson al
 | RPUSH | RList.<br/>add()<br/>addAsync() | RListReactive.<br/>add() | RListRx.<br/>add() |
 | RPUSHX | RDeque.<br/>addLastIfExists()<br/>addLastIfExistsAsync() | RListReactive.<br/>addLastIfExists() | RListRx.<br/>addLastIfExists() |
 
+## Array
+
+| Valkey or Redis command | Sync / Async API<br/><sub>Redisson.create(config)</sub> | Reactive API<br/><sub>redisson.reactive()</sub> | RxJava3 API<br/><sub>redisson.rxJava()</sub> |
+| --- | --- | --- | --- |
+| ARCOUNT | RArray.<br/>count()<br/>countAsync() | RArrayReactive.<br/>count() | RArrayRx.<br/>count() |
+| ARDEL | RArray.<br/>delete()<br/>deleteAsync() | RArrayReactive.<br/>delete() | RArrayRx.<br/>delete() |
+| ARDELRANGE | RArray.<br/>deleteRange()<br/>deleteRanges()<br/>deleteRangeAsync()<br/>deleteRangesAsync() | RArrayReactive.<br/>deleteRange()<br/>deleteRanges() | RArrayRx.<br/>deleteRange()<br/>deleteRanges() |
+| ARGET | RArray.<br/>get()<br/>getAsync() | RArrayReactive.<br/>get() | RArrayRx.<br/>get() |
+| ARGETRANGE | RArray.<br/>range()<br/>rangeAsync() | RArrayReactive.<br/>range() | RArrayRx.<br/>range() |
+| ARGREP | RArray.<br/>grep()<br/>grepEntries()<br/>grepAsync()<br/>grepEntriesAsync() | RArrayReactive.<br/>grep()<br/>grepEntries() | RArrayRx.<br/>grep()<br/>grepEntries() |
+| ARINFO | RArray.<br/>getInfo()<br/>getInfoAsync() | RArrayReactive.<br/>getInfo() | RArrayRx.<br/>getInfo() |
+| ARINSERT | RArray.<br/>insert()<br/>insertAsync() | RArrayReactive.<br/>insert() | RArrayRx.<br/>insert() |
+| ARLASTITEMS | RArray.<br/>lastItems()<br/>lastItemsAsync() | RArrayReactive.<br/>lastItems() | RArrayRx.<br/>lastItems() |
+| ARLEN | RArray.<br/>length()<br/>lengthAsync() | RArrayReactive.<br/>length() | RArrayRx.<br/>length() |
+| ARMGET | RArray.<br/>get()<br/>getAsync() | RArrayReactive.<br/>get() | RArrayRx.<br/>get() |
+| ARMSET | RArray.<br/>set()<br/>setAsync() | RArrayReactive.<br/>set() | RArrayRx.<br/>set() |
+| ARNEXT | RArray.<br/>next()<br/>nextAsync() | RArrayReactive.<br/>next() | RArrayRx.<br/>next() |
+| AROP | RArray.<br/>count()<br/>countMatches()<br/>isSet()<br/>sum()<br/>min()<br/>max()<br/>bitAnd()<br/>bitOr()<br/>bitXor()<br/>countAsync()<br/>countMatchesAsync()<br/>isSetAsync()<br/>sumAsync()<br/>minAsync()<br/>maxAsync()<br/>bitAndAsync()<br/>bitOrAsync()<br/>bitXorAsync() | RArrayReactive.<br/>count()<br/>countMatches()<br/>isSet()<br/>sum()<br/>min()<br/>max()<br/>bitAnd()<br/>bitOr()<br/>bitXor() | RArrayRx.<br/>count()<br/>countMatches()<br/>isSet()<br/>sum()<br/>min()<br/>max()<br/>bitAnd()<br/>bitOr()<br/>bitXor() |
+| ARRING | RArray.<br/>ring()<br/>ringAsync() | RArrayReactive.<br/>ring() | RArrayRx.<br/>ring() |
+| ARSCAN | RArray.<br/>scan()<br/>iterator()<br/>stream()<br/>scanAsync()<br/>iteratorAsync() | RArrayReactive.<br/>scan()<br/>iterator() | RArrayRx.<br/>scan()<br/>iterator() |
+| ARSEEK | RArray.<br/>seek()<br/>seekAsync() | RArrayReactive.<br/>seek() | RArrayRx.<br/>seek() |
+| ARSET | RArray.<br/>set()<br/>setAsync() | RArrayReactive.<br/>set() | RArrayRx.<br/>set() |
+
 ## Sets
 
 | Valkey or Redis command | Sync / Async API<br/><sub>Redisson.create(config)</sub> | Reactive API<br/><sub>redisson.reactive()</sub> | RxJava3 API<br/><sub>redisson.rxJava()</sub> |

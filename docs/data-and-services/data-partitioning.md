@@ -20,7 +20,7 @@ Data partitioning is available for the following data structures and cache imple
 - [Set](collections.md/#set)
 - [Map](collections.md/#map)
 - [BitSet](objects.md/#bitset)
-- [Bloom filter](objects.md/#bloom-filter)
+- [Bloom filter](probabilistic-structures.md/#bloom-filter)
 - [JCache](../cache-api-implementations.md/#jcache-api-jsr-107)
 - [Spring Cache](../integration-with-spring.md/#spring-cache)
 - [Hibernate Cache](../cache-api-implementations.md/#hibernate-cache)
