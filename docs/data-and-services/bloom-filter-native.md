@@ -4,84 +4,36 @@ Java implementation of Valkey or Redis based [RBloomFilterNative](https://static
 
 Must be initialized with error rate and capacity by `init(errorRate, capacity)` method before usage.
 
-Code examples:
+### Initialization
+
+Initialize the filter with an error rate and expected capacity before use:
 
 === "Sync"
     ```java
     RBloomFilterNative<String> bloomFilter = redisson.getBloomFilterNative("sample");
-    // initialize bloom filter with
-    // errorRate = 0.03
-    // capacity = 55000000
+    // errorRate = 0.03, capacity = 55000000
     bloomFilter.init(0.03, 55000000L);
-
-    bloomFilter.add("field1Value");
-    bloomFilter.add("field2Value");
-
-    Set<String> addedItems = bloomFilter.add(Arrays.asList("field3Value", "field4Value", "field5Value"));
-
-    boolean isPresent = bloomFilter.exists("field1Value");
-    Set<String> presentItems = bloomFilter.exists(Arrays.asList("field1Value", "field8Value"));
-
-    long count = bloomFilter.count();
     ```
 === "Async"
     ```java
     RBloomFilterNative<String> bloomFilter = redisson.getBloomFilterNative("sample");
-    // initialize bloom filter with
-    // errorRate = 0.03
-    // capacity = 55000000
+    // errorRate = 0.03, capacity = 55000000
     RFuture<Void> initFuture = bloomFilter.initAsync(0.03, 55000000L);
-
-    RFuture<Boolean> addFuture = bloomFilter.addAsync("field1Value");
-    RFuture<Boolean> addFuture2 = bloomFilter.addAsync("field2Value");
-
-    RFuture<Set<String>> addedFuture = bloomFilter.addAsync(Arrays.asList("field3Value", "field4Value", "field5Value"));
-
-    RFuture<Boolean> existsFuture = bloomFilter.existsAsync("field1Value");
-    RFuture<Set<String>> existsAllFuture = bloomFilter.existsAsync(Arrays.asList("field1Value", "field8Value"));
-
-    RFuture<Long> countFuture = bloomFilter.countAsync();
     ```
 === "Reactive"
     ```java
     RedissonReactiveClient redisson = redissonClient.reactive();
     RBloomFilterNativeReactive<String> bloomFilter = redisson.getBloomFilterNative("sample");
-    // initialize bloom filter with
-    // errorRate = 0.03
-    // capacity = 55000000
+    // errorRate = 0.03, capacity = 55000000
     Mono<Void> initMono = bloomFilter.init(0.03, 55000000L);
-
-    Mono<Boolean> addMono = bloomFilter.add("field1Value");
-    Mono<Boolean> addMono2 = bloomFilter.add("field2Value");
-
-    Mono<Set<String>> addedMono = bloomFilter.add(Arrays.asList("field3Value", "field4Value", "field5Value"));
-
-    Mono<Boolean> existsMono = bloomFilter.exists("field1Value");
-    Mono<Set<String>> existsAllMono = bloomFilter.exists(Arrays.asList("field1Value", "field8Value"));
-
-    Mono<Long> countMono = bloomFilter.count();
     ```
 === "RxJava3"
     ```java
     RedissonRxClient redisson = redissonClient.rxJava();
     RBloomFilterNativeRx<String> bloomFilter = redisson.getBloomFilterNative("sample");
-    // initialize bloom filter with
-    // errorRate = 0.03
-    // capacity = 55000000
+    // errorRate = 0.03, capacity = 55000000
     Completable initRx = bloomFilter.init(0.03, 55000000L);
-
-    Single<Boolean> addRx = bloomFilter.add("field1Value");
-    Single<Boolean> addRx2 = bloomFilter.add("field2Value");
-
-    Single<Set<String>> addedRx = bloomFilter.add(Arrays.asList("field3Value", "field4Value", "field5Value"));
-
-    Single<Boolean> existsRx = bloomFilter.exists("field1Value");
-    Single<Set<String>> existsAllRx = bloomFilter.exists(Arrays.asList("field1Value", "field8Value"));
-
-    Single<Long> countRx = bloomFilter.count();
     ```
-
-**Advanced initialization**
 
 Use `BloomFilterInitArgs` builder for advanced initialization parameters such as expansion rate and non-scaling mode. Parameters `expansionRate` and `nonScaling` are mutually exclusive.
 
@@ -165,7 +117,50 @@ Non-scaling mode prevents creation of sub-filters when capacity is reached:
                                         .nonScaling(true));
     ```
 
-**Insert**
+### Adding elements
+
+Add single elements, or a collection of elements in one call:
+
+=== "Sync"
+    ```java
+    RBloomFilterNative<String> bloomFilter = redisson.getBloomFilterNative("sample");
+
+    bloomFilter.add("field1Value");
+    bloomFilter.add("field2Value");
+
+    Set<String> addedItems = bloomFilter.add(Arrays.asList("field3Value", "field4Value", "field5Value"));
+    ```
+=== "Async"
+    ```java
+    RBloomFilterNative<String> bloomFilter = redisson.getBloomFilterNative("sample");
+
+    RFuture<Boolean> addFuture = bloomFilter.addAsync("field1Value");
+    RFuture<Boolean> addFuture2 = bloomFilter.addAsync("field2Value");
+
+    RFuture<Set<String>> addedFuture = bloomFilter.addAsync(Arrays.asList("field3Value", "field4Value", "field5Value"));
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RBloomFilterNativeReactive<String> bloomFilter = redisson.getBloomFilterNative("sample");
+
+    Mono<Boolean> addMono = bloomFilter.add("field1Value");
+    Mono<Boolean> addMono2 = bloomFilter.add("field2Value");
+
+    Mono<Set<String>> addedMono = bloomFilter.add(Arrays.asList("field3Value", "field4Value", "field5Value"));
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RBloomFilterNativeRx<String> bloomFilter = redisson.getBloomFilterNative("sample");
+
+    Single<Boolean> addRx = bloomFilter.add("field1Value");
+    Single<Boolean> addRx2 = bloomFilter.add("field2Value");
+
+    Single<Set<String>> addedRx = bloomFilter.add(Arrays.asList("field3Value", "field4Value", "field5Value"));
+    ```
+
+### Inserting elements
 
 The `insert()` method combines filter auto-creation (if it doesn't yet exist) with element insertion. It supports optional parameters including `capacity`, `errorRate`, `expansionRate`, `nonScaling`, and `noCreate`.
 
@@ -245,7 +240,73 @@ Setting `noCreate` to `true` prevents the filter from being created automaticall
                              .noCreate(true));
     ```
 
-**Filter information**
+### Testing membership
+
+Test whether elements are present. The collection-based call returns the subset of supplied elements found in the filter:
+
+=== "Sync"
+    ```java
+    RBloomFilterNative<String> bloomFilter = redisson.getBloomFilterNative("sample");
+
+    boolean isPresent = bloomFilter.exists("field1Value");
+    Set<String> presentItems = bloomFilter.exists(Arrays.asList("field1Value", "field8Value"));
+    ```
+=== "Async"
+    ```java
+    RBloomFilterNative<String> bloomFilter = redisson.getBloomFilterNative("sample");
+
+    RFuture<Boolean> existsFuture = bloomFilter.existsAsync("field1Value");
+    RFuture<Set<String>> existsAllFuture = bloomFilter.existsAsync(Arrays.asList("field1Value", "field8Value"));
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RBloomFilterNativeReactive<String> bloomFilter = redisson.getBloomFilterNative("sample");
+
+    Mono<Boolean> existsMono = bloomFilter.exists("field1Value");
+    Mono<Set<String>> existsAllMono = bloomFilter.exists(Arrays.asList("field1Value", "field8Value"));
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RBloomFilterNativeRx<String> bloomFilter = redisson.getBloomFilterNative("sample");
+
+    Single<Boolean> existsRx = bloomFilter.exists("field1Value");
+    Single<Set<String>> existsAllRx = bloomFilter.exists(Arrays.asList("field1Value", "field8Value"));
+    ```
+
+### Counting elements
+
+`count()` returns the approximate number of elements added to the filter:
+
+=== "Sync"
+    ```java
+    RBloomFilterNative<String> bloomFilter = redisson.getBloomFilterNative("sample");
+
+    long count = bloomFilter.count();
+    ```
+=== "Async"
+    ```java
+    RBloomFilterNative<String> bloomFilter = redisson.getBloomFilterNative("sample");
+
+    RFuture<Long> countFuture = bloomFilter.countAsync();
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RBloomFilterNativeReactive<String> bloomFilter = redisson.getBloomFilterNative("sample");
+
+    Mono<Long> countMono = bloomFilter.count();
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RBloomFilterNativeRx<String> bloomFilter = redisson.getBloomFilterNative("sample");
+
+    Single<Long> countRx = bloomFilter.count();
+    ```
+
+### Filter information
 
 The `getInfo()` method returns a `BloomFilterInfo` object containing filter details: capacity, size, sub-filter count, item count, and expansion rate. Use `getInfo(BloomFilterInfoOption)` to query a specific metric individually.
 
@@ -299,7 +360,7 @@ The `getInfo()` method returns a `BloomFilterInfo` object containing filter deta
 
 Available `BloomFilterInfoOption` values: `CAPACITY`, `SIZE`, `FILTERS`, `ITEMS`, `EXPANSION`.
 
-**Data dump and restore**
+### Data dump and restore
 
 The `scanDump()` and `loadChunk()` methods allow serialization and deserialization of a Bloom filter for backup, replication, or migration between Valkey or Redis instances. Iteration starts from `0` and completes when the returned iterator is `0` with empty data. Requires **Redis Bloom 1.0.0 and higher.**
 

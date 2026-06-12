@@ -1,6 +1,6 @@
-Probabilistic structures trade exact answers for dramatic memory savings. Rather than storing the elements themselves, they keep a small, fixed-size summary and answer questions approximately - either *is this element present?* (with a tunable false-positive rate) or *how many distinct elements are there?* (within a small error margin) - using far less memory than an exact structure would.
+Probabilistic structures trade exact answers for dramatic memory savings. Rather than storing the elements themselves, they keep a small, fixed-size summary and answer questions approximately - *is this element present?* (with a tunable false-positive rate), *how many distinct elements are there?* (within a small error margin), *which elements are most frequent?*, or *what value falls at a given percentile?* - using far less memory than an exact structure would.
 
-Redisson provides four: the [Bloom filter](#bloom-filter) and its [Bloom filter (Native)](#bloom-filter-native) variant and the [Cuckoo filter](#cuckoo-filter) for membership testing (the Cuckoo filter also supports deletion), and [HyperLogLog](#hyperloglog) for estimating the number of distinct elements.
+Redisson provides six: the [Bloom filter](#bloom-filter) and its [Bloom filter (Native)](#bloom-filter-native) variant and the [Cuckoo filter](#cuckoo-filter) for membership testing (the Cuckoo filter also supports deletion), [HyperLogLog](#hyperloglog) for estimating the number of distinct elements, [TopK](#topk) for tracking the most frequent elements, and [TDigest](#tdigest) for estimating quantiles and the distribution of a stream of values.
 
 ## Bloom filter
 Java implementation of Valkey or Redis based [RBloomFilter](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RBloomFilter.html) object is a Bloom filter - a compact, probabilistic structure that tests whether an element has been added to a set. It never reports a false negative (an element that was added always tests as present), but allows a tunable rate of false positives (an element that was never added may occasionally test as present), in return for using far less memory than holding the elements themselves. The number of contained bits is limited to `2^32`, raised to `2^63` with [data partitioning](data-partitioning.md), and the object is thread-safe.
@@ -51,7 +51,7 @@ Code examples:
 	Single<Long> countSingle = bloomFilter.count();
 	```
 
-**Adding elements**
+### Adding elements
 
 `add` inserts a single element and returns `true` if it changed the filter, or `false` if the element was already present. The collection overload `add(Collection)` inserts many elements at once and returns how many were newly added.
 
@@ -92,7 +92,7 @@ Code examples:
 	Single<Long> addedCountSingle = bloomFilter.add(Arrays.asList(new SomeObject("a", "b"), new SomeObject("c", "d")));
 	```
 
-**Testing membership**
+### Testing membership
 
 `contains` returns `true` if an element is probably present; because of the false-positive rate a `true` result is not a guarantee, but a `false` result is definitive. `contains(Collection)` returns how many of the given elements are probably present, and `exists(Collection)` returns the subset of them that are.
 
@@ -139,7 +139,7 @@ Code examples:
 	Single<Set<SomeObject>> presentSingle = bloomFilter.exists(Arrays.asList(new SomeObject("a", "b"), new SomeObject("c", "d")));
 	```
 
-**Filter information**
+### Filter information
 
 `count` returns the estimated number of elements added so far. The configured sizing can be read back with `getExpectedInsertions` (the capacity passed to `tryInit`) and `getFalseProbability` (the target false-positive rate), and the derived structure with `getSize` (the number of bits) and `getHashIterations` (the number of hash functions).
 
@@ -399,7 +399,7 @@ Code examples:
     Single<Long> countRx = log.count();
     ```
 
-**Adding elements**
+### Adding elements
 
 `add` records a single element and `addAll` records a whole collection at once. Both return `true` if the addition changed the structure's internal state - that is, if the element was probably new - and `false` if it almost certainly had no effect on the estimate.
 
@@ -437,7 +437,7 @@ Code examples:
     Single<Boolean> bulkRx = log.addAll(Arrays.asList("user-2", "user-3", "user-4"));
     ```
 
-**Counting distinct elements**
+### Counting distinct elements
 
 `count` returns the estimated number of distinct elements added to this log. The result is approximate - HyperLogLog trades exactness for a fixed, tiny memory footprint - so it suits large-scale counting where an exact figure is not required.
 
@@ -468,7 +468,7 @@ Code examples:
     Single<Long> distinctRx = log.count();
     ```
 
-**Combining multiple logs**
+### Combining multiple logs
 
 Several logs can be counted together. `countWith` returns the estimated number of distinct elements across this log and the named ones without changing any of them - a combined total over, say, daily logs. `mergeWith` instead folds the named logs into this one, so its own count reflects their union from then on.
 
@@ -652,4 +652,621 @@ Since the union of two logs can be estimated with `countWith`, the overlap betwe
     Single<Long> onWeb = web.count();
     Single<Long> onEither = web.countWith("active:mobile");
     // combine with the mobile count via inclusion-exclusion
+    ```
+
+## TopK
+
+Java implementation of Redis based [RTopK](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RTopK.html) object is a probabilistic data structure that keeps track of the `k` most frequent items in a stream using the HeavyKeeper algorithm, with a fixed amount of memory regardless of the number of distinct items seen. It is backed by the `TOPK.*` commands of the Redis Bloom module. This object is thread-safe.
+
+A Top-K must be initialized once before items are added, after which occurrences are recorded and the current leaders can be queried at any time.
+
+### Initialization
+
+`init(int)` reserves space for the given number of top items using default tuning, while `init(TopKInitArgs)` additionally controls the underlying sketch: `width` (counters per array, default 8), `depth` (number of counter arrays, default 7) and `decay` (probability of a counter being decreased on collision, default 0.9).
+
+=== "Sync"
+    ```java
+    RTopK<String> topK = redisson.getTopK("searchTerms");
+
+    // track the 50 most frequent items with default tuning
+    topK.init(50);
+
+    // or tune the underlying sketch
+    topK.init(TopKInitArgs.topK(50)
+                    .width(2000)
+                    .depth(7)
+                    .decay(0.925));
+    ```
+=== "Async"
+    ```java
+    RTopKAsync<String> topK = redisson.getTopK("searchTerms");
+
+    RFuture<Void> future = topK.initAsync(50);
+
+    RFuture<Void> tuned = topK.initAsync(TopKInitArgs.topK(50)
+                    .width(2000).depth(7).decay(0.925));
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RTopKReactive<String> topK = redisson.getTopK("searchTerms");
+
+    Mono<Void> result = topK.init(50);
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RTopKRx<String> topK = redisson.getTopK("searchTerms");
+
+    Completable result = topK.init(50);
+    ```
+
+### Adding items
+
+Items are recorded with `add()`, or with an explicit weight using `incrementBy()`. Both return the item, if any, that was pushed out of the top-K list as a result of the call, or `null` when nothing was evicted. The list- and map-based overloads return their results positionally aligned to the input.
+
+=== "Sync"
+    ```java
+    RTopK<String> topK = redisson.getTopK("searchTerms");
+
+    // record an occurrence; returns the evicted item or null
+    String evicted = topK.add("redis");
+
+    // record several at once (result aligned to input)
+    List<String> evictedItems = topK.add(List.of("redis", "valkey", "redis"));
+
+    // record with an explicit weight
+    topK.incrementBy("redis", 5);
+
+    // weight several items at once
+    topK.incrementBy(Map.of("redis", 5, "valkey", 2));
+    ```
+=== "Async"
+    ```java
+    RTopKAsync<String> topK = redisson.getTopK("searchTerms");
+
+    RFuture<String> evicted = topK.addAsync("redis");
+    RFuture<List<String>> evictedItems = topK.addAsync(List.of("redis", "valkey"));
+    RFuture<String> incremented = topK.incrementByAsync("redis", 5);
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RTopKReactive<String> topK = redisson.getTopK("searchTerms");
+
+    Mono<String> evicted = topK.add("redis");
+    Mono<List<String>> evictedItems = topK.add(List.of("redis", "valkey"));
+    Mono<String> incremented = topK.incrementBy("redis", 5);
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RTopKRx<String> topK = redisson.getTopK("searchTerms");
+
+    Maybe<String> evicted = topK.add("redis");
+    Single<List<String>> evictedItems = topK.add(List.of("redis", "valkey"));
+    Maybe<String> incremented = topK.incrementBy("redis", 5);
+    ```
+
+### Querying membership and leaders
+
+`contains()` reports whether an item is currently among the leaders, `list()` returns the current top-K items and `listWithCount()` returns them together with their approximate counts. The older `count()` method is deprecated since Redis Bloom 2.4.0 because its estimate can be inaccurate; prefer `listWithCount()`.
+
+=== "Sync"
+    ```java
+    RTopK<String> topK = redisson.getTopK("searchTerms");
+
+    // is an item currently among the leaders?
+    boolean present = topK.contains("redis");
+    List<Boolean> presence = topK.contains(List.of("redis", "valkey"));
+
+    // current leaders, optionally with their approximate counts
+    List<String> leaders = topK.list();
+    Map<String, Long> leadersWithCount = topK.listWithCount();
+    ```
+=== "Async"
+    ```java
+    RTopKAsync<String> topK = redisson.getTopK("searchTerms");
+
+    RFuture<Boolean> present = topK.containsAsync("redis");
+    RFuture<List<String>> leaders = topK.listAsync();
+    RFuture<Map<String, Long>> leadersWithCount = topK.listWithCountAsync();
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RTopKReactive<String> topK = redisson.getTopK("searchTerms");
+
+    Mono<Boolean> present = topK.contains("redis");
+    Mono<List<String>> leaders = topK.list();
+    Mono<Map<String, Long>> leadersWithCount = topK.listWithCount();
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RTopKRx<String> topK = redisson.getTopK("searchTerms");
+
+    Single<Boolean> present = topK.contains("redis");
+    Single<List<String>> leaders = topK.list();
+    Single<Map<String, Long>> leadersWithCount = topK.listWithCount();
+    ```
+
+### Top-K information
+
+`getInfo()` returns the configured parameters of the structure - the number of tracked items together with the sketch `width`, `depth` and `decay`.
+
+=== "Sync"
+    ```java
+    RTopK<String> topK = redisson.getTopK("searchTerms");
+
+    TopKInfo info = topK.getInfo();
+    long tracked = info.getTopK();
+    long width = info.getWidth();
+    long depth = info.getDepth();
+    double decay = info.getDecay();
+    ```
+=== "Async"
+    ```java
+    RTopKAsync<String> topK = redisson.getTopK("searchTerms");
+
+    RFuture<TopKInfo> info = topK.getInfoAsync();
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RTopKReactive<String> topK = redisson.getTopK("searchTerms");
+
+    Mono<TopKInfo> info = topK.getInfo();
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RTopKRx<String> topK = redisson.getTopK("searchTerms");
+
+    Single<TopKInfo> info = topK.getInfo();
+    ```
+
+### Use Cases
+
+Top-K answers *which items are most frequent?* over an unbounded stream while using only a small, fixed amount of memory, which makes it a fit for trend detection and heavy-hitter analysis at high volume, where keeping an exact counter per distinct item would be too expensive.
+
+**Trending content**
+
+Leaderboards of trending search terms, hashtags, products or pages can be maintained directly from the event stream. Each view or query is fed in with `add` (or weighted with `incrementBy`), and the current leaders - with their approximate counts - are read back with `listWithCount`, without storing a counter per distinct item.
+
+=== "Sync"
+    ```java
+    RTopK<String> trending = redisson.getTopK("trending:searches");
+    trending.init(20);
+
+    // record each search as it happens
+    trending.add(query);
+
+    // current top searches with approximate counts
+    Map<String, Long> top = trending.listWithCount();
+    ```
+=== "Async"
+    ```java
+    RTopKAsync<String> trending = redisson.getTopK("trending:searches");
+
+    RFuture<String> evicted = trending.addAsync(query);
+    RFuture<Map<String, Long>> top = trending.listWithCountAsync();
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RTopKReactive<String> trending = redisson.getTopK("trending:searches");
+
+    Mono<String> evicted = trending.add(query);
+    Mono<Map<String, Long>> top = trending.listWithCount();
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RTopKRx<String> trending = redisson.getTopK("trending:searches");
+
+    Maybe<String> evicted = trending.add(query);
+    Single<Map<String, Long>> top = trending.listWithCount();
+    ```
+
+**Heavy-hitter detection**
+
+In high-volume traffic - API calls, log lines, network flows - a Top-K surfaces the handful of clients, IPs or keys responsible for a disproportionate share of requests, so hot keys and potential abuse can be spotted in bounded memory. `contains` then gives a cheap test for whether a given client is currently among the top talkers.
+
+=== "Sync"
+    ```java
+    RTopK<String> talkers = redisson.getTopK("api:top-callers");
+    talkers.init(10);
+
+    // weight by request cost as traffic arrives
+    talkers.incrementBy(apiKey, requestCost);
+
+    // is this caller currently a heavy hitter?
+    boolean isHeavyHitter = talkers.contains(apiKey);
+    List<String> worst = talkers.list();
+    ```
+=== "Async"
+    ```java
+    RTopKAsync<String> talkers = redisson.getTopK("api:top-callers");
+
+    RFuture<String> evicted = talkers.incrementByAsync(apiKey, requestCost);
+    RFuture<Boolean> isHeavyHitter = talkers.containsAsync(apiKey);
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RTopKReactive<String> talkers = redisson.getTopK("api:top-callers");
+
+    Mono<String> evicted = talkers.incrementBy(apiKey, requestCost);
+    Mono<Boolean> isHeavyHitter = talkers.contains(apiKey);
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RTopKRx<String> talkers = redisson.getTopK("api:top-callers");
+
+    Maybe<String> evicted = talkers.incrementBy(apiKey, requestCost);
+    Single<Boolean> isHeavyHitter = talkers.contains(apiKey);
+    ```
+
+## TDigest
+
+Java implementation of Redis based [RTDigest](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RTDigest.html) object is a t-digest - a probabilistic data structure that estimates quantiles, ranks and the cumulative distribution of a stream of observations with sub-linear memory and high accuracy at the distribution's tails. It is backed by the `TDIGEST.*` commands of the Redis Bloom module. This object is thread-safe.
+
+The sketch must be created with `create()` before use.
+
+### Initialization
+
+Create the sketch before adding observations. An optional compression factor trades memory for accuracy - a higher value yields more accurate estimates, particularly at the tails, at the cost of more memory. `reset()` empties the sketch and re-initializes it.
+
+=== "Sync"
+    ```java
+    RTDigest tdigest = redisson.getTDigest("latencies");
+
+    // create with default compression
+    tdigest.create();
+
+    // or create with a higher compression for better tail accuracy
+    tdigest.create(200);
+
+    // empty and re-initialize the sketch
+    tdigest.reset();
+    ```
+=== "Async"
+    ```java
+    RTDigest tdigest = redisson.getTDigest("latencies");
+
+    RFuture<Void> createFuture = tdigest.createAsync(200);
+    RFuture<Void> resetFuture = tdigest.resetAsync();
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RTDigestReactive tdigest = redisson.getTDigest("latencies");
+
+    Mono<Void> createMono = tdigest.create(200);
+    Mono<Void> resetMono = tdigest.reset();
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RTDigestRx tdigest = redisson.getTDigest("latencies");
+
+    Completable createRx = tdigest.create(200);
+    Completable resetRx = tdigest.reset();
+    ```
+
+### Adding observations
+
+Feed observations into the sketch one at a time or several at once.
+
+=== "Sync"
+    ```java
+    RTDigest tdigest = redisson.getTDigest("latencies");
+
+    tdigest.add(12.5);
+    tdigest.add(8.0, 15.3, 22.1, 9.7);
+    ```
+=== "Async"
+    ```java
+    RTDigest tdigest = redisson.getTDigest("latencies");
+
+    RFuture<Void> addFuture = tdigest.addAsync(12.5);
+    RFuture<Void> addAllFuture = tdigest.addAsync(8.0, 15.3, 22.1, 9.7);
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RTDigestReactive tdigest = redisson.getTDigest("latencies");
+
+    Mono<Void> addMono = tdigest.add(12.5);
+    Mono<Void> addAllMono = tdigest.add(8.0, 15.3, 22.1, 9.7);
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RTDigestRx tdigest = redisson.getTDigest("latencies");
+
+    Completable addRx = tdigest.add(12.5);
+    Completable addAllRx = tdigest.add(8.0, 15.3, 22.1, 9.7);
+    ```
+
+### Merging sketches
+
+Several sketches can be merged into one destination, which is useful for combining per-node or per-shard sketches into a single global view. `mergeWith(String...)` merges the named source sketches on top of the destination's current contents, while `mergeWith(TDigestMergeArgs)` additionally controls the resulting compression and can override the destination, discarding its existing observations before the merge.
+
+=== "Sync"
+    ```java
+    RTDigest global = redisson.getTDigest("latencies:global");
+    global.create();
+
+    // merge per-node sketches into the destination
+    global.mergeWith("latencies:node1", "latencies:node2");
+
+    // set the resulting compression and discard the destination's current contents
+    global.mergeWith(TDigestMergeArgs.keys("latencies:node1", "latencies:node2")
+                        .compression(200)
+                        .override());
+    ```
+=== "Async"
+    ```java
+    RTDigest global = redisson.getTDigest("latencies:global");
+
+    RFuture<Void> mergeFuture = global.mergeWithAsync("latencies:node1", "latencies:node2");
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RTDigestReactive global = redisson.getTDigest("latencies:global");
+
+    Mono<Void> mergeMono = global.mergeWith("latencies:node1", "latencies:node2");
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RTDigestRx global = redisson.getTDigest("latencies:global");
+
+    Completable mergeRx = global.mergeWith("latencies:node1", "latencies:node2");
+    ```
+
+### Quantiles and cumulative distribution
+
+`quantile()` estimates, for each input fraction, the value below which that fraction of observations fall - for example the median or the 99th percentile. `cumulativeProbability()` is the inverse: for each input value it estimates the fraction of observations less than or equal to it. Both accept several inputs and return one result per input.
+
+=== "Sync"
+    ```java
+    RTDigest tdigest = redisson.getTDigest("latencies");
+
+    // median, 95th and 99th percentile latency
+    List<Double> percentiles = tdigest.quantile(0.5, 0.95, 0.99);
+
+    // fraction of requests served at or under 100ms and 250ms
+    List<Double> fractions = tdigest.cumulativeProbability(100.0, 250.0);
+    ```
+=== "Async"
+    ```java
+    RTDigest tdigest = redisson.getTDigest("latencies");
+
+    RFuture<List<Double>> percentilesFuture = tdigest.quantileAsync(0.5, 0.95, 0.99);
+    RFuture<List<Double>> fractionsFuture = tdigest.cumulativeProbabilityAsync(100.0, 250.0);
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RTDigestReactive tdigest = redisson.getTDigest("latencies");
+
+    Mono<List<Double>> percentilesMono = tdigest.quantile(0.5, 0.95, 0.99);
+    Mono<List<Double>> fractionsMono = tdigest.cumulativeProbability(100.0, 250.0);
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RTDigestRx tdigest = redisson.getTDigest("latencies");
+
+    Single<List<Double>> percentilesRx = tdigest.quantile(0.5, 0.95, 0.99);
+    Single<List<Double>> fractionsRx = tdigest.cumulativeProbability(100.0, 250.0);
+    ```
+
+### Ranks
+
+`rank()` returns, for each value, the number of observations less than it, and `revRank()` the number greater than it (both return `-1` for a value outside the observed range). `byRank()` and `byRevRank()` are the inverse, returning the value at a given rank counting from the smallest or largest observation respectively.
+
+=== "Sync"
+    ```java
+    RTDigest tdigest = redisson.getTDigest("latencies");
+
+    // how many observations fall below / above given values
+    List<Long> ranks = tdigest.rank(100.0, 250.0);
+    List<Long> reverseRanks = tdigest.revRank(100.0, 250.0);
+
+    // the value at given ranks, from the smallest / largest observation
+    List<Double> values = tdigest.byRank(0, 99);
+    List<Double> valuesFromTop = tdigest.byRevRank(0, 9);
+    ```
+=== "Async"
+    ```java
+    RTDigest tdigest = redisson.getTDigest("latencies");
+
+    RFuture<List<Long>> ranksFuture = tdigest.rankAsync(100.0, 250.0);
+    RFuture<List<Long>> reverseRanksFuture = tdigest.revRankAsync(100.0, 250.0);
+    RFuture<List<Double>> valuesFuture = tdigest.byRankAsync(0, 99);
+    RFuture<List<Double>> valuesFromTopFuture = tdigest.byRevRankAsync(0, 9);
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RTDigestReactive tdigest = redisson.getTDigest("latencies");
+
+    Mono<List<Long>> ranksMono = tdigest.rank(100.0, 250.0);
+    Mono<List<Double>> valuesMono = tdigest.byRank(0, 99);
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RTDigestRx tdigest = redisson.getTDigest("latencies");
+
+    Single<List<Long>> ranksRx = tdigest.rank(100.0, 250.0);
+    Single<List<Double>> valuesRx = tdigest.byRank(0, 99);
+    ```
+
+### Summary statistics
+
+`getMin()` and `getMax()` return the smallest and largest observations (or `NaN` when the sketch is empty), and `trimmedMean()` returns the mean of the observations between two cut quantiles, ignoring outliers at the tails.
+
+=== "Sync"
+    ```java
+    RTDigest tdigest = redisson.getTDigest("latencies");
+
+    double min = tdigest.getMin();
+    double max = tdigest.getMax();
+
+    // mean ignoring the bottom 10% and top 10% of observations
+    double trimmed = tdigest.trimmedMean(0.1, 0.9);
+    ```
+=== "Async"
+    ```java
+    RTDigest tdigest = redisson.getTDigest("latencies");
+
+    RFuture<Double> minFuture = tdigest.getMinAsync();
+    RFuture<Double> maxFuture = tdigest.getMaxAsync();
+    RFuture<Double> trimmedFuture = tdigest.trimmedMeanAsync(0.1, 0.9);
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RTDigestReactive tdigest = redisson.getTDigest("latencies");
+
+    Mono<Double> minMono = tdigest.getMin();
+    Mono<Double> trimmedMono = tdigest.trimmedMean(0.1, 0.9);
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RTDigestRx tdigest = redisson.getTDigest("latencies");
+
+    Single<Double> minRx = tdigest.getMin();
+    Single<Double> trimmedRx = tdigest.trimmedMean(0.1, 0.9);
+    ```
+
+### Sketch information
+
+`getInfo()` returns a `TDigestInfo` describing the sketch: its compression and capacity, the number of merged and unmerged nodes and their weights, the total number of observations, the number of compressions performed, and the estimated memory usage.
+
+=== "Sync"
+    ```java
+    RTDigest tdigest = redisson.getTDigest("latencies");
+
+    TDigestInfo info = tdigest.getInfo();
+    long compression = info.getCompression();
+    long observations = info.getObservations();
+    long memoryUsage = info.getMemoryUsage();
+    ```
+=== "Async"
+    ```java
+    RTDigest tdigest = redisson.getTDigest("latencies");
+
+    RFuture<TDigestInfo> infoFuture = tdigest.getInfoAsync();
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RTDigestReactive tdigest = redisson.getTDigest("latencies");
+
+    Mono<TDigestInfo> infoMono = tdigest.getInfo();
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RTDigestRx tdigest = redisson.getTDigest("latencies");
+
+    Single<TDigestInfo> infoRx = tdigest.getInfo();
+    ```
+
+### Use Cases
+
+A t-digest answers *what does the value distribution look like?* over an unbounded stream of numbers - any quantile, rank or trimmed mean - while using only a small, fixed amount of memory and staying most accurate at the tails, where percentile monitoring needs it most. This makes it a fit for latency and SLA tracking and for distribution-based thresholds at high volume, where retaining every observation to compute exact percentiles would be too expensive.
+
+**Latency and SLA monitoring**
+
+Request or operation latencies are fed into the sketch with `add` as they complete, and tail percentiles - p50, p95, p99 - are read back at any time with `quantile`, giving a continuously updated picture of the latency distribution in a tiny, fixed footprint. `cumulativeProbability` answers the inverse SLA question directly - what fraction of requests came in under the target - and per-instance sketches gathered across a fleet can be folded into one cluster-wide view with `mergeWith`.
+
+=== "Sync"
+    ```java
+    RTDigest latencies = redisson.getTDigest("latencies:checkout");
+    latencies.create();
+
+    // record each request's latency as it completes
+    latencies.add(requestMillis);
+
+    // p50 / p95 / p99 for the dashboard
+    List<Double> percentiles = latencies.quantile(0.5, 0.95, 0.99);
+
+    // SLA check: fraction of requests served under the 200ms target
+    double withinSla = latencies.cumulativeProbability(200.0).get(0);
+    ```
+=== "Async"
+    ```java
+    RTDigest latencies = redisson.getTDigest("latencies:checkout");
+
+    RFuture<Void> recordFuture = latencies.addAsync(requestMillis);
+    RFuture<List<Double>> percentilesFuture = latencies.quantileAsync(0.5, 0.95, 0.99);
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RTDigestReactive latencies = redisson.getTDigest("latencies:checkout");
+
+    Mono<Void> recordMono = latencies.add(requestMillis);
+    Mono<List<Double>> percentilesMono = latencies.quantile(0.5, 0.95, 0.99);
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RTDigestRx latencies = redisson.getTDigest("latencies:checkout");
+
+    Completable recordRx = latencies.add(requestMillis);
+    Single<List<Double>> percentilesRx = latencies.quantile(0.5, 0.95, 0.99);
+    ```
+
+**Adaptive thresholds and outlier detection**
+
+Because the sketch tracks the whole distribution, it can supply thresholds that adapt to the data instead of being hard-coded. `quantile` yields a dynamic cutoff - flag anything above the current 99th percentile - while `cumulativeProbability` and `rank` place a new observation within the historical distribution to show how extreme it is. `trimmedMean` provides a stable central estimate that ignores the heaviest outliers at both tails.
+
+=== "Sync"
+    ```java
+    RTDigest amounts = redisson.getTDigest("tx:amounts");
+    amounts.create();
+
+    // dynamic threshold: the current 99th percentile
+    double cutoff = amounts.quantile(0.99).get(0);
+
+    // how extreme is a new value relative to history?
+    double fractionBelow = amounts.cumulativeProbability(newAmount).get(0);
+    boolean isOutlier = newAmount > cutoff;
+
+    // robust baseline that ignores the top and bottom 5%
+    double baseline = amounts.trimmedMean(0.05, 0.95);
+    ```
+=== "Async"
+    ```java
+    RTDigest amounts = redisson.getTDigest("tx:amounts");
+
+    RFuture<List<Double>> cutoffFuture = amounts.quantileAsync(0.99);
+    RFuture<Double> baselineFuture = amounts.trimmedMeanAsync(0.05, 0.95);
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RTDigestReactive amounts = redisson.getTDigest("tx:amounts");
+
+    Mono<List<Double>> cutoffMono = amounts.quantile(0.99);
+    Mono<Double> baselineMono = amounts.trimmedMean(0.05, 0.95);
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RTDigestRx amounts = redisson.getTDigest("tx:amounts");
+
+    Single<List<Double>> cutoffRx = amounts.quantile(0.99);
+    Single<Double> baselineRx = amounts.trimmedMean(0.05, 0.95);
     ```
