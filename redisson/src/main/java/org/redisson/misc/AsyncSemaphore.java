@@ -99,6 +99,9 @@ public final class AsyncSemaphore {
                     return;
                 } else {
                     counter.incrementAndGet();
+                    // dead waiter already gave the permit back above; continue instead of
+                    // falling through to the trailing increment, which would double-count it
+                    continue;
                 }
             }
 
