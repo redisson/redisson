@@ -1290,6 +1290,23 @@ public final class Redisson implements RedissonClient {
         return new RedissonTDigest(commandExecutor.copy(params), params.getName());
     }
 
+    @Override
+    public <V> RTopK<V> getTopK(String name) {
+        return getTopK(name, null);
+    }
+
+    @Override
+    public <V> RTopK<V> getTopK(String name, Codec codec) {
+        return new RedissonTopK<V>(codec, commandExecutor, name);
+    }
+
+    @Override
+    public <V> RTopK<V> getTopK(PlainOptions options) {
+        PlainParams params = (PlainParams) options;
+        return new RedissonTopK<V>(params.getCodec(),
+                commandExecutor.copy(params), params.getName());
+    }
+
 
     @Override
     public <V> RBloomFilterNative<V> getBloomFilterNative(PlainOptions options) {

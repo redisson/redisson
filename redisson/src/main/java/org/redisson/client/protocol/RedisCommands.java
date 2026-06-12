@@ -1126,5 +1126,34 @@ public interface RedisCommands {
     RedisCommand<TDigestInfo> TDIGEST_INFO = new RedisCommand<>("TDIGEST.INFO",
                         new ListMultiDecoder2(new TDigestInfoDecoder(), new ObjectListReplayDecoder<>()));
 
+    RedisCommand<Void> TOPK_RESERVE = new RedisCommand<>("TOPK.RESERVE", new VoidReplayConvertor());
+
+    RedisCommand<Object> TOPK_ADD_SINGLE = new RedisCommand<>("TOPK.ADD", new ListFirstObjectDecoder());
+
+    RedisCommand<List<Object>> TOPK_ADD = new RedisCommand<>("TOPK.ADD", new ObjectListReplayDecoder<>());
+
+    RedisCommand<Object> TOPK_INCRBY_SINGLE = new RedisCommand<>("TOPK.INCRBY", new ListFirstObjectDecoder());
+
+    RedisCommand<List<Object>> TOPK_INCRBY = new RedisCommand<>("TOPK.INCRBY", new ObjectListReplayDecoder<>());
+
+    RedisCommand<Boolean> TOPK_QUERY_SINGLE = new RedisCommand("TOPK.QUERY",
+                        new ListFirstObjectDecoder(), new BooleanReplayConvertor());
+
+    RedisCommand<List<Boolean>> TOPK_QUERY = new RedisCommand("TOPK.QUERY",
+                        new ObjectListReplayDecoder<Boolean>(), new BooleanReplayConvertor());
+
+    RedisCommand<Long> TOPK_COUNT_SINGLE = new RedisCommand("TOPK.COUNT",
+                        new ListFirstObjectDecoder(), new LongReplayConvertor());
+
+    RedisCommand<List<Long>> TOPK_COUNT = new RedisCommand("TOPK.COUNT",
+                        new ObjectListReplayDecoder<Long>(), new LongReplayConvertor());
+
+    RedisCommand<List<Object>> TOPK_LIST = new RedisCommand<>("TOPK.LIST", new TopKListDecoder<>());
+
+    RedisCommand<Map<Object, Long>> TOPK_LIST_WITHCOUNT = new RedisCommand<>("TOPK.LIST", new TopKListWithCountDecoder<>());
+
+    RedisCommand<TopKInfo> TOPK_INFO = new RedisCommand<>("TOPK.INFO",
+                        new ListMultiDecoder2(new TopKInfoDecoder(), new ObjectListReplayDecoder<>()));
+
 
 }

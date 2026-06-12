@@ -441,6 +441,18 @@ public class RedissonBatchReactive implements RBatchReactive {
     }
 
     @Override
+    public <V> RTopKReactive<V> getTopK(String name) {
+        return getTopK(name, null);
+    }
+
+    @Override
+    public <V> RTopKReactive<V> getTopK(String name, Codec codec) {
+        return ReactiveProxyBuilder.create(executorService,
+                new RedissonTopK<V>(codec, executorService, name),
+                RTopKReactive.class);
+    }
+
+    @Override
     public RVectorSetReactive getVectorSet(String name) {
         return ReactiveProxyBuilder.create(executorService,
                 new RedissonVectorSet(executorService, name),

@@ -2029,6 +2029,35 @@ public interface RedissonClient {
     <V> RCuckooFilter<V> getCuckooFilter(PlainOptions options);
 
     /**
+     * Returns Top-K sketch instance by <code>name</code>.
+     *
+     * @param <V> type of value
+     * @param name name of object
+     * @return TopK object
+     */
+    <V> RTopK<V> getTopK(String name);
+
+    /**
+     * Returns Top-K sketch instance by <code>name</code>
+     * using provided <code>codec</code> for values.
+     *
+     * @param <V> type of value
+     * @param name name of object
+     * @param codec codec for values
+     * @return TopK object
+     */
+    <V> RTopK<V> getTopK(String name, Codec codec);
+
+    /**
+     * Returns Top-K sketch instance with specified <code>options</code>.
+     *
+     * @param <V> type of value
+     * @param options instance options
+     * @return TopK object
+     */
+    <V> RTopK<V> getTopK(PlainOptions options);
+
+    /**
      * Returns t-digest instance by <code>name</code>.
      *
      * @param name name of object

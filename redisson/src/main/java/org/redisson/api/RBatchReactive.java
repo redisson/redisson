@@ -77,6 +77,26 @@ public interface RBatchReactive {
     <V> RCuckooFilterReactive<V> getCuckooFilter(String name, Codec codec);
 
     /**
+     * Returns Top-K sketch instance by <code>name</code>.
+     *
+     * @param <V> type of value
+     * @param name name of object
+     * @return TopK object
+     */
+    <V> RTopKReactive<V> getTopK(String name);
+
+    /**
+     * Returns Top-K sketch instance by <code>name</code>
+     * using provided <code>codec</code> for values.
+     *
+     * @param <V> type of value
+     * @param name name of object
+     * @param codec codec for values
+     * @return TopK object
+     */
+    <V> RTopKReactive<V> getTopK(String name, Codec codec);
+
+    /**
      * Returns t-digest instance by <code>name</code>.
      *
      * @param name name of object

@@ -1067,6 +1067,27 @@ public final class RedissonRx implements RedissonRxClient {
     }
 
     @Override
+    public <V> RTopKRx<V> getTopK(String name) {
+        return getTopK(name, null);
+    }
+
+    @Override
+    public <V> RTopKRx<V> getTopK(String name, Codec codec) {
+        return RxProxyBuilder.create(commandExecutor,
+                new RedissonTopK<V>(codec, commandExecutor, name),
+                RTopKRx.class);
+    }
+
+    @Override
+    public <V> RTopKRx<V> getTopK(PlainOptions options) {
+        PlainParams params = (PlainParams) options;
+        CommandRxExecutor ca = commandExecutor.copy(params);
+        return RxProxyBuilder.create(commandExecutor,
+                new RedissonTopK<V>(params.getCodec(), ca, params.getName()),
+                RTopKRx.class);
+    }
+
+    @Override
     public RFunctionRx getFunction() {
         return RxProxyBuilder.create(commandExecutor, new RedissonFuction(commandExecutor), RFunctionRx.class);
     }

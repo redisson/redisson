@@ -384,6 +384,16 @@ public class RedissonBatch implements RBatch {
     }
 
     @Override
+    public <V> RTopKAsync<V> getTopK(String name) {
+        return getTopK(name, null);
+    }
+
+    @Override
+    public <V> RTopKAsync<V> getTopK(String name, Codec codec) {
+        return new RedissonTopK<V>(codec, executorService, name);
+    }
+
+    @Override
     public RVectorSetAsync getVectorSet(String name) {
         return new RedissonVectorSet(executorService, name);
     }

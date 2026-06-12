@@ -1137,6 +1137,27 @@ public final class RedissonReactive implements RedissonReactiveClient {
     }
 
     @Override
+    public <V> RTopKReactive<V> getTopK(String name) {
+        return getTopK(name, null);
+    }
+
+    @Override
+    public <V> RTopKReactive<V> getTopK(String name, Codec codec) {
+        return ReactiveProxyBuilder.create(commandExecutor,
+                new RedissonTopK<V>(codec, commandExecutor, name),
+                RTopKReactive.class);
+    }
+
+    @Override
+    public <V> RTopKReactive<V> getTopK(PlainOptions options) {
+        PlainParams params = (PlainParams) options;
+        CommandReactiveExecutor ca = commandExecutor.copy(params);
+        return ReactiveProxyBuilder.create(commandExecutor,
+                new RedissonTopK<V>(params.getCodec(), ca, params.getName()),
+                RTopKReactive.class);
+    }
+
+    @Override
     public RFunctionReactive getFunction() {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonFuction(commandExecutor), RFunctionReactive.class);
     }

@@ -458,6 +458,18 @@ public class RedissonBatchRx implements RBatchRx {
     }
 
     @Override
+    public <V> RTopKRx<V> getTopK(String name) {
+        return getTopK(name, null);
+    }
+
+    @Override
+    public <V> RTopKRx<V> getTopK(String name, Codec codec) {
+        return RxProxyBuilder.create(executorService,
+                new RedissonTopK<V>(codec, executorService, name),
+                RTopKRx.class);
+    }
+
+    @Override
     public RVectorSetRx getVectorSet(String name) {
         return RxProxyBuilder.create(executorService,
                 new RedissonVectorSet(executorService, name),
