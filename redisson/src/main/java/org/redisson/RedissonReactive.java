@@ -1121,6 +1121,22 @@ public final class RedissonReactive implements RedissonReactiveClient {
     }
 
     @Override
+    public RTDigestReactive getTDigest(String name) {
+        return ReactiveProxyBuilder.create(commandExecutor,
+                new RedissonTDigest(commandExecutor, name),
+                RTDigestReactive.class);
+    }
+
+    @Override
+    public RTDigestReactive getTDigest(PlainOptions options) {
+        PlainParams params = (PlainParams) options;
+        CommandReactiveExecutor ca = commandExecutor.copy(params);
+        return ReactiveProxyBuilder.create(commandExecutor,
+                new RedissonTDigest(ca, params.getName()),
+                RTDigestReactive.class);
+    }
+
+    @Override
     public RFunctionReactive getFunction() {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonFuction(commandExecutor), RFunctionReactive.class);
     }

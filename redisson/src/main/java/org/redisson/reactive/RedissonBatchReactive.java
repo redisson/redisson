@@ -434,6 +434,13 @@ public class RedissonBatchReactive implements RBatchReactive {
     }
 
     @Override
+    public RTDigestReactive getTDigest(String name) {
+        return ReactiveProxyBuilder.create(executorService,
+                new RedissonTDigest(executorService, name),
+                RTDigestReactive.class);
+    }
+
+    @Override
     public RVectorSetReactive getVectorSet(String name) {
         return ReactiveProxyBuilder.create(executorService,
                 new RedissonVectorSet(executorService, name),

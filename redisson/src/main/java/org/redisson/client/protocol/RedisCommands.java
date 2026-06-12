@@ -1097,5 +1097,34 @@ public interface RedisCommands {
     RedisCommand<CuckooFilterInfo> CF_INFO = new RedisCommand<>("CF.INFO",
                         new ListMultiDecoder2(new CuckooFilterInfoDecoder(), new ObjectListReplayDecoder<>()));
 
+    RedisCommand<Void> TDIGEST_CREATE = new RedisCommand<>("TDIGEST.CREATE", new VoidReplayConvertor());
+
+    RedisCommand<Void> TDIGEST_RESET = new RedisCommand<>("TDIGEST.RESET", new VoidReplayConvertor());
+
+    RedisCommand<Void> TDIGEST_ADD = new RedisCommand<>("TDIGEST.ADD", new VoidReplayConvertor());
+
+    RedisCommand<Void> TDIGEST_MERGE = new RedisCommand<>("TDIGEST.MERGE", new VoidReplayConvertor());
+
+    RedisCommand<Double> TDIGEST_MIN = new RedisCommand<>("TDIGEST.MIN");
+
+    RedisCommand<Double> TDIGEST_MAX = new RedisCommand<>("TDIGEST.MAX");
+
+    RedisCommand<Double> TDIGEST_TRIMMED_MEAN = new RedisCommand<>("TDIGEST.TRIMMED_MEAN");
+
+    RedisCommand<List<Double>> TDIGEST_QUANTILE = new RedisCommand<>("TDIGEST.QUANTILE", new ObjectListReplayDecoder<>());
+
+    RedisCommand<List<Double>> TDIGEST_CDF = new RedisCommand<>("TDIGEST.CDF", new ObjectListReplayDecoder<>());
+
+    RedisCommand<List<Double>> TDIGEST_BYRANK = new RedisCommand<>("TDIGEST.BYRANK", new ObjectListReplayDecoder<>());
+
+    RedisCommand<List<Double>> TDIGEST_BYREVRANK = new RedisCommand<>("TDIGEST.BYREVRANK", new ObjectListReplayDecoder<>());
+
+    RedisCommand<List<Long>> TDIGEST_RANK = new RedisCommand<>("TDIGEST.RANK", new ObjectListReplayDecoder<>());
+
+    RedisCommand<List<Long>> TDIGEST_REVRANK = new RedisCommand<>("TDIGEST.REVRANK", new ObjectListReplayDecoder<>());
+
+    RedisCommand<TDigestInfo> TDIGEST_INFO = new RedisCommand<>("TDIGEST.INFO",
+                        new ListMultiDecoder2(new TDigestInfoDecoder(), new ObjectListReplayDecoder<>()));
+
 
 }

@@ -2029,6 +2029,22 @@ public interface RedissonClient {
     <V> RCuckooFilter<V> getCuckooFilter(PlainOptions options);
 
     /**
+     * Returns t-digest instance by <code>name</code>.
+     *
+     * @param name name of object
+     * @return TDigest object
+     */
+    RTDigest getTDigest(String name);
+
+    /**
+     * Returns t-digest instance with specified <code>options</code>.
+     *
+     * @param options instance options
+     * @return TDigest object
+     */
+    RTDigest getTDigest(PlainOptions options);
+
+    /**
      * Returns id generator instance by name.
      *
      * @param name name of object

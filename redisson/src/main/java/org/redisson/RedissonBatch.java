@@ -379,6 +379,11 @@ public class RedissonBatch implements RBatch {
     }
 
     @Override
+    public RTDigestAsync getTDigest(String name) {
+        return new RedissonTDigest(executorService, name);
+    }
+
+    @Override
     public RVectorSetAsync getVectorSet(String name) {
         return new RedissonVectorSet(executorService, name);
     }

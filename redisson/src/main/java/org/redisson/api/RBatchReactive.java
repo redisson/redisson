@@ -77,6 +77,14 @@ public interface RBatchReactive {
     <V> RCuckooFilterReactive<V> getCuckooFilter(String name, Codec codec);
 
     /**
+     * Returns t-digest instance by <code>name</code>.
+     *
+     * @param name name of object
+     * @return TDigest object
+     */
+    RTDigestReactive getTDigest(String name);
+
+    /**
      * Returns vector set instance by name.
      * Stores vectors and associated elements in a set optimized for similarity search.
      *

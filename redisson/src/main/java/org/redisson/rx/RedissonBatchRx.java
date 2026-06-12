@@ -451,6 +451,13 @@ public class RedissonBatchRx implements RBatchRx {
     }
 
     @Override
+    public RTDigestRx getTDigest(String name) {
+        return RxProxyBuilder.create(executorService,
+                new RedissonTDigest(executorService, name),
+                RTDigestRx.class);
+    }
+
+    @Override
     public RVectorSetRx getVectorSet(String name) {
         return RxProxyBuilder.create(executorService,
                 new RedissonVectorSet(executorService, name),

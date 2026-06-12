@@ -1051,6 +1051,22 @@ public final class RedissonRx implements RedissonRxClient {
     }
 
     @Override
+    public RTDigestRx getTDigest(String name) {
+        return RxProxyBuilder.create(commandExecutor,
+                new RedissonTDigest(commandExecutor, name),
+                RTDigestRx.class);
+    }
+
+    @Override
+    public RTDigestRx getTDigest(PlainOptions options) {
+        PlainParams params = (PlainParams) options;
+        CommandRxExecutor ca = commandExecutor.copy(params);
+        return RxProxyBuilder.create(commandExecutor,
+                new RedissonTDigest(ca, params.getName()),
+                RTDigestRx.class);
+    }
+
+    @Override
     public RFunctionRx getFunction() {
         return RxProxyBuilder.create(commandExecutor, new RedissonFuction(commandExecutor), RFunctionRx.class);
     }

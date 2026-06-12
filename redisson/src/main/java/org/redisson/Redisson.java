@@ -1279,6 +1279,17 @@ public final class Redisson implements RedissonClient {
                 commandExecutor.copy(params), params.getName());
     }
 
+    @Override
+    public RTDigest getTDigest(String name) {
+        return new RedissonTDigest(commandExecutor, name);
+    }
+
+    @Override
+    public RTDigest getTDigest(PlainOptions options) {
+        PlainParams params = (PlainParams) options;
+        return new RedissonTDigest(commandExecutor.copy(params), params.getName());
+    }
+
 
     @Override
     public <V> RBloomFilterNative<V> getBloomFilterNative(PlainOptions options) {

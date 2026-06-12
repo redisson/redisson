@@ -78,6 +78,14 @@ public interface RBatchRx {
     <V> RCuckooFilterRx<V> getCuckooFilter(String name, Codec codec);
 
     /**
+     * Returns t-digest instance by <code>name</code>.
+     *
+     * @param name name of object
+     * @return TDigest object
+     */
+    RTDigestRx getTDigest(String name);
+
+    /**
      * Returns vector set instance by name.
      * Stores vectors and associated elements in a set optimized for similarity search.
      *
