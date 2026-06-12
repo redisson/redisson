@@ -278,7 +278,19 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         retryReadRandomAsync(codec, command, mainPromise, list, params);
         return new CompletableFutureWrapper<>(mainPromise);
     }
-    
+
+    @Override
+    public <T, R> RFuture<R> readRoundRobinAsync(Codec codec, RedisCommand<T> command, Object... params) {
+        MasterSlaveEntry entry = connectionManager.getNextEntry();
+        return async(true, new NodeSource(entry), codec, command, params, false, false);
+    }
+
+    @Override
+    public <T, R> RFuture<R> writeRoundRobinAsync(Codec codec, RedisCommand<T> command, Object... params) {
+        MasterSlaveEntry entry = connectionManager.getNextEntry();
+        return async(false, new NodeSource(entry), codec, command, params, false, false);
+    }
+
     private <R, T> void retryReadRandomAsync(Codec codec, RedisCommand<T> command, CompletableFuture<R> mainPromise,
             List<RedisClient> nodes, Object... params) {
         RedisClient client = nodes.remove(0);
