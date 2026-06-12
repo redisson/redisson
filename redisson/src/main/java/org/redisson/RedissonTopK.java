@@ -79,9 +79,23 @@ public class RedissonTopK<V> extends RedissonExpirable implements RTopK<V> {
         // TOPK.RESERVE accepts width, depth and decay only together, so when
         // any of them is supplied the remaining ones fall back to the defaults.
         if (a.getWidth() != null || a.getDepth() != null || a.getDecay() != null) {
-            params.add(a.getWidth() != null ? a.getWidth() : DEFAULT_WIDTH);
-            params.add(a.getDepth() != null ? a.getDepth() : DEFAULT_DEPTH);
-            params.add(a.getDecay() != null ? a.getDecay() : DEFAULT_DECAY);
+            if (a.getWidth() != null) {
+                params.add(a.getWidth());
+            } else {
+                params.add(DEFAULT_WIDTH);
+            }
+
+            if (a.getDepth() != null) {
+                params.add(a.getDepth());
+            } else {
+                params.add(DEFAULT_DEPTH);
+            }
+
+            if (a.getDecay() != null) {
+                params.add(a.getDecay());
+            } else {
+                params.add(DEFAULT_DECAY);
+            }
         }
 
         return commandExecutor.writeAsync(
