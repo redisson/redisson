@@ -585,7 +585,7 @@ public class RedissonSearchTest extends RedisDockerTest {
                     FieldIndex.text("t2"));
 
             try {
-                Thread.sleep(1500);
+                Thread.sleep(2000);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }

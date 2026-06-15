@@ -744,6 +744,12 @@ public final class ServiceManager {
         return addersCounter;
     }
 
+    private final Map<Long, MasterSlaveEntry> searchCursorRoutes = new ConcurrentHashMap<>();
+
+    public Map<Long, MasterSlaveEntry> getSearchCursorRoutes() {
+        return searchCursorRoutes;
+    }
+
     private final MapResolver mapResolver = new MapResolver(this);
 
     public MapResolver getLiveObjectMapResolver() {

@@ -38,10 +38,13 @@ import org.redisson.client.protocol.convertor.EmptyMapConvertor;
 import org.redisson.client.protocol.decoder.*;
 import org.redisson.codec.CompositeCodec;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.iterator.RedissonBaseIterator;
+import org.redisson.misc.CompletableFutureWrapper;
 
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.concurrent.CompletionStage;
 
 /**
  *
@@ -61,6 +64,14 @@ public class RedissonSearch implements RSearch {
     public RedissonSearch(Codec codec, CommandAsyncExecutor commandExecutor) {
         this.codec = commandExecutor.getServiceManager().getCodec(codec);
         this.commandExecutor = commandExecutor;
+    }
+
+    private boolean isClusterMode() {
+        return commandExecutor.getServiceManager().getCfg().isClusterConfig();
+    }
+
+    private Map<Long, MasterSlaveEntry> cursorRoutes() {
+        return commandExecutor.getServiceManager().getSearchCursorRoutes();
     }
 
     @Override
@@ -824,6 +835,19 @@ public class RedissonSearch implements RSearch {
             }
         }
 
+        if (options.isWithCursor() && isClusterMode()) {
+            MasterSlaveEntry entry = commandExecutor.getConnectionManager().getNextEntry();
+            RFuture<AggregationResult> future =
+                    commandExecutor.writeAsync(entry, StringCodec.INSTANCE, command, args.toArray());
+            CompletionStage<AggregationResult> result = future.thenApply(r -> {
+                if (r != null && r.getCursorId() > 0) {
+                    cursorRoutes().put(r.getCursorId(), entry);
+                }
+                return r;
+            });
+            return new CompletableFutureWrapper<>(result);
+        }
+
         return commandExecutor.writeRoundRobinAsync(StringCodec.INSTANCE, command, args.toArray());
     }
 
@@ -961,6 +985,13 @@ public class RedissonSearch implements RSearch {
 
     @Override
     public RFuture<Void> delCursorAsync(String indexName, long cursorId) {
+        MasterSlaveEntry entry = null;
+        if (isClusterMode()) {
+            entry = cursorRoutes().remove(cursorId);
+        }
+        if (entry != null) {
+            return commandExecutor.writeAsync(entry, StringCodec.INSTANCE, RedisCommands.FT_CURSOR_DEL, indexName, cursorId);
+        }
         return commandExecutor.writeAsync((String) null, StringCodec.INSTANCE, RedisCommands.FT_CURSOR_DEL, indexName, cursorId);
     }
 
@@ -986,7 +1017,29 @@ public class RedissonSearch implements RSearch {
                             new ObjectMapReplayDecoder(new CompositeCodec(StringCodec.INSTANCE, codec))));
         }
 
-        return commandExecutor.writeAsync(indexName, StringCodec.INSTANCE, command, indexName, cursorId);
+        return executeCursorRead(indexName, cursorId, command, indexName, cursorId);
+    }
+
+    private RFuture<AggregationResult> executeCursorRead(String indexName, long cursorId,
+                                                         RedisStrictCommand command, Object... params) {
+        MasterSlaveEntry entry;
+        if (isClusterMode()) {
+            entry = cursorRoutes().get(cursorId);
+        } else {
+            entry = null;
+        }
+        if (entry == null) {
+            return commandExecutor.writeAsync(indexName, StringCodec.INSTANCE, command, params);
+        }
+
+        RFuture<AggregationResult> future = commandExecutor.writeAsync(entry, StringCodec.INSTANCE, command, params);
+        CompletionStage<AggregationResult> result = future.thenApply(r -> {
+            if (r == null || r.getCursorId() == 0) {
+                cursorRoutes().remove(cursorId, entry);
+            }
+            return r;
+        });
+        return new CompletableFutureWrapper<>(result);
     }
 
     @Override
@@ -1011,7 +1064,7 @@ public class RedissonSearch implements RSearch {
                             new ObjectMapReplayDecoder(new CompositeCodec(StringCodec.INSTANCE, codec))));
         }
 
-        return commandExecutor.writeAsync(indexName, StringCodec.INSTANCE, command, indexName, cursorId, "COUNT", count);
+        return executeCursorRead(indexName, cursorId, command, indexName, cursorId, "COUNT", count);
     }
 
     @Override
