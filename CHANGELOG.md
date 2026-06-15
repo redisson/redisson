@@ -3,6 +3,19 @@ Redisson Releases History
 
 Upgrade to __[Redisson PRO](https://redisson.pro/feature-comparison.html)__ with **advanced features**.
 
+### 15-June-2026 - 4.6.0 released
+
+Feature - [T-digest](https://redisson.pro/docs/data-and-services/probabilistic-structures/#tdigest) object added  
+Feature - [Top-k](https://redisson.pro/docs/data-and-services/probabilistic-structures/#topk) object added  
+Feature - Spring Boot 4.1.0 integration  
+Feature - Spring Data Redis 4.1.0 integration  
+Feature - `getFullInfo()` and `lastItemsReversed()` methods added to `RArray`  
+Feature - `putWithLease()`, `getWithLease()`, `removeWithLease()` methods added `RMapCache` (thanks to @nhancdt2602)  
+
+Fixed - Spring Data `redisTemplate.opsForZSet().popMin()` method throws `IndexOutOfBoundsException`  
+Fixed - old value not sent in `RMapCache.fastPutIfExistsOperation()` update message (thanks to @kubbidev)  
+Fixed - adding ability to use `useReferences` and `allowedClasses` settings in yaml config for `Kryo5Codec`  
+
 ### 05-June-2026 - 4.5.0 released
 
 Feature - [Array](https://redisson.pro/docs/data-and-services/collections/#array) object added (thanks to @lamnt2008)  
