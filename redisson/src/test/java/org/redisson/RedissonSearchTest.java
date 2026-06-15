@@ -1669,4 +1669,95 @@ public class RedissonSearchTest extends RedisDockerTest {
         });
     }
 
+    private static final String INDEX = "idx:cursor";
+    private static final int DISTINCT_ORGS = 6;
+
+    @Test
+    public void testCursorRoundRobinAcrossMasters() {
+        withNewCluster((nodes, redisson) -> {
+            RSearch s = redisson.getSearch(StringCodec.INSTANCE);
+            seedAndCreateIndex(redisson, s);
+
+            for (int i = 0; i < 9; i++) {
+                List<Map<String, Object>> rows = drainCursor(s);
+                assertThat(rows).hasSize(DISTINCT_ORGS);
+            }
+        });
+    }
+
+    @Test
+    public void testCursorWithNewSearch() {
+        withNewCluster((nodes, redisson) -> {
+            RSearch creator = redisson.getSearch(StringCodec.INSTANCE);
+            seedAndCreateIndex(redisson, creator);
+
+            AggregationResult first = creator.aggregate(INDEX, "*",
+                    AggregationOptions.defaults()
+                            .groupBy(GroupBy.fieldNames("@org").reducers(Reducer.count().as("cnt")))
+                            .withCursor(1));
+
+            List<Map<String, Object>> rows = new ArrayList<>(first.getAttributes());
+            long cursorId = first.getCursorId();
+            assertThat(cursorId).isPositive();
+
+            while (cursorId != 0) {
+                RSearch reader = redisson.getSearch(StringCodec.INSTANCE);
+                AggregationResult page = reader.readCursor(INDEX, cursorId, 1);
+                cursorId = page.getCursorId();
+                rows.addAll(page.getAttributes());
+            }
+
+            assertThat(rows).hasSize(DISTINCT_ORGS);
+        });
+    }
+
+    @Test
+    public void testDelCursorTargetsOwningMaster() {
+        withNewCluster((nodes, redisson) -> {
+            RSearch s = redisson.getSearch(StringCodec.INSTANCE);
+            seedAndCreateIndex(redisson, s);
+
+            for (int i = 0; i < 9; i++) {
+                AggregationResult first = s.aggregate(INDEX, "*",
+                        AggregationOptions.defaults()
+                                .groupBy(GroupBy.fieldNames("@org").reducers(Reducer.count().as("cnt")))
+                                .withCursor(1));
+                long cursorId = first.getCursorId();
+                assertThat(cursorId).isPositive();
+
+                s.delCursor(INDEX, cursorId);
+            }
+        });
+    }
+
+    private static void seedAndCreateIndex(RedissonClient redisson, RSearch s) {
+        for (int i = 0; i < DISTINCT_ORGS * 3; i++) {
+            RMap<String, Object> m = redisson.getMap("doc:" + i, StringCodec.INSTANCE);
+            m.put("org", "org_" + (i % DISTINCT_ORGS));
+            m.put("value", String.valueOf(i));
+        }
+
+        s.createIndex(INDEX, IndexOptions.defaults()
+                        .on(IndexType.HASH)
+                        .prefix(Arrays.asList("doc:")),
+                FieldIndex.tag("org"),
+                FieldIndex.numeric("value"));
+    }
+
+    private static List<Map<String, Object>> drainCursor(RSearch s) {
+        AggregationResult first = s.aggregate(INDEX, "*",
+                AggregationOptions.defaults()
+                        .groupBy(GroupBy.fieldNames("@org").reducers(Reducer.count().as("cnt")))
+                        .withCursor(1));
+
+        List<Map<String, Object>> rows = new ArrayList<>(first.getAttributes());
+        long cursorId = first.getCursorId();
+        while (cursorId != 0) {
+            AggregationResult page = s.readCursor(INDEX, cursorId, 1);
+            cursorId = page.getCursorId();
+            rows.addAll(page.getAttributes());
+        }
+        return rows;
+    }
+
 }
