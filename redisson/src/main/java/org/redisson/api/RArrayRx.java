@@ -19,6 +19,7 @@ import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Single;
 import org.redisson.api.array.ArrayEntry;
+import org.redisson.api.array.ArrayFullInfo;
 import org.redisson.api.array.ArrayGrepArgs;
 import org.redisson.api.array.ArrayInfo;
 
@@ -223,13 +224,12 @@ public interface RArrayRx<V> extends RExpirableRx {
     Single<List<V>> lastItems(long count);
 
     /**
-     * Returns last inserted values.
+     * Returns last inserted values in reverse order.
      *
      * @param count values amount
-     * @param reverse {@code true} to return values in reverse order
-     * @return last inserted values
+     * @return last inserted values in reverse order
      */
-    Single<List<V>> lastItems(long count, boolean reverse);
+    Single<List<V>> lastItemsReversed(long count);
 
     /**
      * Returns array information.
@@ -239,12 +239,11 @@ public interface RArrayRx<V> extends RExpirableRx {
     Single<ArrayInfo> getInfo();
 
     /**
-     * Returns array information.
+     * Returns full array information including extended statistics.
      *
-     * @param full {@code true} to include full statistics
-     * @return array information
+     * @return full array information
      */
-    Single<ArrayInfo> getInfo(boolean full);
+    Single<ArrayFullInfo> getFullInfo();
 
     /**
      * Returns indexes of values matching the specified arguments.

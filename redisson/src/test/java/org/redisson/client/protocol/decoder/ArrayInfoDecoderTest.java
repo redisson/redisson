@@ -16,6 +16,7 @@
 package org.redisson.client.protocol.decoder;
 
 import org.junit.jupiter.api.Test;
+import org.redisson.api.array.ArrayFullInfo;
 import org.redisson.api.array.ArrayInfo;
 
 import java.util.Arrays;
@@ -26,7 +27,7 @@ public class ArrayInfoDecoderTest {
 
     @Test
     public void testDecodeSkipsMissingFields() {
-        ArrayInfo info = new ArrayInfoDecoder().decode(Arrays.asList("count", 2L, "len", 5L), null);
+        ArrayFullInfo info = new ArrayFullInfoDecoder().decode(Arrays.asList("count", 2L, "len", 5L), null);
 
         assertThat(info.getCount()).isEqualTo(2);
         assertThat(info.getLength()).isEqualTo(5);
@@ -44,7 +45,7 @@ public class ArrayInfoDecoderTest {
 
     @Test
     public void testDecodeStringValues() {
-        ArrayInfo info = new ArrayInfoDecoder().decode(Arrays.asList(
+        ArrayFullInfo info = new ArrayFullInfoDecoder().decode(Arrays.asList(
                 "count", "2",
                 "len", "5",
                 "avg-dense-size", "1.5"), null);

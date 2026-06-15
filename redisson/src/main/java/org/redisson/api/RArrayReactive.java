@@ -17,6 +17,7 @@ package org.redisson.api;
 
 import org.redisson.api.annotation.EmptyAsAbsent;
 import org.redisson.api.array.ArrayEntry;
+import org.redisson.api.array.ArrayFullInfo;
 import org.redisson.api.array.ArrayGrepArgs;
 import org.redisson.api.array.ArrayInfo;
 import reactor.core.publisher.Flux;
@@ -225,13 +226,12 @@ public interface RArrayReactive<V> extends RExpirableReactive {
     Mono<List<V>> lastItems(long count);
 
     /**
-     * Returns last inserted values.
+     * Returns last inserted values in reverse order.
      *
      * @param count values amount
-     * @param reverse {@code true} to return values in reverse order
-     * @return last inserted values
+     * @return last inserted values in reverse order
      */
-    Mono<List<V>> lastItems(long count, boolean reverse);
+    Mono<List<V>> lastItemsReversed(long count);
 
     /**
      * Returns array information.
@@ -241,12 +241,11 @@ public interface RArrayReactive<V> extends RExpirableReactive {
     Mono<ArrayInfo> getInfo();
 
     /**
-     * Returns array information.
+     * Returns full array information including extended statistics.
      *
-     * @param full {@code true} to include full statistics
-     * @return array information
+     * @return full array information
      */
-    Mono<ArrayInfo> getInfo(boolean full);
+    Mono<ArrayFullInfo> getFullInfo();
 
     /**
      * Returns indexes of values matching the specified arguments.

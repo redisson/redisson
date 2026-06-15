@@ -19,11 +19,15 @@ import java.io.Serializable;
 
 /**
  * Array information object.
+ * <p>
+ * Holds the information that is always available for an array. Extended
+ * statistics that are only populated when full information is requested are
+ * exposed by {@link ArrayFullInfo}.
  *
  * @author lamnt2008
  *
  */
-public final class ArrayInfo implements Serializable {
+public class ArrayInfo implements Serializable {
 
     private static final long serialVersionUID = -5000606611320810658L;
 
@@ -34,11 +38,6 @@ public final class ArrayInfo implements Serializable {
     private long directorySize;
     private long superDirectoryEntries;
     private long sliceSize;
-    private Long denseSlices;
-    private Long sparseSlices;
-    private Double averageDenseSize;
-    private Double averageDenseFill;
-    private Double averageSparseSize;
 
     /**
      * Returns number of values stored in array.
@@ -131,71 +130,6 @@ public final class ArrayInfo implements Serializable {
         this.sliceSize = sliceSize;
     }
 
-    /**
-     * Returns number of dense slices.
-     *
-     * @return number of dense slices
-     */
-    public Long getDenseSlices() {
-        return denseSlices;
-    }
-
-    public void setDenseSlices(Long denseSlices) {
-        this.denseSlices = denseSlices;
-    }
-
-    /**
-     * Returns number of sparse slices.
-     *
-     * @return number of sparse slices
-     */
-    public Long getSparseSlices() {
-        return sparseSlices;
-    }
-
-    public void setSparseSlices(Long sparseSlices) {
-        this.sparseSlices = sparseSlices;
-    }
-
-    /**
-     * Returns average dense slice size.
-     *
-     * @return average dense slice size
-     */
-    public Double getAverageDenseSize() {
-        return averageDenseSize;
-    }
-
-    public void setAverageDenseSize(Double averageDenseSize) {
-        this.averageDenseSize = averageDenseSize;
-    }
-
-    /**
-     * Returns average dense slice fill ratio.
-     *
-     * @return average dense slice fill ratio
-     */
-    public Double getAverageDenseFill() {
-        return averageDenseFill;
-    }
-
-    public void setAverageDenseFill(Double averageDenseFill) {
-        this.averageDenseFill = averageDenseFill;
-    }
-
-    /**
-     * Returns average sparse slice size.
-     *
-     * @return average sparse slice size
-     */
-    public Double getAverageSparseSize() {
-        return averageSparseSize;
-    }
-
-    public void setAverageSparseSize(Double averageSparseSize) {
-        this.averageSparseSize = averageSparseSize;
-    }
-
     @Override
     public String toString() {
         return "ArrayInfo{" +
@@ -206,11 +140,6 @@ public final class ArrayInfo implements Serializable {
                 ", directorySize=" + directorySize +
                 ", superDirectoryEntries=" + superDirectoryEntries +
                 ", sliceSize=" + sliceSize +
-                ", denseSlices=" + denseSlices +
-                ", sparseSlices=" + sparseSlices +
-                ", averageDenseSize=" + averageDenseSize +
-                ", averageDenseFill=" + averageDenseFill +
-                ", averageSparseSize=" + averageSparseSize +
                 '}';
     }
 }

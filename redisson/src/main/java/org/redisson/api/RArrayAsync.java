@@ -16,6 +16,7 @@
 package org.redisson.api;
 
 import org.redisson.api.array.ArrayEntry;
+import org.redisson.api.array.ArrayFullInfo;
 import org.redisson.api.array.ArrayGrepArgs;
 import org.redisson.api.array.ArrayInfo;
 
@@ -230,13 +231,12 @@ public interface RArrayAsync<V> extends RExpirableAsync {
     RFuture<List<V>> lastItemsAsync(long count);
 
     /**
-     * Returns last inserted values.
+     * Returns last inserted values in reverse order.
      *
      * @param count values amount
-     * @param reverse {@code true} to return values in reverse order
-     * @return last inserted values
+     * @return last inserted values in reverse order
      */
-    RFuture<List<V>> lastItemsAsync(long count, boolean reverse);
+    RFuture<List<V>> lastItemsReversedAsync(long count);
 
     /**
      * Returns array information.
@@ -246,12 +246,11 @@ public interface RArrayAsync<V> extends RExpirableAsync {
     RFuture<ArrayInfo> getInfoAsync();
 
     /**
-     * Returns array information.
+     * Returns full array information including extended statistics.
      *
-     * @param full {@code true} to include full statistics
-     * @return array information
+     * @return full array information
      */
-    RFuture<ArrayInfo> getInfoAsync(boolean full);
+    RFuture<ArrayFullInfo> getFullInfoAsync();
 
     /**
      * Returns indexes of values matching the specified arguments.

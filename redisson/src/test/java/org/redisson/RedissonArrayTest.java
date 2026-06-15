@@ -23,6 +23,7 @@ import org.redisson.api.RArray;
 import org.redisson.api.RArrayReactive;
 import org.redisson.api.RArrayRx;
 import org.redisson.api.array.ArrayEntry;
+import org.redisson.api.array.ArrayFullInfo;
 import org.redisson.api.array.ArrayGrepArgs;
 import org.redisson.api.array.ArrayInfo;
 import org.redisson.client.RedisException;
@@ -104,7 +105,7 @@ public class RedissonArrayTest extends RedisDockerTest {
 
         assertThat(array.next()).isEqualTo(1);
         assertThat(array.lastItems(3)).containsExactly("b", "c", "d");
-        assertThat(array.lastItems(3, true)).containsExactly("d", "c", "b");
+        assertThat(array.lastItemsReversed(3)).containsExactly("d", "c", "b");
 
         assertThat(array.seek(0)).isTrue();
         assertThat(array.next()).isEqualTo(0);
@@ -152,7 +153,7 @@ public class RedissonArrayTest extends RedisDockerTest {
         assertThat(info.getLength()).isEqualTo(2);
         assertThat(info.getSliceSize()).isPositive();
 
-        ArrayInfo fullInfo = array.getInfo(true);
+        ArrayFullInfo fullInfo = array.getFullInfo();
         assertThat(fullInfo.getDenseSlices()).isNotNull();
         assertThat(fullInfo.getSparseSlices()).isNotNull();
     }

@@ -19,6 +19,7 @@ import org.redisson.api.AsyncIterator;
 import org.redisson.api.RArray;
 import org.redisson.api.RFuture;
 import org.redisson.api.array.ArrayEntry;
+import org.redisson.api.array.ArrayFullInfo;
 import org.redisson.api.array.ArrayGrepArgs;
 import org.redisson.api.array.ArrayGrepParams;
 import org.redisson.api.array.ArrayInfo;
@@ -505,21 +506,18 @@ public class RedissonArray<V> extends RedissonExpirable implements RArray<V> {
 
     @Override
     public RFuture<List<V>> lastItemsAsync(long count) {
-        return lastItemsAsync(count, false);
-    }
-
-    @Override
-    public List<V> lastItems(long count, boolean reverse) {
-        return get(lastItemsAsync(count, reverse));
-    }
-
-    @Override
-    public RFuture<List<V>> lastItemsAsync(long count, boolean reverse) {
-        if (reverse) {
-            return commandExecutor.readAsync(getRawName(), codec,
-                    RedisCommands.ARLASTITEMS, getRawName(), count, "REV");
-        }
         return commandExecutor.readAsync(getRawName(), codec, RedisCommands.ARLASTITEMS, getRawName(), count);
+    }
+
+    @Override
+    public List<V> lastItemsReversed(long count) {
+        return get(lastItemsReversedAsync(count));
+    }
+
+    @Override
+    public RFuture<List<V>> lastItemsReversedAsync(long count) {
+        return commandExecutor.readAsync(getRawName(), codec,
+                RedisCommands.ARLASTITEMS, getRawName(), count, "REV");
     }
 
     @Override
@@ -529,20 +527,17 @@ public class RedissonArray<V> extends RedissonExpirable implements RArray<V> {
 
     @Override
     public RFuture<ArrayInfo> getInfoAsync() {
-        return getInfoAsync(false);
-    }
-
-    @Override
-    public ArrayInfo getInfo(boolean full) {
-        return get(getInfoAsync(full));
-    }
-
-    @Override
-    public RFuture<ArrayInfo> getInfoAsync(boolean full) {
-        if (full) {
-            return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.ARINFO, getRawName(), "FULL");
-        }
         return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.ARINFO, getRawName());
+    }
+
+    @Override
+    public ArrayFullInfo getFullInfo() {
+        return get(getFullInfoAsync());
+    }
+
+    @Override
+    public RFuture<ArrayFullInfo> getFullInfoAsync() {
+        return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.ARINFO_FULL, getRawName(), "FULL");
     }
 
     @Override

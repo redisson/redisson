@@ -15,26 +15,31 @@
  */
 package org.redisson.client.protocol.decoder;
 
-import org.redisson.api.array.ArrayInfo;
+import org.redisson.api.array.ArrayFullInfo;
 import org.redisson.client.handler.State;
 
 import java.util.List;
 import java.util.Map;
 
 /**
- * Array information decoder.
+ * Full array information decoder.
  *
- * @author lamnt2008
+ * @author Nikita Koksharov
  *
  */
-public class ArrayInfoDecoder extends AbstractArrayInfoDecoder implements MultiDecoder<ArrayInfo> {
+public class ArrayFullInfoDecoder extends AbstractArrayInfoDecoder implements MultiDecoder<ArrayFullInfo> {
 
     @Override
-    public ArrayInfo decode(List<Object> parts, State state) {
+    public ArrayFullInfo decode(List<Object> parts, State state) {
         Map<String, Object> map = toMap(parts);
 
-        ArrayInfo info = new ArrayInfo();
+        ArrayFullInfo info = new ArrayFullInfo();
         populateBase(map, info);
+        setLong(map, "dense-slices", info::setDenseSlices);
+        setLong(map, "sparse-slices", info::setSparseSlices);
+        setDouble(map, "avg-dense-size", info::setAverageDenseSize);
+        setDouble(map, "avg-dense-fill", info::setAverageDenseFill);
+        setDouble(map, "avg-sparse-size", info::setAverageSparseSize);
         return info;
     }
 

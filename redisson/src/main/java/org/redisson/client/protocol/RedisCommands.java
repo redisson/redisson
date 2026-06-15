@@ -32,6 +32,7 @@ import java.util.stream.Stream;
 
 import org.redisson.api.*;
 import org.redisson.api.array.ArrayEntry;
+import org.redisson.api.array.ArrayFullInfo;
 import org.redisson.api.array.ArrayInfo;
 import org.redisson.api.bloomfilter.BloomFilterInfo;
 import org.redisson.api.bloomfilter.BloomFilterScanDumpInfo;
@@ -78,6 +79,7 @@ public interface RedisCommands {
     RedisCommand<Boolean> ARSEEK = new RedisCommand<>("ARSEEK", new BooleanReplayConvertor());
     RedisCommand<List<Object>> ARLASTITEMS = new RedisCommand<>("ARLASTITEMS", new ObjectListReplayDecoder<>());
     RedisCommand<ArrayInfo> ARINFO = new RedisCommand<>("ARINFO", new ArrayInfoDecoder());
+    RedisCommand<ArrayFullInfo> ARINFO_FULL = new RedisCommand<>("ARINFO", new ArrayFullInfoDecoder());
 
     RedisCommand<Boolean> VADD = new RedisCommand<>("VADD", new BooleanReplayConvertor());
     RedisCommand<Integer> VCARD = new RedisCommand<>("VCARD", new IntegerReplayConvertor());
