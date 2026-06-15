@@ -196,4 +196,21 @@ public final class ArrayInfo implements Serializable {
         this.averageSparseSize = averageSparseSize;
     }
 
+    @Override
+    public String toString() {
+        return "ArrayInfo{" +
+                "count=" + count +
+                ", length=" + length +
+                ", nextInsertIndex=" + nextInsertIndex +
+                ", slices=" + slices +
+                ", directorySize=" + directorySize +
+                ", superDirectoryEntries=" + superDirectoryEntries +
+                ", sliceSize=" + sliceSize +
+                ", denseSlices=" + denseSlices +
+                ", sparseSlices=" + sparseSlices +
+                ", averageDenseSize=" + averageDenseSize +
+                ", averageDenseFill=" + averageDenseFill +
+                ", averageSparseSize=" + averageSparseSize +
+                '}';
+    }
 }
