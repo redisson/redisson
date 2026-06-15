@@ -38,19 +38,21 @@ Redisson greatly extends the capabilities of Valkey and Redis by providing addit
 * [JMS API implementation](https://redisson.pro/docs/messaging/#jms-api-implementation)
 * [Cache API implementations](https://redisson.pro/docs/cache-api-implementations)  
     Spring Cache, JCache API (JSR-107), Hibernate Cache, MyBatis Cache, Quarkus Cache, Micronaut Cache
-* [Distributed Objects](https://redisson.pro/docs/data-and-services/objects)  
-    Object holder, JSON holder, Binary stream holder, Geospatial holder, BitSet, Bloom filter, HyperLogLog, Rate Limiter
-* [Distributed Counters](https://redisson.pro/docs/data-and-services/counters)  
+* [Objects](https://redisson.pro/docs/data-and-services/objects)  
+    Object holder, JSON holder, Binary stream holder, Geospatial holder, BitSet, Rate Limiter, GCRA Rate Limiter
+* [Counters](https://redisson.pro/docs/data-and-services/counters)  
     Id generator, AtomicLong, AtomicDouble, LongAdder, DoubleAdder
-* [Distributed Collections](https://redisson.pro/docs/data-and-services/collections)  
-    JSON Store, Map, Multimap, Set, List, SortedSet, ScoredSortedSet, LexSortedSet, TimeSeries, VectorSet
-* [Distributed Queues](https://redisson.pro/docs/data-and-services/queues)  
+* [Probabilistic structures](https://redisson.pro/docs/data-and-services/probabilistic-structures/)
+    Bloom filter, HyperLogLog, Cuckoo filter, Top-k, T-digest
+* [Collections](https://redisson.pro/docs/data-and-services/collections)  
+    JSON Store, Map, Multimap, Set, List, SortedSet, ScoredSortedSet, LexSortedSet, TimeSeries, VectorSet, BitVector Store
+* [Queues](https://redisson.pro/docs/data-and-services/queues)  
     ReliableQueue, Queue, Deque, Blocking Queue, Blocking Deque, Priority Queue, Priority Deque, Stream, Ring Buffer, Transfer Queue
-* [Distributed Locks and synchronizers](https://redisson.pro/docs/data-and-services/locks-and-synchronizers)  
+* [Locks and synchronizers](https://redisson.pro/docs/data-and-services/locks-and-synchronizers)  
     Lock, FairLock, MultiLock, RedLock, ReadWriteLock, Semaphore, PermitExpirableSemaphore, CountDownLatch
-* [Distributed Publish/subscribe](https://redisson.pro/docs/data-and-services/publish-subscribe)  
+* [Publish/subscribe](https://redisson.pro/docs/data-and-services/publish-subscribe)  
     Reliable PubSub, Topic, Sharded Topic
-* [Distributed Services](https://redisson.pro/docs/data-and-services/services)  
+* [Services](https://redisson.pro/docs/data-and-services/services)  
     Remote service, Live Object service, Executor service, Scheduler service, MapReduce service
 * [Microservices integration](https://redisson.pro/docs/microservices-integration)  
     Helidon, Micronaut, Quarkus
