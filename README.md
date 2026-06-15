@@ -66,12 +66,12 @@ Redisson greatly extends the capabilities of Valkey and Redis by providing addit
 ### [Redisson PRO vs. Community Edition ➜](https://redisson.pro/feature-comparison.html)
 
 ## Comparing solutions
-- [Redisson vs Spring Data Redis](https://redisson.pro/articles/feature-comparison-redisson-vs-spring-data-redis.html)
-- [Redisson vs Jedis](https://redisson.pro/feature-comparison-redisson-vs-jedis.html)
-- [Redisson vs Lettuce](https://redisson.pro/feature-comparison-redisson-vs-lettuce.html)
-- [Redis vs Apache Ignite](https://redisson.pro/feature-comparison-redis-vs-ignite.html)
-- [Redis vs Hazelcast](https://redisson.pro/feature-comparison-redis-vs-hazelcast.html)
-- [Redis vs Ehcache](https://redisson.pro/feature-comparison-redis-vs-ehcache.html)
+- [Redisson vs Spring Data Redis](https://redisson.pro/blog/feature-comparison-redisson-vs-spring-data-redis.html)
+- [Redisson vs Jedis](https://redisson.pro/blog/feature-comparison-redisson-vs-jedis.html)
+- [Redisson vs Lettuce](https://redisson.pro/blog/feature-comparison-redisson-vs-lettuce.html)
+- [Redis vs Apache Ignite](https://redisson.pro/blog/feature-comparison-redis-vs-ignite.html)
+- [Redis vs Hazelcast](https://redisson.pro/blog/feature-comparison-redis-vs-hazelcast.html)
+- [Redis vs Ehcache](https://redisson.pro/blog/feature-comparison-redis-vs-ehcache.html)
 
 ## Success stories
 
