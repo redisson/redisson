@@ -401,7 +401,7 @@
                         <trimStackTrace>true</trimStackTrace>
                         <forkCount>6</forkCount>
                         <reuseForks>false</reuseForks>
-                        <argLine>${argLine} -javaagent:"${settings.localRepository}"/com/github/hazendaz/jmockit/jmockit/2.1.0/jmockit-2.1.0.jar</argLine>
+                        <argLine>${argLine} -javaagent:"${settings.localRepository}"/com/github/hazendaz/jmockit/jmockit/2.2.0/jmockit-2.2.0.jar</argLine>
                     </configuration>
             </plugin>
 
