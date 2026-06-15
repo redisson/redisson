@@ -63,9 +63,7 @@ Redisson greatly extends the capabilities of Valkey and Redis by providing addit
 * Supports many popular codecs ([Kryo](https://github.com/EsotericSoftware/kryo), [Jackson JSON](https://github.com/FasterXML/jackson), [Avro](http://avro.apache.org/), [Smile](http://wiki.fasterxml.com/SmileFormatSpec), [CBOR](http://cbor.io/), [MsgPack](http://msgpack.org/), [Amazon Ion](https://amzn.github.io/ion-docs/), [LZ4](https://github.com/jpountz/lz4-java), [Snappy](https://github.com/xerial/snappy-java), [Protobuf](https://github.com/protocolbuffers/protobuf) and JDK Serialization)
 * 2000+ unit tests  
 
-## [Redisson PRO vs. Community Edition ➜](https://redisson.pro/feature-comparison.html)
-
-<!--
+### [Redisson PRO vs. Community Edition ➜](https://redisson.pro/feature-comparison.html)
 
 ## Comparing solutions
 - [Redisson vs Spring Data Redis](https://redisson.pro/articles/feature-comparison-redisson-vs-spring-data-redis.html)
@@ -81,4 +79,3 @@ Redisson greatly extends the capabilities of Valkey and Redis by providing addit
 - [Migrating from Hazelcast to Redis  /  Halodoc](https://blogs.halodoc.io/why-and-how-we-move-from-hazelcast-to-redis-2/)
 - [Distributed Locking with Redis (Migration from Hazelcast)  /  ContaAzul](https://carlosbecker.com/posts/distributed-locks-redis/)  
 - [Migrating from Coherence to Redis](https://www.youtube.com/watch?v=JF5R2ucKTEg)  
--->
