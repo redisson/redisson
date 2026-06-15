@@ -445,7 +445,7 @@ public class RedissonSearch implements RSearch {
                                             new ObjectListReplayDecoder()));
         }
 
-        return commandExecutor.readAsync(indexName, StringCodec.INSTANCE, command, args.toArray());
+        return commandExecutor.readRoundRobinAsync(StringCodec.INSTANCE, command, args.toArray());
     }
 
     @SuppressWarnings("MethodLength")
@@ -824,7 +824,7 @@ public class RedissonSearch implements RSearch {
             }
         }
 
-        return commandExecutor.writeAsync(indexName, StringCodec.INSTANCE, command, args.toArray());
+        return commandExecutor.writeRoundRobinAsync(StringCodec.INSTANCE, command, args.toArray());
     }
 
     @Override
@@ -840,7 +840,7 @@ public class RedissonSearch implements RSearch {
         RedisStrictCommand<SearchProfileResult> command = new RedisStrictCommand<>("FT.PROFILE",
                 new UnboundedListMultiDecoder(new SearchProfileResultDecoder()));
 
-        return commandExecutor.readAsync(indexName, StringCodec.INSTANCE, command, args.toArray());
+        return commandExecutor.readRoundRobinAsync(StringCodec.INSTANCE, command, args.toArray());
     }
 
     @Override
@@ -856,7 +856,7 @@ public class RedissonSearch implements RSearch {
         RedisStrictCommand<AggregateProfileResult> command = new RedisStrictCommand<>("FT.PROFILE",
                 new UnboundedListMultiDecoder(new AggregateProfileResultDecoder()));
 
-        return commandExecutor.readAsync(indexName, StringCodec.INSTANCE, command, args.toArray());
+        return commandExecutor.readRoundRobinAsync(StringCodec.INSTANCE, command, args.toArray());
     }
 
     private static List<Object> buildProfileArgs(String indexName, String queryType, boolean limited, List<Object> innerArgs) {
@@ -1144,7 +1144,7 @@ public class RedissonSearch implements RSearch {
                             new ObjectMapReplayDecoder(new CompositeCodec(StringCodec.INSTANCE, DoubleCodec.INSTANCE))));
         }
 
-        return commandExecutor.readAsync(indexName, StringCodec.INSTANCE, command, args.toArray());
+        return commandExecutor.readRoundRobinAsync(StringCodec.INSTANCE, command, args.toArray());
     }
 
     @Override
