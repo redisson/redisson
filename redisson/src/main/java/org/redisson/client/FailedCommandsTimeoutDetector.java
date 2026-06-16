@@ -38,4 +38,11 @@ public class FailedCommandsTimeoutDetector extends FailedCommandsDetector {
         }
     }
 
+    @Override
+    public FailedNodeDetector copy() {
+        FailedCommandsTimeoutDetector copy = new FailedCommandsTimeoutDetector();
+        copySettingsTo(copy);
+        return copy;
+    }
+
 }

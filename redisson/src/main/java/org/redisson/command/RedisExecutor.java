@@ -193,6 +193,7 @@ public class RedisExecutor<V, R> {
 
                 if (connectionFuture.isDone() && connectionFuture.isCompletedExceptionally()) {
                     exception = convertException(connectionFuture);
+                    reportCommandFailure(NodeFailureStage.COMMAND_ACQUIRE, connectionFuture, exception);
                     tryComplete(attemptPromise, exception);
                     return;
                 }
@@ -244,6 +245,7 @@ public class RedisExecutor<V, R> {
                         + ", " + LogHelper.toString(command, params)
                         + " after " + attempt + " of " + attempts + " retry attempts");
 
+                reportCommandFailure(NodeFailureStage.COMMAND_ACQUIRE, connectionFuture, exception);
                 attemptPromise.completeExceptionally(exception);
             }
         };
@@ -268,6 +270,7 @@ public class RedisExecutor<V, R> {
                         + " Node source: " + source + ", connection: " + connectionFuture.join()
                         + ", " + LogHelper.toString(command, params)
                         + " after " + attempt + " of " + attempts + " retry attempts");
+                reportCommandFailure(NodeFailureStage.COMMAND_WRITE, connectionFuture, exception);
                 attemptPromise.completeExceptionally(exception);
             }
         };
@@ -297,6 +300,7 @@ public class RedisExecutor<V, R> {
                         + "Node source: " + source
                         + ", " + LogHelper.toString(command, params)
                         + " after " + attempt + " of " + attempts + " retry attempts");
+                reportCommandFailure(NodeFailureStage.COMMAND_ACQUIRE, connectionFuture, exception);
                 connectionFuture.completeExceptionally(new CancellationException());
                 attemptPromise.completeExceptionally(exception);
                 return;
@@ -308,6 +312,7 @@ public class RedisExecutor<V, R> {
                             + "Node source: " + source
                             + ", " + LogHelper.toString(command, params)
                             + " after " + attempt + " of " + attempts + " retry attempts");
+                reportCommandFailure(NodeFailureStage.COMMAND_ACQUIRE, connectionFuture, exception);
             } else {
                 if (connectionFuture.isDone() && !connectionFuture.isCompletedExceptionally()) {
                     if (writeFuture == null || !writeFuture.isDone()) {
@@ -319,9 +324,10 @@ public class RedisExecutor<V, R> {
                                             "Check CPU usage of the JVM. Check that there are no blocking invocations in async/reactive/rx listeners or subscribeOnElements method. Check connection with Redis node: " + getNow(connectionFuture).getRedisClient().getAddr() +
                                             " for TCP packet drops. Try to increase nettyThreads setting." +
                                             " Netty pending tasks: " + pendingTasks + ","
-                                          + " Node source: " + source + ", connection: " + getNow(connectionFuture)
+                                            + " Node source: " + source + ", connection: " + getNow(connectionFuture)
                                             + ", " + LogHelper.toString(command, params)
                                             + " after " + attempt + " of " + attempts + " retry attempts");
+                                    reportCommandFailure(NodeFailureStage.COMMAND_WRITE, connectionFuture, exception);
                                 }
                                 attemptPromise.completeExceptionally(exception);
                             }
@@ -399,6 +405,7 @@ public class RedisExecutor<V, R> {
                     ", " + LogHelper.toString(command, params)
                     + " after " + attempt + " of " + attempts + " retry attempts",
                     future.cause());
+            NodeFailureReporter.report(connection.getRedisClient(), NodeFailureStage.COMMAND_WRITE, command, exception, attempt, attempts);
             tryComplete(attemptPromise, exception);
             return;
         }
@@ -484,14 +491,16 @@ public class RedisExecutor<V, R> {
             }
 
             int pendingTasks = countPendingTasks();
-            attemptPromise.completeExceptionally(
+            RedisResponseTimeoutException responseTimeoutException =
                     new RedisResponseTimeoutException("Redis server response timeout (" + timeoutAmount + " ms) occurred"
                             + " after " + attempt + " of " + attempts + " retry attempts,"
                             + " is non-idempotent command: " + (command != null && command.isNoRetry())
                             + " Check connection with Redis node: " + connection.getRedisClient().getAddr() + " for TCP packet drops or bandwidth limits. "
                             + " Try to increase nettyThreads and/or timeout settings."
                             + " Netty pending tasks: " + pendingTasks + ", "
-                            + LogHelper.toString(command, params) + ", channel: " + connection.getChannel()));
+                            + LogHelper.toString(command, params) + ", channel: " + connection.getChannel());
+            NodeFailureReporter.report(connection.getRedisClient(), NodeFailureStage.COMMAND_RESPONSE, command, responseTimeoutException, attempt, attempts);
+            attemptPromise.completeExceptionally(responseTimeoutException);
         };
 
         timeout = Optional.of(connectionManager.getServiceManager().newTimeout(timeoutResponseTask, timeoutTime, TimeUnit.MILLISECONDS));
@@ -699,6 +708,7 @@ public class RedisExecutor<V, R> {
         }
 
         RedisClient client = connectionFuture.join().getRedisClient();
+        NodeFailureReporter.report(client, NodeFailureStage.COMMAND_FINAL, command, cause, attempt, attempts);
         FailedNodeDetector detector = client.getConfig().getFailedNodeDetector();
         detector.onCommandFailed(cause);
         if (detector.isNodeFailed()) {
@@ -845,6 +855,17 @@ public class RedisExecutor<V, R> {
             return future.getNow(null);
         } catch (Exception e) {
             return null;
+        }
+    }
+
+    private void reportCommandFailure(NodeFailureStage stage, CompletableFuture<RedisConnection> connectionFuture, Throwable cause) {
+        RedisConnection connection = getNow(connectionFuture);
+        RedisClient client = connection != null ? connection.getRedisClient() : null;
+        if (client == null && source != null) {
+            client = source.getRedisClient();
+        }
+        if (client != null) {
+            NodeFailureReporter.report(client, stage, command, cause, attempt, attempts);
         }
     }
 

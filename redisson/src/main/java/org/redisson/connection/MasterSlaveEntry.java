@@ -20,6 +20,8 @@ import org.redisson.api.RFuture;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisConnectionException;
+import org.redisson.client.NodeFailureReporter;
+import org.redisson.client.NodeFailureStage;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
@@ -60,12 +62,12 @@ public class MasterSlaveEntry {
     MasterSlaveEntry replacedBy;
 
     int references;
-    
+
     final MasterSlaveServersConfig config;
     final ConnectionManager connectionManager;
 
     final MasterConnectionPool masterConnectionPool;
-    
+
     final MasterPubSubConnectionPool masterPubSubConnectionPool;
 
     final PubSubConnectionPool slavePubSubConnectionPool;
@@ -262,10 +264,15 @@ public class MasterSlaveEntry {
                 }
 
                 if (e != null) {
+                    NodeFailureReporter.report(entry.getClient(), NodeFailureStage.RECONNECT_PROBE, e);
                     scheduleCheck(entry);
                     return;
                 }
                 if (!c.isActive()) {
+                    NodeFailureReporter.report(
+                            entry.getClient(),
+                            NodeFailureStage.RECONNECT_PROBE,
+                            new RedisConnectionException("Connection to " + entry.getClient().getAddr() + " is not active!"));
                     c.closeAsync();
                     scheduleCheck(entry);
                     return;
@@ -297,6 +304,10 @@ public class MasterSlaveEntry {
                                 }
                             });
                         } else {
+                            NodeFailureReporter.report(
+                                    entry.getClient(),
+                                    NodeFailureStage.RECONNECT_PROBE,
+                                    ex != null ? ex : new RedisConnectionException("Unexpected PING response during reconnect probe: " + t));
                             scheduleCheck(entry);
                         }
                     } finally {
@@ -306,7 +317,7 @@ public class MasterSlaveEntry {
             });
         }, config.getFailedSlaveReconnectionInterval(), TimeUnit.MILLISECONDS);
     }
-    
+
     private boolean slaveDown(ClientConnectionsEntry entry, FreezeReason freezeReason) {
         ClientConnectionsEntry e = freeze(entry, freezeReason);
         if (e == null) {
@@ -327,7 +338,7 @@ public class MasterSlaveEntry {
     public boolean hasSlave(InetSocketAddress addr) {
         return getEntry(addr) != null;
     }
-    
+
     public boolean hasSlave(RedisURI addr) {
         return getEntry(addr) != null;
     }
@@ -335,7 +346,7 @@ public class MasterSlaveEntry {
     public CompletableFuture<Void> addSlave(RedisURI address) {
         return addSlave(address, null);
     }
-    
+
     public CompletableFuture<Void> addSlave(InetSocketAddress address, RedisURI uri) {
         return addSlave(address, uri, null);
     }
@@ -367,7 +378,7 @@ public class MasterSlaveEntry {
         RedisClient client = connectionManager.createClient(NodeType.SLAVE, address, uri, sslHostname);
         return addSlave(client);
     }
-    
+
     public CompletableFuture<Void> addSlave(RedisURI address, String sslHostname) {
         RedisClient client = connectionManager.createClient(NodeType.SLAVE, address, sslHostname);
         return addSlave(client);
@@ -430,7 +441,7 @@ public class MasterSlaveEntry {
             return r;
         });
     }
-    
+
     public CompletableFuture<Boolean> slaveUpAsync(RedisURI address) {
         noPubSubSlaves.set(false);
         CompletableFuture<Boolean> f = unfreezeAsync(address);
@@ -493,16 +504,16 @@ public class MasterSlaveEntry {
      * Freeze slave with <code>redis(s)://host:port</code> from slaves list.
      * Re-attach pub/sub listeners from it to other slave.
      * Shutdown old master client.
-     * 
+     *
      * @param address of Redis
-     * @return client 
+     * @return client
      */
     public CompletableFuture<RedisClient> changeMaster(RedisURI address) {
         ClientConnectionsEntry oldMaster = masterEntry;
         CompletableFuture<RedisClient> future = setupMasterEntry(address);
         return changeMaster(address, oldMaster, future);
     }
-    
+
     public CompletableFuture<RedisClient> changeMaster(InetSocketAddress address, RedisURI uri) {
         ClientConnectionsEntry oldMaster = masterEntry;
         CompletableFuture<RedisClient> future = setupMasterEntry(address, uri);
@@ -606,7 +617,7 @@ public class MasterSlaveEntry {
         f.completeExceptionally(exception);
         return f;
     }
-    
+
     public CompletableFuture<RedisConnection> connectionReadOp(RedisCommand<?> command, RedisClient client, boolean trackChanges) {
         return connectionReadOp(command, client, trackChanges, null);
     }

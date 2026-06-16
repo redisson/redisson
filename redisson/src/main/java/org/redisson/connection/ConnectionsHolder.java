@@ -15,6 +15,9 @@
  */
 package org.redisson.connection;
 
+import org.redisson.client.NodeFailureConnectionType;
+import org.redisson.client.NodeFailureReporter;
+import org.redisson.client.NodeFailureStage;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisConnectionException;
@@ -33,7 +36,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.function.Function;
 
 /**
- * 
+ *
  * @author Nikita Koksharov
  *
  */
@@ -81,7 +84,7 @@ public class ConnectionsHolder<T extends RedisConnection> {
     protected CompletableFuture<Void> acquireConnection() {
         return freeConnectionsCounter.acquire();
     }
-    
+
     private void releaseConnection() {
         freeConnectionsCounter.release();
     }
@@ -169,6 +172,7 @@ public class ConnectionsHolder<T extends RedisConnection> {
                 releaseConnection();
 
                 if (e != null) {
+                    NodeFailureReporter.report(client, NodeFailureStage.POOL_INIT, e);
                     for (RedisConnection connection : getAllConnections()) {
                         if (!connection.isClosed()) {
                             connection.closeAsync();
@@ -197,6 +201,8 @@ public class ConnectionsHolder<T extends RedisConnection> {
         connFuture.whenComplete((conn, e) -> {
             if (e != null) {
                 releaseConnection();
+                NodeFailureReporter.report(
+                        client, NodeFailureStage.POOL_CREATE_CONNECTION, connectionType(), e);
 
                 promise.completeExceptionally(e);
                 return;
@@ -272,5 +278,8 @@ public class ConnectionsHolder<T extends RedisConnection> {
     public ServiceManager getServiceManager() {
         return serviceManager;
     }
-}
 
+    private NodeFailureConnectionType connectionType() {
+        return changeUsage ? NodeFailureConnectionType.PLAIN : NodeFailureConnectionType.PUBSUB;
+    }
+}

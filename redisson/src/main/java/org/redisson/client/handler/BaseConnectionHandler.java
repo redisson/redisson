@@ -17,6 +17,8 @@ package org.redisson.client.handler;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import org.redisson.client.NodeFailureReporter;
+import org.redisson.client.NodeFailureStage;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisClientConfig;
 import org.redisson.client.RedisConnection;
@@ -34,7 +36,7 @@ import java.util.Objects;
 import java.util.concurrent.*;
 
 /**
- * 
+ *
  * @author Nikita Koksharov
  *
  */
@@ -105,6 +107,7 @@ public abstract class BaseConnectionHandler<C extends RedisConnection> extends C
                     }, 1, TimeUnit.SECONDS);
                     return;
                 }
+                NodeFailureReporter.report(redisClient, NodeFailureStage.BOOTSTRAP, e);
                 connection.closeAsync();
                 connectionPromise.completeExceptionally(e);
                 return;
@@ -138,6 +141,7 @@ public abstract class BaseConnectionHandler<C extends RedisConnection> extends C
                     }
 
                     if (!(cause instanceof RedisRetryException)) {
+                        NodeFailureReporter.report(redisClient, NodeFailureStage.AUTH_RENEWAL, cause);
                         log.error("Unable to send AUTH command over channel: {}", ctx.channel(), cause);
 
                         log.debug("channel: {} closed due to AUTH error response", ctx.channel());
@@ -196,5 +200,5 @@ public abstract class BaseConnectionHandler<C extends RedisConnection> extends C
                 || ctx.isRemoved()
                 || connection.getRedisClient().isShutdown();
     }
-    
+
 }

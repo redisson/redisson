@@ -46,6 +46,18 @@ public interface FailedNodeDetector {
 
     void onCommandFailed(Throwable cause);
 
+    default void onNodeFailure(NodeFailureEvent event) {
+    }
+
     boolean isNodeFailed();
+
+    /**
+     * Returns a detector with the same configuration and independent runtime state.
+     *
+     * @return detector copy
+     */
+    default FailedNodeDetector copy() {
+        return this;
+    }
 
 }

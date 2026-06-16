@@ -20,6 +20,7 @@ import io.netty.channel.socket.DuplexChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.resolver.AddressResolverGroup;
 import io.netty.util.Timer;
+import org.redisson.api.NodeType;
 import org.redisson.config.*;
 import org.redisson.misc.RedisURI;
 
@@ -81,6 +82,7 @@ public class RedisClientConfig {
     private CredentialsResolver credentialsResolver = new DefaultCredentialsResolver();
     private Consumer<InetSocketAddress> connectedListener;
     private Consumer<InetSocketAddress> disconnectedListener;
+    private NodeType nodeType;
 
     private CommandMapper commandMapper = new DefaultCommandMapper();
 
@@ -127,10 +129,11 @@ public class RedisClientConfig {
         this.credentialsResolver = config.credentialsResolver;
         this.connectedListener = config.connectedListener;
         this.disconnectedListener = config.disconnectedListener;
+        this.nodeType = config.nodeType;
         this.sslKeyManagerFactory = config.sslKeyManagerFactory;
         this.sslTrustManagerFactory = config.sslTrustManagerFactory;
         this.commandMapper = config.commandMapper;
-        this.failedNodeDetector = config.failedNodeDetector;
+        this.failedNodeDetector = config.failedNodeDetector != null ? config.failedNodeDetector.copy() : null;
         this.tcpKeepAliveCount = config.tcpKeepAliveCount;
         this.tcpKeepAliveIdle = config.tcpKeepAliveIdle;
         this.tcpKeepAliveInterval = config.tcpKeepAliveInterval;
@@ -436,6 +439,15 @@ public class RedisClientConfig {
     }
     public RedisClientConfig setDisconnectedListener(Consumer<InetSocketAddress> disconnectedListener) {
         this.disconnectedListener = disconnectedListener;
+        return this;
+    }
+
+    public NodeType getNodeType() {
+        return nodeType;
+    }
+
+    public RedisClientConfig setNodeType(NodeType nodeType) {
+        this.nodeType = nodeType;
         return this;
     }
 
