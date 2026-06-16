@@ -38,19 +38,21 @@ Redisson greatly extends the capabilities of Valkey and Redis by providing addit
 * [JMS API implementation](https://redisson.pro/docs/messaging/#jms-api-implementation)
 * [Cache API implementations](https://redisson.pro/docs/cache-api-implementations)  
     Spring Cache, JCache API (JSR-107), Hibernate Cache, MyBatis Cache, Quarkus Cache, Micronaut Cache
-* [Distributed Objects](https://redisson.pro/docs/data-and-services/objects)  
-    Object holder, JSON holder, Binary stream holder, Geospatial holder, BitSet, Bloom filter, HyperLogLog, Rate Limiter
-* [Distributed Counters](https://redisson.pro/docs/data-and-services/counters)  
+* [Objects](https://redisson.pro/docs/data-and-services/objects)  
+    Object holder, JSON holder, Binary stream holder, Geospatial holder, BitSet, Rate Limiter, GCRA Rate Limiter
+* [Counters](https://redisson.pro/docs/data-and-services/counters)  
     Id generator, AtomicLong, AtomicDouble, LongAdder, DoubleAdder
-* [Distributed Collections](https://redisson.pro/docs/data-and-services/collections)  
-    JSON Store, Map, Multimap, Set, List, SortedSet, ScoredSortedSet, LexSortedSet, TimeSeries, VectorSet
-* [Distributed Queues](https://redisson.pro/docs/data-and-services/queues)  
+* [Probabilistic structures](https://redisson.pro/docs/data-and-services/probabilistic-structures/)
+    Bloom filter, HyperLogLog, Cuckoo filter, Top-k, T-digest
+* [Collections](https://redisson.pro/docs/data-and-services/collections)  
+    JSON Store, Map, Multimap, Set, List, SortedSet, ScoredSortedSet, LexSortedSet, TimeSeries, VectorSet, BitVector Store
+* [Queues](https://redisson.pro/docs/data-and-services/queues)  
     ReliableQueue, Queue, Deque, Blocking Queue, Blocking Deque, Priority Queue, Priority Deque, Stream, Ring Buffer, Transfer Queue
-* [Distributed Locks and synchronizers](https://redisson.pro/docs/data-and-services/locks-and-synchronizers)  
+* [Locks and synchronizers](https://redisson.pro/docs/data-and-services/locks-and-synchronizers)  
     Lock, FairLock, MultiLock, RedLock, ReadWriteLock, Semaphore, PermitExpirableSemaphore, CountDownLatch
-* [Distributed Publish/subscribe](https://redisson.pro/docs/data-and-services/publish-subscribe)  
+* [Publish/subscribe](https://redisson.pro/docs/data-and-services/publish-subscribe)  
     Reliable PubSub, Topic, Sharded Topic
-* [Distributed Services](https://redisson.pro/docs/data-and-services/services)  
+* [Services](https://redisson.pro/docs/data-and-services/services)  
     Remote service, Live Object service, Executor service, Scheduler service, MapReduce service
 * [Microservices integration](https://redisson.pro/docs/microservices-integration)  
     Helidon, Micronaut, Quarkus
@@ -63,17 +65,19 @@ Redisson greatly extends the capabilities of Valkey and Redis by providing addit
 * Supports many popular codecs ([Kryo](https://github.com/EsotericSoftware/kryo), [Jackson JSON](https://github.com/FasterXML/jackson), [Avro](http://avro.apache.org/), [Smile](http://wiki.fasterxml.com/SmileFormatSpec), [CBOR](http://cbor.io/), [MsgPack](http://msgpack.org/), [Amazon Ion](https://amzn.github.io/ion-docs/), [LZ4](https://github.com/jpountz/lz4-java), [Snappy](https://github.com/xerial/snappy-java), [Protobuf](https://github.com/protocolbuffers/protobuf) and JDK Serialization)
 * 2000+ unit tests  
 
-## [Redisson PRO vs. Community Edition ➜](https://redisson.pro/feature-comparison.html)
-
-<!--
+### [Redisson PRO vs. Community Edition ➜](https://redisson.pro/feature-comparison.html)
 
 ## Comparing solutions
-- [Redisson vs Spring Data Redis](https://redisson.pro/articles/feature-comparison-redisson-vs-spring-data-redis.html)
-- [Redisson vs Jedis](https://redisson.pro/feature-comparison-redisson-vs-jedis.html)
-- [Redisson vs Lettuce](https://redisson.pro/feature-comparison-redisson-vs-lettuce.html)
-- [Redis vs Apache Ignite](https://redisson.pro/feature-comparison-redis-vs-ignite.html)
-- [Redis vs Hazelcast](https://redisson.pro/feature-comparison-redis-vs-hazelcast.html)
-- [Redis vs Ehcache](https://redisson.pro/feature-comparison-redis-vs-ehcache.html)
+- [Redisson vs Spring Data Redis](https://redisson.pro/blog/feature-comparison-redisson-vs-spring-data-redis.html)
+- [Redisson vs Jedis](https://redisson.pro/blog/feature-comparison-redisson-vs-jedis.html)
+- [Redisson vs Lettuce](https://redisson.pro/blog/feature-comparison-redisson-vs-lettuce.html)
+- [Valkey & Redis vs Apache Ignite](https://redisson.pro/blog/feature-comparison-redis-vs-ignite.html)
+- [Valkey & Redis vs Hazelcast](https://redisson.pro/blog/feature-comparison-redis-vs-hazelcast.html)
+- [Valkey & Redis vs Ehcache](https://redisson.pro/blog/feature-comparison-redis-vs-ehcache.html)
+- [Valkey & Redis vs Gemfire](https://redisson.pro/blog/feature-comparison-valkey-and-redis-vs-vmware-tanzu-gemfire.html)
+- [Valkey & Redis vs WebSphere eXtreme Scale](https://redisson.pro/blog/valkey-redis-vs-websphere-extreme-scale.html)
+- [RabbitMQ vs Valkey & Redis based Reliable PubSub](https://redisson.pro/blog/rabbitmq-vs-valkey-redis-based-reliable-pubsub.html)
+- [Google PubSub vs Valkey & Redis based Reliable PubSub](https://redisson.pro/blog/google-pubsub-vs-valkey-redis-based-reliable-pubsub.html)
 
 ## Success stories
 
@@ -81,4 +85,3 @@ Redisson greatly extends the capabilities of Valkey and Redis by providing addit
 - [Migrating from Hazelcast to Redis  /  Halodoc](https://blogs.halodoc.io/why-and-how-we-move-from-hazelcast-to-redis-2/)
 - [Distributed Locking with Redis (Migration from Hazelcast)  /  ContaAzul](https://carlosbecker.com/posts/distributed-locks-redis/)  
 - [Migrating from Coherence to Redis](https://www.youtube.com/watch?v=JF5R2ucKTEg)  
--->
