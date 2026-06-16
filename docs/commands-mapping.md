@@ -238,6 +238,37 @@ This table lists the commands that map directly to Redisson methods. Redisson al
 | CF.INFO | RCuckooFilter.<br/>getInfo()<br/>getInfoAsync() | RCuckooFilterReactive.<br/>getInfo() | RCuckooFilterRx.<br/>getInfo() |
 | CF.RESERVE | RCuckooFilter.<br/>init()<br/>initAsync() | RCuckooFilterReactive.<br/>init() | RCuckooFilterRx.<br/>init() |
 
+## TopK
+
+| Valkey or Redis command | Sync / Async API<br/><sub>Redisson.create(config)</sub> | Reactive API<br/><sub>redisson.reactive()</sub> | RxJava3 API<br/><sub>redisson.rxJava()</sub> |
+| --- | --- | --- | --- |
+| TOPK.ADD | RTopK.<br/>add()<br/>addAsync() | RTopKReactive.<br/>add() | RTopKRx.<br/>add() |
+| TOPK.COUNT | RTopK.<br/>count()<br/>countAsync() | RTopKReactive.<br/>count() | RTopKRx.<br/>count() |
+| TOPK.INCRBY | RTopK.<br/>incrementBy()<br/>incrementByAsync() | RTopKReactive.<br/>incrementBy() | RTopKRx.<br/>incrementBy() |
+| TOPK.INFO | RTopK.<br/>getInfo()<br/>getInfoAsync() | RTopKReactive.<br/>getInfo() | RTopKRx.<br/>getInfo() |
+| TOPK.LIST | RTopK.<br/>list()<br/>listAsync()<br/>listWithCount()<br/>listWithCountAsync() | RTopKReactive.<br/>list()<br/>listWithCount() | RTopKRx.<br/>list()<br/>listWithCount() |
+| TOPK.QUERY | RTopK.<br/>contains()<br/>containsAsync() | RTopKReactive.<br/>contains() | RTopKRx.<br/>contains() |
+| TOPK.RESERVE | RTopK.<br/>init()<br/>initAsync() | RTopKReactive.<br/>init() | RTopKRx.<br/>init() |
+
+## TDigest
+
+| Valkey or Redis command | Sync / Async API<br/><sub>Redisson.create(config)</sub> | Reactive API<br/><sub>redisson.reactive()</sub> | RxJava3 API<br/><sub>redisson.rxJava()</sub> |
+| --- | --- | --- | --- |
+| TDIGEST.ADD | RTDigest.<br/>add()<br/>addAsync() | RTDigestReactive.<br/>add() | RTDigestRx.<br/>add() |
+| TDIGEST.BYRANK | RTDigest.<br/>byRank()<br/>byRankAsync() | RTDigestReactive.<br/>byRank() | RTDigestRx.<br/>byRank() |
+| TDIGEST.BYREVRANK | RTDigest.<br/>byRevRank()<br/>byRevRankAsync() | RTDigestReactive.<br/>byRevRank() | RTDigestRx.<br/>byRevRank() |
+| TDIGEST.CDF | RTDigest.<br/>cumulativeProbability()<br/>cumulativeProbabilityAsync() | RTDigestReactive.<br/>cumulativeProbability() | RTDigestRx.<br/>cumulativeProbability() |
+| TDIGEST.CREATE | RTDigest.<br/>create()<br/>createAsync() | RTDigestReactive.<br/>create() | RTDigestRx.<br/>create() |
+| TDIGEST.INFO | RTDigest.<br/>getInfo()<br/>getInfoAsync() | RTDigestReactive.<br/>getInfo() | RTDigestRx.<br/>getInfo() |
+| TDIGEST.MAX | RTDigest.<br/>getMax()<br/>getMaxAsync() | RTDigestReactive.<br/>getMax() | RTDigestRx.<br/>getMax() |
+| TDIGEST.MERGE | RTDigest.<br/>mergeWith()<br/>mergeWithAsync() | RTDigestReactive.<br/>mergeWith() | RTDigestRx.<br/>mergeWith() |
+| TDIGEST.MIN | RTDigest.<br/>getMin()<br/>getMinAsync() | RTDigestReactive.<br/>getMin() | RTDigestRx.<br/>getMin() |
+| TDIGEST.QUANTILE | RTDigest.<br/>quantile()<br/>quantileAsync() | RTDigestReactive.<br/>quantile() | RTDigestRx.<br/>quantile() |
+| TDIGEST.RANK | RTDigest.<br/>rank()<br/>rankAsync() | RTDigestReactive.<br/>rank() | RTDigestRx.<br/>rank() |
+| TDIGEST.RESET | RTDigest.<br/>reset()<br/>resetAsync() | RTDigestReactive.<br/>reset() | RTDigestRx.<br/>reset() |
+| TDIGEST.REVRANK | RTDigest.<br/>revRank()<br/>revRankAsync() | RTDigestReactive.<br/>revRank() | RTDigestRx.<br/>revRank() |
+| TDIGEST.TRIMMED_MEAN | RTDigest.<br/>trimmedMean()<br/>trimmedMeanAsync() | RTDigestReactive.<br/>trimmedMean() | RTDigestRx.<br/>trimmedMean() |
+
 ## JSON
 
 | Valkey or Redis command | Sync / Async API<br/><sub>Redisson.create(config)</sub> | Reactive API<br/><sub>redisson.reactive()</sub> | RxJava3 API<br/><sub>redisson.rxJava()</sub> |
