@@ -68,22 +68,19 @@ public class RedissonReactiveStringCommands extends RedissonBaseReactive impleme
             } else if (command.getExpiration().get().isPersistent()) {
                 if (!command.getOption().isPresent() || command.getOption().get() == SetOption.UPSERT) {
                     m = write(key, StringCodec.INSTANCE, SET, key, value);
-                }
-                if (command.getOption().get() == SetOption.SET_IF_ABSENT) {
+                } else if (command.getOption().get() == SetOption.SET_IF_ABSENT) {
                     m = write(key, StringCodec.INSTANCE, SET, key, value, "NX");
-                }
-                if (command.getOption().get() == SetOption.SET_IF_PRESENT) {
+                } else if (command.getOption().get() == SetOption.SET_IF_PRESENT) {
                     m = write(key, StringCodec.INSTANCE, SET, key, value, "XX");
                 }
             } else {
                 if (!command.getOption().isPresent() || command.getOption().get() == SetOption.UPSERT) {
                     m = write(key, StringCodec.INSTANCE, SET, key, value, "PX", command.getExpiration().get().getExpirationTimeInMilliseconds());
-                }
-                if (command.getOption().get() == SetOption.SET_IF_ABSENT) {
+                } else if (command.getOption().get() == SetOption.SET_IF_ABSENT) {
                     m = write(key, StringCodec.INSTANCE, SET, key, value, "PX", command.getExpiration().get().getExpirationTimeInMilliseconds(), "NX");
-                }
-                if (command.getOption().get() == SetOption.SET_IF_PRESENT) {
+                } else if (command.getOption().get() == SetOption.SET_IF_PRESENT) {
                     m = write(key, StringCodec.INSTANCE, SET, key, value, "PX", command.getExpiration().get().getExpirationTimeInMilliseconds(), "XX");
+                    return m.map(v -> new BooleanResponse<>(command, v));
                 }
             }
             return m.map(v -> new BooleanResponse<>(command, v))
