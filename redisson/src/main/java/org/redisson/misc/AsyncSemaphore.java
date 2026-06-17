@@ -84,7 +84,10 @@ public final class AsyncSemaphore {
                 CompletableFuture<Void> future = listeners.poll();
                 if (future == null) {
                     counter.incrementAndGet();
-                    return;
+                    if (listeners.isEmpty()) {
+                        return;
+                    }
+                    continue;
                 }
 
                 boolean complete;
