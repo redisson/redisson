@@ -280,11 +280,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             String hostname = hostnameMapper.apply(uri);
             CompletableFuture<RedisClient> masterFuture = masterSlaveEntry.setupMasterEntry(uri, hostname);
             try {
-                if (config.getMasterConnectionMinimumIdleSize() == 0) {
-                    masterFuture.join();
-                } else {
-                    masterFuture.get(config.getConnectTimeout()*config.getMasterConnectionMinimumIdleSize(), TimeUnit.MILLISECONDS);
-                }
+                // bound the wait even when minimumIdleSize == 0; an unbounded join() never completes the lazyConnect latch if master entry setup stalls, parking all callers
+                masterFuture.get((long) config.getConnectTimeout() * Math.max(1, config.getMasterConnectionMinimumIdleSize()), TimeUnit.MILLISECONDS);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new RedisConnectionException(e);
@@ -295,11 +292,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             if (!config.isSlaveNotUsed()) {
                 CompletableFuture<Void> fs = masterSlaveEntry.initSlaveBalancer(hostnameMapper);
                 try {
-                    if (config.getSlaveConnectionMinimumIdleSize() == 0) {
-                        fs.join();
-                    } else {
-                        fs.get(config.getConnectTimeout()*config.getSlaveConnectionMinimumIdleSize(), TimeUnit.MILLISECONDS);
-                    }
+                    // bound the wait even when minimumIdleSize == 0; an unbounded join() never completes the lazyConnect latch if the slave balancer stalls, parking all callers
+                    fs.get((long) config.getConnectTimeout() * Math.max(1, config.getSlaveConnectionMinimumIdleSize()), TimeUnit.MILLISECONDS);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     throw new RedisConnectionException(e);
