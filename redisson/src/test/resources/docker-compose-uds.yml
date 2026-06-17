@@ -38,7 +38,7 @@ services:
             mavenCentral()
         }
         dependencies {
-            testImplementation "org.redisson:redisson:4.1.0"
+            testImplementation "org.redisson:redisson:4.6.0"
             testImplementation "io.netty:netty-transport-native-epoll:4.2.9.Final:linux-x86_64"
             testImplementation "org.junit.jupiter:junit-jupiter:5.10.2"
             testImplementation "org.assertj:assertj-core:3.25.3"
