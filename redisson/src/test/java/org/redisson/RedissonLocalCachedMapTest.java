@@ -6,7 +6,9 @@ import org.awaitility.Awaitility;
 import org.awaitility.Durations;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.redisson.api.*;
+import org.redisson.api.RLocalCachedMap;
+import org.redisson.api.RMap;
+import org.redisson.api.RedissonClient;
 import org.redisson.api.listener.LocalCacheInvalidateListener;
 import org.redisson.api.map.MapLoader;
 import org.redisson.api.map.WriteMode;
@@ -30,6 +32,7 @@ import org.redisson.config.NameMapper;
 
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -510,6 +513,34 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
         assertThat(cache2.size()).isEqualTo(1);
 
         redisson.shutdown();
+    }
+
+    @Test
+    public void testShardedSubscription() {
+        testInCluster((clusterClient) -> {
+            Set<String> issuedCommands = ConcurrentHashMap.newKeySet();
+
+            Config config = clusterClient.getConfig();
+            config.setCommandMapper(command -> {
+                issuedCommands.add(command.toUpperCase(Locale.ROOT));
+                return command;
+            });
+
+            RedissonClient client = Redisson.create(config);
+            try {
+                RLocalCachedMap<String, String> map = client.getLocalCachedMap(
+                        LocalCachedMapOptions.<String, String>name("test")
+                                .expirationEventPolicy(LocalCachedMapOptions.ExpirationEventPolicy.DONT_SUBSCRIBE));
+
+                map.put("1", "1");
+                assertThat(map.get("1")).isEqualTo("1");
+
+                assertThat(issuedCommands).contains("SSUBSCRIBE")
+                                          .doesNotContain("PSUBSCRIBE", "PUNSUBSCRIBE");
+            } finally {
+                client.shutdown();
+            }
+        });
     }
 
     @Test

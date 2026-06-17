@@ -167,7 +167,9 @@ public abstract class LocalCacheListener {
     void createTopic(String name, CommandAsyncExecutor commandExecutor) {
         if (isSharded) {
             invalidationTopic = RedissonShardedTopic.createRaw(LocalCachedMessageCodec.INSTANCE, commandExecutor, getInvalidationTopicName());
-            patternTopic = new RedissonPatternTopic(LocalCachedMessageCodec.INSTANCE, commandExecutor, "*:topic");
+            if (options.isUseTopicPattern()) {
+                patternTopic = new RedissonPatternTopic(LocalCachedMessageCodec.INSTANCE, commandExecutor, "*:topic");
+            }
         } else if (options.isUseTopicPattern()) {
             patternTopic = new RedissonPatternTopic(LocalCachedMessageCodec.INSTANCE, commandExecutor, "*:topic");
         } else {
