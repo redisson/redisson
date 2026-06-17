@@ -21,6 +21,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class RedissonSubscribeReactiveTest extends BaseConnectionTest {
 
     @Test
+    public void testUnsubscribe() {
+        RedissonConnectionFactory factory = new RedissonConnectionFactory(redisson);
+        ReactiveRedisConnection connection = factory.getReactiveConnection();
+        ReactiveSubscription ss = connection.pubSubCommands().createSubscription().block();
+
+        ByteBuffer channel = ByteBuffer.wrap("test".getBytes());
+        ss.subscribe(channel).block();
+        ss.unsubscribe(channel).block();
+    }
+
+    @Test
     public void testPubSub() {
         RedissonConnectionFactory factory = new RedissonConnectionFactory(redisson);
         AtomicLong counter = new AtomicLong();
