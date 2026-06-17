@@ -1,7 +1,6 @@
-package org.redisson.spring.data.connection;
+package org.redisson.misc;
 
 import org.junit.jupiter.api.Test;
-import org.redisson.misc.AsyncSemaphore;
 
 import java.util.concurrent.CompletableFuture;
 
