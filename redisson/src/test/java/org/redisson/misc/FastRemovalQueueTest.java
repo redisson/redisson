@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class FastRmovalQueueTest {
+public class FastRemovalQueueTest {
 
     @Test
     public void testIterator() {
