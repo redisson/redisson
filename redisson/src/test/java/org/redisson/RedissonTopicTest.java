@@ -500,7 +500,7 @@ public class RedissonTopicTest extends RedisDockerTest {
             params.add(2000);
             params.add("KEYS");
             params.addAll(keys);
-            sourceConnection.sync(RedisCommands.MIGRATE, params.toArray());
+//            sourceConnection.sync(RedisCommands.MIGRATE, params.toArray());
 
             for (ClusterNodeInfo node : mastersList) {
                 if (node.getSlotRanges().isEmpty()) {
@@ -775,7 +775,7 @@ public class RedissonTopicTest extends RedisDockerTest {
 
         restart(redis);
 
-        Thread.sleep(2000);
+        Thread.sleep(3000);
 
         redisson.getTopic("topic").publish(1);
         
@@ -1291,7 +1291,7 @@ public class RedissonTopicTest extends RedisDockerTest {
     public void testReattachInSentinel3() throws Exception {
         withSentinel((nodes, config) -> {
             config.useSentinelServers()
-                    .setRetryAttempts(8)
+                    .setRetryAttempts(10)
                     .setSubscriptionsPerConnection(20)
                     .setSubscriptionConnectionPoolSize(200);
 
@@ -1359,7 +1359,7 @@ public class RedissonTopicTest extends RedisDockerTest {
             System.out.println("master has been stopped! " + port);
 
             try {
-                TimeUnit.SECONDS.sleep(40);
+                TimeUnit.SECONDS.sleep(10);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }

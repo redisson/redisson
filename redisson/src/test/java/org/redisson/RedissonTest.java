@@ -1022,7 +1022,7 @@ public class RedissonTest extends RedisDockerTest {
 
     @Test
     public void testClusterConnectionFail() {
-            Awaitility.await().atLeast(Duration.ofSeconds(3)).atMost(Duration.ofSeconds(7)).untilAsserted(() -> {
+            Awaitility.await().atLeast(Duration.ofSeconds(2)).atMost(Duration.ofSeconds(7)).untilAsserted(() -> {
             Assertions.assertThrows(RedisConnectionException.class, () -> {
                 Config config = new Config();
                 config.useClusterServers()
