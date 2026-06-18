@@ -6,7 +6,7 @@ For Spring Boot usage please refer to [Spring Boot](integration-with-spring.md/#
 
 Redisson integrates with [Micronaut](https://micronaut.io/) framework. It implements [Micronaut Cache](cache-api-implementations.md/#micronaut-cache) and [Micronaut Session](#session).  
 
-Supports Micronaut 2.0.x - 4.x.x
+Supports Micronaut 2.0.x - 5.x.x
 
 ### Usage  
 
@@ -27,6 +27,8 @@ Supports Micronaut 2.0.x - 4.x.x
             <artifactId>redisson-micronaut-30</artifactId>
             <!-- for Micronaut v4.x.x -->
             <artifactId>redisson-micronaut-40</artifactId>
+            <!-- for Micronaut v5.x.x -->
+            <artifactId>redisson-micronaut-50</artifactId>
             <version>xVERSIONx</version>
         </dependency>
         ```
@@ -40,6 +42,8 @@ Supports Micronaut 2.0.x - 4.x.x
         compile 'org.redisson:redisson-micronaut-30:xVERSIONx'
         // for Micronaut v4.x.x
         compile 'org.redisson:redisson-micronaut-40:xVERSIONx'
+        // for Micronaut v5.x.x
+        compile 'org.redisson:redisson-micronaut-50:xVERSIONx'
         ```
 
 
@@ -56,6 +60,8 @@ Supports Micronaut 2.0.x - 4.x.x
             <artifactId>redisson-micronaut-30</artifactId>
             <!-- for Micronaut v4.x.x -->
             <artifactId>redisson-micronaut-40</artifactId>
+            <!-- for Micronaut v5.x.x -->
+            <artifactId>redisson-micronaut-50</artifactId>
             <version>xVERSIONx</version>
         </dependency>
         ```
@@ -69,6 +75,8 @@ Supports Micronaut 2.0.x - 4.x.x
         compile 'pro.redisson:redisson-micronaut-30:xVERSIONx'
         // for Micronaut v4.x.x
         compile 'pro.redisson:redisson-micronaut-40:xVERSIONx'
+        // for Micronaut v5.x.x
+        compile 'pro.redisson:redisson-micronaut-50:xVERSIONx'
         ```
 
         [License key configuration](configuration.md/#license-key-configuration)

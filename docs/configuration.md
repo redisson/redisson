@@ -1417,8 +1417,7 @@ _This feature is available only in [Redisson PRO](https://redisson.pro/feature-c
 
 Supports multiple Valkey or Redis Sentinel setups with active-passive data replication.  
 
-Replication of the primary Sentinel deployment with secondary Sentinel deployments is managed by `replicationMode` setting. 
-The first address in the list of specified addresses in the configuration is the primary Sentinel deployment, and the others are secondary Sentinel deployments.
+Replication of the primary Sentinel deployment with secondary Sentinel deployments is managed by `replicationMode` setting. Primary Sentinel deployment detection is managed by `primaryDiscoveryMode` setting.
 
 Programmatic config example:  
 ```java
@@ -1446,6 +1445,18 @@ Multi Sentinel connection mode is activated by follow line:
 
 `MultiSentinelServersConfig` settings listed below:
 
+**primaryDiscoveryMode**
+
+Default value: `AUTO`
+
+Defines primary Sentinel deployment selection mode.
+
+Available values:  
+
+* `AUTO` - The primary Sentinel deployment is a deployment that has all master nodes available. Master nodes availability scan interval is defined by `scanInterval` setting.
+* `FIRST_PRIMARY` - The primary Sentinel deployment is the first address in the list of specified addresses in configuration. No primary Sentinel deployment failover detection.
+* `FIRST_PRIMARY_PUBSUB_NOTIFICATION` - The primary Sentinel deployment is the first address in the list of specified addresses in the configuration. The new primary Sentinel deployment is switched manually by connecting to the current primary Sentinel deployment and publishing a message with the new primary database address in the format `<hostname:port>` to the 'redisson:multicluster:primary' channel. This mode is useful for data migration between clusters.
+
 **replicationMode**
 
 Default value: `NONE`
@@ -1469,6 +1480,17 @@ Enables sentinels list check during Redisson startup.
 Default value: `5000`
 
 Interval in milliseconds to check the endpoint's DNS. Set `-1` to disable.
+
+**datastoreMode**
+
+Default value: `ACTIVE_PASSIVE`
+
+Defines Datastore mode.  
+Available values:  
+
+* `ACTIVE` - only primary (active) Sentinel deployment is used  
+* `ACTIVE_PASSIVE` - primary (active) Sentinel deployment is used for read/write operations and secondary (passive) Sentinel deployments are used for read operations only  
+* `WRITE_ACTIVE_READ_PASSIVE` - Primary (active) Sentinel deployment is used for write operations and secondary (passive) Sentinel deployments are used for read operations only  
 
 **checkSlaveStatusWithSyncing**
 
