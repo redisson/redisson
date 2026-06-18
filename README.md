@@ -42,7 +42,7 @@ Redisson greatly extends the capabilities of Valkey and Redis by providing addit
     Object holder, JSON holder, Binary stream holder, Geospatial holder, BitSet, Rate Limiter, GCRA Rate Limiter
 * [Counters](https://redisson.pro/docs/data-and-services/counters)  
     Id generator, AtomicLong, AtomicDouble, LongAdder, DoubleAdder
-* [Probabilistic structures](https://redisson.pro/docs/data-and-services/probabilistic-structures/)
+* [Probabilistic structures](https://redisson.pro/docs/data-and-services/probabilistic-structures/)  
     Bloom filter, HyperLogLog, Cuckoo filter, Top-k, T-digest
 * [Collections](https://redisson.pro/docs/data-and-services/collections)  
     JSON Store, Map, Multimap, Set, List, SortedSet, ScoredSortedSet, LexSortedSet, TimeSeries, VectorSet, BitVector Store
