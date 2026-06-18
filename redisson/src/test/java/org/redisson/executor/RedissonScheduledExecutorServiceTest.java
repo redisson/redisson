@@ -873,5 +873,101 @@ public class RedissonScheduledExecutorServiceTest extends RedisDockerTest {
         assertThat(System.currentTimeMillis() - startTime).isBetween(3000L, 3200L);
         assertThat(future.get()).isEqualTo(100);
     }
-    
+
+    @Test
+    public void testSkipScheduledTaskLaterThanThreshold() throws InterruptedException {
+        RScheduledExecutorService executor = redisson.getExecutorService("skipLate");
+        executor.schedule(new IncrementRunnableTask("skipLateCounter"), 1, TimeUnit.SECONDS);
+
+        Thread.sleep(4000);
+
+        // a worker joins with a 2s lateness threshold; the ~3s-late task is skipped
+        executor.registerWorkers(WorkerOptions.defaults().workers(1).taskLateThreshold(Duration.ofSeconds(2)));
+        Thread.sleep(3000);
+
+        assertThat(redisson.getAtomicLong("skipLateCounter").get()).isZero();
+
+        executor.deregisterWorkers();
+        executor.delete();
+        redisson.getAtomicLong("skipLateCounter").delete();
+    }
+
+    @Test
+    public void testRunScheduledTaskLaterThanThresholdWhenDisabled() throws InterruptedException {
+        RScheduledExecutorService executor = redisson.getExecutorService("runLate");
+        executor.schedule(new IncrementRunnableTask("runLateCounter"), 1, TimeUnit.SECONDS);
+
+        Thread.sleep(4000);
+
+        executor.registerWorkers(WorkerOptions.defaults().workers(1));
+        Thread.sleep(3000);
+
+        assertThat(redisson.getAtomicLong("runLateCounter").get()).isEqualTo(1);
+
+        executor.deregisterWorkers();
+        executor.delete();
+        redisson.getAtomicLong("runLateCounter").delete();
+    }
+
+    @Test
+    public void testOnTimeTaskNotSkippedWithThreshold() throws InterruptedException {
+        RScheduledExecutorService executor = redisson.getExecutorService("onTime");
+        executor.registerWorkers(WorkerOptions.defaults().workers(1).taskLateThreshold(Duration.ofSeconds(10)));
+        executor.schedule(new IncrementRunnableTask("onTimeCounter"), 1, TimeUnit.SECONDS);
+
+        Thread.sleep(3000);
+
+        assertThat(redisson.getAtomicLong("onTimeCounter").get()).isEqualTo(1);
+
+        executor.deregisterWorkers();
+        executor.delete();
+        redisson.getAtomicLong("onTimeCounter").delete();
+    }
+
+    @Test
+    public void testCronTaskSkipsStaleExecutionAndRearms() throws InterruptedException {
+        RScheduledExecutorService executor = redisson.getExecutorService("cronSkip");
+        executor.schedule(new IncrementRunnableTask("cronSkipCounter"), CronSchedule.of("0/1 * * * * ?"));
+
+        Thread.sleep(4000);
+        RAtomicLong counter = redisson.getAtomicLong("cronSkipCounter");
+        assertThat(counter.get()).isZero();
+
+        Thread.sleep(1150 - (System.currentTimeMillis() % 1000));
+        executor.registerWorkers(WorkerOptions.defaults().workers(1).taskLateThreshold(Duration.ofSeconds(2)));
+
+        // the stale fire is ~5s late, so it must be skipped instead of run on join
+        Thread.sleep(500);
+        assertThat(counter.get()).isZero();
+
+        // but the cron re-arms, so subsequent on-time fires run normally
+        Thread.sleep(3000);
+        assertThat(counter.get()).isGreaterThanOrEqualTo(2);
+
+        executor.deregisterWorkers();
+        executor.delete();
+        counter.delete();
+    }
+
+    @Test
+    public void testCronTaskRunsStaleExecutionWhenThresholdDisabled() throws InterruptedException {
+        RScheduledExecutorService executor = redisson.getExecutorService("cronRun");
+        executor.schedule(new IncrementRunnableTask("cronRunCounter"), CronSchedule.of("0/1 * * * * ?"));
+
+        Thread.sleep(4000);
+        RAtomicLong counter = redisson.getAtomicLong("cronRunCounter");
+        assertThat(counter.get()).isZero();
+
+        Thread.sleep(1150 - (System.currentTimeMillis() % 1000));
+        executor.registerWorkers(WorkerOptions.defaults().workers(1));
+
+        // the stale fire runs on join, before the next on-time boundary (~850ms away)
+        Thread.sleep(800);
+        assertThat(counter.get()).isGreaterThanOrEqualTo(1);
+
+        executor.deregisterWorkers();
+        executor.delete();
+        counter.delete();
+    }
+
 }

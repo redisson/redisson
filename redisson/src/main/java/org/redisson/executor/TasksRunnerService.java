@@ -35,6 +35,8 @@ import org.redisson.executor.params.*;
 import org.redisson.misc.Hash;
 import org.redisson.misc.HashValue;
 import org.redisson.misc.Injector;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -56,6 +58,8 @@ import java.util.concurrent.TimeUnit;
  */
 public class TasksRunnerService implements RemoteExecutorService {
 
+    private static final Logger log = LoggerFactory.getLogger(TasksRunnerService.class);
+
     private static final Map<HashValue, Codec> CODECS = new LRUCacheMap<>(500, 0, 0);
     
     private final Codec codec;
@@ -76,6 +80,8 @@ public class TasksRunnerService implements RemoteExecutorService {
 
     private TasksInjector tasksInjector;
 
+    private long taskLateThreshold;
+
     public TasksRunnerService(CommandAsyncExecutor commandExecutor, RedissonClient redisson, Codec codec, String name) {
         this.commandExecutor = commandExecutor;
         this.name = name;
@@ -85,6 +91,10 @@ public class TasksRunnerService implements RemoteExecutorService {
 
     public void setTasksInjector(TasksInjector tasksInjector) {
         this.tasksInjector = tasksInjector;
+    }
+
+    public void setTaskLateThreshold(long taskLateThreshold) {
+        this.taskLateThreshold = taskLateThreshold;
     }
 
     public void setTasksExpirationTimeName(String tasksExpirationTimeName) {
@@ -350,7 +360,30 @@ public class TasksRunnerService implements RemoteExecutorService {
         }
     }
 
+    /**
+     * Determines whether a scheduled task is too late to run, based on the
+     * worker-level lateness threshold. Recurring tasks are still rescheduled
+     * by their caller after a skip, so only the stale execution is dropped.
+     */
+    private boolean skipAsLate(TaskParameters params) {
+        if (taskLateThreshold <= 0 || !(params instanceof ScheduledParameters)) {
+            return false;
+        }
+        long lateBy = System.currentTimeMillis() - ((ScheduledParameters) params).getStartTime();
+        if (lateBy > taskLateThreshold) {
+            log.debug("Task {} skipped: {} ms late, exceeds threshold of {} ms",
+                    params.getRequestId(), lateBy, taskLateThreshold);
+            return true;
+        }
+        return false;
+    }
+
     public void executeRunnable(TaskParameters params, boolean removeTask) {
+        if (skipAsLate(params)) {
+            finish(params.getRequestId(), removeTask);
+            return;
+        }
+
         try {
             if (params.getRequestId() != null && !(params instanceof ScheduledParameters)) {
                 RFuture<Long> future = renewRetryTime(params.getRequestId());

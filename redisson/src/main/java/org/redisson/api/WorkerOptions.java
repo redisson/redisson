@@ -15,16 +15,17 @@
  */
 package org.redisson.api;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
-
 import org.redisson.api.executor.TaskListener;
 import org.redisson.config.Config;
 import org.redisson.executor.SpringTasksInjector;
 import org.redisson.executor.TasksInjector;
 import org.springframework.beans.factory.BeanFactory;
+
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Configuration for RExecutorService workers.
@@ -38,6 +39,7 @@ public final class WorkerOptions {
     private ExecutorService executorService;
     private TasksInjector tasksInjector;
     private long taskTimeout;
+    private long taskLateThreshold;
     private List<TaskListener> listeners = new ArrayList<>();
     
     private WorkerOptions() {
@@ -55,7 +57,7 @@ public final class WorkerOptions {
      * Defines workers amount used to execute tasks.
      * Default is <code>1</code>.
      * 
-     * @param workers - workers amount
+     * @param workers workers amount
      * @return self instance
      */
     public WorkerOptions workers(int workers) {
@@ -66,7 +68,7 @@ public final class WorkerOptions {
     /**
      * Use {@code tasksInjector(new SpringTasksInjector(beanFactory)} instead.
      *
-     * @param beanFactory - Spring BeanFactory instance
+     * @param beanFactory Spring BeanFactory instance
      * @return self instance
      */
     @Deprecated
@@ -103,7 +105,7 @@ public final class WorkerOptions {
      * Defines custom ExecutorService to execute tasks.
      * {@link Config#setExecutor(ExecutorService)} is used by default.
      * 
-     * @param executorService - custom ExecutorService
+     * @param executorService custom ExecutorService
      * @return self instance
      */
     public WorkerOptions executorService(ExecutorService executorService) {
@@ -114,8 +116,8 @@ public final class WorkerOptions {
     /**
      * Defines task timeout since task execution start moment
      *
-     * @param timeout - timeout of task
-     * @param unit - time unit
+     * @param timeout timeout of task
+     * @param unit time unit
      * @return self instance
      */
     public WorkerOptions taskTimeout(long timeout, TimeUnit unit) {
@@ -125,6 +127,26 @@ public final class WorkerOptions {
 
     public long getTaskTimeout() {
         return taskTimeout;
+    }
+
+    /**
+     * Defines the lateness threshold for scheduled tasks.
+     * <p>
+     * If a worker picks up a scheduled task later than this threshold past its
+     * intended execution time, the task is skipped instead of executed.
+     * <p>
+     * Default is <code>null</code> - disabled, all missed tasks run immediately.
+     *
+     * @param threshold maximum allowed lateness
+     * @return self instance
+     */
+    public WorkerOptions taskLateThreshold(Duration threshold) {
+        this.taskLateThreshold = threshold.toMillis();
+        return this;
+    }
+
+    public long getTaskLateThreshold() {
+        return taskLateThreshold;
     }
 
     /**
