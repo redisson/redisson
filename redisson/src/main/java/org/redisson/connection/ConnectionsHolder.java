@@ -164,9 +164,10 @@ public class ConnectionsHolder<T extends RedisConnection> {
                         conn.decUsage();
                     }
                     addConnection(conn);
+                    // release only on success; the failure path already releases in createConnection(promise),
+                    // so an unconditional release here double-releases per failed init and lifts the counter above pool max
+                    releaseConnection();
                 }
-
-                releaseConnection();
 
                 if (e != null) {
                     for (RedisConnection connection : getAllConnections()) {
