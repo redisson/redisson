@@ -3,6 +3,17 @@ Redisson Releases History
 
 Upgrade to __[Redisson PRO](https://redisson.pro/feature-comparison.html)__ with **advanced features**.
 
+### 18-June-2026 - 4.6.1 released
+
+Fixed - ConnectionsHolder init-connection double release (thanks to @yipeng09)  
+Fixed - AsyncSemaphore.tryRun() over-increment on cancelled waiters (thanks to @yipeng09)  
+Fixed - AsyncSemaphore race condition  
+Fixed - non-cluster lazy initialization can park caller threads indefinitely (thanks to @yipeng09)  
+Fixed - `RedissonReactiveSubscription.unsubscribe()` throws `UnsupportedOperationException`  
+Fixed - `RLocalCachedMap` sharded subscription mode uses PSUBSCRIBE unconditionally  
+Fixed - Spring Data Redis 4.1 RedissonReactiveStringCommands throws exceptions  
+Fixed - `FT.SEARCH/FT.AGGREGATE` don't work in master nodes round robin in Redis Cluster (thanks to @wushiyuanmaimob)  
+
 ### 15-June-2026 - 4.6.0 released
 
 Feature - [T-digest](https://redisson.pro/docs/data-and-services/probabilistic-structures/#tdigest) object added  
