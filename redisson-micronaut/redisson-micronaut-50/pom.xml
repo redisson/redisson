@@ -12,7 +12,7 @@
     <packaging>jar</packaging>
 
     <properties>
-        <micronaut.version>5.0.3</micronaut.version>
+        <micronaut.version>5.1.1</micronaut.version>
         <micronaut.plugin.version>5.0.0</micronaut.plugin.version>
         <micronaut.test-plugin.version>5.0.0</micronaut.test-plugin.version>
         <main.basedir>${project.parent.parent.basedir}</main.basedir>
