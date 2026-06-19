@@ -64,6 +64,10 @@ public final class EvictionScheduler {
         addTask(name, () -> new ScoredSetEvictionTask(name, executor, shiftInMilliseconds));
     }
 
+    public void scheduleSetCache(String name, String expiredChannelName, String publishCommand) {
+        addTask(name, () -> new SetCacheEvictionTask(name, expiredChannelName, executor, publishCommand));
+    }
+
     public void schedule(String name, String timeoutSetName, String maxIdleSetName,
                          String expiredChannelName, String lastAccessTimeSetName, MapCacheOptions<?, ?> options,
                          String publishCommand) {

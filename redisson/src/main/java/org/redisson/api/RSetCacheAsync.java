@@ -172,6 +172,7 @@ public interface RSetCacheAsync<V> extends RSetAsync<V> {
      * @see org.redisson.api.listener.TrackingListener
      * @see org.redisson.api.listener.SetAddListener
      * @see org.redisson.api.listener.SetRemoveListener
+     * @see org.redisson.api.listener.SetExpiredListener
      * @see org.redisson.api.ExpiredObjectListener
      * @see org.redisson.api.DeletedObjectListener
      *

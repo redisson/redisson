@@ -18,7 +18,9 @@ package org.redisson;
 import io.netty.buffer.ByteBuf;
 import io.netty.util.ReferenceCountUtil;
 import org.redisson.api.*;
+import org.redisson.api.listener.MessageListener;
 import org.redisson.api.listener.SetAddListener;
+import org.redisson.api.listener.SetExpiredListener;
 import org.redisson.api.listener.SetRemoveListener;
 import org.redisson.api.listener.TrackingListener;
 import org.redisson.api.mapreduce.RCollectionMapReduce;
@@ -26,7 +28,10 @@ import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.IntegerCodec;
 import org.redisson.client.codec.LongCodec;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.codec.BaseEventCodec;
+import org.redisson.codec.SetCacheEventCodec;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.eviction.EvictionScheduler;
 import org.redisson.iterator.BaseAsyncIterator;
@@ -37,6 +42,8 @@ import org.redisson.misc.CompositeAsyncIterator;
 
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
@@ -62,11 +69,13 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
 
     final RedissonClient redisson;
     final EvictionScheduler evictionScheduler;
+    final String publishCommand;
 
     public RedissonSetCache(EvictionScheduler evictionScheduler, CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(commandExecutor, name);
+        this.publishCommand = commandExecutor.getConnectionManager().getSubscribeService().getPublishCommand();
         if (evictionScheduler != null) {
-            evictionScheduler.schedule(getRawName(), 0);
+            evictionScheduler.scheduleSetCache(getRawName(), getExpiredChannelName(), publishCommand);
         }
         this.evictionScheduler = evictionScheduler;
         this.redisson = redisson;
@@ -74,12 +83,18 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
 
     public RedissonSetCache(Codec codec, EvictionScheduler evictionScheduler, CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(codec, commandExecutor, name);
+        this.publishCommand = commandExecutor.getConnectionManager().getSubscribeService().getPublishCommand();
         if (evictionScheduler != null) {
-            evictionScheduler.schedule(getRawName(), 0);
+            evictionScheduler.scheduleSetCache(getRawName(), getExpiredChannelName(), publishCommand);
         }
         this.evictionScheduler = evictionScheduler;
         this.redisson = redisson;
     }
+
+    String getExpiredChannelName() {
+        return prefixName("redisson_set_cache_expired", getRawName());
+    }
+
     
     @Override
     public <KOut, VOut> RCollectionMapReduce<V, KOut, VOut> mapReduce() {
@@ -454,6 +469,17 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
         if (evictionScheduler != null) {
             evictionScheduler.remove(getRawName());
         }
+
+        String expiredChannelName = getExpiredChannelName();
+        Collection<Integer> ids = getListenerIdsByName(expiredChannelName);
+        if (!ids.isEmpty()) {
+            RTopic topic = getTopic(expiredChannelName);
+            for (Integer listenerId : new ArrayList<>(ids)) {
+                removeListenerId(expiredChannelName, listenerId);
+                topic.removeListener(listenerId);
+            }
+        }
+
         removeListeners();
     }
 
@@ -1476,6 +1502,9 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
         if (listener instanceof TrackingListener) {
             return addTrackingListener((TrackingListener) listener);
         }
+        if (listener instanceof SetExpiredListener) {
+            return get(addExpiredListenerAsync((SetExpiredListener<V>) listener));
+        }
 
         return super.addListener(listener);
     }
@@ -1491,8 +1520,49 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
         if (listener instanceof TrackingListener) {
             return addTrackingListenerAsync((TrackingListener) listener);
         }
+        if (listener instanceof SetExpiredListener) {
+            return addExpiredListenerAsync((SetExpiredListener<V>) listener);
+        }
 
         return super.addListenerAsync(listener);
+    }
+
+    private volatile BaseEventCodec.OSType osType;
+    private volatile Codec topicCodec;
+
+    protected RTopic getTopic(String name) {
+        if (getSubscribeService().isShardingSupported()) {
+            return RedissonShardedTopic.createRaw(topicCodec, commandExecutor, name);
+        }
+        return RedissonTopic.createRaw(topicCodec, commandExecutor, name);
+    }
+
+    private RFuture<Integer> addExpiredListenerAsync(SetExpiredListener<V> listener) {
+        CompletionStage<Void> osTypeFuture = CompletableFuture.completedFuture(null);
+        if (osType == null) {
+            RFuture<Map<String, String>> serverFuture = commandExecutor.readAsync((String) null, StringCodec.INSTANCE, RedisCommands.INFO_SERVER);
+            osTypeFuture = serverFuture.thenAccept(res -> {
+                String os = res.get("os");
+                if (os == null || os.contains("Windows")) {
+                    osType = BaseEventCodec.OSType.WINDOWS;
+                } else if (os.contains("NONSTOP")) {
+                    osType = BaseEventCodec.OSType.HPNONSTOP;
+                }
+                topicCodec = new SetCacheEventCodec(codec, osType);
+            });
+        }
+
+        CompletionStage<Integer> f = osTypeFuture.thenCompose(osType -> {
+            RTopic topic = getTopic(getExpiredChannelName());
+            return topic.addListenerAsync(List.class, (MessageListener<List<Object>>) (channel, msg) -> {
+                listener.onExpired((V) msg.get(0));
+            });
+        });
+        f = f.thenApply(id -> {
+            addListenerId(getExpiredChannelName(), id);
+            return id;
+        });
+        return new CompletableFutureWrapper<>(f);
     }
 
     @Override
@@ -1517,11 +1587,29 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
     public void removeListener(int listenerId) {
         removeTrackingListener(listenerId);
         removeListener(listenerId, "__keyevent@*:zadd", "__keyevent@*:zrem");
+
+        String expiredChannelName = getExpiredChannelName();
+        if (getListenerIdsByName(expiredChannelName).contains(listenerId)) {
+            RTopic topic = getTopic(expiredChannelName);
+            removeListenerId(expiredChannelName, listenerId);
+            topic.removeListener(listenerId);
+        }
+
         super.removeListener(listenerId);
     }
 
     @Override
     public RFuture<Void> removeListenerAsync(int listenerId) {
+        String expiredChannelName = getExpiredChannelName();
+        if (getListenerIdsByName(expiredChannelName).contains(listenerId)) {
+            RTopic topic = getTopic(expiredChannelName);
+            removeListenerId(expiredChannelName, listenerId);
+            CompletionStage<Void> r = topic.removeListenerAsync(listenerId)
+                    .thenCompose(v -> removeTrackingListenerAsync(listenerId))
+                    .thenCompose(v -> removeListenerAsync(null, listenerId, "__keyevent@*:zadd", "__keyevent@*:zrem"));
+            return new CompletableFutureWrapper<>(r);
+        }
+
         return removeListenerAsync(removeTrackingListenerAsync(listenerId), listenerId,
                 "__keyevent@*:zadd", "__keyevent@*:zrem");
     }

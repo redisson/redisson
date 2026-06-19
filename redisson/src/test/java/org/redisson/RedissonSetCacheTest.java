@@ -9,6 +9,10 @@ import org.redisson.api.RSetCache;
 import org.redisson.api.listener.SetAddListener;
 import org.redisson.client.codec.IntegerCodec;
 import org.redisson.eviction.EvictionScheduler;
+import org.redisson.api.RedissonClient;
+import org.redisson.api.listener.SetExpiredListener;
+import org.redisson.config.Config;
+import java.util.concurrent.ConcurrentHashMap;
 
 import java.io.Serializable;
 import java.time.Duration;
@@ -748,5 +752,44 @@ public class RedissonSetCacheTest extends RedisDockerTest {
         Thread.sleep(1200);
         assertThat(cache.addIfAbsent(map)).isTrue();
         redisson.getKeys().flushall();
+    }
+
+    @Test
+    public void testExpiredListener() {
+        Config config = createConfig();
+        config.setMinCleanUpDelay(1);
+        config.setMaxCleanUpDelay(2);
+        RedissonClient redisson = Redisson.create(config);
+        try {
+            RSetCache<Integer> set = redisson.getSetCache("test");
+            AtomicInteger counter = new AtomicInteger();
+            Set<Integer> expired = Collections.newSetFromMap(new ConcurrentHashMap<>());
+
+            int id = set.addListener((SetExpiredListener<Integer>) value -> {
+                counter.incrementAndGet();
+                expired.add(value);
+            });
+
+            set.add(1, 1, TimeUnit.SECONDS);
+            set.add(2, 1, TimeUnit.SECONDS);
+            set.add(3); // no ttl, must not expire
+
+            Awaitility.await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> {
+                assertThat(counter.get()).isEqualTo(2);
+            });
+            assertThat(expired).containsExactlyInAnyOrder(1, 2);
+            assertThat(set).containsExactly(3);
+
+            // removing the listener stops further expiration notifications
+            set.removeListener(id);
+            counter.set(0);
+            set.add(4, 1, TimeUnit.SECONDS);
+            Awaitility.await().pollDelay(Duration.ofSeconds(4)).atMost(Duration.ofSeconds(6))
+                    .untilAsserted(() -> assertThat(counter.get()).isZero());
+
+            set.destroy();
+        } finally {
+            redisson.shutdown();
+        }
     }
 }
