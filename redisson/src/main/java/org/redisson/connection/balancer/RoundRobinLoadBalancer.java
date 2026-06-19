@@ -15,6 +15,8 @@
  */
 package org.redisson.connection.balancer;
 
+import org.redisson.client.protocol.RedisCommand;
+import org.redisson.client.protocol.RedisCommands;
 import org.redisson.connection.ClientConnectionsEntry;
 
 import java.util.List;
@@ -28,15 +30,29 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class RoundRobinLoadBalancer extends BaseLoadBalancer {
 
     private final AtomicInteger index = new AtomicInteger(-1);
+    private final AtomicInteger pubSubIndex = new AtomicInteger(-1);
+
+    @Override
+    public ClientConnectionsEntry getEntry(List<ClientConnectionsEntry> clientsCopy, RedisCommand<?> redisCommand) {
+        if (redisCommand != null
+                && RedisCommands.PUBSUB_COMMANDS.contains(redisCommand.getName())) {
+            return getEntry(clientsCopy, pubSubIndex);
+        }
+        return getEntry(clientsCopy, index);
+    }
 
     @Override
     public ClientConnectionsEntry getEntry(List<ClientConnectionsEntry> clientsCopy) {
+        return getEntry(clientsCopy, index);
+    }
+
+    private ClientConnectionsEntry getEntry(List<ClientConnectionsEntry> clientsCopy, AtomicInteger counter) {
         clientsCopy = filter(clientsCopy);
         if (clientsCopy.isEmpty()) {
             return null;
         }
 
-        int ind = Math.floorMod(index.incrementAndGet(), clientsCopy.size());
+        int ind = Math.floorMod(counter.incrementAndGet(), clientsCopy.size());
         return clientsCopy.get(ind);
     }
 
