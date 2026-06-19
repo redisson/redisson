@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -97,6 +98,20 @@ public class Kryo5CodecTest {
         ByteBuf b4 = cc.getValueEncoder().encode(v4);
         AtomicReference<String> v4_1 = (AtomicReference<String>)cc.getValueDecoder().decode(b4, null);
         assertThat(v4_1.get()).isEqualTo("123");
+    }
+    
+    @Test
+    public void testKeySetView() throws IOException {
+        Kryo5Codec cc = new Kryo5Codec();
+
+        ConcurrentHashMap.KeySetView<String, Boolean> set = ConcurrentHashMap.newKeySet();
+        set.add("123");
+        ByteBuf b1 = cc.getValueEncoder().encode(set);
+        Set<String> set_1 = (Set<String>) cc.getValueDecoder().decode(b1, null);
+        assertThat(set_1).containsOnly("123");
+        // ensure this has the value part of the KeySetView set correctly so we can add things
+        set_1.add("456");
+        assertThat(set_1).containsOnly("123", "456");
     }
 
 }
