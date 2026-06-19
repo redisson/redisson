@@ -15,6 +15,7 @@
  */
 package org.redisson.connection.balancer;
 
+import org.redisson.client.protocol.RedisCommand;
 import org.redisson.misc.WrappedLock;
 import org.redisson.connection.ClientConnectionsEntry;
 import org.redisson.misc.RedisURI;
@@ -90,6 +91,11 @@ public class WeightedRoundRobinBalancer implements LoadBalancer {
 
     @Override
     public ClientConnectionsEntry getEntry(List<ClientConnectionsEntry> clients) {
+        return getEntry(clients, null);
+    }
+
+    @Override
+    public ClientConnectionsEntry getEntry(List<ClientConnectionsEntry> clients, RedisCommand<?> redisCommand) {
         List<ClientConnectionsEntry> usedClients = findClients(clients, weights);
         for (ClientConnectionsEntry e : clients) {
             if (usedClients.contains(e)) {

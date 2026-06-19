@@ -15,6 +15,7 @@
  */
 package org.redisson.connection.balancer;
 
+import org.redisson.client.protocol.RedisCommand;
 import org.redisson.connection.ClientConnectionsEntry;
 
 import java.util.List;
@@ -29,6 +30,11 @@ public class RandomLoadBalancer extends BaseLoadBalancer {
 
     @Override
     public ClientConnectionsEntry getEntry(List<ClientConnectionsEntry> clientsCopy) {
+        return getEntry(clientsCopy, null);
+    }
+
+    @Override
+    public ClientConnectionsEntry getEntry(List<ClientConnectionsEntry> clientsCopy, RedisCommand<?> redisCommand) {
         clientsCopy = filter(clientsCopy);
         if (clientsCopy.isEmpty()) {
             return null;
@@ -37,5 +43,4 @@ public class RandomLoadBalancer extends BaseLoadBalancer {
         int ind = ThreadLocalRandom.current().nextInt(clientsCopy.size());
         return clientsCopy.get(ind);
     }
-
 }
