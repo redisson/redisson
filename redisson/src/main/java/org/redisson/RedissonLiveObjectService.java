@@ -965,7 +965,9 @@ public class RedissonLiveObjectService implements RLiveObjectService {
 
                 .method(ElementMatchers.isAnnotatedWith(RFieldAccessor.class)
                         .and(ElementMatchers.named("get")
-                                .or(ElementMatchers.named("set"))))
+                                .or(ElementMatchers.named("set")))
+                        .or(ElementMatchers.isAnnotatedWith(RGetter.class))
+                        .or(ElementMatchers.isAnnotatedWith(RSetter.class)))
                 .intercept(MethodDelegation.to(FieldAccessorInterceptor.class))
 
                 .method(ElementMatchers.isDeclaredBy(Map.class)

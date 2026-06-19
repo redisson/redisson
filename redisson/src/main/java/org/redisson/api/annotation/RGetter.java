@@ -21,28 +21,24 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Specifies that the method is a field accessor for Live Object.
+ * Specifies that the method is a generic field getter for a Live Object.
+ * <p>
+ * The annotated method takes a single {@link String} argument - the name of the
+ * field to read - and returns its value. Unlike the deprecated
+ * {@link RFieldAccessor} annotation, the method may have any name.
  * Example:
  * <pre>
- *       &#064;RFieldAccessor
- *       public void set(String field, T value) {
- *       }
- *       
- *       &#064;RFieldAccessor
- *       public Object get(String field) {
+ *       &#064;RGetter
+ *       public &lt;T&gt; T get(String field) {
  *           return null;
  *       }
  * </pre>
- * 
- * @deprecated This annotation has been split into the more explicit
- *             {@link RGetter} and {@link RSetter} annotations, which also
- *             remove the requirement for the accessor methods to be named
- *             {@code get} and {@code set}. Use {@link RGetter} to mark a field
- *             getter and {@link RSetter} to mark a field setter instead.
  *
- * @author Rui Gu (https://github.com/jackygurui)
+ * @see RSetter
+ *
+ * @author Nikita Koksharov
  */
-@Deprecated
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD})
-public @interface RFieldAccessor {}
+public @interface RGetter {
+}

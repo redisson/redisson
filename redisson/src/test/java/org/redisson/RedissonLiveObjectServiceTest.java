@@ -2245,6 +2245,186 @@ public class RedissonLiveObjectServiceTest extends RedisDockerTest {
         }
     }
 
+    @REntity
+    public static class TestClassGetterSetter {
+
+        @RId(generator = UUIDGenerator.class)
+        private Serializable id;
+
+        private String value;
+
+        public Serializable getId() {
+            return id;
+        }
+
+        public String getValue() {
+            return value;
+        }
+
+        public void setValue(String value) {
+            this.value = value;
+        }
+
+        @RGetter
+        public <T> T readField(String field) {
+            return null;
+        }
+
+        @RSetter
+        public <T> void writeField(String field, T value) {
+        }
+    }
+
+    @Test
+    public void testFieldAccessorGetterSetter() {
+        RLiveObjectService service = redisson.getLiveObjectService();
+        TestClassGetterSetter myObject = new TestClassGetterSetter();
+        myObject = service.persist(myObject);
+
+        myObject.setValue("123345");
+        assertEquals("123345", myObject.readField("value"));
+        myObject.writeField("value", "9999");
+        assertEquals("9999", myObject.readField("value"));
+        assertEquals("9999", myObject.getValue());
+        try {
+            myObject.readField("555555");
+        } catch (Exception e) {
+            assertTrue(e instanceof NoSuchFieldException);
+        }
+        try {
+            myObject.writeField("555555", "999");
+        } catch (Exception e) {
+            assertTrue(e instanceof NoSuchFieldException);
+        }
+    }
+
+    @REntity
+    public static class TestClassConventionalAccessor {
+
+        @RId(generator = UUIDGenerator.class)
+        private Serializable id;
+
+        private String value;
+
+        public Serializable getId() {
+            return id;
+        }
+
+        public String getValue() {
+            return value;
+        }
+
+        public void setValue(String value) {
+            this.value = value;
+        }
+
+        @RGetter
+        public <T> T get(String field) {
+            return null;
+        }
+
+        @RSetter
+        public <T> void set(String field, T value) {
+        }
+    }
+
+    @Test
+    public void testGetterSetterAnnotationsOnConventionalNames() {
+        RLiveObjectService service = redisson.getLiveObjectService();
+        TestClassConventionalAccessor myObject = new TestClassConventionalAccessor();
+        myObject = service.persist(myObject);
+
+        myObject.setValue("123345");
+        assertEquals("123345", myObject.get("value"));
+        myObject.set("value", "9999");
+        assertEquals("9999", myObject.get("value"));
+        assertEquals("9999", myObject.getValue());
+        try {
+            myObject.get("555555");
+        } catch (Exception e) {
+            assertTrue(e instanceof NoSuchFieldException);
+        }
+        try {
+            myObject.set("555555", "999");
+        } catch (Exception e) {
+            assertTrue(e instanceof NoSuchFieldException);
+        }
+    }
+
+    @REntity
+    public static class TestClassReadOnlyAccessor {
+
+        @RId(generator = UUIDGenerator.class)
+        private Serializable id;
+
+        private String value;
+
+        public Serializable getId() {
+            return id;
+        }
+
+        public String getValue() {
+            return value;
+        }
+
+        public void setValue(String value) {
+            this.value = value;
+        }
+
+        // Only a getter accessor is declared - a setter is not required.
+        @RGetter
+        public <T> T read(String field) {
+            return null;
+        }
+    }
+
+    @Test
+    public void testReadOnlyGetterAccessor() {
+        RLiveObjectService service = redisson.getLiveObjectService();
+        TestClassReadOnlyAccessor myObject = new TestClassReadOnlyAccessor();
+        myObject = service.persist(myObject);
+
+        myObject.setValue("abc");
+        assertEquals("abc", myObject.read("value"));
+        myObject.setValue("xyz");
+        assertEquals("xyz", myObject.read("value"));
+        try {
+            myObject.read("555555");
+        } catch (Exception e) {
+            assertTrue(e instanceof NoSuchFieldException);
+        }
+    }
+
+    @Test
+    public void testFieldAccessorPersistenceIntegration() {
+        RLiveObjectService service = redisson.getLiveObjectService();
+        DefaultNamingScheme scheme = new DefaultNamingScheme(redisson.getConfig().getCodec());
+
+        TestClassGetterSetter object = new TestClassGetterSetter();
+        object = service.persist(object);
+        Serializable id = object.getId();
+
+        // Write a field value through the @RSetter accessor.
+        object.writeField("value", "persisted-value");
+
+        // The value is written through to the backing Redis hash.
+        assertEquals("persisted-value", service.asRMap(object).get("value"));
+        assertTrue(redisson.getMap(scheme.getName(TestClassGetterSetter.class, id)).isExists());
+        assertEquals("persisted-value",
+                redisson.getMap(scheme.getName(TestClassGetterSetter.class, id)).get("value"));
+
+        // Re-fetch a fresh live object by id and read it back via the @RGetter accessor.
+        TestClassGetterSetter reloaded = service.get(TestClassGetterSetter.class, id);
+        assertEquals("persisted-value", reloaded.readField("value"));
+        assertEquals("persisted-value", reloaded.getValue());
+
+        // Writing through the @RSetter accessor on the reloaded instance also persists.
+        reloaded.writeField("value", "updated-value");
+        assertEquals("updated-value",
+                redisson.getMap(scheme.getName(TestClassGetterSetter.class, id)).get("value"));
+        assertEquals("updated-value", object.readField("value"));
+    }
+
     @Test
     public void testCollectionRewrite() {
         Customer c = new Customer("123");

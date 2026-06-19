@@ -19,6 +19,8 @@ import java.lang.reflect.Method;
 import java.util.Locale;
 
 import org.redisson.api.RMap;
+import org.redisson.api.annotation.RGetter;
+import org.redisson.api.annotation.RSetter;
 import org.redisson.liveobject.misc.ClassUtils;
 
 import net.bytebuddy.implementation.bind.annotation.AllArguments;
@@ -40,24 +42,39 @@ public class FieldAccessorInterceptor {
             @This Object me,
             @FieldValue("liveObjectLiveMap") RMap<?, ?> map
     ) throws Exception {
-        if (args.length >= 1 && String.class.isAssignableFrom(args[0].getClass())) {
-            String name = ((String) args[0]).substring(0, 1).toUpperCase(Locale.ENGLISH) + ((String) args[0]).substring(1);
-            if ("get".equals(method.getName()) && args.length == 1) {
+        if (args.length >= 1 && args[0] != null && String.class.isAssignableFrom(args[0].getClass())) {
+            String fieldName = (String) args[0];
+            String name = fieldName.substring(0, 1).toUpperCase(Locale.ENGLISH) + fieldName.substring(1);
+            if (isGetter(method) && args.length == 1) {
                 try {
                     return me.getClass().getMethod("get" + name).invoke(me);
                 } catch (NoSuchMethodException noSuchMethodException) {
-                    throw new NoSuchFieldException((String) args[0]);
+                    throw new NoSuchFieldException(fieldName);
                 }
-            } else if ("set".equals(method.getName()) && args.length == 2) {
+            } else if (isSetter(method) && args.length == 2) {
                 Method m = ClassUtils.searchForMethod(me.getClass(), "set" + name, new Class[]{args[1].getClass()});
                 if (m != null) {
                     return m.invoke(me, args[1]);
                 } else {
-                    throw new NoSuchFieldException((String) args[0]);
+                    throw new NoSuchFieldException(fieldName);
                 }
             }
         }
         throw new NoSuchMethodException(method.getName() + " has wrong signature");
 
+    }
+
+    private static boolean isGetter(Method method) {
+        if (method.isAnnotationPresent(RGetter.class)) {
+            return true;
+        }
+        return "get".equals(method.getName());
+    }
+
+    private static boolean isSetter(Method method) {
+        if (method.isAnnotationPresent(RSetter.class)) {
+            return true;
+        }
+        return "set".equals(method.getName());
     }
 }
