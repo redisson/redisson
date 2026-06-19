@@ -50,7 +50,7 @@ public class CommandsLoadBalancer extends RoundRobinLoadBalancer implements Load
                                 .filter(c -> address.equals(c.getClient().getAddr()))
                                 .findAny()
                                 .orElseGet(() -> {
-                return getEntry(clientsCopy);
+                return super.getEntry(clientsCopy, null);
             });
         }
 
@@ -58,12 +58,12 @@ public class CommandsLoadBalancer extends RoundRobinLoadBalancer implements Load
             if (e.getValue().contains(name)) {
                 List<ClientConnectionsEntry> s = filter(clientsCopy, e.getKey());
                 if (!s.isEmpty()) {
-                    return getEntry(s);
+                    return super.getEntry(s, null);
                 }
             }
         }
 
-        return getEntry(clientsCopy);
+        return super.getEntry(clientsCopy, null);
     }
 
     /**
