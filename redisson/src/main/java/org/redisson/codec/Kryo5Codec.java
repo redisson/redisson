@@ -41,6 +41,7 @@ import java.net.InetAddress;
 import java.net.SocketAddress;
 import java.net.URI;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -185,6 +186,8 @@ public class Kryo5Codec extends BaseCodec {
         kryo.addDefaultSerializer(AtomicInteger.class, new DefaultSerializers.AtomicIntegerSerializer());
         kryo.addDefaultSerializer(AtomicLong.class, new DefaultSerializers.AtomicLongSerializer());
         kryo.addDefaultSerializer(AtomicReference.class, new DefaultSerializers.AtomicReferenceSerializer());
+        // once kryo5 releases a new version, this serializer will be included in kryo5s DefaultSerializers
+        kryo.addDefaultSerializer(ConcurrentHashMap.KeySetView.class, new Kryo5KeySetViewSerializer());
         return kryo;
     }
 

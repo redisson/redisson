@@ -285,6 +285,8 @@
                     </includes>
                     <excludes>
                         <exclude>target/**</exclude>
+                        <!-- vendored in from Kryo5, BSD-3-clause -->
+                        <exclude>src/main/java/org/redisson/codec/Kryo5KeySetViewSerializer.java</exclude>
                     </excludes>
                     <useDefaultExcludes>true</useDefaultExcludes>
                     <mapping>
