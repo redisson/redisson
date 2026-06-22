@@ -1858,7 +1858,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
             Map.Entry<?, ?> e = (Map.Entry<?, ?>) o;
             Object key = e.getKey();
             V value = get(key);
-            return value != null && value.equals(e);
+            return value != null && value.equals(e.getValue());
         }
 
         @Override
