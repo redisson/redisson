@@ -554,4 +554,71 @@ public class RedissonSortedSetTest extends RedisDockerTest {
         assertThat(set2).containsExactly(1, 2, 3, 4);
     }
 
+    @Test
+    public void testAddAll() {
+        RSortedSet<Integer> set = redisson.getSortedSet("simple");
+
+        assertThat(set.addAll(Arrays.asList(5, 1, 3))).isTrue();
+        assertThat(set.readAll()).containsExactly(1, 3, 5);
+
+        // Add more elements including duplicates
+        assertThat(set.addAll(Arrays.asList(2, 4, 3))).isTrue();
+        assertThat(set.readAll()).containsExactly(1, 2, 3, 4, 5);
+
+        // Add empty collection
+        assertThat(set.addAll(Collections.emptyList())).isFalse();
+        assertThat(set.readAll()).containsExactly(1, 2, 3, 4, 5);
+
+        // Add only duplicates
+        assertThat(set.addAll(Arrays.asList(1, 3, 5))).isFalse();
+        assertThat(set.readAll()).containsExactly(1, 2, 3, 4, 5);
+    }
+
+    @Test
+    public void testRemoveAll() {
+        RSortedSet<Integer> set = redisson.getSortedSet("simple");
+        set.add(1);
+        set.add(2);
+        set.add(3);
+        set.add(4);
+        set.add(5);
+
+        assertThat(set.removeAll(Arrays.asList(2, 4))).isTrue();
+        assertThat(set.readAll()).containsExactly(1, 3, 5);
+
+        // Remove non-existing elements
+        assertThat(set.removeAll(Arrays.asList(10, 20))).isFalse();
+        assertThat(set.readAll()).containsExactly(1, 3, 5);
+
+        // Remove empty collection
+        assertThat(set.removeAll(Collections.emptyList())).isFalse();
+    }
+
+    @Test
+    public void testRetainAllBatch() {
+        RSortedSet<Integer> set = redisson.getSortedSet("simple");
+        set.add(1);
+        set.add(2);
+        set.add(3);
+        set.add(4);
+        set.add(5);
+
+        assertThat(set.retainAll(Arrays.asList(2, 4, 6))).isTrue();
+        assertThat(set.readAll()).containsExactly(2, 4);
+
+        // Retain with empty collection clears the set
+        RSortedSet<Integer> set2 = redisson.getSortedSet("simple2");
+        set2.add(1);
+        set2.add(2);
+        assertThat(set2.retainAll(Collections.emptyList())).isTrue();
+        assertThat(set2.readAll()).isEmpty();
+
+        // Retain all existing elements
+        RSortedSet<Integer> set3 = redisson.getSortedSet("simple3");
+        set3.add(1);
+        set3.add(2);
+        assertThat(set3.retainAll(Arrays.asList(1, 2))).isFalse();
+        assertThat(set3.readAll()).containsExactly(1, 2);
+    }
+
 }
