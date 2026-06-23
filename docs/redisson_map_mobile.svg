@@ -1,294 +1,328 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="560" height="3410" viewBox="0 0 560 3410" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" role="img" aria-labelledby="fmMTitle fmMDesc">
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="3548" viewBox="0 0 560 3548" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" role="img" aria-labelledby="fmMTitle fmMDesc">
 <title id="fmMTitle">Redisson Feature Map</title>
-<desc id="fmMDesc">Redisson Feature Map. A catalogue of Redisson features grouped into 5 sections: Data Structures, Concurrency &amp; Messaging, Distributed Services, Integrations &amp; APIs, Deployment &amp; Operations. 14 features are marked PRO, meaning they are available only in Redisson PRO.</desc>
+<desc id="fmMDesc">Redisson Feature Map. A catalogue of Redisson features grouped into 5 sections: Data Structures, Concurrency &amp; Messaging, Distributed Services, Integrations &amp; APIs, Deployment &amp; Operations. 14 features are marked PRO, meaning they are available only in Redisson PRO. 12 features are marked with a red lightning bolt, meaning they offer a PRO local cache for up to 45 times faster reads. 1 features are marked with a slate lightning bolt, meaning a local cache is available in the free version. 13 features are marked with a red distributed-nodes icon, meaning they support PRO data partitioning across cluster nodes. The Redisson PRO engine also accelerates all features by up to 4 times through faster command request and response handling.</desc>
 <defs><filter id="sh" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#0F172A" flood-opacity="0.06"/></filter></defs>
-<rect width="560" height="3410" fill="#FFFFFF" aria-hidden="true"/>
+<rect width="560" height="3548" fill="#FFFFFF" aria-hidden="true"/>
 <text x="0" y="54" font-size="24" font-weight="800" fill="#0F172A" aria-hidden="true">Redisson Feature Map</text>
 <g aria-hidden="true">
-<rect x="0" y="66" width="32" height="18" rx="5" fill="#C2161D"/>
-<text x="16.0" y="78.6" font-size="10" font-weight="800" letter-spacing="0.06em" text-anchor="middle" fill="#FFFFFF">PRO</text>
-<text x="38" y="79.0" font-size="13" fill="#64748B">= Redisson PRO only</text>
+<rect x="0" y="78" width="32" height="18" rx="5" fill="#C2161D"/>
+<text x="16.0" y="90.6" font-size="10" font-weight="800" letter-spacing="0.06em" text-anchor="middle" fill="#FFFFFF">PRO</text>
+<text x="38" y="91.0" font-size="13" fill="#64748B">= Redisson PRO only</text>
+<path d="M17.32,103.00 L11.60,111.96 L15.56,111.96 L14.24,119.00 L20.62,109.40 L16.44,109.40 L17.32,103.00 Z" fill="#475569" aria-hidden="true"/>
+<text x="38" y="115.0" font-size="13" fill="#64748B">= Local cache enabled</text>
+<path d="M17.32,127.00 L11.60,135.96 L15.56,135.96 L14.24,143.00 L20.62,133.40 L16.44,133.40 L17.32,127.00 Z" fill="#C2161D" aria-hidden="true"/>
+<text x="38" y="139.0" font-size="13" fill="#64748B">= Local cache enabled (PRO only)</text>
+<circle cx="13.20" cy="153.88" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="18.80" cy="153.88" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="13.20" cy="159.00" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="18.80" cy="159.00" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="13.20" cy="164.12" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="18.80" cy="164.12" r="1.89" fill="#C2161D" aria-hidden="true"/>
+<text x="38" y="163.0" font-size="13" fill="#64748B">= Single structure partitioned across cluster nodes (PRO only)</text>
 </g>
-<rect x="0" y="110" width="4" height="18" rx="2" fill="#C2161D" aria-hidden="true"/>
-<text x="14" y="125" font-size="15" font-weight="700" letter-spacing="0.04em" fill="#475569" aria-hidden="true">DATA STRUCTURES</text>
-<rect x="0" y="1196" width="4" height="18" rx="2" fill="#C2161D" aria-hidden="true"/>
-<text x="14" y="1211" font-size="15" font-weight="700" letter-spacing="0.04em" fill="#475569" aria-hidden="true">CONCURRENCY &amp; MESSAGING</text>
-<rect x="0" y="1646" width="4" height="18" rx="2" fill="#C2161D" aria-hidden="true"/>
-<text x="14" y="1661" font-size="15" font-weight="700" letter-spacing="0.04em" fill="#475569" aria-hidden="true">DISTRIBUTED SERVICES</text>
-<rect x="0" y="1916" width="4" height="18" rx="2" fill="#C2161D" aria-hidden="true"/>
-<text x="14" y="1931" font-size="15" font-weight="700" letter-spacing="0.04em" fill="#475569" aria-hidden="true">INTEGRATIONS &amp; APIS</text>
-<rect x="0" y="3038" width="4" height="18" rx="2" fill="#C2161D" aria-hidden="true"/>
-<text x="14" y="3053" font-size="15" font-weight="700" letter-spacing="0.04em" fill="#475569" aria-hidden="true">DEPLOYMENT &amp; OPERATIONS</text>
-<g role="group" aria-label="Data Structures. Collections: Map, Multimap, Set, SortedSet, ScoredSortedSet, LexSortedSet, List, Array, Time Series, Vector Set, JSON Store (PRO only), BitVector Store (PRO only).">
-<rect x="0" y="136" width="560" height="254" rx="16" fill="#F8FAFC" stroke="#475569" stroke-opacity="0.25" stroke-width="1.5" filter="url(#sh)" aria-hidden="true"/>
-<text x="20" y="174" font-size="20" font-weight="700" fill="#0F172A" aria-hidden="true">Collections</text>
-<rect x="20" y="188" width="64" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="52.0" y="212.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Map</text>
-<rect x="94" y="188" width="97" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="142.5" y="212.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Multimap</text>
-<rect x="201" y="188" width="64" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="233.0" y="212.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Set</text>
-<rect x="275" y="188" width="106" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="328.0" y="212.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">SortedSet</text>
-<rect x="20" y="236" width="158" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="99.0" y="260.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">ScoredSortedSet</text>
-<rect x="188" y="236" width="132" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="254.0" y="260.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">LexSortedSet</text>
-<rect x="330" y="236" width="64" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="362.0" y="260.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">List</text>
-<rect x="404" y="236" width="71" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="439.5" y="260.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Array</text>
-<rect x="20" y="284" width="123" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="81.5" y="308.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Time Series</text>
-<rect x="153" y="284" width="115" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="210.5" y="308.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Vector Set</text>
-<rect x="278" y="284" width="159" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="292" y="308.0" font-size="15" font-weight="500" text-anchor="start" fill="#334155" aria-hidden="true">JSON Store</text>
-<rect x="391" y="294.0" width="32" height="18" rx="5" fill="#C2161D" aria-hidden="true"/>
-<text x="407.0" y="306.6" font-size="10" font-weight="800" letter-spacing="0.06em" text-anchor="middle" fill="#FFFFFF" aria-hidden="true">PRO</text>
-<rect x="20" y="332" width="202" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="34" y="356.0" font-size="15" font-weight="500" text-anchor="start" fill="#334155" aria-hidden="true">BitVector Store</text>
-<rect x="176" y="342.0" width="32" height="18" rx="5" fill="#C2161D" aria-hidden="true"/>
-<text x="192.0" y="354.6" font-size="10" font-weight="800" letter-spacing="0.06em" text-anchor="middle" fill="#FFFFFF" aria-hidden="true">PRO</text>
+<rect x="0" y="200" width="4" height="18" rx="2" fill="#C2161D" aria-hidden="true"/>
+<text x="14" y="215" font-size="15" font-weight="700" letter-spacing="0.04em" fill="#475569" aria-hidden="true">DATA STRUCTURES</text>
+<rect x="0" y="1334" width="4" height="18" rx="2" fill="#C2161D" aria-hidden="true"/>
+<text x="14" y="1349" font-size="15" font-weight="700" letter-spacing="0.04em" fill="#475569" aria-hidden="true">CONCURRENCY &amp; MESSAGING</text>
+<rect x="0" y="1784" width="4" height="18" rx="2" fill="#C2161D" aria-hidden="true"/>
+<text x="14" y="1799" font-size="15" font-weight="700" letter-spacing="0.04em" fill="#475569" aria-hidden="true">DISTRIBUTED SERVICES</text>
+<rect x="0" y="2054" width="4" height="18" rx="2" fill="#C2161D" aria-hidden="true"/>
+<text x="14" y="2069" font-size="15" font-weight="700" letter-spacing="0.04em" fill="#475569" aria-hidden="true">INTEGRATIONS &amp; APIS</text>
+<rect x="0" y="3176" width="4" height="18" rx="2" fill="#C2161D" aria-hidden="true"/>
+<text x="14" y="3191" font-size="15" font-weight="700" letter-spacing="0.04em" fill="#475569" aria-hidden="true">DEPLOYMENT &amp; OPERATIONS</text>
+<g role="group" aria-label="Data Structures. Collections: Map (local cache in free version, PRO data partitioning), MapCache (PRO local cache, PRO data partitioning), Multimap, Set (PRO data partitioning), SortedSet, ScoredSortedSet, LexSortedSet, List, Array, Time Series, Vector Set, JSON Store (PRO only, PRO local cache, PRO data partitioning), BitVector Store (PRO only).">
+<rect x="0" y="226" width="560" height="254" rx="16" fill="#F8FAFC" stroke="#475569" stroke-opacity="0.25" stroke-width="1.5" filter="url(#sh)" aria-hidden="true"/>
+<text x="20" y="264" font-size="20" font-weight="700" fill="#0F172A" aria-hidden="true">Collections</text>
+<rect x="20" y="278" width="103" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<path d="M40.82,288.00 L35.10,298.08 L39.06,298.08 L37.74,306.00 L44.12,295.20 L39.94,295.20 L40.82,288.00 Z" fill="#475569" aria-hidden="true"/>
+<circle cx="56.20" cy="291.24" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="61.80" cy="291.24" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="56.20" cy="297.00" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="61.80" cy="297.00" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="56.20" cy="302.76" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="61.80" cy="302.76" r="1.89" fill="#C2161D" aria-hidden="true"/>
+<text x="73" y="302.0" font-size="15" font-weight="500" text-anchor="start" fill="#334155" aria-hidden="true">Map</text>
+<rect x="133" y="278" width="149" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<path d="M153.82,288.00 L148.10,298.08 L152.06,298.08 L150.74,306.00 L157.12,295.20 L152.94,295.20 L153.82,288.00 Z" fill="#C2161D" aria-hidden="true"/>
+<circle cx="169.20" cy="291.24" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="174.80" cy="291.24" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="169.20" cy="297.00" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="174.80" cy="297.00" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="169.20" cy="302.76" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="174.80" cy="302.76" r="1.89" fill="#C2161D" aria-hidden="true"/>
+<text x="186" y="302.0" font-size="15" font-weight="500" text-anchor="start" fill="#334155" aria-hidden="true">MapCache</text>
+<rect x="292" y="278" width="102" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="343.0" y="302.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Multimap</text>
+<rect x="404" y="278" width="85" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<circle cx="422.20" cy="291.24" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="427.80" cy="291.24" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="422.20" cy="297.00" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="427.80" cy="297.00" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="422.20" cy="302.76" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="427.80" cy="302.76" r="1.89" fill="#C2161D" aria-hidden="true"/>
+<text x="439" y="302.0" font-size="15" font-weight="500" text-anchor="start" fill="#334155" aria-hidden="true">Set</text>
+<rect x="20" y="326" width="106" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="73.0" y="350.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">SortedSet</text>
+<rect x="136" y="326" width="161" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="216.5" y="350.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">ScoredSortedSet</text>
+<rect x="307" y="326" width="134" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="374.0" y="350.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">LexSortedSet</text>
+<rect x="451" y="326" width="64" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="483.0" y="350.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">List</text>
+<rect x="20" y="374" width="71" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="55.5" y="398.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Array</text>
+<rect x="101" y="374" width="122" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="162.0" y="398.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Time Series</text>
+<rect x="233" y="374" width="109" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="287.5" y="398.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Vector Set</text>
+<rect x="20" y="422" width="197" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<path d="M40.82,432.00 L35.10,442.08 L39.06,442.08 L37.74,450.00 L44.12,439.20 L39.94,439.20 L40.82,432.00 Z" fill="#C2161D" aria-hidden="true"/>
+<circle cx="56.20" cy="435.24" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="61.80" cy="435.24" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="56.20" cy="441.00" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="61.80" cy="441.00" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="56.20" cy="446.76" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="61.80" cy="446.76" r="1.89" fill="#C2161D" aria-hidden="true"/>
+<text x="73" y="446.0" font-size="15" font-weight="500" text-anchor="start" fill="#334155" aria-hidden="true">JSON Store</text>
+<rect x="171" y="432.0" width="32" height="18" rx="5" fill="#C2161D" aria-hidden="true"/>
+<text x="187.0" y="444.6" font-size="10" font-weight="800" letter-spacing="0.06em" text-anchor="middle" fill="#FFFFFF" aria-hidden="true">PRO</text>
+<rect x="227" y="422" width="191" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="241" y="446.0" font-size="15" font-weight="500" text-anchor="start" fill="#334155" aria-hidden="true">BitVector Store</text>
+<rect x="372" y="432.0" width="32" height="18" rx="5" fill="#C2161D" aria-hidden="true"/>
+<text x="388.0" y="444.6" font-size="10" font-weight="800" letter-spacing="0.06em" text-anchor="middle" fill="#FFFFFF" aria-hidden="true">PRO</text>
 </g>
-<g role="group" aria-label="Data Structures. Objects: Object holder, Binary stream holder, JSON object holder, Geospatial holder, BitSet, RateLimiter, GCRA Rate Limiter.">
-<rect x="0" y="412" width="560" height="206" rx="16" fill="#F8FAFC" stroke="#475569" stroke-opacity="0.25" stroke-width="1.5" filter="url(#sh)" aria-hidden="true"/>
-<text x="20" y="450" font-size="20" font-weight="700" fill="#0F172A" aria-hidden="true">Objects</text>
-<rect x="20" y="464" width="141" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="90.5" y="488.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Object holder</text>
-<rect x="171" y="464" width="202" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="272.0" y="488.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Binary stream holder</text>
-<rect x="20" y="512" width="184" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="112.0" y="536.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">JSON object holder</text>
-<rect x="214" y="512" width="175" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="301.5" y="536.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Geospatial holder</text>
-<rect x="399" y="512" width="80" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="439.0" y="536.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">BitSet</text>
-<rect x="20" y="560" width="123" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="81.5" y="584.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">RateLimiter</text>
-<rect x="153" y="560" width="175" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="240.5" y="584.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">GCRA Rate Limiter</text>
+<g role="group" aria-label="Data Structures. Objects: Object holder, Binary stream holder, &lt;br&gt;, Geospatial holder, RateLimiter, &lt;br&gt;, JSON object holder, BitSet (PRO data partitioning), &lt;br&gt;, GCRA Rate Limiter.">
+<rect x="0" y="502" width="560" height="254" rx="16" fill="#F8FAFC" stroke="#475569" stroke-opacity="0.25" stroke-width="1.5" filter="url(#sh)" aria-hidden="true"/>
+<text x="20" y="540" font-size="20" font-weight="700" fill="#0F172A" aria-hidden="true">Objects</text>
+<rect x="20" y="554" width="136" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="88.0" y="578.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Object holder</text>
+<rect x="166" y="554" width="196" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="264.0" y="578.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Binary stream holder</text>
+<rect x="20" y="602" width="168" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="104.0" y="626.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Geospatial holder</text>
+<rect x="198" y="602" width="121" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="258.5" y="626.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">RateLimiter</text>
+<rect x="20" y="650" width="178" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="109.0" y="674.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">JSON object holder</text>
+<rect x="208" y="650" width="96" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<circle cx="226.20" cy="663.24" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="231.80" cy="663.24" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="226.20" cy="669.00" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="231.80" cy="669.00" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="226.20" cy="674.76" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="231.80" cy="674.76" r="1.89" fill="#C2161D" aria-hidden="true"/>
+<text x="243" y="674.0" font-size="15" font-weight="500" text-anchor="start" fill="#334155" aria-hidden="true">BitSet</text>
+<rect x="20" y="698" width="176" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="108.0" y="722.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">GCRA Rate Limiter</text>
 </g>
 <g role="group" aria-label="Data Structures. Queues: Queue, Deque, Priority Queue, Priority Deque, Stream, Ring Buffer, Transfer Queue.">
-<rect x="0" y="640" width="560" height="158" rx="16" fill="#F8FAFC" stroke="#475569" stroke-opacity="0.25" stroke-width="1.5" filter="url(#sh)" aria-hidden="true"/>
-<text x="20" y="678" font-size="20" font-weight="700" fill="#0F172A" aria-hidden="true">Queues</text>
-<rect x="20" y="692" width="71" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="55.5" y="716.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Queue</text>
-<rect x="101" y="692" width="71" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="136.5" y="716.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Deque</text>
-<rect x="182" y="692" width="149" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="256.5" y="716.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Priority Queue</text>
-<rect x="341" y="692" width="149" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="415.5" y="716.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Priority Deque</text>
-<rect x="20" y="740" width="80" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="60.0" y="764.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Stream</text>
-<rect x="110" y="740" width="123" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="171.5" y="764.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Ring Buffer</text>
-<rect x="243" y="740" width="149" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="317.5" y="764.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Transfer Queue</text>
+<rect x="0" y="778" width="560" height="158" rx="16" fill="#F8FAFC" stroke="#475569" stroke-opacity="0.25" stroke-width="1.5" filter="url(#sh)" aria-hidden="true"/>
+<text x="20" y="816" font-size="20" font-weight="700" fill="#0F172A" aria-hidden="true">Queues</text>
+<rect x="20" y="830" width="79" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="59.5" y="854.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Queue</text>
+<rect x="109" y="830" width="79" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="148.5" y="854.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Deque</text>
+<rect x="198" y="830" width="141" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="268.5" y="854.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Priority Queue</text>
+<rect x="349" y="830" width="141" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="419.5" y="854.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Priority Deque</text>
+<rect x="20" y="878" width="85" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="62.5" y="902.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Stream</text>
+<rect x="115" y="878" width="118" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="174.0" y="902.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Ring Buffer</text>
+<rect x="243" y="878" width="149" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="317.5" y="902.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Transfer Queue</text>
 </g>
 <g role="group" aria-label="Data Structures. Counters: Id generator, AtomicLong, AtomicDouble, LongAdder, DoubleAdder.">
-<rect x="0" y="820" width="560" height="158" rx="16" fill="#F8FAFC" stroke="#475569" stroke-opacity="0.25" stroke-width="1.5" filter="url(#sh)" aria-hidden="true"/>
-<text x="20" y="858" font-size="20" font-weight="700" fill="#0F172A" aria-hidden="true">Counters</text>
-<rect x="20" y="872" width="132" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="86.0" y="896.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Id generator</text>
-<rect x="162" y="872" width="115" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="219.5" y="896.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">AtomicLong</text>
-<rect x="287" y="872" width="132" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="353.0" y="896.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">AtomicDouble</text>
-<rect x="20" y="920" width="106" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="73.0" y="944.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">LongAdder</text>
-<rect x="136" y="920" width="123" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="197.5" y="944.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">DoubleAdder</text>
+<rect x="0" y="958" width="560" height="158" rx="16" fill="#F8FAFC" stroke="#475569" stroke-opacity="0.25" stroke-width="1.5" filter="url(#sh)" aria-hidden="true"/>
+<text x="20" y="996" font-size="20" font-weight="700" fill="#0F172A" aria-hidden="true">Counters</text>
+<rect x="20" y="1010" width="127" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="83.5" y="1034.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Id generator</text>
+<rect x="157" y="1010" width="121" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="217.5" y="1034.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">AtomicLong</text>
+<rect x="288" y="1010" width="139" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="357.5" y="1034.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">AtomicDouble</text>
+<rect x="20" y="1058" width="114" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="77.0" y="1082.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">LongAdder</text>
+<rect x="144" y="1058" width="131" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="209.5" y="1082.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">DoubleAdder</text>
 </g>
-<g role="group" aria-label="Data Structures. Probabilistic structures: Bloom filter, Cuckoo filter, HyperLogLog, TopK, TDigest.">
-<rect x="0" y="1000" width="560" height="158" rx="16" fill="#F8FAFC" stroke="#475569" stroke-opacity="0.25" stroke-width="1.5" filter="url(#sh)" aria-hidden="true"/>
-<text x="20" y="1038" font-size="20" font-weight="700" fill="#0F172A" aria-hidden="true">Probabilistic structures</text>
-<rect x="20" y="1052" width="132" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="86.0" y="1076.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Bloom filter</text>
-<rect x="162" y="1052" width="141" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="232.5" y="1076.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Cuckoo filter</text>
-<rect x="313" y="1052" width="123" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="374.5" y="1076.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">HyperLogLog</text>
-<rect x="446" y="1052" width="64" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="478.0" y="1076.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">TopK</text>
-<rect x="20" y="1100" width="88" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="64.0" y="1124.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">TDigest</text>
+<g role="group" aria-label="Data Structures. Probabilistic structures: Bloom filter (PRO data partitioning), Cuckoo filter, HyperLogLog, TopK, TDigest.">
+<rect x="0" y="1138" width="560" height="158" rx="16" fill="#F8FAFC" stroke="#475569" stroke-opacity="0.25" stroke-width="1.5" filter="url(#sh)" aria-hidden="true"/>
+<text x="20" y="1176" font-size="20" font-weight="700" fill="#0F172A" aria-hidden="true">Probabilistic structures</text>
+<rect x="20" y="1190" width="142" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<circle cx="38.20" cy="1203.24" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="43.80" cy="1203.24" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="38.20" cy="1209.00" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="43.80" cy="1209.00" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="38.20" cy="1214.76" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="43.80" cy="1214.76" r="1.89" fill="#C2161D" aria-hidden="true"/>
+<text x="55" y="1214.0" font-size="15" font-weight="500" text-anchor="start" fill="#334155" aria-hidden="true">Bloom filter</text>
+<rect x="172" y="1190" width="128" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="236.0" y="1214.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Cuckoo filter</text>
+<rect x="310" y="1190" width="132" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="376.0" y="1214.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">HyperLogLog</text>
+<rect x="452" y="1190" width="67" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="485.5" y="1214.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">TopK</text>
+<rect x="20" y="1238" width="89" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="64.5" y="1262.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">TDigest</text>
 </g>
 <g role="group" aria-label="Concurrency &amp; Messaging. Locks &amp; Synchronizers: Lock, Fair Lock, MultiLock, ReadWriteLock, Semaphore, CountDownLatch, Spin Lock, Fenced Lock.">
-<rect x="0" y="1222" width="560" height="206" rx="16" fill="#F8FAFC" stroke="#475569" stroke-opacity="0.25" stroke-width="1.5" filter="url(#sh)" aria-hidden="true"/>
-<text x="20" y="1260" font-size="20" font-weight="700" fill="#0F172A" aria-hidden="true">Locks &amp; Synchronizers</text>
-<rect x="20" y="1274" width="64" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="52.0" y="1298.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Lock</text>
-<rect x="94" y="1274" width="106" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="147.0" y="1298.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Fair Lock</text>
-<rect x="210" y="1274" width="106" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="263.0" y="1298.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">MultiLock</text>
-<rect x="326" y="1274" width="141" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="396.5" y="1298.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">ReadWriteLock</text>
-<rect x="20" y="1322" width="106" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="73.0" y="1346.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Semaphore</text>
-<rect x="136" y="1322" width="149" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="210.5" y="1346.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">CountDownLatch</text>
-<rect x="295" y="1322" width="106" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="348.0" y="1346.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Spin Lock</text>
-<rect x="20" y="1370" width="123" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="81.5" y="1394.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Fenced Lock</text>
+<rect x="0" y="1360" width="560" height="206" rx="16" fill="#F8FAFC" stroke="#475569" stroke-opacity="0.25" stroke-width="1.5" filter="url(#sh)" aria-hidden="true"/>
+<text x="20" y="1398" font-size="20" font-weight="700" fill="#0F172A" aria-hidden="true">Locks &amp; Synchronizers</text>
+<rect x="20" y="1412" width="65" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="52.5" y="1436.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Lock</text>
+<rect x="95" y="1412" width="97" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="143.5" y="1436.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Fair Lock</text>
+<rect x="202" y="1412" width="103" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="253.5" y="1436.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">MultiLock</text>
+<rect x="315" y="1412" width="146" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="388.0" y="1436.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">ReadWriteLock</text>
+<rect x="20" y="1460" width="119" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="79.5" y="1484.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Semaphore</text>
+<rect x="149" y="1460" width="163" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="230.5" y="1484.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">CountDownLatch</text>
+<rect x="322" y="1460" width="104" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="374.0" y="1484.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Spin Lock</text>
+<rect x="20" y="1508" width="126" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="83.0" y="1532.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Fenced Lock</text>
 </g>
 <g role="group" aria-label="Concurrency &amp; Messaging. Messaging: Pub/Sub topic, Sharded Pub/Sub topic, JMS API (PRO only), Reliable Queue (PRO only), Reliable Pub/Sub (PRO only).">
-<rect x="0" y="1450" width="560" height="158" rx="16" fill="#F8FAFC" stroke="#475569" stroke-opacity="0.25" stroke-width="1.5" filter="url(#sh)" aria-hidden="true"/>
-<text x="20" y="1488" font-size="20" font-weight="700" fill="#0F172A" aria-hidden="true">Messaging</text>
-<rect x="20" y="1502" width="141" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="90.5" y="1526.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Pub/Sub topic</text>
-<rect x="171" y="1502" width="210" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="276.0" y="1526.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Sharded Pub/Sub topic</text>
-<rect x="391" y="1502" width="132" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="405" y="1526.0" font-size="15" font-weight="500" text-anchor="start" fill="#334155" aria-hidden="true">JMS API</text>
-<rect x="477" y="1512.0" width="32" height="18" rx="5" fill="#C2161D" aria-hidden="true"/>
-<text x="493.0" y="1524.6" font-size="10" font-weight="800" letter-spacing="0.06em" text-anchor="middle" fill="#FFFFFF" aria-hidden="true">PRO</text>
-<rect x="20" y="1550" width="193" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="34" y="1574.0" font-size="15" font-weight="500" text-anchor="start" fill="#334155" aria-hidden="true">Reliable Queue</text>
-<rect x="167" y="1560.0" width="32" height="18" rx="5" fill="#C2161D" aria-hidden="true"/>
-<text x="183.0" y="1572.6" font-size="10" font-weight="800" letter-spacing="0.06em" text-anchor="middle" fill="#FFFFFF" aria-hidden="true">PRO</text>
-<rect x="223" y="1550" width="211" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="237" y="1574.0" font-size="15" font-weight="500" text-anchor="start" fill="#334155" aria-hidden="true">Reliable Pub/Sub</text>
-<rect x="388" y="1560.0" width="32" height="18" rx="5" fill="#C2161D" aria-hidden="true"/>
-<text x="404.0" y="1572.6" font-size="10" font-weight="800" letter-spacing="0.06em" text-anchor="middle" fill="#FFFFFF" aria-hidden="true">PRO</text>
+<rect x="0" y="1588" width="560" height="158" rx="16" fill="#F8FAFC" stroke="#475569" stroke-opacity="0.25" stroke-width="1.5" filter="url(#sh)" aria-hidden="true"/>
+<text x="20" y="1626" font-size="20" font-weight="700" fill="#0F172A" aria-hidden="true">Messaging</text>
+<rect x="20" y="1640" width="137" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="88.5" y="1664.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Pub/Sub topic</text>
+<rect x="167" y="1640" width="208" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="271.0" y="1664.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Sharded Pub/Sub topic</text>
+<rect x="385" y="1640" width="131" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="399" y="1664.0" font-size="15" font-weight="500" text-anchor="start" fill="#334155" aria-hidden="true">JMS API</text>
+<rect x="470" y="1650.0" width="32" height="18" rx="5" fill="#C2161D" aria-hidden="true"/>
+<text x="486.0" y="1662.6" font-size="10" font-weight="800" letter-spacing="0.06em" text-anchor="middle" fill="#FFFFFF" aria-hidden="true">PRO</text>
+<rect x="20" y="1688" width="191" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="34" y="1712.0" font-size="15" font-weight="500" text-anchor="start" fill="#334155" aria-hidden="true">Reliable Queue</text>
+<rect x="165" y="1698.0" width="32" height="18" rx="5" fill="#C2161D" aria-hidden="true"/>
+<text x="181.0" y="1710.6" font-size="10" font-weight="800" letter-spacing="0.06em" text-anchor="middle" fill="#FFFFFF" aria-hidden="true">PRO</text>
+<rect x="221" y="1688" width="205" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="235" y="1712.0" font-size="15" font-weight="500" text-anchor="start" fill="#334155" aria-hidden="true">Reliable Pub/Sub</text>
+<rect x="380" y="1698.0" width="32" height="18" rx="5" fill="#C2161D" aria-hidden="true"/>
+<text x="396.0" y="1710.6" font-size="10" font-weight="800" letter-spacing="0.06em" text-anchor="middle" fill="#FFFFFF" aria-hidden="true">PRO</text>
 </g>
-<g role="group" aria-label="Distributed Services. Services: Remote service, Live Object service, Executor service, Scheduled executor service, MapReduce service, RediSearch API.">
-<rect x="0" y="1672" width="560" height="206" rx="16" fill="#F8FAFC" stroke="#475569" stroke-opacity="0.25" stroke-width="1.5" filter="url(#sh)" aria-hidden="true"/>
-<text x="20" y="1710" font-size="20" font-weight="700" fill="#0F172A" aria-hidden="true">Services</text>
-<rect x="20" y="1724" width="149" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="94.5" y="1748.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Remote service</text>
-<rect x="179" y="1724" width="193" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="275.5" y="1748.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Live Object service</text>
-<rect x="20" y="1772" width="167" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="103.5" y="1796.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Executor service</text>
-<rect x="197" y="1772" width="254" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="324.0" y="1796.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Scheduled executor service</text>
-<rect x="20" y="1820" width="175" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="107.5" y="1844.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">MapReduce service</text>
-<rect x="205" y="1820" width="149" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="279.5" y="1844.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">RediSearch API</text>
+<g role="group" aria-label="Distributed Services. Services: Remote service, Live Object service (PRO local cache), Executor service, Scheduled executor service, MapReduce service, RediSearch API.">
+<rect x="0" y="1810" width="560" height="206" rx="16" fill="#F8FAFC" stroke="#475569" stroke-opacity="0.25" stroke-width="1.5" filter="url(#sh)" aria-hidden="true"/>
+<text x="20" y="1848" font-size="20" font-weight="700" fill="#0F172A" aria-hidden="true">Services</text>
+<rect x="20" y="1862" width="150" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="95.0" y="1886.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Remote service</text>
+<rect x="180" y="1862" width="197" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<path d="M200.82,1872.00 L195.10,1882.08 L199.06,1882.08 L197.74,1890.00 L204.12,1879.20 L199.94,1879.20 L200.82,1872.00 Z" fill="#C2161D" aria-hidden="true"/>
+<text x="212" y="1886.0" font-size="15" font-weight="500" text-anchor="start" fill="#334155" aria-hidden="true">Live Object service</text>
+<rect x="20" y="1910" width="160" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="100.0" y="1934.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Executor service</text>
+<rect x="190" y="1910" width="247" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="313.5" y="1934.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Scheduled executor service</text>
+<rect x="20" y="1958" width="182" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="111.0" y="1982.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">MapReduce service</text>
+<rect x="212" y="1958" width="147" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="285.5" y="1982.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">RediSearch API</text>
 </g>
-<g role="group" aria-label="Integrations &amp; APIs. Web Session Management: Apache Tomcat Session, Spring Session, Micronaut Session.">
-<rect x="0" y="1942" width="560" height="158" rx="16" fill="#F8FAFC" stroke="#475569" stroke-opacity="0.25" stroke-width="1.5" filter="url(#sh)" aria-hidden="true"/>
-<text x="20" y="1980" font-size="20" font-weight="700" fill="#0F172A" aria-hidden="true">Web Session Management</text>
-<rect x="20" y="1994" width="210" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="125.0" y="2018.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Apache Tomcat Session</text>
-<rect x="240" y="1994" width="149" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="314.5" y="2018.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Spring Session</text>
-<rect x="20" y="2042" width="175" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="107.5" y="2066.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Micronaut Session</text>
+<g role="group" aria-label="Integrations &amp; APIs. Spring Framework: Spring Boot Starter, Spring Cache (PRO local cache, PRO data partitioning), Spring Session (PRO local cache), Spring Transaction Manager, Spring Data Redis, Spring Cloud Stream (PRO only), Spring AI Vector Store (PRO only).">
+<rect x="0" y="2080" width="560" height="254" rx="16" fill="#F8FAFC" stroke="#475569" stroke-opacity="0.25" stroke-width="1.5" filter="url(#sh)" aria-hidden="true"/>
+<text x="20" y="2118" font-size="20" font-weight="700" fill="#0F172A" aria-hidden="true">Spring Framework</text>
+<rect x="20" y="2132" width="181" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="110.5" y="2156.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Spring Boot Starter</text>
+<rect x="211" y="2132" width="173" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<path d="M231.82,2142.00 L226.10,2152.08 L230.06,2152.08 L228.74,2160.00 L235.12,2149.20 L230.94,2149.20 L231.82,2142.00 Z" fill="#C2161D" aria-hidden="true"/>
+<circle cx="247.20" cy="2145.24" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="252.80" cy="2145.24" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="247.20" cy="2151.00" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="252.80" cy="2151.00" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="247.20" cy="2156.76" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="252.80" cy="2156.76" r="1.89" fill="#C2161D" aria-hidden="true"/>
+<text x="264" y="2156.0" font-size="15" font-weight="500" text-anchor="start" fill="#334155" aria-hidden="true">Spring Cache</text>
+<rect x="20" y="2180" width="162" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<path d="M40.82,2190.00 L35.10,2200.08 L39.06,2200.08 L37.74,2208.00 L44.12,2197.20 L39.94,2197.20 L40.82,2190.00 Z" fill="#C2161D" aria-hidden="true"/>
+<text x="52" y="2204.0" font-size="15" font-weight="500" text-anchor="start" fill="#334155" aria-hidden="true">Spring Session</text>
+<rect x="192" y="2180" width="250" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="317.0" y="2204.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Spring Transaction Manager</text>
+<rect x="20" y="2228" width="170" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="105.0" y="2252.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Spring Data Redis</text>
+<rect x="200" y="2228" width="236" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="214" y="2252.0" font-size="15" font-weight="500" text-anchor="start" fill="#334155" aria-hidden="true">Spring Cloud Stream</text>
+<rect x="390" y="2238.0" width="32" height="18" rx="5" fill="#C2161D" aria-hidden="true"/>
+<text x="406.0" y="2250.6" font-size="10" font-weight="800" letter-spacing="0.06em" text-anchor="middle" fill="#FFFFFF" aria-hidden="true">PRO</text>
+<rect x="20" y="2276" width="246" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="34" y="2300.0" font-size="15" font-weight="500" text-anchor="start" fill="#334155" aria-hidden="true">Spring AI Vector Store</text>
+<rect x="220" y="2286.0" width="32" height="18" rx="5" fill="#C2161D" aria-hidden="true"/>
+<text x="236.0" y="2298.6" font-size="10" font-weight="800" letter-spacing="0.06em" text-anchor="middle" fill="#FFFFFF" aria-hidden="true">PRO</text>
 </g>
-<g role="group" aria-label="Integrations &amp; APIs. Cache API Implementations: Spring Cache, JCache API (JSR-107), Hibernate Cache, MyBatis Cache, Quarkus Cache, Micronaut Cache.">
-<rect x="0" y="2122" width="560" height="206" rx="16" fill="#F8FAFC" stroke="#475569" stroke-opacity="0.25" stroke-width="1.5" filter="url(#sh)" aria-hidden="true"/>
-<text x="20" y="2160" font-size="20" font-weight="700" fill="#0F172A" aria-hidden="true">Cache API Implementations</text>
-<rect x="20" y="2174" width="132" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="86.0" y="2198.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Spring Cache</text>
-<rect x="162" y="2174" width="202" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="263.0" y="2198.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">JCache API (JSR-107)</text>
-<rect x="20" y="2222" width="158" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="99.0" y="2246.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Hibernate Cache</text>
-<rect x="188" y="2222" width="141" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="258.5" y="2246.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">MyBatis Cache</text>
-<rect x="339" y="2222" width="141" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="409.5" y="2246.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Quarkus Cache</text>
-<rect x="20" y="2270" width="158" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="99.0" y="2294.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Micronaut Cache</text>
+<g role="group" aria-label="Integrations &amp; APIs. Cache API Implementations: Spring Cache (PRO local cache, PRO data partitioning), JCache API (JSR-107) (PRO local cache, PRO data partitioning), Hibernate Cache (PRO local cache, PRO data partitioning), MyBatis Cache (PRO local cache, PRO data partitioning), Quarkus Cache (PRO local cache, PRO data partitioning), Micronaut Cache (PRO local cache, PRO data partitioning).">
+<rect x="0" y="2356" width="560" height="206" rx="16" fill="#F8FAFC" stroke="#475569" stroke-opacity="0.25" stroke-width="1.5" filter="url(#sh)" aria-hidden="true"/>
+<text x="20" y="2394" font-size="20" font-weight="700" fill="#0F172A" aria-hidden="true">Cache API Implementations</text>
+<rect x="20" y="2408" width="173" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<path d="M40.82,2418.00 L35.10,2428.08 L39.06,2428.08 L37.74,2436.00 L44.12,2425.20 L39.94,2425.20 L40.82,2418.00 Z" fill="#C2161D" aria-hidden="true"/>
+<circle cx="56.20" cy="2421.24" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="61.80" cy="2421.24" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="56.20" cy="2427.00" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="61.80" cy="2427.00" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="56.20" cy="2432.76" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="61.80" cy="2432.76" r="1.89" fill="#C2161D" aria-hidden="true"/>
+<text x="73" y="2432.0" font-size="15" font-weight="500" text-anchor="start" fill="#334155" aria-hidden="true">Spring Cache</text>
+<rect x="203" y="2408" width="231" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<path d="M223.82,2418.00 L218.10,2428.08 L222.06,2428.08 L220.74,2436.00 L227.12,2425.20 L222.94,2425.20 L223.82,2418.00 Z" fill="#C2161D" aria-hidden="true"/>
+<circle cx="239.20" cy="2421.24" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="244.80" cy="2421.24" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="239.20" cy="2427.00" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="244.80" cy="2427.00" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="239.20" cy="2432.76" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="244.80" cy="2432.76" r="1.89" fill="#C2161D" aria-hidden="true"/>
+<text x="256" y="2432.0" font-size="15" font-weight="500" text-anchor="start" fill="#334155" aria-hidden="true">JCache API (JSR-107)</text>
+<rect x="20" y="2456" width="199" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<path d="M40.82,2466.00 L35.10,2476.08 L39.06,2476.08 L37.74,2484.00 L44.12,2473.20 L39.94,2473.20 L40.82,2466.00 Z" fill="#C2161D" aria-hidden="true"/>
+<circle cx="56.20" cy="2469.24" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="61.80" cy="2469.24" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="56.20" cy="2475.00" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="61.80" cy="2475.00" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="56.20" cy="2480.76" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="61.80" cy="2480.76" r="1.89" fill="#C2161D" aria-hidden="true"/>
+<text x="73" y="2480.0" font-size="15" font-weight="500" text-anchor="start" fill="#334155" aria-hidden="true">Hibernate Cache</text>
+<rect x="229" y="2456" width="184" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<path d="M249.82,2466.00 L244.10,2476.08 L248.06,2476.08 L246.74,2484.00 L253.12,2473.20 L248.94,2473.20 L249.82,2466.00 Z" fill="#C2161D" aria-hidden="true"/>
+<circle cx="265.20" cy="2469.24" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="270.80" cy="2469.24" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="265.20" cy="2475.00" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="270.80" cy="2475.00" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="265.20" cy="2480.76" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="270.80" cy="2480.76" r="1.89" fill="#C2161D" aria-hidden="true"/>
+<text x="282" y="2480.0" font-size="15" font-weight="500" text-anchor="start" fill="#334155" aria-hidden="true">MyBatis Cache</text>
+<rect x="20" y="2504" width="187" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<path d="M40.82,2514.00 L35.10,2524.08 L39.06,2524.08 L37.74,2532.00 L44.12,2521.20 L39.94,2521.20 L40.82,2514.00 Z" fill="#C2161D" aria-hidden="true"/>
+<circle cx="56.20" cy="2517.24" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="61.80" cy="2517.24" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="56.20" cy="2523.00" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="61.80" cy="2523.00" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="56.20" cy="2528.76" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="61.80" cy="2528.76" r="1.89" fill="#C2161D" aria-hidden="true"/>
+<text x="73" y="2528.0" font-size="15" font-weight="500" text-anchor="start" fill="#334155" aria-hidden="true">Quarkus Cache</text>
+<rect x="217" y="2504" width="200" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<path d="M237.82,2514.00 L232.10,2524.08 L236.06,2524.08 L234.74,2532.00 L241.12,2521.20 L236.94,2521.20 L237.82,2514.00 Z" fill="#C2161D" aria-hidden="true"/>
+<circle cx="253.20" cy="2517.24" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="258.80" cy="2517.24" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="253.20" cy="2523.00" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="258.80" cy="2523.00" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="253.20" cy="2528.76" r="1.89" fill="#C2161D" aria-hidden="true"/><circle cx="258.80" cy="2528.76" r="1.89" fill="#C2161D" aria-hidden="true"/>
+<text x="270" y="2528.0" font-size="15" font-weight="500" text-anchor="start" fill="#334155" aria-hidden="true">Micronaut Cache</text>
 </g>
 <g role="group" aria-label="Integrations &amp; APIs. Microservices: Helidon, Micronaut, Quarkus.">
-<rect x="0" y="2350" width="560" height="110" rx="16" fill="#F8FAFC" stroke="#475569" stroke-opacity="0.25" stroke-width="1.5" filter="url(#sh)" aria-hidden="true"/>
-<text x="20" y="2388" font-size="20" font-weight="700" fill="#0F172A" aria-hidden="true">Microservices</text>
-<rect x="20" y="2402" width="88" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="64.0" y="2426.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Helidon</text>
-<rect x="118" y="2402" width="106" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="171.0" y="2426.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Micronaut</text>
-<rect x="234" y="2402" width="88" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="278.0" y="2426.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Quarkus</text>
+<rect x="0" y="2584" width="560" height="110" rx="16" fill="#F8FAFC" stroke="#475569" stroke-opacity="0.25" stroke-width="1.5" filter="url(#sh)" aria-hidden="true"/>
+<text x="20" y="2622" font-size="20" font-weight="700" fill="#0F172A" aria-hidden="true">Microservices</text>
+<rect x="20" y="2636" width="88" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="64.0" y="2660.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Helidon</text>
+<rect x="118" y="2636" width="107" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="171.5" y="2660.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Micronaut</text>
+<rect x="235" y="2636" width="93" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="281.5" y="2660.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Quarkus</text>
 </g>
 <g role="group" aria-label="Integrations &amp; APIs. Programming APIs: Reactive Streams API, RxJava3 API, Asynchronous API.">
-<rect x="0" y="2482" width="560" height="158" rx="16" fill="#F8FAFC" stroke="#475569" stroke-opacity="0.25" stroke-width="1.5" filter="url(#sh)" aria-hidden="true"/>
-<text x="20" y="2520" font-size="20" font-weight="700" fill="#0F172A" aria-hidden="true">Programming APIs</text>
-<rect x="20" y="2534" width="202" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="121.0" y="2558.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Reactive Streams API</text>
-<rect x="232" y="2534" width="123" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="293.5" y="2558.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">RxJava3 API</text>
-<rect x="20" y="2582" width="167" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="103.5" y="2606.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Asynchronous API</text>
+<rect x="0" y="2716" width="560" height="110" rx="16" fill="#F8FAFC" stroke="#475569" stroke-opacity="0.25" stroke-width="1.5" filter="url(#sh)" aria-hidden="true"/>
+<text x="20" y="2754" font-size="20" font-weight="700" fill="#0F172A" aria-hidden="true">Programming APIs</text>
+<rect x="20" y="2768" width="197" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="118.5" y="2792.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Reactive Streams API</text>
+<rect x="227" y="2768" width="122" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="288.0" y="2792.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">RxJava3 API</text>
+<rect x="359" y="2768" width="170" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="444.0" y="2792.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Asynchronous API</text>
 </g>
-<g role="group" aria-label="Integrations &amp; APIs. Spring Framework: Spring Boot Starter, Spring Cache, Spring Session, Spring Transaction Manager, Spring Data Redis, Spring Cloud Stream (PRO only), Spring AI Vector Store (PRO only).">
-<rect x="0" y="2662" width="560" height="206" rx="16" fill="#F8FAFC" stroke="#475569" stroke-opacity="0.25" stroke-width="1.5" filter="url(#sh)" aria-hidden="true"/>
-<text x="20" y="2700" font-size="20" font-weight="700" fill="#0F172A" aria-hidden="true">Spring Framework</text>
-<rect x="20" y="2714" width="193" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="116.5" y="2738.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Spring Boot Starter</text>
-<rect x="223" y="2714" width="132" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="289.0" y="2738.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Spring Cache</text>
-<rect x="365" y="2714" width="149" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="439.5" y="2738.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Spring Session</text>
-<rect x="20" y="2762" width="254" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="147.0" y="2786.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Spring Transaction Manager</text>
-<rect x="284" y="2762" width="175" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="371.5" y="2786.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Spring Data Redis</text>
-<rect x="20" y="2810" width="237" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="34" y="2834.0" font-size="15" font-weight="500" text-anchor="start" fill="#334155" aria-hidden="true">Spring Cloud Stream</text>
-<rect x="211" y="2820.0" width="32" height="18" rx="5" fill="#C2161D" aria-hidden="true"/>
-<text x="227.0" y="2832.6" font-size="10" font-weight="800" letter-spacing="0.06em" text-anchor="middle" fill="#FFFFFF" aria-hidden="true">PRO</text>
-<rect x="267" y="2810" width="263" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="281" y="2834.0" font-size="15" font-weight="500" text-anchor="start" fill="#334155" aria-hidden="true">Spring AI Vector Store</text>
-<rect x="484" y="2820.0" width="32" height="18" rx="5" fill="#C2161D" aria-hidden="true"/>
-<text x="500.0" y="2832.6" font-size="10" font-weight="800" letter-spacing="0.06em" text-anchor="middle" fill="#FFFFFF" aria-hidden="true">PRO</text>
+<g role="group" aria-label="Integrations &amp; APIs. Web Session Management: Apache Tomcat Session, Spring Session (PRO local cache), Micronaut Session.">
+<rect x="0" y="2848" width="560" height="158" rx="16" fill="#F8FAFC" stroke="#475569" stroke-opacity="0.25" stroke-width="1.5" filter="url(#sh)" aria-hidden="true"/>
+<text x="20" y="2886" font-size="20" font-weight="700" fill="#0F172A" aria-hidden="true">Web Session Management</text>
+<rect x="20" y="2900" width="214" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="127.0" y="2924.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Apache Tomcat Session</text>
+<rect x="244" y="2900" width="162" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<path d="M264.82,2910.00 L259.10,2920.08 L263.06,2920.08 L261.74,2928.00 L268.12,2917.20 L263.94,2917.20 L264.82,2910.00 Z" fill="#C2161D" aria-hidden="true"/>
+<text x="276" y="2924.0" font-size="15" font-weight="500" text-anchor="start" fill="#334155" aria-hidden="true">Spring Session</text>
+<rect x="20" y="2948" width="172" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="106.0" y="2972.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Micronaut Session</text>
 </g>
 <g role="group" aria-label="Integrations &amp; APIs. Transactions &amp; Batching: Transactions API, XA Transactions (PRO only), Pipelining.">
-<rect x="0" y="2890" width="560" height="110" rx="16" fill="#F8FAFC" stroke="#475569" stroke-opacity="0.25" stroke-width="1.5" filter="url(#sh)" aria-hidden="true"/>
-<text x="20" y="2928" font-size="20" font-weight="700" fill="#0F172A" aria-hidden="true">Transactions &amp; Batching</text>
-<rect x="20" y="2942" width="167" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="103.5" y="2966.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Transactions API</text>
-<rect x="197" y="2942" width="202" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="211" y="2966.0" font-size="15" font-weight="500" text-anchor="start" fill="#334155" aria-hidden="true">XA Transactions</text>
-<rect x="353" y="2952.0" width="32" height="18" rx="5" fill="#C2161D" aria-hidden="true"/>
-<text x="369.0" y="2964.6" font-size="10" font-weight="800" letter-spacing="0.06em" text-anchor="middle" fill="#FFFFFF" aria-hidden="true">PRO</text>
-<rect x="409" y="2942" width="115" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="466.5" y="2966.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Pipelining</text>
+<rect x="0" y="3028" width="560" height="110" rx="16" fill="#F8FAFC" stroke="#475569" stroke-opacity="0.25" stroke-width="1.5" filter="url(#sh)" aria-hidden="true"/>
+<text x="20" y="3066" font-size="20" font-weight="700" fill="#0F172A" aria-hidden="true">Transactions &amp; Batching</text>
+<rect x="20" y="3080" width="158" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="99.0" y="3104.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Transactions API</text>
+<rect x="188" y="3080" width="198" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="202" y="3104.0" font-size="15" font-weight="500" text-anchor="start" fill="#334155" aria-hidden="true">XA Transactions</text>
+<rect x="340" y="3090.0" width="32" height="18" rx="5" fill="#C2161D" aria-hidden="true"/>
+<text x="356.0" y="3102.6" font-size="10" font-weight="800" letter-spacing="0.06em" text-anchor="middle" fill="#FFFFFF" aria-hidden="true">PRO</text>
+<rect x="396" y="3080" width="105" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="448.5" y="3104.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Pipelining</text>
 </g>
 <g role="group" aria-label="Deployment &amp; Operations. Valkey &amp; Redis Deployments: Single, Sentinel, Cluster, Replicated, Proxy (PRO only), Advanced Replicated (PRO only), Multi Cluster (PRO only), Multi Sentinel (PRO only).">
-<rect x="0" y="3064" width="560" height="206" rx="16" fill="#F8FAFC" stroke="#475569" stroke-opacity="0.25" stroke-width="1.5" filter="url(#sh)" aria-hidden="true"/>
-<text x="20" y="3102" font-size="20" font-weight="700" fill="#0F172A" aria-hidden="true">Valkey &amp; Redis Deployments</text>
-<rect x="20" y="3116" width="80" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="60.0" y="3140.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Single</text>
-<rect x="110" y="3116" width="97" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="158.5" y="3140.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Sentinel</text>
-<rect x="217" y="3116" width="88" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="261.0" y="3140.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Cluster</text>
-<rect x="315" y="3116" width="115" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="372.5" y="3140.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Replicated</text>
-<rect x="20" y="3164" width="115" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="34" y="3188.0" font-size="15" font-weight="500" text-anchor="start" fill="#334155" aria-hidden="true">Proxy</text>
-<rect x="89" y="3174.0" width="32" height="18" rx="5" fill="#C2161D" aria-hidden="true"/>
-<text x="105.0" y="3186.6" font-size="10" font-weight="800" letter-spacing="0.06em" text-anchor="middle" fill="#FFFFFF" aria-hidden="true">PRO</text>
-<rect x="145" y="3164" width="237" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="159" y="3188.0" font-size="15" font-weight="500" text-anchor="start" fill="#334155" aria-hidden="true">Advanced Replicated</text>
-<rect x="336" y="3174.0" width="32" height="18" rx="5" fill="#C2161D" aria-hidden="true"/>
-<text x="352.0" y="3186.6" font-size="10" font-weight="800" letter-spacing="0.06em" text-anchor="middle" fill="#FFFFFF" aria-hidden="true">PRO</text>
-<rect x="20" y="3212" width="185" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="34" y="3236.0" font-size="15" font-weight="500" text-anchor="start" fill="#334155" aria-hidden="true">Multi Cluster</text>
-<rect x="159" y="3222.0" width="32" height="18" rx="5" fill="#C2161D" aria-hidden="true"/>
-<text x="175.0" y="3234.6" font-size="10" font-weight="800" letter-spacing="0.06em" text-anchor="middle" fill="#FFFFFF" aria-hidden="true">PRO</text>
-<rect x="215" y="3212" width="193" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="229" y="3236.0" font-size="15" font-weight="500" text-anchor="start" fill="#334155" aria-hidden="true">Multi Sentinel</text>
-<rect x="362" y="3222.0" width="32" height="18" rx="5" fill="#C2161D" aria-hidden="true"/>
-<text x="378.0" y="3234.6" font-size="10" font-weight="800" letter-spacing="0.06em" text-anchor="middle" fill="#FFFFFF" aria-hidden="true">PRO</text>
+<rect x="0" y="3202" width="560" height="206" rx="16" fill="#F8FAFC" stroke="#475569" stroke-opacity="0.25" stroke-width="1.5" filter="url(#sh)" aria-hidden="true"/>
+<text x="20" y="3240" font-size="20" font-weight="700" fill="#0F172A" aria-hidden="true">Valkey &amp; Redis Deployments</text>
+<rect x="20" y="3254" width="76" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="58.0" y="3278.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Single</text>
+<rect x="106" y="3254" width="92" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="152.0" y="3278.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Sentinel</text>
+<rect x="208" y="3254" width="85" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="250.5" y="3278.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Cluster</text>
+<rect x="303" y="3254" width="111" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="358.5" y="3278.0" font-size="15" font-weight="500" text-anchor="middle" fill="#334155" aria-hidden="true">Replicated</text>
+<rect x="20" y="3302" width="115" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="34" y="3326.0" font-size="15" font-weight="500" text-anchor="start" fill="#334155" aria-hidden="true">Proxy</text>
+<rect x="89" y="3312.0" width="32" height="18" rx="5" fill="#C2161D" aria-hidden="true"/>
+<text x="105.0" y="3324.6" font-size="10" font-weight="800" letter-spacing="0.06em" text-anchor="middle" fill="#FFFFFF" aria-hidden="true">PRO</text>
+<rect x="145" y="3302" width="239" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="159" y="3326.0" font-size="15" font-weight="500" text-anchor="start" fill="#334155" aria-hidden="true">Advanced Replicated</text>
+<rect x="338" y="3312.0" width="32" height="18" rx="5" fill="#C2161D" aria-hidden="true"/>
+<text x="354.0" y="3324.6" font-size="10" font-weight="800" letter-spacing="0.06em" text-anchor="middle" fill="#FFFFFF" aria-hidden="true">PRO</text>
+<rect x="20" y="3350" width="172" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="34" y="3374.0" font-size="15" font-weight="500" text-anchor="start" fill="#334155" aria-hidden="true">Multi Cluster</text>
+<rect x="146" y="3360.0" width="32" height="18" rx="5" fill="#C2161D" aria-hidden="true"/>
+<text x="162.0" y="3372.6" font-size="10" font-weight="800" letter-spacing="0.06em" text-anchor="middle" fill="#FFFFFF" aria-hidden="true">PRO</text>
+<rect x="202" y="3350" width="181" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="216" y="3374.0" font-size="15" font-weight="500" text-anchor="start" fill="#334155" aria-hidden="true">Multi Sentinel</text>
+<rect x="337" y="3360.0" width="32" height="18" rx="5" fill="#C2161D" aria-hidden="true"/>
+<text x="353.0" y="3372.6" font-size="10" font-weight="800" letter-spacing="0.06em" text-anchor="middle" fill="#FFFFFF" aria-hidden="true">PRO</text>
 </g>
 <g role="group" aria-label="Deployment &amp; Operations. Security &amp; Monitoring: Passwords encryption (PRO only), Observability (PRO only).">
-<rect x="0" y="3292" width="560" height="110" rx="16" fill="#F8FAFC" stroke="#475569" stroke-opacity="0.25" stroke-width="1.5" filter="url(#sh)" aria-hidden="true"/>
-<text x="20" y="3330" font-size="20" font-weight="700" fill="#0F172A" aria-hidden="true">Security &amp; Monitoring</text>
-<rect x="20" y="3344" width="246" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="34" y="3368.0" font-size="15" font-weight="500" text-anchor="start" fill="#334155" aria-hidden="true">Passwords encryption</text>
-<rect x="220" y="3354.0" width="32" height="18" rx="5" fill="#C2161D" aria-hidden="true"/>
-<text x="236.0" y="3366.6" font-size="10" font-weight="800" letter-spacing="0.06em" text-anchor="middle" fill="#FFFFFF" aria-hidden="true">PRO</text>
-<rect x="276" y="3344" width="185" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
-<text x="290" y="3368.0" font-size="15" font-weight="500" text-anchor="start" fill="#334155" aria-hidden="true">Observability</text>
-<rect x="415" y="3354.0" width="32" height="18" rx="5" fill="#C2161D" aria-hidden="true"/>
-<text x="431.0" y="3366.6" font-size="10" font-weight="800" letter-spacing="0.06em" text-anchor="middle" fill="#FFFFFF" aria-hidden="true">PRO</text>
+<rect x="0" y="3430" width="560" height="110" rx="16" fill="#F8FAFC" stroke="#475569" stroke-opacity="0.25" stroke-width="1.5" filter="url(#sh)" aria-hidden="true"/>
+<text x="20" y="3468" font-size="20" font-weight="700" fill="#0F172A" aria-hidden="true">Security &amp; Monitoring</text>
+<rect x="20" y="3482" width="244" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="34" y="3506.0" font-size="15" font-weight="500" text-anchor="start" fill="#334155" aria-hidden="true">Passwords encryption</text>
+<rect x="218" y="3492.0" width="32" height="18" rx="5" fill="#C2161D" aria-hidden="true"/>
+<text x="234.0" y="3504.6" font-size="10" font-weight="800" letter-spacing="0.06em" text-anchor="middle" fill="#FFFFFF" aria-hidden="true">PRO</text>
+<rect x="274" y="3482" width="178" height="38" rx="9" fill="#EEF2F6" stroke="#94A3B8" stroke-width="1" aria-hidden="true"/>
+<text x="288" y="3506.0" font-size="15" font-weight="500" text-anchor="start" fill="#334155" aria-hidden="true">Observability</text>
+<rect x="406" y="3492.0" width="32" height="18" rx="5" fill="#C2161D" aria-hidden="true"/>
+<text x="422.0" y="3504.6" font-size="10" font-weight="800" letter-spacing="0.06em" text-anchor="middle" fill="#FFFFFF" aria-hidden="true">PRO</text>
 </g>
 </svg>
