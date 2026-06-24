@@ -136,8 +136,9 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                     break;
                 }
 
-                // Build entries first, then register slots only after the bounded wait succeeds, so a
-                // slow entry can't deadlock init and a straggler can't mutate manager state post-timeout.
+                // Build entries first, then register slots only for entries that finish within the
+                // bounded wait. A slow entry can't deadlock init, and a single failed master or slave
+                // no longer prevents the healthy masters from registering
                 Map<ClusterPartition, CompletableFuture<MasterSlaveEntry>> buildFutures = new LinkedHashMap<>();
                 for (ClusterPartition partition : partitions) {
                     if (partition.isMasterFail()) {
@@ -151,38 +152,45 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                     buildFutures.put(partition, buildMasterEntry(partition, cfg));
                 }
 
-                CompletableFuture<Void> all = CompletableFuture.allOf(buildFutures.values().toArray(new CompletableFuture[0]));
+                List<CompletableFuture<Void>> completedFutures = new ArrayList<>(buildFutures.size());
+                for (CompletableFuture<MasterSlaveEntry> bf : buildFutures.values()) {
+                    completedFutures.add(bf.handle((entry, ex) -> (Void) null));
+                }
+                CompletableFuture<Void> allSettled = CompletableFuture.allOf(completedFutures.toArray(new CompletableFuture[0]));
                 long timeoutMillis = (long) config.getConnectTimeout()
                         * (Math.max(1, config.getMasterConnectionMinimumIdleSize())
                          + Math.max(1, config.getSlaveConnectionMinimumIdleSize())
                          + Math.max(1, config.getSubscriptionConnectionMinimumIdleSize()));
-                Throwable initException = null;
                 try {
-                    all.get(timeoutMillis, TimeUnit.MILLISECONDS);
-                } catch (ExecutionException e) {
-                    initException = e.getCause();
+                    allSettled.get(timeoutMillis, TimeUnit.MILLISECONDS);
                 } catch (TimeoutException e) {
-                    initException = new RedisConnectionException(
+                    lastException = new RedisConnectionException(
                             "Timed out after " + timeoutMillis
                                     + "ms waiting for cluster master entries to initialize", e);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
-                    initException = new RedisConnectionException(e);
+                    lastException = new RedisConnectionException(e);
                 }
 
-                if (initException != null) {
-                    lastException = initException;
-                    // Shut down built pools, including stragglers that finish after the deadline.
-                    for (CompletableFuture<MasterSlaveEntry> bf : buildFutures.values()) {
+                for (Map.Entry<ClusterPartition, CompletableFuture<MasterSlaveEntry>> built : buildFutures.entrySet()) {
+                    CompletableFuture<MasterSlaveEntry> bf = built.getValue();
+                    if (bf.isDone() && !bf.isCompletedExceptionally()) {
+                        registerMasterEntry(bf.join(), built.getKey());
+                    } else {
+                        if (bf.isCompletedExceptionally()) {
+                            try {
+                                bf.join();
+                            } catch (CompletionException ce) {
+                                lastException = ce.getCause();
+                            }
+                        }
+                        // Failed build (already torn down by buildMasterEntry) or a straggler that
+                        // finishes after the deadline: shut its pool down so it can't leak or register late.
                         bf.whenComplete((entry, ex) -> {
                             if (entry != null) {
                                 entry.shutdownAsync();
                             }
                         });
-                    }
-                } else {
-                    for (Map.Entry<ClusterPartition, CompletableFuture<MasterSlaveEntry>> e : buildFutures.entrySet()) {
-                        registerMasterEntry(e.getValue().join(), e.getKey());
                     }
                 }
                 break;
@@ -354,9 +362,6 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         return buildMasterEntry(partition, cfg).thenAccept(entry -> registerMasterEntry(entry, partition));
     }
 
-    // Builds a master entry (master + slave pools) WITHOUT registering its slots. The caller registers
-    // via registerMasterEntry once the build is known to have succeeded. A failed build shuts down its
-    // own entry so a partially-built pool doesn't linger.
     private CompletableFuture<MasterSlaveEntry> buildMasterEntry(ClusterPartition partition, ClusterServersConfig cfg) {
         if (partition.isMasterFail()) {
             RedisException e = new RedisException("Failed to add master: " +
@@ -393,9 +398,12 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             CompletableFuture<RedisClient> f = entry.setupMasterEntry(new RedisURI(config.getMasterAddress()), configEndpointHostName);
             CompletableFuture<MasterSlaveEntry> entryFuture = f.thenCompose(masterClient -> {
                 if (!config.isSlaveNotUsed()) {
-                    CompletableFuture<Void> fs = entry.initSlaveBalancer(r -> configEndpointHostName);
-                    return fs.thenApply(r -> {
-                        if (!partition.getSlaveAddresses().isEmpty()) {
+                    return entry.initSlaveBalancer(r -> configEndpointHostName).handle((r, ex) -> {
+                        if (ex != null) {
+                            log.warn("Unable to init slave balancer for master: {} slot ranges: {}. "
+                                    + "Registering master-only. Slaves will be connected by the cluster monitor.",
+                                    partition.getMasterAddress(), partition.getSlotRanges(), ex);
+                        } else if (!partition.getSlaveAddresses().isEmpty()) {
                             log.info("slaves: {} added for master: {} slot ranges: {}",
                                     partition.getSlaveAddresses(), partition.getMasterAddress(), partition.getSlotRanges());
                             if (!partition.getFailedSlaveAddresses().isEmpty()) {
