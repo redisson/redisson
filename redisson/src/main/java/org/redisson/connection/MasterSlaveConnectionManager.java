@@ -548,6 +548,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     private NodeType getNodeType(NodeType type, InetSocketAddress address) {
+        if (!isInitialized()) {
+            // pre-init getEntry() can trigger lazyConnect and park the caller on the latch held by the connecting thread.
+            return type;
+        }
         if (getServiceManager().getCfg().isSingleConfig()) {
             return NodeType.MASTER;
         }
