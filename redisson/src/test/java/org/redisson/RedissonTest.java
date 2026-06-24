@@ -27,6 +27,7 @@ import org.redisson.client.codec.BaseCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
+import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.codec.SerializationCodec;
@@ -1357,8 +1358,8 @@ public class RedissonTest extends RedisDockerTest {
                     .setReadMode(ReadMode.SLAVE)
                     .setLoadBalancer(new RoundRobinLoadBalancer() {
                         @Override
-                        public ClientConnectionsEntry getEntry(List<ClientConnectionsEntry> clientsCopy) {
-                            ClientConnectionsEntry entry = super.getEntry(clientsCopy);
+                        public ClientConnectionsEntry getEntry(List<ClientConnectionsEntry> clientsCopy, RedisCommand<?> redisCommand) {
+                            ClientConnectionsEntry entry = super.getEntry(clientsCopy, redisCommand);
                             lastSlavePoolPick.set(entry);
                             return entry;
                         }
@@ -1411,8 +1412,8 @@ public class RedissonTest extends RedisDockerTest {
                     .setReadMode(ReadMode.SLAVE)
                     .setLoadBalancer(new RoundRobinLoadBalancer() {
                         @Override
-                        public ClientConnectionsEntry getEntry(List<ClientConnectionsEntry> clientsCopy) {
-                            ClientConnectionsEntry entry = super.getEntry(clientsCopy);
+                        public ClientConnectionsEntry getEntry(List<ClientConnectionsEntry> clientsCopy, RedisCommand<?> redisCommand) {
+                            ClientConnectionsEntry entry = super.getEntry(clientsCopy, redisCommand);
                             lastSlavePoolPick.set(entry);
                             return entry;
                         }
