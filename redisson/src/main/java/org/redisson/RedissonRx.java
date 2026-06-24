@@ -831,6 +831,26 @@ public final class RedissonRx implements RedissonRxClient {
     }
 
     @Override
+    public <V> RCircularBufferRx<V> getCircularBuffer(String name) {
+        return RxProxyBuilder.create(commandExecutor,
+                new RedissonCircularBuffer<V>(commandExecutor, name), RCircularBufferRx.class);
+    }
+
+    @Override
+    public <V> RCircularBufferRx<V> getCircularBuffer(String name, Codec codec) {
+        return RxProxyBuilder.create(commandExecutor,
+                new RedissonCircularBuffer<V>(codec, commandExecutor, name), RCircularBufferRx.class);
+    }
+
+    @Override
+    public <V> RCircularBufferRx<V> getCircularBuffer(PlainOptions options) {
+        PlainParams params = (PlainParams) options;
+        CommandRxExecutor ce = commandExecutor.copy(params);
+        return RxProxyBuilder.create(commandExecutor,
+                new RedissonCircularBuffer<V>(params.getCodec(), ce, params.getName()), RCircularBufferRx.class);
+    }
+
+    @Override
     public <V> RBlockingQueueRx<V> getBlockingQueue(String name) {
         RedissonBlockingQueue<V> queue = new RedissonBlockingQueue<V>(commandExecutor, name, null);
         return RxProxyBuilder.create(commandExecutor, queue, 

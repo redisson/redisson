@@ -205,6 +205,6 @@ public class RedissonRingBuffer<V> extends RedissonQueue<V> implements RRingBuff
 
     @Override
     public void clear() {
-        get(super.deleteAsync());
+        get(commandExecutor.writeAsync(getRawName(), RedisCommands.DEL_VOID, getRawName()));
     }
 }

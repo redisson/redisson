@@ -1054,6 +1054,22 @@ public final class Redisson implements RedissonClient {
     }
 
     @Override
+    public <V> RCircularBuffer<V> getCircularBuffer(String name) {
+        return new RedissonCircularBuffer<>(commandExecutor, name);
+    }
+
+    @Override
+    public <V> RCircularBuffer<V> getCircularBuffer(String name, Codec codec) {
+        return new RedissonCircularBuffer<>(codec, commandExecutor, name);
+    }
+
+    @Override
+    public <V> RCircularBuffer<V> getCircularBuffer(PlainOptions options) {
+        PlainParams params = (PlainParams) options;
+        return new RedissonCircularBuffer<>(params.getCodec(), commandExecutor.copy(params), params.getName());
+    }
+
+    @Override
     public <V> RBlockingQueue<V> getBlockingQueue(String name) {
         return new RedissonBlockingQueue<V>(commandExecutor, name, this);
     }

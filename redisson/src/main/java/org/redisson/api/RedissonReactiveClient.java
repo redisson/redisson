@@ -1484,6 +1484,41 @@ public interface RedissonReactiveClient {
     <V> RRingBufferReactive<V> getRingBuffer(PlainOptions options);
 
     /**
+     * Returns circular (ring) buffer instance by <code>name</code>.
+     * <p>
+     * Requires <b>Redis 8.8 or higher.</b>
+     *
+     * @param <V> value type
+     * @param name name of instance
+     * @return CircularBuffer object
+     */
+    <V> RCircularBufferReactive<V> getCircularBuffer(String name);
+
+    /**
+     * Returns circular (ring) buffer instance by <code>name</code>
+     * using provided <code>codec</code> for values.
+     * <p>
+     * Requires <b>Redis 8.8 or higher.</b>
+     *
+     * @param <V> value type
+     * @param name name of instance
+     * @param codec codec for values
+     * @return CircularBuffer object
+     */
+    <V> RCircularBufferReactive<V> getCircularBuffer(String name, Codec codec);
+
+    /**
+     * Returns circular (ring) buffer instance with specified <code>options</code>.
+     * <p>
+     * Requires <b>Redis 8.8 or higher.</b>
+     *
+     * @param <V> value type
+     * @param options instance options
+     * @return CircularBuffer object
+     */
+    <V> RCircularBufferReactive<V> getCircularBuffer(PlainOptions options);
+
+    /**
      * Returns blocking queue instance by name.
      * 
      * @param <V> type of values

@@ -903,6 +903,26 @@ public final class RedissonReactive implements RedissonReactiveClient {
     }
 
     @Override
+    public <V> RCircularBufferReactive<V> getCircularBuffer(String name) {
+        return ReactiveProxyBuilder.create(commandExecutor,
+                new RedissonCircularBuffer<V>(commandExecutor, name), RCircularBufferReactive.class);
+    }
+
+    @Override
+    public <V> RCircularBufferReactive<V> getCircularBuffer(String name, Codec codec) {
+        return ReactiveProxyBuilder.create(commandExecutor,
+                new RedissonCircularBuffer<V>(codec, commandExecutor, name), RCircularBufferReactive.class);
+    }
+
+    @Override
+    public <V> RCircularBufferReactive<V> getCircularBuffer(PlainOptions options) {
+        PlainParams params = (PlainParams) options;
+        CommandReactiveExecutor ca = commandExecutor.copy(params);
+        return ReactiveProxyBuilder.create(commandExecutor,
+                new RedissonCircularBuffer<V>(params.getCodec(), ca, params.getName()), RCircularBufferReactive.class);
+    }
+
+    @Override
     public <V> RBlockingQueueReactive<V> getBlockingQueue(String name) {
         RedissonBlockingQueue<V> queue = new RedissonBlockingQueue<V>(commandExecutor, name, null);
         return ReactiveProxyBuilder.create(commandExecutor, queue, 
