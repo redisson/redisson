@@ -18,6 +18,7 @@ package org.redisson;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -143,6 +144,42 @@ public class RedissonRingBuffer<V> extends RedissonQueue<V> implements RRingBuff
     @Override
     public int capacity() {
         return get(capacityAsync());
+    }
+
+    @Override
+    public List<V> readNewest(int count) {
+        return get(readNewestAsync(count));
+    }
+
+    @Override
+    public RFuture<List<V>> readNewestAsync(int count) {
+        if (count <= 0) {
+            return new CompletableFutureWrapper<>(Collections.<V>emptyList());
+        }
+        return rangeAsync(-count, -1);
+    }
+
+    @Override
+    public List<V> readOldest(int count) {
+        return get(readOldestAsync(count));
+    }
+
+    @Override
+    public RFuture<List<V>> readOldestAsync(int count) {
+        if (count <= 0) {
+            return new CompletableFutureWrapper<>(Collections.<V>emptyList());
+        }
+        return rangeAsync(0, count - 1);
+    }
+
+    @Override
+    public V peekLast() {
+        return get(peekLastAsync());
+    }
+
+    @Override
+    public RFuture<V> peekLastAsync() {
+        return getAsync(-1);
     }
 
     @Override

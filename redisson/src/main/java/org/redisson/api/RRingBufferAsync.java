@@ -15,6 +15,8 @@
  */
 package org.redisson.api;
 
+import java.util.List;
+
 /**
  * RingBuffer based queue evicts elements from the head if queue capacity became full.
  * <p>
@@ -58,5 +60,39 @@ public interface RRingBufferAsync<V> extends RQueueAsync<V> {
      * @return queue capacity
      */
     RFuture<Integer> capacityAsync();
+
+    /**
+     * Returns the newest (most recently added) elements of this buffer.
+     * At most <code>count</code> elements are returned, ordered from oldest
+     * to newest (same order as {@link #readAllAsync()}). Doesn't remove elements.
+     * <p>
+     * If <code>count</code> is greater than the current size, all elements are returned.
+     *
+     * @param count - maximum number of elements to return
+     * @return list of the newest elements, or an empty list if this buffer is
+     *         empty or <code>count</code> is non-positive
+     */
+    RFuture<List<V>> readNewestAsync(int count);
+
+    /**
+     * Returns the oldest elements of this buffer.
+     * At most <code>count</code> elements are returned, ordered from oldest
+     * to newest (same order as {@link #readAllAsync()}). Doesn't remove elements.
+     * <p>
+     * If <code>count</code> is greater than the current size, all elements are returned.
+     *
+     * @param count - maximum number of elements to return
+     * @return list of the oldest elements, or an empty list if this buffer is
+     *         empty or <code>count</code> is non-positive
+     */
+    RFuture<List<V>> readOldestAsync(int count);
+
+    /**
+     * Retrieves, but doesn't remove, the newest (most recently added) element of this buffer,
+     * or returns <code>null</code> if this buffer is empty.
+     *
+     * @return the newest element, or <code>null</code> if this buffer is empty
+     */
+    RFuture<V> peekLastAsync();
     
 }
