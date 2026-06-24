@@ -6,6 +6,7 @@ import org.redisson.api.RFuture;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.redisnode.RedisClusterMaster;
 import org.redisson.api.redisnode.RedisNodes;
+import org.redisson.client.protocol.RedisCommand;
 import org.redisson.config.Config;
 import org.redisson.config.ReadMode;
 import org.redisson.config.SubscriptionMode;
@@ -323,8 +324,8 @@ public class RedissonFailoverTest extends RedisDockerTest {
                     .setReadMode(ReadMode.SLAVE)
                     .setLoadBalancer(new RoundRobinLoadBalancer() {
                         @Override
-                        public ClientConnectionsEntry getEntry(List<ClientConnectionsEntry> clientsCopy) {
-                            ClientConnectionsEntry entry = super.getEntry(clientsCopy);
+                        public ClientConnectionsEntry getEntry(List<ClientConnectionsEntry> clientsCopy, RedisCommand<?> redisCommand) {
+                            ClientConnectionsEntry entry = super.getEntry(clientsCopy, redisCommand);
                             lastUsedConn.set(entry);
                             return entry;
                         }
