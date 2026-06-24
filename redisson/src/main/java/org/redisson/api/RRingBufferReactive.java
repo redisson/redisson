@@ -17,6 +17,7 @@ package org.redisson.api;
 
 import java.util.List;
 
+import org.redisson.api.annotation.EmptyAsAbsent;
 import reactor.core.publisher.Mono;
 
 /**
@@ -74,6 +75,7 @@ public interface RRingBufferReactive<V> extends RQueueReactive<V> {
      * @return list of the newest elements, or an empty list if this buffer is
      *         empty or <code>count</code> is non-positive
      */
+    @EmptyAsAbsent
     Mono<List<V>> readNewest(int count);
 
     /**
@@ -87,6 +89,7 @@ public interface RRingBufferReactive<V> extends RQueueReactive<V> {
      * @return list of the oldest elements, or an empty list if this buffer is
      *         empty or <code>count</code> is non-positive
      */
+    @EmptyAsAbsent
     Mono<List<V>> readOldest(int count);
 
     /**
