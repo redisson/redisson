@@ -22,7 +22,7 @@ package org.redisson.client.protocol.convertor;
  */
 public class BooleanNumberReplayConvertor implements Convertor<Boolean> {
 
-    private long number;
+    private final long number;
 
     public BooleanNumberReplayConvertor(long number) {
         super();
