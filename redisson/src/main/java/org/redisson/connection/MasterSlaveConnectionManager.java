@@ -138,7 +138,23 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                     RedisURI address = new RedisURI(addr.getScheme()
                                  + "://" + connection.getRedisClient().getAddr().getAddress().getHostAddress()
                                  + ":" + connection.getRedisClient().getAddr().getPort());
-                    nodeConnections.put(address, connection);
+                    // Distinct hostnames can resolve to one address (proxied cluster), so install
+                    // atomically to avoid leaving two live sockets: reuse an active winner, replace
+                    // a stale entry.
+                    while (true) {
+                        RedisConnection existing = nodeConnections.putIfAbsent(address, connection);
+                        if (existing == null || existing == connection) {
+                            break;
+                        }
+                        if (existing.isActive()) {
+                            nodeConnections.put(addr, existing);
+                            connection.getRedisClient().shutdownAsync();
+                            return CompletableFuture.completedFuture(existing);
+                        }
+                        if (nodeConnections.replace(address, existing, connection)) {
+                            break;
+                        }
+                    }
                 }
                 nodeConnections.put(addr, connection);
                 return CompletableFuture.completedFuture(connection);

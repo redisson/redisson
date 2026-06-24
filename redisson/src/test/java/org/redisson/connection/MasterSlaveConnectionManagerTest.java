@@ -1,20 +1,25 @@
 package org.redisson.connection;
 
 import mockit.Expectations;
+import mockit.Injectable;
 import mockit.Invocation;
 import mockit.Mock;
 import mockit.MockUp;
 import mockit.Mocked;
+import mockit.Verifications;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.NodeType;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisClientConfig;
+import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisConnectionException;
 import org.redisson.config.*;
 
+import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.RedisURI;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.concurrent.*;
@@ -294,6 +299,120 @@ public class MasterSlaveConnectionManagerTest {
             redisConfig.getConnectedListener().accept(addr);
 
             Assertions.assertThat(emittedNodeType.get()).isEqualTo(NodeType.MASTER);
+        } finally {
+            manager.shutdown(0, 0, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    void connectToNodeReusesConnectionWhenHostnamesResolveToSameAddress(
+            @Injectable RedisClient seedClient, @Injectable RedisConnection seedConnection,
+            @Injectable RedisClient nodeClient, @Injectable RedisConnection nodeConnection)
+            throws Exception {
+        Config config = new Config();
+        MasterSlaveServersConfig msConfig = config.useMasterSlaveServers();
+        msConfig.setMasterAddress("redis://127.0.0.1:6379");
+        msConfig.setReadMode(ReadMode.MASTER);
+
+        // Two distinct hostnames (config endpoint + CLUSTER NODES address) that resolve to one
+        // address — the serverless proxy case. The first call connects via seedClient; the second
+        // must detect seedConnection already holds that resolved address and reuse it.
+        RedisURI seedUri = new RedisURI("redis://config-endpoint.example:6379");
+        RedisURI nodeUri = new RedisURI("redis://cluster-node.example:6379");
+        InetSocketAddress resolved =
+                new InetSocketAddress(InetAddress.getByName("10.0.0.1"), 6379);
+
+        MasterSlaveConnectionManager manager = new MasterSlaveConnectionManager(msConfig, config) {
+            @Override
+            protected RedisClient createClient(NodeType type, RedisURI address, int timeout,
+                    int commandTimeout, String sslHostname) {
+                return address.equals(seedUri) ? seedClient : nodeClient;
+            }
+        };
+
+        try {
+            new Expectations() {{
+                seedClient.connectAsync(); result = new CompletableFutureWrapper<>(seedConnection);
+                seedConnection.isActive(); result = true;
+                seedConnection.getRedisClient(); result = seedClient; minTimes = 0;
+                seedClient.getAddr(); result = resolved;
+
+                nodeClient.connectAsync(); result = new CompletableFutureWrapper<>(nodeConnection);
+                nodeConnection.isActive(); result = true;
+                nodeConnection.getRedisClient(); result = nodeClient;
+                nodeClient.getAddr(); result = resolved;
+            }};
+
+            RedisConnection first = manager
+                    .connectToNode(NodeType.MASTER, msConfig, seedUri, seedUri.getHost())
+                    .toCompletableFuture().get(5, TimeUnit.SECONDS);
+            RedisConnection second = manager
+                    .connectToNode(NodeType.MASTER, msConfig, nodeUri, nodeUri.getHost())
+                    .toCompletableFuture().get(5, TimeUnit.SECONDS);
+
+            // the second call reuses the seed connection rather than holding a second socket
+            Assertions.assertThat(first).isSameAs(seedConnection);
+            Assertions.assertThat(second).isSameAs(seedConnection);
+
+            // and the redundant client opened by the second call is shut down
+            new Verifications() {{
+                nodeClient.shutdownAsync(); times = 1;
+            }};
+        } finally {
+            manager.shutdown(0, 0, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    void connectToNodeReplacesStaleEntryWhenExistingResolvedConnectionIsInactive(
+            @Injectable RedisClient seedClient, @Injectable RedisConnection seedConnection,
+            @Injectable RedisClient nodeClient, @Injectable RedisConnection nodeConnection)
+            throws Exception {
+        Config config = new Config();
+        MasterSlaveServersConfig msConfig = config.useMasterSlaveServers();
+        msConfig.setMasterAddress("redis://127.0.0.1:6379");
+        msConfig.setReadMode(ReadMode.MASTER);
+
+        RedisURI seedUri = new RedisURI("redis://config-endpoint.example:6379");
+        RedisURI nodeUri = new RedisURI("redis://cluster-node.example:6379");
+        InetSocketAddress resolved =
+                new InetSocketAddress(InetAddress.getByName("10.0.0.1"), 6379);
+
+        MasterSlaveConnectionManager manager = new MasterSlaveConnectionManager(msConfig, config) {
+            @Override
+            protected RedisClient createClient(NodeType type, RedisURI address, int timeout,
+                    int commandTimeout, String sslHostname) {
+                return address.equals(seedUri) ? seedClient : nodeClient;
+            }
+        };
+
+        try {
+            new Expectations() {{
+                seedClient.connectAsync(); result = new CompletableFutureWrapper<>(seedConnection);
+                // active at install time, but dead by the time the second call inspects it
+                seedConnection.isActive(); returns(true, false);
+                seedConnection.getRedisClient(); result = seedClient; minTimes = 0;
+                seedClient.getAddr(); result = resolved;
+
+                nodeClient.connectAsync(); result = new CompletableFutureWrapper<>(nodeConnection);
+                nodeConnection.isActive(); result = true;
+                nodeConnection.getRedisClient(); result = nodeClient;
+                nodeClient.getAddr(); result = resolved;
+            }};
+
+            manager.connectToNode(NodeType.MASTER, msConfig, seedUri, seedUri.getHost())
+                    .toCompletableFuture().get(5, TimeUnit.SECONDS);
+            RedisConnection second = manager
+                    .connectToNode(NodeType.MASTER, msConfig, nodeUri, nodeUri.getHost())
+                    .toCompletableFuture().get(5, TimeUnit.SECONDS);
+
+            // a dead resolved-IP entry must be replaced by the new connection, not reused
+            Assertions.assertThat(second).isSameAs(nodeConnection);
+
+            // and the new connection's client must not be shut down
+            new Verifications() {{
+                nodeClient.shutdownAsync(); times = 0;
+            }};
         } finally {
             manager.shutdown(0, 0, TimeUnit.SECONDS);
         }
