@@ -3,6 +3,11 @@ package org.redisson;
 import org.joor.Reflect;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.redisson.client.RedisClient;
+import org.redisson.client.RedisClientConfig;
+import org.redisson.client.RedisConnection;
+import org.redisson.client.codec.StringCodec;
+import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.config.NameMapper;
 import org.redisson.api.RLock;
 import org.redisson.api.RScript;
@@ -20,6 +25,7 @@ import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -411,7 +417,7 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
         // fail to get the lock, keeping ttl of lock ttl + 200ms
         locked = lock.tryLockInnerAsync(5000, leaseTime, TimeUnit.MILLISECONDS, threadThirdWaiter, RedisCommands.EVAL_NULL_BOOLEAN).toCompletableFuture().join();;
         Assertions.assertFalse(locked);
-        
+
         Thread.sleep(500);
 
         locked = lock.tryLockInnerAsync(5000, leaseTime, TimeUnit.MILLISECONDS, threadThirdWaiter, RedisCommands.EVAL_NULL_BOOLEAN).toCompletableFuture().join();;
@@ -1001,5 +1007,89 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
         redisson.shutdown();
     }
 
+    @Test
+    public void testAcquireFailedNotCalledOnRedisTimeout() throws Exception {
+        Config config = createConfig();
+        config.useSingleServer().setTimeout(1000)
+                .setRetryAttempts(10);
+        RedissonClient redisson = Redisson.create(config);
+
+        String lockName = "testAcquireFailedNotCalled";
+
+        CountDownLatch hLocked = new CountDownLatch(1);
+        Thread holder = new Thread(() -> {
+            RLock l = redisson.getFairLock(lockName);
+            l.lock(10, TimeUnit.SECONDS);
+            hLocked.countDown();
+        });
+
+        CountDownLatch hLocked2 = new CountDownLatch(1);
+        Thread holder2 = new Thread(() -> {
+            RLock l = redisson.getFairLock(lockName);
+            l.lock(10, TimeUnit.SECONDS);
+            hLocked2.countDown();
+        });
+
+        AtomicReference<Exception> aException = new AtomicReference<>();
+        CountDownLatch aDone = new CountDownLatch(1);
+        Thread a = new Thread(() -> {
+            RLock l = redisson.getFairLock(lockName);
+            try {
+                l.tryLock(60, 1, TimeUnit.SECONDS);
+            } catch (Exception e) {
+                aException.set(e);
+            } finally {
+                aDone.countDown();
+            }
+        });
+
+        holder.start();
+        hLocked.await();
+        holder2.start();
+
+        Thread.sleep(200);
+        RedissonFairLock lock = (RedissonFairLock) redisson.getFairLock(lockName);
+        List<String> queue = redisson.getScript(StringCodec.INSTANCE).eval(
+                RScript.Mode.READ_ONLY,
+                "return redis.call('lrange', KEYS[1], 0, -1);",
+                RScript.ReturnType.LIST,
+                Collections.singletonList(lock.threadsQueueName));
+
+        assertThat(queue).isNotEmpty();
+
+        a.start();
+
+        Thread.sleep(100);
+        queue = redisson.getScript(StringCodec.INSTANCE).eval(
+                RScript.Mode.READ_ONLY,
+                "return redis.call('lrange', KEYS[1], 0, -1);",
+                RScript.ReturnType.LIST,
+                Collections.singletonList(lock.threadsQueueName));
+
+        assertThat(queue).hasSize(2);
+
+        RedisClientConfig cc = new RedisClientConfig();
+        cc.setAddress(redisson.getConfig().useSingleServer().getAddress());
+        RedisClient c = RedisClient.create(cc);
+        RedisConnection ccc = c.connect();
+        ccc.sync(new RedisStrictCommand<Void>("CLIENT", "PAUSE"), "30000", "WRITE");
+
+        aDone.await(20, TimeUnit.SECONDS);
+
+        ccc.sync(new RedisStrictCommand<Void>("CLIENT", "UNPAUSE"));
+        ccc.close();
+
+        Thread.sleep(1000);
+        queue = redisson.getScript(StringCodec.INSTANCE).eval(
+                RScript.Mode.READ_ONLY,
+                "return redis.call('lrange', KEYS[1], 0, -1);",
+                RScript.ReturnType.LIST,
+                Collections.singletonList(lock.threadsQueueName));
+
+        assertThat(queue).isEmpty();
+        Assertions.assertNull(aException.get());
+
+        redisson.shutdown();
+    }
 
 }
