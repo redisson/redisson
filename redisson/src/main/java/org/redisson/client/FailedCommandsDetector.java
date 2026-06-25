@@ -27,9 +27,9 @@ import java.util.concurrent.ConcurrentSkipListSet;
  */
 public class FailedCommandsDetector implements FailedNodeDetector {
 
-    private long checkInterval;
+    protected long checkInterval;
 
-    private long failedCommandsLimit;
+    protected long failedCommandsLimit;
 
     private final NavigableSet<Long> failedCommands = new ConcurrentSkipListSet<>();
 
@@ -108,6 +108,11 @@ public class FailedCommandsDetector implements FailedNodeDetector {
             return true;
         }
         return false;
+    }
+
+    @Override
+    public FailedNodeDetector copy() {
+        return new FailedCommandsDetector(checkInterval, (int) failedCommandsLimit);
     }
 
 }
