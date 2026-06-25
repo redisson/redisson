@@ -401,8 +401,8 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
         try {
             return valueBuf.equals(oldValueBuf);
         } finally {
-            valueBuf.readableBytes();
-            oldValueBuf.readableBytes();
+            valueBuf.release();
+            oldValueBuf.release();
         }
     }
     
