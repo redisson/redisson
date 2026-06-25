@@ -30,6 +30,8 @@ import java.util.concurrent.ExecutionException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.AbstractMap;
+
 public class RedissonMapTest extends BaseMapTest {
 
     @Test
@@ -456,6 +458,15 @@ public class RedissonMapTest extends BaseMapTest {
 
         String val = map.get(2);
         assertThat(val).isEqualTo("33");
+    }
+
+    @Test
+    public void testEntrySetContains() {
+        RMap<String, String> map = redisson.getMap("simple");
+        map.put("1", "2");
+
+        assertThat(map.entrySet().contains(new AbstractMap.SimpleEntry<>("1", "2"))).isTrue();
+        assertThat(map.entrySet().contains(new AbstractMap.SimpleEntry<>("1", "3"))).isFalse();
     }
 
     @Test
