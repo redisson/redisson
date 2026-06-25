@@ -73,7 +73,7 @@ public class RedissonFairLock extends RedissonLock implements RLock {
             wait = unit.toMillis(waitTime);
         }
 
-        RFuture<Void> f = evalWriteSyncedNoRetryAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_VOID,
+        RFuture<Void> f = commandExecutor.syncedEvalWithRetry(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_VOID,
                 // get the existing timeout for the thread to remove
                 "local queue = redis.call('lrange', KEYS[1], 0, -1);" +
                         // find the location in the queue where the thread is

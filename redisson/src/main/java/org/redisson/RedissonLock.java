@@ -17,6 +17,7 @@ package org.redisson;
 
 import io.netty.util.Timeout;
 import org.redisson.api.RFuture;
+import org.redisson.client.RedisResponseTimeoutException;
 import org.redisson.client.RedisTimeoutException;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
@@ -270,7 +271,14 @@ public class RedissonLock extends RedissonBaseLock {
         
             while (true) {
                 long currentTime = System.currentTimeMillis();
-                ttl = tryAcquire(waitTime, leaseTime, unit, threadId);
+                try {
+                    ttl = tryAcquire(waitTime, leaseTime, unit, threadId);
+                } catch (RedisResponseTimeoutException e) {
+                    LOGGER.error(e.getMessage(), e);
+                    acquireFailed(waitTime, unit, threadId);
+                    return false;
+                }
+
                 // lock acquired
                 if (ttl == null) {
                     return true;
