@@ -17,6 +17,8 @@ package org.redisson.connection.pool;
 
 import org.redisson.api.NodeType;
 import org.redisson.client.FailedNodeDetector;
+import org.redisson.client.NodeFailureReporter;
+import org.redisson.client.NodeFailureStage;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisConnectionException;
 import org.redisson.client.protocol.RedisCommand;
@@ -120,6 +122,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
         });
         result.whenComplete((r, e) -> {
             if (e != null) {
+                NodeFailureReporter.report(entry.getClient(), NodeFailureStage.POOL_ACQUIRE, command, e, -1, -1);
                 if (entry.getNodeType() == NodeType.SLAVE) {
                     FailedNodeDetector detector = entry.getClient().getConfig().getFailedNodeDetector();
                     detector.onConnectFailed(e);

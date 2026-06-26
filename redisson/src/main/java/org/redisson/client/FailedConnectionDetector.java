@@ -86,6 +86,13 @@ public class FailedConnectionDetector implements FailedNodeDetector {
     }
 
     @Override
+    public FailedNodeDetector copy() {
+        FailedConnectionDetector copy = new FailedConnectionDetector();
+        copy.checkInterval = checkInterval;
+        return copy;
+    }
+
+    @Override
     public boolean isNodeFailed() {
         if (firstFailTime.get() != 0 && checkInterval > 0) {
             return System.currentTimeMillis() - firstFailTime.get() > checkInterval;

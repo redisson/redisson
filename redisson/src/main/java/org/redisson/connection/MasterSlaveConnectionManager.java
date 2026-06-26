@@ -132,7 +132,13 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
         RedisClient client = createClient(type, addr, cfg.getConnectTimeout(), cfg.getTimeout(), sslHostname);
         CompletionStage<RedisConnection> future = client.connectAsync();
-        return future.thenCompose(connection -> {
+        return future.handle((connection, e) -> {
+            if (e != null) {
+                NodeFailureReporter.report(client, NodeFailureStage.TOPOLOGY, e);
+                CompletableFuture<RedisConnection> f = new CompletableFuture<>();
+                f.completeExceptionally(e);
+                return f;
+            }
             if (connection.isActive()) {
                 if (!addr.isIP()) {
                     RedisURI address = new RedisURI(addr.getScheme()
@@ -145,10 +151,12 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             } else {
                 connection.closeAsync();
                 CompletableFuture<RedisConnection> f = new CompletableFuture<>();
-                f.completeExceptionally(new RedisException("Connection to " + connection.getRedisClient().getAddr() + " is not active!"));
+                RedisException exception = new RedisException("Connection to " + connection.getRedisClient().getAddr() + " is not active!");
+                NodeFailureReporter.report(client, NodeFailureStage.TOPOLOGY, exception);
+                f.completeExceptionally(exception);
                 return f;
             }
-        });
+        }).thenCompose(Function.identity());
     }
 
     @Override
@@ -455,6 +463,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         Config serviceCfg = serviceManager.getCfg();
         RedisClientConfig redisConfig = new RedisClientConfig();
         redisConfig.setAddress(address)
+                .setNodeType(type)
                 .setTimer(serviceManager.getTimer())
                 .setExecutor(serviceManager.getExecutor())
                 .setResolverGroup(serviceManager.getResolverGroup())

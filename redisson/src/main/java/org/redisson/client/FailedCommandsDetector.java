@@ -95,6 +95,18 @@ public class FailedCommandsDetector implements FailedNodeDetector {
     }
 
     @Override
+    public FailedNodeDetector copy() {
+        FailedCommandsDetector copy = new FailedCommandsDetector();
+        copySettingsTo(copy);
+        return copy;
+    }
+
+    protected void copySettingsTo(FailedCommandsDetector copy) {
+        copy.checkInterval = checkInterval;
+        copy.failedCommandsLimit = failedCommandsLimit;
+    }
+
+    @Override
     public boolean isNodeFailed() {
         if (failedCommandsLimit == 0) {
             throw new IllegalArgumentException("failedCommandsLimit isn't set");

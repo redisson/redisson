@@ -153,6 +153,10 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
                                 }
                                 refresh(connection, channel);
                             } else {
+                                NodeFailureReporter.report(
+                                        connection.getRedisClient(),
+                                        NodeFailureStage.WATCHDOG_RECONNECT,
+                                        e);
                                 channel.close();
                                 reconnect(connection, nextAttempt);
                             }
@@ -161,10 +165,16 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
                     }
                 }
 
+                if (!future.isSuccess()) {
+                    NodeFailureReporter.report(
+                            connection.getRedisClient(),
+                            NodeFailureStage.WATCHDOG_RECONNECT,
+                            future.cause());
+                }
                 reconnect(connection, nextAttempt);
             });
         } catch (RejectedExecutionException e) {
-            // skip
+            NodeFailureReporter.report(connection.getRedisClient(), NodeFailureStage.WATCHDOG_RECONNECT, e);
         }
     }
 

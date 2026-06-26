@@ -19,6 +19,8 @@ import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.redisson.api.RFuture;
+import org.redisson.client.NodeFailureReporter;
+import org.redisson.client.NodeFailureStage;
 import org.redisson.client.RedisClientConfig;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisRetryException;
@@ -33,7 +35,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 
+ *
  * @author Nikita Koksharov
  *
  */
@@ -41,7 +43,7 @@ import java.util.concurrent.TimeUnit;
 public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
 
     private static final Logger log = LoggerFactory.getLogger(PingConnectionHandler.class);
-    
+
     private final RedisClientConfig config;
 
     public PingConnectionHandler(RedisClientConfig config) {
@@ -99,6 +101,7 @@ public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
                 } else {
                     sendPing(ctx);
                 }
+                NodeFailureReporter.report(connection.getRedisClient(), NodeFailureStage.PING, RedisCommands.PING, cause, -1, -1);
                 connection.getRedisClient().getConfig().getFailedNodeDetector().onPingFailed(cause);
             } else if (future != null) {
                 connection.getRedisClient().getConfig().getFailedNodeDetector().onPingSuccessful();
