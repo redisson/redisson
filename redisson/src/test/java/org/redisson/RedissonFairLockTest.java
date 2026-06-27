@@ -3,6 +3,7 @@ package org.redisson;
 import org.joor.Reflect;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.redisson.api.RList;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisClientConfig;
 import org.redisson.client.RedisConnection;
@@ -1049,24 +1050,12 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
 
         Thread.sleep(200);
         RedissonFairLock lock = (RedissonFairLock) redisson.getFairLock(lockName);
-        List<String> queue = redisson.getScript(StringCodec.INSTANCE).eval(
-                RScript.Mode.READ_ONLY,
-                "return redis.call('lrange', KEYS[1], 0, -1);",
-                RScript.ReturnType.LIST,
-                Collections.singletonList(lock.threadsQueueName));
-
-        assertThat(queue).isNotEmpty();
+        RList<String> queue = redisson.getList(lock.threadsQueueName, StringCodec.INSTANCE);
+        assertThat(queue.readAll()).isNotEmpty();
 
         a.start();
-
         Thread.sleep(100);
-        queue = redisson.getScript(StringCodec.INSTANCE).eval(
-                RScript.Mode.READ_ONLY,
-                "return redis.call('lrange', KEYS[1], 0, -1);",
-                RScript.ReturnType.LIST,
-                Collections.singletonList(lock.threadsQueueName));
-
-        assertThat(queue).hasSize(2);
+        assertThat(queue.readAll()).hasSize(2);
 
         RedisClientConfig cc = new RedisClientConfig();
         cc.setAddress(redisson.getConfig().useSingleServer().getAddress());
@@ -1080,13 +1069,8 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
         ccc.close();
 
         Thread.sleep(1000);
-        queue = redisson.getScript(StringCodec.INSTANCE).eval(
-                RScript.Mode.READ_ONLY,
-                "return redis.call('lrange', KEYS[1], 0, -1);",
-                RScript.ReturnType.LIST,
-                Collections.singletonList(lock.threadsQueueName));
 
-        assertThat(queue).isEmpty();
+        assertThat(queue.readAll()).isEmpty();
         Assertions.assertNull(aException.get());
 
         redisson.shutdown();
