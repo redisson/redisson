@@ -130,7 +130,9 @@ public class RedisClientConfig {
         this.sslKeyManagerFactory = config.sslKeyManagerFactory;
         this.sslTrustManagerFactory = config.sslTrustManagerFactory;
         this.commandMapper = config.commandMapper;
-        this.failedNodeDetector = config.failedNodeDetector;
+        if (config.failedNodeDetector != null) {
+            this.failedNodeDetector = config.failedNodeDetector.copy();
+        }
         this.tcpKeepAliveCount = config.tcpKeepAliveCount;
         this.tcpKeepAliveIdle = config.tcpKeepAliveIdle;
         this.tcpKeepAliveInterval = config.tcpKeepAliveInterval;
