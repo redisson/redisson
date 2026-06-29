@@ -132,6 +132,7 @@ public class RedisClientConfig {
         this.commandMapper = config.commandMapper;
         if (config.failedNodeDetector != null) {
             this.failedNodeDetector = config.failedNodeDetector.copy();
+            this.failedNodeDetector.setNodeAddress(getNodeAddress());
         }
         this.tcpKeepAliveCount = config.tcpKeepAliveCount;
         this.tcpKeepAliveIdle = config.tcpKeepAliveIdle;
@@ -182,6 +183,17 @@ public class RedisClientConfig {
     }
     public InetSocketAddress getAddr() {
         return addr;
+    }
+
+    private InetSocketAddress getNodeAddress() {
+        if (addr != null) {
+            return addr;
+        }
+        if (address == null) {
+            return null;
+        }
+
+        return InetSocketAddress.createUnresolved(address.getHost(), address.getPort());
     }
     
     public Timer getTimer() {
