@@ -91,7 +91,7 @@ public class RedissonSetMultimap<K, V> extends RedissonMultimap<K, V> implements
                         "end; " +
                     "end;" +
                 "end; " +
-                "return 0; ",
+                "return size; ",
                 Arrays.asList(getRawName()),
                 args.toArray());
     }
