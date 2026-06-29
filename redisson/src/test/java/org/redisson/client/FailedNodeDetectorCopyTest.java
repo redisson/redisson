@@ -16,6 +16,9 @@
 package org.redisson.client;
 
 import org.junit.jupiter.api.Test;
+import org.redisson.misc.RedisURI;
+
+import java.net.InetSocketAddress;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -73,12 +76,42 @@ class FailedNodeDetectorCopyTest {
         assertThat(copy.getFailedNodeDetector()).isNotSameAs(detector);
     }
 
+    @Test
+    void redisClientConfigCopyAssignsResolvedAddress() {
+        TrackingDetector detector = new TrackingDetector();
+        InetSocketAddress address = new InetSocketAddress("127.0.0.1", 6379);
+        RedisURI uri = new RedisURI("redis://localhost:6379");
+        RedisClientConfig config = new RedisClientConfig()
+                .setAddress(address, uri)
+                .setFailedNodeDetector(detector);
+
+        RedisClientConfig copy = new RedisClientConfig(config);
+
+        assertThat(((TrackingDetector) copy.getFailedNodeDetector()).address).isEqualTo(address);
+    }
+
+    @Test
+    void redisClientConfigCopyAssignsUnresolvedUriAddress() {
+        TrackingDetector detector = new TrackingDetector();
+        RedisClientConfig config = new RedisClientConfig()
+                .setAddress("redis://redis.example.com:6379")
+                .setFailedNodeDetector(detector);
+
+        RedisClientConfig copy = new RedisClientConfig(config);
+        InetSocketAddress address = ((TrackingDetector) copy.getFailedNodeDetector()).address;
+
+        assertThat(address.getHostString()).isEqualTo("redis.example.com");
+        assertThat(address.getPort()).isEqualTo(6379);
+        assertThat(address.isUnresolved()).isTrue();
+    }
+
     private void failCommand(FailedNodeDetector detector, Throwable cause) throws Exception {
         detector.onCommandFailed(cause);
         Thread.sleep(2);
     }
 
     private static final class TrackingDetector implements FailedNodeDetector {
+        private InetSocketAddress address;
 
         @Override
         public void onConnectSuccessful() {
@@ -107,6 +140,11 @@ class FailedNodeDetectorCopyTest {
         @Override
         public boolean isNodeFailed() {
             return false;
+        }
+
+        @Override
+        public void setNodeAddress(InetSocketAddress address) {
+            this.address = address;
         }
 
         @Override
