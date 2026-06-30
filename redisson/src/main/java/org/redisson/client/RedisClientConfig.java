@@ -130,7 +130,10 @@ public class RedisClientConfig {
         this.sslKeyManagerFactory = config.sslKeyManagerFactory;
         this.sslTrustManagerFactory = config.sslTrustManagerFactory;
         this.commandMapper = config.commandMapper;
-        this.failedNodeDetector = config.failedNodeDetector;
+        if (config.failedNodeDetector != null) {
+            this.failedNodeDetector = config.failedNodeDetector.copy();
+            this.failedNodeDetector.setNodeAddress(getNodeAddress());
+        }
         this.tcpKeepAliveCount = config.tcpKeepAliveCount;
         this.tcpKeepAliveIdle = config.tcpKeepAliveIdle;
         this.tcpKeepAliveInterval = config.tcpKeepAliveInterval;
@@ -180,6 +183,17 @@ public class RedisClientConfig {
     }
     public InetSocketAddress getAddr() {
         return addr;
+    }
+
+    private InetSocketAddress getNodeAddress() {
+        if (addr != null) {
+            return addr;
+        }
+        if (address == null) {
+            return null;
+        }
+
+        return InetSocketAddress.createUnresolved(address.getHost(), address.getPort());
     }
     
     public Timer getTimer() {
