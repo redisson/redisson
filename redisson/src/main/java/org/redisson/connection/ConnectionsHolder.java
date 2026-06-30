@@ -44,6 +44,7 @@ public class ConnectionsHolder<T extends RedisConnection> {
     private final Queue<T> allConnections = new ConcurrentLinkedQueue<>();
     private final Deque<T> freeConnections = new ConcurrentLinkedDeque<>();
     private final AsyncSemaphore freeConnectionsCounter;
+    private final int poolMaxSize;
 
     private final RedisClient client;
 
@@ -57,6 +58,7 @@ public class ConnectionsHolder<T extends RedisConnection> {
                              Function<RedisClient, CompletionStage<T>> connectionCallback,
                              ServiceManager serviceManager, boolean changeUsage) {
         this.freeConnectionsCounter = new AsyncSemaphore(poolMaxSize, serviceManager.getGroup());
+        this.poolMaxSize = poolMaxSize;
         this.client = client;
         this.connectionCallback = connectionCallback;
         this.serviceManager = serviceManager;
@@ -150,6 +152,51 @@ public class ConnectionsHolder<T extends RedisConnection> {
         }
         return f.thenAccept(r -> {
             log.info("{} connections initialized for {}", minimumIdleSize, client.getAddr());
+        });
+    }
+
+    public CompletableFuture<Void> warmUp(int connectionAmount) {
+        if (connectionAmount < 0) {
+            return failedFuture(new IllegalArgumentException("connectionAmount can't be negative"));
+        }
+        if (connectionAmount > poolMaxSize) {
+            return failedFuture(new IllegalArgumentException(
+                    "connectionAmount can't be greater than connection pool size"));
+        }
+        return warmUpConnection(connectionAmount);
+    }
+
+    private CompletableFuture<Void> failedFuture(Exception e) {
+        CompletableFuture<Void> f = new CompletableFuture<>();
+        f.completeExceptionally(e);
+        return f;
+    }
+
+    private CompletableFuture<Void> warmUpConnection(int connectionAmount) {
+        if (allConnections.size() >= connectionAmount) {
+            return CompletableFuture.completedFuture(null);
+        }
+
+        CompletableFuture<Void> f = acquireConnection();
+        return f.thenCompose(r -> {
+            if (allConnections.size() >= connectionAmount) {
+                releaseConnection();
+                return CompletableFuture.completedFuture(null);
+            }
+
+            CompletableFuture<T> promise = new CompletableFuture<>();
+            createConnection(promise);
+            return promise.handle((conn, e) -> {
+                if (e == null) {
+                    if (changeUsage) {
+                        conn.decUsage();
+                    }
+                    addConnection(conn);
+                    releaseConnection();
+                    return null;
+                }
+                throw new CompletionException(e);
+            }).thenCompose(ignored -> warmUpConnection(connectionAmount));
         });
     }
 
@@ -274,4 +321,3 @@ public class ConnectionsHolder<T extends RedisConnection> {
         return serviceManager;
     }
 }
-

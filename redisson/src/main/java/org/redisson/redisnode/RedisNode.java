@@ -19,6 +19,7 @@ import org.redisson.api.NodeType;
 import org.redisson.api.RFuture;
 import org.redisson.api.redisnode.*;
 import org.redisson.client.RedisClient;
+import org.redisson.client.RedisConnectionException;
 import org.redisson.client.RedisTimeoutException;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
@@ -26,6 +27,8 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.Time;
 import org.redisson.cluster.ClusterSlotRange;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.connection.ClientConnectionsEntry;
+import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.misc.RedisURI;
 
@@ -91,6 +94,31 @@ public class RedisNode implements RedisClusterMaster, RedisClusterSlave, RedisMa
     @Override
     public boolean ping(long timeout, TimeUnit timeUnit) {
         return commandExecutor.get(pingAsync(timeout, timeUnit));
+    }
+
+    @Override
+    public RFuture<Void> warmUpConnectionPoolAsync(int connectionAmount) {
+        ClientConnectionsEntry entry = getEntry();
+        if (entry == null) {
+            RedisConnectionException e = new RedisConnectionException("Redis node entry hasn't been found: " + client);
+            return new CompletableFutureWrapper<>(e);
+        }
+        return new CompletableFutureWrapper<>(entry.warmUpConnections(connectionAmount));
+    }
+
+    @Override
+    public void warmUpConnectionPool(int connectionAmount) {
+        commandExecutor.get(warmUpConnectionPoolAsync(connectionAmount));
+    }
+
+    private ClientConnectionsEntry getEntry() {
+        for (MasterSlaveEntry entry : commandExecutor.getConnectionManager().getEntrySet()) {
+            ClientConnectionsEntry clientEntry = entry.getEntry(client);
+            if (clientEntry != null) {
+                return clientEntry;
+            }
+        }
+        return null;
     }
 
     @Override

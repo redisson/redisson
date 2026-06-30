@@ -15,6 +15,8 @@
  */
 package org.redisson.api.redisnode;
 
+import org.redisson.api.RFuture;
+
 /**
  * Redis Slave node API interface
  *
@@ -22,4 +24,14 @@ package org.redisson.api.redisnode;
  *
  */
 public interface RedisSlaveAsync extends RedisNodeAsync {
+
+    /**
+     * Warms up connection pool for this Redis node to the specified connection amount.
+     * If current connections amount is greater than or equal to specified value, then no new connections are created.
+     *
+     * @param connectionAmount - connections amount
+     * @return void
+     */
+    RFuture<Void> warmUpConnectionPoolAsync(int connectionAmount);
+
 }

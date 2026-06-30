@@ -13,6 +13,7 @@ import org.redisson.misc.AsyncSemaphore;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
 
@@ -72,6 +73,78 @@ public class ConnectionsHolderTest {
             // returns to the pool max — never inflated above it, which would jam idle eviction
             Assertions.assertThat(counter.getCounter()).isEqualTo(poolMaxSize);
             Assertions.assertThat(holder.getFreeConnections()).hasSize(poolMaxSize);
+        } finally {
+            manager.shutdown(0, 0, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    void testWarmUpCreatesConnectionsUpToDefinedAmount(@Mocked RedisClient client, @Mocked RedisConnection conn) {
+        MasterSlaveConnectionManager manager = buildManager();
+        try {
+            AtomicInteger createdConnections = new AtomicInteger();
+            Function<RedisClient, CompletionStage<RedisConnection>> succeedingCallback = r -> {
+                createdConnections.incrementAndGet();
+                return CompletableFuture.completedFuture(conn);
+            };
+            ConnectionsHolder<RedisConnection> holder =
+                    new ConnectionsHolder<>(client, 4, succeedingCallback, manager.getServiceManager(), false);
+
+            CompletableFuture<Void> result = holder.warmUp(3);
+            Assertions.assertThat(result).isCompleted();
+
+            Assertions.assertThat(createdConnections).hasValue(3);
+            Assertions.assertThat(holder.getAllConnections()).hasSize(3);
+            Assertions.assertThat(holder.getFreeConnections()).hasSize(3);
+            Assertions.assertThat(holder.getFreeConnectionsCounter().getCounter()).isEqualTo(4);
+        } finally {
+            manager.shutdown(0, 0, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    void testWarmUpDoesNotCreateConnectionsIfAmountAlreadyReached(@Mocked RedisClient client,
+                                                                  @Mocked RedisConnection conn) {
+        MasterSlaveConnectionManager manager = buildManager();
+        try {
+            AtomicInteger createdConnections = new AtomicInteger();
+            Function<RedisClient, CompletionStage<RedisConnection>> succeedingCallback = r -> {
+                createdConnections.incrementAndGet();
+                return CompletableFuture.completedFuture(conn);
+            };
+            ConnectionsHolder<RedisConnection> holder =
+                    new ConnectionsHolder<>(client, 4, succeedingCallback, manager.getServiceManager(), false);
+
+            Assertions.assertThat(holder.warmUp(3)).isCompleted();
+            Assertions.assertThat(holder.warmUp(2)).isCompleted();
+
+            Assertions.assertThat(createdConnections).hasValue(3);
+            Assertions.assertThat(holder.getAllConnections()).hasSize(3);
+            Assertions.assertThat(holder.getFreeConnections()).hasSize(3);
+            Assertions.assertThat(holder.getFreeConnectionsCounter().getCounter()).isEqualTo(4);
+        } finally {
+            manager.shutdown(0, 0, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    void testWarmUpRejectsAmountGreaterThanPoolSize(@Mocked RedisClient client, @Mocked RedisConnection conn) {
+        MasterSlaveConnectionManager manager = buildManager();
+        try {
+            AtomicInteger createdConnections = new AtomicInteger();
+            Function<RedisClient, CompletionStage<RedisConnection>> succeedingCallback = r -> {
+                createdConnections.incrementAndGet();
+                return CompletableFuture.completedFuture(conn);
+            };
+            ConnectionsHolder<RedisConnection> holder =
+                    new ConnectionsHolder<>(client, 2, succeedingCallback, manager.getServiceManager(), false);
+
+            CompletableFuture<Void> result = holder.warmUp(3);
+
+            Assertions.assertThat(result).isCompletedExceptionally();
+            Assertions.assertThat(createdConnections).hasValue(0);
+            Assertions.assertThat(holder.getAllConnections()).isEmpty();
+            Assertions.assertThat(holder.getFreeConnections()).isEmpty();
         } finally {
             manager.shutdown(0, 0, TimeUnit.SECONDS);
         }

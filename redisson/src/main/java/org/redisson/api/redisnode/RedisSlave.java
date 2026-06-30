@@ -22,4 +22,13 @@ package org.redisson.api.redisnode;
  *
  */
 public interface RedisSlave extends RedisNode, RedisSlaveAsync {
+
+    /**
+     * Warms up connection pool for this Redis node to the specified connection amount.
+     * If current connections amount is greater than or equal to specified value, then no new connections are created.
+     *
+     * @param connectionAmount - connections amount
+     */
+    void warmUpConnectionPool(int connectionAmount);
+
 }
