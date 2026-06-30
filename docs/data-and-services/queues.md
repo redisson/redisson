@@ -2674,6 +2674,329 @@ Usage example:
 	```
 
 
+## Circular Buffer
+
+Java implementation of Redis based [RCircularBuffer](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RCircularBuffer.html) object is a fixed-capacity ring buffer backed by the Redis array type. New values are appended to the tail and, once the buffer is full, wrap around to overwrite the oldest values. This object is thread-safe.
+
+Each value is addressed by the ring slot it occupies, and evicting the oldest value is simply the next write reusing its slot - surviving values are never renumbered, so an absolute index keeps referring to the same value until that slot is overwritten. This is the key difference from the LIST-backed [RRingBuffer](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RRingBuffer.html), which is kept full with `RPUSH` + `LPOP` and therefore shifts every surviving element down one position on each eviction, so there a given index does not denote the same value over time.
+
+Capacity must be defined with `trySetCapacity`, `setCapacity` or `set` before values are added.
+
+Requires **Redis 8.8+**.
+
+### Setting the capacity
+
+`trySetCapacity` sets the capacity only if it has not been set already, while `setCapacity` overrides it - the new size takes effect on the next write, discarding the oldest values that no longer fit. `capacity` returns the configured size and `remainingCapacity` the number of values that can still be added before eviction begins.
+
+=== "Sync"
+    ```java
+    RCircularBuffer<Integer> buffer = redisson.getCircularBuffer("sensor:readings");
+
+    buffer.trySetCapacity(1000);     // set once
+    buffer.setCapacity(500);         // override on next write
+
+    int capacity = buffer.capacity();
+    int remaining = buffer.remainingCapacity();
+    ```
+=== "Async"
+    ```java
+    RCircularBufferAsync<Integer> buffer = redisson.getCircularBuffer("sensor:readings");
+
+    RFuture<Boolean> set = buffer.trySetCapacityAsync(1000);
+    RFuture<Void> override = buffer.setCapacityAsync(500);
+    RFuture<Integer> capacity = buffer.capacityAsync();
+    RFuture<Integer> remaining = buffer.remainingCapacityAsync();
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RCircularBufferReactive<Integer> buffer = redisson.getCircularBuffer("sensor:readings");
+
+    Mono<Boolean> set = buffer.trySetCapacity(1000);
+    Mono<Void> override = buffer.setCapacity(500);
+    Mono<Integer> capacity = buffer.capacity();
+    Mono<Integer> remaining = buffer.remainingCapacity();
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RCircularBufferRx<Integer> buffer = redisson.getCircularBuffer("sensor:readings");
+
+    Single<Boolean> set = buffer.trySetCapacity(1000);
+    Completable override = buffer.setCapacity(500);
+    Single<Integer> capacity = buffer.capacity();
+    Single<Integer> remaining = buffer.remainingCapacity();
+    ```
+
+### Adding values
+
+`add` appends a single value and `addAll` a collection, both wrapping around to overwrite the oldest values once the buffer is full. `set` writes the given values into a ring of the specified size, (re)configuring the capacity to that size, and returns the slot index where the last value was written.
+
+=== "Sync"
+    ```java
+    RCircularBuffer<Integer> buffer = redisson.getCircularBuffer("sensor:readings");
+    buffer.trySetCapacity(1000);
+
+    buffer.add(42);
+    buffer.addAll(List.of(43, 44, 45));
+
+    // write straight into a ring of size 1000; returns the last written slot
+    long lastSlot = buffer.set(1000, 10, 20, 30);
+    ```
+=== "Async"
+    ```java
+    RCircularBufferAsync<Integer> buffer = redisson.getCircularBuffer("sensor:readings");
+
+    RFuture<Boolean> added = buffer.addAsync(42);
+    RFuture<Boolean> addedAll = buffer.addAllAsync(List.of(43, 44, 45));
+    RFuture<Long> lastSlot = buffer.setAsync(1000, 10, 20, 30);
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RCircularBufferReactive<Integer> buffer = redisson.getCircularBuffer("sensor:readings");
+
+    Mono<Boolean> added = buffer.add(42);
+    Mono<Boolean> addedAll = buffer.addAll(List.of(43, 44, 45));
+    Mono<Long> lastSlot = buffer.set(1000, 10, 20, 30);
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RCircularBufferRx<Integer> buffer = redisson.getCircularBuffer("sensor:readings");
+
+    Single<Boolean> added = buffer.add(42);
+    Single<Boolean> addedAll = buffer.addAll(List.of(43, 44, 45));
+    Single<Long> lastSlot = buffer.set(1000, 10, 20, 30);
+    ```
+
+### Reading by slot index
+
+Values are addressed by their absolute ring slot, which stays stable across evictions. `get` returns the value at a single slot or, given several slots, the value at each of them, while `range` returns the values stored in an inclusive slot range. A slot that holds no value yields `null`.
+
+=== "Sync"
+    ```java
+    RCircularBuffer<Integer> buffer = redisson.getCircularBuffer("sensor:readings");
+
+    Integer value = buffer.get(42);
+    List<Integer> values = buffer.get(0, 100, 200);
+    List<Integer> window = buffer.range(0, 99);
+    ```
+=== "Async"
+    ```java
+    RCircularBufferAsync<Integer> buffer = redisson.getCircularBuffer("sensor:readings");
+
+    RFuture<Integer> value = buffer.getAsync(42);
+    RFuture<List<Integer>> values = buffer.getAsync(0, 100, 200);
+    RFuture<List<Integer>> window = buffer.rangeAsync(0, 99);
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RCircularBufferReactive<Integer> buffer = redisson.getCircularBuffer("sensor:readings");
+
+    Mono<Integer> value = buffer.get(42);
+    Mono<List<Integer>> values = buffer.get(0, 100, 200);
+    Mono<List<Integer>> window = buffer.range(0, 99);
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RCircularBufferRx<Integer> buffer = redisson.getCircularBuffer("sensor:readings");
+
+    Maybe<Integer> value = buffer.get(42);
+    Single<List<Integer>> values = buffer.get(0, 100, 200);
+    Single<List<Integer>> window = buffer.range(0, 99);
+    ```
+
+### Reading recent values
+
+`lastItems` returns the most recently added values, newest-first when `reverse` is `true` or oldest-first otherwise, and `readAll` returns every retained value in insertion order. `peekLast` and `peekFirst` return the newest and oldest retained values - the latter being the one that will be overwritten next - without removing them.
+
+=== "Sync"
+    ```java
+    RCircularBuffer<Integer> buffer = redisson.getCircularBuffer("sensor:readings");
+
+    List<Integer> latest = buffer.lastItems(10, true);   // 10 newest, newest-first
+    List<Integer> all = buffer.readAll();                // oldest-first
+
+    Integer newest = buffer.peekLast();
+    Integer oldest = buffer.peekFirst();
+    ```
+=== "Async"
+    ```java
+    RCircularBufferAsync<Integer> buffer = redisson.getCircularBuffer("sensor:readings");
+
+    RFuture<List<Integer>> latest = buffer.lastItemsAsync(10, true);
+    RFuture<List<Integer>> all = buffer.readAllAsync();
+    RFuture<Integer> newest = buffer.peekLastAsync();
+    RFuture<Integer> oldest = buffer.peekFirstAsync();
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RCircularBufferReactive<Integer> buffer = redisson.getCircularBuffer("sensor:readings");
+
+    Mono<List<Integer>> latest = buffer.lastItems(10, true);
+    Mono<List<Integer>> all = buffer.readAll();
+    Mono<Integer> newest = buffer.peekLast();
+    Mono<Integer> oldest = buffer.peekFirst();
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RCircularBufferRx<Integer> buffer = redisson.getCircularBuffer("sensor:readings");
+
+    Single<List<Integer>> latest = buffer.lastItems(10, true);
+    Single<List<Integer>> all = buffer.readAll();
+    Maybe<Integer> newest = buffer.peekLast();
+    Maybe<Integer> oldest = buffer.peekFirst();
+    ```
+
+### Buffer state
+
+`size` reports how many values are currently stored, with `isEmpty` and `isFull` as convenience checks - `isFull` meaning the next `add` will overwrite the oldest value. `contains` tests for the presence of a value and `count` returns how many stored values equal it. `clear` removes all values while keeping the configured capacity.
+
+=== "Sync"
+    ```java
+    RCircularBuffer<Integer> buffer = redisson.getCircularBuffer("sensor:readings");
+
+    int size = buffer.size();
+    boolean empty = buffer.isEmpty();
+    boolean full = buffer.isFull();
+
+    boolean present = buffer.contains(42);
+    long occurrences = buffer.count(42);
+
+    buffer.clear();
+    ```
+=== "Async"
+    ```java
+    RCircularBufferAsync<Integer> buffer = redisson.getCircularBuffer("sensor:readings");
+
+    RFuture<Integer> size = buffer.sizeAsync();
+    RFuture<Boolean> full = buffer.isFullAsync();
+    RFuture<Boolean> present = buffer.containsAsync(42);
+    RFuture<Long> occurrences = buffer.countAsync(42);
+    RFuture<Void> cleared = buffer.clearAsync();
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RCircularBufferReactive<Integer> buffer = redisson.getCircularBuffer("sensor:readings");
+
+    Mono<Integer> size = buffer.size();
+    Mono<Boolean> full = buffer.isFull();
+    Mono<Boolean> present = buffer.contains(42);
+    Mono<Long> occurrences = buffer.count(42);
+    Mono<Void> cleared = buffer.clear();
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RCircularBufferRx<Integer> buffer = redisson.getCircularBuffer("sensor:readings");
+
+    Single<Integer> size = buffer.size();
+    Single<Boolean> full = buffer.isFull();
+    Single<Boolean> present = buffer.contains(42);
+    Single<Long> occurrences = buffer.count(42);
+    Completable cleared = buffer.clear();
+    ```
+
+### Aggregations
+
+When the buffer holds numbers, aggregates can be computed server-side over the whole window or over an inclusive slot range: `sum`, `min`, `max` and `average` (the first three also accept a range), plus the bitwise `bitAnd`, `bitOr` and `bitXor` reductions. Each returns `null` when the buffer is empty.
+
+=== "Sync"
+    ```java
+    RCircularBuffer<Integer> buffer = redisson.getCircularBuffer("sensor:readings");
+
+    Double total = buffer.sum();
+    Double lowest = buffer.min();
+    Double highest = buffer.max();
+    Double mean = buffer.average();
+
+    // aggregate over a slot range
+    Double windowSum = buffer.sum(0, 99);
+
+    // bitwise reductions
+    Long andBits = buffer.bitAnd();
+    Long orBits = buffer.bitOr();
+    Long xorBits = buffer.bitXor();
+    ```
+=== "Async"
+    ```java
+    RCircularBufferAsync<Integer> buffer = redisson.getCircularBuffer("sensor:readings");
+
+    RFuture<Double> total = buffer.sumAsync();
+    RFuture<Double> mean = buffer.averageAsync();
+    RFuture<Double> windowSum = buffer.sumAsync(0, 99);
+    RFuture<Long> xorBits = buffer.bitXorAsync();
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RCircularBufferReactive<Integer> buffer = redisson.getCircularBuffer("sensor:readings");
+
+    Mono<Double> total = buffer.sum();
+    Mono<Double> mean = buffer.average();
+    Mono<Double> windowSum = buffer.sum(0, 99);
+    Mono<Long> xorBits = buffer.bitXor();
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RCircularBufferRx<Integer> buffer = redisson.getCircularBuffer("sensor:readings");
+
+    Maybe<Double> total = buffer.sum();
+    Maybe<Double> mean = buffer.average();
+    Maybe<Double> windowSum = buffer.sum(0, 99);
+    Maybe<Long> xorBits = buffer.bitXor();
+    ```
+
+### Use Cases
+
+Because slots are stable, `RCircularBuffer` supports patterns that need an index to keep meaning the same element between two operations - patterns that are broken on the LIST-backed `RRingBuffer`, where every eviction shifts the surviving elements down and renumbers them.
+
+**Index-based handoff on a shared ring**
+
+A producer writes frames and tells a consumer to process the one at slot K. On the array the consumer reads exactly that frame; on a LIST ring, K has already shifted by the time the consumer reads, so it gets the wrong element - you cannot coordinate by index on a LIST ring.
+
+```java
+RCircularBuffer<String> ring = redisson.getCircularBuffer("frames");
+
+// the consumer is handed slot K and reads exactly that frame;
+// later writes reuse other slots, so K still points to the same value
+String frame = ring.get(slotK);
+```
+
+**Strided / positional downsampling**
+
+Keep 10k sensor samples and read every 100th slot to build a 100-point sparkline. On the array those positions are stable reference points across polls; on a LIST, *every 100th index* points at a different, drifting set on every push, so the sampled set is incoherent.
+
+```java
+RCircularBuffer<Integer> samples = redisson.getCircularBuffer("sensor:samples");
+samples.trySetCapacity(10_000);
+
+// every 100th slot - stable reference points across polls
+long[] strided = LongStream.range(0, 100).map(i -> i * 100).toArray();
+List<Integer> sparkline = samples.get(strided);
+```
+
+**Optimistic re-read and position-based correlation**
+
+Read slot N, do work, then confirm slot N still holds the same value - or ask *have I already alerted on the thing at this position?* These need a stable cell, which the LIST does not have.
+
+```java
+RCircularBuffer<Integer> buffer = redisson.getCircularBuffer("sensor:readings");
+
+Integer seen = buffer.get(n);
+// ... do work based on the value at slot n ...
+if (Objects.equals(buffer.get(n), seen)) {
+    // slot n still holds the same value - safe to act on it
+}
+```
+
 ## Transfer Queue
 
 Java implementation of Valkey or Redis based [TransferQueue](https://www.javadoc.io/doc/org.redisson/redisson/latest/org/redisson/api/RTransferQueue.html) implements [java.util.concurrent.TransferQueue](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/TransferQueue.html) interface. Provides set of `transfer` methods which return only when value was successfully hand off to consumer. This object is thread-safe.  
