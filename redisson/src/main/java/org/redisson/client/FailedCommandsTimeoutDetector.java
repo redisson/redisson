@@ -38,4 +38,9 @@ public class FailedCommandsTimeoutDetector extends FailedCommandsDetector {
         }
     }
 
+    @Override
+    public FailedNodeDetector copy() {
+        return new FailedCommandsTimeoutDetector(checkInterval, (int) failedCommandsLimit);
+    }
+
 }
