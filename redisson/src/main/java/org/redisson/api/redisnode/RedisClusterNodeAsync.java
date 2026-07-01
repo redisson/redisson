@@ -31,6 +31,15 @@ import java.util.Set;
 public interface RedisClusterNodeAsync extends RedisNodeAsync {
 
     /**
+     * Warms up connection pool for this Redis node to the specified connection amount.
+     * If current connections amount is greater than or equal to specified value, then no new connections are created.
+     *
+     * @param connectionAmount - connections amount
+     * @return void
+     */
+    RFuture<Void> warmUpConnectionPoolAsync(int connectionAmount);
+
+    /**
      * Returns cluster information reported by this Redis node
      *
      * @return cluster information

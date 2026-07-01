@@ -86,6 +86,10 @@ public class ClientConnectionsEntry {
         return connectionsHolder.initConnections(minimumIdleSize);
     }
 
+    public CompletableFuture<Void> warmUpConnections(int connectionAmount) {
+        return connectionsHolder.warmUp(connectionAmount);
+    }
+
     public CompletableFuture<Void> initPubSubConnections(int minimumIdleSize) {
         return pubSubConnectionsHolder.initConnections(minimumIdleSize);
     }
@@ -271,4 +275,3 @@ public class ClientConnectionsEntry {
                 '}';
     }
 }
-
