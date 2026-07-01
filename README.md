@@ -78,3 +78,7 @@ Redisson greatly extends the capabilities of Valkey and Redis by providing addit
 - [Valkey & Redis vs WebSphere eXtreme Scale](https://redisson.pro/blog/valkey-redis-vs-websphere-extreme-scale.html)
 - [RabbitMQ vs Valkey & Redis based Reliable PubSub](https://redisson.pro/blog/rabbitmq-vs-valkey-redis-based-reliable-pubsub.html)
 - [Google PubSub vs Valkey & Redis based Reliable PubSub](https://redisson.pro/blog/google-pubsub-vs-valkey-redis-based-reliable-pubsub.html)
+
+## Migration guides
+- [Jedis to Redisson migration](https://redisson.pro/blog/jedis-to-redisson-migration-guide.html)
+- [Valkey GLIDE to Redisson migration](https://redisson.pro/blog/valkey-glide-to-redisson-migration-guide.html)
