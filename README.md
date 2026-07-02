@@ -81,4 +81,3 @@ Redisson greatly extends the capabilities of Valkey and Redis by providing addit
 
 ## Migration guides
 - [Jedis to Redisson migration](https://redisson.pro/blog/jedis-to-redisson-migration-guide.html)
-- [Valkey GLIDE to Redisson migration](https://redisson.pro/blog/valkey-glide-to-redisson-migration-guide.html)
