@@ -48,4 +48,20 @@ public interface FailedNodeDetector {
 
     boolean isNodeFailed();
 
+    /**
+     * Returns a copy of this detector that keeps the same configuration
+     * but starts with fresh runtime state. It is used to assign an independent
+     * detector to each Redis node, so that failures of one node don't pollute
+     * the failure state of another.
+     * <p>
+     * The default implementation returns the same instance, preserving the
+     * shared state. Custom detectors holding per-node runtime state should
+     * override this method.
+     *
+     * @return detector copy with fresh runtime state
+     */
+    default FailedNodeDetector copy() {
+        return this;
+    }
+
 }

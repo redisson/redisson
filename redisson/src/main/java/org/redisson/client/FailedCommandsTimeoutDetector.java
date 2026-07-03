@@ -32,6 +32,11 @@ public class FailedCommandsTimeoutDetector extends FailedCommandsDetector {
     }
 
     @Override
+    protected FailedCommandsDetector newInstance() {
+        return new FailedCommandsTimeoutDetector();
+    }
+
+    @Override
     public void onCommandFailed(Throwable cause) {
         if (cause instanceof RedisTimeoutException) {
             super.onCommandFailed(cause);

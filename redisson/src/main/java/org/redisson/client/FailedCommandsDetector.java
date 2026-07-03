@@ -36,6 +36,14 @@ public class FailedCommandsDetector implements FailedNodeDetector {
     public FailedCommandsDetector() {
     }
 
+    /**
+     * Creates an empty detector of the same type. Overridden by subclasses so
+     * that {@link #copy()} preserves the concrete detector type.
+     */
+    protected FailedCommandsDetector newInstance() {
+        return new FailedCommandsDetector();
+    }
+
     public FailedCommandsDetector(long checkInterval, int failedCommandsLimit) {
         if (checkInterval == 0) {
             throw new IllegalArgumentException("checkInterval value");
@@ -108,6 +116,14 @@ public class FailedCommandsDetector implements FailedNodeDetector {
             return true;
         }
         return false;
+    }
+
+    @Override
+    public FailedNodeDetector copy() {
+        FailedCommandsDetector detector = newInstance();
+        detector.checkInterval = checkInterval;
+        detector.failedCommandsLimit = failedCommandsLimit;
+        return detector;
     }
 
 }
