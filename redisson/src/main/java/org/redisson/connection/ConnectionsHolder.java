@@ -43,6 +43,7 @@ public class ConnectionsHolder<T extends RedisConnection> {
 
     private final Queue<T> allConnections = new ConcurrentLinkedQueue<>();
     private final Deque<T> freeConnections = new ConcurrentLinkedDeque<>();
+    private final Queue<WarmUpRequest> warmUpListeners = new ConcurrentLinkedQueue<>();
     private final AsyncSemaphore freeConnectionsCounter;
     private final int poolMaxSize;
 
@@ -53,6 +54,16 @@ public class ConnectionsHolder<T extends RedisConnection> {
     private final ServiceManager serviceManager;
 
     private final boolean changeUsage;
+
+    private static final class WarmUpRequest {
+        private final int connectionAmount;
+        private final CompletableFuture<Void> promise;
+
+        private WarmUpRequest(int connectionAmount, CompletableFuture<Void> promise) {
+            this.connectionAmount = connectionAmount;
+            this.promise = promise;
+        }
+    }
 
     public ConnectionsHolder(RedisClient client, int poolMaxSize,
                              Function<RedisClient, CompletionStage<T>> connectionCallback,
@@ -173,31 +184,85 @@ public class ConnectionsHolder<T extends RedisConnection> {
     }
 
     private CompletableFuture<Void> warmUpConnection(int connectionAmount) {
-        if (allConnections.size() >= connectionAmount) {
+        if (hasFreeConnections(connectionAmount)) {
             return CompletableFuture.completedFuture(null);
         }
 
+        CompletableFuture<Void> result = new CompletableFuture<>();
+        warmUpConnection(connectionAmount, result);
+        return result;
+    }
+
+    private void warmUpConnection(int connectionAmount, CompletableFuture<Void> result) {
+        if (result.isDone()) {
+            return;
+        }
+        if (hasFreeConnections(connectionAmount)) {
+            result.complete(null);
+            return;
+        }
+        if (allConnections.size() >= poolMaxSize) {
+            waitForFreeConnections(connectionAmount, result);
+            return;
+        }
+
         CompletableFuture<Void> f = acquireConnection();
-        return f.thenCompose(r -> {
-            if (allConnections.size() >= connectionAmount) {
+        f.thenAccept(r -> {
+            if (result.isDone()) {
                 releaseConnection();
-                return CompletableFuture.completedFuture(null);
+                return;
+            }
+            if (hasFreeConnections(connectionAmount)) {
+                releaseConnection();
+                result.complete(null);
+                return;
+            }
+            if (allConnections.size() >= poolMaxSize) {
+                releaseConnection();
+                waitForFreeConnections(connectionAmount, result);
+                return;
             }
 
             CompletableFuture<T> promise = new CompletableFuture<>();
             createConnection(promise);
-            return promise.handle((conn, e) -> {
+            promise.whenComplete((conn, e) -> {
                 if (e == null) {
                     if (changeUsage) {
                         conn.decUsage();
                     }
                     addConnection(conn);
                     releaseConnection();
-                    return null;
+                    completeWarmUpListeners();
+                    warmUpConnection(connectionAmount, result);
+                    return;
                 }
-                throw new CompletionException(e);
-            }).thenCompose(ignored -> warmUpConnection(connectionAmount));
+                result.completeExceptionally(e);
+            });
         });
+    }
+
+    private boolean hasFreeConnections(int connectionAmount) {
+        return freeConnections.size() >= connectionAmount;
+    }
+
+    private void waitForFreeConnections(int connectionAmount, CompletableFuture<Void> result) {
+        WarmUpRequest request = new WarmUpRequest(connectionAmount, result);
+        warmUpListeners.add(request);
+        result.whenComplete((r, e) -> warmUpListeners.remove(request));
+        completeWarmUpListeners();
+    }
+
+    private void completeWarmUpListeners() {
+        for (WarmUpRequest request : warmUpListeners) {
+            if (request.promise.isDone()) {
+                warmUpListeners.remove(request);
+                continue;
+            }
+            if (hasFreeConnections(request.connectionAmount)
+                    && warmUpListeners.remove(request)) {
+                request.promise.complete(null);
+            }
+        }
     }
 
     private CompletableFuture<Void> createConnection(int minimumIdleSize, int index) {
@@ -214,6 +279,7 @@ public class ConnectionsHolder<T extends RedisConnection> {
                     // release only on success; the failure path already releases in createConnection(promise),
                     // so an unconditional release here double-releases per failed init and lifts the counter above pool max
                     releaseConnection();
+                    completeWarmUpListeners();
                 }
 
                 if (e != null) {
@@ -265,6 +331,7 @@ public class ConnectionsHolder<T extends RedisConnection> {
         if (!promise.complete(conn)) {
             releaseConnection(conn);
             releaseConnection();
+            completeWarmUpListeners();
         }
     }
 
@@ -315,6 +382,7 @@ public class ConnectionsHolder<T extends RedisConnection> {
             releaseConnection(connection);
         }
         releaseConnection();
+        completeWarmUpListeners();
     }
 
     public ServiceManager getServiceManager() {
