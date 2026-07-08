@@ -83,3 +83,4 @@ Redisson greatly extends the capabilities of Valkey and Redis by providing addit
 - [Jedis to Redisson migration](https://redisson.pro/blog/jedis-to-redisson-migration-guide.html)
 - [Spring Data Redis to Redisson migration](https://redisson.pro/blog/spring-data-redis-to-redisson-migration-guide.html)
 - [Lettuce to Redisson migration](https://redisson.pro/blog/lettuce-to-redisson-migration-guide.html)
+- [Ehcache to Redisson migration](https://redisson.pro/blog/ehcache-to-redisson-moving-to-distributed-java-cache.html)
