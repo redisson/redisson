@@ -48,4 +48,13 @@ public interface FailedNodeDetector {
 
     boolean isNodeFailed();
 
+    /**
+     * Returns a detector with the same configuration and independent runtime state.
+     *
+     * @return detector copy
+     */
+    default FailedNodeDetector copy() {
+        return this;
+    }
+
 }
