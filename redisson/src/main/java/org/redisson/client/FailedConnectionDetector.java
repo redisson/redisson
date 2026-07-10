@@ -94,4 +94,9 @@ public class FailedConnectionDetector implements FailedNodeDetector {
         return false;
     }
 
+    @Override
+    public FailedNodeDetector copy() {
+        return new FailedConnectionDetector(checkInterval);
+    }
+
 }

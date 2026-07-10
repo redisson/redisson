@@ -650,12 +650,7 @@ public abstract class BaseMapTest extends RedisDockerTest {
         assertThat(object.getTestField()).isEqualTo("test-val");
         map.put("test-key", object);
 
-        try {
-            map.get("test-key");
-            Assertions.fail("Expected exception from map.get() call");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        Assertions.assertThrows(Exception.class, () -> map.get("test-key"));
         destroy(map);
     }
 
