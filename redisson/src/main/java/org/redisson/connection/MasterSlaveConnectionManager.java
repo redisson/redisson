@@ -65,6 +65,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     protected final AtomicReference<CompletableFuture<Void>> lazyConnectLatch = new AtomicReference<>();
 
+    // Owns lazyConnectLatch: a synchronous entry teardown during doConnect re-enters lazyConnect on
+    // this same thread, which must not join() the latch it holds.
+    private volatile Thread connectingThread;
+
     private boolean lastAttempt;
 
     protected final AtomicInteger rrCounter = new AtomicInteger(0);
@@ -188,6 +192,12 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             return;
         }
 
+        // Re-entry by the connecting thread itself: return rather than join() the latch it holds,
+        // which would self-deadlock.
+        if (Thread.currentThread() == connectingThread) {
+            return;
+        }
+
         CompletableFuture<Void> newFuture = new CompletableFuture<>();
         if (!lazyConnectLatch.compareAndSet(null, newFuture)) {
             CompletableFuture<Void> currentFuture = lazyConnectLatch.get();
@@ -202,12 +212,17 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             }
         }
 
+        // This thread now owns the latch; mark it so a synchronous re-entry into lazyConnect
+        // returns instead of join()ing the latch only it can complete.
+        connectingThread = Thread.currentThread();
         try {
             connect();
             newFuture.complete(null);
         } catch (Exception e) {
             newFuture.completeExceptionally(e);
             throw e;
+        } finally {
+            connectingThread = null;
         }
     }
 
