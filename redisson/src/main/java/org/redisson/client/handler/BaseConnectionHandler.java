@@ -20,7 +20,11 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisClientConfig;
 import org.redisson.client.RedisConnection;
+import org.redisson.client.RedisConnectionBootstrapException;
+import org.redisson.client.RedisConnectionBootstrapException.Phase;
 import org.redisson.client.RedisRetryException;
+import org.redisson.client.RedisServerRejectionException;
+import org.redisson.client.WriteRedisConnectionException;
 import org.redisson.client.protocol.QueueCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.config.Protocol;
@@ -64,36 +68,46 @@ public abstract class BaseConnectionHandler<C extends RedisConnection> extends C
     @Override
     public void channelActive(ChannelHandlerContext ctx) {
         List<CompletableFuture<?>> futures = new ArrayList<>(5);
+        // Parallel list tracking the bootstrap phase for each future, so we can
+        // identify which step failed without parsing the exception message.
+        List<Phase> phases = new ArrayList<>(5);
 
-        CompletableFuture<Void> f = authWithCredential();
-        futures.add(f);
+        CompletableFuture<Void> authFuture = authWithCredential();
+        futures.add(authFuture);
+        phases.add(Phase.AUTH);
 
         RedisClientConfig config = redisClient.getConfig();
 
         if (config.getProtocol() == Protocol.RESP3) {
             CompletionStage<Object> f1 = connection.async(RedisCommands.HELLO, "3");
             futures.add(f1.toCompletableFuture());
+            phases.add(Phase.HELLO);
         }
 
         if (config.getDatabase() != 0) {
             CompletionStage<Object> future = connection.async(RedisCommands.SELECT, config.getDatabase());
             futures.add(future.toCompletableFuture());
+            phases.add(Phase.SELECT);
         }
         if (config.getClientName() != null) {
             CompletionStage<Object> future = connection.async(RedisCommands.CLIENT_SETNAME, config.getClientName());
             futures.add(future.toCompletableFuture());
+            phases.add(Phase.CLIENT_SETNAME);
         }
         if (!config.getCapabilities().isEmpty()) {
             CompletionStage<Object> future = connection.async(RedisCommands.CLIENT_CAPA, config.getCapabilities().toArray());
             futures.add(future.toCompletableFuture());
+            phases.add(Phase.CLIENT_CAPA);
         }
         if (config.isReadOnly()) {
             CompletionStage<Object> future = connection.async(RedisCommands.READONLY);
             futures.add(future.toCompletableFuture());
+            phases.add(Phase.READONLY);
         }
         if (config.getPingConnectionInterval() > 0) {
             CompletionStage<Object> future = connection.async(RedisCommands.PING);
             futures.add(future.toCompletableFuture());
+            phases.add(Phase.PING);
         }
 
         CompletableFuture<Void> future = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
@@ -106,7 +120,7 @@ public abstract class BaseConnectionHandler<C extends RedisConnection> extends C
                     return;
                 }
                 connection.closeAsync();
-                connectionPromise.completeExceptionally(e);
+                connectionPromise.completeExceptionally(wrapBootstrapFailure(futures, phases, e));
                 return;
             }
 
@@ -115,6 +129,49 @@ public abstract class BaseConnectionHandler<C extends RedisConnection> extends C
             ctx.fireChannelActive();
             connectionPromise.complete(connection);
         });
+    }
+
+    /**
+     * Wraps a bootstrap pipeline failure in a {@link RedisConnectionBootstrapException}
+     * that identifies which phase failed, so callers don't need to parse the message string.
+     * <p>
+     * If the channel received an unsolicited server error before any command was sent
+     * (e.g. "ERR max number of clients reached"), that error is stored on the channel
+     * attribute {@link CommandDecoder#UNSOLICITED_ERROR_KEY}. We prefer it as the cause
+     * over a generic channel-closed exception, since it carries the real server reason.
+     */
+    private RedisConnectionBootstrapException wrapBootstrapFailure(
+            List<CompletableFuture<?>> futures, List<Phase> phases, Throwable cause) {
+        // Check if an unsolicited server error arrived before bootstrap started
+        // (e.g. ERR max number of clients reached sent by the server on connect)
+        RedisServerRejectionException unsolicitedError =
+                connection.getChannel().attr(CommandDecoder.UNSOLICITED_ERROR_KEY).get();
+
+        for (int i = 0; i < futures.size(); i++) {
+            CompletableFuture<?> f = futures.get(i);
+            if (f.isCompletedExceptionally()) {
+                Throwable phaseCause = cause(f);
+                Phase phase = phases.get(i);
+                // Prefer the unsolicited server error as the cause when the per-phase
+                // failure is a generic channel-close exception (WriteRedisConnectionException)
+                if (unsolicitedError != null && phaseCause instanceof WriteRedisConnectionException) {
+                    phaseCause = unsolicitedError;
+                }
+                return new RedisConnectionBootstrapException(
+                        "Bootstrap failed at phase " + phase + ": " + phaseCause.getMessage(),
+                        phase,
+                        phaseCause);
+            }
+        }
+        // cause here is a CompletionException wrapping the real cause; getMessage() may be null
+        Throwable rootCause = cause.getCause() != null ? cause.getCause() : cause;
+        if (unsolicitedError != null && rootCause instanceof WriteRedisConnectionException) {
+            rootCause = unsolicitedError;
+        }
+        return new RedisConnectionBootstrapException(
+                "Bootstrap failed: " + rootCause.getMessage(),
+                Phase.UNKNOWN,
+                rootCause);
     }
 
     private CompletionStage<Void> startRenewal(ChannelHandlerContext ctx, RedisClientConfig config) {
