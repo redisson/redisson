@@ -143,7 +143,10 @@ public class RedissonRegionFactory extends RegionFactoryTemplate {
 
     @Override
     public boolean isMinimalPutsEnabledByDefault() {
-        return true;
+        // Must stay false. Since Hibernate 7.4 AbstractReadWriteAccess#putFromLoad honors the
+        // minimalPutOverride flag and skips the put when (minimalPutOverride && version == null
+        // && item != null).
+        return false;
     }
 
     @Override
