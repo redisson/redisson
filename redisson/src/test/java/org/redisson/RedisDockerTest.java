@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 
 public class RedisDockerTest {
 
-    protected static final String IMAGE = "redis:latest";
+    protected static final String IMAGE = "redis:8.8-m03";
 
     protected static final String NOTIFY_KEYSPACE_EVENTS = "--notify-keyspace-events";
 
