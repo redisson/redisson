@@ -71,4 +71,31 @@ public class RedisURITest {
         assertThat(uri.toString()).isEqualTo("redis://localhost:6379");
     }
 
+    @Test
+    public void testCredentialsCopyConstructor() {
+        RedisURI base = new RedisURI("redis://192.168.0.10:6379");
+
+        RedisURI uri = new RedisURI("alice", "secret", base);
+
+        assertThat(uri.getUsername()).isEqualTo("alice");
+        assertThat(uri.getPassword()).isEqualTo("secret");
+        assertThat(uri.getScheme()).isEqualTo("redis");
+        assertThat(uri.getHost()).isEqualTo("192.168.0.10");
+        assertThat(uri.getPort()).isEqualTo(6379);
+    }
+
+    @Test
+    public void testCredentialsCopyConstructorPasswordOnly() {
+        RedisURI base = new RedisURI("rediss://192.168.0.10:6379");
+
+        RedisURI uri = new RedisURI(null, "secret", base);
+
+        assertThat(uri.getUsername()).isNull();
+        assertThat(uri.getPassword()).isEqualTo("secret");
+        assertThat(uri.getScheme()).isEqualTo("rediss");
+        assertThat(uri.isSsl()).isTrue();
+        assertThat(uri.getHost()).isEqualTo("192.168.0.10");
+        assertThat(uri.getPort()).isEqualTo(6379);
+    }
+
 }
