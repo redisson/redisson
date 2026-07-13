@@ -2415,9 +2415,15 @@ Applying a separate limit to each user, tenant, or API key means one limiter per
     ```
 
 ## GCRA Rate Limiter
-Java implementation of Redis based [RGcra](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RGcra.html) object is a rate limiter based on the [Generic Cell Rate Algorithm](https://en.wikipedia.org/wiki/Generic_cell_rate_algorithm). It restricts the rate of operations using a burst capacity and a token replenishment rate. State is stored in a single Redis key, so the limit applies across all threads regardless of the Redisson instance. This object is thread-safe.
+Java implementation of Redis based [RGcra](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RGcra.html) object is a rate limiter based on the [Generic Cell Rate Algorithm](https://en.wikipedia.org/wiki/Generic_cell_rate_algorithm). It restricts the rate of operations using a burst capacity and a token replenishment rate. State is stored in Redis, so the limit applies across all threads regardless of the Redisson instance. This object is thread-safe.
 
 Requires Redis 8.8.0 or higher.
+
+The rate is configured once through the `trySetRate()` or `setRate()` method:
+
+* `trySetRate(maxBurst, tokensPerPeriod, period)` - sets the rate only if it hasn't been set before, returns `false` otherwise
+* `setRate(maxBurst, tokensPerPeriod, period)` - overwrites the rate and resets the consumed tokens
+* `getConfig()` - returns the currently configured rate
 
 Each call to `tryAcquire()` requests one or more tokens and returns a `GcraResult` with the following information:
 
@@ -2434,21 +2440,24 @@ Code example:
     RGcra gcra = redisson.getGcra("myLimiter");
 
     // up to 4 tokens per second, with burst of 2 additional tokens
-    GcraResult result = gcra.tryAcquire(2, 4, Duration.ofSeconds(1));
+    gcra.trySetRate(2, 4, Duration.ofSeconds(1));
+
+    GcraResult result = gcra.tryAcquire();
     if (!result.isLimited()) {
         // request accepted
     }
 
     // acquire 3 tokens at once
-    GcraResult batch = gcra.tryAcquire(2, 4, Duration.ofSeconds(1), 3);
+    GcraResult batch = gcra.tryAcquire(3);
     ```
 
 === "Async"
     ```
     RGcraAsync gcra = redisson.getGcra("myLimiter");
 
-    RFuture<GcraResult> resultFuture = gcra.tryAcquireAsync(2, 4, Duration.ofSeconds(1));
-    RFuture<GcraResult> batchFuture = gcra.tryAcquireAsync(2, 4, Duration.ofSeconds(1), 3);
+    RFuture<Boolean> setFuture = gcra.trySetRateAsync(2, 4, Duration.ofSeconds(1));
+    RFuture<GcraResult> resultFuture = gcra.tryAcquireAsync();
+    RFuture<GcraResult> batchFuture = gcra.tryAcquireAsync(3);
     ```
 
 === "Reactive"
@@ -2456,8 +2465,9 @@ Code example:
     RedissonReactiveClient redisson = redissonClient.reactive();
     RGcraReactive gcra = redisson.getGcra("myLimiter");
 
-    Mono<GcraResult> resultMono = gcra.tryAcquire(2, 4, Duration.ofSeconds(1));
-    Mono<GcraResult> batchMono = gcra.tryAcquire(2, 4, Duration.ofSeconds(1), 3);
+    Mono<Boolean> setMono = gcra.trySetRate(2, 4, Duration.ofSeconds(1));
+    Mono<GcraResult> resultMono = gcra.tryAcquire();
+    Mono<GcraResult> batchMono = gcra.tryAcquire(3);
     ```
 
 === "RxJava3"
@@ -2465,25 +2475,28 @@ Code example:
     RedissonRxClient redisson = redissonClient.rxJava();
     RGcraRx gcra = redisson.getGcra("myLimiter");
 
-    Single<GcraResult> resultRx = gcra.tryAcquire(2, 4, Duration.ofSeconds(1));
-    Single<GcraResult> batchRx = gcra.tryAcquire(2, 4, Duration.ofSeconds(1), 3);
+    Single<Boolean> setRx = gcra.trySetRate(2, 4, Duration.ofSeconds(1));
+    Single<GcraResult> resultRx = gcra.tryAcquire();
+    Single<GcraResult> batchRx = gcra.tryAcquire(3);
     ```
 
 ### Use Cases
 
-The GCRA rate limiter enforces a smooth request rate with a configurable burst allowance, keeping all state in a single Redis key so one limit applies across every thread and Redisson instance. Each `tryAcquire` call is non-blocking and returns a `GcraResult` that reports whether the call was limited and, when it was, how long to wait. That makes it a fit for guarding APIs, pacing calls to downstream services, and enforcing per-client quotas.
+The GCRA rate limiter enforces a smooth request rate with a configurable burst allowance, keeping its state in Redis so one limit applies across every thread and Redisson instance. Each `tryAcquire` call is non-blocking and returns a `GcraResult` that reports whether the call was limited and, when it was, how long to wait. That makes it a fit for guarding APIs, pacing calls to downstream services, and enforcing per-client quotas.
 
 **Per-Client API Rate Limiting**
 
-API gateways limit each caller independently and tell a throttled client when to come back. Encoding the client id in the limiter name gives one limiter per API key, user, or IP. On each request a single token is requested, and the `GcraResult` supplies everything needed for the response: `getRetryAfterSeconds()` for the HTTP `Retry-After` header on a 429, and `getMaxTokens()`/`getAvailableTokens()` for `X-RateLimit-*` headers.
+API gateways limit each caller independently and tell a throttled client when to come back. Encoding the client id in the limiter name gives one limiter per API key, user, or IP. The rate is configured once (`trySetRate()` is idempotent, so it's safe to call before each request); on each request a single token is requested, and the `GcraResult` supplies everything needed for the response: `getRetryAfterSeconds()` for the HTTP `Retry-After` header on a 429, and `getMaxTokens()`/`getAvailableTokens()` for `X-RateLimit-*` headers.
 
 === "Sync"
     ```
-    // one limiter per API key - state lives in a single Redis key per client
+    // one limiter per API key
     RGcra gcra = redisson.getGcra("ratelimit:" + apiKey);
 
     // up to 100 requests per second per client, with a burst of 50 additional
-    GcraResult result = gcra.tryAcquire(50, 100, Duration.ofSeconds(1));
+    gcra.trySetRate(50, 100, Duration.ofSeconds(1));
+
+    GcraResult result = gcra.tryAcquire();
 
     if (result.isLimited()) {
         // reject with HTTP 429 and tell the client when to retry
@@ -2500,7 +2513,7 @@ API gateways limit each caller independently and tell a throttled client when to
     RGcraAsync gcra = redisson.getGcra("ratelimit:" + apiKey);
 
     // isLimited(), getRetryAfterSeconds() and getAvailableTokens() read off the result
-    RFuture<GcraResult> result = gcra.tryAcquireAsync(50, 100, Duration.ofSeconds(1));
+    RFuture<GcraResult> result = gcra.tryAcquireAsync();
     ```
 === "Reactive"
     ```
@@ -2508,7 +2521,7 @@ API gateways limit each caller independently and tell a throttled client when to
     RGcraReactive gcra = redisson.getGcra("ratelimit:" + apiKey);
 
     // isLimited(), getRetryAfterSeconds() and getAvailableTokens() read off the result
-    Mono<GcraResult> result = gcra.tryAcquire(50, 100, Duration.ofSeconds(1));
+    Mono<GcraResult> result = gcra.tryAcquire();
     ```
 === "RxJava3"
     ```
@@ -2516,7 +2529,7 @@ API gateways limit each caller independently and tell a throttled client when to
     RGcraRx gcra = redisson.getGcra("ratelimit:" + apiKey);
 
     // isLimited(), getRetryAfterSeconds() and getAvailableTokens() read off the result
-    Single<GcraResult> result = gcra.tryAcquire(50, 100, Duration.ofSeconds(1));
+    Single<GcraResult> result = gcra.tryAcquire();
     ```
 
 **Protecting Downstream Dependencies**
@@ -2528,7 +2541,9 @@ When calling a fragile third-party API, payment provider, or email/SMS gateway t
     RGcra gcra = redisson.getGcra("downstream:payments-api");
 
     // the provider tolerates ~10 calls per second; permit a small burst of 5
-    GcraResult result = gcra.tryAcquire(5, 10, Duration.ofSeconds(1));
+    gcra.trySetRate(5, 10, Duration.ofSeconds(1));
+
+    GcraResult result = gcra.tryAcquire();
 
     if (result.isLimited()) {
         // pace ourselves - schedule a retry once tokens replenish
@@ -2543,7 +2558,7 @@ When calling a fragile third-party API, payment provider, or email/SMS gateway t
     RGcraAsync gcra = redisson.getGcra("downstream:payments-api");
 
     // when limited, defer the call by result.getRetryAfterSeconds()
-    RFuture<GcraResult> result = gcra.tryAcquireAsync(5, 10, Duration.ofSeconds(1));
+    RFuture<GcraResult> result = gcra.tryAcquireAsync();
     ```
 === "Reactive"
     ```
@@ -2551,7 +2566,7 @@ When calling a fragile third-party API, payment provider, or email/SMS gateway t
     RGcraReactive gcra = redisson.getGcra("downstream:payments-api");
 
     // when limited, defer the call by result.getRetryAfterSeconds()
-    Mono<GcraResult> result = gcra.tryAcquire(5, 10, Duration.ofSeconds(1));
+    Mono<GcraResult> result = gcra.tryAcquire();
     ```
 === "RxJava3"
     ```
@@ -2559,7 +2574,7 @@ When calling a fragile third-party API, payment provider, or email/SMS gateway t
     RGcraRx gcra = redisson.getGcra("downstream:payments-api");
 
     // when limited, defer the call by result.getRetryAfterSeconds()
-    Single<GcraResult> result = gcra.tryAcquire(5, 10, Duration.ofSeconds(1));
+    Single<GcraResult> result = gcra.tryAcquire();
     ```
 
 **Weighted, Cost-Based Quotas**
@@ -2570,11 +2585,12 @@ Not every operation costs the same: a bulk export, a large upload, or a heavy qu
     ```
     RGcra gcra = redisson.getGcra("quota:" + accountId);
 
+    // budget of 1000 tokens per minute, with a burst of 200
+    gcra.trySetRate(200, 1000, Duration.ofMinutes(1));
+
     // charge each request by its cost (rows exported, payload size, ...)
     int cost = estimateCost(request);
-
-    // budget of 1000 tokens per minute, with a burst of 200
-    GcraResult result = gcra.tryAcquire(200, 1000, Duration.ofMinutes(1), cost);
+    GcraResult result = gcra.tryAcquire(cost);
 
     if (result.isLimited()) {
         // not enough budget right now - retry after result.getRetryAfterSeconds()
@@ -2587,7 +2603,7 @@ Not every operation costs the same: a bulk export, a large upload, or a heavy qu
     RGcraAsync gcra = redisson.getGcra("quota:" + accountId);
 
     int cost = estimateCost(request);
-    RFuture<GcraResult> result = gcra.tryAcquireAsync(200, 1000, Duration.ofMinutes(1), cost);
+    RFuture<GcraResult> result = gcra.tryAcquireAsync(cost);
     ```
 === "Reactive"
     ```
@@ -2595,7 +2611,7 @@ Not every operation costs the same: a bulk export, a large upload, or a heavy qu
     RGcraReactive gcra = redisson.getGcra("quota:" + accountId);
 
     int cost = estimateCost(request);
-    Mono<GcraResult> result = gcra.tryAcquire(200, 1000, Duration.ofMinutes(1), cost);
+    Mono<GcraResult> result = gcra.tryAcquire(cost);
     ```
 === "RxJava3"
     ```
@@ -2603,5 +2619,5 @@ Not every operation costs the same: a bulk export, a large upload, or a heavy qu
     RGcraRx gcra = redisson.getGcra("quota:" + accountId);
 
     int cost = estimateCost(request);
-    Single<GcraResult> result = gcra.tryAcquire(200, 1000, Duration.ofMinutes(1), cost);
+    Single<GcraResult> result = gcra.tryAcquire(cost);
     ```
