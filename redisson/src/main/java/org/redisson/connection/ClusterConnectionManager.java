@@ -896,67 +896,21 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         changedSlots.forEach(subscribeService::reattachPubSub);
     }
     
-    private int indexOf(byte[] array, byte element) {
-        for (int i = 0; i < array.length; ++i) {
-            if (array[i] == element) {
-                return i;
-            }
-        }
-        return -1;
-    }  
-    
     @Override
     public int calcSlot(byte[] key) {
-        if (key == null) {
-            return 0;
-        }
-
-        int start = indexOf(key, (byte) '{');
-        if (start != -1) {
-            int end = indexOf(key, (byte) '}');
-            if (end != -1 && start + 1 < end) {
-                key = Arrays.copyOfRange(key, start + 1, end);
-            }
-        }
-        
-        int result = CRC16.crc16(key) % MAX_SLOT;
-        return result;
+        return SlotCalculator.calcSlot(key);
     }
 
     @Override
     public int calcSlot(ByteBuf key) {
-        if (key == null) {
-            return 0;
-        }
-
-        int start = key.indexOf(key.readerIndex(), key.readerIndex() + key.readableBytes(), (byte) '{');
-        if (start != -1) {
-            int end = key.indexOf(start + 1, key.readerIndex() + key.readableBytes(), (byte) '}');
-            if (end != -1 && start + 1 < end) {
-                key = key.slice(start + 1, end-start - 1);
-            }
-        }
-
-        int result = CRC16.crc16(key) % MAX_SLOT;
+        int result = SlotCalculator.calcSlot(key);
         log.debug("slot {} for {}", result, key);
         return result;
     }
 
     @Override
     public int calcSlot(String key) {
-        if (key == null) {
-            return 0;
-        }
-
-        int start = key.indexOf('{');
-        if (start != -1) {
-            int end = key.indexOf('}');
-            if (end != -1 && start + 1 < end) {
-                key = key.substring(start + 1, end);
-            }
-        }
-
-        int result = CRC16.crc16(key.getBytes()) % MAX_SLOT;
+        int result = SlotCalculator.calcSlot(key);
         log.debug("slot {} for {}", result, key);
         return result;
     }
