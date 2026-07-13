@@ -709,6 +709,10 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             }
             
             if (config.isSlaveNotUsed()) {
+                // slaves aren't connected in this mode, but the partition state must still be
+                // updated so the same slaves aren't re-detected as added on every topology scan
+                currentPart.addSlaveAddress(uri);
+                currentPart.removeFailedSlaveAddress(uri);
                 continue;
             }
 
