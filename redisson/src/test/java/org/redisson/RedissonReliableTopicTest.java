@@ -14,6 +14,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 
 /**
  *
@@ -21,6 +22,15 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  */
 public class RedissonReliableTopicTest extends RedisDockerTest {
+
+    @Test
+    public void testRemoveAllListenersOnNotSubscribedTopic() {
+        RReliableTopic topic = redisson.getReliableTopic("testRemoveAllFresh");
+
+        // no listener was ever added, so no subscription exists - removing
+        // listeners must be a no-op instead of throwing NullPointerException
+        assertThatNoException().isThrownBy(topic::removeAllListeners);
+    }
 
     @Test
     public void testConcurrency() throws InterruptedException {
