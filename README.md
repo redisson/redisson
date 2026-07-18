@@ -84,6 +84,6 @@ Redisson greatly extends the capabilities of Valkey and Redis by providing addit
 - [Spring Data Redis to Redisson migration](https://redisson.pro/blog/spring-data-redis-to-redisson-migration-guide.html)
 - [Lettuce to Redisson migration](https://redisson.pro/blog/lettuce-to-redisson-migration-guide.html)
 - [Ehcache to Redisson migration](https://redisson.pro/blog/ehcache-to-redisson-moving-to-distributed-java-cache.html)
-- [Hazelcast to Redisson migration](https://redisson.pro/blog/hazelcast-to-redis-redisson-migration-guide.html)
-- [GemFire and Apache Geode to Redisson migration](https://redisson.pro/blog/hazelcast-to-redis-redisson-migration-guide.html)
+- [Hazelcast to Redisson migration](https://redisson.pro/blog/migrating-from-hazelcast-to-valkey-or-redis.html)
+- [GemFire and Apache Geode to Redisson migration](https://redisson.pro/blog/gemfire-to-valkey-redis-redisson-migration-guide.html)
 - [Apache Ignite to Redisson migration](https://redisson.pro/blog/apache-ignite-to-valkey-redis-redisson-migration-guide.html)
