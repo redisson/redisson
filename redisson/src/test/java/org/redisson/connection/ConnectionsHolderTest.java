@@ -1,5 +1,6 @@
 package org.redisson.connection;
 
+import io.netty.channel.embedded.EmbeddedChannel;
 import mockit.Mocked;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -72,6 +73,80 @@ public class ConnectionsHolderTest {
             // returns to the pool max — never inflated above it, which would jam idle eviction
             Assertions.assertThat(counter.getCounter()).isEqualTo(poolMaxSize);
             Assertions.assertThat(holder.getFreeConnections()).hasSize(poolMaxSize);
+        } finally {
+            manager.shutdown(0, 0, TimeUnit.SECONDS);
+        }
+    }
+
+    /**
+     * Inactive free-pool entries (channel closed without RedisConnection.closeAsync)
+     * must be discarded, not re-queued for reuse. See redisson/redisson#7236.
+     */
+    @Test
+    void testInactiveConnectionDroppedFromFreePoolOnPoll() throws Exception {
+        MasterSlaveConnectionManager manager = buildManager();
+        try {
+            EmbeddedChannel channel = new EmbeddedChannel();
+            RedisConnection connection = new RedisConnection(null, channel, new CompletableFuture<>());
+            channel.close().syncUninterruptibly();
+            Assertions.assertThat(connection.isActive()).isFalse();
+            Assertions.assertThat(connection.isClosed()).isFalse();
+
+            Function<RedisClient, CompletionStage<RedisConnection>> failingCallback = r -> {
+                CompletableFuture<RedisConnection> f = new CompletableFuture<>();
+                f.completeExceptionally(new RuntimeException("no new connection"));
+                return f;
+            };
+            ConnectionsHolder<RedisConnection> holder =
+                    new ConnectionsHolder<>(null, 2, failingCallback, manager.getServiceManager(), true);
+            holder.getFreeConnections().add(connection);
+            holder.getAllConnections().add(connection);
+
+            CompletableFuture<RedisConnection> acquired = holder.acquireConnection(null);
+            try {
+                acquired.get(2, TimeUnit.SECONDS);
+                Assertions.fail("expected acquire to fail after dropping inactive connection");
+            } catch (Exception expected) {
+                // createConnection fails after inactive free entry is dropped
+            }
+
+            Assertions.assertThat(holder.getFreeConnections()).doesNotContain(connection);
+            Assertions.assertThat(holder.getAllConnections()).doesNotContain(connection);
+            Assertions.assertThat(connection.isClosed()).isTrue();
+        } finally {
+            manager.shutdown(0, 0, TimeUnit.SECONDS);
+        }
+    }
+
+    /**
+     * Releasing an inactive connection must not return it to the free pool.
+     */
+    @Test
+    void testInactiveConnectionNotReleasedToFreePool(@Mocked RedisClient redisClient) throws Exception {
+        MasterSlaveConnectionManager manager = buildManager();
+        try {
+            EmbeddedChannel channel = new EmbeddedChannel();
+            RedisConnection connection = new RedisConnection(null, channel, new CompletableFuture<>());
+            connection.incUsage();
+            channel.close().syncUninterruptibly();
+            Assertions.assertThat(connection.isActive()).isFalse();
+            Assertions.assertThat(connection.isClosed()).isFalse();
+
+            ConnectionsHolder<RedisConnection> holder =
+                    new ConnectionsHolder<>(null, 2, r -> new CompletableFuture<>(),
+                            manager.getServiceManager(), true);
+            holder.getAllConnections().add(connection);
+
+            MasterSlaveServersConfig msConfig = new MasterSlaveServersConfig();
+            msConfig.setSubscriptionConnectionPoolSize(0);
+            msConfig.setSubscriptionConnectionMinimumIdleSize(0);
+            ClientConnectionsEntry entry = new ClientConnectionsEntry(
+                    redisClient, 0, 2, manager, org.redisson.api.NodeType.MASTER, msConfig);
+            holder.releaseConnection(entry, connection);
+
+            Assertions.assertThat(holder.getFreeConnections()).doesNotContain(connection);
+            Assertions.assertThat(holder.getAllConnections()).doesNotContain(connection);
+            Assertions.assertThat(connection.isClosed()).isTrue();
         } finally {
             manager.shutdown(0, 0, TimeUnit.SECONDS);
         }

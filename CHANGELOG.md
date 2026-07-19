@@ -5,6 +5,7 @@ Upgrade to __[Redisson PRO](https://redisson.pro/feature-comparison.html)__ with
 
 ### 18-June-2026 - 4.6.1 released
 
+Fixed - ConnectionsHolder drops inactive channels instead of reusing them after bare channel close (thanks to @HarshDevelops)
 Fixed - ConnectionsHolder init-connection double release (thanks to @yipeng09)  
 Fixed - AsyncSemaphore.tryRun() over-increment on cancelled waiters (thanks to @yipeng09)  
 Fixed - AsyncSemaphore race condition  
