@@ -23,4 +23,13 @@ package org.redisson.api.redisnode;
  */
 public interface RedisMaster extends RedisNode, RedisMasterAsync {
 
+    /**
+     * Warms up connection pool for this Redis node until the specified amount of free connections is available.
+     * If current free connections amount is greater than or equal to specified value, then no new connections are
+     * created.
+     *
+     * @param connectionAmount - free connections amount
+     */
+    void warmUpConnectionPool(int connectionAmount);
+
 }
