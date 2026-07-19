@@ -93,14 +93,15 @@ public class ConnectionsHolder<T extends RedisConnection> {
 
     private T pollConnection(RedisCommand<?> command) {
         int size = freeConnections.size();
+        int dropped = 0;
         for (int i = 0; i < size; i++) {
             T conn = freeConnections.poll();
             if (conn == null) {
                 return null;
             }
             if (conn.isActive()) {
-                if (i > 0) {
-                    log.debug("skipped connections with inactive channel: {}", i);
+                if (dropped > 0) {
+                    log.debug("dropped connections with inactive channel: {}", dropped);
                 }
                 if (changeUsage) {
                     conn.incUsage();
@@ -108,7 +109,14 @@ public class ConnectionsHolder<T extends RedisConnection> {
                 return conn;
             }
 
-            freeConnections.addLast(conn);
+            // Do not re-queue inactive channels: they can otherwise be borrowed again after
+            // a bare channel close (closed flag still false) and produce write timeouts.
+            // See https://github.com/redisson/redisson/issues/7236
+            allConnections.remove(conn);
+            if (!conn.isClosed()) {
+                conn.closeAsync();
+            }
+            dropped++;
         }
         return null;
     }
@@ -123,12 +131,19 @@ public class ConnectionsHolder<T extends RedisConnection> {
             return;
         }
 
-        connection.setLastUsageTime(System.nanoTime());
-        if (connection.isActive()) {
-            freeConnections.addFirst(connection);
-        } else {
-            freeConnections.addLast(connection);
+        if (!connection.isActive()) {
+            // Channel closed without RedisConnection.closeAsync() (e.g. PING timeout path).
+            // Drop it so it is not returned to the free pool.
+            allConnections.remove(connection);
+            connection.closeAsync();
+            if (changeUsage) {
+                connection.decUsage();
+            }
+            return;
         }
+
+        connection.setLastUsageTime(System.nanoTime());
+        freeConnections.addFirst(connection);
         if (changeUsage) {
             connection.decUsage();
         }
