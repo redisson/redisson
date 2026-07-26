@@ -1446,4 +1446,60 @@ public class RedissonTest extends RedisDockerTest {
         });
     }
 
+    @Test
+    public void testConnectionReleaseDoesNotCauseCommandWriteTimeout() throws Exception {
+        String key = "testConnectionReleaseDoesNotCauseCommandWriteTimeout";
+        redisson.getBucket(key).set("value");
+
+        Config c = createConfig();
+        c.setNettyThreads(1);
+        c.useSingleServer()
+                .setConnectionPoolSize(2)
+                .setConnectionMinimumIdleSize(2)
+                .setRetryAttempts(0)
+                .setTimeout(500)
+                .setPingConnectionInterval(0);
+
+        RedissonClient r = Redisson.create(c);
+        CountDownLatch waiterCallbackStarted = new CountDownLatch(1);
+        CountDownLatch unblockRelease = new CountDownLatch(1);
+        try {
+            ConnectionManager connectionManager = Reflect.on(r).get("connectionManager");
+            MasterSlaveEntry masterSlaveEntry = connectionManager.getEntry(0);
+            ClientConnectionsEntry entry = masterSlaveEntry.getEntry();
+            ConnectionsHolder<RedisConnection> holder = entry.getConnectionsHolder();
+            RedisConnection connection1 = holder.acquireConnection(RedisCommands.GET).get(3, TimeUnit.SECONDS);
+            RedisConnection connection2 = holder.acquireConnection(RedisCommands.GET).get(3, TimeUnit.SECONDS);
+
+            CompletableFuture<RedisConnection> waiter = holder.acquireConnection(RedisCommands.GET);
+            waiter.whenComplete((connection, ex) -> {
+                waiterCallbackStarted.countDown();
+                try {
+                    unblockRelease.await();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+                if (connection != null) {
+                    holder.releaseConnection(entry, connection);
+                }
+            });
+
+            CompletableFuture<Void> releaseStarted = new CompletableFuture<>();
+            connectionManager.getServiceManager().getGroup().next().execute(() -> {
+                releaseStarted.complete(null);
+                holder.releaseConnection(entry, connection1);
+            });
+            releaseStarted.get(1, TimeUnit.SECONDS);
+            assertThat(waiterCallbackStarted.await(1, TimeUnit.SECONDS)).isTrue();
+
+            holder.releaseConnection(entry, connection2);
+
+            RBucket<String> bucket = r.getBucket(key);
+            assertThat(bucket.get()).isEqualTo("value");
+        } finally {
+            unblockRelease.countDown();
+            r.shutdown();
+        }
+    }
+
 }
