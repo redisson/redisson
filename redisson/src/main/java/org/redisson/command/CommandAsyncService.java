@@ -69,6 +69,23 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     static final Logger log = LoggerFactory.getLogger(CommandAsyncService.class);
 
+    /**
+     * Non-blocking counterpart of every blocking command that {@link #pollFromAnyAsync} rotates
+     * over, used to visit each name once before the rotation starts blocking.
+     */
+    private static final Map<RedisCommand<?>, RedisCommand<?>> NON_BLOCKING_POLL_COMMANDS = nonBlockingPollCommands();
+
+    private static Map<RedisCommand<?>, RedisCommand<?>> nonBlockingPollCommands() {
+        Map<RedisCommand<?>, RedisCommand<?>> commands = new IdentityHashMap<>();
+        commands.put(RedisCommands.BLPOP_VALUE, RedisCommands.LPOP);
+        commands.put(RedisCommands.BLPOP_NAME, RedisCommands.LPOP);
+        commands.put(RedisCommands.BRPOP_VALUE, RedisCommands.RPOP);
+        commands.put(RedisCommands.BRPOP_NAME, RedisCommands.RPOP);
+        commands.put(RedisCommands.BZPOPMIN_VALUE, RedisCommands.ZPOPMIN_VALUE);
+        commands.put(RedisCommands.BZPOPMAX_VALUE, RedisCommands.ZPOPMAX_VALUE);
+        return Collections.unmodifiableMap(commands);
+    }
+
     final Codec codec;
     final ConnectionManager connectionManager;
     final RedissonObjectBuilder objectBuilder;
@@ -998,13 +1015,27 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     public <V> RFuture<V> pollFromAnyAsync(String name, Codec codec, RedisCommand<?> command, long secondsTimeout, String... queueNames) {
         List<String> mappedNames = Arrays.stream(queueNames).map(m -> connectionManager.getServiceManager().getNameMapper().map(m)).collect(Collectors.toList());
         if (getServiceManager().getCfg().isClusterConfig() && queueNames.length > 0) {
-            AtomicReference<Iterator<String>> ref = new AtomicReference<>();
             List<String> names = new ArrayList<>();
             names.add(name);
             names.addAll(mappedNames);
-            ref.set(names.iterator());
-            AtomicLong counter = new AtomicLong(secondsTimeout);
-            CompletionStage<V> result = poll(codec, ref, names, counter, command);
+
+            // On a cluster the names can live on different nodes, so one blocking command cannot
+            // cover them all and each name is polled in turn with a 1 second block. That makes the
+            // timeout a budget of attempts, and a timeout shorter than the number of names runs out
+            // before the last names are polled even once, hiding elements that are sitting in them.
+            // A single node does not behave that way, because BLPOP inspects every key before it
+            // blocks. Take one non-blocking pass over the names first to get the same reachability,
+            // then start the blocking rotation with the whole timeout still available.
+            CompletionStage<V> result = this.<V>sweep(codec, names, 0, command).thenCompose(res -> {
+                if (res != null) {
+                    return CompletableFuture.completedFuture(res);
+                }
+
+                AtomicReference<Iterator<String>> ref = new AtomicReference<>();
+                ref.set(names.iterator());
+                AtomicLong counter = new AtomicLong(secondsTimeout);
+                return this.<V>poll(codec, ref, names, counter, command);
+            });
             return new CompletableFutureWrapper<>(result);
         } else {
             List<Object> params = new ArrayList<>(queueNames.length + 1);
@@ -1013,6 +1044,29 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             params.add(secondsTimeout);
             return writeAsync(name, codec, command, params.toArray());
         }
+    }
+
+    private <V> CompletionStage<V> sweep(Codec codec, List<String> names, int index, RedisCommand<?> command) {
+        RedisCommand<?> nonBlocking = NON_BLOCKING_POLL_COMMANDS.get(command);
+        if (nonBlocking == null || index >= names.size()) {
+            // a command without a non-blocking counterpart simply skips the pass and is left
+            // with the plain rotation, which still reaches every name when the timeout allows it
+            return CompletableFuture.completedFuture(null);
+        }
+
+        String currentName = names.get(index);
+        RFuture<Object> future = writeAsync(currentName, codec, nonBlocking, currentName);
+        return future.thenCompose(res -> {
+            if (res != null) {
+                if (command == RedisCommands.BLPOP_NAME || command == RedisCommands.BRPOP_NAME) {
+                    // the blocking commands report which name the element came from, the
+                    // non-blocking ones return the element alone and the name is known here
+                    return CompletableFuture.completedFuture((V) new org.redisson.api.Entry<>(currentName, res));
+                }
+                return CompletableFuture.completedFuture((V) res);
+            }
+            return this.<V>sweep(codec, names, index + 1, command);
+        });
     }
 
     private <V> CompletionStage<V> poll(Codec codec, AtomicReference<Iterator<String>> ref,
