@@ -12,6 +12,9 @@ import org.redisson.misc.AsyncSemaphore;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
@@ -19,12 +22,63 @@ import java.util.function.Function;
 public class ConnectionsHolderTest {
 
     private MasterSlaveConnectionManager buildManager() {
+        return buildManager(null);
+    }
+
+    private MasterSlaveConnectionManager buildManager(ThreadPoolExecutor executor) {
         Config config = new Config();
         config.setLazyInitialization(true);
+        if (executor != null) {
+            config.setExecutor(executor);
+        }
         MasterSlaveServersConfig msConfig = config.useMasterSlaveServers();
         msConfig.setMasterAddress("redis://127.0.0.1:6379");
         msConfig.setReadMode(ReadMode.MASTER);
         return new MasterSlaveConnectionManager(msConfig, config);
+    }
+
+    @Test
+    void testConnectionCounterUsesServiceExecutorToWakeWaiter() throws Exception {
+        ThreadPoolExecutor executor = new ThreadPoolExecutor(1, 1, 0, TimeUnit.MILLISECONDS,
+                new LinkedBlockingQueue<>());
+        CountDownLatch taskStarted = new CountDownLatch(1);
+        CountDownLatch unblock = new CountDownLatch(1);
+        MasterSlaveConnectionManager manager = buildManager(executor);
+        try {
+            executor.execute(() -> {
+                taskStarted.countDown();
+                try {
+                    unblock.await();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            });
+            Assertions.assertThat(taskStarted.await(1, TimeUnit.SECONDS)).isTrue();
+
+            ConnectionsHolder<RedisConnection> holder =
+                    new ConnectionsHolder<>(null, 1, r -> new CompletableFuture<>(), manager.getServiceManager(), false);
+            AsyncSemaphore counter = holder.getFreeConnectionsCounter();
+
+            CompletableFuture<Void> acquired = counter.acquire();
+            Assertions.assertThat(acquired).isCompleted();
+
+            CompletableFuture<Void> waiter = counter.acquire();
+            Assertions.assertThat(waiter).isNotDone();
+
+            counter.release();
+
+            Assertions.assertThat(waiter).isNotDone();
+            Assertions.assertThat(executor.getQueue()).hasSize(1);
+
+            unblock.countDown();
+
+            waiter.get(1, TimeUnit.SECONDS);
+            Assertions.assertThat(waiter).isCompleted();
+        } finally {
+            unblock.countDown();
+            manager.shutdown(0, 0, TimeUnit.SECONDS);
+            executor.shutdownNow();
+        }
     }
 
     @Test
@@ -76,4 +130,5 @@ public class ConnectionsHolderTest {
             manager.shutdown(0, 0, TimeUnit.SECONDS);
         }
     }
+
 }

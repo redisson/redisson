@@ -17,6 +17,7 @@ package org.redisson.misc;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -120,7 +121,18 @@ public final class AsyncSemaphore {
 
     public void release() {
         counter.incrementAndGet();
-        tryForkAndRun();
+        if (listeners.isEmpty()) {
+            return;
+        }
+        if (executorService != null) {
+            try {
+                executorService.execute(this::tryRun);
+                return;
+            } catch (RejectedExecutionException e) {
+                // fallback to the caller thread during shutdown
+            }
+        }
+        tryRun();
     }
 
     @Override
