@@ -22,7 +22,7 @@ import org.redisson.api.RType;
  * @author Nikita Koksharov
  *
  */
-public class KeysScanParams implements KeysScanOptions {
+public final class KeysScanParams implements KeysScanOptions {
 
     private int limit;
     private String pattern;
