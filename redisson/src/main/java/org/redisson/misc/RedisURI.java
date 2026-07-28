@@ -63,6 +63,15 @@ public final class RedisURI {
         this.hashCode = Objects.hash(isSsl(), host, port);
     }
 
+    public RedisURI(String username, String password, RedisURI baseUri) {
+        this.scheme = baseUri.scheme;
+        this.host = baseUri.host;
+        this.port = baseUri.port;
+        this.username = username;
+        this.password = password;
+        this.hashCode = Objects.hash(isSsl(), host, port);
+    }
+
     public RedisURI(String uri) {
         if (!isValid(uri)) {
             throw new IllegalArgumentException("Redis url should start with redis:// or rediss:// (for SSL connection)");

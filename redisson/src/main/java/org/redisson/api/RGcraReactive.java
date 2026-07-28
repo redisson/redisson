@@ -30,13 +30,62 @@ import java.time.Duration;
 public interface RGcraReactive extends RExpirableReactive {
 
     /**
+     * Sets the rate configuration only if it hasn't been set before.
+     *
+     * @param maxBurst maximum burst size
+     * @param tokensPerPeriod token replenishment rate per period
+     * @param period replenishment period
+     * @return {@code true} if the rate was set, or {@code false} if it was already set before
+     */
+    Mono<Boolean> trySetRate(long maxBurst, long tokensPerPeriod, Duration period);
+
+    /**
+     * Sets the rate configuration overwriting the previous value and resetting the consumed tokens.
+     *
+     * @param maxBurst maximum burst size
+     * @param tokensPerPeriod token replenishment rate per period
+     * @param period replenishment period
+     * @return void
+     */
+    Mono<Void> setRate(long maxBurst, long tokensPerPeriod, Duration period);
+
+    /**
+     * Returns the rate configuration set through
+     * {@link #trySetRate(long, long, Duration)} or {@link #setRate(long, long, Duration)} method.
+     *
+     * @return rate configuration or {@code null} if the rate wasn't set
+     */
+    Mono<GcraConfig> getConfig();
+
+    /**
+     * Applies the GCRA algorithm with a single token request
+     * using the rate configuration set through
+     * {@link #trySetRate(long, long, Duration)} or {@link #setRate(long, long, Duration)} method.
+     *
+     * @return GCRA result
+     */
+    Mono<GcraResult> tryAcquire();
+
+    /**
+     * Applies the GCRA algorithm with a custom token request size
+     * using the rate configuration set through
+     * {@link #trySetRate(long, long, Duration)} or {@link #setRate(long, long, Duration)} method.
+     *
+     * @param tokens requested token amount
+     * @return GCRA result
+     */
+    Mono<GcraResult> tryAcquire(long tokens);
+
+    /**
      * Applies the GCRA algorithm with a single token request.
      *
      * @param maxBurst maximum burst size
      * @param tokensPerPeriod token replenishment rate per period
      * @param period replenishment period
      * @return GCRA result
+     * @deprecated use {@link #trySetRate(long, long, Duration)} with {@link #tryAcquire()} instead
      */
+    @Deprecated
     Mono<GcraResult> tryAcquire(long maxBurst, long tokensPerPeriod, Duration period);
 
     /**
@@ -47,7 +96,9 @@ public interface RGcraReactive extends RExpirableReactive {
      * @param period replenishment period
      * @param tokens requested token amount
      * @return GCRA result
+     * @deprecated use {@link #trySetRate(long, long, Duration)} with {@link #tryAcquire(long)} instead
      */
+    @Deprecated
     Mono<GcraResult> tryAcquire(long maxBurst, long tokensPerPeriod, Duration period, long tokens);
 
 }

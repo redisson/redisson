@@ -18,6 +18,7 @@ import org.redisson.misc.RedisURI;
 import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -170,6 +171,34 @@ public class MasterSlaveConnectionManagerTest {
             // exceptional latch must be replaceable so a subsequent call retries initialization
             Assertions.assertThatCode(manager::getEntrySet).doesNotThrowAnyException();
             Assertions.assertThat(doConnectInvocations.get()).isEqualTo(2);
+        } finally {
+            manager.shutdown(0, 0, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    void testLazyConnectReentryFromConnectingThreadDoesNotDeadlock() {
+        Config config = new Config();
+        config.setLazyInitialization(true);
+        MasterSlaveServersConfig msConfig = config.useMasterSlaveServers();
+        msConfig.setMasterAddress("redis://127.0.0.1:6379");
+        msConfig.setReadMode(ReadMode.MASTER);
+        msConfig.setRetryAttempts(0);
+
+        AtomicBoolean reentrantReturned = new AtomicBoolean();
+        MasterSlaveConnectionManager manager = new MasterSlaveConnectionManager(msConfig, config) {
+            @Override
+            protected void doConnect(Function<RedisURI, String> hostnameMapper) {
+                // mimics a synchronous entry teardown during init re-entering lazyConnect on the
+                // connecting thread; without the guard this join()s the latch it holds and deadlocks
+                lazyConnect();
+                reentrantReturned.set(true);
+            }
+        };
+
+        try {
+            assertTimeoutPreemptively(Duration.ofSeconds(10), manager::getEntrySet);
+            Assertions.assertThat(reentrantReturned).isTrue();
         } finally {
             manager.shutdown(0, 0, TimeUnit.SECONDS);
         }

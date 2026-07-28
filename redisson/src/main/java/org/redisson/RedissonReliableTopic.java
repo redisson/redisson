@@ -314,9 +314,18 @@ public final class RedissonReliableTopic extends RedissonExpirable implements RR
     }
 
     private RFuture<Void> removeSubscriber() {
-        subscribed.set(false);
-        readFuture.cancel(false);
-        timeoutTask.cancel();
+        if (!subscribed.compareAndSet(true, false)) {
+            return CompletableFutureWrapper.completedNull();
+        }
+
+        RFuture<Map<StreamMessageId, Map<String, Object>>> rf = readFuture;
+        if (rf != null) {
+            rf.cancel(false);
+        }
+        Timeout tt = timeoutTask;
+        if (tt != null) {
+            tt.cancel();
+        }
 
         return commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
                 "redis.call('xgroup', 'destroy', KEYS[1], ARGV[1]); "
