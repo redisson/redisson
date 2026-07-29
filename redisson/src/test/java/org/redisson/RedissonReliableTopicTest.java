@@ -6,7 +6,9 @@ import org.redisson.api.RReliableTopic;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.listener.MessageListener;
 import org.redisson.config.Config;
+import org.testcontainers.containers.GenericContainer;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.Queue;
@@ -22,6 +24,37 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
  *
  */
 public class RedissonReliableTopicTest extends RedisDockerTest {
+
+    @Test
+    public void testSubscriberDoesNotReadConsumerGroupFromSlave() throws InterruptedException {
+        withSentinel((nodes, config) -> {
+            RedissonClient sentinelRedisson = Redisson.create(config);
+            try {
+                RReliableTopic rt = sentinelRedisson.getReliableTopic("testSlaveRead");
+                AtomicInteger counter = new AtomicInteger();
+                rt.addListener(Integer.class, (ch, m) -> counter.incrementAndGet());
+
+                assertThat(rt.publish(1)).isEqualTo(1);
+                Awaitility.await().atMost(Duration.ofSeconds(10))
+                        .untilAsserted(() -> assertThat(counter).hasValue(1));
+
+                // the subscriber reads the consumer group it has just created on the master,
+                // so none of its scripts may be executed on a slave
+                assertThat(commandStats(nodes.get(0))).contains("cmdstat_xpending:");
+                assertThat(commandStats(nodes.get(1))).doesNotContain("cmdstat_xpending:");
+            } finally {
+                sentinelRedisson.shutdown();
+            }
+        }, 1);
+    }
+
+    private String commandStats(GenericContainer<?> node) {
+        try {
+            return node.execInContainer("redis-cli", "info", "commandstats").getStdout();
+        } catch (IOException | InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     @Test
     public void testRemoveAllListenersOnNotSubscribedTopic() {
