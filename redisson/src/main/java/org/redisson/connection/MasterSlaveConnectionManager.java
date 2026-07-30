@@ -454,6 +454,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     protected RedisClientConfig createRedisConfig(NodeType type, RedisURI address, int timeout, int commandTimeout, String sslHostname) {
         Config serviceCfg = serviceManager.getCfg();
         RedisClientConfig redisConfig = new RedisClientConfig();
+        FailedNodeDetector failedNodeDetector = new FailedConnectionDetector();
+        if (type == NodeType.SLAVE) {
+            failedNodeDetector = config.getFailedSlaveNodeDetector();
+        }
         redisConfig.setAddress(address)
                 .setTimer(serviceManager.getTimer())
                 .setExecutor(serviceManager.getExecutor())
@@ -480,7 +484,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 .setUsername(Objects.toString(serviceCfg.getUsername(), config.getUsername()))
                 .setPassword(Objects.toString(serviceCfg.getPassword(), config.getPassword()))
                 .setNettyHook(serviceCfg.getNettyHook())
-                .setFailedNodeDetector(config.getFailedSlaveNodeDetector())
+                .setFailedNodeDetector(failedNodeDetector)
                 .setProtocol(serviceCfg.getProtocol())
                 .setCapabilities(serviceCfg.getValkeyCapabilities())
                 .setReconnectionDelay(config.getReconnectionDelay())
