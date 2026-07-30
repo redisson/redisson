@@ -15,8 +15,8 @@
  */
 package org.redisson.client;
 
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 
 /**
  * Detects failed Redis node if it has reached specified amount of command execution errors
@@ -31,7 +31,7 @@ public class FailedCommandsDetector implements FailedNodeDetector {
 
     protected long failedCommandsLimit;
 
-    private final Queue<Long> failedCommands = new ConcurrentLinkedQueue<>();
+    private final NavigableMap<Long, Long> failedCommands = new TreeMap<>();
 
     public FailedCommandsDetector() {
     }
@@ -90,8 +90,8 @@ public class FailedCommandsDetector implements FailedNodeDetector {
     }
 
     @Override
-    public void onCommandFailed(Throwable cause) {
-        failedCommands.add(getCurrentTime());
+    public synchronized void onCommandFailed(Throwable cause) {
+        failedCommands.merge(getCurrentTime(), 1L, Long::sum);
     }
 
     @Override
@@ -101,11 +101,10 @@ public class FailedCommandsDetector implements FailedNodeDetector {
         }
 
         long start = getCurrentTime() - checkInterval;
-        while (failedCommands.peek() != null && failedCommands.peek() < start) {
-            failedCommands.poll();
-        }
+        failedCommands.headMap(start).clear();
 
-        if (failedCommands.size() >= failedCommandsLimit) {
+        long failures = failedCommands.values().stream().mapToLong(Long::longValue).sum();
+        if (failures >= failedCommandsLimit) {
             failedCommands.clear();
             return true;
         }

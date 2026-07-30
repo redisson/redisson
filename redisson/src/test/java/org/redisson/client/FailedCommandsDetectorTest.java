@@ -53,6 +53,19 @@ class FailedCommandsDetectorTest {
     }
 
     @Test
+    void removesExpiredFailuresInsertedAfterCurrentFailures() {
+        TestFailedCommandsDetector detector = new TestFailedCommandsDetector(1000, 2);
+        detector.setTime(1001);
+        detector.onCommandFailed(new RedisTimeoutException("current"));
+        detector.setTime(0);
+        detector.onCommandFailed(new RedisTimeoutException("expired"));
+
+        detector.setTime(1001);
+
+        assertThat(detector.isNodeFailed()).isFalse();
+    }
+
+    @Test
     void thresholdCanOnlyBeConsumedOnceConcurrently() throws Exception {
         TestFailedCommandsDetector detector = new TestFailedCommandsDetector(1000, 1);
         detector.onCommandFailed(new RedisTimeoutException("failed"));
@@ -100,6 +113,10 @@ class FailedCommandsDetectorTest {
 
         private void advanceTime(long delta) {
             time.addAndGet(delta);
+        }
+
+        private void setTime(long value) {
+            time.set(value);
         }
     }
 }
