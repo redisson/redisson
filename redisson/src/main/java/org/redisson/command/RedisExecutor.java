@@ -703,7 +703,7 @@ public class RedisExecutor<V, R> {
         detector.onCommandFailed(cause);
         if (detector.isNodeFailed()) {
             log.error("Redis node {} has been marked as failed according to the detection logic defined in {}",
-                            entry.getClient().getAddr(), detector);
+                            client.getAddr(), detector);
             entry.shutdownAndReconnectAsync(client, cause);
         }
     }

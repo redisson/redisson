@@ -15,8 +15,8 @@
  */
 package org.redisson.client;
 
-import java.util.NavigableSet;
-import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Detects failed Redis node if it has reached specified amount of command execution errors
@@ -31,7 +31,7 @@ public class FailedCommandsDetector implements FailedNodeDetector {
 
     protected long failedCommandsLimit;
 
-    private final NavigableSet<Long> failedCommands = new ConcurrentSkipListSet<>();
+    private final Queue<Long> failedCommands = new ConcurrentLinkedQueue<>();
 
     public FailedCommandsDetector() {
     }
@@ -91,23 +91,29 @@ public class FailedCommandsDetector implements FailedNodeDetector {
 
     @Override
     public void onCommandFailed(Throwable cause) {
-        failedCommands.add(System.currentTimeMillis());
+        failedCommands.add(getCurrentTime());
     }
 
     @Override
-    public boolean isNodeFailed() {
+    public synchronized boolean isNodeFailed() {
         if (failedCommandsLimit == 0) {
             throw new IllegalArgumentException("failedCommandsLimit isn't set");
         }
 
-        long start = System.currentTimeMillis() - checkInterval;
-        failedCommands.headSet(start).clear();
+        long start = getCurrentTime() - checkInterval;
+        while (failedCommands.peek() != null && failedCommands.peek() < start) {
+            failedCommands.poll();
+        }
 
-        if (failedCommands.tailSet(start).size() >= failedCommandsLimit) {
+        if (failedCommands.size() >= failedCommandsLimit) {
             failedCommands.clear();
             return true;
         }
         return false;
+    }
+
+    protected long getCurrentTime() {
+        return System.currentTimeMillis();
     }
 
     @Override
