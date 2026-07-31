@@ -408,6 +408,7 @@ public interface RedisCommands {
     RedisCommand<Boolean> LREM = new RedisCommand<Boolean>("LREM", new BooleanAmountReplayConvertor());
     RedisCommand<Object> LINDEX = new RedisCommand<Object>("LINDEX");
     RedisCommand<Object> LMOVE = new RedisCommand<Object>("LMOVE");
+    RedisCommand<List<Object>> LMOVEM = new RedisCommand<>("LMOVEM", new ObjectListReplayDecoder(), new EmptyListConvertor());
     RedisCommand<Integer> LINSERT_INT = new RedisCommand<Integer>("LINSERT", new IntegerReplayConvertor());
     RedisStrictCommand<Integer> LLEN_INT = new RedisStrictCommand<Integer>("LLEN", new IntegerReplayConvertor());
     RedisStrictCommand<Void> LTRIM = new RedisStrictCommand<Void>("LTRIM", new VoidReplayConvertor());
@@ -434,6 +435,7 @@ public interface RedisCommands {
     RedisCommand<List<Object>> BZMPOP_SINGLE_LIST = new RedisCommand("BZMPOP", ZMPOP_VALUES.getReplayMultiDecoder(), new EmptyListConvertor());
     RedisCommand<Object> BLPOP_VALUE = new RedisCommand<Object>("BLPOP", new ListObjectDecoder<Object>(1));
     RedisCommand<Object> BLMOVE = new RedisCommand<Object>("BLMOVE", new ListFirstObjectDecoder());
+    RedisCommand<List<Object>> BLMOVEM = new RedisCommand<>("BLMOVEM", new ObjectListReplayDecoder(), new EmptyListConvertor());
     RedisCommand<Object> BRPOP_VALUE = new RedisCommand<Object>("BRPOP", new ListObjectDecoder<Object>(1));
     RedisCommand<Object> BZPOPMIN_VALUE = new RedisCommand<Object>("BZPOPMIN", new ScoredSortedSetPolledObjectDecoder());
     RedisCommand<Object> BZPOPMAX_VALUE = new RedisCommand<Object>("BZPOPMAX", new ScoredSortedSetPolledObjectDecoder());
@@ -484,7 +486,8 @@ public interface RedisCommands {
 
     Set<String> BLOCKING_COMMAND_NAMES = new HashSet<String>(
             Arrays.asList(BRPOPLPUSH.getName(), BZPOPMIN_VALUE.getName(), BZPOPMAX_VALUE.getName(),
-                    BLPOP.getName(), BRPOP.getName(), BLMOVE.getName(), BZMPOP_SINGLE_LIST.getName(), BLMPOP.getName()));
+                    BLPOP.getName(), BRPOP.getName(), BLMOVE.getName(), BLMOVEM.getName(),
+                    BZMPOP_SINGLE_LIST.getName(), BLMPOP.getName()));
 
     RedisCommand<Boolean> PFADD = new RedisCommand<Boolean>("PFADD", new BooleanReplayConvertor());
     RedisStrictCommand<Long> PFCOUNT = new RedisStrictCommand<Long>("PFCOUNT");

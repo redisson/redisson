@@ -22,6 +22,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.api.queue.QueueMoveElementsArgs;
 import org.redisson.misc.CompletableFutureWrapper;
 
 import java.util.*;
@@ -542,6 +543,15 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
         return get(pollLastAndOfferFirstToAsync(dequeName));
     }
 
+    @Override
+    public List<V> move(QueueMoveElementsArgs args) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public RFuture<List<V>> moveAsync(QueueMoveElementsArgs args) {
+        throw new UnsupportedOperationException();
+    }
     @Override
     public void destroy() {
         commandExecutor.getServiceManager().getQueueTransferService().remove(queueName);

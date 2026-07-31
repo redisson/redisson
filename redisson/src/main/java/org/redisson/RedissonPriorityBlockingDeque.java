@@ -23,6 +23,7 @@ import org.redisson.api.queue.DequeMoveArgs;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.api.queue.QueueMoveElementsArgs;
 import org.redisson.misc.CompletableFutureWrapper;
 
 import java.time.Duration;
@@ -363,5 +364,15 @@ public class RedissonPriorityBlockingDeque<V> extends RedissonPriorityDeque<V> i
     @Override
     public RFuture<V> moveAsync(Duration timeout, DequeMoveArgs args) {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public List<V> move(Duration timeout, QueueMoveElementsArgs args) {
+        throw new UnsupportedOperationException("use move(QueueMoveElementsArgs) method");
+    }
+
+    @Override
+    public RFuture<List<V>> moveAsync(Duration timeout, QueueMoveElementsArgs args) {
+        throw new UnsupportedOperationException("use moveAsync(QueueMoveElementsArgs) method");
     }
 }

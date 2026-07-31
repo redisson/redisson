@@ -15,6 +15,7 @@
  */
 package org.redisson.api;
 
+import org.redisson.api.queue.QueueMoveElementsArgs;
 import reactor.core.publisher.Mono;
 
 import java.util.List;
@@ -76,6 +77,18 @@ public interface RQueueReactive<V> extends RCollectionReactive<V> {
      * @return elements
      */
     Mono<List<V>> readAll();
+
+    /**
+     * Retrieves and removes the head elements of this queue
+     * and adds them at the tail of <code>queueName</code>.
+     * Returns moved elements.
+     * <p>
+     * Requires <b>Redis 8.10.0 and higher.</b>
+     *
+     * @param args - arguments object
+     * @return moved elements
+     */
+    Mono<List<V>> move(QueueMoveElementsArgs args);
 
     /**
      * Adds object event listener

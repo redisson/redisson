@@ -15,6 +15,8 @@
  */
 package org.redisson.api;
 
+import org.redisson.api.queue.QueueMoveElementsArgs;
+
 import java.util.List;
 
 /**
@@ -74,6 +76,27 @@ public interface RQueueAsync<V> extends RCollectionAsync<V> {
      * @return list of head elements
      */
     RFuture<List<V>> pollAsync(int limit);
+
+    /**
+     * Retrieves and removes the head elements of this queue
+     * and adds them at the tail of <code>queueName</code>.
+     * Returns moved elements.
+     * <p>
+     * Code example:
+     * <pre>
+     * RFuture&lt;List&lt;V&gt;&gt; future = queue.moveAsync(QueueMoveElementsArgs.to("myQueue")
+     *                                                              .count(10));
+     *
+     * RFuture&lt;List&lt;V&gt;&gt; future = queue.moveAsync(QueueMoveElementsArgs.to("myQueue")
+     *                                                              .exactly(10));
+     * </pre>
+     * <p>
+     * Requires <b>Redis 8.10.0 and higher.</b>
+     *
+     * @param args - arguments object
+     * @return moved elements
+     */
+    RFuture<List<V>> moveAsync(QueueMoveElementsArgs args);
 
     /**
      * Adds object event listener

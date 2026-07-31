@@ -21,6 +21,7 @@ import org.redisson.api.RFuture;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.queue.DequeMoveArgs;
 import org.redisson.api.queue.DequeMoveParams;
+import org.redisson.api.queue.QueueMoveElementsArgs;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
@@ -348,5 +349,15 @@ public class RedissonBlockingDeque<V> extends RedissonDeque<V> implements RBlock
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.BLMOVE, getRawName(),
                                                 pp.getDestName(), pp.getSourceDirection(), pp.getDestDirection(),
                                                 toSeconds(timeout.getSeconds(), TimeUnit.SECONDS));
+    }
+
+    @Override
+    public List<V> move(Duration timeout, QueueMoveElementsArgs args) {
+        return blockingQueue.move(timeout, args);
+    }
+
+    @Override
+    public RFuture<List<V>> moveAsync(Duration timeout, QueueMoveElementsArgs args) {
+        return blockingQueue.moveAsync(timeout, args);
     }
 }

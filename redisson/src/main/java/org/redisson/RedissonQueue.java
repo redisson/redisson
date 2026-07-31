@@ -21,7 +21,10 @@ import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.api.queue.QueueMoveElementsArgs;
+import org.redisson.api.queue.QueueMoveElementsParams;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -128,6 +131,27 @@ public class RedissonQueue<V> extends BaseRedissonList<V> implements RQueue<V> {
     @Override
     public RFuture<V> pollLastAndOfferFirstToAsync(String queueName) {
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.RPOPLPUSH, getRawName(), queueName);
+    }
+
+    @Override
+    public List<V> move(QueueMoveElementsArgs args) {
+        return get(moveAsync(args));
+    }
+
+    @Override
+    public RFuture<List<V>> moveAsync(QueueMoveElementsArgs args) {
+        QueueMoveElementsParams pp = (QueueMoveElementsParams) args;
+        List<Object> params = new ArrayList<>();
+        params.add(getRawName());
+        params.add(mapName(pp.getDestName()));
+        params.add("LEFT");
+        params.add("RIGHT");
+        if (pp.getSelector() != null) {
+            params.add(pp.getSelector());
+            params.add(pp.getCount());
+            params.add(pp.getOrdering());
+        }
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.LMOVEM, params.toArray());
     }
 
 }

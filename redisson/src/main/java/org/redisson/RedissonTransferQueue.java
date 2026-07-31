@@ -26,6 +26,7 @@ import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.client.protocol.convertor.Convertor;
 import org.redisson.client.protocol.decoder.ObjectListReplayDecoder;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.api.queue.QueueMoveElementsArgs;
 import org.redisson.connection.decoder.ListDrainToDecoder;
 import org.redisson.executor.RemotePromise;
 import org.redisson.iterator.RedissonListIterator;
@@ -670,6 +671,26 @@ public class RedissonTransferQueue<V> extends RedissonExpirable implements RTran
 
     @Override
     public V pollLastAndOfferFirstTo(String queueName) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public List<V> move(QueueMoveElementsArgs args) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public RFuture<List<V>> moveAsync(QueueMoveElementsArgs args) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public List<V> move(Duration timeout, QueueMoveElementsArgs args) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public RFuture<List<V>> moveAsync(Duration timeout, QueueMoveElementsArgs args) {
         throw new UnsupportedOperationException();
     }
 

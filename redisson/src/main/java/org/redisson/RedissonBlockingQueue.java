@@ -23,6 +23,8 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.api.queue.QueueMoveElementsArgs;
+import org.redisson.api.queue.QueueMoveElementsParams;
 import org.redisson.connection.decoder.ListDrainToDecoder;
 import org.redisson.misc.CompletableFutureWrapper;
 
@@ -281,6 +283,28 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
     @Override
     public void unsubscribe(int listenerId) {
         getServiceManager().getElementsSubscribeService().unsubscribe(listenerId);
+    }
+
+    @Override
+    public List<V> move(Duration timeout, QueueMoveElementsArgs args) {
+        return get(moveAsync(timeout, args));
+    }
+
+    @Override
+    public RFuture<List<V>> moveAsync(Duration timeout, QueueMoveElementsArgs args) {
+        QueueMoveElementsParams pp = (QueueMoveElementsParams) args;
+        List<Object> params = new ArrayList<>();
+        params.add(getRawName());
+        params.add(mapName(pp.getDestName()));
+        params.add("LEFT");
+        params.add("RIGHT");
+        params.add(toSeconds(timeout.toMillis(), TimeUnit.MILLISECONDS));
+        if (pp.getSelector() != null) {
+            params.add(pp.getSelector());
+            params.add(pp.getCount());
+            params.add(pp.getOrdering());
+        }
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.BLMOVEM, params.toArray());
     }
 
 }

@@ -7,6 +7,8 @@ import org.junit.jupiter.api.Timeout;
 import org.redisson.api.Entry;
 import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RFuture;
+import org.redisson.api.RQueue;
+import org.redisson.api.queue.QueueMoveElementsArgs;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
 import org.testcontainers.containers.ContainerState;
@@ -698,6 +700,80 @@ public class RedissonBlockingQueueTest extends RedissonQueueTest {
         q.add(12);
 
         assertThat(values).hasSize(10);
+    }
+
+    @Test
+    public void testMoveTimeout() {
+        RBlockingQueue<Integer> queue = getQueue();
+        RQueue<Integer> destination = redisson.getQueue("destination");
+
+        long start = System.currentTimeMillis();
+        List<Integer> elements = queue.move(Duration.ofSeconds(1),
+                                            QueueMoveElementsArgs.to(destination.getName())
+                                                                 .count(1));
+        long elapsed = System.currentTimeMillis() - start;
+
+        assertThat(elements).isEmpty();
+        assertThat(elapsed).isGreaterThanOrEqualTo(900);
+        assertThat(destination).isEmpty();
+    }
+
+    @Test
+    @Timeout(30)
+    public void testMoveSubSecondTimeout() {
+        RBlockingQueue<Integer> queue = getQueue();
+        RQueue<Integer> destination = redisson.getQueue("destination");
+
+        // sub-second timeouts must round up to 1 second rather than truncate
+        // to 0, which BLMOVEM treats as "block indefinitely"
+        List<Integer> elements = queue.move(Duration.ofMillis(500),
+                                            QueueMoveElementsArgs.to(destination.getName())
+                                                                 .count(1));
+
+        assertThat(elements).isEmpty();
+        assertThat(destination).isEmpty();
+    }
+
+    @Test
+    public void testMoveWaitsForElement() {
+        RBlockingQueue<Integer> queue = getQueue();
+        RQueue<Integer> destination = redisson.getQueue("destination");
+
+        Executors.newSingleThreadScheduledExecutor().schedule(() -> {
+            queue.addAll(Arrays.asList(1, 2, 3));
+        }, 2, TimeUnit.SECONDS);
+
+        List<Integer> elements = queue.move(Duration.ofSeconds(10),
+                                            QueueMoveElementsArgs.to(destination.getName())
+                                                                 .count(2));
+
+        assertThat(elements).isNotEmpty();
+        assertThat(destination).isNotEmpty();
+    }
+
+    @Test
+    public void testMoveExactlyWaitsForEnoughElements() {
+        RBlockingQueue<Integer> queue = getQueue();
+        RQueue<Integer> destination = redisson.getQueue("destination");
+        queue.add(1);
+
+        List<Integer> tooFew = queue.move(Duration.ofSeconds(1),
+                                          QueueMoveElementsArgs.to(destination.getName())
+                                                               .exactly(3));
+        assertThat(tooFew).isEmpty();
+        assertThat(queue).containsExactly(1);
+
+        Executors.newSingleThreadScheduledExecutor().schedule(() -> {
+            queue.addAll(Arrays.asList(2, 3));
+        }, 2, TimeUnit.SECONDS);
+
+        List<Integer> elements = queue.move(Duration.ofSeconds(10),
+                                            QueueMoveElementsArgs.to(destination.getName())
+                                                                 .exactly(3));
+
+        assertThat(elements).containsExactly(1, 2, 3);
+        assertThat(queue).isEmpty();
+        assertThat(destination).containsExactly(1, 2, 3);
     }
 
 }

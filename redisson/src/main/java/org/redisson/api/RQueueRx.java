@@ -15,6 +15,7 @@
  */
 package org.redisson.api;
 
+import org.redisson.api.queue.QueueMoveElementsArgs;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Single;
 
@@ -77,6 +78,18 @@ public interface RQueueRx<V> extends RCollectionRx<V> {
      * @return elements
      */
     Single<List<V>> readAll();
+
+    /**
+     * Retrieves and removes the head elements of this queue
+     * and adds them at the tail of <code>queueName</code>.
+     * Returns moved elements.
+     * <p>
+     * Requires <b>Redis 8.10.0 and higher.</b>
+     *
+     * @param args - arguments object
+     * @return moved elements
+     */
+    Single<List<V>> move(QueueMoveElementsArgs args);
 
     /**
      * Adds object event listener

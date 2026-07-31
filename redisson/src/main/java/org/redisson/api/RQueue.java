@@ -15,6 +15,8 @@
  */
 package org.redisson.api;
 
+import org.redisson.api.queue.QueueMoveElementsArgs;
+
 import java.util.List;
 import java.util.Queue;
 
@@ -50,6 +52,27 @@ public interface RQueue<V> extends Queue<V>, RExpirable, RQueueAsync<V> {
      * @return list of head elements
      */
     List<V> poll(int limit);
+
+    /**
+     * Retrieves and removes the head elements of this queue
+     * and adds them at the tail of <code>queueName</code>.
+     * Returns moved elements.
+     * <p>
+     * Code example:
+     * <pre>
+     * List&lt;V&gt; elements = queue.move(QueueMoveElementsArgs.to("myQueue")
+     *                                                 .count(10));
+     *
+     * List&lt;V&gt; elements = queue.move(QueueMoveElementsArgs.to("myQueue")
+     *                                                 .exactly(10));
+     * </pre>
+     * <p>
+     * Requires <b>Redis 8.10.0 and higher.</b>
+     *
+     * @param args - arguments object
+     * @return moved elements
+     */
+    List<V> move(QueueMoveElementsArgs args);
 
     /**
      * Adds object event listener

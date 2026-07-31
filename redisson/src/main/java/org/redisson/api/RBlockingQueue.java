@@ -15,6 +15,8 @@
  */
 package org.redisson.api;
 
+import org.redisson.api.queue.QueueMoveElementsArgs;
+
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -132,6 +134,29 @@ public interface RBlockingQueue<V> extends BlockingQueue<V>, RQueue<V>, RBlockin
      * @throws InterruptedException if interrupted while waiting
      */
     V takeLastAndOfferFirstTo(String queueName) throws InterruptedException;
+
+    /**
+     * Retrieves and removes the head elements of this queue
+     * and adds them at the tail of <code>queueName</code>.
+     * If necessary waits up to defined <code>timeout</code>
+     * for elements to become available.
+     * Returns moved elements.
+     * <p>
+     * Code example:
+     * <pre>
+     * List&lt;V&gt; elements = queue.move(Duration.ofSeconds(10),
+     *                                QueueMoveElementsArgs.to("myQueue")
+     *                                                     .count(10));
+     * </pre>
+     * <p>
+     * Requires <b>Redis 8.10.0 and higher.</b>
+     *
+     * @param timeout how long to wait before giving up
+     * @param args - arguments object
+     * @return moved elements or empty list if the
+     *         specified waiting time elapses before elements are available
+     */
+    List<V> move(Duration timeout, QueueMoveElementsArgs args);
 
     /**
      * Use {@link #subscribeOnElements(Function)} instead.

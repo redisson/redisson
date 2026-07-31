@@ -24,6 +24,7 @@ import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.api.queue.QueueMoveElementsArgs;
 import org.redisson.connection.decoder.ListDrainToDecoder;
 import org.redisson.misc.CompletableFutureWrapper;
 
@@ -305,6 +306,41 @@ public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements
     @Override
     public V pollLastAndOfferFirstTo(String queueName, long timeout, TimeUnit unit) throws InterruptedException {
         return commandExecutor.getInterrupted(pollLastAndOfferFirstToAsync(queueName, timeout, unit));
+    }
+
+    @Override
+    public List<V> move(QueueMoveElementsArgs args) {
+        return get(moveAsync(args));
+    }
+
+    @Override
+    public RFuture<List<V>> moveAsync(QueueMoveElementsArgs args) {
+        return wrapMoveFuture(super.moveAsync(args));
+    }
+
+    @Override
+    public List<V> move(Duration timeout, QueueMoveElementsArgs args) {
+        return get(moveAsync(timeout, args));
+    }
+
+    @Override
+    public RFuture<List<V>> moveAsync(Duration timeout, QueueMoveElementsArgs args) {
+        return wrapMoveFuture(blockingQueue.moveAsync(timeout, args));
+    }
+
+    private RFuture<List<V>> wrapMoveFuture(RFuture<List<V>> moveFuture) {
+        CompletionStage<List<V>> f = moveFuture.thenCompose(res -> {
+            if (res == null || res.isEmpty()) {
+                return CompletableFuture.completedFuture(res);
+            }
+            return createSemaphore(null).releaseAsync(res.size()).handle((r, ex) -> res);
+        });
+        f.whenComplete((r, e) -> {
+            if (f.toCompletableFuture().isCancelled()) {
+                moveFuture.cancel(false);
+            }
+        });
+        return new CompletableFutureWrapper<>(f);
     }
 
     @Override

@@ -15,6 +15,8 @@
  */
 package org.redisson.api;
 
+import org.redisson.api.queue.QueueMoveElementsArgs;
+
 import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
@@ -208,5 +210,21 @@ public interface RBlockingQueueAsync<V> extends RQueueAsync<V> {
      * @return void
      */
     RFuture<Void> putAsync(V e);
+
+    /**
+     * Retrieves and removes the head elements of this queue
+     * and adds them at the tail of <code>queueName</code>.
+     * If necessary waits up to defined <code>timeout</code>
+     * for elements to become available.
+     * Returns moved elements.
+     * <p>
+     * Requires <b>Redis 8.10.0 and higher.</b>
+     *
+     * @param timeout how long to wait before giving up
+     * @param args - arguments object
+     * @return moved elements or empty list if the
+     *         specified waiting time elapses before elements are available
+     */
+    RFuture<List<V>> moveAsync(Duration timeout, QueueMoveElementsArgs args);
 
 }

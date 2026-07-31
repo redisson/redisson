@@ -24,6 +24,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.api.queue.QueueMoveElementsArgs;
 import org.redisson.connection.decoder.ListDrainToDecoder;
 import org.redisson.misc.CompletableFutureWrapper;
 
@@ -309,5 +310,15 @@ public class RedissonPriorityBlockingQueue<V> extends RedissonPriorityQueue<V> i
     @Override
     public List<V> poll(int limit) {
         return get(pollAsync(limit));
+    }
+
+    @Override
+    public List<V> move(Duration timeout, QueueMoveElementsArgs args) {
+        throw new UnsupportedOperationException("use move(QueueMoveElementsArgs) method");
+    }
+
+    @Override
+    public RFuture<List<V>> moveAsync(Duration timeout, QueueMoveElementsArgs args) {
+        throw new UnsupportedOperationException("use moveAsync(QueueMoveElementsArgs) method");
     }
 }
