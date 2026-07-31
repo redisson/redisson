@@ -649,6 +649,36 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
     }
 
     @Override
+    public Integer countUnion(String... names) {
+        return get(countUnionAsync(names));
+    }
+
+    @Override
+    public Integer countUnion(int limit, String... names) {
+        return get(countUnionAsync(limit, names));
+    }
+
+    @Override
+    public Integer countUnionApprox(String... names) {
+        return get(countUnionApproxAsync(names));
+    }
+
+    @Override
+    public Integer countUnionApprox(int limit, String... names) {
+        return get(countUnionApproxAsync(limit, names));
+    }
+
+    @Override
+    public Integer countDiff(String... names) {
+        return get(countDiffAsync(names));
+    }
+
+    @Override
+    public Integer countDiff(int limit, String... names) {
+        return get(countDiffAsync(limit, names));
+    }
+
+    @Override
     public Set<V> containsEach(Collection<V> c) {
         throw new UnsupportedOperationException();
     }
@@ -892,6 +922,88 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
                         "return res;",
                          keys,
                 System.currentTimeMillis(), 92233720368547758L, names.length+1, limit);
+    }
+
+    @Override
+    public RFuture<Integer> countUnionAsync(String... names) {
+        return countUnionAsync(0, names);
+    }
+
+    @Override
+    public RFuture<Integer> countUnionAsync(int limit, String... names) {
+        List<Object> keys = new ArrayList<>();
+        keys.add(getRawName());
+        keys.addAll(map(names));
+
+        return commandExecutor.evalReadAsync(getRawName(), IntegerCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
+                   "local limit = tonumber(ARGV[3]);" +
+                         "local found = {};" +
+                         "local count = 0;" +
+                         "for i = 1, #KEYS, 1 do " +
+                             "local values = redis.call('zrangebyscore', KEYS[i], ARGV[1], ARGV[2]);" +
+                             "for j = 1, #values, 1 do " +
+                                 "if found[values[j]] == nil then " +
+                                     "found[values[j]] = true;" +
+                                     "count = count + 1;" +
+                                     "if limit > 0 and count >= limit then " +
+                                         "return count;" +
+                                     "end;" +
+                                 "end;" +
+                             "end;" +
+                        "end;" +
+                        "return count;",
+                        keys,
+                System.currentTimeMillis(), 92233720368547758L, limit);
+    }
+
+    /*
+     * RSetCache is backed by a sorted set, so the union cardinality is computed
+     * exactly rather than estimated. An exact value is a valid result for an
+     * approximate count, so both variants share the same implementation.
+     */
+    @Override
+    public RFuture<Integer> countUnionApproxAsync(String... names) {
+        return countUnionAsync(0, names);
+    }
+
+    @Override
+    public RFuture<Integer> countUnionApproxAsync(int limit, String... names) {
+        return countUnionAsync(limit, names);
+    }
+
+    @Override
+    public RFuture<Integer> countDiffAsync(String... names) {
+        return countDiffAsync(0, names);
+    }
+
+    @Override
+    public RFuture<Integer> countDiffAsync(int limit, String... names) {
+        List<Object> keys = new ArrayList<>();
+        keys.add(getRawName());
+        keys.addAll(map(names));
+
+        return commandExecutor.evalReadAsync(getRawName(), IntegerCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
+                   "local limit = tonumber(ARGV[3]);" +
+                         "local excluded = {};" +
+                         "for i = 2, #KEYS, 1 do " +
+                             "local values = redis.call('zrangebyscore', KEYS[i], ARGV[1], ARGV[2]);" +
+                             "for j = 1, #values, 1 do " +
+                                 "excluded[values[j]] = true;" +
+                             "end;" +
+                        "end;" +
+                        "local count = 0;" +
+                        "local values = redis.call('zrangebyscore', KEYS[1], ARGV[1], ARGV[2]);" +
+                        "for j = 1, #values, 1 do " +
+                            "if excluded[values[j]] == nil then " +
+                                "count = count + 1;" +
+                                "if limit > 0 and count >= limit then " +
+                                    "return count;" +
+                                "end;" +
+                            "end;" +
+                        "end;" +
+                        "return count;",
+                        keys,
+                System.currentTimeMillis(), 92233720368547758L, limit);
     }
 
     @Override

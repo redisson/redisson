@@ -548,6 +548,89 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
     }
 
     @Override
+    public Integer countUnion(String... names) {
+        return get(countUnionAsync(names));
+    }
+
+    @Override
+    public RFuture<Integer> countUnionAsync(String... names) {
+        return countUnionAsync(0, names);
+    }
+
+    @Override
+    public Integer countUnion(int limit, String... names) {
+        return get(countUnionAsync(limit, names));
+    }
+
+    @Override
+    public RFuture<Integer> countUnionAsync(int limit, String... names) {
+        return unionCardAsync(false, limit, names);
+    }
+
+    @Override
+    public Integer countUnionApprox(String... names) {
+        return get(countUnionApproxAsync(names));
+    }
+
+    @Override
+    public RFuture<Integer> countUnionApproxAsync(String... names) {
+        return countUnionApproxAsync(0, names);
+    }
+
+    @Override
+    public Integer countUnionApprox(int limit, String... names) {
+        return get(countUnionApproxAsync(limit, names));
+    }
+
+    @Override
+    public RFuture<Integer> countUnionApproxAsync(int limit, String... names) {
+        return unionCardAsync(true, limit, names);
+    }
+
+    private RFuture<Integer> unionCardAsync(boolean approx, int limit, String... names) {
+        List<Object> args = new ArrayList<>(names.length + 5);
+        args.add(names.length + 1);
+        args.add(getRawName());
+        args.addAll(map(names));
+        if (approx) {
+            args.add("APPROX");
+        }
+        if (limit > 0) {
+            args.add("LIMIT");
+            args.add(limit);
+        }
+        return commandExecutor.readAsync(getRawName(), codec, RedisCommands.SUNIONCARD_INT, args.toArray());
+    }
+
+    @Override
+    public Integer countDiff(String... names) {
+        return get(countDiffAsync(names));
+    }
+
+    @Override
+    public RFuture<Integer> countDiffAsync(String... names) {
+        return countDiffAsync(0, names);
+    }
+
+    @Override
+    public Integer countDiff(int limit, String... names) {
+        return get(countDiffAsync(limit, names));
+    }
+
+    @Override
+    public RFuture<Integer> countDiffAsync(int limit, String... names) {
+        List<Object> args = new ArrayList<>(names.length + 4);
+        args.add(names.length + 1);
+        args.add(getRawName());
+        args.addAll(map(names));
+        if (limit > 0) {
+            args.add("LIMIT");
+            args.add(limit);
+        }
+        return commandExecutor.readAsync(getRawName(), codec, RedisCommands.SDIFFCARD_INT, args.toArray());
+    }
+
+    @Override
     public void clear() {
         delete();
     }

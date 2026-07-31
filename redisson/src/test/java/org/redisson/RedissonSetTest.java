@@ -5,8 +5,10 @@ import mockit.Invocation;
 import mockit.Mock;
 import mockit.MockUp;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.*;
+import org.redisson.client.RedisException;
 import org.redisson.client.codec.IntegerCodec;
 import org.redisson.client.codec.StringCodec;
 
@@ -780,6 +782,88 @@ public class RedissonSetTest extends RedisDockerTest {
 
         assertThat(set.readDiff("set1", "set2")).containsOnly(7, 6);
         assertThat(set).containsOnly(6, 5, 7);
+    }
+
+    /**
+     * SUNIONCARD and SDIFFCARD require Redis 8.10.0, skip if the server is older.
+     */
+    private void assumeCardCommandsSupported(Runnable command) {
+        try {
+            command.run();
+        } catch (RedisException e) {
+            Assumptions.assumeFalse(e.getMessage().contains("unknown command"),
+                    "SUNIONCARD/SDIFFCARD aren't supported");
+            throw e;
+        }
+    }
+
+    @Test
+    public void testCountUnion() {
+        RSet<Integer> set = redisson.getSet("set");
+        set.add(5);
+        set.add(6);
+        RSet<Integer> set1 = redisson.getSet("set1");
+        set1.add(1);
+        set1.add(2);
+        RSet<Integer> set2 = redisson.getSet("set2");
+        set2.add(3);
+        set2.add(4);
+        set2.add(5);
+
+        assumeCardCommandsSupported(() -> set.countUnion("set1"));
+
+        assertThat(set.countUnion("set1", "set2")).isEqualTo(6);
+        assertThat(set.countUnion("set1")).isEqualTo(4);
+        // a missing key is treated as an empty set
+        assertThat(set.countUnion("set1", "unknownSet")).isEqualTo(4);
+        // counting stops as soon as the limit is reached
+        assertThat(set.countUnion(4, "set1", "set2")).isEqualTo(4);
+        assertThat(set.countUnion(0, "set1", "set2")).isEqualTo(6);
+        // current set is left untouched
+        assertThat(set).containsOnly(5, 6);
+    }
+
+    @Test
+    public void testCountUnionApprox() {
+        RSet<Integer> set = redisson.getSet("set");
+        set.add(5);
+        set.add(6);
+        RSet<Integer> set1 = redisson.getSet("set1");
+        set1.add(1);
+        set1.add(2);
+        RSet<Integer> set2 = redisson.getSet("set2");
+        set2.add(3);
+        set2.add(4);
+        set2.add(5);
+
+        assumeCardCommandsSupported(() -> set.countUnionApprox("set1"));
+
+        // HyperLogLog based estimate, allow for the documented error margin
+        assertThat(set.countUnionApprox("set1", "set2")).isBetween(5, 7);
+        assertThat(set.countUnionApprox(4, "set1", "set2")).isEqualTo(4);
+        assertThat(set).containsOnly(5, 6);
+    }
+
+    @Test
+    public void testCountDiff() {
+        RSet<Integer> set = redisson.getSet("set");
+        set.addAll(Arrays.asList(1, 2, 3, 4, 5));
+        RSet<Integer> set1 = redisson.getSet("set1");
+        set1.add(4);
+        RSet<Integer> set2 = redisson.getSet("set2");
+        set2.add(5);
+
+        assumeCardCommandsSupported(() -> set.countDiff("set1"));
+
+        assertThat(set.countDiff("set1", "set2")).isEqualTo(3);
+        assertThat(set.countDiff("set1")).isEqualTo(4);
+        // a missing key is treated as an empty set
+        assertThat(set.countDiff("unknownSet")).isEqualTo(5);
+        // counting stops as soon as the limit is reached
+        assertThat(set.countDiff(2, "set1", "set2")).isEqualTo(2);
+        assertThat(set.countDiff(0, "set1", "set2")).isEqualTo(3);
+        // current set is left untouched
+        assertThat(set).containsOnly(1, 2, 3, 4, 5);
     }
 
     @Test

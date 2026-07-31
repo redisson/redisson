@@ -370,6 +370,10 @@ public interface RedisCommands {
     RedisCommand<Boolean> SISMEMBER = new RedisCommand<Boolean>("SISMEMBER", new BooleanReplayConvertor());
     RedisStrictCommand<Integer> SCARD_INT = new RedisStrictCommand<Integer>("SCARD", new IntegerReplayConvertor());
     RedisStrictCommand<Integer> SINTERCARD_INT = new RedisStrictCommand<>("SINTERCARD", new IntegerReplayConvertor());
+
+    RedisStrictCommand<Integer> SUNIONCARD_INT = new RedisStrictCommand<>("SUNIONCARD", new IntegerReplayConvertor());
+    RedisStrictCommand<Integer> SDIFFCARD_INT = new RedisStrictCommand<>("SDIFFCARD", new IntegerReplayConvertor());
+
     RedisStrictCommand<Long> SCARD = new RedisStrictCommand<Long>("SCARD");
     RedisStrictCommand<Integer> SUNIONSTORE_INT = new RedisStrictCommand<Integer>("SUNIONSTORE", new IntegerReplayConvertor());
     RedisStrictCommand<Integer> SDIFFSTORE_INT = new RedisStrictCommand<Integer>("SDIFFSTORE", new IntegerReplayConvertor());

@@ -679,6 +679,63 @@ public class RedissonSetCacheTest extends RedisDockerTest {
         assertThat(redisson.getKeys().getKeys()).containsExactlyInAnyOrder("cache1", "cache2", "cache3");
     }
 
+    @Test
+    public void testCountUnion() throws InterruptedException {
+        redisson.getKeys().flushall();
+        RSetCache<Integer> cache1 = redisson.getSetCache("cache1", IntegerCodec.INSTANCE);
+        cache1.add(1);
+        cache1.add(2, 1, TimeUnit.SECONDS);
+        cache1.add(5, 1, TimeUnit.SECONDS);
+        cache1.add(3);
+
+        RSetCache<Integer> cache2 = redisson.getSetCache("cache2", IntegerCodec.INSTANCE);
+        cache2.add(4);
+        cache2.add(2, 1, TimeUnit.SECONDS);
+        cache2.add(5, 1, TimeUnit.SECONDS);
+        cache2.add(7);
+
+        // 1, 2, 3, 4, 5, 7
+        assertThat(cache1.countUnion("cache2")).isEqualTo(6);
+        assertThat(cache1.countUnionApprox("cache2")).isEqualTo(6);
+        assertThat(cache1.countUnion(3, "cache2")).isEqualTo(3);
+        assertThat(cache1.countUnion("unknownCache")).isEqualTo(4);
+
+        Thread.sleep(1500);
+
+        // expired entries are excluded: 1, 3, 4, 7
+        assertThat(cache1.countUnion("cache2")).isEqualTo(4);
+        assertThat(cache1.countUnion(2, "cache2")).isEqualTo(2);
+
+        // no temporary keys are left behind
+        assertThat(redisson.getKeys().getKeys()).containsExactlyInAnyOrder("cache1", "cache2");
+    }
+
+    @Test
+    public void testCountDiff() throws InterruptedException {
+        redisson.getKeys().flushall();
+        RSetCache<Integer> cache1 = redisson.getSetCache("cache1", IntegerCodec.INSTANCE);
+        cache1.add(1);
+        cache1.add(2, 1, TimeUnit.SECONDS);
+        cache1.add(5, 1, TimeUnit.SECONDS);
+        cache1.add(3, 1, TimeUnit.SECONDS);
+
+        RSetCache<Integer> cache2 = redisson.getSetCache("cache2", IntegerCodec.INSTANCE);
+        cache2.add(4);
+        cache2.add(2, 1, TimeUnit.SECONDS);
+        cache2.add(5, 1, TimeUnit.SECONDS);
+        cache2.add(7);
+
+        // {1, 2, 3, 5} minus {2, 4, 5, 7} = 1, 3
+        assertThat(cache1.countDiff("cache2")).isEqualTo(2);
+        assertThat(cache1.countDiff(1, "cache2")).isEqualTo(1);
+        assertThat(cache1.countDiff("unknownCache")).isEqualTo(4);
+
+        Thread.sleep(1500);
+
+        // expired entries are excluded: {1} minus {4, 7} = 1
+        assertThat(cache1.countDiff("cache2")).isEqualTo(1);
+    }
+
         @Test
     public void testIntersection() throws InterruptedException {
         redisson.getKeys().flushall();

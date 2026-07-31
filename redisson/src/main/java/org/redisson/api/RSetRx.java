@@ -183,6 +183,52 @@ public interface RSetRx<V> extends RCollectionRx<V>, RSortableRx<Set<V>> {
      * @return size of union
      */
     Maybe<Set<V>> readUnion(String... names);
+
+    /**
+     * Counts elements of set as a result of sets union with current set.
+     * <p>
+     * Requires <b>Redis 8.10.0 and higher.</b>
+     *
+     * @param names - name of sets
+     * @return amount of elements
+     */
+    Single<Integer> countUnion(String... names);
+
+    /**
+     * Counts elements of set as a result of sets union with current set.
+     * <p>
+     * Requires <b>Redis 8.10.0 and higher.</b>
+     *
+     * @param names - name of sets
+     * @param limit - sets union limit
+     * @return amount of elements
+     */
+    Single<Integer> countUnion(int limit, String... names);
+
+    /**
+     * Counts elements of set as a result of sets union with current set.
+     * Returns an approximate value computed through HyperLogLog with
+     * 0.81% standard error instead of an exact one.
+     * <p>
+     * Requires <b>Redis 8.10.0 and higher.</b>
+     *
+     * @param names - name of sets
+     * @return approximate amount of elements
+     */
+    Single<Integer> countUnionApprox(String... names);
+
+    /**
+     * Counts elements of set as a result of sets union with current set.
+     * Returns an approximate value computed through HyperLogLog with
+     * 0.81% standard error instead of an exact one.
+     * <p>
+     * Requires <b>Redis 8.10.0 and higher.</b>
+     *
+     * @param names - name of sets
+     * @param limit - sets union limit
+     * @return approximate amount of elements
+     */
+    Single<Integer> countUnionApprox(int limit, String... names);
     
     /**
      * Diff sets specified by name and write to current set.
@@ -201,6 +247,27 @@ public interface RSetRx<V> extends RCollectionRx<V>, RSortableRx<Set<V>> {
      * @return values
      */
     Maybe<Set<V>> readDiff(String... names);
+
+    /**
+     * Counts elements of set as a result of sets difference with current set.
+     * <p>
+     * Requires <b>Redis 8.10.0 and higher.</b>
+     *
+     * @param names - name of sets
+     * @return amount of elements
+     */
+    Single<Integer> countDiff(String... names);
+
+    /**
+     * Counts elements of set as a result of sets difference with current set.
+     * <p>
+     * Requires <b>Redis 8.10.0 and higher.</b>
+     *
+     * @param names - name of sets
+     * @param limit - sets difference limit
+     * @return amount of elements
+     */
+    Single<Integer> countDiff(int limit, String... names);
     
     /**
      * Intersection sets specified by name and write to current set.
