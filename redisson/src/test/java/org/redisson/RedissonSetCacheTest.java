@@ -712,7 +712,6 @@ public class RedissonSetCacheTest extends RedisDockerTest {
 
     @Test
     public void testCountDiff() throws InterruptedException {
-        redisson.getKeys().flushall();
         RSetCache<Integer> cache1 = redisson.getSetCache("cache1", IntegerCodec.INSTANCE);
         cache1.add(1);
         cache1.add(2, 1, TimeUnit.SECONDS);
@@ -736,9 +735,8 @@ public class RedissonSetCacheTest extends RedisDockerTest {
         assertThat(cache1.countDiff("cache2")).isEqualTo(1);
     }
 
-        @Test
+    @Test
     public void testIntersection() throws InterruptedException {
-        redisson.getKeys().flushall();
         RSetCache<Integer> cache1 = redisson.getSetCache("cache1");
         cache1.add(1);
         cache1.add(2, 1, TimeUnit.SECONDS);
