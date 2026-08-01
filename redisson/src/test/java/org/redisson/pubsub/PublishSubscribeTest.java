@@ -6,6 +6,7 @@ import mockit.Mock;
 import mockit.MockUp;
 import mockit.Mocked;
 import mockit.Tested;
+import mockit.Verifications;
 import org.junit.jupiter.api.Test;
 import org.redisson.RedissonLockEntry;
 import org.redisson.client.BaseRedisPubSubListener;
@@ -88,7 +89,7 @@ public class PublishSubscribeTest {
 
     @Test
     public void testSubscribeNoTimeoutReleasesSemaphoreIfEntryIsMissing(@Mocked ServiceManager serviceManager) {
-        String channelName = "redisson_lock__channel__test";
+        String channelName = "test-channel";
         AsyncSemaphore semaphore = new AsyncSemaphore(1);
         CompletableFuture<PubSubConnectionEntry> failedFuture = new CompletableFuture<>();
         failedFuture.completeExceptionally(new RedisNodeNotFoundException("missing node"));
@@ -100,6 +101,9 @@ public class PublishSubscribeTest {
                     }
                     if ("calcSlot".equals(method.getName())) {
                         return 1;
+                    }
+                    if ("getWriteEntry".equals(method.getName())) {
+                        return null;
                     }
                     return null;
                 });
@@ -113,11 +117,21 @@ public class PublishSubscribeTest {
 
         PublishSubscribeService service = new PublishSubscribeService(connectionManager);
 
+        // Simulate the caller already holding the semaphore permit.
+        // subscribeNoTimeout should return it when no master node exists.
         semaphore.acquire().join();
+        CompletableFuture<Void> waiter = semaphore.acquire();
+        assertFalse(waiter.isDone());
+
         CompletableFuture<PubSubConnectionEntry> subscribeFuture = service.subscribeNoTimeout(
                 LongCodec.INSTANCE, channelName, semaphore, new BaseRedisPubSubListener());
 
         assertSame(failedFuture, subscribeFuture);
-        assertTrue(semaphore.acquire().isDone());
+        assertTrue(subscribeFuture.isCompletedExceptionally());
+        assertTrue(waiter.isDone());
+        new Verifications() {{
+            serviceManager.createNodeNotFoundFuture(channelName, 1);
+            times = 1;
+        }};
     }
 }
