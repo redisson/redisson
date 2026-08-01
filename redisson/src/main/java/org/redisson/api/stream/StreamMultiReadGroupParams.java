@@ -53,6 +53,18 @@ public final class StreamMultiReadGroupParams implements StreamMultiReadGroupArg
     }
 
     @Override
+    public StreamMultiReadGroupArgs maxCount(int maxCount) {
+        params.maxCount(maxCount);
+        return this;
+    }
+
+    @Override
+    public StreamMultiReadGroupArgs maxSize(long maxSize) {
+        params.maxSize(maxSize);
+        return this;
+    }
+
+    @Override
     public StreamMultiReadGroupArgs timeout(Duration timeout) {
         params.timeout(timeout);
         return this;
@@ -72,6 +84,14 @@ public final class StreamMultiReadGroupParams implements StreamMultiReadGroupArg
 
     public int getCount() {
         return params.getCount();
+    }
+
+    public int getMaxCount() {
+        return params.getMaxCount();
+    }
+
+    public long getMaxSize() {
+        return params.getMaxSize();
     }
 
     public Duration getTimeout() {

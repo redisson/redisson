@@ -28,6 +28,8 @@ public final class StreamReadGroupParams implements StreamReadGroupArgs {
     private boolean noAck;
     private final StreamMessageId id1;
     private int count;
+    private int maxCount;
+    private long maxSize;
     private Duration timeout;
 
     StreamReadGroupParams(StreamMessageId id1) {
@@ -53,6 +55,18 @@ public final class StreamReadGroupParams implements StreamReadGroupArgs {
     }
 
     @Override
+    public StreamReadGroupArgs maxCount(int maxCount) {
+        this.maxCount = maxCount;
+        return this;
+    }
+
+    @Override
+    public StreamReadGroupArgs maxSize(long maxSize) {
+        this.maxSize = maxSize;
+        return this;
+    }
+
+    @Override
     public StreamReadGroupArgs timeout(Duration timeout) {
         this.timeout = timeout;
         return this;
@@ -68,6 +82,14 @@ public final class StreamReadGroupParams implements StreamReadGroupArgs {
 
     public int getCount() {
         return count;
+    }
+
+    public int getMaxCount() {
+        return maxCount;
+    }
+
+    public long getMaxSize() {
+        return maxSize;
     }
 
     public Duration getTimeout() {

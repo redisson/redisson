@@ -298,6 +298,16 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
             params.add(rp.getCount());
         }
 
+        if (rp.getMaxCount() > 0) {
+            params.add("MAXCOUNT");
+            params.add(rp.getMaxCount());
+        }
+
+        if (rp.getMaxSize() > 0) {
+            params.add("MAXSIZE");
+            params.add(rp.getMaxSize());
+        }
+
         if (rp.getTimeout() != null) {
             params.add("BLOCK");
             params.add(rp.getTimeout().toMillis());
@@ -344,6 +354,16 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         if (rp.getCount() > 0) {
             params.add("COUNT");
             params.add(rp.getCount());
+        }
+
+        if (rp.getMaxCount() > 0) {
+            params.add("MAXCOUNT");
+            params.add(rp.getMaxCount());
+        }
+
+        if (rp.getMaxSize() > 0) {
+            params.add("MAXSIZE");
+            params.add(rp.getMaxSize());
         }
 
         if (rp.getTimeout() != null) {
@@ -437,6 +457,16 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
             params.add(rp.getCount());
         }
 
+        if (rp.getMaxCount() > 0) {
+            params.add("MAXCOUNT");
+            params.add(rp.getMaxCount());
+        }
+
+        if (rp.getMaxSize() > 0) {
+            params.add("MAXSIZE");
+            params.add(rp.getMaxSize());
+        }
+
         if (rp.getTimeout() != null) {
             params.add("BLOCK");
             params.add(rp.getTimeout().toMillis());
@@ -470,6 +500,16 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         if (rp.getCount() > 0) {
             params.add("COUNT");
             params.add(rp.getCount());
+        }
+
+        if (rp.getMaxCount() > 0) {
+            params.add("MAXCOUNT");
+            params.add(rp.getMaxCount());
+        }
+
+        if (rp.getMaxSize() > 0) {
+            params.add("MAXSIZE");
+            params.add(rp.getMaxSize());
         }
 
         if (rp.getTimeout() != null) {

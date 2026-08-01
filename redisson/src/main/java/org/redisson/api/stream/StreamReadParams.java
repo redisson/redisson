@@ -26,6 +26,8 @@ public final class StreamReadParams implements StreamReadArgs {
 
     private final StreamMessageId id1;
     private int count;
+    private int maxCount;
+    private long maxSize;
     private Duration timeout;
 
     StreamReadParams(StreamMessageId id1) {
@@ -35,6 +37,18 @@ public final class StreamReadParams implements StreamReadArgs {
     @Override
     public StreamReadArgs count(int count) {
         this.count = count;
+        return this;
+    }
+
+    @Override
+    public StreamReadArgs maxCount(int maxCount) {
+        this.maxCount = maxCount;
+        return this;
+    }
+
+    @Override
+    public StreamReadArgs maxSize(long maxSize) {
+        this.maxSize = maxSize;
         return this;
     }
 
@@ -50,6 +64,14 @@ public final class StreamReadParams implements StreamReadArgs {
 
     public int getCount() {
         return count;
+    }
+
+    public int getMaxCount() {
+        return maxCount;
+    }
+
+    public long getMaxSize() {
+        return maxSize;
     }
 
     public Duration getTimeout() {

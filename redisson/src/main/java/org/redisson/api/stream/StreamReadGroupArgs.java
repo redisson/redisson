@@ -49,6 +49,26 @@ public interface StreamReadGroupArgs {
     StreamReadGroupArgs count(int count);
 
     /**
+     * Defines the total limit of entries returned in the command reply.
+     * <p>
+     * Requires <b>Redis 8.10.0 and higher.</b>
+     *
+     * @param maxCount total entries limit
+     * @return arguments object
+     */
+    StreamReadGroupArgs maxCount(int maxCount);
+
+    /**
+     * Defines the total size limit in bytes of entries returned in the command reply.
+     * <p>
+     * Requires <b>Redis 8.10.0 and higher.</b>
+     *
+     * @param maxSize total entries size limit in bytes
+     * @return arguments object
+     */
+    StreamReadGroupArgs maxSize(long maxSize);
+
+    /**
      * Defines time interval to wait for stream data availability.
      * <code>0</code> is used to wait infinitely.
      *

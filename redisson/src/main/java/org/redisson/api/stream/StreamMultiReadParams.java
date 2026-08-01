@@ -41,6 +41,18 @@ public final class StreamMultiReadParams implements StreamMultiReadArgs {
     }
 
     @Override
+    public StreamMultiReadArgs maxCount(int maxCount) {
+        params.maxCount(maxCount);
+        return this;
+    }
+
+    @Override
+    public StreamMultiReadArgs maxSize(long maxSize) {
+        params.maxSize(maxSize);
+        return this;
+    }
+
+    @Override
     public StreamMultiReadArgs timeout(Duration timeout) {
         params.timeout(timeout);
         return this;
@@ -52,6 +64,14 @@ public final class StreamMultiReadParams implements StreamMultiReadArgs {
 
     public int getCount() {
         return params.getCount();
+    }
+
+    public int getMaxCount() {
+        return params.getMaxCount();
+    }
+
+    public long getMaxSize() {
+        return params.getMaxSize();
     }
 
     public Duration getTimeout() {

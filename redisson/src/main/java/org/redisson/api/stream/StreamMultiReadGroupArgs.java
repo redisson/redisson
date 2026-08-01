@@ -52,6 +52,33 @@ public interface StreamMultiReadGroupArgs {
     StreamMultiReadGroupArgs count(int count);
 
     /**
+     * Defines the total limit of entries returned by the command.
+     * <p>
+     * Unlike {@link #count(int)}, which is applied per stream,
+     * this limit is applied to the cumulative amount of entries
+     * returned for all streams.
+     * <p>
+     * Requires <b>Redis 8.10.0 and higher.</b>
+     *
+     * @param maxCount total entries limit
+     * @return arguments object
+     */
+    StreamMultiReadGroupArgs maxCount(int maxCount);
+
+    /**
+     * Defines the total limit in bytes of entries returned by the command.
+     * <p>
+     * The limit is applied to the cumulative size of entries
+     * returned for all streams.
+     * <p>
+     * Requires <b>Redis 8.10.0 and higher.</b>
+     *
+     * @param maxSize total entries size limit in bytes
+     * @return arguments object
+     */
+    StreamMultiReadGroupArgs maxSize(long maxSize);
+
+    /**
      * Defines time interval to wait for stream data availability.
      * <code>0</code> is used to wait infinitely.
      *

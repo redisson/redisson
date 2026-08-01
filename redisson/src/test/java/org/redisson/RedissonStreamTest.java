@@ -1152,6 +1152,95 @@ public class RedissonStreamTest extends RedisDockerTest {
         assertThat(s.get("test1").values().iterator().next()).isEqualTo(entries1);
         assertThat(s.get("test2").values().iterator().next()).isEqualTo(entries2);
     }
+
+    @Test
+    public void testReadMaxCount() {
+        RStream<String, String> stream = redisson.getStream("test");
+        for (int i = 0; i < 5; i++) {
+            stream.add(StreamAddArgs.entry("" + i, "" + i));
+        }
+
+        Map<StreamMessageId, Map<String, String>> s = stream.read(
+                StreamReadArgs.greaterThan(new StreamMessageId(0)).maxCount(2));
+        assertThat(s).hasSize(2);
+    }
+
+    @Test
+    public void testReadMaxSize() {
+        RStream<String, String> stream = redisson.getStream("test");
+        for (int i = 0; i < 10; i++) {
+            stream.add(StreamAddArgs.entry("key" + i, "value" + i));
+        }
+
+        Map<StreamMessageId, Map<String, String>> all = stream.read(
+                StreamReadArgs.greaterThan(new StreamMessageId(0)).maxSize(1024 * 1024));
+        assertThat(all).hasSize(10);
+
+        Map<StreamMessageId, Map<String, String>> limited = stream.read(
+                StreamReadArgs.greaterThan(new StreamMessageId(0)).maxSize(32));
+        assertThat(limited.size()).isLessThan(10);
+    }
+
+    @Test
+    public void testReadMultiKeysMaxCount() {
+        RStream<String, String> stream1 = redisson.getStream("test1");
+        stream1.add(StreamAddArgs.entry("1", "11"));
+        stream1.add(StreamAddArgs.entry("2", "22"));
+
+        RStream<String, String> stream2 = redisson.getStream("test2");
+        stream2.add(StreamAddArgs.entry("3", "33"));
+        stream2.add(StreamAddArgs.entry("4", "44"));
+
+        Map<String, Map<StreamMessageId, Map<String, String>>> s = stream2.read(
+                StreamMultiReadArgs.greaterThan(new StreamMessageId(0), "test1", new StreamMessageId(0))
+                                   .count(2)
+                                   .maxCount(3));
+
+        int total = s.values().stream().mapToInt(Map::size).sum();
+        assertThat(total).isEqualTo(3);
+    }
+
+    @Test
+    public void testReadGroupMaxCount() {
+        RStream<String, String> stream = redisson.getStream("test");
+
+        StreamMessageId id0 = stream.add(StreamAddArgs.entry("0", "0"));
+        stream.createGroup(StreamCreateGroupArgs.name("testGroup").id(id0));
+
+        for (int i = 1; i <= 5; i++) {
+            stream.add(StreamAddArgs.entry("" + i, "" + i));
+        }
+
+        Map<StreamMessageId, Map<String, String>> s = stream.readGroup("testGroup", "consumer1",
+                StreamReadGroupArgs.neverDelivered().maxCount(2));
+        assertThat(s).hasSize(2);
+    }
+
+    @Test
+    public void testReadGroupMultiKeysMaxCount() {
+        RStream<String, String> stream1 = redisson.getStream("test1");
+        RStream<String, String> stream2 = redisson.getStream("test2");
+
+        StreamMessageId id01 = stream1.add(StreamAddArgs.entry("0", "0"));
+        StreamMessageId id02 = stream2.add(StreamAddArgs.entry("0", "0"));
+
+        stream1.createGroup(StreamCreateGroupArgs.name("testGroup").id(id01));
+        stream2.createGroup(StreamCreateGroupArgs.name("testGroup").id(id02));
+
+        stream1.add(StreamAddArgs.entry("1", "1"));
+        stream1.add(StreamAddArgs.entry("2", "2"));
+        stream2.add(StreamAddArgs.entry("3", "3"));
+        stream2.add(StreamAddArgs.entry("4", "4"));
+
+        Map<String, Map<StreamMessageId, Map<String, String>>> s = stream1.readGroup("testGroup", "consumer1",
+                StreamMultiReadGroupArgs.greaterThan(StreamMessageId.NEVER_DELIVERED,
+                                        Collections.singletonMap("test2", StreamMessageId.NEVER_DELIVERED))
+                                        .count(2)
+                                        .maxCount(3));
+
+        int total = s.values().stream().mapToInt(Map::size).sum();
+        assertThat(total).isEqualTo(3);
+    }
     
     @Test
     public void testReadMulti() {
