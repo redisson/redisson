@@ -12,6 +12,7 @@ import org.testcontainers.containers.GenericContainer;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -152,6 +153,55 @@ public class RedissonLockExpirationRenewalTest extends RedisDockerTest {
 
             executor.shutdownNow();
         }
+    }
+
+    /**
+     * Watchdog must not outlive unlock when acquire is interrupted mid-flight
+     * and release runs in finally (cancel vs schedule race). See #7272.
+     */
+    @Test
+    public void testWatchdogDoesNotOutliveInterruptedAcquire() throws Exception {
+        String name = "test:watchdog:interrupt-leak";
+        redisson.getKeys().delete(name);
+
+        AtomicBoolean stop = new AtomicBoolean();
+        Thread worker = new Thread(() -> {
+            RLock lock = redisson.getLock(name);
+            while (!stop.get()) {
+                Thread.interrupted(); // clear so the next interrupt lands during acquire
+                try {
+                    lock.lockInterruptibly();
+                } catch (InterruptedException | RuntimeException e) {
+                    // acquire interrupted (may be wrapped as RedisException)
+                } finally {
+                    Thread.interrupted(); // allow unlock to complete without immediate re-interrupt
+                    try {
+                        lock.unlock();
+                    } catch (RuntimeException ignored) {
+                        // not held
+                    }
+                }
+            }
+        });
+        worker.start();
+
+        long until = System.currentTimeMillis() + 8_000;
+        while (System.currentTimeMillis() < until) {
+            worker.interrupt();
+            Thread.sleep(2);
+        }
+        stop.set(true);
+        worker.join(10_000);
+        if (worker.isAlive()) {
+            worker.interrupt();
+            worker.join(5_000);
+        }
+
+        Thread.sleep(LOCK_WATCHDOG_TIMEOUT * 3);
+        long ttl = redisson.getMap(name).remainTimeToLive();
+        redisson.getKeys().delete(name);
+
+        assertThat(ttl).as("orphan lock still renewed by watchdog after interrupted acquire/unlock").isLessThanOrEqualTo(0L);
     }
 
 }

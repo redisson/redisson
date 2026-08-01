@@ -159,9 +159,17 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
     }
 
     private RFuture<Void> unlockAsync0(long threadId, String requestId) {
+        // Cancel watchdog synchronously before the Redis unlock so a following
+        // acquire cannot re-arm renewal while this cancel is still in-flight (#7272).
+        // unlockResult=false avoids resetting fixed lease time on reentrant partial unlock;
+        // full release resets lease below via updateLockLeaseTimeOnUnlock.
+        cancelExpirationRenewal(threadId, Boolean.FALSE);
+
         CompletionStage<Boolean> future = unlockInnerAsync(threadId, requestId);
         CompletionStage<Void> f = future.handle((res, e) -> {
-            cancelExpirationRenewal(threadId, res);
+            if (res == null || Boolean.TRUE.equals(res)) {
+                updateLockLeaseTimeOnUnlock(res);
+            }
 
             if (e != null) {
                 if (e instanceof CompletionException) {
@@ -179,6 +187,14 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
         });
 
         return new CompletableFutureWrapper<>(f);
+    }
+
+    /**
+     * Called when unlock finishes and the lock is fully released (or was not held).
+     * Subclasses use this to reset watchdog lease time.
+     */
+    protected void updateLockLeaseTimeOnUnlock(Boolean unlockResult) {
+        // no-op by default
     }
 
     @Override
