@@ -495,6 +495,28 @@ public class RedissonSearchTest extends RedisDockerTest {
     }
 
     @Test
+    public void testAliasList() {
+        RSearch s = redisson.getSearch();
+
+        s.createIndex("idx:1", IndexOptions.defaults()
+                        .on(IndexType.HASH)
+                        .prefix(Arrays.asList("doc:")),
+                FieldIndex.text("t1"),
+                FieldIndex.text("t2"));
+
+        assertThat(s.getAliases("idx:1")).isEmpty();
+
+        s.addAlias("alias1", "idx:1");
+        s.addAlias("alias2", "idx:1");
+
+        assertThat(s.getAliases("idx:1")).containsExactlyInAnyOrder("alias1", "alias2");
+
+        s.delAlias("alias1");
+
+        assertThat(s.getAliases("idx:1")).containsExactly("alias2");
+    }
+
+    @Test
     public void testMapAggregate() {
         RMap<String, SimpleObject> m = redisson.getMap("doc:1", new CompositeCodec(StringCodec.INSTANCE, redisson.getConfig().getCodec()));
         m.put("t1", new SimpleObject("name1"));

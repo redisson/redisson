@@ -1036,6 +1036,7 @@ public interface RedisCommands {
 
     RedisStrictCommand<Void> FT_ALIASADD = new RedisStrictCommand<>("FT.ALIASADD", new VoidReplayConvertor());
     RedisStrictCommand<Void> FT_ALIASDEL = new RedisStrictCommand<>("FT.ALIASDEL", new VoidReplayConvertor());
+    RedisStrictCommand<List<String>> FT_ALIASLIST = new RedisStrictCommand<>("FT.ALIASLIST", new StringListReplayDecoder());
 
     RedisStrictCommand<Void> FT_ALIASUPDATE = new RedisStrictCommand<>("FT.ALIASUPDATE", new VoidReplayConvertor());
     RedisStrictCommand<Void> FT_ALTER = new RedisStrictCommand<>("FT.ALTER", new VoidReplayConvertor());

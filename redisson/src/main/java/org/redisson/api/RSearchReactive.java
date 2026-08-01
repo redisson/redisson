@@ -169,6 +169,16 @@ public interface RSearchReactive {
     Mono<Void> updateAlias(String alias, String indexName);
 
     /**
+     * Returns list of aliases defined for the specified index
+     * <p>
+     * Requires <b>Redis 8.10.0 and higher.</b>
+     *
+     * @param indexName index name
+     * @return list of aliases
+     */
+    Mono<List<String>> getAliases(String indexName);
+
+    /**
      * Adds a new attribute to the index
      *
      * @param indexName index name

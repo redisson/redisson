@@ -150,6 +150,16 @@ public interface RSearchAsync {
     RFuture<Void> updateAliasAsync(String alias, String indexName);
 
     /**
+     * Returns list of aliases defined for the specified index
+     * <p>
+     * Requires <b>Redis 8.10.0 and higher.</b>
+     *
+     * @param indexName index name
+     * @return list of aliases
+     */
+    RFuture<List<String>> getAliasesAsync(String indexName);
+
+    /**
      * Adds a new attribute to the index
      *
      * @param indexName index name
