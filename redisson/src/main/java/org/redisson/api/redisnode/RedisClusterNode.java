@@ -30,11 +30,11 @@ import java.util.Set;
 public interface RedisClusterNode extends RedisNode, RedisClusterNodeAsync {
 
     /**
-     * Warms up connection pool for this Redis node until the specified amount of free connections is available.
-     * If current free connections amount is greater than or equal to specified value, then no new connections are
-     * created.
+     * Warms up the connection pool for this Redis node until it contains the specified number of connections.
+     * Connections currently in use are included in this number. If the pool already contains at least the specified
+     * number, then no new connections are created.
      *
-     * @param connectionAmount - free connections amount
+     * @param connectionAmount target connection amount
      */
     void warmUpConnectionPool(int connectionAmount);
 

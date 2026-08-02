@@ -43,7 +43,8 @@ public class ConnectionsHolder<T extends RedisConnection> {
 
     private final Queue<T> allConnections = new ConcurrentLinkedQueue<>();
     private final Deque<T> freeConnections = new ConcurrentLinkedDeque<>();
-    private final Queue<WarmUpRequest> warmUpListeners = new ConcurrentLinkedQueue<>();
+    private final Object warmUpLock = new Object();
+    private CompletableFuture<Void> lastWarmUp = CompletableFuture.completedFuture(null);
     private final AsyncSemaphore freeConnectionsCounter;
     private final int poolMaxSize;
 
@@ -54,16 +55,6 @@ public class ConnectionsHolder<T extends RedisConnection> {
     private final ServiceManager serviceManager;
 
     private final boolean changeUsage;
-
-    private static final class WarmUpRequest {
-        private final int connectionAmount;
-        private final CompletableFuture<Void> promise;
-
-        private WarmUpRequest(int connectionAmount, CompletableFuture<Void> promise) {
-            this.connectionAmount = connectionAmount;
-            this.promise = promise;
-        }
-    }
 
     public ConnectionsHolder(RedisClient client, int poolMaxSize,
                              Function<RedisClient, CompletionStage<T>> connectionCallback,
@@ -174,7 +165,13 @@ public class ConnectionsHolder<T extends RedisConnection> {
             return failedFuture(new IllegalArgumentException(
                     "connectionAmount can't be greater than connection pool size"));
         }
-        return warmUpConnection(connectionAmount);
+        CompletableFuture<Void> warmUpFuture;
+        synchronized (warmUpLock) {
+            lastWarmUp = lastWarmUp.handle((r, e) -> null)
+                                  .thenCompose(r -> warmUpConnection(connectionAmount));
+            warmUpFuture = lastWarmUp;
+        }
+        return warmUpFuture.thenApply(r -> null);
     }
 
     private CompletableFuture<Void> failedFuture(Exception e) {
@@ -184,85 +181,27 @@ public class ConnectionsHolder<T extends RedisConnection> {
     }
 
     private CompletableFuture<Void> warmUpConnection(int connectionAmount) {
-        if (hasFreeConnections(connectionAmount)) {
+        if (allConnections.size() >= connectionAmount) {
             return CompletableFuture.completedFuture(null);
         }
 
-        CompletableFuture<Void> result = new CompletableFuture<>();
-        warmUpConnection(connectionAmount, result);
-        return result;
+        return createWarmUpConnection()
+                .thenCompose(r -> warmUpConnection(connectionAmount));
     }
 
-    private void warmUpConnection(int connectionAmount, CompletableFuture<Void> result) {
-        if (result.isDone()) {
-            return;
-        }
-        if (hasFreeConnections(connectionAmount)) {
-            result.complete(null);
-            return;
-        }
-        if (allConnections.size() >= poolMaxSize) {
-            waitForFreeConnections(connectionAmount, result);
-            return;
-        }
-
+    private CompletableFuture<Void> createWarmUpConnection() {
         CompletableFuture<Void> f = acquireConnection();
-        f.thenAccept(r -> {
-            if (result.isDone()) {
-                releaseConnection();
-                return;
-            }
-            if (hasFreeConnections(connectionAmount)) {
-                releaseConnection();
-                result.complete(null);
-                return;
-            }
-            if (allConnections.size() >= poolMaxSize) {
-                releaseConnection();
-                waitForFreeConnections(connectionAmount, result);
-                return;
-            }
-
+        return f.thenCompose(r -> {
             CompletableFuture<T> promise = new CompletableFuture<>();
             createConnection(promise);
-            promise.whenComplete((conn, e) -> {
-                if (e == null) {
-                    if (changeUsage) {
-                        conn.decUsage();
-                    }
-                    addConnection(conn);
-                    releaseConnection();
-                    completeWarmUpListeners();
-                    warmUpConnection(connectionAmount, result);
-                    return;
+            return promise.thenAccept(conn -> {
+                if (changeUsage) {
+                    conn.decUsage();
                 }
-                result.completeExceptionally(e);
+                addConnection(conn);
+                releaseConnection();
             });
         });
-    }
-
-    private boolean hasFreeConnections(int connectionAmount) {
-        return freeConnections.size() >= connectionAmount;
-    }
-
-    private void waitForFreeConnections(int connectionAmount, CompletableFuture<Void> result) {
-        WarmUpRequest request = new WarmUpRequest(connectionAmount, result);
-        warmUpListeners.add(request);
-        result.whenComplete((r, e) -> warmUpListeners.remove(request));
-        completeWarmUpListeners();
-    }
-
-    private void completeWarmUpListeners() {
-        for (WarmUpRequest request : warmUpListeners) {
-            if (request.promise.isDone()) {
-                warmUpListeners.remove(request);
-                continue;
-            }
-            if (hasFreeConnections(request.connectionAmount)
-                    && warmUpListeners.remove(request)) {
-                request.promise.complete(null);
-            }
-        }
     }
 
     private CompletableFuture<Void> createConnection(int minimumIdleSize, int index) {
@@ -279,7 +218,6 @@ public class ConnectionsHolder<T extends RedisConnection> {
                     // release only on success; the failure path already releases in createConnection(promise),
                     // so an unconditional release here double-releases per failed init and lifts the counter above pool max
                     releaseConnection();
-                    completeWarmUpListeners();
                 }
 
                 if (e != null) {
@@ -331,7 +269,6 @@ public class ConnectionsHolder<T extends RedisConnection> {
         if (!promise.complete(conn)) {
             releaseConnection(conn);
             releaseConnection();
-            completeWarmUpListeners();
         }
     }
 
@@ -382,7 +319,6 @@ public class ConnectionsHolder<T extends RedisConnection> {
             releaseConnection(connection);
         }
         releaseConnection();
-        completeWarmUpListeners();
     }
 
     public ServiceManager getServiceManager() {
