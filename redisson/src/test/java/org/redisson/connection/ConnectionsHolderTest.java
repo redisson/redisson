@@ -6,6 +6,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
+import org.redisson.client.RedisConnectionException;
 import org.redisson.config.Config;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.config.ReadMode;
@@ -334,6 +335,109 @@ public class ConnectionsHolderTest {
             Assertions.assertThat(result4).isCompleted();
             Assertions.assertThat(holder.getAllConnections()).hasSize(3);
             Assertions.assertThat(holder.getFreeConnections()).hasSize(3);
+        } finally {
+            manager.shutdown(0, 0, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    void testWarmUpRechecksTargetAfterPermitIsAcquired(@Mocked RedisConnection conn1,
+                                                       @Mocked RedisConnection conn2,
+                                                       @Mocked ClientConnectionsEntry entry) {
+        MasterSlaveConnectionManager manager = buildManager();
+        try {
+            new Expectations() {{
+                conn1.isActive(); result = true; minTimes = 0;
+                conn2.isActive(); result = true; minTimes = 0;
+                entry.isFreezed(); result = false; minTimes = 0;
+            }};
+
+            List<CompletableFuture<RedisConnection>> connectionFutures = new ArrayList<>();
+            Function<RedisClient, CompletionStage<RedisConnection>> callback = r -> {
+                CompletableFuture<RedisConnection> f = new CompletableFuture<>();
+                connectionFutures.add(f);
+                return f;
+            };
+            ConnectionsHolder<RedisConnection> holder =
+                    new ConnectionsHolder<>(null, 2, callback, manager.getServiceManager(), false);
+
+            CompletableFuture<Void> initialWarmUp = holder.warmUp(1);
+            connectionFutures.get(0).complete(conn1);
+            Assertions.assertThat(initialWarmUp).isCompleted();
+
+            RedisConnection borrowedConnection = holder.acquireConnection(null).join();
+            CompletableFuture<RedisConnection> commandConnection = holder.acquireConnection(null);
+            Assertions.assertThat(connectionFutures).hasSize(2);
+
+            CompletableFuture<Void> warmUp = holder.warmUp(2);
+            Assertions.assertThat(warmUp).isNotDone();
+
+            connectionFutures.get(1).complete(conn2);
+            Assertions.assertThat(commandConnection).isCompleted();
+            Assertions.assertThat(holder.getAllConnections()).hasSize(2);
+
+            holder.releaseConnection(entry, borrowedConnection);
+
+            Assertions.assertThat(warmUp).isCompleted();
+            Assertions.assertThat(connectionFutures).hasSize(2);
+            Assertions.assertThat(holder.getAllConnections()).hasSize(2);
+
+            holder.releaseConnection(entry, commandConnection.join());
+            Assertions.assertThat(holder.getFreeConnectionsCounter().getCounter()).isEqualTo(2);
+        } finally {
+            manager.shutdown(0, 0, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    void testFailWarmUpCancelsPendingPermit(@Mocked RedisConnection conn,
+                                            @Mocked ClientConnectionsEntry entry) {
+        MasterSlaveConnectionManager manager = buildManager();
+        try {
+            new Expectations() {{
+                conn.isActive(); result = true; minTimes = 0;
+                entry.isFreezed(); result = false; minTimes = 0;
+            }};
+
+            CompletableFuture<RedisConnection> connectionFuture = new CompletableFuture<>();
+            ConnectionsHolder<RedisConnection> holder = new ConnectionsHolder<>(null, 1,
+                    r -> connectionFuture, manager.getServiceManager(), false);
+
+            CompletableFuture<RedisConnection> commandConnection = holder.acquireConnection(null);
+            CompletableFuture<Void> warmUp = holder.warmUp(1);
+            Assertions.assertThat(holder.getFreeConnectionsCounter().queueSize()).isEqualTo(1);
+
+            holder.failWarmUp(new RedisConnectionException("node down"));
+
+            Assertions.assertThat(warmUp).isCompletedExceptionally();
+            Assertions.assertThat(holder.getFreeConnectionsCounter().queueSize()).isZero();
+
+            connectionFuture.complete(conn);
+            holder.releaseConnection(entry, commandConnection.join());
+            Assertions.assertThat(holder.getFreeConnectionsCounter().getCounter()).isEqualTo(1);
+        } finally {
+            manager.shutdown(0, 0, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    void testFailWarmUpDiscardsConnectionCreatedAfterNodeDown(@Mocked RedisConnection conn) {
+        MasterSlaveConnectionManager manager = buildManager();
+        try {
+            CompletableFuture<RedisConnection> connectionFuture = new CompletableFuture<>();
+            ConnectionsHolder<RedisConnection> holder = new ConnectionsHolder<>(null, 1,
+                    r -> connectionFuture, manager.getServiceManager(), false);
+
+            CompletableFuture<Void> warmUp = holder.warmUp(1);
+            holder.failWarmUp(new RedisConnectionException("node down"));
+
+            Assertions.assertThat(warmUp).isCompletedExceptionally();
+
+            connectionFuture.complete(conn);
+
+            Assertions.assertThat(holder.getAllConnections()).isEmpty();
+            Assertions.assertThat(holder.getFreeConnections()).isEmpty();
+            Assertions.assertThat(holder.getFreeConnectionsCounter().getCounter()).isEqualTo(1);
         } finally {
             manager.shutdown(0, 0, TimeUnit.SECONDS);
         }

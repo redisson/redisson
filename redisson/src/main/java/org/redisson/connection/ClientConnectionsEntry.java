@@ -19,6 +19,7 @@ import io.netty.channel.ChannelFuture;
 import org.redisson.api.NodeType;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
+import org.redisson.client.RedisConnectionException;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.config.MasterSlaveServersConfig;
@@ -108,6 +109,7 @@ public class ClientConnectionsEntry {
 
     public CompletableFuture<Void> shutdownAsync() {
         idleConnectionWatcher.remove(this);
+        connectionsHolder.failWarmUp(new RedisConnectionException("Redis node has been shut down: " + client));
         return client.shutdownAsync().toCompletableFuture();
     }
 
@@ -123,6 +125,9 @@ public class ClientConnectionsEntry {
         this.freezeReason = freezeReason;
         if (freezeReason != null) {
             this.initialized = false;
+            connectionsHolder.failWarmUp(new RedisConnectionException("Redis node is frozen: " + client));
+        } else {
+            connectionsHolder.enableWarmUp();
         }
     }
 
@@ -154,6 +159,7 @@ public class ClientConnectionsEntry {
     }
 
     protected final void nodeDown(ConnectionsHolder<RedisConnection> connectionsHolder) {
+        connectionsHolder.failWarmUp(new RedisConnectionException("Redis node is down: " + client));
         connectionsHolder.getFreeConnectionsCounter().removeListeners();
 
         for (RedisConnection connection : connectionsHolder.getAllConnections()) {
