@@ -106,10 +106,25 @@ public class RedissonTransaction implements RTransaction {
     @Override
     public <V> RBucket<V> getBucket(String name, Codec codec) {
         checkState();
+        checkCodecMismatch(name, codec);
 
         return (RBucket<V>) instances.computeIfAbsent(name, k -> {
             return new RedissonTransactionalBucket<V>(codec, commandExecutor, options.getTimeout(), name, operations, executed, id);
         });
+    }
+
+    private void checkCodecMismatch(String name, Codec codec) {
+        if (codec == null) {
+            return;
+        }
+        Object existing = instances.get(name);
+        if (existing instanceof org.redisson.api.RObject) {
+            Codec existingCodec = ((org.redisson.api.RObject) existing).getCodec();
+            if (existingCodec == null || !existingCodec.getClass().equals(codec.getClass())) {
+                throw new IllegalArgumentException("Codec mismatch for '" + name
+                        + "': instance created with " + existingCodec + ", requested " + codec);
+            }
+        }
     }
 
     @Override
@@ -144,6 +159,7 @@ public class RedissonTransaction implements RTransaction {
     @Override
     public <V> RSet<V> getSet(String name, Codec codec) {
         checkState();
+        checkCodecMismatch(name, codec);
 
         return (RSet<V>) instances.computeIfAbsent(name, k -> {
             return new RedissonTransactionalSet<V>(codec, commandExecutor, name, operations, options.getTimeout(), executed, id);
@@ -162,6 +178,7 @@ public class RedissonTransaction implements RTransaction {
     @Override
     public <V> RSetCache<V> getSetCache(String name, Codec codec) {
         checkState();
+        checkCodecMismatch(name, codec);
 
         return (RSetCache<V>) instances.computeIfAbsent(name, k -> {
             return new RedissonTransactionalSetCache<V>(codec, commandExecutor, name, operations, options.getTimeout(), executed, id);
@@ -180,6 +197,7 @@ public class RedissonTransaction implements RTransaction {
     @Override
     public <K, V> RMap<K, V> getMap(String name, Codec codec) {
         checkState();
+        checkCodecMismatch(name, codec);
 
         return (RMap<K, V>) instances.computeIfAbsent(name, k -> {
             return new RedissonTransactionalMap<K, V>(codec, commandExecutor, name, operations, options.getTimeout(), executed, id);
@@ -198,6 +216,7 @@ public class RedissonTransaction implements RTransaction {
     @Override
     public <K, V> RMapCache<K, V> getMapCache(String name, Codec codec) {
         checkState();
+        checkCodecMismatch(name, codec);
 
         return (RMapCache<K, V>) instances.computeIfAbsent(name, k -> {
             return new RedissonTransactionalMapCache<K, V>(codec, commandExecutor, name, operations, options.getTimeout(), executed, id);
