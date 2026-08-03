@@ -5,10 +5,8 @@ import mockit.Invocation;
 import mockit.Mock;
 import mockit.MockUp;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.*;
-import org.redisson.client.RedisException;
 import org.redisson.client.codec.IntegerCodec;
 import org.redisson.client.codec.StringCodec;
 
@@ -784,19 +782,6 @@ public class RedissonSetTest extends RedisDockerTest {
         assertThat(set).containsOnly(6, 5, 7);
     }
 
-    /**
-     * SUNIONCARD and SDIFFCARD require Redis 8.10.0, skip if the server is older.
-     */
-    private void assumeCardCommandsSupported(Runnable command) {
-        try {
-            command.run();
-        } catch (RedisException e) {
-            Assumptions.assumeFalse(e.getMessage().contains("unknown command"),
-                    "SUNIONCARD/SDIFFCARD aren't supported");
-            throw e;
-        }
-    }
-
     @Test
     public void testCountUnion() {
         RSet<Integer> set = redisson.getSet("set");
@@ -809,8 +794,6 @@ public class RedissonSetTest extends RedisDockerTest {
         set2.add(3);
         set2.add(4);
         set2.add(5);
-
-        assumeCardCommandsSupported(() -> set.countUnion("set1"));
 
         assertThat(set.countUnion("set1", "set2")).isEqualTo(6);
         assertThat(set.countUnion("set1")).isEqualTo(4);
@@ -836,8 +819,6 @@ public class RedissonSetTest extends RedisDockerTest {
         set2.add(4);
         set2.add(5);
 
-        assumeCardCommandsSupported(() -> set.countUnionApprox("set1"));
-
         // HyperLogLog based estimate, allow for the documented error margin
         assertThat(set.countUnionApprox("set1", "set2")).isBetween(5, 7);
         assertThat(set.countUnionApprox(4, "set1", "set2")).isEqualTo(4);
@@ -852,8 +833,6 @@ public class RedissonSetTest extends RedisDockerTest {
         set1.add(4);
         RSet<Integer> set2 = redisson.getSet("set2");
         set2.add(5);
-
-        assumeCardCommandsSupported(() -> set.countDiff("set1"));
 
         assertThat(set.countDiff("set1", "set2")).isEqualTo(3);
         assertThat(set.countDiff("set1")).isEqualTo(4);
@@ -905,7 +884,7 @@ public class RedissonSetTest extends RedisDockerTest {
 
     
     @Test
-    public void testMove() throws Exception {
+    public void testMove() {
         RSet<Integer> set = redisson.getSet("set");
         RSet<Integer> otherSet = redisson.getSet("otherSet");
 
@@ -922,7 +901,7 @@ public class RedissonSetTest extends RedisDockerTest {
     }
 
     @Test
-    public void testMoveNoMember() throws Exception {
+    public void testMoveNoMember() {
         RSet<Integer> set = redisson.getSet("set");
         RSet<Integer> otherSet = redisson.getSet("otherSet");
 
