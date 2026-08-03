@@ -45,6 +45,7 @@ abstract class EvictionTask implements TimerTask {
     final CommandAsyncExecutor executor;
 
     volatile Timeout timeout;
+    volatile boolean cancelled;
 
     EvictionTask(CommandAsyncExecutor executor) {
         super();
@@ -61,6 +62,7 @@ abstract class EvictionTask implements TimerTask {
 
     public void cancel() {
         timeout.cancel();
+        cancelled = true;
     }
 
     abstract CompletionStage<Integer> execute();
@@ -69,7 +71,7 @@ abstract class EvictionTask implements TimerTask {
     
     @Override
     public void run(Timeout timeout) {
-        if (executor.getServiceManager().isShuttingDown()) {
+        if (cancelled || executor.getServiceManager().isShuttingDown()) {
             return;
         }
 
