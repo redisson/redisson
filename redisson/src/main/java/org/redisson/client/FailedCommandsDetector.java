@@ -15,8 +15,8 @@
  */
 package org.redisson.client;
 
-import java.util.NavigableMap;
-import java.util.TreeMap;
+import java.util.concurrent.ConcurrentNavigableMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 /**
  * Detects failed Redis node if it has reached specified amount of command execution errors
@@ -31,7 +31,7 @@ public class FailedCommandsDetector implements FailedNodeDetector {
 
     protected long failedCommandsLimit;
 
-    private final NavigableMap<Long, Long> failedCommands = new TreeMap<>();
+    private final ConcurrentNavigableMap<Long, Long> failedCommands = new ConcurrentSkipListMap<>();
 
     public FailedCommandsDetector() {
     }
