@@ -1,17 +1,27 @@
 package org.redisson.pubsub;
 
 import mockit.Injectable;
+import mockit.Expectations;
 import mockit.Mock;
 import mockit.MockUp;
+import mockit.Mocked;
 import mockit.Tested;
+import mockit.Verifications;
 import org.junit.jupiter.api.Test;
 import org.redisson.RedissonLockEntry;
+import org.redisson.client.BaseRedisPubSubListener;
 import org.redisson.client.ChannelName;
+import org.redisson.client.RedisNodeNotFoundException;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.RedisTimeoutException;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.LongCodec;
+import org.redisson.config.MasterSlaveServersConfig;
+import org.redisson.connection.ConnectionManager;
+import org.redisson.connection.ServiceManager;
 import org.redisson.misc.AsyncSemaphore;
 
+import java.lang.reflect.Proxy;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -75,5 +85,49 @@ public class PublishSubscribeTest {
         thread3.join();
         assertTrue(secondPromise.isDone());
         assertFalse(secondPromise.isCompletedExceptionally());
+    }
+
+    @Test
+    public void testSubscribeNoTimeoutReleasesSemaphoreIfEntryIsMissing(@Mocked ServiceManager serviceManager) {
+        String channelName = "redisson_lock__channel__test";
+        AsyncSemaphore semaphore = new AsyncSemaphore(1);
+        CompletableFuture<PubSubConnectionEntry> failedFuture = new CompletableFuture<>();
+        failedFuture.completeExceptionally(new RedisNodeNotFoundException("missing node"));
+        ConnectionManager connectionManager = (ConnectionManager) Proxy.newProxyInstance(
+                ConnectionManager.class.getClassLoader(), new Class[] {ConnectionManager.class},
+                (proxy, method, args) -> {
+                    if ("getServiceManager".equals(method.getName())) {
+                        return serviceManager;
+                    }
+                    if ("calcSlot".equals(method.getName())) {
+                        return 1;
+                    }
+                    if ("getWriteEntry".equals(method.getName())) {
+                        // Return null to simulate the case where the Redis node is unavailable
+                        return null;
+                    }
+                    return null;
+                });
+
+        new Expectations() {{
+            serviceManager.getConfig();
+            result = new MasterSlaveServersConfig();
+            serviceManager.createNodeNotFoundFuture(channelName, 1);
+            result = failedFuture;
+        }};
+
+        PublishSubscribeService service = new PublishSubscribeService(connectionManager);
+
+        // Simulate the caller already holding the semaphore permit, subscribeNoTimeout should return it when no master node exists.
+        semaphore.acquire().join();
+        CompletableFuture<Void> waiter = semaphore.acquire();
+        assertFalse(waiter.isDone());
+
+        CompletableFuture<PubSubConnectionEntry> subscribeFuture = service.subscribeNoTimeout(
+                LongCodec.INSTANCE, channelName, semaphore, new BaseRedisPubSubListener());
+
+        assertSame(failedFuture, subscribeFuture);
+        assertTrue(subscribeFuture.isCompletedExceptionally());
+        assertTrue(waiter.isDone());
     }
 }
