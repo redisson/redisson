@@ -409,6 +409,28 @@ public final class RedissonRx implements RedissonRxClient {
     }
 
     @Override
+    public <K, V> RMapsRx<K, V> getMaps() {
+        return createMaps(new RedissonMaps<>(commandExecutor), commandExecutor);
+    }
+
+    @Override
+    public <K, V> RMapsRx<K, V> getMaps(Codec codec) {
+        return createMaps(new RedissonMaps<>(codec, commandExecutor), commandExecutor);
+    }
+
+    @Override
+    public <K, V> RMapsRx<K, V> getMaps(OptionalOptions options) {
+        OptionalParams params = (OptionalParams) options;
+        CommandRxExecutor ce = commandExecutor.copy(params);
+        return createMaps(new RedissonMaps<>(params.getCodec(), ce), ce);
+    }
+
+    private <K, V> RMapsRx<K, V> createMaps(RMaps<K, V> maps, CommandRxExecutor ce) {
+        return RxProxyBuilder.create(commandExecutor, maps,
+                                        new RedissonMapsRx<>(maps, ce), RMapsRx.class);
+    }
+
+    @Override
     public <V> RJsonBucketRx<V> getJsonBucket(String name, JsonCodec codec) {
         return RxProxyBuilder.create(commandExecutor, new RedissonJsonBucket<>(codec, commandExecutor, name), RJsonBucketRx.class);
     }

@@ -145,6 +145,8 @@ public final class ServiceManager {
 
     private NatMapper natMapper = NatMapper.direct();
 
+    private volatile boolean hashImportDisabled;
+
     private static final Map<InetSocketAddress, Set<String>> SCRIPT_SHA_CACHE = new ConcurrentHashMap<>();
 
     private static final Map<String, String> SHA_CACHE = new LRUCacheMap<>(500, 0, 0);
@@ -461,6 +463,14 @@ public final class ServiceManager {
 
     public MasterSlaveServersConfig getConfig() {
         return config;
+    }
+
+    public boolean isHashImportDisabled() {
+        return hashImportDisabled;
+    }
+
+    public void disableHashImport() {
+        hashImportDisabled = true;
     }
 
     public NameMapper getNameMapper() {

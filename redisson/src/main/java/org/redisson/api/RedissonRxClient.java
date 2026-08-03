@@ -693,6 +693,30 @@ public interface RedissonRxClient {
     RBucketsRx getBuckets(OptionalOptions options);
 
     /**
+     * Returns interface for mass operations with Map objects.
+     *
+     * @return Maps object
+     */
+    <K, V> RMapsRx<K, V> getMaps();
+
+    /**
+     * Returns interface for mass operations with Map objects
+     * using provided codec for keys and values.
+     *
+     * @param codec codec for keys and values
+     * @return Maps object
+     */
+    <K, V> RMapsRx<K, V> getMaps(Codec codec);
+
+    /**
+     * Returns API for mass operations over Map objects with specified <code>options</code>.
+     *
+     * @param options instance options
+     * @return Maps object
+     */
+    <K, V> RMapsRx<K, V> getMaps(OptionalOptions options);
+
+    /**
      * Returns JSON data holder instance by name using provided codec.
      *
      * @param <V> type of value

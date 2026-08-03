@@ -279,6 +279,22 @@ public final class Redisson implements RedissonClient {
     }
 
     @Override
+    public <K, V> RMaps<K, V> getMaps() {
+        return new RedissonMaps<>(commandExecutor);
+    }
+
+    @Override
+    public <K, V> RMaps<K, V> getMaps(Codec codec) {
+        return new RedissonMaps<>(codec, commandExecutor);
+    }
+
+    @Override
+    public <K, V> RMaps<K, V> getMaps(OptionalOptions options) {
+        OptionalParams params = (OptionalParams) options;
+        return new RedissonMaps<>(params.getCodec(), commandExecutor.copy(params));
+    }
+
+    @Override
     public <V> RJsonBucket<V> getJsonBucket(String name, JsonCodec codec) {
         return new RedissonJsonBucket<>(codec, commandExecutor, name);
     }

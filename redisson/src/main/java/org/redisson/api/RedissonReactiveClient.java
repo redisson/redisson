@@ -692,6 +692,30 @@ public interface RedissonReactiveClient {
     RBucketsReactive getBuckets(OptionalOptions options);
 
     /**
+     * Returns interface for mass operations with Map objects.
+     *
+     * @return Maps object
+     */
+    <K, V> RMapsReactive<K, V> getMaps();
+
+    /**
+     * Returns interface for mass operations with Map objects
+     * using provided codec for keys and values.
+     *
+     * @param codec codec for keys and values
+     * @return Maps object
+     */
+    <K, V> RMapsReactive<K, V> getMaps(Codec codec);
+
+    /**
+     * Returns API for mass operations over Map objects with specified <code>options</code>.
+     *
+     * @param options instance options
+     * @return Maps object
+     */
+    <K, V> RMapsReactive<K, V> getMaps(OptionalOptions options);
+
+    /**
      * Use {@link #getBuckets()} instead.
      *
      * @param <V> type of value

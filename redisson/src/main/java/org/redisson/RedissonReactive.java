@@ -463,6 +463,28 @@ public final class RedissonReactive implements RedissonReactiveClient {
     }
 
     @Override
+    public <K, V> RMapsReactive<K, V> getMaps() {
+        return createMaps(new RedissonMaps<>(commandExecutor), commandExecutor);
+    }
+
+    @Override
+    public <K, V> RMapsReactive<K, V> getMaps(Codec codec) {
+        return createMaps(new RedissonMaps<>(codec, commandExecutor), commandExecutor);
+    }
+
+    @Override
+    public <K, V> RMapsReactive<K, V> getMaps(OptionalOptions options) {
+        OptionalParams params = (OptionalParams) options;
+        CommandReactiveExecutor ce = commandExecutor.copy(params);
+        return createMaps(new RedissonMaps<>(params.getCodec(), ce), ce);
+    }
+
+    private <K, V> RMapsReactive<K, V> createMaps(RMaps<K, V> maps, CommandReactiveExecutor ce) {
+        return ReactiveProxyBuilder.create(commandExecutor, maps,
+                                            new RedissonMapsReactive<>(maps, ce), RMapsReactive.class);
+    }
+
+    @Override
     public <V> List<RBucketReactive<V>> findBuckets(String pattern) {
         RKeys redissonKeys = new RedissonKeys(commandExecutor);
         Iterable<String> keys = redissonKeys.getKeysByPattern(pattern);
