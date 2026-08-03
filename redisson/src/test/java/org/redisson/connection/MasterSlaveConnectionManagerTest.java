@@ -55,6 +55,8 @@ public class MasterSlaveConnectionManagerTest {
                     .isInstanceOf(FailedCommandsTimeoutDetector.class);
             Assertions.assertThat(sentinelConfig.getFailedNodeDetector())
                     .isInstanceOf(FailedConnectionDetector.class);
+            Assertions.assertThat(masterConfig.getFailedNodeDetector())
+                    .isSameAs(sentinelConfig.getFailedNodeDetector());
         } finally {
             manager.shutdown(0, 0, TimeUnit.SECONDS);
         }
