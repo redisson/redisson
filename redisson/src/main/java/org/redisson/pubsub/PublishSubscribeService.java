@@ -450,6 +450,7 @@ public class PublishSubscribeService {
                                                                 AsyncSemaphore semaphore, RedisPubSubListener<?>... listeners) {
         MasterSlaveEntry entry = getEntry(new ChannelName(channelName));
         if (entry == null) {
+            semaphore.release();
             int slot = connectionManager.calcSlot(channelName);
             return connectionManager.getServiceManager().createNodeNotFoundFuture(channelName, slot);
         }

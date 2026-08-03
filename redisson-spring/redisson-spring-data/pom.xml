@@ -63,14 +63,14 @@
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-            <version>1.5.18</version>
+            <version>1.5.38</version>
             <scope>test</scope>
         </dependency>
 
       	<dependency>
       		<groupId>io.projectreactor</groupId>
       		<artifactId>reactor-test</artifactId>
-                <version>3.6.11</version>
+                <version>3.8.6</version>
       		<scope>test</scope>
       	</dependency>
 
