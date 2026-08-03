@@ -245,20 +245,10 @@ public class RedissonMapsImport<K, V> implements RMapsImport<K, V> {
         return false;
     }
 
-    /**
-     * Fieldsets are named after the field names they hold, so a connection keeps at most
-     * one fieldset per used set of field names instead of accumulating a new one per import.
-     */
     static String fieldsetName(List<byte[]> fields) {
         return String.format("rs%08x", (int) fieldsHash(fields).getValue()[0]);
     }
 
-    /**
-     * Field names are hashed to look up the group an object belongs to, as arrays are
-     * compared by identity. Lengths are hashed along with the names themselves, otherwise
-     * field names of different bounds holding the same bytes would share a group and the
-     * values of an object would be stored under the field names of another one.
-     */
     static HashValue fieldsHash(List<byte[]> fields) {
         byte[] lengths = new byte[fields.size() * Integer.BYTES];
         int position = 0;
