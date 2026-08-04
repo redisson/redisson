@@ -3,6 +3,52 @@ Redisson Releases History
 
 Upgrade to __[Redisson PRO](https://redisson.pro/feature-comparison.html)__ with **advanced features**.
 
+### 04-August-2026 - 4.7.0 released
+
+Feature - `RMaps` object added for mass operations with Map objects  
+Feature - Array based [Circular Buffer](https://redisson.pro/docs/data-and-services/queues/#circular-buffer) object added  
+Feature - `readNewest()`, `readOldest()` and `peekLast()` methods added to `RRingBuffer`  
+Feature - `countUnion()`, `countUnionApprox()` and `countDiff()` methods added to `RSet`  
+Feature - `maxCount()` and `maxSize()` params added to `RStream.read()` and `RStream.readGroup()` methods  
+Feature - `getAliases()` method added to `RSearch`  
+Feature - `move()` method added to `RQueue` and `RBlockingQueue`  
+Feature - `SetExpiredListener` added for `RSetCache`  
+Feature - `@RGetter` and `@RSetter` annotations added instead of deprecated `@RFieldAccessor`  
+Feature - `WorkerOptions.taskLateThreshold` setting added  
+Feature - Hibernate 7.4.x support  
+Feature - `trySetRate()`, `setRate()`, `getConfig()` and `tryAcquire()` methods added to `RGcra`, old `tryAcquire()` methods deprecated (thanks to @wushiyuanmaimob)  
+Feature - `KeySetViewSerializer` used by `Kryo5Codec` (thanks to @olewehrmeyer)  
+Feature - Netty updated to 4.2.16.Final  
+Feature - Fory lib upgraded to 1.4.0  
+
+Improvement - `RoundRobinLoadBalancer` is now load balancing pubsub subscriptions  
+Improvement - `failedSlaveNodeDetector` setting is now applied only to slave nodes (thanks to @rahulrane50)  
+Improvement - `FailedNodeDetector` instance is now copied per client instead of being shared (thanks to @rahulrane50)  
+Improvement - redundant `junit-bom` import removed from `redisson-spring-boot-starter` (thanks to @Develop-KIM)  
+Improvement - protobuf-java lib updated to 4.35.1  
+Improvement - zstd-jni lib updated to 1.5.7-12  
+Improvement - lz4-java lib updated to 1.11.1  
+Improvement - jackson-dataformat-msgpack lib updated to 0.9.12  
+Improvement - micronaut-inject lib updated to 3.10.6 in `redisson-micronaut-30` module  
+
+Fixed - JCache fallback mode doesn't work for some methods  
+Fixed - JCache fallback mode doesn't handle incorrect password encryption format 
+Fixed - `EvictionTask` cancellation race condition  
+Fixed - master should be registered even if slaves can't be reached (regression since 4.6.1)  
+Fixed - cluster lazy initialization parks caller threads indefinitely (thanks to @yipeng09)  
+Fixed - cluster lazy initialization self-deadlocks if stale master entry is re-registered (thanks to @yipeng09)  
+Fixed - cluster monitor spams "added slaves detected" if slaves aren't used (thanks to @wushiyuanmaimob)  
+Fixed - username isn't inherited from cluster config endpoint by discovered nodes (thanks to @wushiyuanmaimob)  
+Fixed - pubsub semaphore leak if subscription entry is missing (thanks to @AliasJeff)  
+Fixed - read lock renewal entry leak (thanks to @wushiyuanmaimob)  
+Fixed - `tryLock()` method throws timeout exception and `redisson_lock_queue`, `redisson_lock_timeout` keys aren't removed (thanks to @seakider)  
+Fixed - codec mismatch isn't detected if the same name is reused in a transaction (thanks to @fudianchn)  
+Fixed - `ByteBuf` leak in `RedissonTransactionalBucket.isEquals()` method (thanks to @vasiliy-mikhailov)  
+Fixed - `RMap.entrySet().contains()` method always returns false (thanks to @vasiliy-mikhailov)  
+Fixed - `RSetMultimap.fastRemoveValueAsync()` method always returns 0 (thanks to @vasiliy-mikhailov)  
+Fixed - `RReliableTopic.removeAllListeners()` method throws NPE if there is no subscription (thanks to @wushiyuanmaimob)  
+Fixed - `isMinimalPutsEnabledByDefault()` method should return false in `redisson-hibernate-72` module  
+
 ### 18-June-2026 - 4.6.1 released
 
 Fixed - ConnectionsHolder init-connection double release (thanks to @yipeng09)  
