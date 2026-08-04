@@ -15,10 +15,7 @@
  */
 package org.redisson.misc;
 
-import java.util.Iterator;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReference;
@@ -26,6 +23,7 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * Non-blocking queue with O(1) removal whose read path allocates nothing.
  *
+ * Null elements aren't permitted.
  *
  * @author Nikita Koksharov
  *
@@ -37,6 +35,8 @@ public final class FastRemovalQueue<E> implements Iterable<E> {
     private final Queue<Node<E>> queue = new ConcurrentLinkedQueue<>();
 
     public void add(E element) {
+        Objects.requireNonNull(element, "element must not be null");
+
         Node<E> newNode = new Node<>(element);
         while (true) {
             Node<E> current = index.putIfAbsent(element, newNode);
@@ -55,11 +55,19 @@ public final class FastRemovalQueue<E> implements Iterable<E> {
     }
 
     public boolean remove(E element) {
+        if (element == null) {
+            return false;
+        }
+
         Node<E> node = index.remove(element);
         return node != null && node.claim() != null;
     }
 
     public boolean moveToTail(E element) {
+        if (element == null) {
+            return false;
+        }
+
         Node<E> node = index.get(element);
         if (node == null || node.get() == null) {
             return false;
