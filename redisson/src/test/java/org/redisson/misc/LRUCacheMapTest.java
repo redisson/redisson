@@ -83,14 +83,16 @@ public class LRUCacheMapTest {
         Thread.sleep(100);
         map.put(2, 2);
         Thread.sleep(100);
-        map.get(1);
+        assertThat(map.get(1)).isEqualTo(1);
+
         Thread.sleep(350);
         //first it will remove the entry which key is 2
         map.put(3, 3);
         assertThat(map.get(2)).isNull();
-        Thread.sleep(200);
-        map.put(4, 4);
+
+        Thread.sleep(400);
         //second no entry expired, it will poll the entry which key is 1
+        map.put(4, 4);
         assertThat(map.get(1)).isNull();
         Thread.sleep(220);
         //third it will remove the entry which key is 3
