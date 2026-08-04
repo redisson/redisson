@@ -15,7 +15,10 @@
  */
 package org.redisson.misc;
 
-import java.util.*;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReference;
@@ -31,44 +34,34 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public final class FastRemovalQueue<E> implements Iterable<E> {
 
-    private final Map<E, Node<E>> index = new ConcurrentHashMap<>();
-    private final Queue<Node<E>> queue = new ConcurrentLinkedQueue<>();
+    private volatile State<E> state = new State<>();
 
     public void add(E element) {
-        Objects.requireNonNull(element, "element must not be null");
-
+        State<E> current = state;
         Node<E> newNode = new Node<>(element);
         while (true) {
-            Node<E> current = index.putIfAbsent(element, newNode);
-            if (current == null) {
-                queue.add(newNode);
+            Node<E> indexed = current.index.putIfAbsent(element, newNode);
+            if (indexed == null) {
+                current.queue.add(newNode);
                 return;
             }
-            if (current.get() != null) {
+            if (indexed.get() != null) {
                 return;
             }
-            if (index.replace(element, current, newNode)) {
-                queue.add(newNode);
+            if (current.index.replace(element, indexed, newNode)) {
+                current.queue.add(newNode);
                 return;
             }
         }
     }
 
     public boolean remove(E element) {
-        if (element == null) {
-            return false;
-        }
-
-        Node<E> node = index.remove(element);
+        Node<E> node = state.index.remove(element);
         return node != null && node.claim() != null;
     }
 
     public boolean moveToTail(E element) {
-        if (element == null) {
-            return false;
-        }
-
-        Node<E> node = index.get(element);
+        Node<E> node = state.index.get(element);
         if (node == null || node.get() == null) {
             return false;
         }
@@ -79,21 +72,22 @@ public final class FastRemovalQueue<E> implements Iterable<E> {
     }
 
     public E poll() {
+        State<E> current = state;
         // one full revolution is the bound: after that, evict whatever comes up
-        int reprieves = index.size() + 1;
+        int reprieves = current.index.size() + 1;
         Node<E> node;
-        while ((node = queue.poll()) != null) {
+        while ((node = current.queue.poll()) != null) {
             if (node.get() == null) {
                 continue;
             }
             if (node.referenced && reprieves-- > 0) {
                 node.referenced = false;
-                queue.add(node);
+                current.queue.add(node);
                 continue;
             }
             E value = node.claim();
             if (value != null) {
-                index.remove(value, node);
+                current.index.remove(value, node);
                 return value;
             }
         }
@@ -101,24 +95,20 @@ public final class FastRemovalQueue<E> implements Iterable<E> {
     }
 
     public boolean isEmpty() {
-        return index.isEmpty();
+        return state.index.isEmpty();
     }
 
     public int size() {
-        return index.size();
+        return state.index.size();
     }
 
     public void clear() {
-        index.clear();
-        for (Node<E> node : queue) {
-            node.claim();
-        }
-        queue.clear();
+        state = new State<>();
     }
 
     @Override
     public Iterator<E> iterator() {
-        Iterator<Node<E>> nodes = queue.iterator();
+        Iterator<Node<E>> nodes = state.queue.iterator();
         return new Iterator<E>() {
             private E next;
 
@@ -140,6 +130,11 @@ public final class FastRemovalQueue<E> implements Iterable<E> {
                 return value;
             }
         };
+    }
+
+    private static final class State<E> {
+        private final Map<E, Node<E>> index = new ConcurrentHashMap<>();
+        private final Queue<Node<E>> queue = new ConcurrentLinkedQueue<>();
     }
 
     private static final class Node<E> extends AtomicReference<E> {

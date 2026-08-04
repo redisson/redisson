@@ -9,6 +9,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -237,5 +238,75 @@ public class FastRemovalQueueTest {
         return drained;
     }
 
+    @Test
+    public void testClear() {
+        FastRemovalQueue<Integer> queue = new FastRemovalQueue<>();
+        queue.add(1);
+        queue.add(2);
+        queue.add(3);
 
+        queue.clear();
+
+        assertThat(queue.size()).isZero();
+        assertThat(queue.isEmpty()).isTrue();
+        assertThat(queue.poll()).isNull();
+        assertThat(queue).isEmpty();
+
+        queue.add(4);
+        queue.add(5);
+        assertThat(queue).containsExactly(4, 5);
+        assertThat(queue.poll()).isEqualTo(4);
+        assertThat(queue.poll()).isEqualTo(5);
+        assertThat(queue.poll()).isNull();
+    }
+
+    @Test
+    @Timeout(1)
+    public void testConcurrentClearAndAdd() throws Exception {
+        int rounds = 200;
+        int stranded = 0;
+        int worstRound = 0;
+
+        for (int round = 0; round < rounds; round++) {
+            FastRemovalQueue<Integer> queue = new FastRemovalQueue<>();
+            AtomicBoolean clearing = new AtomicBoolean(true);
+
+            Thread adder = new Thread(() -> {
+                int i = 0;
+                while (clearing.get()) {
+                    queue.add(i++);
+                }
+                for (int j = 0; j < 20; j++) {
+                    queue.add(-1 - j);
+                }
+            });
+            Thread clearer = new Thread(() -> {
+                for (int i = 0; i < 500; i++) {
+                    queue.clear();
+                }
+                clearing.set(false);
+            });
+            adder.start();
+            clearer.start();
+            adder.join();
+            clearer.join();
+
+            int size = queue.size();
+            int drained = 0;
+            while (queue.poll() != null && drained < 100000) {
+                drained++;
+            }
+            if (size != drained) {
+                stranded++;
+                worstRound = Math.max(worstRound, Math.abs(size - drained));
+            }
+        }
+
+        assertThat(stranded)
+                .withFailMessage("%d of %d rounds ended with size() disagreeing with what poll() "
+                                + "yields, worst by %d element(s) -- an add() that landed inside "
+                                + "clear() is indexed but not listed",
+                        stranded, rounds, worstRound)
+                .isZero();
+    }
 }
