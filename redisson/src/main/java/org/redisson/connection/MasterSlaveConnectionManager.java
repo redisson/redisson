@@ -47,6 +47,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     public static final int MAX_SLOT = 16384;
 
+    private static final FailedNodeDetector DEFAULT_FAILED_NODE_DETECTOR = new FailedConnectionDetector();
+
     protected final ClusterSlotRange singleSlotRange = new ClusterSlotRange(0, MAX_SLOT-1);
 
     private final Logger log = LoggerFactory.getLogger(getClass());
@@ -469,6 +471,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     protected RedisClientConfig createRedisConfig(NodeType type, RedisURI address, int timeout, int commandTimeout, String sslHostname) {
         Config serviceCfg = serviceManager.getCfg();
         RedisClientConfig redisConfig = new RedisClientConfig();
+        FailedNodeDetector failedNodeDetector = DEFAULT_FAILED_NODE_DETECTOR;
+        if (type == NodeType.SLAVE) {
+            failedNodeDetector = config.getFailedSlaveNodeDetector();
+        }
         redisConfig.setAddress(address)
                 .setTimer(serviceManager.getTimer())
                 .setExecutor(serviceManager.getExecutor())
@@ -495,7 +501,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 .setUsername(Objects.toString(serviceCfg.getUsername(), config.getUsername()))
                 .setPassword(Objects.toString(serviceCfg.getPassword(), config.getPassword()))
                 .setNettyHook(serviceCfg.getNettyHook())
-                .setFailedNodeDetector(config.getFailedSlaveNodeDetector())
+                .setFailedNodeDetector(failedNodeDetector)
                 .setProtocol(serviceCfg.getProtocol())
                 .setCapabilities(serviceCfg.getValkeyCapabilities())
                 .setReconnectionDelay(config.getReconnectionDelay())

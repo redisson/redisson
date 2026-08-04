@@ -8,6 +8,8 @@ import mockit.Mocked;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.NodeType;
+import org.redisson.client.FailedCommandsTimeoutDetector;
+import org.redisson.client.FailedConnectionDetector;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisClientConfig;
 import org.redisson.client.RedisConnectionException;
@@ -27,6 +29,39 @@ import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 
 public class MasterSlaveConnectionManagerTest {
+
+    @Test
+    void failedSlaveNodeDetectorIsOnlyAssignedToSlaves() {
+        Config config = new Config();
+        config.setLazyInitialization(true);
+        MasterSlaveServersConfig msConfig = config.useMasterSlaveServers();
+        msConfig.setMasterAddress("redis://127.0.0.1:6379");
+        msConfig.setReadMode(ReadMode.MASTER);
+        msConfig.setFailedSlaveNodeDetector(new FailedCommandsTimeoutDetector(10000, 2));
+
+        MasterSlaveConnectionManager manager = new MasterSlaveConnectionManager(msConfig, config);
+        try {
+            RedisURI address = new RedisURI("redis://127.0.0.1:6379");
+
+            RedisClientConfig masterConfig = manager.createRedisConfig(
+                    NodeType.MASTER, address, 1000, 1000, null);
+            RedisClientConfig slaveConfig = manager.createRedisConfig(
+                    NodeType.SLAVE, address, 1000, 1000, null);
+            RedisClientConfig sentinelConfig = manager.createRedisConfig(
+                    NodeType.SENTINEL, address, 1000, 1000, null);
+
+            Assertions.assertThat(masterConfig.getFailedNodeDetector())
+                    .isInstanceOf(FailedConnectionDetector.class);
+            Assertions.assertThat(slaveConfig.getFailedNodeDetector())
+                    .isInstanceOf(FailedCommandsTimeoutDetector.class);
+            Assertions.assertThat(sentinelConfig.getFailedNodeDetector())
+                    .isInstanceOf(FailedConnectionDetector.class);
+            Assertions.assertThat(masterConfig.getFailedNodeDetector())
+                    .isSameAs(sentinelConfig.getFailedNodeDetector());
+        } finally {
+            manager.shutdown(0, 0, TimeUnit.SECONDS);
+        }
+    }
 
     MasterSlaveConnectionManager buildSlowConnectionManager(BaseMasterSlaveServersConfig<?> msConfig, Config config) {
         return new MasterSlaveConnectionManager(msConfig, config) {
