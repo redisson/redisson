@@ -462,7 +462,8 @@ public class RedissonKeysTest extends RedisDockerTest {
         String password = "123456";
         GenericContainer<?> redis = createContainer("--requirepass " + password);
         redis.start();
-        Config config = createConfigWithPassword(redis, password);
+        Config config = createConfig(redis);
+        config.setPassword(password);
         RedissonClient r2 = Redisson.create(config);
         List<String> keys = Arrays.asList("{testMigrate}key1", "{testMigrate}key2");
         for (String key : keys) {
@@ -513,16 +514,5 @@ public class RedissonKeysTest extends RedisDockerTest {
         s = redisson.getKeys().expireAt(Instant.ofEpochMilli(ts), "expire-miss");
         assertThat(s).isEqualTo(0);
     }
-
-    protected static Config createConfigWithPassword(GenericContainer<?> container, String password) {
-        Config config = new Config();
-        config.setProtocol(protocol);
-        config.useSingleServer()
-                .setAddress("redis://127.0.0.1:" + container.getFirstMappedPort())
-                .setPassword(password)
-        ;
-        return config;
-    }
-
 
 }

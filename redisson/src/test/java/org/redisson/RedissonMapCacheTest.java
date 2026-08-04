@@ -394,8 +394,7 @@ public class RedissonMapCacheTest extends BaseMapTest {
 
     @Test
     public void testExpirationWithMaxSize() throws InterruptedException {
-        Config config = new Config();
-        config.useSingleServer().setAddress(redisson.getConfig().useSingleServer().getAddress());
+        Config config = redisson.getConfig();
         config.setMaxCleanUpDelay(2);
         config.setMinCleanUpDelay(1);
         RedissonClient redisson = Redisson.create(config);
