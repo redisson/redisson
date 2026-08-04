@@ -18,10 +18,14 @@ package org.redisson.misc;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Thread-safe queue with O(1) complexity for removal operation.
+ * Non-blocking queue with O(1) removal whose read path allocates nothing.
+ *
  *
  * @author Nikita Koksharov
  *
@@ -30,30 +34,62 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class FastRemovalQueue<E> implements Iterable<E> {
 
     private final Map<E, Node<E>> index = new ConcurrentHashMap<>();
-    private final DoublyLinkedList<E> list = new DoublyLinkedList<>();
+    private final Queue<Node<E>> queue = new ConcurrentLinkedQueue<>();
 
     public void add(E element) {
         Node<E> newNode = new Node<>(element);
-        if (index.putIfAbsent(element, newNode) == null) {
-            list.add(newNode);
+        while (true) {
+            Node<E> current = index.putIfAbsent(element, newNode);
+            if (current == null) {
+                queue.add(newNode);
+                return;
+            }
+            if (current.get() != null) {
+                return;
+            }
+            if (index.replace(element, current, newNode)) {
+                queue.add(newNode);
+                return;
+            }
         }
-    }
-
-    public boolean moveToTail(E element) {
-        Node<E> node = index.get(element);
-        if (node != null) {
-            list.moveToTail(node);
-            return true;
-        }
-        return false;
     }
 
     public boolean remove(E element) {
         Node<E> node = index.remove(element);
-        if (node != null) {
-            return list.remove(node);
+        return node != null && node.claim() != null;
+    }
+
+    public boolean moveToTail(E element) {
+        Node<E> node = index.get(element);
+        if (node == null || node.get() == null) {
+            return false;
         }
-        return false;
+        if (!node.referenced) {
+            node.referenced = true;
+        }
+        return true;
+    }
+
+    public E poll() {
+        // one full revolution is the bound: after that, evict whatever comes up
+        int reprieves = index.size() + 1;
+        Node<E> node;
+        while ((node = queue.poll()) != null) {
+            if (node.get() == null) {
+                continue;
+            }
+            if (node.referenced && reprieves-- > 0) {
+                node.referenced = false;
+                queue.add(node);
+                continue;
+            }
+            E value = node.claim();
+            if (value != null) {
+                index.remove(value, node);
+                return value;
+            }
+        }
+        return null;
     }
 
     public boolean isEmpty() {
@@ -64,164 +100,52 @@ public final class FastRemovalQueue<E> implements Iterable<E> {
         return index.size();
     }
 
-    public E poll() {
-        Node<E> node = list.removeFirst();
-        if (node != null) {
-            index.remove(node.value);
-            return node.value;
-        }
-        return null;
-    }
-
     public void clear() {
         index.clear();
-        list.clear();
+        for (Node<E> node : queue) {
+            node.claim();
+        }
+        queue.clear();
     }
 
     @Override
     public Iterator<E> iterator() {
-        return list.iterator();
+        Iterator<Node<E>> nodes = queue.iterator();
+        return new Iterator<E>() {
+            private E next;
+
+            @Override
+            public boolean hasNext() {
+                while (next == null && nodes.hasNext()) {
+                    next = nodes.next().get();
+                }
+                return next != null;
+            }
+
+            @Override
+            public E next() {
+                if (!hasNext()) {
+                    throw new NoSuchElementException();
+                }
+                E value = next;
+                next = null;
+                return value;
+            }
+        };
     }
 
-    static class Node<E> {
-        private final E value;
-        private Node<E> prev;
-        private volatile Node<E> next;
-        private volatile boolean deleted;
+    private static final class Node<E> extends AtomicReference<E> {
+
+        private static final long serialVersionUID = 1L;
+
+        private volatile boolean referenced;
 
         Node(E value) {
-            this.value = value;
+            super(value);
         }
 
-        public void setDeleted() {
-            deleted = true;
-        }
-
-        public boolean isDeleted() {
-            return deleted;
-        }
-
-        public E getValue() {
-            return value;
-        }
-    }
-
-    static class DoublyLinkedList<E> implements Iterable<E> {
-        private final WrappedLock lock = new WrappedLock();
-        private Node<E> head;
-        private Node<E> tail;
-
-        DoublyLinkedList() {
-        }
-
-        public void clear() {
-            lock.execute(() -> {
-                head = null;
-                tail = null;
-            });
-        }
-
-        public void add(Node<E> newNode) {
-            lock.execute(() -> {
-                addNode(newNode);
-            });
-        }
-
-        private void addNode(Node<E> newNode) {
-            Node<E> currentTail = tail;
-            tail = newNode;
-            if (currentTail == null) {
-                head = newNode;
-            } else {
-                newNode.prev = currentTail;
-                currentTail.next = newNode;
-            }
-        }
-
-        public boolean remove(Node<E> node) {
-            Boolean r = lock.execute(() -> {
-                if (node.isDeleted()) {
-                    return false;
-                }
-
-                removeNode(node);
-                node.setDeleted();
-                return true;
-            });
-            return Boolean.TRUE.equals(r);
-        }
-
-        private void removeNode(Node<E> node) {
-            Node<E> prevNode = node.prev;
-            Node<E> nextNode = node.next;
-
-            if (prevNode != null) {
-                prevNode.next = nextNode;
-            } else {
-                head = nextNode;
-            }
-
-            if (nextNode != null) {
-                nextNode.prev = prevNode;
-            } else {
-                tail = prevNode;
-            }
-        }
-
-        public void moveToTail(Node<E> node) {
-            lock.execute(() -> {
-                if (node.isDeleted()) {
-                    return;
-                }
-
-                removeNode(node);
-
-                node.prev = null;
-                node.next = null;
-                addNode(node);
-            });
-        }
-
-        public Node<E> removeFirst() {
-            return lock.execute(() -> {
-                Node<E> currentHead = head;
-                if (head == tail) {
-                    head = null;
-                    tail = null;
-                } else {
-                    head = head.next;
-                    head.prev = null;
-                }
-                if (currentHead != null) {
-                    currentHead.setDeleted();
-                }
-                return currentHead;
-            });
-        }
-
-        @Override
-        public Iterator<E> iterator() {
-            return new Iterator<E>() {
-                private Node<E> current = head;
-
-                @Override
-                public boolean hasNext() {
-                    while (current != null && current.isDeleted()) {
-                        current = current.next;
-                    }
-                    return current != null;
-                }
-
-                @Override
-                public E next() {
-                    if (current == null) {
-                        throw new NoSuchElementException();
-                    }
-                    E value = current.getValue();
-                    current = current.next;
-                    return value;
-                }
-            };
+        E claim() {
+            return getAndSet(null);
         }
     }
 }

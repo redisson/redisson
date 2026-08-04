@@ -1,6 +1,7 @@
 package org.redisson.misc;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -172,5 +173,69 @@ public class FastRemovalQueueTest {
 
         assertThat(totalPolled + removed.get() + pooled.get()).isEqualTo(numThreads * numElements);
     }
+
+    private static final int ROUNDS = 200;
+    private static final int ITERATIONS = 1000;
+    private static final int PARKED = 20;
+
+    @Test
+    @Timeout(1)
+    public void testConcurrentAddAndRemoveOfSameElement() throws Exception {
+        int corruptedRounds = 0;
+        Throwable firstError = null;
+
+        for (int round = 0; round < ROUNDS; round++) {
+            FastRemovalQueue<String> queue = new FastRemovalQueue<>();
+            List<String> parked = new ArrayList<>();
+            for (int i = 0; i < PARKED; i++) {
+                queue.add("parked-" + i);
+                parked.add("parked-" + i);
+            }
+
+            // both threads contend on one element; the parked ones are bystanders
+            Runnable job = () -> {
+                for (int i = 0; i < ITERATIONS; i++) {
+                    queue.add("hot");
+                    queue.remove("hot");
+                }
+            };
+            Thread first = new Thread(job);
+            Thread second = new Thread(job);
+            first.start();
+            second.start();
+            first.join();
+            second.join();
+
+            try {
+                if (!drain(queue).containsAll(parked)) {
+                    corruptedRounds++;
+                }
+            } catch (Throwable t) {
+                // corruption also leaves head != tail with head.next == null,
+                // so removeFirst() throws NPE on "head.prev = null"
+                corruptedRounds++;
+                if (firstError == null) {
+                    firstError = t;
+                }
+            }
+        }
+
+        assertThat(corruptedRounds)
+                .withFailMessage("%d of %d rounds lost elements that were parked before the race%s",
+                        corruptedRounds, ROUNDS,
+                        firstError == null ? "" : ", and poll() threw " + firstError)
+                .isZero();
+    }
+
+    private static List<String> drain(FastRemovalQueue<String> queue) {
+        List<String> drained = new ArrayList<>();
+        String element;
+        // bounded because a corrupted list can contain a cycle
+        while (drained.size() < 1000 && (element = queue.poll()) != null) {
+            drained.add(element);
+        }
+        return drained;
+    }
+
 
 }
