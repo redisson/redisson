@@ -15,8 +15,12 @@
  */
 package org.redisson.client;
 
+import java.util.Map;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * Detects failed Redis node if it has reached specified amount of command execution errors
@@ -32,6 +36,8 @@ public class FailedCommandsDetector implements FailedNodeDetector {
     protected long failedCommandsLimit;
 
     private final ConcurrentNavigableMap<Long, Long> failedCommands = new ConcurrentSkipListMap<>();
+    private final AtomicLong failedCommandsCount = new AtomicLong();
+    private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
     public FailedCommandsDetector() {
     }
@@ -90,25 +96,50 @@ public class FailedCommandsDetector implements FailedNodeDetector {
     }
 
     @Override
-    public synchronized void onCommandFailed(Throwable cause) {
-        failedCommands.merge(getCurrentTime(), 1L, Long::sum);
+    public void onCommandFailed(Throwable cause) {
+        lock.readLock().lock();
+        try {
+            failedCommands.merge(getCurrentTime(), 1L, Long::sum);
+            failedCommandsCount.incrementAndGet();
+        } finally {
+            lock.readLock().unlock();
+        }
     }
 
     @Override
-    public synchronized boolean isNodeFailed() {
+    public boolean isNodeFailed() {
         if (failedCommandsLimit == 0) {
             throw new IllegalArgumentException("failedCommandsLimit isn't set");
         }
 
-        long start = getCurrentTime() - checkInterval;
-        failedCommands.headMap(start).clear();
-
-        long failures = failedCommands.values().stream().mapToLong(Long::longValue).sum();
-        if (failures >= failedCommandsLimit) {
-            failedCommands.clear();
-            return true;
+        long failures = failedCommandsCount.get();
+        if (failures < failedCommandsLimit) {
+            Map.Entry<Long, Long> firstFailure = failedCommands.firstEntry();
+            long start = getCurrentTime() - checkInterval;
+            if (firstFailure == null || firstFailure.getKey() >= start) {
+                return false;
+            }
         }
-        return false;
+
+        lock.writeLock().lock();
+        try {
+            long start = getCurrentTime() - checkInterval;
+            ConcurrentNavigableMap<Long, Long> expiredCommands = failedCommands.headMap(start);
+            long expiredCommandsCount = expiredCommands.values().stream()
+                    .mapToLong(Long::longValue)
+                    .sum();
+            expiredCommands.clear();
+
+            failures = failedCommandsCount.addAndGet(-expiredCommandsCount);
+            if (failures >= failedCommandsLimit) {
+                failedCommands.clear();
+                failedCommandsCount.set(0);
+                return true;
+            }
+            return false;
+        } finally {
+            lock.writeLock().unlock();
+        }
     }
 
     protected long getCurrentTime() {
