@@ -56,8 +56,25 @@ public final class FastRemovalQueue<E> implements Iterable<E> {
     }
 
     public boolean remove(E element) {
-        Node<E> node = state.index.remove(element);
-        return node != null && node.claim() != null;
+        State<E> current = state;
+        Node<E> node = current.index.remove(element);
+        if (node == null || node.claim() == null) {
+            return false;
+        }
+        discardClaimedHead(current);
+        return true;
+    }
+
+    private static <E> void discardClaimedHead(State<E> current) {
+        for (int i = 0; i < 2; i++) {
+            Node<E> head = current.queue.peek();
+            if (head == null || head.get() != null) {
+                return;
+            }
+            if (!current.queue.remove(head)) {
+                return;
+            }
+        }
     }
 
     public boolean moveToTail(E element) {
