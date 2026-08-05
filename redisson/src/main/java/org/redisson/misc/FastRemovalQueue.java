@@ -21,6 +21,10 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public final class FastRemovalQueue<E> implements Iterable<E> {
 
+    private static final int SWEEP_BUDGET = 64;
+
+    private static final int SWEEP_THRESHOLD = 64;
+
     private volatile State<E> state = new State<>();
 
     public void add(E element) {
@@ -50,28 +54,43 @@ public final class FastRemovalQueue<E> implements Iterable<E> {
         }
         current.claimed.incrementAndGet();
         discardClaimedHead(current);
-        compactIfBacklogged(current);
+        sweepIfBacklogged(current);
         return true;
     }
 
-    private static <E> void compactIfBacklogged(State<E> current) {
-        if (current.claimed.get() <= current.index.size() + 64) {
+    private static <E> void sweepIfBacklogged(State<E> current) {
+        int backlog = current.claimed.get();
+        if (backlog <= SWEEP_THRESHOLD || backlog <= current.index.size()) {
             return;
         }
-        if (!current.compacting.compareAndSet(false, true)) {
+        if (!current.sweeping.compareAndSet(false, true)) {
             return;
         }
         try {
+            Iterator<Node<E>> cursor = current.sweeper;
+            if (cursor == null) {
+                cursor = current.queue.iterator();
+            }
+
             int swept = 0;
-            for (Iterator<Node<E>> it = current.queue.iterator(); it.hasNext();) {
-                if (it.next().get() == null) {
-                    it.remove();
+            for (int examined = 0; examined < SWEEP_BUDGET && cursor.hasNext(); examined++) {
+                if (cursor.next().get() == null) {
+                    cursor.remove();
                     swept++;
                 }
             }
-            current.claimed.addAndGet(-swept);
+
+            if (cursor.hasNext()) {
+                current.sweeper = cursor;
+            } else {
+                current.sweeper = null;
+            }
+
+            if (swept > 0) {
+                current.claimed.addAndGet(-swept);
+            }
         } finally {
-            current.compacting.set(false);
+            current.sweeping.set(false);
         }
     }
 
@@ -167,7 +186,8 @@ public final class FastRemovalQueue<E> implements Iterable<E> {
         private final Queue<Node<E>> queue = new ConcurrentLinkedQueue<>();
 
         private final AtomicInteger claimed = new AtomicInteger();
-        private final AtomicBoolean compacting = new AtomicBoolean();
+        private final AtomicBoolean sweeping = new AtomicBoolean();
+        private volatile Iterator<Node<E>> sweeper;
 
     }
 
