@@ -15,12 +15,14 @@
  */
 package org.redisson.misc;
 
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * 
+ *
  * @author Nikita Koksharov
  *
  */
@@ -47,7 +49,10 @@ public final class AsyncSemaphore {
     }
     
     public void removeListeners() {
-        listeners.clear();
+        CompletableFuture<Void> future;
+        while ((future = listeners.poll()) != null) {
+            future.completeExceptionally(new CancellationException("AsyncSemaphore listeners have been removed"));
+        }
     }
 
     public CompletableFuture<Void> acquire() {
@@ -67,11 +72,18 @@ public final class AsyncSemaphore {
             int val = tasksLatch.get();
             if (stackSize.get() > 25 * val
                     && tasksLatch.compareAndSet(val, val+1)) {
-                executorService.submit(() -> {
+                try {
+                    executorService.submit(() -> {
+                        tasksLatch.decrementAndGet();
+                        tryRun();
+                    });
+                    return;
+                } catch (RejectedExecutionException e) {
+                    // the executor is going away. Hand the reservation back and run inline:
+                    // otherwise the permit never reaches a waiter, and the raised latch
+                    // permanently lifts the 25 * tasksLatch threshold this guard depends on
                     tasksLatch.decrementAndGet();
-                    tryRun();
-                });
-                return;
+                }
             }
         }
 
@@ -115,7 +127,7 @@ public final class AsyncSemaphore {
     }
 
     public int getCounter() {
-        return counter.get();
+        return Math.max(0, counter.get());
     }
 
     public void release() {
@@ -127,7 +139,5 @@ public final class AsyncSemaphore {
     public String toString() {
         return "value:" + counter + ":queue:" + queueSize();
     }
-    
-    
-    
+
 }
