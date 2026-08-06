@@ -36,8 +36,13 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public final class FastRemovalQueue<E> implements Iterable<E> {
 
-    private static final int SWEEP_BUDGET = 64;
+    /** Dead nodes unlinked per removal, so no single caller pays for the whole prefix. */
+    private static final int DROP_BUDGET = 64;
 
+    /** Nodes examined per removal by the sweep cursor. */
+    private static final int SWEEP_BUDGET = 16;
+
+    /** Below this the backlog is not worth sweeping. */
     private static final int SWEEP_THRESHOLD = 64;
 
     private volatile State<E> state = new State<>();
@@ -48,17 +53,22 @@ public final class FastRemovalQueue<E> implements Iterable<E> {
         while (true) {
             Node<E> indexed = current.index.putIfAbsent(element, newNode);
             if (indexed == null) {
-                current.queue.add(newNode);
+                publish(current, newNode);
                 return;
             }
             if (indexed.get() != null) {
                 return;
             }
             if (current.index.replace(element, indexed, newNode)) {
-                current.queue.add(newNode);
+                publish(current, newNode);
                 return;
             }
         }
+    }
+
+    private void publish(State<E> current, Node<E> newNode) {
+        current.queue.add(newNode);
+        current.live.incrementAndGet();
     }
 
     public boolean remove(E element) {
@@ -67,15 +77,38 @@ public final class FastRemovalQueue<E> implements Iterable<E> {
         if (node == null || node.claim() == null) {
             return false;
         }
+        current.live.decrementAndGet();
         current.claimed.incrementAndGet();
-        discardClaimedHead(current);
+        dropDeadPrefix(current);
         sweepIfBacklogged(current);
         return true;
     }
 
-    private static <E> void sweepIfBacklogged(State<E> current) {
+    private boolean dropDeadPrefix(State<E> current) {
+        int dropped = 0;
+        while (dropped < DROP_BUDGET) {
+            Node<E> head = current.queue.peek();
+            if (head == null) {
+                return true;
+            }
+            if (head.get() != null || !current.queue.remove(head)) {
+                break;
+            }
+            current.claimed.decrementAndGet();
+            dropped++;
+        }
+        return dropped > 0;
+    }
+
+    /**
+     * The prefix drop cannot reach a dead node until everything ahead of it has gone, so a
+     * caller that removes out of order strands them behind a live element. One thread at a
+     * time advances a cursor a fixed distance and hands it back, which reaches the middle
+     * without any single call paying for the queue.
+     */
+    private void sweepIfBacklogged(State<E> current) {
         int backlog = current.claimed.get();
-        if (backlog <= SWEEP_THRESHOLD || backlog <= current.index.size()) {
+        if (backlog <= SWEEP_THRESHOLD || backlog <= current.live.get()) {
             return;
         }
         if (!current.sweeping.compareAndSet(false, true)) {
@@ -86,7 +119,6 @@ public final class FastRemovalQueue<E> implements Iterable<E> {
             if (cursor == null) {
                 cursor = current.queue.iterator();
             }
-
             int swept = 0;
             for (int examined = 0; examined < SWEEP_BUDGET && cursor.hasNext(); examined++) {
                 if (cursor.next().get() == null) {
@@ -94,31 +126,16 @@ public final class FastRemovalQueue<E> implements Iterable<E> {
                     swept++;
                 }
             }
-
+            if (swept > 0) {
+                current.claimed.addAndGet(-swept);
+            }
             if (cursor.hasNext()) {
                 current.sweeper = cursor;
             } else {
                 current.sweeper = null;
             }
-
-            if (swept > 0) {
-                current.claimed.addAndGet(-swept);
-            }
         } finally {
             current.sweeping.set(false);
-        }
-    }
-
-    private static <E> void discardClaimedHead(State<E> current) {
-        for (int i = 0; i < 2; i++) {
-            Node<E> head = current.queue.peek();
-            if (head == null || head.get() != null) {
-                return;
-            }
-            if (!current.queue.remove(head)) {
-                return;
-            }
-            current.claimed.decrementAndGet();
         }
     }
 
@@ -136,7 +153,7 @@ public final class FastRemovalQueue<E> implements Iterable<E> {
     public E poll() {
         State<E> current = state;
         // one full revolution is the bound: after that, evict whatever comes up
-        int reprieves = current.index.size() + 1;
+        int reprieves = Math.max(0, current.live.get()) + 1;
         Node<E> node;
         while ((node = current.queue.poll()) != null) {
             if (node.get() == null) {
@@ -150,6 +167,7 @@ public final class FastRemovalQueue<E> implements Iterable<E> {
             }
             E value = node.claim();
             if (value != null) {
+                current.live.decrementAndGet();
                 current.index.remove(value, node);
                 return value;
             }
@@ -158,11 +176,11 @@ public final class FastRemovalQueue<E> implements Iterable<E> {
     }
 
     public boolean isEmpty() {
-        return state.index.isEmpty();
+        return state.live.get() <= 0;
     }
 
     public int size() {
-        return state.index.size();
+        return Math.max(0, state.live.get());
     }
 
     public void clear() {
@@ -196,14 +214,15 @@ public final class FastRemovalQueue<E> implements Iterable<E> {
     }
 
     private static final class State<E> {
-
         private final Map<E, Node<E>> index = new ConcurrentHashMap<>();
         private final Queue<Node<E>> queue = new ConcurrentLinkedQueue<>();
-
+        /** Nodes published to {@link #queue} and not yet claimed. */
+        private final AtomicInteger live = new AtomicInteger();
+        /** Approximate count of claimed nodes still physically queued. */
         private final AtomicInteger claimed = new AtomicInteger();
         private final AtomicBoolean sweeping = new AtomicBoolean();
+        /** Sweep position carried between calls; guarded by {@link #sweeping}. */
         private volatile Iterator<Node<E>> sweeper;
-
     }
 
     private static final class Node<E> extends AtomicReference<E> {
