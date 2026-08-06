@@ -16,6 +16,7 @@
 package org.redisson.config;
 
 import io.netty.channel.EventLoopGroup;
+import org.redisson.api.LockRenewalFailureListener;
 import org.redisson.api.RedissonNodeInitializer;
 import org.redisson.client.FailedNodeDetector;
 import org.redisson.client.NettyHook;
@@ -575,6 +576,7 @@ public class ConfigSupport {
                 CredentialsResolver.class,
                 EventLoopGroup.class,
                 ConnectionListener.class,
+                LockRenewalFailureListener.class,
                 ExecutorService.class,
                 CommandMapper.class,
                 FailedNodeDetector.class,

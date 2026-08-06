@@ -16,6 +16,7 @@
 package org.redisson.config;
 
 import io.netty.channel.EventLoopGroup;
+import org.redisson.api.LockRenewalFailureListener;
 import org.redisson.client.DefaultCredentialsResolver;
 import org.redisson.client.DefaultNettyHook;
 import org.redisson.client.NettyHook;
@@ -104,6 +105,8 @@ public class Config {
 
     private ConnectionListener connectionListener;
 
+    private LockRenewalFailureListener lockRenewalFailureListener;
+
     private boolean useThreadClassLoader = true;
 
     private AddressResolverGroupFactory addressResolverGroupFactory = new SequentialDnsAddressResolverFactory();
@@ -166,6 +169,7 @@ public class Config {
         }
 
         setConnectionListener(oldConf.getConnectionListener());
+        setLockRenewalFailureListener(oldConf.getLockRenewalFailureListener());
         setUseThreadClassLoader(oldConf.isUseThreadClassLoader());
         setMinCleanUpDelay(oldConf.getMinCleanUpDelay());
         setMaxCleanUpDelay(oldConf.getMaxCleanUpDelay());
@@ -954,6 +958,22 @@ public class Config {
      */
     public Config setConnectionListener(ConnectionListener connectionListener) {
         this.connectionListener = connectionListener;
+        return this;
+    }
+
+    public LockRenewalFailureListener getLockRenewalFailureListener() {
+        return lockRenewalFailureListener;
+    }
+
+    /**
+     * Sets listener which is triggered when lock watchdog renewal attempt fails.
+     * A listener can be triggered repeatedly while renewal attempts keep failing.
+     *
+     * @param lockRenewalFailureListener lock renewal failure listener
+     * @return config
+     */
+    public Config setLockRenewalFailureListener(LockRenewalFailureListener lockRenewalFailureListener) {
+        this.lockRenewalFailureListener = lockRenewalFailureListener;
         return this;
     }
 
