@@ -51,7 +51,10 @@ public class LFUCacheMap<K, V> extends AbstractCacheMap<K, V> {
             // this stays a consistent total order.
             long d = accessCount - o.accessCount;
             if (d != 0) {
-                return d < 0 ? -1 : 1;
+                if (d < 0) {
+                    return -1;
+                }
+                return 1;
             }
             return Long.compare(id, o.id);
         }
