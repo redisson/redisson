@@ -15,8 +15,9 @@
  */
 package org.redisson.connection;
 
-import org.redisson.config.DefaultNameMapper;
+import io.netty.buffer.ByteBuf;
 import org.redisson.client.DefaultCredentialsResolver;
+import org.redisson.config.DefaultNameMapper;
 import org.redisson.config.*;
 
 /**
@@ -28,6 +29,33 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
 
     SingleConnectionManager(SingleServerConfig cfg, Config configCopy) {
         super(create(cfg), configCopy);
+    }
+
+    @Override
+    public int calcSlot(String key) {
+        if (!serviceManager.isClusterSetup()) {
+            return 0;
+        }
+
+        return SlotCalculator.calcSlot(key);
+    }
+
+    @Override
+    public int calcSlot(byte[] key) {
+        if (!serviceManager.isClusterSetup()) {
+            return 0;
+        }
+
+        return SlotCalculator.calcSlot(key);
+    }
+
+    @Override
+    public int calcSlot(ByteBuf key) {
+        if (!serviceManager.isClusterSetup()) {
+            return 0;
+        }
+
+        return SlotCalculator.calcSlot(key);
     }
 
     private static MasterSlaveServersConfig create(SingleServerConfig cfg) {
