@@ -15,6 +15,8 @@
  */
 package org.redisson.api.redisnode;
 
+import org.redisson.api.RFuture;
+
 /**
  * Redis Master node API interface
  *
@@ -22,4 +24,15 @@ package org.redisson.api.redisnode;
  *
  */
 public interface RedisMasterAsync extends RedisNodeAsync {
+
+    /**
+     * Warms up the connection pool for this Redis node until it contains the specified number of connections.
+     * Connections currently in use are included in this number. If the pool already contains at least the specified
+     * number, then no new connections are created.
+     *
+     * @param connectionAmount target connection amount
+     * @return future completed once the target connection amount is reached
+     */
+    RFuture<Void> warmUpConnectionPoolAsync(int connectionAmount);
+
 }

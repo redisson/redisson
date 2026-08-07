@@ -24,7 +24,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Deque;
+import java.util.HashSet;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
@@ -43,7 +45,14 @@ public class ConnectionsHolder<T extends RedisConnection> {
 
     private final Queue<T> allConnections = new ConcurrentLinkedQueue<>();
     private final Deque<T> freeConnections = new ConcurrentLinkedDeque<>();
+    private final Object warmUpLock = new Object();
+    private final Set<CompletableFuture<Void>> warmUpFutures = new HashSet<>();
+    private final Set<CompletableFuture<Void>> warmUpPermits = new HashSet<>();
+    private CompletableFuture<Void> lastWarmUp = CompletableFuture.completedFuture(null);
+    private long warmUpGeneration;
+    private boolean warmUpEnabled = true;
     private final AsyncSemaphore freeConnectionsCounter;
+    private final int poolMaxSize;
 
     private final RedisClient client;
 
@@ -57,6 +66,7 @@ public class ConnectionsHolder<T extends RedisConnection> {
                              Function<RedisClient, CompletionStage<T>> connectionCallback,
                              ServiceManager serviceManager, boolean changeUsage) {
         this.freeConnectionsCounter = new AsyncSemaphore(poolMaxSize, serviceManager.getGroup());
+        this.poolMaxSize = poolMaxSize;
         this.client = client;
         this.connectionCallback = connectionCallback;
         this.serviceManager = serviceManager;
@@ -151,6 +161,140 @@ public class ConnectionsHolder<T extends RedisConnection> {
         return f.thenAccept(r -> {
             log.info("{} connections initialized for {}", minimumIdleSize, client.getAddr());
         });
+    }
+
+    public CompletableFuture<Void> warmUp(int connectionAmount) {
+        if (connectionAmount < 0) {
+            return failedFuture(new IllegalArgumentException("connectionAmount can't be negative"));
+        }
+        if (connectionAmount > poolMaxSize) {
+            return failedFuture(new IllegalArgumentException(
+                    "connectionAmount can't be greater than connection pool size"));
+        }
+        CompletableFuture<Void> warmUpFuture;
+        synchronized (warmUpLock) {
+            if (!warmUpEnabled) {
+                return failedWarmUpFuture();
+            }
+            long generation = warmUpGeneration;
+            lastWarmUp = lastWarmUp.handle((r, e) -> null)
+                                  .thenCompose(r -> warmUpConnection(connectionAmount, generation));
+            warmUpFuture = lastWarmUp;
+            warmUpFutures.add(warmUpFuture);
+        }
+        warmUpFuture.whenComplete((r, e) -> removeWarmUpFuture(warmUpFuture));
+        return warmUpFuture.thenApply(r -> null);
+    }
+
+    private CompletableFuture<Void> failedFuture(Exception e) {
+        CompletableFuture<Void> f = new CompletableFuture<>();
+        f.completeExceptionally(e);
+        return f;
+    }
+
+    private CompletableFuture<Void> failedWarmUpFuture() {
+        return failedFuture(new RedisConnectionException("Redis node isn't available: " + client));
+    }
+
+    private void removeWarmUpFuture(CompletableFuture<Void> future) {
+        synchronized (warmUpLock) {
+            warmUpFutures.remove(future);
+        }
+    }
+
+    private CompletableFuture<Void> warmUpConnection(int connectionAmount, long generation) {
+        synchronized (warmUpLock) {
+            if (!isWarmUpValid(generation)) {
+                return failedWarmUpFuture();
+            }
+            if (allConnections.size() >= connectionAmount) {
+                return CompletableFuture.completedFuture(null);
+            }
+        }
+
+        return createWarmUpConnection(connectionAmount, generation)
+                .thenCompose(r -> warmUpConnection(connectionAmount, generation));
+    }
+
+    private CompletableFuture<Void> createWarmUpConnection(int connectionAmount, long generation) {
+        CompletableFuture<Void> f;
+        synchronized (warmUpLock) {
+            if (!isWarmUpValid(generation)) {
+                return failedWarmUpFuture();
+            }
+            f = acquireConnection();
+            warmUpPermits.add(f);
+        }
+        f.whenComplete((r, e) -> removeWarmUpPermit(f));
+        return f.thenCompose(r -> {
+            synchronized (warmUpLock) {
+                if (!isWarmUpValid(generation)) {
+                    releaseConnection();
+                    return failedWarmUpFuture();
+                }
+                if (allConnections.size() >= connectionAmount) {
+                    releaseConnection();
+                    return CompletableFuture.completedFuture(null);
+                }
+            }
+
+            CompletableFuture<T> promise = new CompletableFuture<>();
+            createConnection(promise);
+            return promise.handle((conn, e) -> {
+                if (e != null) {
+                    throw new CompletionException(e);
+                }
+
+                synchronized (warmUpLock) {
+                    if (!isWarmUpValid(generation)) {
+                        allConnections.remove(conn);
+                        conn.closeAsync();
+                        releaseConnection();
+                        throw new CompletionException(new RedisConnectionException(
+                                "Redis node isn't available: " + client));
+                    }
+                    if (changeUsage) {
+                        conn.decUsage();
+                    }
+                    addConnection(conn);
+                    releaseConnection();
+                }
+                return null;
+            });
+        });
+    }
+
+    private void removeWarmUpPermit(CompletableFuture<Void> future) {
+        synchronized (warmUpLock) {
+            warmUpPermits.remove(future);
+        }
+    }
+
+    private boolean isWarmUpValid(long generation) {
+        return warmUpEnabled && warmUpGeneration == generation;
+    }
+
+    void failWarmUp(Throwable cause) {
+        Set<CompletableFuture<Void>> futures;
+        Set<CompletableFuture<Void>> permits;
+        synchronized (warmUpLock) {
+            warmUpEnabled = false;
+            warmUpGeneration++;
+            futures = new HashSet<>(warmUpFutures);
+            permits = new HashSet<>(warmUpPermits);
+            warmUpFutures.clear();
+            warmUpPermits.clear();
+            lastWarmUp = CompletableFuture.completedFuture(null);
+        }
+
+        futures.forEach(f -> f.completeExceptionally(cause));
+        permits.forEach(f -> f.cancel(false));
+    }
+
+    void enableWarmUp() {
+        synchronized (warmUpLock) {
+            warmUpEnabled = true;
+        }
     }
 
     private CompletableFuture<Void> createConnection(int minimumIdleSize, int index) {
@@ -274,4 +418,3 @@ public class ConnectionsHolder<T extends RedisConnection> {
         return serviceManager;
     }
 }
-

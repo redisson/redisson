@@ -23,4 +23,13 @@ package org.redisson.api.redisnode;
  */
 public interface RedisMaster extends RedisNode, RedisMasterAsync {
 
+    /**
+     * Warms up the connection pool for this Redis node until it contains the specified number of connections.
+     * Connections currently in use are included in this number. If the pool already contains at least the specified
+     * number, then no new connections are created.
+     *
+     * @param connectionAmount target connection amount
+     */
+    void warmUpConnectionPool(int connectionAmount);
+
 }
