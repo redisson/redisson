@@ -15,8 +15,56 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 public class AsyncSemaphoreTest {
+
+    @Test
+    void testReleaseWithExecutorCompletesWaiterAsynchronously() throws Exception {
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        CountDownLatch taskStarted = new CountDownLatch(1);
+        CountDownLatch unblock = new CountDownLatch(1);
+
+        try {
+            executor.execute(() -> {
+                taskStarted.countDown();
+                try {
+                    unblock.await();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            });
+            assertThat(taskStarted.await(1, TimeUnit.SECONDS)).isTrue();
+
+            AsyncSemaphore semaphore = new AsyncSemaphore(0, executor);
+
+            CompletableFuture<Void> waiter = semaphore.acquire();
+            semaphore.release();
+
+            assertThat(waiter).isNotDone();
+
+            unblock.countDown();
+            waiter.get(1, TimeUnit.SECONDS);
+
+            assertThat(waiter).isCompleted();
+        } finally {
+            unblock.countDown();
+            executor.shutdownNow();
+        }
+    }
+
+    @Test
+    void testReleaseFallsBackIfExecutorRejectsWakeup() {
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        executor.shutdown();
+        AsyncSemaphore semaphore = new AsyncSemaphore(0, executor);
+
+        CompletableFuture<Void> waiter = semaphore.acquire();
+
+        assertThatCode(semaphore::release).doesNotThrowAnyException();
+        assertThat(waiter).isCompleted();
+        assertThat(semaphore.getCounter()).isZero();
+    }
 
     @RepeatedTest(2)
     void testReleaseRacingAcquire() throws Exception {

@@ -132,7 +132,18 @@ public final class AsyncSemaphore {
 
     public void release() {
         counter.incrementAndGet();
-        tryForkAndRun();
+        if (listeners.isEmpty()) {
+            return;
+        }
+        if (executorService != null) {
+            try {
+                executorService.execute(this::tryRun);
+                return;
+            } catch (RejectedExecutionException e) {
+                // fallback to the caller thread during shutdown
+            }
+        }
+        tryRun();
     }
 
     @Override

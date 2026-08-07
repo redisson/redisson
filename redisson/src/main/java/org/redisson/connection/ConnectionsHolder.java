@@ -56,7 +56,7 @@ public class ConnectionsHolder<T extends RedisConnection> {
     public ConnectionsHolder(RedisClient client, int poolMaxSize,
                              Function<RedisClient, CompletionStage<T>> connectionCallback,
                              ServiceManager serviceManager, boolean changeUsage) {
-        this.freeConnectionsCounter = new AsyncSemaphore(poolMaxSize, serviceManager.getGroup());
+        this.freeConnectionsCounter = new AsyncSemaphore(poolMaxSize, serviceManager.getExecutor());
         this.client = client;
         this.connectionCallback = connectionCallback;
         this.serviceManager = serviceManager;
