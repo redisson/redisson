@@ -95,7 +95,9 @@ public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
                     }
 
                     log.debug("channel: {} closed due to PING response timeout set in {} ms", ctx.channel(), config.getPingConnectionInterval());
-                    ctx.channel().close();
+                    // Mark the RedisConnection closed so the pool does not reuse an inactive channel.
+                    // See https://github.com/redisson/redisson/issues/7236
+                    connection.closeAsync();
                 } else {
                     sendPing(ctx);
                 }
