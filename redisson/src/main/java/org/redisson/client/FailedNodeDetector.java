@@ -15,6 +15,8 @@
  */
 package org.redisson.client;
 
+import java.net.InetSocketAddress;
+
 /**
  * Detects failed Redis node depending
  * on {@link #isNodeFailed()} method implementation.
@@ -26,6 +28,10 @@ public interface FailedNodeDetector {
 
     void onConnectSuccessful();
 
+    default void onConnectSuccessful(InetSocketAddress address) {
+        onConnectSuccessful();
+    }
+
     @Deprecated
     void onConnectFailed();
 
@@ -33,7 +39,15 @@ public interface FailedNodeDetector {
         onConnectFailed();
     }
 
+    default void onConnectFailed(Throwable cause, InetSocketAddress address) {
+        onConnectFailed(cause);
+    }
+
     void onPingSuccessful();
+
+    default void onPingSuccessful(InetSocketAddress address) {
+        onPingSuccessful();
+    }
 
     @Deprecated
     void onPingFailed();
@@ -42,11 +56,27 @@ public interface FailedNodeDetector {
         onPingFailed();
     }
 
+    default void onPingFailed(Throwable cause, InetSocketAddress address) {
+        onPingFailed(cause);
+    }
+
     void onCommandSuccessful();
+
+    default void onCommandSuccessful(InetSocketAddress address) {
+        onCommandSuccessful();
+    }
 
     void onCommandFailed(Throwable cause);
 
+    default void onCommandFailed(Throwable cause, InetSocketAddress address) {
+        onCommandFailed(cause);
+    }
+
     boolean isNodeFailed();
+
+    default boolean isNodeFailed(InetSocketAddress address) {
+        return isNodeFailed();
+    }
 
     /**
      * Returns a detector with the same configuration and independent runtime state.

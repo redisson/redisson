@@ -75,7 +75,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
         List<InetSocketAddress> failed = new ArrayList<>();
         List<InetSocketAddress> freezed = new ArrayList<>();
         for (ClientConnectionsEntry entry : entries) {
-            if (entry.getClient().getConfig().getFailedNodeDetector().isNodeFailed()) {
+            if (entry.getClient().getConfig().getFailedNodeDetector().isNodeFailed(entry.getClient().getAddr())) {
                 failed.add(entry.getClient().getAddr());
             } else if (entry.isFreezed()) {
                 freezed.add(entry.getClient().getAddr());
@@ -122,8 +122,8 @@ abstract class ConnectionPool<T extends RedisConnection> {
             if (e != null) {
                 if (entry.getNodeType() == NodeType.SLAVE) {
                     FailedNodeDetector detector = entry.getClient().getConfig().getFailedNodeDetector();
-                    detector.onConnectFailed(e);
-                    if (detector.isNodeFailed()) {
+                    detector.onConnectFailed(e, entry.getClient().getAddr());
+                    if (detector.isNodeFailed(entry.getClient().getAddr())) {
                         log.error("Redis node {} has been marked as failed according to the detection logic defined in {}",
                                         entry.getClient().getAddr(), detector);
                         masterSlaveEntry.shutdownAndReconnectAsync(entry.getClient(), e);
@@ -136,7 +136,8 @@ abstract class ConnectionPool<T extends RedisConnection> {
             entry.addHandler(r, handler);
 
             if (entry.getNodeType() == NodeType.SLAVE) {
-                entry.getClient().getConfig().getFailedNodeDetector().onConnectSuccessful();
+                entry.getClient().getConfig().getFailedNodeDetector()
+                        .onConnectSuccessful(entry.getClient().getAddr());
             }
 
             if (!cancelableFuture.complete(r)) {
@@ -148,7 +149,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
         
     private boolean isHealthy(ClientConnectionsEntry entry) {
         if (entry.getNodeType() == NodeType.SLAVE
-                && entry.getClient().getConfig().getFailedNodeDetector().isNodeFailed()) {
+                && entry.getClient().getConfig().getFailedNodeDetector().isNodeFailed(entry.getClient().getAddr())) {
             return false;
         }
         return true;
