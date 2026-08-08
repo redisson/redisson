@@ -16,7 +16,6 @@
 package org.redisson.client;
 
 import org.junit.jupiter.api.Test;
-import org.redisson.misc.RedisURI;
 
 import java.net.InetSocketAddress;
 
@@ -77,32 +76,46 @@ class FailedNodeDetectorCopyTest {
     }
 
     @Test
-    void redisClientConfigCopyAssignsResolvedAddress() {
-        TrackingDetector detector = new TrackingDetector();
+    void addressAwareMethodsReceiveSuppliedAddress() {
+        AddressAwareDetector detector = new AddressAwareDetector();
         InetSocketAddress address = new InetSocketAddress("127.0.0.1", 6379);
-        RedisURI uri = new RedisURI("redis://localhost:6379");
-        RedisClientConfig config = new RedisClientConfig()
-                .setAddress(address, uri)
-                .setFailedNodeDetector(detector);
+        RedisConnectionException cause = new RedisConnectionException("test");
 
-        RedisClientConfig copy = new RedisClientConfig(config);
+        detector.onConnectSuccessful(address);
+        detector.onConnectFailed(cause, address);
+        detector.onPingSuccessful(address);
+        detector.onPingFailed(cause, address);
+        detector.onCommandSuccessful(address);
+        detector.onCommandFailed(cause, address);
 
-        assertThat(((TrackingDetector) copy.getFailedNodeDetector()).address).isEqualTo(address);
+        assertThat(detector.addresses).containsOnly(address);
+        assertThat(detector.causes).containsOnly(cause);
+        assertThat(detector.isNodeFailed(address)).isTrue();
+        assertThat(detector.failedCheckAddress).isEqualTo(address);
     }
 
     @Test
-    void redisClientConfigCopyAssignsUnresolvedUriAddress() {
+    void addressAwareMethodsDelegateToLegacyMethodsByDefault() {
         TrackingDetector detector = new TrackingDetector();
-        RedisClientConfig config = new RedisClientConfig()
-                .setAddress("redis://redis.example.com:6379")
-                .setFailedNodeDetector(detector);
+        InetSocketAddress address = new InetSocketAddress("127.0.0.1", 6379);
+        RedisConnectionException cause = new RedisConnectionException("test");
 
-        RedisClientConfig copy = new RedisClientConfig(config);
-        InetSocketAddress address = ((TrackingDetector) copy.getFailedNodeDetector()).address;
+        detector.onConnectSuccessful(address);
+        detector.onConnectFailed(cause, address);
+        detector.onPingSuccessful(address);
+        detector.onPingFailed(cause, address);
+        detector.onCommandSuccessful(address);
+        detector.onCommandFailed(cause, address);
 
-        assertThat(address.getHostString()).isEqualTo("redis.example.com");
-        assertThat(address.getPort()).isEqualTo(6379);
-        assertThat(address.isUnresolved()).isTrue();
+        assertThat(detector.connectSuccessfulCalls).isEqualTo(1);
+        assertThat(detector.connectFailedCalls).isEqualTo(1);
+        assertThat(detector.pingSuccessfulCalls).isEqualTo(1);
+        assertThat(detector.pingFailedCalls).isEqualTo(1);
+        assertThat(detector.commandSuccessfulCalls).isEqualTo(1);
+        assertThat(detector.commandFailedCalls).isEqualTo(1);
+        assertThat(detector.lastCause).isEqualTo(cause);
+        assertThat(detector.isNodeFailed(address)).isTrue();
+        assertThat(detector.nodeFailedCalls).isEqualTo(1);
     }
 
     private void failCommand(FailedNodeDetector detector, Throwable cause) throws Exception {
@@ -111,10 +124,70 @@ class FailedNodeDetectorCopyTest {
     }
 
     private static final class TrackingDetector implements FailedNodeDetector {
-        private InetSocketAddress address;
+        private int connectSuccessfulCalls;
+        private int connectFailedCalls;
+        private int pingSuccessfulCalls;
+        private int pingFailedCalls;
+        private int commandSuccessfulCalls;
+        private int commandFailedCalls;
+        private int nodeFailedCalls;
+        private Throwable lastCause;
 
         @Override
         public void onConnectSuccessful() {
+            connectSuccessfulCalls++;
+        }
+
+        @Override
+        public void onConnectFailed() {
+            connectFailedCalls++;
+        }
+
+        @Override
+        public void onPingSuccessful() {
+            pingSuccessfulCalls++;
+        }
+
+        @Override
+        public void onPingFailed() {
+            pingFailedCalls++;
+        }
+
+        @Override
+        public void onCommandSuccessful() {
+            commandSuccessfulCalls++;
+        }
+
+        @Override
+        public void onCommandFailed(Throwable cause) {
+            commandFailedCalls++;
+            lastCause = cause;
+        }
+
+        @Override
+        public boolean isNodeFailed() {
+            nodeFailedCalls++;
+            return true;
+        }
+
+        @Override
+        public FailedNodeDetector copy() {
+            return new TrackingDetector();
+        }
+    }
+
+    private static final class AddressAwareDetector implements FailedNodeDetector {
+        private final InetSocketAddress[] addresses = new InetSocketAddress[6];
+        private final Throwable[] causes = new Throwable[3];
+        private InetSocketAddress failedCheckAddress;
+
+        @Override
+        public void onConnectSuccessful() {
+        }
+
+        @Override
+        public void onConnectSuccessful(InetSocketAddress address) {
+            addresses[0] = address;
         }
 
         @Override
@@ -122,7 +195,18 @@ class FailedNodeDetectorCopyTest {
         }
 
         @Override
+        public void onConnectFailed(Throwable cause, InetSocketAddress address) {
+            causes[0] = cause;
+            addresses[1] = address;
+        }
+
+        @Override
         public void onPingSuccessful() {
+        }
+
+        @Override
+        public void onPingSuccessful(InetSocketAddress address) {
+            addresses[2] = address;
         }
 
         @Override
@@ -130,11 +214,28 @@ class FailedNodeDetectorCopyTest {
         }
 
         @Override
+        public void onPingFailed(Throwable cause, InetSocketAddress address) {
+            causes[1] = cause;
+            addresses[3] = address;
+        }
+
+        @Override
         public void onCommandSuccessful() {
         }
 
         @Override
+        public void onCommandSuccessful(InetSocketAddress address) {
+            addresses[4] = address;
+        }
+
+        @Override
         public void onCommandFailed(Throwable cause) {
+        }
+
+        @Override
+        public void onCommandFailed(Throwable cause, InetSocketAddress address) {
+            causes[2] = cause;
+            addresses[5] = address;
         }
 
         @Override
@@ -143,13 +244,9 @@ class FailedNodeDetectorCopyTest {
         }
 
         @Override
-        public void setNodeAddress(InetSocketAddress address) {
-            this.address = address;
-        }
-
-        @Override
-        public FailedNodeDetector copy() {
-            return new TrackingDetector();
+        public boolean isNodeFailed(InetSocketAddress address) {
+            failedCheckAddress = address;
+            return true;
         }
     }
 }

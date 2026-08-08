@@ -137,7 +137,7 @@ class FailedCommandsDetectorTest {
         detector.blockNextTimeRead();
         ExecutorService executor = Executors.newFixedThreadPool(2);
         try {
-            Future<Boolean> transition = executor.submit(detector::isNodeFailed);
+            Future<Boolean> transition = executor.submit(() -> detector.isNodeFailed());
             detector.awaitBlockedTimeRead();
 
             CountDownLatch writerStarted = new CountDownLatch(1);

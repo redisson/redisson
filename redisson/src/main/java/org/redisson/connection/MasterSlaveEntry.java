@@ -712,7 +712,8 @@ public class MasterSlaveEntry {
 
     @SuppressWarnings("BooleanExpressionComplexity")
     private ClientConnectionsEntry freeze(ClientConnectionsEntry connectionEntry, FreezeReason freezeReason) {
-        if (connectionEntry == null || (connectionEntry.getClient().getConfig().getFailedNodeDetector().isNodeFailed()
+        if (connectionEntry == null || (connectionEntry.getClient().getConfig().getFailedNodeDetector()
+                                                    .isNodeFailed(connectionEntry.getClient().getAddr())
                                             && connectionEntry.getFreezeReason() == FreezeReason.RECONNECT
                                             && freezeReason == FreezeReason.RECONNECT)) {
             return null;
@@ -800,7 +801,8 @@ public class MasterSlaveEntry {
                             return;
                         }
 
-                        entry.getClient().getConfig().getFailedNodeDetector().onConnectSuccessful();
+                        entry.getClient().getConfig().getFailedNodeDetector()
+                                .onConnectSuccessful(entry.getClient().getAddr());
                         entry.setFreezeReason(null);
                         log.debug("Unfreezed entry: {} after {} attempts", entry, retry);
                         f.complete(true);
