@@ -28,6 +28,10 @@ public interface FailedNodeDetector {
 
     void onConnectSuccessful();
 
+    default void onConnectSuccessful(InetSocketAddress address) {
+        onConnectSuccessful();
+    }
+
     @Deprecated
     void onConnectFailed();
 
@@ -35,7 +39,15 @@ public interface FailedNodeDetector {
         onConnectFailed();
     }
 
+    default void onConnectFailed(Throwable cause, InetSocketAddress address) {
+        onConnectFailed(cause);
+    }
+
     void onPingSuccessful();
+
+    default void onPingSuccessful(InetSocketAddress address) {
+        onPingSuccessful();
+    }
 
     @Deprecated
     void onPingFailed();
@@ -44,18 +56,26 @@ public interface FailedNodeDetector {
         onPingFailed();
     }
 
+    default void onPingFailed(Throwable cause, InetSocketAddress address) {
+        onPingFailed(cause);
+    }
+
     void onCommandSuccessful();
+
+    default void onCommandSuccessful(InetSocketAddress address) {
+        onCommandSuccessful();
+    }
 
     void onCommandFailed(Throwable cause);
 
+    default void onCommandFailed(Throwable cause, InetSocketAddress address) {
+        onCommandFailed(cause);
+    }
+
     boolean isNodeFailed();
 
-    /**
-     * Assigns Redis node address this detector instance observes.
-     *
-     * @param address Redis node address
-     */
-    default void setNodeAddress(InetSocketAddress address) {
+    default boolean isNodeFailed(InetSocketAddress address) {
+        return isNodeFailed();
     }
 
     /**

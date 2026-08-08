@@ -19,6 +19,7 @@ import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.redisson.api.RFuture;
+import org.redisson.client.RedisClient;
 import org.redisson.client.RedisClientConfig;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisRetryException;
@@ -99,9 +100,11 @@ public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
                 } else {
                     sendPing(ctx);
                 }
-                connection.getRedisClient().getConfig().getFailedNodeDetector().onPingFailed(cause);
+                RedisClient client = connection.getRedisClient();
+                client.getConfig().getFailedNodeDetector().onPingFailed(cause, client.getAddr());
             } else if (future != null) {
-                connection.getRedisClient().getConfig().getFailedNodeDetector().onPingSuccessful();
+                RedisClient client = connection.getRedisClient();
+                client.getConfig().getFailedNodeDetector().onPingSuccessful(client.getAddr());
                 sendPing(ctx);
             } else {
                 sendPing(ctx);

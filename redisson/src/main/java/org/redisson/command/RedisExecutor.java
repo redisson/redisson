@@ -700,8 +700,8 @@ public class RedisExecutor<V, R> {
 
         RedisClient client = connectionFuture.join().getRedisClient();
         FailedNodeDetector detector = client.getConfig().getFailedNodeDetector();
-        detector.onCommandFailed(cause);
-        if (detector.isNodeFailed()) {
+        detector.onCommandFailed(cause, client.getAddr());
+        if (detector.isNodeFailed(client.getAddr())) {
             log.error("Redis node {} has been marked as failed according to the detection logic defined in {}",
                             entry.getClient().getAddr(), detector);
             entry.shutdownAndReconnectAsync(client, cause);
@@ -714,7 +714,8 @@ public class RedisExecutor<V, R> {
         } else {
             promise.complete(res);
         }
-        connectionFuture.join().getRedisClient().getConfig().getFailedNodeDetector().onCommandSuccessful();
+        RedisClient client = connectionFuture.join().getRedisClient();
+        client.getConfig().getFailedNodeDetector().onCommandSuccessful(client.getAddr());
     }
 
     protected void sendCommand(CompletableFuture<R> attemptPromise, RedisConnection connection) {
