@@ -1,3 +1,7 @@
+---
+description: "Cache API implementations for Valkey and Redis in Java, covering Hibernate second-level cache, JCache JSR-107, Spring Cache, MyBatis and Micronaut."
+---
+
 {% include 'cache/spring-cache.md' %}
 
 ## Hibernate Cache

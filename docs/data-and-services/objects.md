@@ -1,3 +1,7 @@
+---
+description: "Distributed Java objects on Valkey and Redis, including object and JSON holders, binary streams, geospatial data, BitSet, rate limiter and atomic counters."
+---
+
 ## Object holder
 Java implementation of Valkey or Redis based [RBucket](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RBucket.html) object is a holder for a single object of any type. The value is serialized and stored under one key, the maximum size is 512Mb, and the object is thread-safe.
 

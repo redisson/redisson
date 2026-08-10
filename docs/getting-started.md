@@ -1,3 +1,7 @@
+---
+description: "Get started with Redisson in two steps by adding the Maven or Gradle dependency, then creating a client and obtaining your first Valkey or Redis backed object."
+---
+
 Getting started with Redisson takes two steps: add the dependency to your project, then create a client and obtain your first Valkey or Redis based object or service.
 
 1. Add dependency

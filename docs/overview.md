@@ -1,10 +1,14 @@
+---
+description: "Redisson is the Java client and real-time data platform for Valkey and Redis, providing distributed objects, collections, locks and services on java.util APIs."
+---
+
 Redisson is the Java Client and Real-Time Data Platform for [Valkey](https://valkey.io) and [Redis](https://redis.io).
 
 Redisson does far more than wrap the native API. It exposes familiar Java types - collections, objects, and services - backed by the server, and many of them have no native counterpart in Valkey or Redis at all: of the **roughly sixty** objects and services, more than **thirty** exist only in Redisson. 
 
 <picture>
-  <source media="(max-width: 768px)" srcset="../redisson_map_mobile_v2.svg"/>
-  <img src="../redisson_map_v2.svg" alt="Redisson Feature Map — objects, services and integrations grouped by theme" style="width:100%;height:auto"/>
+  <source media="(max-width: 768px)" srcset="../redisson_map_mobile_v3.svg"/>
+  <img src="../redisson_map_v3.svg" alt="Redisson Feature Map — objects, services and integrations grouped by theme" style="width:100%;height:auto"/>
 </picture>
 
 Redisson offers one of the most convenient ways to work with Valkey & Redis. Its objects form an abstraction layer between Valkey or Redis and your Java code, letting you focus on data modeling and application logic and lowering the learning curve for Java developers.

@@ -1,3 +1,7 @@
+---
+description: "Reference guide for Redisson, the Valkey and Redis Java client offering distributed locks, collections, caches, messaging and services on familiar java.util APIs."
+---
+
 # Redisson - Valkey & Redis Java client<br/>Real-Time Data Platform
 
 High-performance async and lock-free Java client for Redis and Valkey based on [Netty](http://netty.io) framework.  

@@ -1,3 +1,7 @@
+---
+description: "Transactions in Redisson with ACID properties over RMap, RMapCache, RLocalCachedMap, RSet, RSetCache and RBucket, plus XA and the Spring transaction manager."
+---
+
 ## Transactions management
 
 `RMap`, `RMapCache`, `RLocalCachedMap`, `RSet`, `RSetCache` and `RBucket` objects can participate in a transaction with ACID properties. The transaction takes locks for write operations and maintains a list of data-modification operations until `commit()` is called; the acquired locks are released after `commit()` or `rollback()`. If anything goes wrong during commit or rollback, an `org.redisson.transaction.TransactionException` is thrown.

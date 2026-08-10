@@ -1,3 +1,7 @@
+---
+description: "Distributed queues for Java on Valkey and Redis, including reliable queue with acknowledgement and dead-letter support, plus blocking, priority and delayed queues."
+---
+
 ## Reliable Queue
 
 _This feature is available only in [Redisson PRO](https://redisson.pro/feature-comparison.html) edition._

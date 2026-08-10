@@ -1,3 +1,7 @@
+---
+description: "Publish and subscribe messaging in Java with Valkey and Redis, covering topics, pattern topics, sharded topics for cluster mode and automatic re-subscription."
+---
+
 ## Topic
 Java [RTopic](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RTopic.html) object implements Publish / Subscribe mechanism based on [Redis Pub/Sub](https://redis.io/docs/latest/develop/interact/pubsub/) or [Valkey Pub/Sub](https://valkey.io/topics/pubsub/). It allows to subscribe on events published with multiple instances of `RTopic` object with the same name. 
 

@@ -1,3 +1,7 @@
+---
+description: "How to configure the Redisson client for Valkey and Redis in cluster, sentinel, replicated, master-slave or single-server mode, using the Config API, YAML or JSON."
+---
+
 ## Using Redisson API
 Programmatic configuration is performed by the `Config` object instance. For example:
 ```java

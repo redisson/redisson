@@ -1,3 +1,7 @@
+---
+description: "Distributed Java collections on Valkey and Redis, including Map with local cache and eviction, Multimap, Set, SortedSet, List, Queue, Deque and JSON Store."
+---
+
 ## Map
 Java implementation of Valkey or Redis based [Map](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RMap.html) object for Java implements [ConcurrentMap](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/ConcurrentMap.html) interface. This object is thread-safe. Consider to use [Live Object service](services.md/#live-object-service) to store POJO object as Valkey or Redis Map. Valkey or Redis uses serialized state to check key uniqueness instead of key's `hashCode()`/`equals()` methods.
 
@@ -44,6 +48,83 @@ try {
    keyLock.readLock().unlock();
 }
 ```
+
+**Operations over multiple objects**
+
+Use the [RMaps](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RMaps.html) interface to run operations over several [RMap](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RMap.html) objects in a single round trip - writing a whole batch of maps at once, or streaming in many maps one by one. Maps that share the same field names are written with a single declaration of those names, which reduces the amount of transferred data and lets Valkey or Redis keep one copy of the field names for all such objects.
+
+=== "Sync"
+    ```
+    RMaps<String, Integer> maps = redisson.getMaps();
+
+    // write several whole Map objects at once, keyed by name
+    Map<String, Map<String, Integer>> objects = new HashMap<>();
+    objects.put("product:1", Map.of("price", 100, "qty", 5));
+    objects.put("product:2", Map.of("price", 200, "qty", 3));
+    maps.set(objects);
+
+    // or write them in portions of 100 objects
+    maps.set(objects, 100);
+
+    // stream many objects that share the same field names, one by one
+    RMapsImport<String, Integer> imp = maps.createImport(
+            MapsImportArgs.fields("price", "qty").batchSize(100));
+    imp.add("product:3", 300, 8);
+    imp.add("product:4", 400, 2);
+    imp.flush();
+    ```
+=== "Async"
+    ```
+    RMapsAsync<String, Integer> maps = redisson.getMaps();
+
+    Map<String, Map<String, Integer>> objects = new HashMap<>();
+    objects.put("product:1", Map.of("price", 100, "qty", 5));
+    objects.put("product:2", Map.of("price", 200, "qty", 3));
+
+    // store all at once, or in portions of 100
+    RFuture<Void> setFuture = maps.setAsync(objects);
+    RFuture<Void> batchFuture = maps.setAsync(objects, 100);
+
+    // stream objects that share the same field names
+    RMapsImportAsync<String, Integer> imp = maps.createImport(
+            MapsImportArgs.fields("price", "qty").batchSize(100));
+    RFuture<Void> addFuture = imp.addAsync("product:3", 300, 8);
+    RFuture<Void> flushFuture = imp.flushAsync();
+    ```
+=== "Reactive"
+    ```
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RMapsReactive<String, Integer> maps = redisson.getMaps();
+
+    Map<String, Map<String, Integer>> objects = new HashMap<>();
+    objects.put("product:1", Map.of("price", 100, "qty", 5));
+    objects.put("product:2", Map.of("price", 200, "qty", 3));
+
+    Mono<Void> setMono = maps.set(objects);
+    Mono<Void> batchMono = maps.set(objects, 100);
+
+    RMapsImportReactive<String, Integer> imp = maps.createImport(
+            MapsImportArgs.fields("price", "qty").batchSize(100));
+    Mono<Void> addMono = imp.add("product:3", 300, 8);
+    Mono<Void> flushMono = imp.flush();
+    ```
+=== "RxJava3"
+    ```
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RMapsRx<String, Integer> maps = redisson.getMaps();
+
+    Map<String, Map<String, Integer>> objects = new HashMap<>();
+    objects.put("product:1", Map.of("price", 100, "qty", 5));
+    objects.put("product:2", Map.of("price", 200, "qty", 3));
+
+    Completable setRx = maps.set(objects);
+    Completable batchRx = maps.set(objects, 100);
+
+    RMapsImportRx<String, Integer> imp = maps.createImport(
+            MapsImportArgs.fields("price", "qty").batchSize(100));
+    Completable addRx = imp.add("product:3", 300, 8);
+    Completable flushRx = imp.flush();
+    ```
 
 ### Eviction, local cache and data partitioning
 

@@ -1,3 +1,7 @@
+---
+description: "Serialization codecs in Redisson, how Java objects are marshalled to bytes for Valkey and Redis, and how to set a codec globally or per object."
+---
+
 Data serialization is extensively used by Redisson to marshall and unmarshall bytes received or sent over network link with Redis or Valkey server. 
 
 Many popular codecs are available for usage:  

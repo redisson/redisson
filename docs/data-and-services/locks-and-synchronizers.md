@@ -1,3 +1,7 @@
+---
+description: "Distributed locks for Java on Valkey and Redis, including RLock, fair and non-reentrant locks, MultiLock, RedLock, ReadWriteLock, semaphores and fencing tokens."
+---
+
 ## Choosing a lock
 
 Redisson offers several distributed lock types. They share the same `RLock`-style API and watchdog behavior, and differ mainly in ordering guarantees, whether they hand out a fencing token, and how a waiting thread is notified. The table below summarizes the trade-offs; each type is documented in its own section further down.

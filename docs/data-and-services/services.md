@@ -1,3 +1,7 @@
+---
+description: "Distributed services for Java on Valkey and Redis, including remote method invocation, Live Objects, executor service and scheduled executor with reactive APIs."
+---
+
 ## Remote service
 Redisson's Remote Service executes a remote procedure call (RPC) over Valkey or Redis: a method invoked on a Java interface is serialized and stored as a request, executed on another node, and its result is returned to the caller. The remote interface may use any serializable types for its parameters and return value. Because the request and its result travel through Valkey or Redis rather than a direct connection, the caller and the executor need not know about each other or be online at the same moment - which makes it a fit for distributing work across a pool of workers or invoking behaviour on a remote node.
 

@@ -1,3 +1,7 @@
+---
+description: "Distributed web session management on Valkey and Redis using the Apache Tomcat session manager for 7.x to 11.x and Spring Session, with non-sticky sessions."
+---
+
 ## Tomcat Session
 
 Redisson implements a Session Manager for [Apache Tomcat](http://tomcat.apache.org) that utilizes Valkey or Redis as the storage backend. It stores web session in Valkey or Redis, facilitating the distribution of requests across multiple Tomcat servers in a cluster environment. 

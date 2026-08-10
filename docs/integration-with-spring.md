@@ -1,3 +1,7 @@
+---
+description: "How to integrate Valkey or Redis with Spring using Redisson, covering the Spring Boot starter, Spring Data Redis, Spring Cache, Spring Session and transaction manager."
+---
+
 ## Spring Boot Starter
 
 Integrates Redisson with Spring Boot library. Depends on [Spring Data Redis](#spring-data-redis) module.
