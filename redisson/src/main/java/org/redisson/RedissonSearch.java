@@ -1152,16 +1152,16 @@ public class RedissonSearch implements RSearch {
     public RFuture<Boolean> hasIndexAsync(String indexName) {
         return commandExecutor.evalReadAsync(indexName, StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                         "local result = redis.pcall('FT.INFO', KEYS[1]) "
-                        + "if type(result) == 'table' and result.err then "
+                        + "if result.err then "
                             + "local err = string.lower(result.err) "
-                            + "if string.find(err, ARGV[1]) or string.find(err, ARGV[2]) then "
+                            + "if string.find(err, ARGV[1]) or string.find(err, ARGV[2]) or string.find(err, ARGV[3]) then "
                                 + "return 0 "
                             + "else "
                                 + "return redis.error_reply(result.err) "
                             + "end "
                         + "end "
                         + "return 1 ",
-                Collections.singletonList(indexName), "not found", "no such index"
+                Collections.singletonList(indexName), "not found", "no such index", "unknown index"
         );
     }
 
