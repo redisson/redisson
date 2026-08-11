@@ -327,31 +327,108 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
 
 
     /*
-     * Both scripts treat an expired entry at the target timestamp as absent, matching
-     * getEntry(), and delete the ones they find so a stale entry cannot mask a live one.
-     * ARGV[1] is the id width and ARGV[2] is now, followed by 5 values per entry:
-     * timestamp, label flag, value, label, expiration time. Ids are assigned by nextId.
+     * The window is anchored on the highest timestamp the collection holds once this call is
+     * applied: the highest of the entries being added and the highest one already present.
+     * An entry that has expired but has not been evicted yet is not a valid anchor - it would
+     * drag the window backwards and, sitting inside its own window, keep doing it - so it is
+     * removed here, bounded, exactly as the eviction task would remove it. Giving up leaves
+     * the anchor low, which under-trims rather than over-trims.
      */
-    private static final String ADD_IF_ABSENT = NEXT_ID +
+    private static final String RETENTION_CUTOFF =
+             "local cutoff; " +
+             "local retention = tonumber(ARGV[2]); " +
+             "if retention > 0 then " +
+                 "local highest; " +
+                 "for i = 4, #ARGV, 5 do " +
+                     "local timestamp = tonumber(ARGV[i]); " +
+                     "if highest == nil or timestamp > highest then " +
+                         "highest = timestamp; " +
+                     "end; " +
+                 "end; " +
+                 "local probes = 0; " +
+                 "while probes < 100 do " +
+                     "local top = redis.call('zrevrange', KEYS[1], 0, 0, 'withscores'); " +
+                     "if #top == 0 then " +
+                         "break; " +
+                     "end; " +
+                     "local expirationDate = redis.call('zscore', KEYS[2], top[1]); " +
+                     "if expirationDate == false or tonumber(expirationDate) > tonumber(ARGV[3]) then " +
+                         "local timestamp = tonumber(top[2]); " +
+                         "if highest == nil or timestamp > highest then " +
+                             "highest = timestamp; " +
+                         "end; " +
+                         "break; " +
+                     "end; " +
+                     "redis.call('zrem', KEYS[1], top[1]); " +
+                     "redis.call('zrem', KEYS[2], top[1]); " +
+                     "probes = probes + 1; " +
+                 "end; " +
+                 "if highest ~= nil then " +
+                     "cutoff = highest - retention; " +
+                 "end; " +
+             "end; ";
+
+    private static final String RETENTION_TRIM =
+             "if cutoff ~= nil then " +
+                 "local stale = redis.call('zrangebyscore', KEYS[1], '-inf', " +
+                                          "'(' .. string.format('%.0f', cutoff), 'limit', 0, 500); " +
+                 "if #stale > 0 then " +
+                     "redis.call('zrem', KEYS[1], unpack(stale)); " +
+                     "redis.call('zrem', KEYS[2], unpack(stale)); " +
+                 "end; " +
+             "end; ";
+
+    private static final String ADD_IF_ABSENT = NEXT_ID + RETENTION_CUTOFF +
              "local added = 0; " +
              "local occupiedAt = {}; " +
-             "for i = 3, #ARGV, 5 do " +
-                 "local occupied = occupiedAt[ARGV[i]]; " +
-                 "local existing = {}; " +
-                 "if occupied == nil then " +
-                     "occupied = false; " +
-                     "existing = redis.call('zrangebyscore', KEYS[1], ARGV[i], ARGV[i]); " +
+             "for i = 4, #ARGV, 5 do " +
+                 "if cutoff == nil or tonumber(ARGV[i]) >= cutoff then " +
+                     "local occupied = occupiedAt[ARGV[i]]; " +
+                     "local existing = {}; " +
+                     "if occupied == nil then " +
+                         "occupied = false; " +
+                         "existing = redis.call('zrangebyscore', KEYS[1], ARGV[i], ARGV[i]); " +
+                     "end; " +
+                     "for j = 1, #existing do " +
+                         "local expirationDate = redis.call('zscore', KEYS[2], existing[j]); " +
+                         "if expirationDate == false or tonumber(expirationDate) > tonumber(ARGV[3]) then " +
+                             "occupied = true; " +
+                         "else " +
+                             "redis.call('zrem', KEYS[1], existing[j]); " +
+                             "redis.call('zrem', KEYS[2], existing[j]); " +
+                         "end; " +
+                     "end; " +
+                     "if occupied == false then " +
+                         "local id = nextId(); " +
+                         "local lbl = string.char(ARGV[i+1]) .. ARGV[i+3]; " +
+                         "local val = struct.pack('BBc0Lc0Lc0', 4, " +
+                                                               "string.len(id), id, " +
+                                                               "string.len(ARGV[i+2]), ARGV[i+2], " +
+                                                               "string.len(lbl), lbl); " +
+                         "redis.call('zadd', KEYS[1], ARGV[i], val); " +
+                         "redis.call('zadd', KEYS[2], ARGV[i+4], val); " +
+                         "added = added + 1; " +
+                     "end; " +
+                     "occupiedAt[ARGV[i]] = true; " +
                  "end; " +
-                 "for j = 1, #existing do " +
-                     "local expirationDate = redis.call('zscore', KEYS[2], existing[j]); " +
-                     "if expirationDate == false or tonumber(expirationDate) > tonumber(ARGV[2]) then " +
-                         "occupied = true; " +
-                     "else " +
+             "end; " +
+             RETENTION_TRIM +
+             "return added;";
+
+    private static final String ADD_OR_REPLACE = NEXT_ID + RETENTION_CUTOFF +
+             "local created = 0; " +
+             "for i = 4, #ARGV, 5 do " +
+                 "if cutoff == nil or tonumber(ARGV[i]) >= cutoff then " +
+                     "local replaced = false; " +
+                     "local existing = redis.call('zrangebyscore', KEYS[1], ARGV[i], ARGV[i]); " +
+                     "for j = 1, #existing do " +
+                         "local expirationDate = redis.call('zscore', KEYS[2], existing[j]); " +
+                         "if expirationDate == false or tonumber(expirationDate) > tonumber(ARGV[3]) then " +
+                             "replaced = true; " +
+                         "end; " +
                          "redis.call('zrem', KEYS[1], existing[j]); " +
                          "redis.call('zrem', KEYS[2], existing[j]); " +
                      "end; " +
-                 "end; " +
-                 "if occupied == false then " +
                      "local id = nextId(); " +
                      "local lbl = string.char(ARGV[i+1]) .. ARGV[i+3]; " +
                      "local val = struct.pack('BBc0Lc0Lc0', 4, " +
@@ -360,43 +437,34 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
                                                            "string.len(lbl), lbl); " +
                      "redis.call('zadd', KEYS[1], ARGV[i], val); " +
                      "redis.call('zadd', KEYS[2], ARGV[i+4], val); " +
-                     "added = added + 1; " +
-                 "end; " +
-                 "occupiedAt[ARGV[i]] = true; " +
-             "end; " +
-             "return added;";
-
-    private static final String ADD_OR_REPLACE = NEXT_ID +
-             "local created = 0; " +
-             "for i = 3, #ARGV, 5 do " +
-                 "local replaced = false; " +
-                 "local existing = redis.call('zrangebyscore', KEYS[1], ARGV[i], ARGV[i]); " +
-                 "for j = 1, #existing do " +
-                     "local expirationDate = redis.call('zscore', KEYS[2], existing[j]); " +
-                     "if expirationDate == false or tonumber(expirationDate) > tonumber(ARGV[2]) then " +
-                         "replaced = true; " +
+                     "if replaced == false then " +
+                         "created = created + 1; " +
                      "end; " +
-                     "redis.call('zrem', KEYS[1], existing[j]); " +
-                     "redis.call('zrem', KEYS[2], existing[j]); " +
-                 "end; " +
-                 "local id = nextId(); " +
-                 "local lbl = string.char(ARGV[i+1]) .. ARGV[i+3]; " +
-                 "local val = struct.pack('BBc0Lc0Lc0', 4, " +
-                                                       "string.len(id), id, " +
-                                                       "string.len(ARGV[i+2]), ARGV[i+2], " +
-                                                       "string.len(lbl), lbl); " +
-                 "redis.call('zadd', KEYS[1], ARGV[i], val); " +
-                 "redis.call('zadd', KEYS[2], ARGV[i+4], val); " +
-                 "if replaced == false then " +
-                     "created = created + 1; " +
                  "end; " +
              "end; " +
+             RETENTION_TRIM +
              "return created;";
 
     private Object[] encodeArgs(Collection<? extends TimeSeriesAddArgs<V, ? super L>> entries) {
         long now = System.currentTimeMillis();
+        long retention = 0;
+        for (TimeSeriesAddArgs<V, ? super L> entry : entries) {
+            Duration value = ((TimeSeriesAddParams<V, ?>) entry).getRetention();
+            if (value == null || value.isNegative()) {
+                continue;
+            }
+            // entries in one call describe one collection, so the widest window wins,
+            // which is both order independent and the reading that loses no data
+            if (value.getSeconds() >= Long.MAX_VALUE / 1000) {
+                retention = Long.MAX_VALUE;
+            } else {
+                retention = Math.max(retention, value.toMillis());
+            }
+        }
+
         List<Object> params = new ArrayList<>();
         params.add(SEQUENCE_WIDTH);
+        params.add(retention);
         params.add(now);
         for (TimeSeriesAddArgs<V, ? super L> entry : entries) {
             TimeSeriesAddParams<V, ?> args = (TimeSeriesAddParams<V, ?>) entry;

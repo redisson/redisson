@@ -30,6 +30,7 @@ public final class TimeSeriesAddParams<V, L> implements TimeSeriesAddArgs<V, L> 
     private final V object;
     private L label;
     private Duration timeToLive;
+    private Duration retention;
 
     TimeSeriesAddParams(long timestamp, V object) {
         this.timestamp = timestamp;
@@ -39,6 +40,12 @@ public final class TimeSeriesAddParams<V, L> implements TimeSeriesAddArgs<V, L> 
     @Override
     public TimeSeriesAddParams<V, L> label(L label) {
         this.label = label;
+        return this;
+    }
+
+    @Override
+    public TimeSeriesAddParams<V, L> retention(Duration retention) {
+        this.retention = retention;
         return this;
     }
 
@@ -62,6 +69,10 @@ public final class TimeSeriesAddParams<V, L> implements TimeSeriesAddArgs<V, L> 
 
     public Duration getTimeToLive() {
         return timeToLive;
+    }
+
+    public Duration getRetention() {
+        return retention;
     }
 
 }

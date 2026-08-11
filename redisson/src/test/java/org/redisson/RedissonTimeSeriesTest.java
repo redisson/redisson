@@ -940,4 +940,117 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
         assertThat(t.get(5)).isEqualTo("d");
     }
 
+    @Test
+    public void testRetention() {
+        RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
+        for (int ts = 1000; ts <= 1150; ts += 50) {
+            t.addOrReplace(TimeSeriesAddArgs.entry(ts, "v" + ts)
+                                            .retention(Duration.ofMillis(100)));
+        }
+
+        assertThat(t.range(0, 10000)).containsExactly("v1050", "v1100", "v1150");
+        assertThat(t.firstTimestamp()).isEqualTo(1050);
+        assertThat(t.size()).isEqualTo(3);
+    }
+
+    @Test
+    public void testRetentionMeasuredAgainstHighestTimestamp() {
+        RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
+        Duration retention = Duration.ofMillis(100);
+        assertThat(t.addOrReplace(TimeSeriesAddArgs.entry(5000, "newest").retention(retention))).isTrue();
+        // arrives last, but its own timestamp is outside the window, so it is not added
+        assertThat(t.addOrReplace(TimeSeriesAddArgs.entry(4000, "way-behind").retention(retention))).isFalse();
+        assertThat(t.addOrReplace(TimeSeriesAddArgs.entry(4950, "just-inside").retention(retention))).isTrue();
+
+        assertThat(t.range(0, 10000)).containsExactly("just-inside", "newest");
+        assertThat(t.size()).isEqualTo(2);
+    }
+
+    @Test
+    public void testRetentionIsIndependentOfTimeToLive() throws InterruptedException {
+        RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
+        Duration retention = Duration.ofMinutes(1);
+        t.addOrReplace(TimeSeriesAddArgs.entry(5000, "kept").retention(retention));
+        t.addOrReplace(TimeSeriesAddArgs.entry(5050, "expires")
+                                        .retention(retention)
+                                        .timeToLive(Duration.ofMillis(300)));
+        assertThat(t.size()).isEqualTo(2);
+
+        Thread.sleep(500);
+        assertThat(t.range(0, 10000)).containsExactly("kept");
+    }
+
+    @Test
+    public void testNoRetentionKeepsEverything() {
+        RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
+        t.addOrReplace(TimeSeriesAddArgs.entry(1, "old"));
+        t.addOrReplace(TimeSeriesAddArgs.entry(1_000_000, "new"));
+
+        assertThat(t.size()).isEqualTo(2);
+        assertThat(t.range(0, 10_000_000)).containsExactly("old", "new");
+    }
+
+    @Test
+    public void testRetentionRejectsInsteadOfReporting() {
+        RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
+        t.addOrReplace(TimeSeriesAddArgs.entry(10000, "newest"));
+        Duration retention = Duration.ofSeconds(1);
+
+        assertThat(t.addIfAbsent(TimeSeriesAddArgs.entry(1000, "old").retention(retention))).isFalse();
+        assertThat(t.get(1000)).isNull();
+        assertThat(t.addOrReplace(TimeSeriesAddArgs.entry(1000, "old").retention(retention))).isFalse();
+        assertThat(t.size()).isEqualTo(1);
+
+        // and in a batch, only the entries that survive are counted
+        int created = t.addAllOrReplace(Arrays.asList(
+                TimeSeriesAddArgs.entry(1000, "out").retention(Duration.ofSeconds(2)),
+                TimeSeriesAddArgs.entry(9000, "in").retention(Duration.ofSeconds(2)),
+                TimeSeriesAddArgs.entry(10500, "newer").retention(Duration.ofSeconds(2))));
+        assertThat(created).isEqualTo(2);
+        assertThat(t.size()).isEqualTo(3);
+        assertThat(t.getAll(1000)).isEmpty();
+    }
+
+    @Test
+    public void testRetentionAnchorsOnALiveEntry() throws InterruptedException {
+        RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
+        t.addOrReplace(TimeSeriesAddArgs.entry(1000, "live-a"));
+        t.addOrReplace(TimeSeriesAddArgs.entry(1100, "live-b"));
+        // far ahead of everything else, and gone before the next write
+        t.addOrReplace(TimeSeriesAddArgs.entry(9000, "doomed")
+                                        .timeToLive(Duration.ofMillis(1)));
+        Thread.sleep(50);
+
+        t.addOrReplace(TimeSeriesAddArgs.entry(1150, "live-c").retention(Duration.ofMillis(100)));
+
+        // the window is anchored on 1150, not on the expired entry at 9000
+        assertThat(t.range(0, 100000)).containsExactly("live-b", "live-c");
+    }
+
+    @Test
+    public void testRetentionOfAnUnrepresentableLength() {
+        RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
+        t.addOrReplace(TimeSeriesAddArgs.entry(1, "old"));
+        // Duration.toMillis() overflows for this one
+        t.addOrReplace(TimeSeriesAddArgs.entry(1_000_000, "new")
+                                        .retention(Duration.ofSeconds(Long.MAX_VALUE)));
+
+        assertThat(t.range(0, 10_000_000)).containsExactly("old", "new");
+    }
+
+    @Test
+    public void testWidestRetentionInACallWins() {
+        RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
+        t.addAllOrReplace(Arrays.asList(
+                TimeSeriesAddArgs.entry(1000, "a").retention(Duration.ofMillis(300)),
+                // shorter than a millisecond, so it rounds to nothing and must not win
+                TimeSeriesAddArgs.entry(1100, "b").retention(Duration.ofNanos(999_999)),
+                TimeSeriesAddArgs.entry(1200, "c").retention(Duration.ofMillis(100))));
+
+        assertThat(t.range(0, 10000)).containsExactly("a", "b", "c");
+
+        t.addOrReplace(TimeSeriesAddArgs.entry(1500, "d").retention(Duration.ofMillis(300)));
+        assertThat(t.range(0, 10000)).containsExactly("c", "d");
+    }
+
 }

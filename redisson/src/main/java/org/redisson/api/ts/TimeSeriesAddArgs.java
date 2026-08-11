@@ -74,6 +74,24 @@ public interface TimeSeriesAddArgs<V, L> {
     TimeSeriesAddArgs<V, L> label(L label);
 
     /**
+     * Defines the retention of the collection at the moment this entry is added.
+     * <p>
+     * Entries whose timestamp falls further than <code>retention</code> behind the highest
+     * timestamp held are removed, and an entry being added that falls outside that window is
+     * not added at all. Retention is measured against that timestamp rather than against the
+     * clock, so entries added out of order are judged by their own timestamp, and it is
+     * unrelated to the time to live, which runs from the moment of insertion.
+     * <p>
+     * A bounded number of entries is removed per call, so a collection holding far more
+     * than the retention allows converges over the following additions rather than in one.
+     * If several entries in the same call define a retention the widest one is used.
+     *
+     * @param retention retention interval
+     * @return arguments object
+     */
+    TimeSeriesAddArgs<V, L> retention(Duration retention);
+
+    /**
      * Defines the time to live interval of the entry.
      * If not defined the entry is stored until it's removed explicitly.
      *
