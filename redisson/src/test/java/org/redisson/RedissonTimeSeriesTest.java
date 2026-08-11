@@ -430,4 +430,179 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
         assertThat(t.size()).isEqualTo(3);
     }
 
+    @Test
+    public void testBackfilledOrder() {
+        RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
+        // inserted out of timestamp order
+        t.add(100, "A");
+        t.add(50, "B");
+        t.add(200, "C");
+
+        assertThat(t.firstTimestamp()).isEqualTo(50);
+        assertThat(t.lastTimestamp()).isEqualTo(200);
+        assertThat(t.first()).isEqualTo("B");
+        assertThat(t.last()).isEqualTo("C");
+        assertThat(t.first(2)).containsExactly("B", "A");
+        assertThat(t.last(2)).containsExactly("A", "C");
+        assertThat(t.firstEntry()).isEqualTo(new TimeSeriesEntry<>(50, "B"));
+        assertThat(t.lastEntry()).isEqualTo(new TimeSeriesEntry<>(200, "C"));
+    }
+
+    @Test
+    public void testReversedInsertionOrder() {
+        RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
+        t.add(5, "e");
+        t.add(4, "d");
+        t.add(3, "c");
+        t.add(2, "b");
+        t.add(1, "a");
+
+        assertThat(t.firstTimestamp()).isEqualTo(1);
+        assertThat(t.lastTimestamp()).isEqualTo(5);
+        assertThat(t.first(3)).containsExactly("a", "b", "c");
+        assertThat(t.last(3)).containsExactly("c", "d", "e");
+        assertThat(t.firstEntries(2)).containsExactly(new TimeSeriesEntry<>(1, "a"),
+                                                      new TimeSeriesEntry<>(2, "b"));
+        assertThat(t.lastEntries(2)).containsExactly(new TimeSeriesEntry<>(4, "d"),
+                                                     new TimeSeriesEntry<>(5, "e"));
+    }
+
+    @Test
+    public void testPollReversedInsertionOrder() {
+        RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
+        t.add(5, "e");
+        t.add(4, "d");
+        t.add(3, "c");
+        t.add(2, "b");
+        t.add(1, "a");
+
+        assertThat(t.pollFirst()).isEqualTo("a");
+        assertThat(t.pollLast()).isEqualTo("e");
+        assertThat(t.pollFirst(2)).containsExactly("b", "c");
+        assertThat(t.size()).isEqualTo(1);
+    }
+
+    @Test
+    public void testTTLBackfilledOrder() throws InterruptedException {
+        RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
+        t.add(300, "keep-late");
+        t.add(100, "expires", Duration.ofSeconds(1));
+        t.add(200, "keep-mid");
+
+        assertThat(t.firstTimestamp()).isEqualTo(100);
+
+        Thread.sleep(1100);
+
+        assertThat(t.size()).isEqualTo(2);
+        assertThat(t.firstTimestamp()).isEqualTo(200);
+        assertThat(t.first()).isEqualTo("keep-mid");
+        assertThat(t.lastTimestamp()).isEqualTo(300);
+        assertThat(t.last()).isEqualTo("keep-late");
+    }
+
+    @Test
+    public void testDuplicateTimestampsAtBatchBoundary() throws InterruptedException {
+        RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
+        // expired entries at the head force the index paging branch rather than the
+        // single ranged read, and keeping live entries in the majority keeps it there
+        for (int i = 0; i < 15; i++) {
+            t.add(i, "expired" + i, Duration.ofMillis(300));
+        }
+        Thread.sleep(500);
+        for (int i = 0; i < 20; i++) {
+            t.add(7000, "dup" + i);
+        }
+        for (int i = 0; i < 20; i++) {
+            t.add(8000 + i, "tail" + i);
+        }
+
+        assertThat(t.size()).isEqualTo(40);
+        assertThat(t.firstTimestamp()).isEqualTo(7000);
+        assertThat(t.lastTimestamp()).isEqualTo(8019);
+        // all 20 same-timestamp entries survive a batch boundary falling inside the group
+        assertThat(t.first(20)).hasSize(20)
+                .allMatch(v -> v.startsWith("dup"));
+    }
+
+    @Test
+    public void testHeadTailOnEmptyAndFullyExpired() throws InterruptedException {
+        RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
+        assertThat(t.first()).isNull();
+        assertThat(t.last()).isNull();
+        assertThat(t.firstTimestamp()).isNull();
+        assertThat(t.firstEntry()).isNull();
+        assertThat(t.pollFirst()).isNull();
+
+        t.add(1, "a", Duration.ofMillis(800));
+        t.add(2, "b", Duration.ofMillis(800));
+        Thread.sleep(1000);
+
+        assertThat(t.first()).isNull();
+        assertThat(t.firstTimestamp()).isNull();
+        assertThat(t.first(5)).isEmpty();
+        assertThat(t.pollFirst()).isNull();
+    }
+
+    @Test
+    public void testZeroAndNegativeCount() {
+        RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
+        t.add(1, "a");
+        t.add(2, "b");
+        t.add(3, "c");
+
+        assertThat(t.first(0)).isEmpty();
+        assertThat(t.last(0)).isEmpty();
+        assertThat(t.firstEntries(0)).isEmpty();
+        assertThat(t.lastEntries(0)).isEmpty();
+        assertThat(t.pollFirst(0)).isEmpty();
+        assertThat(t.pollLast(0)).isEmpty();
+        assertThat(t.size()).isEqualTo(3);
+
+        assertThat(t.first(10)).containsExactly("a", "b", "c");
+        assertThat(t.last(10)).containsExactly("a", "b", "c");
+
+        assertThat(t.first(-1)).containsExactly("a", "b", "c");
+        assertThat(t.last(-1)).containsExactly("a", "b", "c");
+        assertThat(t.size()).isEqualTo(3);
+    }
+
+    @Test
+    public void testPollSkipsExpiredWithoutConsumingThem() throws InterruptedException {
+        RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
+        for (int i = 0; i < 5; i++) {
+            t.add(i, "old" + i, Duration.ofMillis(500));
+        }
+        Thread.sleep(700);
+        t.add(100, "a");
+        t.add(101, "b");
+
+        assertThat(t.size()).isEqualTo(2);
+        assertThat(t.pollFirst()).isEqualTo("a");
+        assertThat(t.pollFirst(10)).containsExactly("b");
+        assertThat(t.size()).isEqualTo(0);
+    }
+
+    @Test
+    public void testLargeExpiredBacklog() throws InterruptedException {
+        RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
+        for (int i = 0; i < 200; i++) {
+            t.add(i, "expired" + i, Duration.ofMillis(300));
+        }
+        Thread.sleep(500);
+        t.add(9000, "z");
+        t.add(8000, "y");
+        t.add(8500, "x");
+
+        assertThat(t.size()).isEqualTo(3);
+        assertThat(t.first()).isEqualTo("y");
+        assertThat(t.last()).isEqualTo("z");
+        assertThat(t.first(3)).containsExactly("y", "x", "z");
+        assertThat(t.last(2)).containsExactly("x", "z");
+        assertThat(t.firstTimestamp()).isEqualTo(8000);
+        assertThat(t.lastTimestamp()).isEqualTo(9000);
+        assertThat(t.firstEntries(3)).containsExactly(new TimeSeriesEntry<>(8000, "y"),
+                                                      new TimeSeriesEntry<>(8500, "x"),
+                                                      new TimeSeriesEntry<>(9000, "z"));
+    }
+
 }
