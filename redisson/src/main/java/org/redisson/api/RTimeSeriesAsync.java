@@ -15,6 +15,8 @@
  */
 package org.redisson.api;
 
+import org.redisson.api.ts.TimeSeriesAddArgs;
+
 import java.time.Duration;
 import java.util.Collection;
 import java.util.Map;
@@ -133,6 +135,47 @@ public interface RTimeSeriesAsync<V, L> extends RExpirableAsync {
     RFuture<Void> addAllAsync(Collection<TimeSeriesEntry<V, L>> entries, Duration timeToLive);
 
     /**
+     * Adds entry to this time-series collection
+     * if an entry with the same timestamp doesn't exist.
+     * <p>
+     * Expired entries aren't taken into account.
+     *
+     * @param entry entry arguments
+     * @return <code>true</code> if entry was added
+     */
+    RFuture<Boolean> addIfAbsentAsync(TimeSeriesAddArgs<V, ? super L> entry);
+
+    /**
+     * Adds entries to this time-series collection
+     * skipping those whose timestamp is already used by an existing entry.
+     * <p>
+     * Expired entries aren't taken into account.
+     *
+     * @param entries entries arguments
+     * @return amount of added entries
+     */
+    RFuture<Integer> addAllIfAbsentAsync(Collection<? extends TimeSeriesAddArgs<V, ? super L>> entries);
+
+    /**
+     * Adds entry to this time-series collection
+     * replacing all entries with the same timestamp if they exist.
+     *
+     * @param entry entry arguments
+     * @return <code>true</code> if a new entry was created,
+     *         <code>false</code> if existing entries were replaced
+     */
+    RFuture<Boolean> addOrReplaceAsync(TimeSeriesAddArgs<V, ? super L> entry);
+
+    /**
+     * Adds entries to this time-series collection
+     * replacing all entries with the same timestamps if they exist.
+     *
+     * @param entries entries arguments
+     * @return amount of created entries
+     */
+    RFuture<Integer> addAllOrReplaceAsync(Collection<? extends TimeSeriesAddArgs<V, ? super L>> entries);
+
+    /**
      * Returns size of this set.
      *
      * @return size
@@ -154,6 +197,53 @@ public interface RTimeSeriesAsync<V, L> extends RExpirableAsync {
      * @return time series entry
      */
     RFuture<TimeSeriesEntry<V, L>> getEntryAsync(long timestamp);
+
+    /**
+     * Returns all objects stored by the specified <code>timestamp</code>
+     * in the order they were added.
+     * <p>
+     * Unlike {@link #getAsync(long)} this returns every object sharing the timestamp,
+     * not only the first one.
+     *
+     * @param timestamp objects timestamp
+     * @return collection of objects
+     */
+    RFuture<Collection<V>> getAllAsync(long timestamp);
+
+    /**
+     * Returns all time series entries stored by the specified <code>timestamp</code>
+     * in the order they were added.
+     *
+     * @param timestamp entries timestamp
+     * @return collection of time series entries
+     */
+    RFuture<Collection<TimeSeriesEntry<V, L>>> getAllEntriesAsync(long timestamp);
+
+    /**
+     * Removes all objects stored by the specified <code>timestamp</code>.
+     *
+     * @param timestamp objects timestamp
+     * @return number of removed objects
+     */
+    RFuture<Integer> removeAllAsync(long timestamp);
+
+    /**
+     * Removes and returns all objects stored by the specified <code>timestamp</code>
+     * in the order they were added.
+     *
+     * @param timestamp objects timestamp
+     * @return collection of objects
+     */
+    RFuture<Collection<V>> getAndRemoveAllAsync(long timestamp);
+
+    /**
+     * Removes and returns all time series entries stored by the specified
+     * <code>timestamp</code> in the order they were added.
+     *
+     * @param timestamp entries timestamp
+     * @return collection of time series entries
+     */
+    RFuture<Collection<TimeSeriesEntry<V, L>>> getAndRemoveAllEntriesAsync(long timestamp);
 
     /**
      * Removes object by specified <code>timestamp</code>.

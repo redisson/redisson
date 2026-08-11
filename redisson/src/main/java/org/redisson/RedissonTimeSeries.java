@@ -18,6 +18,8 @@ package org.redisson;
 import org.redisson.api.ObjectListener;
 import org.redisson.api.RFuture;
 import org.redisson.api.RTimeSeries;
+import org.redisson.api.ts.TimeSeriesAddArgs;
+import org.redisson.api.ts.TimeSeriesAddParams;
 import org.redisson.api.TimeSeriesEntry;
 import org.redisson.api.listener.ScoredSortedSetAddListener;
 import org.redisson.api.listener.ScoredSortedSetRemoveListener;
@@ -50,14 +52,16 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
 
     private final EvictionScheduler evictionScheduler;
     private String timeoutSetName;
+    private String sequenceName;
 
     public RedissonTimeSeries(EvictionScheduler evictionScheduler, CommandAsyncExecutor connectionManager, String name) {
         super(connectionManager, name);
 
         this.evictionScheduler = evictionScheduler;
         this.timeoutSetName = getTimeoutSetName(getRawName());
+        this.sequenceName = getSequenceName(getRawName());
         if (evictionScheduler != null) {
-            evictionScheduler.scheduleTimeSeries(getRawName(), timeoutSetName);
+            evictionScheduler.scheduleTimeSeries(getRawName(), timeoutSetName, sequenceName);
         }
     }
 
@@ -66,13 +70,18 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
 
         this.evictionScheduler = evictionScheduler;
         this.timeoutSetName = getTimeoutSetName(getRawName());
+        this.sequenceName = getSequenceName(getRawName());
         if (evictionScheduler != null) {
-            evictionScheduler.scheduleTimeSeries(getRawName(), timeoutSetName);
+            evictionScheduler.scheduleTimeSeries(getRawName(), timeoutSetName, sequenceName);
         }
     }
 
     String getTimeoutSetName(String name) {
         return prefixName("redisson__ts_ttl", name);
+    }
+
+    String getSequenceName(String name) {
+        return prefixName("redisson__ts_seq", name);
     }
 
     @Override
@@ -160,36 +169,41 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
         }
 
         List<Object> params = new ArrayList<>();
+        params.add(SEQUENCE_WIDTH);
         params.add(expirationTime);
         for (Map.Entry<Long, V> entry : objects.entrySet()) {
             params.add(entry.getKey());
-            byte[] random = getServiceManager().generateIdArray();
-            params.add(random);
             encode(params, entry.getValue());
         }
 
         if (timeToLive != null && !timeToLive.isZero()) {
             return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_VOID,
-           "for i = 2, #ARGV, 3 do " +
-                    "local val = struct.pack('BBc0Lc0Lc0', 2, string.len(ARGV[i+1]), ARGV[i+1], string.len(ARGV[i+2]), ARGV[i+2], 0, ''); " +
+                NEXT_ID +
+                "for i = 3, #ARGV, 2 do " +
+                    "local id = nextId(); " +
+                    "local lbl = string.char(2); " +
+                    "local val = struct.pack('BBc0Lc0Lc0', 4, string.len(id), id, string.len(ARGV[i+1]), ARGV[i+1], string.len(lbl), lbl); " +
                     "redis.call('zadd', KEYS[1], ARGV[i], val); " +
-                    "redis.call('zadd', KEYS[2], ARGV[1], val); " +
+                    "redis.call('zadd', KEYS[2], ARGV[2], val); " +
                  "end; ",
-                Arrays.asList(getRawName(), timeoutSetName),
+                Arrays.asList(getRawName(), timeoutSetName, sequenceName),
                 params.toArray());
         }
         return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_VOID,
-            "local expirationTime = ARGV[1]; " +
+            NEXT_ID +
+            "local expirationTime = ARGV[2]; " +
                  "local lastValues = redis.call('zrange', KEYS[2], -1, -1, 'withscores'); " +
-                 "if (#lastValues > 0 and tonumber(lastValues[2]) > tonumber(ARGV[1])) then " +
+                 "if (#lastValues > 0 and tonumber(lastValues[2]) > tonumber(ARGV[2])) then " +
                       "expirationTime = tonumber(lastValues[2]); " +
                  "end; " +
-                 "for i = 2, #ARGV, 3 do " +
-                    "local val = struct.pack('BBc0Lc0Lc0', 2, string.len(ARGV[i+1]), ARGV[i+1], string.len(ARGV[i+2]), ARGV[i+2], 0, ''); " +
+                 "for i = 3, #ARGV, 2 do " +
+                    "local id = nextId(); " +
+                    "local lbl = string.char(2); " +
+                    "local val = struct.pack('BBc0Lc0Lc0', 4, string.len(id), id, string.len(ARGV[i+1]), ARGV[i+1], string.len(lbl), lbl); " +
                     "redis.call('zadd', KEYS[1], ARGV[i], val); " +
                     "redis.call('zadd', KEYS[2], expirationTime + 1, val); " +
                  "end; ",
-                Arrays.asList(getRawName(), timeoutSetName),
+                Arrays.asList(getRawName(), timeoutSetName, sequenceName),
                 params.toArray());
     }
 
@@ -218,16 +232,15 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
         }
 
         List<Object> params = new ArrayList<>();
+        params.add(SEQUENCE_WIDTH);
         params.add(expirationTime);
         for (TimeSeriesEntry<V, L> entry : entries) {
             params.add(entry.getTimestamp());
-            byte[] random = getServiceManager().generateIdArray();
             if (entry.getLabel() == null) {
                 params.add(2);
             } else {
                 params.add(3);
             }
-            params.add(random);
             encode(params, entry.getValue());
             if (entry.getLabel() == null) {
                 params.add("");
@@ -238,33 +251,233 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
 
         if (timeToLive != null) {
             return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_VOID,
-           "for i = 2, #ARGV, 5 do " +
-                    "local val = struct.pack('BBc0Lc0Lc0', ARGV[i+1], " +
+                NEXT_ID +
+                "for i = 3, #ARGV, 4 do " +
+                    "local id = nextId(); " +
+                    "local lbl = string.char(ARGV[i+1]) .. ARGV[i+3]; " +
+                    "local val = struct.pack('BBc0Lc0Lc0', 4, " +
+                                                         "string.len(id), id, " +
                                                          "string.len(ARGV[i+2]), ARGV[i+2], " +
-                                                         "string.len(ARGV[i+3]), ARGV[i+3], " +
-                                                         "string.len(ARGV[i+4]), ARGV[i+4]); " +
+                                                         "string.len(lbl), lbl); " +
                     "redis.call('zadd', KEYS[1], ARGV[i], val); " +
-                    "redis.call('zadd', KEYS[2], ARGV[1], val); " +
+                    "redis.call('zadd', KEYS[2], ARGV[2], val); " +
                  "end; ",
-                Arrays.asList(getRawName(), timeoutSetName),
+                Arrays.asList(getRawName(), timeoutSetName, sequenceName),
                 params.toArray());
         }
         return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_VOID,
-            "local expirationTime = ARGV[1]; " +
+            NEXT_ID +
+            "local expirationTime = ARGV[2]; " +
                  "local lastValues = redis.call('zrange', KEYS[2], -1, -1, 'withscores'); " +
-                 "if (#lastValues > 0 and tonumber(lastValues[2]) > tonumber(ARGV[1])) then " +
+                 "if (#lastValues > 0 and tonumber(lastValues[2]) > tonumber(ARGV[2])) then " +
                       "expirationTime = tonumber(lastValues[2]); " +
                  "end; " +
-                 "for i = 2, #ARGV, 5 do " +
-                    "local val = struct.pack('BBc0Lc0Lc0', ARGV[i+1]," +
+                 "for i = 3, #ARGV, 4 do " +
+                    "local id = nextId(); " +
+                    "local lbl = string.char(ARGV[i+1]) .. ARGV[i+3]; " +
+                    "local val = struct.pack('BBc0Lc0Lc0', 4, " +
+                                                         "string.len(id), id, " +
                                                          "string.len(ARGV[i+2]), ARGV[i+2], " +
-                                                         "string.len(ARGV[i+3]), ARGV[i+3], " +
-                                                         "string.len(ARGV[i+4]), ARGV[i+4]); " +
+                                                         "string.len(lbl), lbl); " +
                     "redis.call('zadd', KEYS[1], ARGV[i], val); " +
                     "redis.call('zadd', KEYS[2], expirationTime + 1, val); " +
                  "end; ",
-                Arrays.asList(getRawName(), timeoutSetName),
+                Arrays.asList(getRawName(), timeoutSetName, sequenceName),
                 params.toArray());
+    }
+
+    /*
+     * Members written by this version start with the marker 4 and carry the label flag as
+     * the first byte of the label field. Members written by earlier versions start with
+     * the flag itself (2 or 3) and hold the label unprefixed. Both shapes unpack with the
+     * same format string, so only the places that actually read a label need to branch.
+     */
+    private static final String DECODE_LABEL =
+             "if n == 4 then " +
+                 "local flag = string.byte(label, 1); " +
+                 "if flag == 2 then " +
+                     "label = 0; " +
+                 "else " +
+                     "label = string.sub(label, 2); " +
+                 "end; " +
+                 "n = flag; " +
+             "elseif n == 2 then " +
+                 "label = 0; " +
+             "end; ";
+
+    static final int SEQUENCE_WIDTH = 20;
+
+    private static final String NEXT_ID =
+             "local sequenceWidth = tonumber(ARGV[1]); " +
+             "local previous; " +
+             "local function nextId() " +
+                 "if previous == nil then " +
+                     "previous = redis.call('get', KEYS[3]); " +
+                     "if previous == false then " +
+                         "previous = '0'; " +
+                     "end; " +
+                 "end; " +
+                 "local sequence = redis.call('incrbyfloat', KEYS[3], 1); " +
+                 "if sequence == previous or #sequence > sequenceWidth then " +
+                     "error('RTimeSeries sequence overflow'); " +
+                 "end; " +
+                 "previous = sequence; " +
+                 "return string.rep('0', sequenceWidth - #sequence) .. sequence; " +
+             "end; ";
+
+
+    /*
+     * Both scripts treat an expired entry at the target timestamp as absent, matching
+     * getEntry(), and delete the ones they find so a stale entry cannot mask a live one.
+     * ARGV[1] is the id width and ARGV[2] is now, followed by 5 values per entry:
+     * timestamp, label flag, value, label, expiration time. Ids are assigned by nextId.
+     */
+    private static final String ADD_IF_ABSENT = NEXT_ID +
+             "local added = 0; " +
+             "local occupiedAt = {}; " +
+             "for i = 3, #ARGV, 5 do " +
+                 "local occupied = occupiedAt[ARGV[i]]; " +
+                 "local existing = {}; " +
+                 "if occupied == nil then " +
+                     "occupied = false; " +
+                     "existing = redis.call('zrangebyscore', KEYS[1], ARGV[i], ARGV[i]); " +
+                 "end; " +
+                 "for j = 1, #existing do " +
+                     "local expirationDate = redis.call('zscore', KEYS[2], existing[j]); " +
+                     "if expirationDate == false or tonumber(expirationDate) > tonumber(ARGV[2]) then " +
+                         "occupied = true; " +
+                     "else " +
+                         "redis.call('zrem', KEYS[1], existing[j]); " +
+                         "redis.call('zrem', KEYS[2], existing[j]); " +
+                     "end; " +
+                 "end; " +
+                 "if occupied == false then " +
+                     "local id = nextId(); " +
+                     "local lbl = string.char(ARGV[i+1]) .. ARGV[i+3]; " +
+                     "local val = struct.pack('BBc0Lc0Lc0', 4, " +
+                                                           "string.len(id), id, " +
+                                                           "string.len(ARGV[i+2]), ARGV[i+2], " +
+                                                           "string.len(lbl), lbl); " +
+                     "redis.call('zadd', KEYS[1], ARGV[i], val); " +
+                     "redis.call('zadd', KEYS[2], ARGV[i+4], val); " +
+                     "added = added + 1; " +
+                 "end; " +
+                 "occupiedAt[ARGV[i]] = true; " +
+             "end; " +
+             "return added;";
+
+    private static final String ADD_OR_REPLACE = NEXT_ID +
+             "local created = 0; " +
+             "for i = 3, #ARGV, 5 do " +
+                 "local replaced = false; " +
+                 "local existing = redis.call('zrangebyscore', KEYS[1], ARGV[i], ARGV[i]); " +
+                 "for j = 1, #existing do " +
+                     "local expirationDate = redis.call('zscore', KEYS[2], existing[j]); " +
+                     "if expirationDate == false or tonumber(expirationDate) > tonumber(ARGV[2]) then " +
+                         "replaced = true; " +
+                     "end; " +
+                     "redis.call('zrem', KEYS[1], existing[j]); " +
+                     "redis.call('zrem', KEYS[2], existing[j]); " +
+                 "end; " +
+                 "local id = nextId(); " +
+                 "local lbl = string.char(ARGV[i+1]) .. ARGV[i+3]; " +
+                 "local val = struct.pack('BBc0Lc0Lc0', 4, " +
+                                                       "string.len(id), id, " +
+                                                       "string.len(ARGV[i+2]), ARGV[i+2], " +
+                                                       "string.len(lbl), lbl); " +
+                 "redis.call('zadd', KEYS[1], ARGV[i], val); " +
+                 "redis.call('zadd', KEYS[2], ARGV[i+4], val); " +
+                 "if replaced == false then " +
+                     "created = created + 1; " +
+                 "end; " +
+             "end; " +
+             "return created;";
+
+    private Object[] encodeArgs(Collection<? extends TimeSeriesAddArgs<V, ? super L>> entries) {
+        long now = System.currentTimeMillis();
+        List<Object> params = new ArrayList<>();
+        params.add(SEQUENCE_WIDTH);
+        params.add(now);
+        for (TimeSeriesAddArgs<V, ? super L> entry : entries) {
+            TimeSeriesAddParams<V, ?> args = (TimeSeriesAddParams<V, ?>) entry;
+            params.add(args.getTimestamp());
+            if (args.getLabel() == null) {
+                params.add(2);
+            } else {
+                params.add(3);
+            }
+            encode(params, args.getObject());
+            if (args.getLabel() == null) {
+                params.add("");
+            } else {
+                encode(params, args.getLabel());
+            }
+            Duration ttl = args.getTimeToLive();
+            if (ttl == null || ttl.isZero() || ttl.isNegative()) {
+                params.add(now + TimeUnit.DAYS.toMillis(365 * 100));
+            } else {
+                params.add(now + ttl.toMillis());
+            }
+        }
+        return params.toArray();
+    }
+
+    @Override
+    public boolean addIfAbsent(TimeSeriesAddArgs<V, ? super L> entry) {
+        return get(addIfAbsentAsync(entry));
+    }
+
+    @Override
+    public RFuture<Boolean> addIfAbsentAsync(TimeSeriesAddArgs<V, ? super L> entry) {
+        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
+                ADD_IF_ABSENT,
+                Arrays.asList(getRawName(), timeoutSetName, sequenceName),
+                encodeArgs(Collections.singletonList(entry)));
+    }
+
+    @Override
+    public int addAllIfAbsent(Collection<? extends TimeSeriesAddArgs<V, ? super L>> entries) {
+        return get(addAllIfAbsentAsync(entries));
+    }
+
+    @Override
+    public RFuture<Integer> addAllIfAbsentAsync(Collection<? extends TimeSeriesAddArgs<V, ? super L>> entries) {
+        if (entries.isEmpty()) {
+            return new CompletableFutureWrapper<>(0);
+        }
+        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_INTEGER,
+                ADD_IF_ABSENT,
+                Arrays.asList(getRawName(), timeoutSetName, sequenceName),
+                encodeArgs(entries));
+    }
+
+    @Override
+    public boolean addOrReplace(TimeSeriesAddArgs<V, ? super L> entry) {
+        return get(addOrReplaceAsync(entry));
+    }
+
+    @Override
+    public RFuture<Boolean> addOrReplaceAsync(TimeSeriesAddArgs<V, ? super L> entry) {
+        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
+                ADD_OR_REPLACE,
+                Arrays.asList(getRawName(), timeoutSetName, sequenceName),
+                encodeArgs(Collections.singletonList(entry)));
+    }
+
+    @Override
+    public int addAllOrReplace(Collection<? extends TimeSeriesAddArgs<V, ? super L>> entries) {
+        return get(addAllOrReplaceAsync(entries));
+    }
+
+    @Override
+    public RFuture<Integer> addAllOrReplaceAsync(Collection<? extends TimeSeriesAddArgs<V, ? super L>> entries) {
+        if (entries.isEmpty()) {
+            return new CompletableFutureWrapper<>(0);
+        }
+        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_INTEGER,
+                ADD_OR_REPLACE,
+                Arrays.asList(getRawName(), timeoutSetName, sequenceName),
+                encodeArgs(entries));
     }
 
     @Override
@@ -290,16 +503,14 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
     public RFuture<V> getAsync(long timestamp) {
         return commandExecutor.evalReadAsync(getRawName(), codec, RedisCommands.EVAL_OBJECT,
        "local values = redis.call('zrangebyscore', KEYS[1], ARGV[2], ARGV[2]);" +
-             "if #values == 0 then " +
-                 "return nil;" +
+             "for i = 1, #values do " +
+                 "local expirationDate = redis.call('zscore', KEYS[2], values[i]); " +
+                 "if expirationDate == false or tonumber(expirationDate) > tonumber(ARGV[1]) then " +
+                     "local n, t, val, label = struct.unpack('BBc0Lc0Lc0', values[i]); " +
+                     "return val;" +
+                 "end;" +
              "end;" +
-
-             "local expirationDate = redis.call('zscore', KEYS[2], values[1]); " +
-             "if expirationDate ~= false and tonumber(expirationDate) <= tonumber(ARGV[1]) then " +
-                 "return nil;" +
-             "end;" +
-             "local n, t, val, label = struct.unpack('BBc0Lc0Lc0', values[1]); " +
-             "return val;",
+             "return nil;",
             Arrays.asList(getRawName(), timeoutSetName),
             System.currentTimeMillis(), timestamp);
     }
@@ -313,19 +524,137 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
     public RFuture<TimeSeriesEntry<V, L>> getEntryAsync(long timestamp) {
         return commandExecutor.evalReadAsync(getRawName(), codec, EVAL_ENTRY,
        "local values = redis.call('zrangebyscore', KEYS[1], ARGV[2], ARGV[2]);" +
-             "if #values == 0 then " +
-                 "return nil;" +
+             "for i = 1, #values do " +
+                 "local expirationDate = redis.call('zscore', KEYS[2], values[i]); " +
+                 "if expirationDate == false or tonumber(expirationDate) > tonumber(ARGV[1]) then " +
+                     "local n, t, val, label = struct.unpack('BBc0Lc0Lc0', values[i]); " +
+                     DECODE_LABEL +
+                     "if n == 2 then " +
+                        "return {n, ARGV[2], val};" +
+                     "end;" +
+                     "return {n, ARGV[2], val, label};" +
+                 "end;" +
              "end;" +
+             "return nil;",
+            Arrays.asList(getRawName(), timeoutSetName),
+            System.currentTimeMillis(), timestamp);
+    }
 
-             "local expirationDate = redis.call('zscore', KEYS[2], values[1]); " +
-             "if expirationDate ~= false and tonumber(expirationDate) <= tonumber(ARGV[1]) then " +
-                 "return nil;" +
-             "end;" +
-             "local n, t, val, label = struct.unpack('BBc0Lc0Lc0', values[1]); " +
-             "if n == 2 then " +
-                "return {n, ARGV[2], val};" +
-             "end;" +
-             "return {n, ARGV[2], val, label};",
+    /*
+     * Plural accessors. A timestamp may hold several entries, and the singular get/remove
+     * family only ever reaches the first live one; these reach all of them, in the order
+     * they were added. Expired entries are skipped, and left for the eviction task.
+     */
+    private static final String LIVE_AT_TIMESTAMP =
+             "local result = {}; " +
+             "local values = redis.call('zrangebyscore', KEYS[1], ARGV[2], ARGV[2]); " +
+             "for i = 1, #values do " +
+                 "local expirationDate = redis.call('zscore', KEYS[2], values[i]); " +
+                 "if expirationDate == false or tonumber(expirationDate) > tonumber(ARGV[1]) then ";
+
+    @Override
+    public Collection<V> getAll(long timestamp) {
+        return get(getAllAsync(timestamp));
+    }
+
+    @Override
+    public RFuture<Collection<V>> getAllAsync(long timestamp) {
+        return commandExecutor.evalReadAsync(getRawName(), codec, RedisCommands.EVAL_LIST,
+            LIVE_AT_TIMESTAMP +
+                     "local n, t, val, label = struct.unpack('BBc0Lc0Lc0', values[i]); " +
+                     "table.insert(result, val); " +
+                 "end; " +
+             "end; " +
+             "return result;",
+            Arrays.asList(getRawName(), timeoutSetName),
+            System.currentTimeMillis(), timestamp);
+    }
+
+    @Override
+    public Collection<TimeSeriesEntry<V, L>> getAllEntries(long timestamp) {
+        return get(getAllEntriesAsync(timestamp));
+    }
+
+    @Override
+    public RFuture<Collection<TimeSeriesEntry<V, L>>> getAllEntriesAsync(long timestamp) {
+        return commandExecutor.evalReadAsync(getRawName(), codec, EVAL_ENTRIES,
+            LIVE_AT_TIMESTAMP +
+                     "local n, t, val, label = struct.unpack('BBc0Lc0Lc0', values[i]); " +
+                     DECODE_LABEL +
+                     "table.insert(result, val); " +
+                     "table.insert(result, label); " +
+                     "table.insert(result, n); " +
+                     "table.insert(result, ARGV[2]); " +
+                 "end; " +
+             "end; " +
+             "return result;",
+            Arrays.asList(getRawName(), timeoutSetName),
+            System.currentTimeMillis(), timestamp);
+    }
+
+    @Override
+    public int removeAll(long timestamp) {
+        return get(removeAllAsync(timestamp));
+    }
+
+    @Override
+    public RFuture<Integer> removeAllAsync(long timestamp) {
+        return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
+       "local counter = 0; " +
+             "local values = redis.call('zrangebyscore', KEYS[1], ARGV[2], ARGV[2]); " +
+             "for i = 1, #values do " +
+                 "local expirationDate = redis.call('zscore', KEYS[2], values[i]); " +
+                 "if expirationDate == false or tonumber(expirationDate) > tonumber(ARGV[1]) then " +
+                     "redis.call('zrem', KEYS[2], values[i]); " +
+                     "redis.call('zrem', KEYS[1], values[i]); " +
+                     "counter = counter + 1; " +
+                 "end; " +
+             "end; " +
+             "return counter;",
+            Arrays.asList(getRawName(), timeoutSetName),
+            System.currentTimeMillis(), timestamp);
+    }
+
+    @Override
+    public Collection<V> getAndRemoveAll(long timestamp) {
+        return get(getAndRemoveAllAsync(timestamp));
+    }
+
+    @Override
+    public RFuture<Collection<V>> getAndRemoveAllAsync(long timestamp) {
+        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_LIST,
+            LIVE_AT_TIMESTAMP +
+                     "local n, t, val, label = struct.unpack('BBc0Lc0Lc0', values[i]); " +
+                     "table.insert(result, val); " +
+                     "redis.call('zrem', KEYS[2], values[i]); " +
+                     "redis.call('zrem', KEYS[1], values[i]); " +
+                 "end; " +
+             "end; " +
+             "return result;",
+            Arrays.asList(getRawName(), timeoutSetName),
+            System.currentTimeMillis(), timestamp);
+    }
+
+    @Override
+    public Collection<TimeSeriesEntry<V, L>> getAndRemoveAllEntries(long timestamp) {
+        return get(getAndRemoveAllEntriesAsync(timestamp));
+    }
+
+    @Override
+    public RFuture<Collection<TimeSeriesEntry<V, L>>> getAndRemoveAllEntriesAsync(long timestamp) {
+        return commandExecutor.evalWriteAsync(getRawName(), codec, EVAL_ENTRIES,
+            LIVE_AT_TIMESTAMP +
+                     "local n, t, val, label = struct.unpack('BBc0Lc0Lc0', values[i]); " +
+                     DECODE_LABEL +
+                     "table.insert(result, val); " +
+                     "table.insert(result, label); " +
+                     "table.insert(result, n); " +
+                     "table.insert(result, ARGV[2]); " +
+                     "redis.call('zrem', KEYS[2], values[i]); " +
+                     "redis.call('zrem', KEYS[1], values[i]); " +
+                 "end; " +
+             "end; " +
+             "return result;",
             Arrays.asList(getRawName(), timeoutSetName),
             System.currentTimeMillis(), timestamp);
     }
@@ -339,17 +668,15 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
     public RFuture<Boolean> removeAsync(long timestamp) {
         return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
        "local values = redis.call('zrangebyscore', KEYS[1], ARGV[2], ARGV[2]);" +
-             "if #values == 0 then " +
-                 "return 0;" +
+             "for i = 1, #values do " +
+                 "local expirationDate = redis.call('zscore', KEYS[2], values[i]); " +
+                 "if expirationDate == false or tonumber(expirationDate) > tonumber(ARGV[1]) then " +
+                     "redis.call('zrem', KEYS[2], values[i]); " +
+                     "redis.call('zrem', KEYS[1], values[i]); " +
+                     "return 1;" +
+                 "end;" +
              "end;" +
-
-             "local expirationDate = redis.call('zscore', KEYS[2], values[1]); " +
-             "if expirationDate ~= false and tonumber(expirationDate) <= tonumber(ARGV[1]) then " +
-                 "return 0;" +
-             "end;" +
-             "redis.call('zrem', KEYS[2], values[1]); " +
-             "redis.call('zrem', KEYS[1], values[1]); " +
-             "return 1;",
+             "return 0;",
             Arrays.asList(getRawName(), timeoutSetName),
             System.currentTimeMillis(), timestamp);
     }
@@ -363,18 +690,16 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
     public RFuture<V> getAndRemoveAsync(long timestamp) {
         return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_OBJECT,
        "local values = redis.call('zrangebyscore', KEYS[1], ARGV[2], ARGV[2]);" +
-             "if #values == 0 then " +
-                 "return nil;" +
+             "for i = 1, #values do " +
+                 "local expirationDate = redis.call('zscore', KEYS[2], values[i]); " +
+                 "if expirationDate == false or tonumber(expirationDate) > tonumber(ARGV[1]) then " +
+                     "redis.call('zrem', KEYS[2], values[i]); " +
+                     "redis.call('zrem', KEYS[1], values[i]); " +
+                     "local n, t, val, label = struct.unpack('BBc0Lc0Lc0', values[i]); " +
+                     "return val;" +
+                 "end;" +
              "end;" +
-
-             "local expirationDate = redis.call('zscore', KEYS[2], values[1]); " +
-             "if expirationDate ~= false and tonumber(expirationDate) <= tonumber(ARGV[1]) then " +
-                 "return nil;" +
-             "end;" +
-             "redis.call('zrem', KEYS[2], values[1]); " +
-             "redis.call('zrem', KEYS[1], values[1]); " +
-             "local n, t, val, label = struct.unpack('BBc0Lc0Lc0', values[1]); " +
-             "return val;",
+             "return nil;",
             Arrays.asList(getRawName(), timeoutSetName),
             System.currentTimeMillis(), timestamp);
     }
@@ -388,21 +713,20 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
     public RFuture<TimeSeriesEntry<V, L>> getAndRemoveEntryAsync(long timestamp) {
         return commandExecutor.evalWriteAsync(getRawName(), codec, EVAL_ENTRY,
        "local values = redis.call('zrangebyscore', KEYS[1], ARGV[2], ARGV[2]);" +
-             "if #values == 0 then " +
-                 "return nil;" +
+             "for i = 1, #values do " +
+                 "local expirationDate = redis.call('zscore', KEYS[2], values[i]); " +
+                 "if expirationDate == false or tonumber(expirationDate) > tonumber(ARGV[1]) then " +
+                     "redis.call('zrem', KEYS[2], values[i]); " +
+                     "redis.call('zrem', KEYS[1], values[i]); " +
+                     "local n, t, val, label = struct.unpack('BBc0Lc0Lc0', values[i]); " +
+                     DECODE_LABEL +
+                     "if n == 2 then " +
+                        "return {n, ARGV[2], val};" +
+                     "end;" +
+                     "return {n, ARGV[2], val, label};" +
+                 "end;" +
              "end;" +
-
-             "local expirationDate = redis.call('zscore', KEYS[2], values[1]); " +
-             "if expirationDate ~= false and tonumber(expirationDate) <= tonumber(ARGV[1]) then " +
-                 "return nil;" +
-             "end;" +
-             "redis.call('zrem', KEYS[2], values[1]); " +
-             "redis.call('zrem', KEYS[1], values[1]); " +
-             "local n, t, val, label = struct.unpack('BBc0Lc0Lc0', values[1]); " +
-             "if n == 2 then " +
-                "return {n, ARGV[2], val};" +
-             "end;" +
-             "return {n, ARGV[2], val, label};",
+             "return nil;",
             Arrays.asList(getRawName(), timeoutSetName),
             System.currentTimeMillis(), timestamp);
     }
@@ -545,7 +869,7 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
                      "table.insert(members, values[i]); " +
                      "table.insert(scores, values[i+1]); " +
                  "end; " +
-             "elseif total == timeoutTotal and liveCount < expiredCount and liveCount <= 10000 then " +
+             "elseif total == timeoutTotal and liveCount < expiredCount and liveCount <= 100000 then " +
                  "local live = redis.call('zrangebyscore', KEYS[2], '(' .. ARGV[1], '+inf'); " +
                  "local items = {}; " +
                  "for i = 1, #live do " +
@@ -602,13 +926,11 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
     private static final String UNPACK_ENTRIES =
              "for i = 1, #members do " +
                  "local n, t, val, label = struct.unpack('BBc0Lc0Lc0', members[i]); " +
+                 DECODE_LABEL +
                  "table.insert(result, val); " +
-                 "if n == 2 then " +
-                     "label = 0; " +
-                 "end; " +
                  "table.insert(result, label); " +
                  "table.insert(result, n); " +
-                 "table.insert(result, scores[i]); " +
+                 "table.insert(result, string.format('%d', tonumber(scores[i]))); " +
              "end; " +
              "return result;";
 
@@ -622,7 +944,7 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
         return commandExecutor.evalReadAsync(getRawName(), LongCodec.INSTANCE, evalCommandType,
             COLLECT_HEAD_TAIL +
              "for i = 1, #scores do " +
-                 "table.insert(result, scores[i]); " +
+                 "table.insert(result, string.format('%d', tonumber(scores[i]))); " +
              "end; " +
              "return result;",
             Arrays.asList(getRawName(), timeoutSetName),
@@ -661,7 +983,7 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
              "local counter = 0; " +
              "for i, v in ipairs(values) do " +
                  "local expirationDate = redis.call('zscore', KEYS[2], v); " +
-                 "if tonumber(expirationDate) > tonumber(ARGV[1]) then " +
+                 "if expirationDate == false or tonumber(expirationDate) > tonumber(ARGV[1]) then " +
                      "counter = counter + 1; " +
                      "redis.call('zrem', KEYS[2], v); " +
                      "redis.call('zrem', KEYS[1], v); " +
@@ -719,6 +1041,7 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
           "local from = ARGV[2]; " +
           "local to = ARGV[3]; " +
           "local limit = tonumber(ARGV[4]); " +
+          "local offset = 0; " +
 
           "local cmd = 'zrangebyscore'; " +
           "if ARGV[5] ~= '0' then " +
@@ -730,29 +1053,27 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
           "while true do " +
              "local values;" +
              "if ARGV[4] ~= '0' then " +
-                "values = redis.call(cmd, KEYS[1], from, to, 'withscores', 'limit', 0, limit);" +
+                "values = redis.call(cmd, KEYS[1], from, to, 'withscores', 'limit', offset, limit);" +
              "else " +
                 "values = redis.call(cmd, KEYS[1], from, to, 'withscores');" +
              "end; " +
 
              "for i=1, #values, 2 do " +
                  "local expirationDate = redis.call('zscore', KEYS[2], values[i]);" +
-                 "if tonumber(expirationDate) > tonumber(ARGV[1]) then " +
+                 "if expirationDate == false or tonumber(expirationDate) > tonumber(ARGV[1]) then " +
                      "local n, t, val, label = struct.unpack('BBc0Lc0Lc0', values[i]); " +
+                     DECODE_LABEL +
                      "table.insert(result, val);" +
-                     "if n == 2 then " +
-                         "label = 0; " +
-                     "end; " +
                      "table.insert(result, label);" +
                      "table.insert(result, n);" +
-                     "table.insert(result, values[i+1]);" +
+                     "table.insert(result, string.format('%d', tonumber(values[i+1])));" +
                  "end;" +
              "end;" +
 
              "if limit == 0 or #result/4 == tonumber(ARGV[4]) or #values/2 < limit then " +
                  "return result;" +
              "end;" +
-             "from = '(' .. values[#values];" +
+             "offset = offset + #values/2;" +
              "limit = tonumber(ARGV[4]) - #result/4;" +
           "end;",
             Arrays.asList(getRawName(), timeoutSetName),
@@ -795,6 +1116,7 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
           "local from = ARGV[2]; " +
           "local to = ARGV[3]; " +
           "local limit = tonumber(ARGV[4]); " +
+          "local offset = 0; " +
 
           "local cmd = 'zrangebyscore'; " +
           "if ARGV[5] ~= '0' then " +
@@ -806,14 +1128,14 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
           "while true do " +
              "local values;" +
              "if ARGV[4] ~= '0' then " +
-                "values = redis.call(cmd, KEYS[1], from, to, 'withscores', 'limit', 0, limit);" +
+                "values = redis.call(cmd, KEYS[1], from, to, 'withscores', 'limit', offset, limit);" +
              "else " +
                 "values = redis.call(cmd, KEYS[1], from, to, 'withscores');" +
              "end; " +
 
              "for i=1, #values, 2 do " +
                  "local expirationDate = redis.call('zscore', KEYS[2], values[i]);" +
-                 "if tonumber(expirationDate) > tonumber(ARGV[1]) then " +
+                 "if expirationDate == false or tonumber(expirationDate) > tonumber(ARGV[1]) then " +
                      "local n, t, val, label = struct.unpack('BBc0Lc0Lc0', values[i]); " +
                      "table.insert(result, val);" +
                  "end;" +
@@ -822,7 +1144,7 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
              "if limit == 0 or #result == tonumber(ARGV[4]) or #values/2 < tonumber(limit) then " +
                  "return result;" +
              "end;" +
-             "from = '(' .. values[#values];" +
+             "offset = offset + #values/2;" +
              "limit = tonumber(ARGV[4]) - #result;" +
           "end;",
             Arrays.asList(getRawName(), timeoutSetName),
@@ -943,6 +1265,11 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
         return pollEntriesAsync(true, 1, EVAL_FIRST_ENTRY);
     }
 
+    /*
+     * Only the entries that are actually returned are removed. Expired entries are skipped
+     * but left in place for the eviction task, so a poll never turns into an unbounded
+     * delete of the expired prefix.
+     */
     private <T> RFuture<T> pollAsync(boolean reverse, int limit, RedisCommand<?> command) {
         return commandExecutor.evalWriteAsync(getRawName(), codec, command,
             COLLECT_HEAD_TAIL + REMOVE_COLLECTED +
@@ -979,7 +1306,7 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
                 + "local res = redis.call('zrange', KEYS[1], ARGV[1], tonumber(ARGV[1]) + tonumber(ARGV[3]) - 1); "
                 + "for i, value in ipairs(res) do "
                    + "local expirationDate = redis.call('zscore', KEYS[2], value); " +
-                     "if tonumber(expirationDate) > tonumber(ARGV[2]) then " +
+                     "if expirationDate == false or tonumber(expirationDate) > tonumber(ARGV[2]) then " +
                          "local n, t, val, label = struct.unpack('BBc0Lc0Lc0', value); " +
                          "table.insert(result, val);" +
                      "end;"
@@ -1037,12 +1364,12 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
 
     @Override
     public RFuture<Boolean> deleteAsync() {
-        return deleteAsync(getRawName(), timeoutSetName);
+        return deleteAsync(getRawName(), timeoutSetName, sequenceName);
     }
 
     @Override
     public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit, String param, String... keys) {
-        return super.expireAsync(timeToLive, timeUnit, param, getRawName(), timeoutSetName);
+        return super.expireAsync(timeToLive, timeUnit, param, getRawName(), timeoutSetName, sequenceName);
     }
 
     @Override
@@ -1052,43 +1379,45 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
 
     @Override
     public RFuture<Boolean> clearExpireAsync() {
-        return clearExpireAsync(getRawName(), timeoutSetName);
+        return clearExpireAsync(getRawName(), timeoutSetName, sequenceName);
     }
 
     @Override
     public RFuture<Long> sizeInMemoryAsync() {
-        List<Object> keys = Arrays.asList(getRawName(), timeoutSetName);
+        List<Object> keys = Arrays.asList(getRawName(), timeoutSetName, sequenceName);
         return super.sizeInMemoryAsync(keys);
     }
 
     @Override
     public RFuture<Boolean> copyAsync(List<Object> keys, int database, boolean replace) {
         String newName = (String) keys.get(1);
-        List<Object> kks = Arrays.asList(getRawName(), timeoutSetName,
-                newName, getTimeoutSetName(newName));
+        List<Object> kks = Arrays.asList(getRawName(), timeoutSetName, sequenceName,
+                newName, getTimeoutSetName(newName), getSequenceName(newName));
         return super.copyAsync(kks, database, replace);
     }
 
     @Override
     public RFuture<Void> renameAsync(String nn) {
         String newName = mapName(nn);
-        List<Object> kks = Arrays.asList(getRawName(), timeoutSetName,
-                newName, getTimeoutSetName(newName));
+        List<Object> kks = Arrays.asList(getRawName(), timeoutSetName, sequenceName,
+                newName, getTimeoutSetName(newName), getSequenceName(newName));
         return renameAsync(commandExecutor, kks, () -> {
             setName(nn);
             this.timeoutSetName = getTimeoutSetName(newName);
+            this.sequenceName = getSequenceName(newName);
         });
     }
 
     @Override
     public RFuture<Boolean> renamenxAsync(String nn) {
         String newName = mapName(nn);
-        List<Object> kks = Arrays.asList(getRawName(), timeoutSetName,
-                newName, getTimeoutSetName(newName));
+        List<Object> kks = Arrays.asList(getRawName(), timeoutSetName, sequenceName,
+                newName, getTimeoutSetName(newName), getSequenceName(newName));
         return renamenxAsync(commandExecutor, kks, value -> {
             if (value) {
                 setName(nn);
                 this.timeoutSetName = getTimeoutSetName(newName);
+            this.sequenceName = getSequenceName(newName);
             }
         });
     }

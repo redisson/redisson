@@ -2,9 +2,11 @@ package org.redisson;
 
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RTimeSeries;
+import org.redisson.api.ts.TimeSeriesAddArgs;
 import org.redisson.api.TimeSeriesEntry;
 
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -603,6 +605,339 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
         assertThat(t.firstEntries(3)).containsExactly(new TimeSeriesEntry<>(8000, "y"),
                                                       new TimeSeriesEntry<>(8500, "x"),
                                                       new TimeSeriesEntry<>(9000, "z"));
+    }
+
+    @Test
+    public void testAddIfAbsent() {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        assertThat(t.addIfAbsent(TimeSeriesAddArgs.entry(5, "a"))).isTrue();
+        assertThat(t.addIfAbsent(TimeSeriesAddArgs.entry(5, "b"))).isFalse();
+        assertThat(t.get(5)).isEqualTo("a");
+        assertThat(t.size()).isEqualTo(1);
+    }
+
+    @Test
+    public void testAddIfAbsentTreatsExpiredAsAbsent() throws InterruptedException {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        assertThat(t.addIfAbsent(TimeSeriesAddArgs.entry(5, "old")
+                                                  .timeToLive(Duration.ofMillis(300)))).isTrue();
+        Thread.sleep(500);
+
+        assertThat(t.get(5)).isNull();
+        assertThat(t.addIfAbsent(TimeSeriesAddArgs.entry(5, "new"))).isTrue();
+        assertThat(t.get(5)).isEqualTo("new");
+        assertThat(t.size()).isEqualTo(1);
+    }
+
+    @Test
+    public void testAddOrReplace() {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        assertThat(t.addOrReplace(TimeSeriesAddArgs.entry(5, "a"))).isTrue();
+        assertThat(t.addOrReplace(TimeSeriesAddArgs.entry(5, "b"))).isFalse();
+        assertThat(t.get(5)).isEqualTo("b");
+        assertThat(t.size()).isEqualTo(1);
+    }
+
+    @Test
+    public void testAddOrReplaceCollapsesDuplicates() {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        t.add(5, "x");
+        t.add(5, "y");
+        t.add(5, "z");
+        assertThat(t.size()).isEqualTo(3);
+
+        assertThat(t.addOrReplace(TimeSeriesAddArgs.entry(5, "last"))).isFalse();
+        assertThat(t.size()).isEqualTo(1);
+        assertThat(t.get(5)).isEqualTo("last");
+    }
+
+    @Test
+    public void testAddAllIfAbsentAndAddAllOrReplace() {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        assertThat(t.addAllIfAbsent(Arrays.asList(TimeSeriesAddArgs.entry(1, "a"),
+                                                  TimeSeriesAddArgs.entry(2, "b"),
+                                                  TimeSeriesAddArgs.entry(3, "c")))).isEqualTo(3);
+
+        assertThat(t.addAllIfAbsent(Arrays.asList(TimeSeriesAddArgs.entry(2, "ignored"),
+                                                  TimeSeriesAddArgs.entry(4, "d")))).isEqualTo(1);
+        assertThat(t.get(2)).isEqualTo("b");
+
+        assertThat(t.addAllOrReplace(Arrays.asList(TimeSeriesAddArgs.entry(2, "B"),
+                                                   TimeSeriesAddArgs.entry(5, "e")))).isEqualTo(1);
+        assertThat(t.get(2)).isEqualTo("B");
+        assertThat(t.size()).isEqualTo(5);
+    }
+
+    @Test
+    public void testAddArgsLabelAndTimeToLive() throws InterruptedException {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        t.addAllOrReplace(Arrays.asList(
+                TimeSeriesAddArgs.entry(1, "a", "lab1"),
+                TimeSeriesAddArgs.entry(2, "b"),
+                TimeSeriesAddArgs.entry(3, "c", "lab3").timeToLive(Duration.ofMillis(400))));
+
+        assertThat(t.firstEntries(3)).containsExactly(new TimeSeriesEntry<>(1, "a", "lab1"),
+                                                      new TimeSeriesEntry<>(2, "b"),
+                                                      new TimeSeriesEntry<>(3, "c", "lab3"));
+
+        Thread.sleep(600);
+        assertThat(t.size()).isEqualTo(2);
+    }
+
+    @Test
+    public void testExpiredDuplicateDoesNotMaskLiveSample() throws InterruptedException {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        t.add(5, "old", Duration.ofMillis(300));
+        t.add(5, "new");
+        Thread.sleep(500);
+
+        assertThat(t.size()).isEqualTo(1);
+        assertThat(t.get(5)).isEqualTo("new");
+        assertThat(t.getEntry(5)).isEqualTo(new TimeSeriesEntry<>(5, "new"));
+        assertThat(t.getAndRemove(5)).isEqualTo("new");
+        assertThat(t.get(5)).isNull();
+    }
+
+    @Test
+    public void testDuplicatesKeepInsertionOrder() {
+        RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
+        t.add(5, "a");
+        t.add(5, "b");
+        t.add(5, "c");
+
+        assertThat(t.size()).isEqualTo(3);
+        assertThat(t.range(5, 5)).containsExactly("a", "b", "c");
+        assertThat(t.get(5)).isEqualTo("a");
+
+        assertThat(t.remove(5)).isTrue();
+        assertThat(t.get(5)).isEqualTo("b");
+        assertThat(t.range(5, 5)).containsExactly("b", "c");
+    }
+
+    @Test
+    public void testSameValueAtDifferentTimestamps() {
+        RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
+        t.add(1, "temp42");
+        t.add(2, "temp42");
+        t.add(3, "temp42");
+
+        assertThat(t.size()).isEqualTo(3);
+        assertThat(t.entryRange(1, 3)).containsExactly(new TimeSeriesEntry<>(1, "temp42"),
+                                                       new TimeSeriesEntry<>(2, "temp42"),
+                                                       new TimeSeriesEntry<>(3, "temp42"));
+    }
+
+    @Test
+    public void testDuplicateOrderAcrossAddApis() {
+        RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
+        t.addIfAbsent(TimeSeriesAddArgs.entry(9, "a"));
+        t.add(9, "b");
+        t.add(9, "c");
+
+        assertThat(t.range(9, 9)).containsExactly("a", "b", "c");
+        assertThat(t.get(9)).isEqualTo("a");
+    }
+
+    @Test
+    public void testMixedLabelsAtSameTimestamp() {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        t.add(5, "v", "label");
+        t.add(5, "v");
+        t.add(5, "v");
+
+        assertThat(t.size()).isEqualTo(3);
+        assertThat(t.range(5, 5)).containsExactly("v", "v", "v");
+    }
+
+    @Test
+    public void testMixedLabelsKeepInsertionOrder() {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        t.add(5, "a", "label");
+        t.add(5, "b");
+        t.add(5, "c");
+
+        assertThat(t.range(5, 5)).containsExactly("a", "b", "c");
+        assertThat(t.get(5)).isEqualTo("a");
+        assertThat(t.entryRange(5, 5)).containsExactly(new TimeSeriesEntry<>(5, "a", "label"),
+                                                       new TimeSeriesEntry<>(5, "b"),
+                                                       new TimeSeriesEntry<>(5, "c"));
+    }
+
+    @Test
+    public void testEmptyLabelDistinctFromNoLabel() {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        t.add(1, "v1", "lab");
+        t.add(2, "v2");
+        t.add(3, "v3", "");
+
+        assertThat(t.getEntry(1).getLabel()).isEqualTo("lab");
+        assertThat(t.getEntry(2).getLabel()).isNull();
+        assertThat(t.getEntry(3).getLabel()).isEmpty();
+    }
+
+    @Test
+    public void testZeroTimeToLiveMeansNoTimeToLive() throws InterruptedException {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        assertThat(t.addOrReplace(TimeSeriesAddArgs.entry(5, "v")
+                                                   .timeToLive(Duration.ZERO))).isTrue();
+        assertThat(t.get(5)).isEqualTo("v");
+
+        assertThat(t.addOrReplace(TimeSeriesAddArgs.entry(5, "replacement")
+                                                   .timeToLive(Duration.ZERO))).isFalse();
+        Thread.sleep(200);
+        assertThat(t.get(5)).isEqualTo("replacement");
+        assertThat(t.size()).isEqualTo(1);
+    }
+
+    @Test
+    public void testMixedLabelsDoNotClobberTimeToLive() throws InterruptedException {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        t.add(5, "keep");
+        t.add(5, "keep", "label");
+        t.add(5, "keep", Duration.ofMillis(400));
+
+        assertThat(t.size()).isEqualTo(3);
+        Thread.sleep(600);
+        assertThat(t.size()).isEqualTo(2);
+    }
+
+    @Test
+    public void testNegativeAndZeroTimestamps() {
+        RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
+        t.add(-5, "same");
+        t.add(-5, "same");
+        t.add(-5, "same");
+        t.add(0, "same");
+        t.add(0, "same");
+
+        assertThat(t.size()).isEqualTo(5);
+        assertThat(t.range(-5, -5)).containsExactly("same", "same", "same");
+        assertThat(t.range(0, 0)).containsExactly("same", "same");
+        assertThat(t.firstTimestamp()).isEqualTo(-5);
+        assertThat(t.lastTimestamp()).isEqualTo(0);
+    }
+
+    @Test
+    public void testLargeTimestamps() {
+        RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
+        t.add(100_000_000_000_000_000L, "w");
+        t.add(1_000_000_000_000_000_000L, "v");
+
+        assertThat(t.firstTimestamp()).isEqualTo(100_000_000_000_000_000L);
+        assertThat(t.lastTimestamp()).isEqualTo(1_000_000_000_000_000_000L);
+        assertThat(t.firstEntries(2)).containsExactly(
+                new TimeSeriesEntry<>(100_000_000_000_000_000L, "w"),
+                new TimeSeriesEntry<>(1_000_000_000_000_000_000L, "v"));
+        assertThat(t.entryRange(0, Long.MAX_VALUE)).containsExactly(
+                new TimeSeriesEntry<>(100_000_000_000_000_000L, "w"),
+                new TimeSeriesEntry<>(1_000_000_000_000_000_000L, "v"));
+    }
+
+    @Test
+    public void testRangeLimitAcrossDuplicateTimestamps() throws InterruptedException {
+        RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
+        // an expired entry ahead of the duplicates forces the range to fetch a second page
+        t.add(1, "expired", Duration.ofMillis(300));
+        for (int i = 0; i < 5; i++) {
+            t.add(2, "dup" + i);
+        }
+        Thread.sleep(500);
+
+        assertThat(t.size()).isEqualTo(5);
+        assertThat(t.range(1, 2, 1)).containsExactly("dup0");
+        assertThat(t.range(1, 2, 3)).containsExactly("dup0", "dup1", "dup2");
+        assertThat(t.range(1, 2, 5)).containsExactly("dup0", "dup1", "dup2", "dup3", "dup4");
+        assertThat(t.range(1, 2, 9)).containsExactly("dup0", "dup1", "dup2", "dup3", "dup4");
+        assertThat(t.rangeReversed(1, 2, 3)).containsExactly("dup4", "dup3", "dup2");
+        assertThat(t.entryRange(1, 2, 3)).containsExactly(new TimeSeriesEntry<>(2, "dup0"),
+                                                          new TimeSeriesEntry<>(2, "dup1"),
+                                                          new TimeSeriesEntry<>(2, "dup2"));
+    }
+
+    @Test
+    public void testGetAllAndRemoveAll() {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        t.add(5, "a", "L1");
+        t.add(5, "b");
+        t.add(5, "c", "L3");
+        t.add(6, "other");
+
+        assertThat(t.getAll(5)).containsExactly("a", "b", "c");
+        assertThat(t.get(5)).isEqualTo("a");
+        assertThat(t.getAllEntries(5)).containsExactly(new TimeSeriesEntry<>(5, "a", "L1"),
+                                                       new TimeSeriesEntry<>(5, "b"),
+                                                       new TimeSeriesEntry<>(5, "c", "L3"));
+        assertThat(t.getAll(99)).isEmpty();
+        assertThat(t.getAllEntries(99)).isEmpty();
+
+        assertThat(t.removeAll(5)).isEqualTo(3);
+        assertThat(t.getAll(5)).isEmpty();
+        assertThat(t.getAll(6)).containsExactly("other");
+        assertThat(t.size()).isEqualTo(1);
+        assertThat(t.removeAll(99)).isZero();
+    }
+
+    @Test
+    public void testGetAndRemoveAll() {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        t.add(5, "a", "L1");
+        t.add(5, "b");
+
+        assertThat(t.getAndRemoveAllEntries(5))
+                .containsExactly(new TimeSeriesEntry<>(5, "a", "L1"),
+                                 new TimeSeriesEntry<>(5, "b"));
+        assertThat(t.size()).isZero();
+
+        t.add(7, "x");
+        t.add(7, "y");
+        assertThat(t.getAndRemoveAll(7)).containsExactly("x", "y");
+        assertThat(t.getAll(7)).isEmpty();
+        assertThat(t.getAndRemoveAll(99)).isEmpty();
+    }
+
+    @Test
+    public void testPluralAccessorsSkipExpired() throws InterruptedException {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        t.add(5, "gone1", Duration.ofMillis(300));
+        t.add(5, "keep1");
+        t.add(5, "gone2", Duration.ofMillis(300));
+        t.add(5, "keep2");
+        Thread.sleep(500);
+
+        assertThat(t.getAll(5)).containsExactly("keep1", "keep2");
+        assertThat(t.getAllEntries(5)).containsExactly(new TimeSeriesEntry<>(5, "keep1"),
+                                                       new TimeSeriesEntry<>(5, "keep2"));
+        assertThat(t.removeAll(5)).isEqualTo(2);
+        assertThat(t.size()).isZero();
+    }
+
+    @Test
+    public void testSingularAndPluralTogether() {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        t.add(5, "a");
+        t.add(5, "b");
+        t.add(5, "c");
+
+        assertThat(t.remove(5)).isTrue();
+        assertThat(t.getAll(5)).containsExactly("b", "c");
+        assertThat(t.getAndRemove(5)).isEqualTo("b");
+        assertThat(t.getAll(5)).containsExactly("c");
+        assertThat(t.removeAll(5)).isEqualTo(1);
+        assertThat(t.size()).isZero();
+    }
+
+    @Test
+    public void testDuplicateOrderSurvivesRemoval() {
+        RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
+        t.add(5, "a");
+        t.add(5, "b");
+        t.add(5, "c");
+        assertThat(t.removeAll(5)).isEqualTo(3);
+
+        t.add(5, "d");
+        t.add(5, "e");
+        assertThat(t.range(5, 5)).containsExactly("d", "e");
+        assertThat(t.get(5)).isEqualTo("d");
     }
 
 }

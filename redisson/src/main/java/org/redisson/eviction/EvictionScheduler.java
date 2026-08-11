@@ -56,8 +56,8 @@ public final class EvictionScheduler {
         addTask(name, () -> new JCacheEvictionTask(name, timeoutSetName, expiredChannelName, executor));
     }
 
-    public void scheduleTimeSeries(String name, String timeoutSetName) {
-        addTask(name, () -> new TimeSeriesEvictionTask(name, timeoutSetName, executor));
+    public void scheduleTimeSeries(String name, String timeoutSetName, String sequenceName) {
+        addTask(name, () -> new TimeSeriesEvictionTask(name, timeoutSetName, sequenceName, executor));
     }
 
     public void schedule(String name, long shiftInMilliseconds) {

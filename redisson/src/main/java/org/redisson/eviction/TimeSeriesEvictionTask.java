@@ -31,11 +31,13 @@ public class TimeSeriesEvictionTask extends EvictionTask {
 
     private final String name;
     private final String timeoutSetName;
+    private final String sequenceName;
 
-    public TimeSeriesEvictionTask(String name, String timeoutSetName, CommandAsyncExecutor executor) {
+    public TimeSeriesEvictionTask(String name, String timeoutSetName, String sequenceName, CommandAsyncExecutor executor) {
         super(executor);
         this.name = name;
         this.timeoutSetName = timeoutSetName;
+        this.sequenceName = sequenceName;
     }
 
     @Override
@@ -46,8 +48,12 @@ public class TimeSeriesEvictionTask extends EvictionTask {
                   + "redis.call('zrem', KEYS[2], unpack(expiredKeys)); "
                   + "redis.call('zrem', KEYS[1], unpack(expiredKeys)); "
               + "end; "
+
+              + "if redis.call('zcard', KEYS[1]) == 0 then "
+                  + "redis.call('del', KEYS[3]); "
+              + "end; "
               + "return #expiredKeys;",
-              Arrays.asList(name, timeoutSetName),
+              Arrays.asList(name, timeoutSetName, sequenceName),
                 System.currentTimeMillis(), keysLimit);
     }
 

@@ -15,6 +15,8 @@
  */
 package org.redisson.api;
 
+import org.redisson.api.ts.TimeSeriesAddArgs;
+
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -143,6 +145,47 @@ public interface RTimeSeriesReactive<V, L> extends RExpirableReactive {
     Mono<Void> addAll(Collection<TimeSeriesEntry<V, L>> entries, Duration timeToLive);
 
     /**
+     * Adds entry to this time-series collection
+     * if an entry with the same timestamp doesn't exist.
+     * <p>
+     * Expired entries aren't taken into account.
+     *
+     * @param entry entry arguments
+     * @return <code>true</code> if entry was added
+     */
+    Mono<Boolean> addIfAbsent(TimeSeriesAddArgs<V, ? super L> entry);
+
+    /**
+     * Adds entries to this time-series collection
+     * skipping those whose timestamp is already used by an existing entry.
+     * <p>
+     * Expired entries aren't taken into account.
+     *
+     * @param entries entries arguments
+     * @return amount of added entries
+     */
+    Mono<Integer> addAllIfAbsent(Collection<? extends TimeSeriesAddArgs<V, ? super L>> entries);
+
+    /**
+     * Adds entry to this time-series collection
+     * replacing all entries with the same timestamp if they exist.
+     *
+     * @param entry entry arguments
+     * @return <code>true</code> if a new entry was created,
+     *         <code>false</code> if existing entries were replaced
+     */
+    Mono<Boolean> addOrReplace(TimeSeriesAddArgs<V, ? super L> entry);
+
+    /**
+     * Adds entries to this time-series collection
+     * replacing all entries with the same timestamps if they exist.
+     *
+     * @param entries entries arguments
+     * @return amount of created entries
+     */
+    Mono<Integer> addAllOrReplace(Collection<? extends TimeSeriesAddArgs<V, ? super L>> entries);
+
+    /**
      * Returns size of this set.
      *
      * @return size
@@ -164,6 +207,53 @@ public interface RTimeSeriesReactive<V, L> extends RExpirableReactive {
      * @return time series entry
      */
     Mono<TimeSeriesEntry<V, L>> getEntry(long timestamp);
+
+    /**
+     * Returns all objects stored by the specified <code>timestamp</code>
+     * in the order they were added.
+     * <p>
+     * Unlike {@link #get(long)} this returns every object sharing the timestamp,
+     * not only the first one.
+     *
+     * @param timestamp objects timestamp
+     * @return collection of objects
+     */
+    Mono<Collection<V>> getAll(long timestamp);
+
+    /**
+     * Returns all time series entries stored by the specified <code>timestamp</code>
+     * in the order they were added.
+     *
+     * @param timestamp entries timestamp
+     * @return collection of time series entries
+     */
+    Mono<Collection<TimeSeriesEntry<V, L>>> getAllEntries(long timestamp);
+
+    /**
+     * Removes all objects stored by the specified <code>timestamp</code>.
+     *
+     * @param timestamp objects timestamp
+     * @return number of removed objects
+     */
+    Mono<Integer> removeAll(long timestamp);
+
+    /**
+     * Removes and returns all objects stored by the specified <code>timestamp</code>
+     * in the order they were added.
+     *
+     * @param timestamp objects timestamp
+     * @return collection of objects
+     */
+    Mono<Collection<V>> getAndRemoveAll(long timestamp);
+
+    /**
+     * Removes and returns all time series entries stored by the specified
+     * <code>timestamp</code> in the order they were added.
+     *
+     * @param timestamp entries timestamp
+     * @return collection of time series entries
+     */
+    Mono<Collection<TimeSeriesEntry<V, L>>> getAndRemoveAllEntries(long timestamp);
 
     /**
      * Removes object by specified <code>timestamp</code>.
