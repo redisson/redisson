@@ -16,6 +16,8 @@
 package org.redisson.api;
 
 import org.redisson.api.ts.TimeSeriesAddArgs;
+import org.redisson.api.ts.TimeSeriesBucket;
+import org.redisson.api.ts.TimeSeriesAggregationArgs;
 
 import java.time.Duration;
 import java.util.Collection;
@@ -684,4 +686,23 @@ public interface RTimeSeries<V, L> extends RExpirable, Iterable<V>, RTimeSeriesA
      * @return labels set
      */
     Set<L> labels(long startTimestamp, long endTimestamp);
+
+    /**
+     * Aggregates the entries of a timestamp range into time buckets, computing every
+     * aggregation asked for in a single pass over the range.
+     * <p>
+     * The values are read as numbers by the script, so the collection's codec has to encode
+     * numbers as text; aggregating under a binary codec, which the default one is, throws
+     * {@link IllegalStateException} naming it. Buckets holding no entry are not reported.
+     * <pre>
+     *     collection.aggregate(TimeSeriesAggregationArgs.between(from, to)
+     *                                                   .bucket(Duration.ofMinutes(5))
+     *                                                   .avg().max().count());
+     * </pre>
+     *
+     * @param args aggregation arguments
+     * @return buckets in ascending timestamp order
+     */
+    Collection<TimeSeriesBucket> aggregate(TimeSeriesAggregationArgs<? super L> args);
+
 }

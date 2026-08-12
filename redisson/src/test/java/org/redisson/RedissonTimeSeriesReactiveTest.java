@@ -3,6 +3,10 @@ package org.redisson;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RTimeSeriesReactive;
 import org.redisson.api.TimeSeriesEntry;
+import java.time.Duration;
+import org.redisson.client.codec.StringCodec;
+import org.redisson.api.ts.TimeSeriesBucket;
+import org.redisson.api.ts.TimeSeriesAggregationArgs;
 
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
@@ -47,5 +51,21 @@ public class RedissonTimeSeriesReactiveTest extends BaseReactiveTest {
         assertThat(sync(t.labels(2, 2))).containsExactlyInAnyOrder("mem");
         assertThat(sync(t.removeRangeByLabel(0, 10, "cpu"))).isEqualTo(1);
     }
-    
+
+    @Test
+    public void testAggregate() {
+        RTimeSeriesReactive<String, String> t = redisson.getTimeSeries("agg", StringCodec.INSTANCE);
+        sync(t.add(1, "10"));
+        sync(t.add(2, "20"));
+        sync(t.add(500, "30"));
+
+        Collection<TimeSeriesBucket> buckets = sync(t.aggregate(
+                TimeSeriesAggregationArgs.<String>between(0, 1000)
+                        .bucket(Duration.ofMillis(100))
+                        .avg().count()));
+
+        assertThat(buckets).hasSize(2);
+        assertThat(buckets.iterator().next().getAvg()).isEqualTo(15.0);
+    }
+
 }

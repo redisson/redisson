@@ -1,14 +1,24 @@
 package org.redisson;
 
+import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.DoubleCodec;
+import org.redisson.client.codec.IntegerCodec;
+import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.api.RScript;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RTimeSeries;
 import org.redisson.api.ts.TimeSeriesAddArgs;
+import org.assertj.core.data.Offset;
+import java.util.List;
+import org.redisson.api.ts.TimeSeriesBucket;
+import org.redisson.api.ts.TimeSeriesAggregationArgs;
+import org.redisson.api.ts.TimeSeriesAggregation;
 import org.redisson.api.TimeSeriesEntry;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -17,6 +27,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  *
@@ -1410,6 +1421,342 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
         assertThat(t.lastTimestamp()).isEqualTo(100);
         assertThat(t.firstEntry()).isEqualTo(new TimeSeriesEntry<>(100, "live"));
         assertThat(t.first(5)).containsExactly("live");
+    }
+
+    private RTimeSeries<String, String> numeric(String name) {
+        return redisson.getTimeSeries(name, StringCodec.INSTANCE);
+    }
+
+    @Test
+    public void testAggregate() {
+        RTimeSeries<String, String> t = numeric("test");
+        t.add(0, "1");
+        t.add(10, "3");
+        t.add(20, "5");
+        t.add(100, "10");
+        t.add(150, "20");
+
+        List<TimeSeriesBucket> buckets = new ArrayList<>(t.aggregate(
+                TimeSeriesAggregationArgs.<String>between(0, 200)
+                        .bucket(Duration.ofMillis(100))
+                        .count().sum().avg().min().max().valueRange().first().last()));
+
+        assertThat(buckets).hasSize(2);
+
+        TimeSeriesBucket first = buckets.get(0);
+        assertThat(first.getTimestamp()).isZero();
+        assertThat(first.getCount()).isEqualTo(3.0);
+        assertThat(first.getSum()).isEqualTo(9.0);
+        assertThat(first.getAvg()).isEqualTo(3.0);
+        assertThat(first.getMin()).isEqualTo(1.0);
+        assertThat(first.getMax()).isEqualTo(5.0);
+        assertThat(first.getValueRange()).isEqualTo(4.0);
+        assertThat(first.getFirst()).isEqualTo(1.0);
+        assertThat(first.getLast()).isEqualTo(5.0);
+
+        TimeSeriesBucket second = buckets.get(1);
+        assertThat(second.getTimestamp()).isEqualTo(100);
+        assertThat(second.getCount()).isEqualTo(2.0);
+        assertThat(second.getAvg()).isEqualTo(15.0);
+    }
+
+    @Test
+    public void testAggregateReportsOnlyWhatWasAskedFor() {
+        RTimeSeries<String, String> t = numeric("test");
+        t.add(1, "4");
+
+        TimeSeriesBucket bucket = t.aggregate(TimeSeriesAggregationArgs.<String>between(0, 10)
+                .bucket(Duration.ofMillis(10)).avg()).iterator().next();
+
+        assertThat(bucket.getAvg()).isEqualTo(4.0);
+        assertThat(bucket.getMax()).isNull();
+        assertThat(bucket.get(TimeSeriesAggregation.SUM)).isNull();
+        assertThat(bucket.getValues()).containsOnlyKeys(TimeSeriesAggregation.AVG);
+    }
+
+    @Test
+    public void testAggregateSkipsEmptyBuckets() {
+        RTimeSeries<String, String> t = numeric("test");
+        t.add(0, "1");
+        t.add(5000, "2");
+
+        List<TimeSeriesBucket> buckets = new ArrayList<>(t.aggregate(
+                TimeSeriesAggregationArgs.<String>between(0, 10000)
+                        .bucket(Duration.ofMillis(100)).count()));
+
+        assertThat(buckets).hasSize(2);
+        assertThat(buckets.get(0).getTimestamp()).isZero();
+        assertThat(buckets.get(1).getTimestamp()).isEqualTo(5000);
+    }
+
+    @Test
+    public void testAggregateAlignment() {
+        RTimeSeries<String, String> t = numeric("test");
+        for (int ts = 0; ts < 100; ts += 10) {
+            t.add(ts, Integer.toString(ts));
+        }
+
+        assertThat(t.aggregate(TimeSeriesAggregationArgs.<String>between(0, 100)
+                .bucket(Duration.ofMillis(50)).count()))
+                .extracting(TimeSeriesBucket::getTimestamp)
+                .containsExactly(0L, 50L);
+
+        // shifting the alignment moves the boundaries with it
+        assertThat(t.aggregate(TimeSeriesAggregationArgs.<String>between(0, 100)
+                .bucket(Duration.ofMillis(50)).alignTo(25).count()))
+                .extracting(TimeSeriesBucket::getTimestamp)
+                .containsExactly(-25L, 25L, 75L);
+    }
+
+    @Test
+    public void testAggregateNegativeTimestamps() {
+        RTimeSeries<String, String> t = numeric("test");
+        t.add(-30, "1");
+        t.add(-10, "2");
+        t.add(10, "3");
+
+        assertThat(t.aggregate(TimeSeriesAggregationArgs.<String>between(-100, 100)
+                .bucket(Duration.ofMillis(20)).count()))
+                .extracting(TimeSeriesBucket::getTimestamp)
+                .containsExactly(-40L, -20L, 0L);
+    }
+
+    @Test
+    public void testAggregateFilterByValue() {
+        RTimeSeries<String, String> t = numeric("test");
+        for (int i = 0; i < 10; i++) {
+            t.add(i, Integer.toString(i));
+        }
+
+        TimeSeriesBucket bucket = t.aggregate(TimeSeriesAggregationArgs.<String>between(0, 100)
+                .bucket(Duration.ofMillis(100))
+                .filterByValue(3, 6)
+                .count().min().max()).iterator().next();
+
+        assertThat(bucket.getCount()).isEqualTo(4.0);
+        assertThat(bucket.getMin()).isEqualTo(3.0);
+        assertThat(bucket.getMax()).isEqualTo(6.0);
+
+        // a filter that matches nothing leaves no bucket behind
+        assertThat(t.aggregate(TimeSeriesAggregationArgs.<String>between(0, 100)
+                .bucket(Duration.ofMillis(100)).filterByValue(100, 200).count())).isEmpty();
+    }
+
+    @Test
+    public void testAggregateFilterByLabel() {
+        RTimeSeries<String, String> t = numeric("test");
+        t.add(1, "10", "cpu");
+        t.add(2, "20", "mem");
+        t.add(3, "30", "cpu");
+        t.add(4, "40");
+
+        assertThat(t.aggregate(TimeSeriesAggregationArgs.<String>between(0, 100)
+                .bucket(Duration.ofMillis(100)).label("cpu").sum().count())
+                .iterator().next().getSum()).isEqualTo(40.0);
+
+        assertThat(t.aggregate(TimeSeriesAggregationArgs.<String>between(0, 100)
+                .bucket(Duration.ofMillis(100)).label(null).sum())
+                .iterator().next().getSum()).isEqualTo(40.0);
+
+        assertThat(t.aggregate(TimeSeriesAggregationArgs.<String>between(0, 100)
+                .bucket(Duration.ofMillis(100)).label("nope").count())).isEmpty();
+    }
+
+    @Test
+    public void testAggregateVariance() {
+        RTimeSeries<String, String> t = numeric("test");
+        for (String v : new String[]{"2", "4", "4", "4", "5", "5", "7", "9"}) {
+            t.add(t.size(), v);
+        }
+
+        TimeSeriesBucket b = t.aggregate(TimeSeriesAggregationArgs.<String>between(0, 100)
+                .bucket(Duration.ofMillis(100))
+                .stdDevPopulation().stdDevSample().variancePopulation().varianceSample())
+                .iterator().next();
+
+        assertThat(b.getStdDevPopulation()).isEqualTo(2.0);
+        assertThat(b.getVariancePopulation()).isEqualTo(4.0);
+        assertThat(b.getVarianceSample()).isCloseTo(32.0 / 7.0, Offset.offset(1e-12));
+        assertThat(b.getStdDevSample()).isCloseTo(Math.sqrt(32.0 / 7.0), Offset.offset(1e-12));
+    }
+
+    @Test
+    public void testAggregateSampleVarianceOfOneValueIsUndefined() {
+        RTimeSeries<String, String> t = numeric("test");
+        t.add(1, "5");
+
+        TimeSeriesBucket b = t.aggregate(TimeSeriesAggregationArgs.<String>between(0, 100)
+                .bucket(Duration.ofMillis(100))
+                .stdDevPopulation().stdDevSample().variancePopulation().varianceSample())
+                .iterator().next();
+
+        assertThat(b.getStdDevPopulation()).isZero();
+        assertThat(b.getVariancePopulation()).isZero();
+        assertThat(b.getStdDevSample()).isNull();
+        assertThat(b.getVarianceSample()).isNull();
+    }
+
+    @Test
+    public void testAggregateKeepsPrecisionOnLargeCloseValues() {
+        RTimeSeries<String, String> t = numeric("test");
+        // a sum of squares would lose these entirely
+        t.add(1, "1000000000.1");
+        t.add(2, "1000000000.2");
+        t.add(3, "1000000000.3");
+
+        TimeSeriesBucket b = t.aggregate(TimeSeriesAggregationArgs.<String>between(0, 100)
+                .bucket(Duration.ofMillis(100)).avg().variancePopulation())
+                .iterator().next();
+
+        assertThat(b.getAvg()).isCloseTo(1000000000.2, Offset.offset(1e-6));
+        assertThat(b.getVariancePopulation()).isCloseTo(0.0066666, Offset.offset(1e-6));
+    }
+
+    @Test
+    public void testAggregateIgnoresExpiredEntries() throws InterruptedException {
+        RTimeSeries<String, String> t = numeric("test");
+        t.add(1, "10");
+        t.add(2, "20", Duration.ofMillis(300));
+        assertThat(t.aggregate(TimeSeriesAggregationArgs.<String>between(0, 100)
+                .bucket(Duration.ofMillis(100)).count()).iterator().next().getCount())
+                .isEqualTo(2.0);
+
+        Thread.sleep(500);
+        assertThat(t.aggregate(TimeSeriesAggregationArgs.<String>between(0, 100)
+                .bucket(Duration.ofMillis(100)).count().sum()).iterator().next().getSum())
+                .isEqualTo(10.0);
+    }
+
+    @Test
+    public void testAggregateRejectsABinaryCodec() {
+        // the default codec writes a number as binary, which the script cannot read
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        t.add(1, "10");
+
+        assertThatThrownBy(() -> t.aggregate(TimeSeriesAggregationArgs.<String>between(0, 100)
+                .bucket(Duration.ofMillis(100)).avg()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("codec")
+                .hasMessageContaining("StringCodec");
+    }
+
+    @Test
+    public void testAggregateRejectsAValueThatIsNotAFiniteNumber() {
+        for (String bad : new String[]{"not a number", "inf", "-inf", "nan", "infinity"}) {
+            RTimeSeries<String, String> t = numeric("test" + bad.hashCode());
+            t.add(1, "10");
+            t.add(2, bad);
+
+            // tonumber() reads inf and nan, which would quietly poison the whole bucket
+            assertThatThrownBy(() -> t.aggregate(TimeSeriesAggregationArgs.<String>between(0, 100)
+                    .bucket(Duration.ofMillis(100)).avg()))
+                    .hasMessageContaining("is not a finite number");
+        }
+    }
+
+    @Test
+    public void testAggregateReportsAnOverflowJavaCanRead() {
+        RTimeSeries<String, String> t = numeric("test");
+        t.add(1, "1e308");
+        t.add(2, "1e308");
+
+        TimeSeriesBucket b = t.aggregate(TimeSeriesAggregationArgs.<String>between(0, 100)
+                .bucket(Duration.ofMillis(100)).sum().avg()).iterator().next();
+
+        assertThat(b.getSum()).isEqualTo(Double.POSITIVE_INFINITY);
+        // the sum overflowed but the running mean did not
+        assertThat(b.getAvg()).isEqualTo(1e308);
+    }
+
+    @Test
+    public void testAggregateAvgSurvivesASumThatCannotBeRepresented() {
+        RTimeSeries<String, String> t = numeric("test");
+        for (int i = 0; i < 20; i++) {
+            t.add(i, "1e307");
+        }
+
+        assertThat(t.aggregate(TimeSeriesAggregationArgs.<String>between(0, 100)
+                .bucket(Duration.ofMillis(100)).avg()).iterator().next().getAvg())
+                .isEqualTo(1e307);
+    }
+
+    @Test
+    public void testAggregateAtTheBottomOfTheLongRange() {
+        RTimeSeries<String, String> t = numeric("test");
+        t.add(Long.MIN_VALUE, "1");
+
+        assertThat(t.aggregate(TimeSeriesAggregationArgs.<String>between(Long.MIN_VALUE, 0)
+                .bucket(Duration.ofHours(1)).count()))
+                .extracting(TimeSeriesBucket::getTimestamp)
+                .containsExactly(Long.MIN_VALUE);
+    }
+
+    @Test
+    public void testAggregateBucketMustSurviveConversionToMillis() {
+        RTimeSeries<String, String> t = numeric("test");
+        t.add(1, "1");
+
+        // neither zero nor negative, but it truncates to zero milliseconds
+        assertThatThrownBy(() -> t.aggregate(TimeSeriesAggregationArgs.<String>between(0, 100)
+                .bucket(Duration.ofNanos(999_999)).count()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("millisecond");
+
+        // and one too large to convert is simply a very wide bucket
+        assertThat(t.aggregate(TimeSeriesAggregationArgs.<String>between(0, 100)
+                .bucket(Duration.ofSeconds(Long.MAX_VALUE)).count())).hasSize(1);
+    }
+
+    @Test
+    public void testAggregateUnderEveryCodecTheMessageRecommends() {
+        // the entries are written as text whatever the reading collection's codec is
+        RTimeSeries<String, String> writer = redisson.getTimeSeries("codecs", StringCodec.INSTANCE);
+        writer.add(0, "1.5");
+        writer.add(1, "2.5");
+
+        for (Codec codec : new Codec[]{StringCodec.INSTANCE, DoubleCodec.INSTANCE,
+                                       LongCodec.INSTANCE, IntegerCodec.INSTANCE}) {
+            RTimeSeries<Object, Object> t = redisson.getTimeSeries("codecs", codec);
+            TimeSeriesBucket b = t.aggregate(TimeSeriesAggregationArgs.between(0, 10)
+                    .bucket(Duration.ofSeconds(1)).count().avg()).iterator().next();
+            assertThat(b.getCount()).as(codec.getClass().getSimpleName()).isEqualTo(2.0);
+            assertThat(b.getAvg()).as(codec.getClass().getSimpleName()).isEqualTo(2.0);
+        }
+    }
+
+    @Test
+    public void testAggregateRejectsANullAggregation() {
+        assertThatThrownBy(() -> TimeSeriesAggregationArgs.<String>between(0, 100)
+                .aggregations(TimeSeriesAggregation.AVG, null))
+                .isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    public void testAggregateArgumentValidation() {
+        RTimeSeries<String, String> t = numeric("test");
+        t.add(1, "1");
+
+        assertThatThrownBy(() -> t.aggregate(TimeSeriesAggregationArgs.<String>between(0, 100).avg()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("bucket");
+        assertThatThrownBy(() -> t.aggregate(TimeSeriesAggregationArgs.<String>between(0, 100)
+                .bucket(Duration.ZERO).avg()))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> t.aggregate(TimeSeriesAggregationArgs.<String>between(0, 100)
+                .bucket(Duration.ofMillis(10))))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("aggregation");
+    }
+
+    @Test
+    public void testAggregateEmptyRangeAndEmptyCollection() {
+        RTimeSeries<String, String> t = numeric("test");
+        assertThat(t.aggregate(TimeSeriesAggregationArgs.<String>between(0, 100)
+                .bucket(Duration.ofMillis(10)).avg())).isEmpty();
+
+        t.add(500, "1");
+        assertThat(t.aggregate(TimeSeriesAggregationArgs.<String>between(0, 100)
+                .bucket(Duration.ofMillis(10)).avg())).isEmpty();
     }
 
 }

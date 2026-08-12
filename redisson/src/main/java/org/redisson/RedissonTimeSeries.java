@@ -16,6 +16,7 @@
 package org.redisson;
 
 import org.redisson.api.ObjectListener;
+import io.netty.buffer.ByteBuf;
 import org.redisson.api.RFuture;
 import org.redisson.api.RTimeSeries;
 import org.redisson.api.TimeSeriesEntry;
@@ -24,6 +25,10 @@ import org.redisson.api.listener.ScoredSortedSetRemoveListener;
 import org.redisson.api.listener.TrackingListener;
 import org.redisson.api.ts.TimeSeriesAddArgs;
 import org.redisson.api.ts.TimeSeriesAddParams;
+import org.redisson.api.ts.TimeSeriesAggregation;
+import org.redisson.api.ts.TimeSeriesAggregationArgs;
+import org.redisson.api.ts.TimeSeriesAggregationParams;
+import org.redisson.api.ts.TimeSeriesBucket;
 import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
@@ -39,6 +44,7 @@ import org.redisson.eviction.EvictionScheduler;
 import org.redisson.iterator.RedissonBaseIterator;
 import org.redisson.misc.CompletableFutureWrapper;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletionStage;
@@ -311,6 +317,17 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
     private static final int LABEL_MATCH = 1;
     private static final int LABEL_ABSENT = 2;
 
+    /*
+     * Each script that filters reads the mode and the label into labelMode and labelValue
+     * first; the argument positions differ per script, so they are spelled out there rather
+     * than derived. Any other value of labelMode, including none at all, means no filter.
+     *
+     * Matching is on the encoded bytes, which asks nothing of the label type beyond a codec
+     * that encodes equal labels identically - the same assumption looking a member up by
+     * value already makes. Expects label to have been decoded by DECODE_LABEL already, where
+     * an absent label is the number 0 and a present one is a string, so a label can never
+     * compare equal to the absent marker.
+     */
     private static final String MATCHES_LABEL =
              "local matches = true; " +
              "if labelMode == '1' then " +
@@ -319,6 +336,24 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
                  "matches = label == 0; " +
              "end; ";
 
+    /*
+     * Entry ids are a zero padded counter, shared by the whole collection and held in
+     * KEYS[3]. Ids are unique because the counter never repeats, and members sharing a
+     * score compare equal up to the id, so duplicates of one timestamp read back in the
+     * order they were added.
+     *
+     * INCRBYFLOAT is used rather than INCR because it answers with a bulk string. An
+     * integer reply would be handed to Lua as a double, exact only to 2^53, and past that
+     * consecutive values collapse onto one another and ids repeat. Keeping the counter as
+     * text means it is never converted at all, and Redis does the arithmetic in long
+     * double, which stays exact well beyond a signed 64 bit range.
+     *
+     * How far beyond is a property of the platform, so rather than predict the limit the
+     * counter is checked for having actually moved: once precision runs out an increment
+     * leaves the value unchanged, and that is the only outcome that would issue an id
+     * twice. A value too long to pad is refused as well, since a wider id would sort
+     * before a narrower one and invert the order.
+     */
     static final int SEQUENCE_WIDTH = 20;
 
     private static final String NEXT_ID =
@@ -382,6 +417,14 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
                  "end; " +
              "end; ";
 
+    /*
+     * Only entries that were already present can fall outside the window, because an entry
+     * below the cutoff is never written, so what a call reports as added is what it left
+     * behind. Bounded, so that applying a retention to a collection that has long outgrown
+     * it converges over the following additions instead of turning one addition into an
+     * unbounded delete. %.0f rather than %d because a cutoff beyond the range of a signed
+     * 64 bit integer would wrap.
+     */
     private static final String RETENTION_TRIM =
              "if cutoff ~= nil then " +
                  "local stale = redis.call('zrangebyscore', KEYS[1], '-inf', " +
@@ -491,6 +534,16 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
         params.add(now);
         for (TimeSeriesAddArgs<V, ? super L> entry : entries) {
             TimeSeriesAddParams<V, ?> args = (TimeSeriesAddParams<V, ?>) entry;
+            // worked out before anything is encoded, so a time to live that cannot be
+            // converted cannot strand a buffer that was allocated for an earlier field
+            Duration ttl = args.getTimeToLive();
+            long expiration = now + TimeUnit.DAYS.toMillis(365 * 100);
+            if (ttl != null && !ttl.isNegative() && ttl.getSeconds() < Long.MAX_VALUE / 1000) {
+                long millis = ttl.toMillis();
+                if (millis > 0) {
+                    expiration = now + millis;
+                }
+            }
             params.add(args.getTimestamp());
             if (args.getLabel() == null) {
                 params.add(2);
@@ -503,12 +556,7 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
             } else {
                 encode(params, args.getLabel());
             }
-            Duration ttl = args.getTimeToLive();
-            if (ttl == null || ttl.isZero() || ttl.isNegative()) {
-                params.add(now + TimeUnit.DAYS.toMillis(365 * 100));
-            } else {
-                params.add(now + ttl.toMillis());
-            }
+            params.add(expiration);
         }
         return params.toArray();
     }
@@ -569,6 +617,143 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
                 ADD_OR_REPLACE,
                 Arrays.asList(getRawName(), timeoutSetName, sequenceName),
                 encodeArgs(entries));
+    }
+
+    private volatile Boolean numericCodec;
+
+    /*
+     * The script reads the stored value with tonumber(), so the codec has to encode a number
+     * as text. Probing what it actually does beats listing class names: it admits any codec
+     * that qualifies, including one written by the caller, and rejects a binary one such as
+     * the default.
+     *
+     * It only refuses a codec that encodes a number into something that is demonstrably not
+     * one. A codec that cannot encode a number at all says nothing about what is stored -
+     * ByteArrayCodec is handed its bytes ready made - so those are left to the script, which
+     * names the timestamp of the first value it cannot read.
+     */
+    private void checkNumericCodec() {
+        Boolean numeric = numericCodec;
+        if (numeric == null) {
+            numeric = probeNumericCodec();
+            numericCodec = numeric;
+        }
+        if (!numeric) {
+            throw new IllegalStateException(
+                    "Aggregation of '" + getName() + "' requires a codec that encodes numbers as text. "
+                  + "The configured codec (" + codec.getClass().getName() + ") encodes them as "
+                  + "something else. Use StringCodec, DoubleCodec, LongCodec or IntegerCodec.");
+        }
+    }
+
+    private boolean probeNumericCodec() {
+        for (Number probe : new Number[]{1.5d, -2.25d}) {
+            String written;
+            ByteBuf encoded = null;
+            try {
+                encoded = encode(probe);
+                written = encoded.toString(StandardCharsets.US_ASCII).trim();
+            } catch (Exception e) {
+                // it cannot be handed a number at all, which says nothing about what the
+                // collection holds, so leave the verdict to the script
+                return true;
+            } finally {
+                if (encoded != null) {
+                    encoded.release();
+                }
+            }
+            try {
+                if (Double.parseDouble(written) != probe.doubleValue()) {
+                    return false;
+                }
+            } catch (NumberFormatException e) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public Collection<TimeSeriesBucket> aggregate(TimeSeriesAggregationArgs<? super L> args) {
+        return get(aggregateAsync(args));
+    }
+
+    @Override
+    public RFuture<Collection<TimeSeriesBucket>> aggregateAsync(TimeSeriesAggregationArgs<? super L> args) {
+        checkNumericCodec();
+
+        TimeSeriesAggregationParams<?> params = (TimeSeriesAggregationParams<?>) args;
+        // the script works in milliseconds, so the interval has to survive the conversion:
+        // a sub millisecond one is neither zero nor negative but truncates to zero
+        Duration bucket = params.getBucket();
+        long bucketMillis = 0;
+        if (bucket != null && !bucket.isNegative()) {
+            if (bucket.getSeconds() >= Long.MAX_VALUE / 1000) {
+                bucketMillis = Long.MAX_VALUE;
+            } else {
+                bucketMillis = bucket.toMillis();
+            }
+        }
+        if (bucketMillis <= 0) {
+            throw new IllegalArgumentException(
+                    "bucket interval should be defined and at least one millisecond");
+        }
+        List<TimeSeriesAggregation> aggregations = params.getAggregations();
+        if (aggregations.isEmpty()) {
+            throw new IllegalArgumentException("at least one aggregation should be defined");
+        }
+
+        int labelMode = LABEL_NONE;
+        if (params.isLabelFiltered()) {
+            labelMode = labelMode(params.getLabel());
+        }
+        List<Object> codes = new ArrayList<>(aggregations.size());
+        for (TimeSeriesAggregation aggregation : aggregations) {
+            codes.add(aggregation.ordinal() + 1);
+        }
+
+        // the encoded label owns a buffer, so nothing that can throw comes after it
+        List<Object> args0 = new ArrayList<>();
+        args0.add(System.currentTimeMillis());
+        args0.add(params.getStartTimestamp());
+        args0.add(params.getEndTimestamp());
+        args0.add(0);
+        args0.add(0);
+        args0.add(labelMode);
+        args0.add(bucketMillis);
+        args0.add(params.getAlignment());
+        args0.add(Boolean.compare(params.isValueFiltered(), false));
+        args0.add(params.getMinValue());
+        args0.add(params.getMaxValue());
+        args0.addAll(codes);
+        args0.add(6, encodeLabelArg(params.getLabel(), labelMode));
+
+        // the reply is text this script wrote, so it is read back as text. The label argument
+        // is already encoded with the collection's codec and passes through untouched.
+        RFuture<List<Object>> future = commandExecutor.evalReadAsync(getRawName(), StringCodec.INSTANCE,
+                RedisCommands.EVAL_LIST, AGGREGATE_RANGE,
+                Arrays.asList(getRawName(), timeoutSetName),
+                args0.toArray());
+        CompletionStage<Collection<TimeSeriesBucket>> f = future.thenApply(rows ->
+                decodeBuckets(rows, aggregations));
+        return new CompletableFutureWrapper<>(f);
+    }
+
+    private Collection<TimeSeriesBucket> decodeBuckets(List<Object> rows,
+                                                       List<TimeSeriesAggregation> aggregations) {
+        int stride = aggregations.size() + 1;
+        List<TimeSeriesBucket> buckets = new ArrayList<>(rows.size() / stride);
+        for (int i = 0; i + stride <= rows.size(); i += stride) {
+            Map<TimeSeriesAggregation, Double> values = new EnumMap<>(TimeSeriesAggregation.class);
+            for (int j = 0; j < aggregations.size(); j++) {
+                String value = rows.get(i + 1 + j).toString();
+                if (!value.isEmpty()) {
+                    values.put(aggregations.get(j), Double.parseDouble(value));
+                }
+            }
+            buckets.add(new TimeSeriesBucket(Long.parseLong(rows.get(i).toString()), values));
+        }
+        return buckets;
     }
 
     @Override
@@ -923,6 +1108,27 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
     }
 
     /*
+     * Shared prologue for head/tail lookups.
+     *
+     * Traversal order comes from the main set (KEYS[1]), which is scored by timestamp.
+     * The timeout set (KEYS[2]) is scored by expiration time and is consulted only to
+     * skip already expired entries - it never defines the order.
+     *
+     * Collects into `members` and `scores`. ARGV[1] is now, ARGV[2] the direction,
+     * ARGV[3] the limit. A limit of 0 collects nothing, a negative limit collects everything.
+     *
+     * Three strategies, picked by how many entries are expired but not yet evicted:
+     *
+     *  - nothing expired (always so for entries added without a time to live): a single
+     *    ranged read, no per entry lookup;
+     *  - fewer live entries than expired ones: read the live entries straight out of the
+     *    timeout set and order them by timestamp, so a large backlog of expired entries
+     *    costs nothing;
+     *  - otherwise: page through the main set by index, skipping expired entries. Paging
+     *    is by index rather than by score, so entries sharing a timestamp are never
+     *    skipped when a batch boundary falls between them.
+     */
+    /*
      * A score is a double, so a timestamp at the very top of the long range comes back as
      * 2^63, which %d wraps to a negative and %.0f renders as a number no long can hold. What
      * was stored in that case was Long.MAX_VALUE, so that is what is reported.
@@ -931,6 +1137,9 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
              "local function formatTimestamp(score) " +
                  "if score >= 9223372036854775808 then " +
                      "return '9223372036854775807'; " +
+                 "end; " +
+                 "if score <= -9223372036854775808 then " +
+                     "return '-9223372036854775808'; " +
                  "end; " +
                  "return string.format('%.0f', score); " +
              "end; ";
@@ -952,10 +1161,24 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
      * ARGV: 1 now, 2 and 3 the window, 4 the limit with 0 meaning no limit and a negative
      * meaning no results, 5 the direction, 6 the label mode and 7 the label.
      */
-    private static final String COLLECT_RANGE = FORMAT_TIMESTAMP +
+    /*
+     * What the walk does with a row it has accepted. Keeping it is the usual answer, and the
+     * count it returns is what the walk compares the limit against. An aggregation folds the
+     * row into its bucket instead and returns -1, so a window is never held whole - though
+     * its buckets are, and a bucket interval far smaller than the spacing of the entries
+     * gives one bucket per entry.
+     */
+    private static final String KEEP_MEMBERS = FORMAT_TIMESTAMP +
              "local result = {}; " +
              "local members = {}; " +
              "local scores = {}; " +
+             "local function keep(member, score) " +
+                 "table.insert(members, member); " +
+                 "table.insert(scores, score); " +
+                 "return #members; " +
+             "end; ";
+
+    private static final String COLLECT_RANGE =
              "local labelMode = ARGV[6]; " +
              "local labelValue = ARGV[7]; " +
              "local function collect() " +
@@ -1009,9 +1232,7 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
                              "end; " +
                              MATCHES_LABEL +
                              "if matches then " +
-                                 "table.insert(members, values[i]); " +
-                                 "table.insert(scores, values[i+1]); " +
-                                 "if #members == limit then " +
+                                 "if keep(values[i], values[i+1]) == limit then " +
                                      "return; " +
                                  "end; " +
                              "end; " +
@@ -1052,20 +1273,150 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
                  "redis.call('zrem', KEYS[2], members[i]); " +
              "end; ";
 
-    private static final String COLLECT_VALUES = COLLECT_RANGE + UNPACK_VALUES;
-    private static final String COLLECT_ENTRIES = COLLECT_RANGE + UNPACK_ENTRIES;
-    private static final String COLLECT_TIMESTAMPS = COLLECT_RANGE + UNPACK_TIMESTAMPS;
-    private static final String POLL_VALUES = COLLECT_RANGE + REMOVE_COLLECTED + UNPACK_VALUES;
-    private static final String POLL_ENTRIES = COLLECT_RANGE + REMOVE_COLLECTED + UNPACK_ENTRIES;
+    private static final String COLLECT_VALUES = KEEP_MEMBERS + COLLECT_RANGE + UNPACK_VALUES;
+    private static final String COLLECT_ENTRIES = KEEP_MEMBERS + COLLECT_RANGE + UNPACK_ENTRIES;
+    private static final String COLLECT_TIMESTAMPS = KEEP_MEMBERS + COLLECT_RANGE + UNPACK_TIMESTAMPS;
+    private static final String POLL_VALUES = KEEP_MEMBERS + COLLECT_RANGE + REMOVE_COLLECTED + UNPACK_VALUES;
+    private static final String POLL_ENTRIES = KEEP_MEMBERS + COLLECT_RANGE + REMOVE_COLLECTED + UNPACK_ENTRIES;
+
+    /*
+     * Folds the rows the walk accepts into buckets, in one pass, computing every aggregation
+     * that was asked for. The accumulators are the same eight numbers whichever aggregations
+     * those are, so asking for more of them costs nothing beyond the reply.
+     *
+     * Mean and sum of squared deviations are kept by Welford's method rather than as a sum of
+     * squares, which loses most of its significant digits once the values are large and close
+     * together.
+     *
+     * ARGV, after the seven the walk reads: 8 the bucket width, 9 the alignment, 10 whether a
+     * value filter is applied with 11 and 12 its bounds, and 13 onwards the aggregation codes
+     * in the order to report them.
+     */
+    private static final String AGGREGATE = FORMAT_TIMESTAMP +
+             // %g renders a non-finite number the way C does, which Java cannot read back
+             "local function formatNumber(value) " +
+                 "if value ~= value then " +
+                     "return 'NaN'; " +
+                 "end; " +
+                 "if value == math.huge then " +
+                     "return 'Infinity'; " +
+                 "end; " +
+                 "if value == -math.huge then " +
+                     "return '-Infinity'; " +
+                 "end; " +
+                 "return string.format('%.17g', value); " +
+             "end; " +
+             "local result = {}; " +
+             "local bucketSize = tonumber(ARGV[8]); " +
+             "local alignment = tonumber(ARGV[9]); " +
+             "local valueFilter = ARGV[10] == '1'; " +
+             "local minValue = tonumber(ARGV[11]); " +
+             "local maxValue = tonumber(ARGV[12]); " +
+             "local index, count, sum, minv, maxv, firstv, lastv, mean, m2; " +
+
+             "local function close() " +
+                 "if index == nil then " +
+                     "return; " +
+                 "end; " +
+                 "table.insert(result, formatTimestamp(alignment + index * bucketSize)); " +
+                 "for k = 13, #ARGV do " +
+                     "local code = tonumber(ARGV[k]); " +
+                     "local value; " +
+                     "if code == 1 then " +
+                         "value = count; " +
+                     "elseif code == 2 then " +
+                         "value = sum; " +
+                     "elseif code == 3 then " +
+                         "value = sum / count; " +
+                         // the running mean is worth less than sum/count when both work, but
+                         // it is still finite when the sum has overflowed
+                         "if value ~= value or value == math.huge or value == -math.huge then " +
+                             "value = mean; " +
+                         "end; " +
+                     "elseif code == 4 then " +
+                         "value = minv; " +
+                     "elseif code == 5 then " +
+                         "value = maxv; " +
+                     "elseif code == 6 then " +
+                         "value = maxv - minv; " +
+                     "elseif code == 7 then " +
+                         "value = firstv; " +
+                     "elseif code == 8 then " +
+                         "value = lastv; " +
+                     "elseif code == 9 then " +
+                         "value = math.sqrt(m2 / count); " +
+                     "elseif code == 11 then " +
+                         "value = m2 / count; " +
+                     "elseif code == 10 and count > 1 then " +
+                         "value = math.sqrt(m2 / (count - 1)); " +
+                     "elseif code == 12 and count > 1 then " +
+                         "value = m2 / (count - 1); " +
+                     "end; " +
+                     // an aggregation a bucket cannot define is reported as absent
+                     "if value == nil then " +
+                         "table.insert(result, ''); " +
+                     "else " +
+                         "table.insert(result, formatNumber(value)); " +
+                     "end; " +
+                 "end; " +
+             "end; " +
+
+             "local function keep(member, score) " +
+                 "local n, t, val = struct.unpack('BBc0Lc0Lc0', member); " +
+                 "local value = tonumber(val); " +
+                 // tonumber also reads 'inf' and 'nan', which would quietly poison every
+                 // aggregation of the bucket the entry lands in
+                 "if value == nil or value ~= value " +
+                         "or value == math.huge or value == -math.huge then " +
+                     "error('RTimeSeries value at timestamp ' " +
+                            ".. formatTimestamp(tonumber(score)) .. ' is not a finite number'); " +
+                 "end; " +
+                 "if valueFilter and (value < minValue or value > maxValue) then " +
+                     "return -1; " +
+                 "end; " +
+                 "local bucket = math.floor((tonumber(score) - alignment) / bucketSize); " +
+                 "if bucket ~= index then " +
+                     "close(); " +
+                     "index = bucket; " +
+                     "count, sum, minv, maxv, firstv, mean, m2 = 0, 0, value, value, value, 0, 0; " +
+                 "end; " +
+                 "count = count + 1; " +
+                 "sum = sum + value; " +
+                 "if value < minv then " +
+                     "minv = value; " +
+                 "end; " +
+                 "if value > maxv then " +
+                     "maxv = value; " +
+                 "end; " +
+                 "lastv = value; " +
+                 "local delta = value - mean; " +
+                 "mean = mean + delta / count; " +
+                 "m2 = m2 + delta * (value - mean); " +
+                 "return -1; " +
+             "end; ";
+
+    private static final String CLOSE_LAST_BUCKET =
+             "close(); " +
+             "return result;";
+
+    private static final String AGGREGATE_RANGE = AGGREGATE + COLLECT_RANGE + CLOSE_LAST_BUCKET;
 
     private static final long WHOLE_RANGE_START = Long.MIN_VALUE;
     private static final long WHOLE_RANGE_END = Long.MAX_VALUE;
 
+    /*
+     * The walk reads 0 as no limit and a negative as no results, which is what the range
+     * family has always meant. first(count) and its siblings have always meant the opposite
+     * by both, so they are translated here rather than quietly changed.
+     */
     private static int headTailLimit(int count) {
         if (count == 0) {
             return -1;
         }
-        return Math.max(count, 0);
+        if (count < 0) {
+            return 0;
+        }
+        return count;
     }
 
     private <T> RFuture<T> collectAsync(Codec c, RedisCommand<?> command, String script, boolean reverse,

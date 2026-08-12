@@ -16,6 +16,8 @@
 package org.redisson.api;
 
 import org.redisson.api.ts.TimeSeriesAddArgs;
+import org.redisson.api.ts.TimeSeriesBucket;
+import org.redisson.api.ts.TimeSeriesAggregationArgs;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -675,4 +677,24 @@ public interface RTimeSeriesReactive<V, L> extends RExpirableReactive {
      * @return labels set
      */
     Mono<Set<L>> labels(long startTimestamp, long endTimestamp);
+
+    /**
+     * Aggregates the entries of a timestamp range into time buckets, computing every
+     * aggregation asked for in a single pass over the range.
+     * <p>
+     * The values are read as numbers by the script, so the collection's codec has to encode
+     * numbers as text; aggregating under a binary codec, which the default one is, fails with
+     * an {@link IllegalStateException} naming it, delivered wrapped as this API wraps every
+     * failure. Buckets holding no entry are not reported.
+     * <pre>
+     *     collection.aggregate(TimeSeriesAggregationArgs.between(from, to)
+     *                                                   .bucket(Duration.ofMinutes(5))
+     *                                                   .avg().max().count());
+     * </pre>
+     *
+     * @param args aggregation arguments
+     * @return buckets in ascending timestamp order
+     */
+    Mono<Collection<TimeSeriesBucket>> aggregate(TimeSeriesAggregationArgs<? super L> args);
+
 }
