@@ -413,7 +413,9 @@ public abstract class RedissonObject implements RObject {
                            + "end; "
                         + "end; "
                         + "for j = 1, newKeysIndex, 1 do "
+                          +  "if redis.call('exists', KEYS[j]) == 1 then "
                                + "redis.call('renamenx', KEYS[j], KEYS[newKeysIndex + j]); "
+                           + "end; "
                         + "end; "
                         + "return 1;",
                 keys);
