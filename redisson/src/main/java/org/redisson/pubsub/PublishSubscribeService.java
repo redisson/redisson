@@ -41,6 +41,7 @@ import org.slf4j.LoggerFactory;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
@@ -561,7 +562,13 @@ public class PublishSubscribeService {
 
                 int remainFreeAmount = freeEntry.tryAcquire();
                 if (remainFreeAmount == -1) {
-                    throw new IllegalStateException();
+                    freePubSubConnections.getEntries().remove(freeEntry);
+                    freePubSubLock.release();
+                    lock.release();
+                    promise.completeExceptionally(new IllegalStateException(
+                            "Unable to acquire connection for subscription to channel: " + channelNames
+                                    + ". No free subscription slots left on connection: " + freeEntry));
+                    return;
                 }
 
                 PubSubConnectionEntry fe = freeEntry;
@@ -757,29 +764,47 @@ public class PublishSubscribeService {
         }
 
         CompletableFuture<Void> result = new CompletableFuture<>();
+        AtomicBoolean released = new AtomicBoolean();
         BaseRedisPubSubListener listener = new BaseRedisPubSubListener() {
 
             @Override
             public void onStatus(PubSubType type, CharSequence channel) {
                 if (type == topicType && channel.equals(channelName)) {
-                    freePubSubLock.acquire().thenAccept(c -> {
-                        try {
-                            release(ce);
-                        } catch (Exception e) {
-                            result.completeExceptionally(e);
-                        } finally {
-                            freePubSubLock.release();
-                        }
-
-                        result.complete(null);
-                    });
+                    releaseEntry(ce, result, released);
                 }
             }
 
         };
 
+        Timeout ackTimeout = connectionManager.getServiceManager().newTimeout(t -> {
+            if (!result.isDone()) {
+                log.warn("No {} status message received for channel: {}. Releasing subscription lock.",
+                            topicType, channelName);
+                releaseEntry(ce, result, released);
+            }
+        }, config.getSubscriptionTimeout(), TimeUnit.MILLISECONDS);
+        result.whenComplete((r, e) -> ackTimeout.cancel());
+
         ce.unsubscribe(topicType, channelName, listener);
         return result;
+    }
+
+    private void releaseEntry(PubSubConnectionEntry ce, CompletableFuture<Void> result, AtomicBoolean released) {
+        if (!released.compareAndSet(false, true)) {
+            return;
+        }
+
+        freePubSubLock.acquire().thenAccept(c -> {
+            try {
+                release(ce);
+            } catch (Exception e) {
+                result.completeExceptionally(e);
+            } finally {
+                freePubSubLock.release();
+            }
+
+            result.complete(null);
+        });
     }
 
     private void remove(ChannelName channelName, PubSubConnectionEntry entry) {

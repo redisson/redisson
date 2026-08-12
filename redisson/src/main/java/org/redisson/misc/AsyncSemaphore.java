@@ -15,8 +15,10 @@
  */
 package org.redisson.misc;
 
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -47,7 +49,11 @@ public final class AsyncSemaphore {
     }
     
     public void removeListeners() {
-        listeners.clear();
+        // dropping the waiters silently leaves every caller of acquire() hanging forever
+        CompletableFuture<Void> future;
+        while ((future = listeners.poll()) != null) {
+            future.completeExceptionally(new CancellationException("AsyncSemaphore listeners have been removed"));
+        }
     }
 
     public CompletableFuture<Void> acquire() {
@@ -67,11 +73,18 @@ public final class AsyncSemaphore {
             int val = tasksLatch.get();
             if (stackSize.get() > 25 * val
                     && tasksLatch.compareAndSet(val, val+1)) {
-                executorService.submit(() -> {
+                try {
+                    executorService.submit(() -> {
+                        tasksLatch.decrementAndGet();
+                        tryRun();
+                    });
+                    return;
+                } catch (RejectedExecutionException e) {
+                    // the executor is going away. Hand the reservation back and run inline:
+                    // otherwise the permit never reaches a waiter, and the raised latch
+                    // permanently lifts the 25 * tasksLatch threshold this guard depends on
                     tasksLatch.decrementAndGet();
-                    tryRun();
-                });
-                return;
+                }
             }
         }
 
@@ -84,7 +97,10 @@ public final class AsyncSemaphore {
                 CompletableFuture<Void> future = listeners.poll();
                 if (future == null) {
                     counter.incrementAndGet();
-                    return;
+                    if (listeners.isEmpty()) {
+                        return;
+                    }
+                    continue;
                 }
 
                 boolean complete;
@@ -99,6 +115,9 @@ public final class AsyncSemaphore {
                     return;
                 } else {
                     counter.incrementAndGet();
+                    // dead waiter already gave the permit back above; continue instead of
+                    // falling through to the trailing increment, which would double-count it
+                    continue;
                 }
             }
 
@@ -109,7 +128,8 @@ public final class AsyncSemaphore {
     }
 
     public int getCounter() {
-        return counter.get();
+        // the counter goes negative while waiters are queued, which is not a permit count
+        return Math.max(0, counter.get());
     }
 
     public void release() {

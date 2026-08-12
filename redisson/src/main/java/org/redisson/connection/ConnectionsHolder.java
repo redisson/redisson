@@ -206,7 +206,13 @@ public class ConnectionsHolder<T extends RedisConnection> {
         CompletableFuture<T> result = new CompletableFuture<>();
 
         CompletableFuture<Void> f = acquireConnection();
-        f.thenAccept(r -> {
+        f.whenComplete((r, e) -> {
+            if (e != null) {
+                // the wait was cancelled (node down, entry freed), otherwise the caller
+                // would keep waiting on a permit which is never granted
+                result.completeExceptionally(e);
+                return;
+            }
             connectTo(result, command);
         });
         result.whenComplete((r, e) -> {

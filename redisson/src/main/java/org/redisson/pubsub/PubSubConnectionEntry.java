@@ -335,7 +335,7 @@ public class PubSubConnectionEntry {
                 }
 
                 CompletableFuture<Void> ff = CompletableFuture.allOf(ffs.toArray(new CompletableFuture[0]));
-                ff.thenAccept(r -> {
+                ff.whenComplete((r, ex) -> {
                     lock.release();
                 });
             } else {
