@@ -29,4 +29,23 @@ public class RedissonTimeSeriesRxTest extends BaseRxTest {
                                         new TimeSeriesEntry<>(4, "40"));
     }
 
+    @Test
+    public void testLabels() {
+        RTimeSeriesRx<String, String> t = redisson.getTimeSeries("test");
+        sync(t.add(1, "a1", "cpu"));
+        sync(t.add(2, "b1", "mem"));
+        sync(t.add(3, "plain"));
+
+        assertThat(sync(t.rangeByLabel(0, 10, "cpu"))).containsExactly("a1");
+        assertThat(sync(t.rangeReversedByLabel(0, 10, "cpu", 1))).containsExactly("a1");
+        assertThat(sync(t.entryRangeByLabel(0, 10, "mem")))
+                .containsExactly(new TimeSeriesEntry<>(2, "b1", "mem"));
+        assertThat(sync(t.entryRangeReversedByLabel(0, 10, "mem", 1)))
+                .containsExactly(new TimeSeriesEntry<>(2, "b1", "mem"));
+        assertThat(sync(t.rangeByLabel(0, 10, null))).containsExactly("plain");
+        assertThat(sync(t.labels())).containsExactlyInAnyOrder("cpu", "mem");
+        assertThat(sync(t.labels(2, 2))).containsExactlyInAnyOrder("mem");
+        assertThat(sync(t.removeRangeByLabel(0, 10, "cpu"))).isEqualTo(1);
+    }
+
 }

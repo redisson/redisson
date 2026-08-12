@@ -1,11 +1,14 @@
 package org.redisson;
 
+import org.redisson.client.codec.StringCodec;
+import org.redisson.api.RScript;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RTimeSeries;
 import org.redisson.api.ts.TimeSeriesAddArgs;
 import org.redisson.api.TimeSeriesEntry;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -1051,6 +1054,362 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
 
         t.addOrReplace(TimeSeriesAddArgs.entry(1500, "d").retention(Duration.ofMillis(300)));
         assertThat(t.range(0, 10000)).containsExactly("c", "d");
+    }
+
+    @Test
+    public void testRangeByLabel() {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        t.add(1, "a1", "cpu");
+        t.add(2, "b1", "mem");
+        t.add(3, "a2", "cpu");
+        t.add(4, "plain");
+        t.add(5, "b2", "mem");
+
+        assertThat(t.rangeByLabel(0, 10, "cpu")).containsExactly("a1", "a2");
+        assertThat(t.rangeByLabel(0, 10, "mem")).containsExactly("b1", "b2");
+        assertThat(t.rangeByLabel(0, 10, "nope")).isEmpty();
+        assertThat(t.rangeReversedByLabel(0, 10, "cpu")).containsExactly("a2", "a1");
+        // the timestamp range still applies
+        assertThat(t.rangeByLabel(3, 10, "cpu")).containsExactly("a2");
+        // and nothing changed for the unfiltered form
+        assertThat(t.range(0, 10)).containsExactly("a1", "b1", "a2", "plain", "b2");
+    }
+
+    @Test
+    public void testRangeByLabelSelectsUnlabelledWithNull() {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        t.add(1, "labelled", "cpu");
+        t.add(2, "plain");
+
+        assertThat(t.rangeByLabel(0, 10, null)).containsExactly("plain");
+        assertThat(t.entryRangeByLabel(0, 10, null))
+                .containsExactly(new TimeSeriesEntry<>(2, "plain"));
+    }
+
+    @Test
+    public void testEntryRangeByLabel() {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        t.add(1, "a1", "cpu");
+        t.add(2, "b1", "mem");
+        t.add(3, "a2", "cpu");
+
+        assertThat(t.entryRangeByLabel(0, 10, "cpu")).containsExactly(
+                new TimeSeriesEntry<>(1, "a1", "cpu"),
+                new TimeSeriesEntry<>(3, "a2", "cpu"));
+        assertThat(t.entryRangeReversedByLabel(0, 10, "cpu")).containsExactly(
+                new TimeSeriesEntry<>(3, "a2", "cpu"),
+                new TimeSeriesEntry<>(1, "a1", "cpu"));
+    }
+
+    @Test
+    public void testRangeByLabelWithLimit() {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        // only every tenth element matches, so a page of the requested size is mostly dropped
+        for (int i = 1; i <= 40; i++) {
+            t.add(i, "v" + i, i % 10 == 0 ? "keep" : "drop");
+        }
+
+        assertThat(t.rangeByLabel(0, 100, "keep", 10)).containsExactly("v10", "v20", "v30", "v40");
+        assertThat(t.rangeByLabel(0, 100, "keep", 2)).containsExactly("v10", "v20");
+        assertThat(t.rangeByLabel(0, 100, "keep", 1)).containsExactly("v10");
+        assertThat(t.rangeReversedByLabel(0, 100, "keep", 2)).containsExactly("v40", "v30");
+        assertThat(t.entryRangeByLabel(0, 100, "keep", 2)).containsExactly(
+                new TimeSeriesEntry<>(10, "v10", "keep"),
+                new TimeSeriesEntry<>(20, "v20", "keep"));
+    }
+
+    @Test
+    public void testRemoveRangeByLabel() {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        t.add(1, "a1", "cpu");
+        t.add(2, "b1", "mem");
+        t.add(3, "a2", "cpu");
+        t.add(4, "plain");
+
+        assertThat(t.removeRangeByLabel(0, 10, "cpu")).isEqualTo(2);
+        assertThat(t.range(0, 10)).containsExactly("b1", "plain");
+        assertThat(t.removeRangeByLabel(0, 10, "nope")).isZero();
+        assertThat(t.removeRangeByLabel(0, 10, null)).isEqualTo(1);
+        assertThat(t.range(0, 10)).containsExactly("b1");
+    }
+
+    @Test
+    public void testLabels() {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        t.add(1, "a1", "cpu");
+        t.add(2, "b1", "mem");
+        t.add(3, "a2", "cpu");
+        t.add(4, "plain");
+
+        assertThat(t.labels()).containsExactlyInAnyOrder("cpu", "mem");
+        assertThat(t.labels(2, 2)).containsExactlyInAnyOrder("mem");
+        assertThat(t.labels(4, 4)).isEmpty();
+
+        RTimeSeries<String, String> empty = redisson.getTimeSeries("empty");
+        assertThat(empty.labels()).isEmpty();
+    }
+
+    @Test
+    public void testLabelsAcrossPages() {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        // more than the 500 element page the scan reads at a time
+        for (int i = 1; i <= 1300; i++) {
+            t.add(i, "v" + i, "L" + (i % 7));
+        }
+
+        assertThat(t.labels()).hasSize(7);
+        assertThat(t.labels()).contains("L0", "L1", "L2", "L3", "L4", "L5", "L6");
+    }
+
+    @Test
+    public void testLabelFilterIgnoresExpiredEntries() throws InterruptedException {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        t.add(1, "live", "cpu");
+        t.add(2, "dying", "gone", Duration.ofMillis(300));
+        assertThat(t.rangeByLabel(0, 10, "cpu")).containsExactly("live");
+        assertThat(t.labels()).containsExactlyInAnyOrder("cpu", "gone");
+
+        Thread.sleep(500);
+        assertThat(t.rangeByLabel(0, 10, "gone")).isEmpty();
+        assertThat(t.labels()).containsExactlyInAnyOrder("cpu");
+    }
+
+
+    @Test
+    public void testRangeByLabelWithNegativeLimit() {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        for (int i = 1; i <= 5; i++) {
+            t.add(i, "v" + i, "cpu");
+        }
+
+        assertThat(t.rangeByLabel(0, 100, "cpu", -1)).isEmpty();
+        assertThat(t.range(0, 100, -1)).isEmpty();
+        assertThat(t.entryRange(0, 100, -1)).isEmpty();
+        assertThat(t.entryRangeReversedByLabel(0, 100, "cpu", -1)).isEmpty();
+    }
+
+    @Test
+    public void testTimestampsAtTheEdgeOfTheLongRange() {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        t.add(Long.MAX_VALUE, "max", "cpu");
+        t.add(Long.MIN_VALUE, "min", "cpu");
+
+        assertThat(t.firstTimestamp()).isEqualTo(Long.MIN_VALUE);
+        assertThat(t.lastTimestamp()).isEqualTo(Long.MAX_VALUE);
+        assertThat(t.entryRange(Long.MIN_VALUE, Long.MAX_VALUE)).containsExactly(
+                new TimeSeriesEntry<>(Long.MIN_VALUE, "min", "cpu"),
+                new TimeSeriesEntry<>(Long.MAX_VALUE, "max", "cpu"));
+        assertThat(t.rangeByLabel(Long.MIN_VALUE, Long.MAX_VALUE, "cpu")).containsExactly("min", "max");
+    }
+
+    @Test
+    public void testLabelFilterUnderAnotherCodec() {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test", StringCodec.INSTANCE);
+        t.add(1, "a1", "cpu");
+        t.add(2, "b1", "mem");
+        t.add(3, "plain");
+        // an empty label is a label, and is not the same as carrying none
+        t.add(4, "e1", "");
+
+        assertThat(t.rangeByLabel(0, 10, "cpu")).containsExactly("a1");
+        assertThat(t.rangeByLabel(0, 10, "")).containsExactly("e1");
+        assertThat(t.rangeByLabel(0, 10, null)).containsExactly("plain");
+        assertThat(t.labels()).containsExactlyInAnyOrder("cpu", "mem", "");
+        assertThat(t.removeRangeByLabel(0, 10, "")).isEqualTo(1);
+        assertThat(t.range(0, 10)).containsExactly("a1", "b1", "plain");
+    }
+
+    @Test
+    public void testLabelThatLooksLikeTheAbsentMarker() {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test", StringCodec.INSTANCE);
+        t.add(1, "zero", "0");
+        t.add(2, "plain");
+
+        assertThat(t.rangeByLabel(0, 10, "0")).containsExactly("zero");
+        assertThat(t.rangeByLabel(0, 10, null)).containsExactly("plain");
+        assertThat(t.labels()).containsExactlyInAnyOrder("0");
+    }
+
+    @Test
+    public void testEntryRangeReversedByLabelWithLimit() {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        for (int i = 1; i <= 20; i++) {
+            t.add(i, "v" + i, i % 5 == 0 ? "keep" : "drop");
+        }
+
+        assertThat(t.entryRangeReversedByLabel(0, 100, "keep", 2)).containsExactly(
+                new TimeSeriesEntry<>(20, "v20", "keep"),
+                new TimeSeriesEntry<>(15, "v15", "keep"));
+        assertThat(t.entryRangeReversedByLabel(0, 100, "keep")).hasSize(4);
+    }
+
+    @Test
+    public void testRemoveRangeByLabelSkipsExpiredMatches() throws InterruptedException {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        t.add(1, "live", "cpu");
+        t.add(2, "dying", "cpu", Duration.ofMillis(300));
+        Thread.sleep(500);
+
+        // the expired one is still in the index but must not be counted as removed
+        assertThat(t.removeRangeByLabel(0, 10, "cpu")).isEqualTo(1);
+        assertThat(t.range(0, 10)).isEmpty();
+    }
+
+    @Test
+    public void testLabelFilterReadsEntriesWrittenByAnOlderVersion() {
+        String name = "legacy";
+        RTimeSeries<String, String> t = redisson.getTimeSeries(name, StringCodec.INSTANCE);
+        t.add(1, "current", "cpu");
+        // pre-4.x members: marker 3 carries the label raw, marker 2 carries none
+        redisson.getScript(StringCodec.INSTANCE).eval(RScript.Mode.READ_WRITE,
+                "local val = struct.pack('BBc0Lc0Lc0', ARGV[4], string.len(ARGV[2]), ARGV[2], "
+                        + "string.len(ARGV[3]), ARGV[3], string.len(ARGV[5]), ARGV[5]); "
+                + "redis.call('zadd', KEYS[1], ARGV[1], val); "
+                + "redis.call('zadd', KEYS[2], '4102444800000', val); return 1;",
+                RScript.ReturnType.LONG,
+                Arrays.asList(name, "redisson__ts_ttl:{" + name + "}"),
+                "2", "old-id-a", "legacy-labelled", "3", "cpu");
+        redisson.getScript(StringCodec.INSTANCE).eval(RScript.Mode.READ_WRITE,
+                "local val = struct.pack('BBc0Lc0Lc0', ARGV[4], string.len(ARGV[2]), ARGV[2], "
+                        + "string.len(ARGV[3]), ARGV[3], string.len(ARGV[5]), ARGV[5]); "
+                + "redis.call('zadd', KEYS[1], ARGV[1], val); "
+                + "redis.call('zadd', KEYS[2], '4102444800000', val); return 1;",
+                RScript.ReturnType.LONG,
+                Arrays.asList(name, "redisson__ts_ttl:{" + name + "}"),
+                "3", "old-id-b", "legacy-plain", "2", "");
+
+        assertThat(t.range(0, 10)).containsExactly("current", "legacy-labelled", "legacy-plain");
+        assertThat(t.rangeByLabel(0, 10, "cpu")).containsExactly("current", "legacy-labelled");
+        assertThat(t.rangeByLabel(0, 10, null)).containsExactly("legacy-plain");
+        assertThat(t.labels()).containsExactlyInAnyOrder("cpu");
+        assertThat(t.entryRangeByLabel(0, 10, "cpu")).containsExactly(
+                new TimeSeriesEntry<>(1, "current", "cpu"),
+                new TimeSeriesEntry<>(2, "legacy-labelled", "cpu"));
+        assertThat(t.removeRangeByLabel(0, 10, "cpu")).isEqualTo(2);
+    }
+
+    @Test
+    public void testLimitLargerThanTheWindow() {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        for (int i = 1; i <= 2000; i++) {
+            t.add(i, "v" + i, "cpu");
+        }
+
+        // the page is a slice of ranks, so a limit far larger than the window must not
+        // make one page read the whole collection
+        assertThat(t.range(5, 6, Integer.MAX_VALUE)).containsExactly("v5", "v6");
+        assertThat(t.rangeByLabel(5, 6, "cpu", Integer.MAX_VALUE)).containsExactly("v5", "v6");
+        assertThat(t.entryRange(5, 6, Integer.MAX_VALUE)).hasSize(2);
+        assertThat(t.rangeReversed(5, 6, Integer.MAX_VALUE)).containsExactly("v6", "v5");
+    }
+
+    @Test
+    public void testExpireAtCoversEveryKey() {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        t.add(1, "a", "cpu");
+
+        // every expireAt form used to fail with "Unsupported option"
+        assertThat(t.expire(Instant.now().plusSeconds(600))).isTrue();
+        assertThat(redisson.getKeys().remainTimeToLive("test")).isGreaterThan(0);
+        assertThat(redisson.getKeys().remainTimeToLive("redisson__ts_ttl:{test}")).isGreaterThan(0);
+        assertThat(redisson.getKeys().remainTimeToLive("redisson__ts_seq:{test}")).isGreaterThan(0);
+
+        assertThat(t.expireIfSet(Instant.now().plusSeconds(900))).isTrue();
+        assertThat(t.clearExpire()).isTrue();
+        assertThat(redisson.getKeys().remainTimeToLive("redisson__ts_seq:{test}")).isEqualTo(-1);
+        assertThat(t.range(0, 10)).containsExactly("a");
+    }
+
+    @Test
+    public void testCopyOntoANameWhoseCounterSurvived() {
+        RTimeSeries<String, String> src = redisson.getTimeSeries("src");
+        src.add(1000, "A");
+        src.add(1001, "B");
+        src.add(1002, "C");
+
+        // emptying a collection leaves its counter behind until the eviction task runs
+        RTimeSeries<String, String> dst = redisson.getTimeSeries("dst");
+        dst.add(1, "junk");
+        dst.removeAll(1);
+        assertThat(redisson.getKeys().countExists("redisson__ts_seq:{dst}")).isEqualTo(1);
+
+        // the destination is not clean, so the copy must not report success
+        assertThat(src.copy("dst")).isFalse();
+        assertThat(dst.size()).isZero();
+
+        assertThat(src.copyAndReplace("dst")).isTrue();
+        assertThat(dst.range(0, 10000)).containsExactly("A", "B", "C");
+        // and the ids that came with the data are not handed out again
+        dst.add(9999, "B");
+        assertThat(dst.size()).isEqualTo(4);
+        assertThat(dst.get(1001)).isEqualTo("B");
+        assertThat(dst.get(9999)).isEqualTo("B");
+    }
+
+    @Test
+    public void testCopyLeavesTheDestinationAloneWhenItFails() {
+        RTimeSeries<String, String> src = redisson.getTimeSeries("src");
+        src.add(1, "a");
+        RTimeSeries<String, String> dst = redisson.getTimeSeries("dst");
+        dst.add(5, "existing");
+
+        assertThat(src.copy("dst")).isFalse();
+        assertThat(dst.range(0, 100)).containsExactly("existing");
+        // a failed copy must not leave half of the source behind either
+        assertThat(redisson.getKeys().countExists("redisson__ts_seq:{dst}")).isEqualTo(1);
+        assertThat(dst.get(1)).isNull();
+    }
+
+    @Test
+    public void testRenamenxOfACollectionWrittenByAnOlderVersion() {
+        String name = "old";
+        RTimeSeries<String, String> t = redisson.getTimeSeries(name, StringCodec.INSTANCE);
+        // pre-4.x data has the two indexes but no counter key
+        for (int i = 1; i <= 3; i++) {
+            redisson.getScript(StringCodec.INSTANCE).eval(RScript.Mode.READ_WRITE,
+                    "local val = struct.pack('BBc0Lc0Lc0', 2, string.len(ARGV[2]), ARGV[2], "
+                            + "string.len(ARGV[3]), ARGV[3], 0, ''); "
+                    + "redis.call('zadd', KEYS[1], ARGV[1], val); "
+                    + "redis.call('zadd', KEYS[2], '4102444800000', val); return 1;",
+                    RScript.ReturnType.LONG,
+                    Arrays.asList(name, "redisson__ts_ttl:{" + name + "}"),
+                    String.valueOf(i), "id-" + i, "v" + i);
+        }
+        assertThat(redisson.getKeys().countExists("redisson__ts_seq:{old}")).isZero();
+
+        assertThat(t.renamenx("fresh")).isTrue();
+        assertThat(t.range(0, 100)).containsExactly("v1", "v2", "v3");
+        assertThat(redisson.getKeys().countExists("old")).isZero();
+        // and the renamed collection keeps working
+        t.add(4, "v4", "cpu");
+        assertThat(t.rangeByLabel(0, 100, "cpu")).containsExactly("v4");
+    }
+
+    @Test
+    public void testHeadAndTailAgreeWithTheOtherReadsWhenTheIndexesDisagree() {
+        String name = "test";
+        RTimeSeries<String, String> t = redisson.getTimeSeries(name, StringCodec.INSTANCE);
+        for (int i = 1; i <= 10; i++) {
+            t.add(i, "gone" + i, Duration.ofMillis(1));
+        }
+        t.add(100, "live");
+
+        // drop the live entry's expiration row and add an orphan one, so the two indexes
+        // have the same cardinality but different contents
+        redisson.getScript(StringCodec.INSTANCE).eval(RScript.Mode.READ_WRITE,
+                "local m = redis.call('zrangebyscore', KEYS[1], 100, 100)[1]; "
+                + "redis.call('zrem', KEYS[2], m); "
+                + "redis.call('zadd', KEYS[2], '4102444800000', 'orphan'); return 1;",
+                RScript.ReturnType.LONG,
+                Arrays.asList(name, "redisson__ts_ttl:{" + name + "}"));
+
+        assertThat(t.range(0, 1000)).containsExactly("live");
+        assertThat(t.first()).isEqualTo("live");
+        assertThat(t.last()).isEqualTo("live");
+        assertThat(t.firstTimestamp()).isEqualTo(100);
+        assertThat(t.lastTimestamp()).isEqualTo(100);
+        assertThat(t.firstEntry()).isEqualTo(new TimeSeriesEntry<>(100, "live"));
+        assertThat(t.first(5)).containsExactly("live");
     }
 
 }

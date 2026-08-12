@@ -25,6 +25,7 @@ import io.reactivex.rxjava3.core.Single;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -438,7 +439,8 @@ public interface RTimeSeriesRx<V, L> extends RExpirableRx {
      *
      * @param startTimestamp start timestamp
      * @param endTimestamp end timestamp
-     * @param limit result size limit
+     * @param limit result size limit, <code>0</code> for no limit; a negative
+     *              limit returns an empty result
      * @return elements collection
      */
     Single<Collection<V>> range(long startTimestamp, long endTimestamp, int limit);
@@ -457,7 +459,8 @@ public interface RTimeSeriesRx<V, L> extends RExpirableRx {
      *
      * @param startTimestamp start timestamp
      * @param endTimestamp end timestamp
-     * @param limit result size limit
+     * @param limit result size limit, <code>0</code> for no limit; a negative
+     *              limit returns an empty result
      * @return elements collection
      */
     Single<Collection<V>> rangeReversed(long startTimestamp, long endTimestamp, int limit);
@@ -476,7 +479,8 @@ public interface RTimeSeriesRx<V, L> extends RExpirableRx {
      *
      * @param startTimestamp start timestamp
      * @param endTimestamp end timestamp
-     * @param limit result size limit
+     * @param limit result size limit, <code>0</code> for no limit; a negative
+     *              limit returns an empty result
      * @return elements collection
      */
     Single<Collection<TimeSeriesEntry<V, L>>> entryRange(long startTimestamp, long endTimestamp, int limit);
@@ -495,7 +499,8 @@ public interface RTimeSeriesRx<V, L> extends RExpirableRx {
      *
      * @param startTimestamp start timestamp
      * @param endTimestamp end timestamp
-     * @param limit result size limit
+     * @param limit result size limit, <code>0</code> for no limit; a negative
+     *              limit returns an empty result
      * @return elements collection
      */
     Single<Collection<TimeSeriesEntry<V, L>>> entryRangeReversed(long startTimestamp, long endTimestamp, int limit);
@@ -515,4 +520,158 @@ public interface RTimeSeriesRx<V, L> extends RExpirableRx {
     @Override
     Single<Integer> addListener(ObjectListener listener);
 
+    /**
+     * Returns ordered elements carrying <code>label</code> within timestamp range. Including boundary values.
+     * <p>
+     * A <code>null</code> <code>label</code> selects the elements that carry no label at all.
+     * Labels are matched on their encoded form, so the label type needs no ordering, only a
+     * codec that encodes equal labels identically.
+     *
+     * @param startTimestamp start timestamp
+     * @param endTimestamp end timestamp
+     * @param label label to match, or <code>null</code> for elements without one
+     * @return elements collection
+     */
+    Single<Collection<V>> rangeByLabel(long startTimestamp, long endTimestamp, L label);
+
+    /**
+     * Returns ordered elements carrying <code>label</code> within timestamp range. Including boundary values.
+     * <p>
+     * A <code>null</code> <code>label</code> selects the elements that carry no label at all.
+     * Labels are matched on their encoded form, so the label type needs no ordering, only a
+     * codec that encodes equal labels identically.
+     *
+     * @param startTimestamp start timestamp
+     * @param endTimestamp end timestamp
+     * @param label label to match, or <code>null</code> for elements without one
+     * @param limit result size limit, <code>0</code> for no limit; a negative
+     *              limit returns an empty result
+     * @return elements collection
+     */
+    Single<Collection<V>> rangeByLabel(long startTimestamp, long endTimestamp, L label, int limit);
+
+    /**
+     * Returns elements carrying <code>label</code> in reverse order within timestamp range. Including boundary values.
+     * <p>
+     * A <code>null</code> <code>label</code> selects the elements that carry no label at all.
+     * Labels are matched on their encoded form, so the label type needs no ordering, only a
+     * codec that encodes equal labels identically.
+     *
+     * @param startTimestamp start timestamp
+     * @param endTimestamp end timestamp
+     * @param label label to match, or <code>null</code> for elements without one
+     * @return elements collection
+     */
+    Single<Collection<V>> rangeReversedByLabel(long startTimestamp, long endTimestamp, L label);
+
+    /**
+     * Returns elements carrying <code>label</code> in reverse order within timestamp range. Including boundary values.
+     * <p>
+     * A <code>null</code> <code>label</code> selects the elements that carry no label at all.
+     * Labels are matched on their encoded form, so the label type needs no ordering, only a
+     * codec that encodes equal labels identically.
+     *
+     * @param startTimestamp start timestamp
+     * @param endTimestamp end timestamp
+     * @param label label to match, or <code>null</code> for elements without one
+     * @param limit result size limit, <code>0</code> for no limit; a negative
+     *              limit returns an empty result
+     * @return elements collection
+     */
+    Single<Collection<V>> rangeReversedByLabel(long startTimestamp, long endTimestamp, L label, int limit);
+
+    /**
+     * Returns ordered entries carrying <code>label</code> within timestamp range. Including boundary values.
+     * <p>
+     * A <code>null</code> <code>label</code> selects the elements that carry no label at all.
+     * Labels are matched on their encoded form, so the label type needs no ordering, only a
+     * codec that encodes equal labels identically.
+     *
+     * @param startTimestamp start timestamp
+     * @param endTimestamp end timestamp
+     * @param label label to match, or <code>null</code> for elements without one
+     * @return entries collection
+     */
+    Single<Collection<TimeSeriesEntry<V, L>>> entryRangeByLabel(long startTimestamp, long endTimestamp, L label);
+
+    /**
+     * Returns ordered entries carrying <code>label</code> within timestamp range. Including boundary values.
+     * <p>
+     * A <code>null</code> <code>label</code> selects the elements that carry no label at all.
+     * Labels are matched on their encoded form, so the label type needs no ordering, only a
+     * codec that encodes equal labels identically.
+     *
+     * @param startTimestamp start timestamp
+     * @param endTimestamp end timestamp
+     * @param label label to match, or <code>null</code> for elements without one
+     * @param limit result size limit, <code>0</code> for no limit; a negative
+     *              limit returns an empty result
+     * @return entries collection
+     */
+    Single<Collection<TimeSeriesEntry<V, L>>> entryRangeByLabel(long startTimestamp, long endTimestamp, L label, int limit);
+
+    /**
+     * Returns entries carrying <code>label</code> in reverse order within timestamp range. Including boundary values.
+     * <p>
+     * A <code>null</code> <code>label</code> selects the elements that carry no label at all.
+     * Labels are matched on their encoded form, so the label type needs no ordering, only a
+     * codec that encodes equal labels identically.
+     *
+     * @param startTimestamp start timestamp
+     * @param endTimestamp end timestamp
+     * @param label label to match, or <code>null</code> for elements without one
+     * @return entries collection
+     */
+    Single<Collection<TimeSeriesEntry<V, L>>> entryRangeReversedByLabel(long startTimestamp, long endTimestamp, L label);
+
+    /**
+     * Returns entries carrying <code>label</code> in reverse order within timestamp range. Including boundary values.
+     * <p>
+     * A <code>null</code> <code>label</code> selects the elements that carry no label at all.
+     * Labels are matched on their encoded form, so the label type needs no ordering, only a
+     * codec that encodes equal labels identically.
+     *
+     * @param startTimestamp start timestamp
+     * @param endTimestamp end timestamp
+     * @param label label to match, or <code>null</code> for elements without one
+     * @param limit result size limit, <code>0</code> for no limit; a negative
+     *              limit returns an empty result
+     * @return entries collection
+     */
+    Single<Collection<TimeSeriesEntry<V, L>>> entryRangeReversedByLabel(long startTimestamp, long endTimestamp, L label, int limit);
+
+    /**
+     * Removes elements carrying <code>label</code> within timestamp range. Including boundary values.
+     * <p>
+     * A <code>null</code> <code>label</code> selects the elements that carry no label at all.
+     * Labels are matched on their encoded form, so the label type needs no ordering, only a
+     * codec that encodes equal labels identically.
+     *
+     * @param startTimestamp start timestamp
+     * @param endTimestamp end timestamp
+     * @param label label to match, or <code>null</code> for elements without one
+     * @return number of removed elements
+     */
+    Single<Integer> removeRangeByLabel(long startTimestamp, long endTimestamp, L label);
+
+    /**
+     * Returns the distinct labels carried by the elements of this time-series collection.
+     * <p>
+     * There is no label index, so the whole collection is walked and the result is
+     * proportional to the number of distinct labels it holds. Use
+     * {@link #labels(long, long)} to bound both to a timestamp range.
+     *
+     * @return labels set
+     */
+    Single<Set<L>> labels();
+
+    /**
+     * Returns the distinct labels carried by the elements within timestamp range.
+     * Including boundary values.
+     *
+     * @param startTimestamp start timestamp
+     * @param endTimestamp end timestamp
+     * @return labels set
+     */
+    Single<Set<L>> labels(long startTimestamp, long endTimestamp);
 }
