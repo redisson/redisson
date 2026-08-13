@@ -27,6 +27,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.CountDownLatch;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -46,7 +47,8 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     public void testMultipleValues() {
         RTimeSeries<String, Object> ts = redisson.getTimeSeries("test");
         for (int i=0;i < 10000;i++){
-            ts.add(System.currentTimeMillis(), "my-value",60,TimeUnit.DAYS);
+            ts.add(TimeSeriesAddArgs.entry(System.currentTimeMillis(), "my-value")
+                                    .timeToLive(Duration.ofDays(60)));
         }
         assertThat(ts.size()).isEqualTo(10000);
     }
@@ -66,9 +68,9 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testOrder() {
         RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
-        t.add(4, "40");
-        t.add(2, "20", "label2");
-        t.add(1, "10", 1, TimeUnit.SECONDS);
+        t.add(TimeSeriesAddArgs.entry(4, "40"));
+        t.add(TimeSeriesAddArgs.entry(2, "20", "label2"));
+        t.add(TimeSeriesAddArgs.entry(1, "10").timeToLive(Duration.ofSeconds(1)));
 
         Collection<TimeSeriesEntry<String, Object>> r11 = t.entryRange(1, 5);
         assertThat(r11).containsExactly(new TimeSeriesEntry<>(1,"10"),
@@ -79,7 +81,7 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testCleanup() throws InterruptedException {
         RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
-        t.add(1, "10", 1, TimeUnit.SECONDS);
+        t.add(TimeSeriesAddArgs.entry(1, "10").timeToLive(Duration.ofSeconds(1)));
 
         Thread.sleep(6000);
 
@@ -90,7 +92,7 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     public void testIterator() {
         RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
         for (int i = 0; i < 19; i++) {
-            t.add(i, "" + i*10);
+            t.add(TimeSeriesAddArgs.entry(i, "" + i*10));
         }
 
         Iterator<String> iter = t.iterator(3);
@@ -104,19 +106,19 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testRangeReversed() throws InterruptedException {
         RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
-        t.add(1, "10");
-        t.add(2, "20");
-        t.add(3, "30");
-        t.add(4, "40");
+        t.add(TimeSeriesAddArgs.entry(1, "10"));
+        t.add(TimeSeriesAddArgs.entry(2, "20"));
+        t.add(TimeSeriesAddArgs.entry(3, "30"));
+        t.add(TimeSeriesAddArgs.entry(4, "40"));
 
         assertThat(t.rangeReversed(1, 4, 2)).containsExactly("40", "30");
         assertThat(t.rangeReversed(1, 4, 0)).containsExactly("40", "30", "20", "10");
 
         RTimeSeries<String, Object> t2 = redisson.getTimeSeries("test2");
-        t2.add(1, "10");
-        t2.add(2, "20");
-        t2.add(3, "30", 1, TimeUnit.SECONDS);
-        t2.add(4, "40");
+        t2.add(TimeSeriesAddArgs.entry(1, "10"));
+        t2.add(TimeSeriesAddArgs.entry(2, "20"));
+        t2.add(TimeSeriesAddArgs.entry(3, "30").timeToLive(Duration.ofSeconds(1)));
+        t2.add(TimeSeriesAddArgs.entry(4, "40"));
 
         Thread.sleep(1200);
 
@@ -126,19 +128,19 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testRange() throws InterruptedException {
         RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
-        t.add(1, "10");
-        t.add(2, "10");
-        t.add(3, "30");
-        t.add(4, "40");
+        t.add(TimeSeriesAddArgs.entry(1, "10"));
+        t.add(TimeSeriesAddArgs.entry(2, "10"));
+        t.add(TimeSeriesAddArgs.entry(3, "30"));
+        t.add(TimeSeriesAddArgs.entry(4, "40"));
 
         assertThat(t.range(1, 4, 2)).containsExactly("10", "10");
         assertThat(t.range(1, 4, 0)).containsExactly("10", "10", "30", "40");
 
         RTimeSeries<String, Object> t2 = redisson.getTimeSeries("test2");
-        t2.add(1, "10");
-        t2.add(2, "10", 1, TimeUnit.SECONDS);
-        t2.add(3, "30");
-        t2.add(4, "40");
+        t2.add(TimeSeriesAddArgs.entry(1, "10"));
+        t2.add(TimeSeriesAddArgs.entry(2, "10").timeToLive(Duration.ofSeconds(1)));
+        t2.add(TimeSeriesAddArgs.entry(3, "30"));
+        t2.add(TimeSeriesAddArgs.entry(4, "40"));
 
         Thread.sleep(1200);
 
@@ -148,10 +150,10 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testRemove() {
         RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
-        t.add(1, "10");
-        t.add(2, "10");
-        t.add(3, "30");
-        t.add(4, "40");
+        t.add(TimeSeriesAddArgs.entry(1, "10"));
+        t.add(TimeSeriesAddArgs.entry(2, "10"));
+        t.add(TimeSeriesAddArgs.entry(3, "30"));
+        t.add(TimeSeriesAddArgs.entry(4, "40"));
 
         assertThat(t.removeRange(2, 3)).isEqualTo(2);
         assertThat(t.size()).isEqualTo(2);
@@ -166,10 +168,10 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testGetEntry() {
         RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
-        t.add(1, "10");
-        t.add(2, "10");
-        t.add(3, "30");
-        t.add(4, "40");
+        t.add(TimeSeriesAddArgs.entry(1, "10"));
+        t.add(TimeSeriesAddArgs.entry(2, "10"));
+        t.add(TimeSeriesAddArgs.entry(3, "30"));
+        t.add(TimeSeriesAddArgs.entry(4, "40"));
         assertThat(t.size()).isEqualTo(4);
         assertThat(t.get(3)).isEqualTo("30");
         assertThat(t.getEntry(3).getValue()).isEqualTo("30");
@@ -179,9 +181,9 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testLabel() {
         RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
-        t.add(1, "10");
-        t.add(2, "20", "label2");
-        t.add(3, "30", "label3");
+        t.add(TimeSeriesAddArgs.entry(1, "10"));
+        t.add(TimeSeriesAddArgs.entry(2, "20", "label2"));
+        t.add(TimeSeriesAddArgs.entry(3, "30", "label3"));
 
         TimeSeriesEntry<String, Object> ee = t.getEntry(2);
         assertThat(ee.getTimestamp()).isEqualTo(2);
@@ -192,10 +194,10 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testGetAndRemoveEntry() {
         RTimeSeries<String, String> t = redisson.getTimeSeries("test");
-        t.add(1, "10", "100");
-        t.add(2, "20");
-        t.add(3, "30", "300", Duration.ofSeconds(2));
-        t.add(4, "40");
+        t.add(TimeSeriesAddArgs.entry(1, "10", "100"));
+        t.add(TimeSeriesAddArgs.entry(2, "20"));
+        t.add(TimeSeriesAddArgs.entry(3, "30", "300").timeToLive(Duration.ofSeconds(2)));
+        t.add(TimeSeriesAddArgs.entry(4, "40"));
 
         TimeSeriesEntry<String, String> e1 = t.getAndRemoveEntry(1);
         assertThat(e1.getValue()).isEqualTo("10");
@@ -222,10 +224,10 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testGetAndRemove() {
         RTimeSeries<String, String> t = redisson.getTimeSeries("test");
-        t.add(1, "10", "100");
-        t.add(2, "20");
-        t.add(3, "30", "300", Duration.ofSeconds(2));
-        t.add(4, "40");
+        t.add(TimeSeriesAddArgs.entry(1, "10", "100"));
+        t.add(TimeSeriesAddArgs.entry(2, "20"));
+        t.add(TimeSeriesAddArgs.entry(3, "30", "300").timeToLive(Duration.ofSeconds(2)));
+        t.add(TimeSeriesAddArgs.entry(4, "40"));
 
         String s1 = t.getAndRemove(1);
         assertThat(s1).isEqualTo("10");
@@ -239,10 +241,10 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void test() {
         RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
-        t.add(1, "10");
-        t.add(2, "10");
-        t.add(3, "30");
-        t.add(4, "40");
+        t.add(TimeSeriesAddArgs.entry(1, "10"));
+        t.add(TimeSeriesAddArgs.entry(2, "10"));
+        t.add(TimeSeriesAddArgs.entry(3, "30"));
+        t.add(TimeSeriesAddArgs.entry(4, "40"));
         assertThat(t.size()).isEqualTo(4);
         assertThat(t.get(3)).isEqualTo("30");
         TimeSeriesEntry<String, Object> ee = t.getEntry(2);
@@ -280,10 +282,10 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testTTLLast() throws InterruptedException {
         RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
-        t.add(1, "10");
-        t.add(2, "10");
-        t.add(3, "30");
-        t.add(4, "40", 1, TimeUnit.SECONDS);
+        t.add(TimeSeriesAddArgs.entry(1, "10"));
+        t.add(TimeSeriesAddArgs.entry(2, "10"));
+        t.add(TimeSeriesAddArgs.entry(3, "30"));
+        t.add(TimeSeriesAddArgs.entry(4, "40").timeToLive(Duration.ofSeconds(1)));
         assertThat(t.size()).isEqualTo(4);
         assertThat(t.get(3)).isEqualTo("30");
 
@@ -309,10 +311,10 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testTTLFirst() throws InterruptedException {
         RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
-        t.add(1, "10", 1, TimeUnit.SECONDS);
-        t.add(2, "10");
-        t.add(3, "30");
-        t.add(4, "40");
+        t.add(TimeSeriesAddArgs.entry(1, "10").timeToLive(Duration.ofSeconds(1)));
+        t.add(TimeSeriesAddArgs.entry(2, "10"));
+        t.add(TimeSeriesAddArgs.entry(3, "30"));
+        t.add(TimeSeriesAddArgs.entry(4, "40"));
         assertThat(t.size()).isEqualTo(4);
         assertThat(t.get(3)).isEqualTo("30");
 
@@ -338,9 +340,9 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testPollLastEntries() {
         RTimeSeries<String, String> t = redisson.getTimeSeries("test");
-        t.add(1, "10");
-        t.add(2, "20", "200");
-        t.add(3, "30");
+        t.add(TimeSeriesAddArgs.entry(1, "10"));
+        t.add(TimeSeriesAddArgs.entry(2, "20", "200"));
+        t.add(TimeSeriesAddArgs.entry(3, "30"));
 
         Collection<TimeSeriesEntry<String, String>> s = t.pollLastEntries(2);
         assertThat(s).containsExactly(new TimeSeriesEntry<>(2, "20", "200"),
@@ -352,9 +354,9 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testPollFirstEntries() {
         RTimeSeries<String, String> t = redisson.getTimeSeries("test");
-        t.add(1, "10", "100");
-        t.add(2, "20");
-        t.add(3, "30");
+        t.add(TimeSeriesAddArgs.entry(1, "10", "100"));
+        t.add(TimeSeriesAddArgs.entry(2, "20"));
+        t.add(TimeSeriesAddArgs.entry(3, "30"));
 
         Collection<TimeSeriesEntry<String, String>> s = t.pollFirstEntries(2);
         assertThat(s).containsExactly(new TimeSeriesEntry<>(1, "10", "100"),
@@ -366,9 +368,9 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testPoll() throws InterruptedException {
         RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
-        t.add(1, "10");
-        t.add(2, "20");
-        t.add(3, "30");
+        t.add(TimeSeriesAddArgs.entry(1, "10"));
+        t.add(TimeSeriesAddArgs.entry(2, "20"));
+        t.add(TimeSeriesAddArgs.entry(3, "30"));
 
         assertThat(t.pollFirst()).isEqualTo("10");
         assertThat(t.size()).isEqualTo(2);
@@ -379,12 +381,12 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testPollList() {
         RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
-        t.add(1, "10");
-        t.add(2, "20");
-        t.add(3, "30");
-        t.add(4, "40");
-        t.add(5, "50");
-        t.add(6, "60");
+        t.add(TimeSeriesAddArgs.entry(1, "10"));
+        t.add(TimeSeriesAddArgs.entry(2, "20"));
+        t.add(TimeSeriesAddArgs.entry(3, "30"));
+        t.add(TimeSeriesAddArgs.entry(4, "40"));
+        t.add(TimeSeriesAddArgs.entry(5, "50"));
+        t.add(TimeSeriesAddArgs.entry(6, "60"));
 
         assertThat(t.pollFirst(2)).containsExactly("10", "20");
         assertThat(t.size()).isEqualTo(4);
@@ -395,9 +397,9 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testPollFirstEntry() {
         RTimeSeries<String, String> t = redisson.getTimeSeries("test");
-        t.add(1, "10", "100");
-        t.add(2, "20");
-        t.add(3, "30");
+        t.add(TimeSeriesAddArgs.entry(1, "10", "100"));
+        t.add(TimeSeriesAddArgs.entry(2, "20"));
+        t.add(TimeSeriesAddArgs.entry(3, "30"));
 
         TimeSeriesEntry<String, String> e = t.pollFirstEntry();
         assertThat(e).isEqualTo(new TimeSeriesEntry<>(1, "10", "100"));
@@ -411,9 +413,9 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testPollLastEntry() {
         RTimeSeries<String, String> t = redisson.getTimeSeries("test");
-        t.add(1, "10", "100");
-        t.add(2, "20");
-        t.add(3, "30");
+        t.add(TimeSeriesAddArgs.entry(1, "10", "100"));
+        t.add(TimeSeriesAddArgs.entry(2, "20"));
+        t.add(TimeSeriesAddArgs.entry(3, "30"));
 
         TimeSeriesEntry<String, String> e = t.pollLastEntry();
         assertThat(e).isEqualTo(new TimeSeriesEntry<>(3, "30"));
@@ -427,9 +429,9 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testLastEntries() {
         RTimeSeries<String, String> t = redisson.getTimeSeries("test");
-        t.add(1, "10");
-        t.add(2, "20", "200");
-        t.add(3, "30");
+        t.add(TimeSeriesAddArgs.entry(1, "10"));
+        t.add(TimeSeriesAddArgs.entry(2, "20", "200"));
+        t.add(TimeSeriesAddArgs.entry(3, "30"));
 
         Collection<TimeSeriesEntry<String, String>> s = t.lastEntries(2);
         assertThat(s).containsExactly(new TimeSeriesEntry<>(2, "20", "200"),
@@ -441,9 +443,9 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testFirstEntries() {
         RTimeSeries<String, String> t = redisson.getTimeSeries("test");
-        t.add(1, "10", "100");
-        t.add(2, "20");
-        t.add(3, "30");
+        t.add(TimeSeriesAddArgs.entry(1, "10", "100"));
+        t.add(TimeSeriesAddArgs.entry(2, "20"));
+        t.add(TimeSeriesAddArgs.entry(3, "30"));
 
         Collection<TimeSeriesEntry<String, String>> s = t.firstEntries(2);
         assertThat(s).containsExactly(new TimeSeriesEntry<>(1, "10", "100"),
@@ -456,9 +458,9 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     public void testBackfilledOrder() {
         RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
         // inserted out of timestamp order
-        t.add(100, "A");
-        t.add(50, "B");
-        t.add(200, "C");
+        t.add(TimeSeriesAddArgs.entry(100, "A"));
+        t.add(TimeSeriesAddArgs.entry(50, "B"));
+        t.add(TimeSeriesAddArgs.entry(200, "C"));
 
         assertThat(t.firstTimestamp()).isEqualTo(50);
         assertThat(t.lastTimestamp()).isEqualTo(200);
@@ -473,11 +475,11 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testReversedInsertionOrder() {
         RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
-        t.add(5, "e");
-        t.add(4, "d");
-        t.add(3, "c");
-        t.add(2, "b");
-        t.add(1, "a");
+        t.add(TimeSeriesAddArgs.entry(5, "e"));
+        t.add(TimeSeriesAddArgs.entry(4, "d"));
+        t.add(TimeSeriesAddArgs.entry(3, "c"));
+        t.add(TimeSeriesAddArgs.entry(2, "b"));
+        t.add(TimeSeriesAddArgs.entry(1, "a"));
 
         assertThat(t.firstTimestamp()).isEqualTo(1);
         assertThat(t.lastTimestamp()).isEqualTo(5);
@@ -492,11 +494,11 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testPollReversedInsertionOrder() {
         RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
-        t.add(5, "e");
-        t.add(4, "d");
-        t.add(3, "c");
-        t.add(2, "b");
-        t.add(1, "a");
+        t.add(TimeSeriesAddArgs.entry(5, "e"));
+        t.add(TimeSeriesAddArgs.entry(4, "d"));
+        t.add(TimeSeriesAddArgs.entry(3, "c"));
+        t.add(TimeSeriesAddArgs.entry(2, "b"));
+        t.add(TimeSeriesAddArgs.entry(1, "a"));
 
         assertThat(t.pollFirst()).isEqualTo("a");
         assertThat(t.pollLast()).isEqualTo("e");
@@ -507,9 +509,9 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testTTLBackfilledOrder() throws InterruptedException {
         RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
-        t.add(300, "keep-late");
-        t.add(100, "expires", Duration.ofSeconds(1));
-        t.add(200, "keep-mid");
+        t.add(TimeSeriesAddArgs.entry(300, "keep-late"));
+        t.add(TimeSeriesAddArgs.entry(100, "expires").timeToLive(Duration.ofSeconds(1)));
+        t.add(TimeSeriesAddArgs.entry(200, "keep-mid"));
 
         assertThat(t.firstTimestamp()).isEqualTo(100);
 
@@ -528,14 +530,14 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
         // expired entries at the head force the index paging branch rather than the
         // single ranged read, and keeping live entries in the majority keeps it there
         for (int i = 0; i < 15; i++) {
-            t.add(i, "expired" + i, Duration.ofMillis(300));
+            t.add(TimeSeriesAddArgs.entry(i, "expired" + i).timeToLive(Duration.ofMillis(300)));
         }
         Thread.sleep(500);
         for (int i = 0; i < 20; i++) {
-            t.add(7000, "dup" + i);
+            t.add(TimeSeriesAddArgs.entry(7000, "dup" + i));
         }
         for (int i = 0; i < 20; i++) {
-            t.add(8000 + i, "tail" + i);
+            t.add(TimeSeriesAddArgs.entry(8000 + i, "tail" + i));
         }
 
         assertThat(t.size()).isEqualTo(40);
@@ -555,8 +557,8 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
         assertThat(t.firstEntry()).isNull();
         assertThat(t.pollFirst()).isNull();
 
-        t.add(1, "a", Duration.ofMillis(800));
-        t.add(2, "b", Duration.ofMillis(800));
+        t.add(TimeSeriesAddArgs.entry(1, "a").timeToLive(Duration.ofMillis(800)));
+        t.add(TimeSeriesAddArgs.entry(2, "b").timeToLive(Duration.ofMillis(800)));
         Thread.sleep(1000);
 
         assertThat(t.first()).isNull();
@@ -568,9 +570,9 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testZeroAndNegativeCount() {
         RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
-        t.add(1, "a");
-        t.add(2, "b");
-        t.add(3, "c");
+        t.add(TimeSeriesAddArgs.entry(1, "a"));
+        t.add(TimeSeriesAddArgs.entry(2, "b"));
+        t.add(TimeSeriesAddArgs.entry(3, "c"));
 
         assertThat(t.first(0)).isEmpty();
         assertThat(t.last(0)).isEmpty();
@@ -592,11 +594,11 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     public void testPollSkipsExpiredWithoutConsumingThem() throws InterruptedException {
         RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
         for (int i = 0; i < 5; i++) {
-            t.add(i, "old" + i, Duration.ofMillis(500));
+            t.add(TimeSeriesAddArgs.entry(i, "old" + i).timeToLive(Duration.ofMillis(500)));
         }
         Thread.sleep(700);
-        t.add(100, "a");
-        t.add(101, "b");
+        t.add(TimeSeriesAddArgs.entry(100, "a"));
+        t.add(TimeSeriesAddArgs.entry(101, "b"));
 
         assertThat(t.size()).isEqualTo(2);
         assertThat(t.pollFirst()).isEqualTo("a");
@@ -608,12 +610,12 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     public void testLargeExpiredBacklog() throws InterruptedException {
         RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
         for (int i = 0; i < 200; i++) {
-            t.add(i, "expired" + i, Duration.ofMillis(300));
+            t.add(TimeSeriesAddArgs.entry(i, "expired" + i).timeToLive(Duration.ofMillis(300)));
         }
         Thread.sleep(500);
-        t.add(9000, "z");
-        t.add(8000, "y");
-        t.add(8500, "x");
+        t.add(TimeSeriesAddArgs.entry(9000, "z"));
+        t.add(TimeSeriesAddArgs.entry(8000, "y"));
+        t.add(TimeSeriesAddArgs.entry(8500, "x"));
 
         assertThat(t.size()).isEqualTo(3);
         assertThat(t.first()).isEqualTo("y");
@@ -661,9 +663,9 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testAddOrReplaceCollapsesDuplicates() {
         RTimeSeries<String, String> t = redisson.getTimeSeries("test");
-        t.add(5, "x");
-        t.add(5, "y");
-        t.add(5, "z");
+        t.add(TimeSeriesAddArgs.entry(5, "x"));
+        t.add(TimeSeriesAddArgs.entry(5, "y"));
+        t.add(TimeSeriesAddArgs.entry(5, "z"));
         assertThat(t.size()).isEqualTo(3);
 
         assertThat(t.addOrReplace(TimeSeriesAddArgs.entry(5, "last"))).isFalse();
@@ -707,8 +709,8 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testExpiredDuplicateDoesNotMaskLiveSample() throws InterruptedException {
         RTimeSeries<String, String> t = redisson.getTimeSeries("test");
-        t.add(5, "old", Duration.ofMillis(300));
-        t.add(5, "new");
+        t.add(TimeSeriesAddArgs.entry(5, "old").timeToLive(Duration.ofMillis(300)));
+        t.add(TimeSeriesAddArgs.entry(5, "new"));
         Thread.sleep(500);
 
         assertThat(t.size()).isEqualTo(1);
@@ -721,9 +723,9 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testDuplicatesKeepInsertionOrder() {
         RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
-        t.add(5, "a");
-        t.add(5, "b");
-        t.add(5, "c");
+        t.add(TimeSeriesAddArgs.entry(5, "a"));
+        t.add(TimeSeriesAddArgs.entry(5, "b"));
+        t.add(TimeSeriesAddArgs.entry(5, "c"));
 
         assertThat(t.size()).isEqualTo(3);
         assertThat(t.range(5, 5)).containsExactly("a", "b", "c");
@@ -737,9 +739,9 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testSameValueAtDifferentTimestamps() {
         RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
-        t.add(1, "temp42");
-        t.add(2, "temp42");
-        t.add(3, "temp42");
+        t.add(TimeSeriesAddArgs.entry(1, "temp42"));
+        t.add(TimeSeriesAddArgs.entry(2, "temp42"));
+        t.add(TimeSeriesAddArgs.entry(3, "temp42"));
 
         assertThat(t.size()).isEqualTo(3);
         assertThat(t.entryRange(1, 3)).containsExactly(new TimeSeriesEntry<>(1, "temp42"),
@@ -751,8 +753,8 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     public void testDuplicateOrderAcrossAddApis() {
         RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
         t.addIfAbsent(TimeSeriesAddArgs.entry(9, "a"));
-        t.add(9, "b");
-        t.add(9, "c");
+        t.add(TimeSeriesAddArgs.entry(9, "b"));
+        t.add(TimeSeriesAddArgs.entry(9, "c"));
 
         assertThat(t.range(9, 9)).containsExactly("a", "b", "c");
         assertThat(t.get(9)).isEqualTo("a");
@@ -761,9 +763,9 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testMixedLabelsAtSameTimestamp() {
         RTimeSeries<String, String> t = redisson.getTimeSeries("test");
-        t.add(5, "v", "label");
-        t.add(5, "v");
-        t.add(5, "v");
+        t.add(TimeSeriesAddArgs.entry(5, "v", "label"));
+        t.add(TimeSeriesAddArgs.entry(5, "v"));
+        t.add(TimeSeriesAddArgs.entry(5, "v"));
 
         assertThat(t.size()).isEqualTo(3);
         assertThat(t.range(5, 5)).containsExactly("v", "v", "v");
@@ -772,9 +774,9 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testMixedLabelsKeepInsertionOrder() {
         RTimeSeries<String, String> t = redisson.getTimeSeries("test");
-        t.add(5, "a", "label");
-        t.add(5, "b");
-        t.add(5, "c");
+        t.add(TimeSeriesAddArgs.entry(5, "a", "label"));
+        t.add(TimeSeriesAddArgs.entry(5, "b"));
+        t.add(TimeSeriesAddArgs.entry(5, "c"));
 
         assertThat(t.range(5, 5)).containsExactly("a", "b", "c");
         assertThat(t.get(5)).isEqualTo("a");
@@ -786,9 +788,9 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testEmptyLabelDistinctFromNoLabel() {
         RTimeSeries<String, String> t = redisson.getTimeSeries("test");
-        t.add(1, "v1", "lab");
-        t.add(2, "v2");
-        t.add(3, "v3", "");
+        t.add(TimeSeriesAddArgs.entry(1, "v1", "lab"));
+        t.add(TimeSeriesAddArgs.entry(2, "v2"));
+        t.add(TimeSeriesAddArgs.entry(3, "v3", ""));
 
         assertThat(t.getEntry(1).getLabel()).isEqualTo("lab");
         assertThat(t.getEntry(2).getLabel()).isNull();
@@ -810,11 +812,25 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     }
 
     @Test
+    public void testATimeToLiveThatCannotBeHonouredMeansNoTimeToLive() {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        // a negative interval would put the expiration in the past, and one this wide cannot be
+        // converted to milliseconds at all; neither says anything about when to expire the entry
+        assertThat(t.add(TimeSeriesAddArgs.entry(1, "negative")
+                                          .timeToLive(Duration.ofDays(-30000)))).isTrue();
+        assertThat(t.add(TimeSeriesAddArgs.entry(2, "unconvertible")
+                                          .timeToLive(Duration.ofSeconds(Long.MAX_VALUE)))).isTrue();
+
+        assertThat(t.range(0, 10)).containsExactly("negative", "unconvertible");
+        assertThat(t.size()).isEqualTo(2);
+    }
+
+    @Test
     public void testMixedLabelsDoNotClobberTimeToLive() throws InterruptedException {
         RTimeSeries<String, String> t = redisson.getTimeSeries("test");
-        t.add(5, "keep");
-        t.add(5, "keep", "label");
-        t.add(5, "keep", Duration.ofMillis(400));
+        t.add(TimeSeriesAddArgs.entry(5, "keep"));
+        t.add(TimeSeriesAddArgs.entry(5, "keep", "label"));
+        t.add(TimeSeriesAddArgs.entry(5, "keep").timeToLive(Duration.ofMillis(400)));
 
         assertThat(t.size()).isEqualTo(3);
         Thread.sleep(600);
@@ -824,11 +840,11 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testNegativeAndZeroTimestamps() {
         RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
-        t.add(-5, "same");
-        t.add(-5, "same");
-        t.add(-5, "same");
-        t.add(0, "same");
-        t.add(0, "same");
+        t.add(TimeSeriesAddArgs.entry(-5, "same"));
+        t.add(TimeSeriesAddArgs.entry(-5, "same"));
+        t.add(TimeSeriesAddArgs.entry(-5, "same"));
+        t.add(TimeSeriesAddArgs.entry(0, "same"));
+        t.add(TimeSeriesAddArgs.entry(0, "same"));
 
         assertThat(t.size()).isEqualTo(5);
         assertThat(t.range(-5, -5)).containsExactly("same", "same", "same");
@@ -840,8 +856,8 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testLargeTimestamps() {
         RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
-        t.add(100_000_000_000_000_000L, "w");
-        t.add(1_000_000_000_000_000_000L, "v");
+        t.add(TimeSeriesAddArgs.entry(100_000_000_000_000_000L, "w"));
+        t.add(TimeSeriesAddArgs.entry(1_000_000_000_000_000_000L, "v"));
 
         assertThat(t.firstTimestamp()).isEqualTo(100_000_000_000_000_000L);
         assertThat(t.lastTimestamp()).isEqualTo(1_000_000_000_000_000_000L);
@@ -857,9 +873,9 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     public void testRangeLimitAcrossDuplicateTimestamps() throws InterruptedException {
         RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
         // an expired entry ahead of the duplicates forces the range to fetch a second page
-        t.add(1, "expired", Duration.ofMillis(300));
+        t.add(TimeSeriesAddArgs.entry(1, "expired").timeToLive(Duration.ofMillis(300)));
         for (int i = 0; i < 5; i++) {
-            t.add(2, "dup" + i);
+            t.add(TimeSeriesAddArgs.entry(2, "dup" + i));
         }
         Thread.sleep(500);
 
@@ -877,10 +893,10 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testGetAllAndRemoveAll() {
         RTimeSeries<String, String> t = redisson.getTimeSeries("test");
-        t.add(5, "a", "L1");
-        t.add(5, "b");
-        t.add(5, "c", "L3");
-        t.add(6, "other");
+        t.add(TimeSeriesAddArgs.entry(5, "a", "L1"));
+        t.add(TimeSeriesAddArgs.entry(5, "b"));
+        t.add(TimeSeriesAddArgs.entry(5, "c", "L3"));
+        t.add(TimeSeriesAddArgs.entry(6, "other"));
 
         assertThat(t.getAll(5)).containsExactly("a", "b", "c");
         assertThat(t.get(5)).isEqualTo("a");
@@ -900,16 +916,16 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testGetAndRemoveAll() {
         RTimeSeries<String, String> t = redisson.getTimeSeries("test");
-        t.add(5, "a", "L1");
-        t.add(5, "b");
+        t.add(TimeSeriesAddArgs.entry(5, "a", "L1"));
+        t.add(TimeSeriesAddArgs.entry(5, "b"));
 
         assertThat(t.getAndRemoveAllEntries(5))
                 .containsExactly(new TimeSeriesEntry<>(5, "a", "L1"),
                                  new TimeSeriesEntry<>(5, "b"));
         assertThat(t.size()).isZero();
 
-        t.add(7, "x");
-        t.add(7, "y");
+        t.add(TimeSeriesAddArgs.entry(7, "x"));
+        t.add(TimeSeriesAddArgs.entry(7, "y"));
         assertThat(t.getAndRemoveAll(7)).containsExactly("x", "y");
         assertThat(t.getAll(7)).isEmpty();
         assertThat(t.getAndRemoveAll(99)).isEmpty();
@@ -918,10 +934,10 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testPluralAccessorsSkipExpired() throws InterruptedException {
         RTimeSeries<String, String> t = redisson.getTimeSeries("test");
-        t.add(5, "gone1", Duration.ofMillis(300));
-        t.add(5, "keep1");
-        t.add(5, "gone2", Duration.ofMillis(300));
-        t.add(5, "keep2");
+        t.add(TimeSeriesAddArgs.entry(5, "gone1").timeToLive(Duration.ofMillis(300)));
+        t.add(TimeSeriesAddArgs.entry(5, "keep1"));
+        t.add(TimeSeriesAddArgs.entry(5, "gone2").timeToLive(Duration.ofMillis(300)));
+        t.add(TimeSeriesAddArgs.entry(5, "keep2"));
         Thread.sleep(500);
 
         assertThat(t.getAll(5)).containsExactly("keep1", "keep2");
@@ -934,9 +950,9 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testSingularAndPluralTogether() {
         RTimeSeries<String, String> t = redisson.getTimeSeries("test");
-        t.add(5, "a");
-        t.add(5, "b");
-        t.add(5, "c");
+        t.add(TimeSeriesAddArgs.entry(5, "a"));
+        t.add(TimeSeriesAddArgs.entry(5, "b"));
+        t.add(TimeSeriesAddArgs.entry(5, "c"));
 
         assertThat(t.remove(5)).isTrue();
         assertThat(t.getAll(5)).containsExactly("b", "c");
@@ -949,13 +965,13 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testDuplicateOrderSurvivesRemoval() {
         RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
-        t.add(5, "a");
-        t.add(5, "b");
-        t.add(5, "c");
+        t.add(TimeSeriesAddArgs.entry(5, "a"));
+        t.add(TimeSeriesAddArgs.entry(5, "b"));
+        t.add(TimeSeriesAddArgs.entry(5, "c"));
         assertThat(t.removeAll(5)).isEqualTo(3);
 
-        t.add(5, "d");
-        t.add(5, "e");
+        t.add(TimeSeriesAddArgs.entry(5, "d"));
+        t.add(TimeSeriesAddArgs.entry(5, "e"));
         assertThat(t.range(5, 5)).containsExactly("d", "e");
         assertThat(t.get(5)).isEqualTo("d");
     }
@@ -1083,11 +1099,11 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testRangeByLabel() {
         RTimeSeries<String, String> t = redisson.getTimeSeries("test");
-        t.add(1, "a1", "cpu");
-        t.add(2, "b1", "mem");
-        t.add(3, "a2", "cpu");
-        t.add(4, "plain");
-        t.add(5, "b2", "mem");
+        t.add(TimeSeriesAddArgs.entry(1, "a1", "cpu"));
+        t.add(TimeSeriesAddArgs.entry(2, "b1", "mem"));
+        t.add(TimeSeriesAddArgs.entry(3, "a2", "cpu"));
+        t.add(TimeSeriesAddArgs.entry(4, "plain"));
+        t.add(TimeSeriesAddArgs.entry(5, "b2", "mem"));
 
         assertThat(t.rangeByLabel(0, 10, "cpu")).containsExactly("a1", "a2");
         assertThat(t.rangeByLabel(0, 10, "mem")).containsExactly("b1", "b2");
@@ -1102,8 +1118,8 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testRangeByLabelSelectsUnlabelledWithNull() {
         RTimeSeries<String, String> t = redisson.getTimeSeries("test");
-        t.add(1, "labelled", "cpu");
-        t.add(2, "plain");
+        t.add(TimeSeriesAddArgs.entry(1, "labelled", "cpu"));
+        t.add(TimeSeriesAddArgs.entry(2, "plain"));
 
         assertThat(t.rangeByLabel(0, 10, null)).containsExactly("plain");
         assertThat(t.entryRangeByLabel(0, 10, null))
@@ -1113,9 +1129,9 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testEntryRangeByLabel() {
         RTimeSeries<String, String> t = redisson.getTimeSeries("test");
-        t.add(1, "a1", "cpu");
-        t.add(2, "b1", "mem");
-        t.add(3, "a2", "cpu");
+        t.add(TimeSeriesAddArgs.entry(1, "a1", "cpu"));
+        t.add(TimeSeriesAddArgs.entry(2, "b1", "mem"));
+        t.add(TimeSeriesAddArgs.entry(3, "a2", "cpu"));
 
         assertThat(t.entryRangeByLabel(0, 10, "cpu")).containsExactly(
                 new TimeSeriesEntry<>(1, "a1", "cpu"),
@@ -1130,7 +1146,7 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
         RTimeSeries<String, String> t = redisson.getTimeSeries("test");
         // only every tenth element matches, so a page of the requested size is mostly dropped
         for (int i = 1; i <= 40; i++) {
-            t.add(i, "v" + i, i % 10 == 0 ? "keep" : "drop");
+            t.add(TimeSeriesAddArgs.entry(i, "v" + i, i % 10 == 0 ? "keep" : "drop"));
         }
 
         assertThat(t.rangeByLabel(0, 100, "keep", 10)).containsExactly("v10", "v20", "v30", "v40");
@@ -1145,10 +1161,10 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testRemoveRangeByLabel() {
         RTimeSeries<String, String> t = redisson.getTimeSeries("test");
-        t.add(1, "a1", "cpu");
-        t.add(2, "b1", "mem");
-        t.add(3, "a2", "cpu");
-        t.add(4, "plain");
+        t.add(TimeSeriesAddArgs.entry(1, "a1", "cpu"));
+        t.add(TimeSeriesAddArgs.entry(2, "b1", "mem"));
+        t.add(TimeSeriesAddArgs.entry(3, "a2", "cpu"));
+        t.add(TimeSeriesAddArgs.entry(4, "plain"));
 
         assertThat(t.removeRangeByLabel(0, 10, "cpu")).isEqualTo(2);
         assertThat(t.range(0, 10)).containsExactly("b1", "plain");
@@ -1160,10 +1176,10 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testLabels() {
         RTimeSeries<String, String> t = redisson.getTimeSeries("test");
-        t.add(1, "a1", "cpu");
-        t.add(2, "b1", "mem");
-        t.add(3, "a2", "cpu");
-        t.add(4, "plain");
+        t.add(TimeSeriesAddArgs.entry(1, "a1", "cpu"));
+        t.add(TimeSeriesAddArgs.entry(2, "b1", "mem"));
+        t.add(TimeSeriesAddArgs.entry(3, "a2", "cpu"));
+        t.add(TimeSeriesAddArgs.entry(4, "plain"));
 
         assertThat(t.labels()).containsExactlyInAnyOrder("cpu", "mem");
         assertThat(t.labels(2, 2)).containsExactlyInAnyOrder("mem");
@@ -1178,7 +1194,7 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
         RTimeSeries<String, String> t = redisson.getTimeSeries("test");
         // more than the 500 element page the scan reads at a time
         for (int i = 1; i <= 1300; i++) {
-            t.add(i, "v" + i, "L" + (i % 7));
+            t.add(TimeSeriesAddArgs.entry(i, "v" + i, "L" + (i % 7)));
         }
 
         assertThat(t.labels()).hasSize(7);
@@ -1188,8 +1204,8 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testLabelFilterIgnoresExpiredEntries() throws InterruptedException {
         RTimeSeries<String, String> t = redisson.getTimeSeries("test");
-        t.add(1, "live", "cpu");
-        t.add(2, "dying", "gone", Duration.ofMillis(300));
+        t.add(TimeSeriesAddArgs.entry(1, "live", "cpu"));
+        t.add(TimeSeriesAddArgs.entry(2, "dying", "gone").timeToLive(Duration.ofMillis(300)));
         assertThat(t.rangeByLabel(0, 10, "cpu")).containsExactly("live");
         assertThat(t.labels()).containsExactlyInAnyOrder("cpu", "gone");
 
@@ -1203,7 +1219,7 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     public void testRangeByLabelWithNegativeLimit() {
         RTimeSeries<String, String> t = redisson.getTimeSeries("test");
         for (int i = 1; i <= 5; i++) {
-            t.add(i, "v" + i, "cpu");
+            t.add(TimeSeriesAddArgs.entry(i, "v" + i, "cpu"));
         }
 
         assertThat(t.rangeByLabel(0, 100, "cpu", -1)).isEmpty();
@@ -1215,8 +1231,8 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testTimestampsAtTheEdgeOfTheLongRange() {
         RTimeSeries<String, String> t = redisson.getTimeSeries("test");
-        t.add(Long.MAX_VALUE, "max", "cpu");
-        t.add(Long.MIN_VALUE, "min", "cpu");
+        t.add(TimeSeriesAddArgs.entry(Long.MAX_VALUE, "max", "cpu"));
+        t.add(TimeSeriesAddArgs.entry(Long.MIN_VALUE, "min", "cpu"));
 
         assertThat(t.firstTimestamp()).isEqualTo(Long.MIN_VALUE);
         assertThat(t.lastTimestamp()).isEqualTo(Long.MAX_VALUE);
@@ -1229,11 +1245,11 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testLabelFilterUnderAnotherCodec() {
         RTimeSeries<String, String> t = redisson.getTimeSeries("test", StringCodec.INSTANCE);
-        t.add(1, "a1", "cpu");
-        t.add(2, "b1", "mem");
-        t.add(3, "plain");
+        t.add(TimeSeriesAddArgs.entry(1, "a1", "cpu"));
+        t.add(TimeSeriesAddArgs.entry(2, "b1", "mem"));
+        t.add(TimeSeriesAddArgs.entry(3, "plain"));
         // an empty label is a label, and is not the same as carrying none
-        t.add(4, "e1", "");
+        t.add(TimeSeriesAddArgs.entry(4, "e1", ""));
 
         assertThat(t.rangeByLabel(0, 10, "cpu")).containsExactly("a1");
         assertThat(t.rangeByLabel(0, 10, "")).containsExactly("e1");
@@ -1246,8 +1262,8 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testLabelThatLooksLikeTheAbsentMarker() {
         RTimeSeries<String, String> t = redisson.getTimeSeries("test", StringCodec.INSTANCE);
-        t.add(1, "zero", "0");
-        t.add(2, "plain");
+        t.add(TimeSeriesAddArgs.entry(1, "zero", "0"));
+        t.add(TimeSeriesAddArgs.entry(2, "plain"));
 
         assertThat(t.rangeByLabel(0, 10, "0")).containsExactly("zero");
         assertThat(t.rangeByLabel(0, 10, null)).containsExactly("plain");
@@ -1258,7 +1274,7 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     public void testEntryRangeReversedByLabelWithLimit() {
         RTimeSeries<String, String> t = redisson.getTimeSeries("test");
         for (int i = 1; i <= 20; i++) {
-            t.add(i, "v" + i, i % 5 == 0 ? "keep" : "drop");
+            t.add(TimeSeriesAddArgs.entry(i, "v" + i, i % 5 == 0 ? "keep" : "drop"));
         }
 
         assertThat(t.entryRangeReversedByLabel(0, 100, "keep", 2)).containsExactly(
@@ -1270,8 +1286,8 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testRemoveRangeByLabelSkipsExpiredMatches() throws InterruptedException {
         RTimeSeries<String, String> t = redisson.getTimeSeries("test");
-        t.add(1, "live", "cpu");
-        t.add(2, "dying", "cpu", Duration.ofMillis(300));
+        t.add(TimeSeriesAddArgs.entry(1, "live", "cpu"));
+        t.add(TimeSeriesAddArgs.entry(2, "dying", "cpu").timeToLive(Duration.ofMillis(300)));
         Thread.sleep(500);
 
         // the expired one is still in the index but must not be counted as removed
@@ -1283,7 +1299,7 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     public void testLabelFilterReadsEntriesWrittenByAnOlderVersion() {
         String name = "legacy";
         RTimeSeries<String, String> t = redisson.getTimeSeries(name, StringCodec.INSTANCE);
-        t.add(1, "current", "cpu");
+        t.add(TimeSeriesAddArgs.entry(1, "current", "cpu"));
         // pre-4.x members: marker 3 carries the label raw, marker 2 carries none
         redisson.getScript(StringCodec.INSTANCE).eval(RScript.Mode.READ_WRITE,
                 "local val = struct.pack('BBc0Lc0Lc0', ARGV[4], string.len(ARGV[2]), ARGV[2], "
@@ -1316,7 +1332,7 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     public void testLimitLargerThanTheWindow() {
         RTimeSeries<String, String> t = redisson.getTimeSeries("test");
         for (int i = 1; i <= 2000; i++) {
-            t.add(i, "v" + i, "cpu");
+            t.add(TimeSeriesAddArgs.entry(i, "v" + i, "cpu"));
         }
 
         // the page is a slice of ranks, so a limit far larger than the window must not
@@ -1330,7 +1346,7 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testExpireAtCoversEveryKey() {
         RTimeSeries<String, String> t = redisson.getTimeSeries("test");
-        t.add(1, "a", "cpu");
+        t.add(TimeSeriesAddArgs.entry(1, "a", "cpu"));
 
         // every expireAt form used to fail with "Unsupported option"
         assertThat(t.expire(Instant.now().plusSeconds(600))).isTrue();
@@ -1347,13 +1363,13 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testCopyOntoANameWhoseCounterSurvived() {
         RTimeSeries<String, String> src = redisson.getTimeSeries("src");
-        src.add(1000, "A");
-        src.add(1001, "B");
-        src.add(1002, "C");
+        src.add(TimeSeriesAddArgs.entry(1000, "A"));
+        src.add(TimeSeriesAddArgs.entry(1001, "B"));
+        src.add(TimeSeriesAddArgs.entry(1002, "C"));
 
         // emptying a collection leaves its counter behind until the eviction task runs
         RTimeSeries<String, String> dst = redisson.getTimeSeries("dst");
-        dst.add(1, "junk");
+        dst.add(TimeSeriesAddArgs.entry(1, "junk"));
         dst.removeAll(1);
         assertThat(redisson.getKeys().countExists("redisson__ts_seq:{dst}")).isEqualTo(1);
 
@@ -1364,7 +1380,7 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
         assertThat(src.copyAndReplace("dst")).isTrue();
         assertThat(dst.range(0, 10000)).containsExactly("A", "B", "C");
         // and the ids that came with the data are not handed out again
-        dst.add(9999, "B");
+        dst.add(TimeSeriesAddArgs.entry(9999, "B"));
         assertThat(dst.size()).isEqualTo(4);
         assertThat(dst.get(1001)).isEqualTo("B");
         assertThat(dst.get(9999)).isEqualTo("B");
@@ -1373,9 +1389,9 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testCopyLeavesTheDestinationAloneWhenItFails() {
         RTimeSeries<String, String> src = redisson.getTimeSeries("src");
-        src.add(1, "a");
+        src.add(TimeSeriesAddArgs.entry(1, "a"));
         RTimeSeries<String, String> dst = redisson.getTimeSeries("dst");
-        dst.add(5, "existing");
+        dst.add(TimeSeriesAddArgs.entry(5, "existing"));
 
         assertThat(src.copy("dst")).isFalse();
         assertThat(dst.range(0, 100)).containsExactly("existing");
@@ -1405,7 +1421,7 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
         assertThat(t.range(0, 100)).containsExactly("v1", "v2", "v3");
         assertThat(redisson.getKeys().countExists("old")).isZero();
         // and the renamed collection keeps working
-        t.add(4, "v4", "cpu");
+        t.add(TimeSeriesAddArgs.entry(4, "v4", "cpu"));
         assertThat(t.rangeByLabel(0, 100, "cpu")).containsExactly("v4");
     }
 
@@ -1414,9 +1430,9 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
         String name = "test";
         RTimeSeries<String, String> t = redisson.getTimeSeries(name, StringCodec.INSTANCE);
         for (int i = 1; i <= 10; i++) {
-            t.add(i, "gone" + i, Duration.ofMillis(1));
+            t.add(TimeSeriesAddArgs.entry(i, "gone" + i).timeToLive(Duration.ofMillis(1)));
         }
-        t.add(100, "live");
+        t.add(TimeSeriesAddArgs.entry(100, "live"));
 
         // drop the live entry's expiration row and add an orphan one, so the two indexes
         // have the same cardinality but different contents
@@ -1443,11 +1459,11 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testAggregate() {
         RTimeSeries<String, String> t = numeric("test");
-        t.add(0, "1");
-        t.add(10, "3");
-        t.add(20, "5");
-        t.add(100, "10");
-        t.add(150, "20");
+        t.add(TimeSeriesAddArgs.entry(0, "1"));
+        t.add(TimeSeriesAddArgs.entry(10, "3"));
+        t.add(TimeSeriesAddArgs.entry(20, "5"));
+        t.add(TimeSeriesAddArgs.entry(100, "10"));
+        t.add(TimeSeriesAddArgs.entry(150, "20"));
 
         List<TimeSeriesBucket> buckets = new ArrayList<>(t.aggregate(
                 TimeSeriesAggregationArgs.<String>between(0, 200)
@@ -1476,7 +1492,7 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testAggregateReportsOnlyWhatWasAskedFor() {
         RTimeSeries<String, String> t = numeric("test");
-        t.add(1, "4");
+        t.add(TimeSeriesAddArgs.entry(1, "4"));
 
         TimeSeriesBucket bucket = t.aggregate(TimeSeriesAggregationArgs.<String>between(0, 10)
                 .bucket(Duration.ofMillis(10)).avg()).iterator().next();
@@ -1490,8 +1506,8 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testAggregateSkipsEmptyBuckets() {
         RTimeSeries<String, String> t = numeric("test");
-        t.add(0, "1");
-        t.add(5000, "2");
+        t.add(TimeSeriesAddArgs.entry(0, "1"));
+        t.add(TimeSeriesAddArgs.entry(5000, "2"));
 
         List<TimeSeriesBucket> buckets = new ArrayList<>(t.aggregate(
                 TimeSeriesAggregationArgs.<String>between(0, 10000)
@@ -1506,7 +1522,7 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     public void testAggregateAlignment() {
         RTimeSeries<String, String> t = numeric("test");
         for (int ts = 0; ts < 100; ts += 10) {
-            t.add(ts, Integer.toString(ts));
+            t.add(TimeSeriesAddArgs.entry(ts, Integer.toString(ts)));
         }
 
         assertThat(t.aggregate(TimeSeriesAggregationArgs.<String>between(0, 100)
@@ -1524,9 +1540,9 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testAggregateNegativeTimestamps() {
         RTimeSeries<String, String> t = numeric("test");
-        t.add(-30, "1");
-        t.add(-10, "2");
-        t.add(10, "3");
+        t.add(TimeSeriesAddArgs.entry(-30, "1"));
+        t.add(TimeSeriesAddArgs.entry(-10, "2"));
+        t.add(TimeSeriesAddArgs.entry(10, "3"));
 
         assertThat(t.aggregate(TimeSeriesAggregationArgs.<String>between(-100, 100)
                 .bucket(Duration.ofMillis(20)).count()))
@@ -1538,7 +1554,7 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     public void testAggregateFilterByValue() {
         RTimeSeries<String, String> t = numeric("test");
         for (int i = 0; i < 10; i++) {
-            t.add(i, Integer.toString(i));
+            t.add(TimeSeriesAddArgs.entry(i, Integer.toString(i)));
         }
 
         TimeSeriesBucket bucket = t.aggregate(TimeSeriesAggregationArgs.<String>between(0, 100)
@@ -1558,10 +1574,10 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testAggregateFilterByLabel() {
         RTimeSeries<String, String> t = numeric("test");
-        t.add(1, "10", "cpu");
-        t.add(2, "20", "mem");
-        t.add(3, "30", "cpu");
-        t.add(4, "40");
+        t.add(TimeSeriesAddArgs.entry(1, "10", "cpu"));
+        t.add(TimeSeriesAddArgs.entry(2, "20", "mem"));
+        t.add(TimeSeriesAddArgs.entry(3, "30", "cpu"));
+        t.add(TimeSeriesAddArgs.entry(4, "40"));
 
         assertThat(t.aggregate(TimeSeriesAggregationArgs.<String>between(0, 100)
                 .bucket(Duration.ofMillis(100)).label("cpu").sum().count())
@@ -1579,7 +1595,7 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     public void testAggregateVariance() {
         RTimeSeries<String, String> t = numeric("test");
         for (String v : new String[]{"2", "4", "4", "4", "5", "5", "7", "9"}) {
-            t.add(t.size(), v);
+            t.add(TimeSeriesAddArgs.entry(t.size(), v));
         }
 
         TimeSeriesBucket b = t.aggregate(TimeSeriesAggregationArgs.<String>between(0, 100)
@@ -1596,7 +1612,7 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testAggregateSampleVarianceOfOneValueIsUndefined() {
         RTimeSeries<String, String> t = numeric("test");
-        t.add(1, "5");
+        t.add(TimeSeriesAddArgs.entry(1, "5"));
 
         TimeSeriesBucket b = t.aggregate(TimeSeriesAggregationArgs.<String>between(0, 100)
                 .bucket(Duration.ofMillis(100))
@@ -1613,9 +1629,9 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     public void testAggregateKeepsPrecisionOnLargeCloseValues() {
         RTimeSeries<String, String> t = numeric("test");
         // a sum of squares would lose these entirely
-        t.add(1, "1000000000.1");
-        t.add(2, "1000000000.2");
-        t.add(3, "1000000000.3");
+        t.add(TimeSeriesAddArgs.entry(1, "1000000000.1"));
+        t.add(TimeSeriesAddArgs.entry(2, "1000000000.2"));
+        t.add(TimeSeriesAddArgs.entry(3, "1000000000.3"));
 
         TimeSeriesBucket b = t.aggregate(TimeSeriesAggregationArgs.<String>between(0, 100)
                 .bucket(Duration.ofMillis(100)).avg().variancePopulation())
@@ -1628,8 +1644,8 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testAggregateIgnoresExpiredEntries() throws InterruptedException {
         RTimeSeries<String, String> t = numeric("test");
-        t.add(1, "10");
-        t.add(2, "20", Duration.ofMillis(300));
+        t.add(TimeSeriesAddArgs.entry(1, "10"));
+        t.add(TimeSeriesAddArgs.entry(2, "20").timeToLive(Duration.ofMillis(300)));
         assertThat(t.aggregate(TimeSeriesAggregationArgs.<String>between(0, 100)
                 .bucket(Duration.ofMillis(100)).count()).iterator().next().getCount())
                 .isEqualTo(2.0);
@@ -1644,7 +1660,7 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     public void testAggregateRejectsABinaryCodec() {
         // the default codec writes a number as binary, which the script cannot read
         RTimeSeries<String, String> t = redisson.getTimeSeries("test");
-        t.add(1, "10");
+        t.add(TimeSeriesAddArgs.entry(1, "10"));
 
         assertThatThrownBy(() -> t.aggregate(TimeSeriesAggregationArgs.<String>between(0, 100)
                 .bucket(Duration.ofMillis(100)).avg()))
@@ -1657,8 +1673,8 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     public void testAggregateRejectsAValueThatIsNotAFiniteNumber() {
         for (String bad : new String[]{"not a number", "inf", "-inf", "nan", "infinity"}) {
             RTimeSeries<String, String> t = numeric("test" + bad.hashCode());
-            t.add(1, "10");
-            t.add(2, bad);
+            t.add(TimeSeriesAddArgs.entry(1, "10"));
+            t.add(TimeSeriesAddArgs.entry(2, bad));
 
             // tonumber() reads inf and nan, which would quietly poison the whole bucket
             assertThatThrownBy(() -> t.aggregate(TimeSeriesAggregationArgs.<String>between(0, 100)
@@ -1670,8 +1686,8 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testAggregateReportsAnOverflowJavaCanRead() {
         RTimeSeries<String, String> t = numeric("test");
-        t.add(1, "1e308");
-        t.add(2, "1e308");
+        t.add(TimeSeriesAddArgs.entry(1, "1e308"));
+        t.add(TimeSeriesAddArgs.entry(2, "1e308"));
 
         TimeSeriesBucket b = t.aggregate(TimeSeriesAggregationArgs.<String>between(0, 100)
                 .bucket(Duration.ofMillis(100)).sum().avg()).iterator().next();
@@ -1685,7 +1701,7 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     public void testAggregateAvgSurvivesASumThatCannotBeRepresented() {
         RTimeSeries<String, String> t = numeric("test");
         for (int i = 0; i < 20; i++) {
-            t.add(i, "1e307");
+            t.add(TimeSeriesAddArgs.entry(i, "1e307"));
         }
 
         assertThat(t.aggregate(TimeSeriesAggregationArgs.<String>between(0, 100)
@@ -1696,7 +1712,7 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testAggregateAtTheBottomOfTheLongRange() {
         RTimeSeries<String, String> t = numeric("test");
-        t.add(Long.MIN_VALUE, "1");
+        t.add(TimeSeriesAddArgs.entry(Long.MIN_VALUE, "1"));
 
         assertThat(t.aggregate(TimeSeriesAggregationArgs.<String>between(Long.MIN_VALUE, 0)
                 .bucket(Duration.ofHours(1)).count()))
@@ -1707,7 +1723,7 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testAggregateBucketMustSurviveConversionToMillis() {
         RTimeSeries<String, String> t = numeric("test");
-        t.add(1, "1");
+        t.add(TimeSeriesAddArgs.entry(1, "1"));
 
         // neither zero nor negative, but it truncates to zero milliseconds
         assertThatThrownBy(() -> t.aggregate(TimeSeriesAggregationArgs.<String>between(0, 100)
@@ -1724,8 +1740,8 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     public void testAggregateUnderEveryCodecTheMessageRecommends() {
         // the entries are written as text whatever the reading collection's codec is
         RTimeSeries<String, String> writer = redisson.getTimeSeries("codecs", StringCodec.INSTANCE);
-        writer.add(0, "1.5");
-        writer.add(1, "2.5");
+        writer.add(TimeSeriesAddArgs.entry(0, "1.5"));
+        writer.add(TimeSeriesAddArgs.entry(1, "2.5"));
 
         for (Codec codec : new Codec[]{StringCodec.INSTANCE, DoubleCodec.INSTANCE,
                                        LongCodec.INSTANCE, IntegerCodec.INSTANCE}) {
@@ -1747,7 +1763,7 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testAggregateArgumentValidation() {
         RTimeSeries<String, String> t = numeric("test");
-        t.add(1, "1");
+        t.add(TimeSeriesAddArgs.entry(1, "1"));
 
         assertThatThrownBy(() -> t.aggregate(TimeSeriesAggregationArgs.<String>between(0, 100).avg()))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -1767,7 +1783,7 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
         assertThat(t.aggregate(TimeSeriesAggregationArgs.<String>between(0, 100)
                 .bucket(Duration.ofMillis(10)).avg())).isEmpty();
 
-        t.add(500, "1");
+        t.add(TimeSeriesAddArgs.entry(500, "1"));
         assertThat(t.aggregate(TimeSeriesAggregationArgs.<String>between(0, 100)
                 .bucket(Duration.ofMillis(10)).avg())).isEmpty();
     }
@@ -1775,9 +1791,9 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testReadTail() {
         RTimeSeries<String, String> t = redisson.getTimeSeries("test");
-        t.add(10, "a");
-        t.add(20, "b");
-        t.add(30, "c");
+        t.add(TimeSeriesAddArgs.entry(10, "a"));
+        t.add(TimeSeriesAddArgs.entry(20, "b"));
+        t.add(TimeSeriesAddArgs.entry(30, "c"));
 
         assertThat(t.readTail(TimeSeriesReadArgs.after(10))).containsExactly(
                 new TimeSeriesEntry<>(20, "b"),
@@ -1793,7 +1809,7 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
         long cursor = Long.MIN_VALUE;
         List<String> seen = new ArrayList<>();
         for (int round = 0; round < 5; round++) {
-            t.add(round * 10, "v" + round);
+            t.add(TimeSeriesAddArgs.entry(round * 10, "v" + round));
             for (TimeSeriesEntry<String, String> e : t.readTail(TimeSeriesReadArgs.after(cursor))) {
                 seen.add(e.getValue());
                 cursor = e.getTimestamp();
@@ -1808,7 +1824,7 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     public void testReadTailCountAndLabel() {
         RTimeSeries<String, String> t = redisson.getTimeSeries("test");
         for (int i = 1; i <= 10; i++) {
-            t.add(i, "v" + i, i % 2 == 0 ? "even" : "odd");
+            t.add(TimeSeriesAddArgs.entry(i, "v" + i, i % 2 == 0 ? "even" : "odd"));
         }
 
         assertThat(t.readTail(TimeSeriesReadArgs.after(0).count(3)))
@@ -1824,8 +1840,8 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testReadTailAtTheEdgeOfTheLongRange() {
         RTimeSeries<String, String> t = redisson.getTimeSeries("test");
-        t.add(Long.MAX_VALUE, "max");
-        t.add(0, "zero");
+        t.add(TimeSeriesAddArgs.entry(Long.MAX_VALUE, "max"));
+        t.add(TimeSeriesAddArgs.entry(0, "zero"));
 
         assertThat(t.readTail(TimeSeriesReadArgs.after(Long.MAX_VALUE))).isEmpty();
         assertThat(t.readTail(TimeSeriesReadArgs.after(0)))
@@ -1835,8 +1851,8 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testReadTailIgnoresExpiredEntries() throws InterruptedException {
         RTimeSeries<String, String> t = redisson.getTimeSeries("test");
-        t.add(10, "kept");
-        t.add(20, "dying", Duration.ofMillis(300));
+        t.add(TimeSeriesAddArgs.entry(10, "kept"));
+        t.add(TimeSeriesAddArgs.entry(20, "dying").timeToLive(Duration.ofMillis(300)));
         assertThat(t.readTail(TimeSeriesReadArgs.after(0))).hasSize(2);
 
         Thread.sleep(500);
@@ -1855,9 +1871,9 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
         assertThat(empty.getEntriesIssued()).isZero();
         assertThat(empty.getTimeToLive()).isEqualTo(-2);
 
-        t.add(30, "c");
-        t.add(10, "a");
-        t.add(20, "b");
+        t.add(TimeSeriesAddArgs.entry(30, "c"));
+        t.add(TimeSeriesAddArgs.entry(10, "a"));
+        t.add(TimeSeriesAddArgs.entry(20, "b"));
 
         TimeSeriesInfo info = t.info();
         assertThat(info.getSize()).isEqualTo(3);
@@ -1877,9 +1893,9 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testInfoCountsWhatEvictionHasNotReclaimed() throws InterruptedException {
         RTimeSeries<String, String> t = redisson.getTimeSeries("test");
-        t.add(10, "kept");
-        t.add(20, "dying", Duration.ofMillis(300));
-        t.add(30, "also dying", Duration.ofMillis(300));
+        t.add(TimeSeriesAddArgs.entry(10, "kept"));
+        t.add(TimeSeriesAddArgs.entry(20, "dying").timeToLive(Duration.ofMillis(300)));
+        t.add(TimeSeriesAddArgs.entry(30, "also dying").timeToLive(Duration.ofMillis(300)));
         Thread.sleep(500);
 
         TimeSeriesInfo info = t.info();
@@ -1893,7 +1909,7 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testInfoReportsTheCollectionTimeToLive() {
         RTimeSeries<String, String> t = redisson.getTimeSeries("test");
-        t.add(1, "a");
+        t.add(TimeSeriesAddArgs.entry(1, "a"));
         assertThat(t.info().getTimeToLive()).isEqualTo(-1);
 
         t.expire(Duration.ofMinutes(10));
@@ -1906,8 +1922,8 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testInfoAtTheEdgeOfTheLongRange() {
         RTimeSeries<String, String> t = redisson.getTimeSeries("test");
-        t.add(Long.MIN_VALUE, "min");
-        t.add(Long.MAX_VALUE, "max");
+        t.add(TimeSeriesAddArgs.entry(Long.MIN_VALUE, "min"));
+        t.add(TimeSeriesAddArgs.entry(Long.MAX_VALUE, "max"));
 
         TimeSeriesInfo info = t.info();
         assertThat(info.getFirstTimestamp()).isEqualTo(Long.MIN_VALUE);
@@ -1917,7 +1933,7 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testInfoWithATimeToLivePastFourteenDigits() {
         RTimeSeries<String, String> t = redisson.getTimeSeries("test");
-        t.add(1, "a");
+        t.add(TimeSeriesAddArgs.entry(1, "a"));
         t.expire(Duration.ofDays(365L * 4000));
 
         // Lua's tostring renders with %.14g, which would have come back as 1.26144e+14
@@ -1932,7 +1948,7 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
             RTimeSeries<String, String> t = redisson.getTimeSeries("test" + base);
             List<Long> stored = new ArrayList<>();
             for (long d = 0; d <= 16; d += 2) {
-                t.add(base + d, "v" + d);
+                t.add(TimeSeriesAddArgs.entry(base + d, "v" + d));
             }
             for (TimeSeriesEntry<String, String> e : t.entryRange(Long.MIN_VALUE, Long.MAX_VALUE)) {
                 stored.add(e.getTimestamp());
@@ -1976,9 +1992,9 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     public void testReadTailNeverEndsInsideATimestamp() {
         RTimeSeries<String, String> t = redisson.getTimeSeries("test");
         for (int i = 0; i < 150; i++) {
-            t.add(1000, "v" + i);
+            t.add(TimeSeriesAddArgs.entry(1000, "v" + i));
         }
-        t.add(1001, "next");
+        t.add(TimeSeriesAddArgs.entry(1001, "next"));
 
         // the count is reached inside the run at 1000, so the whole run comes back
         assertThat(t.readTail(TimeSeriesReadArgs.after(0).count(100))).hasSize(150);
@@ -2004,9 +2020,9 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testSizeCountsAnEntryWithANegativeExpirationAsExpired() {
         RTimeSeries<String, String> t = redisson.getTimeSeries("test");
-        // a negative time to live puts the expiration before the epoch
-        t.add(7, "gone", Duration.ofDays(-30000));
-        t.add(8, "live");
+        // addAll() takes a negative interval literally, so the expiration lands in the past
+        t.addAll(Collections.singletonMap(7L, "gone"), Duration.ofDays(-30000));
+        t.add(TimeSeriesAddArgs.entry(8, "live"));
 
         assertThat(t.range(0, 100)).containsExactly("live");
         assertThat(t.size()).isEqualTo(1);
@@ -2020,13 +2036,13 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testRenameLeavesTheDestinationMirroringTheSource() {
         RTimeSeries<String, String> src = redisson.getTimeSeries("src");
-        src.add(1, "a");
+        src.add(TimeSeriesAddArgs.entry(1, "a"));
         src.removeAll(1);
         // emptied, but its counter key outlives the data
 
         RTimeSeries<String, String> dst = redisson.getTimeSeries("dst");
         for (int i = 1; i <= 5; i++) {
-            dst.add(i, "d" + i);
+            dst.add(TimeSeriesAddArgs.entry(i, "d" + i));
         }
 
         src.rename("dst");
@@ -2038,8 +2054,8 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
         assertThat(redisson.getKeys().countExists("redisson__ts_ttl:{dst}")).isZero();
 
         // and the ids the source's counter goes on issuing meet no data to collide with
-        renamed.add(3, "fresh");
-        renamed.add(9, "later");
+        renamed.add(TimeSeriesAddArgs.entry(3, "fresh"));
+        renamed.add(TimeSeriesAddArgs.entry(9, "later"));
         assertThat(renamed.range(0, 100)).containsExactly("fresh", "later");
         assertThat(renamed.size()).isEqualTo(2);
     }
@@ -2083,7 +2099,7 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     public void testAddPoliciesCollapseDuplicatesToOneEntry() {
         RTimeSeries<String, String> t = numeric("test");
         for (String v : new String[]{"9", "2", "7"}) {
-            t.add(5, v);
+            t.add(TimeSeriesAddArgs.entry(5, v));
         }
 
         // the smallest of them is what the incoming value is compared against
@@ -2094,7 +2110,7 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
 
         RTimeSeries<String, String> g = numeric("greater");
         for (String v : new String[]{"9", "2", "7"}) {
-            g.add(5, v);
+            g.add(TimeSeriesAddArgs.entry(5, v));
         }
         assertThat(g.addIfGreater(TimeSeriesAddArgs.entry(5, "8"))).isFalse();
         assertThat(g.addIfGreater(TimeSeriesAddArgs.entry(5, "10"))).isTrue();
@@ -2102,7 +2118,7 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
 
         RTimeSeries<String, String> sum = numeric("sum");
         for (String v : new String[]{"9", "2", "7"}) {
-            sum.add(5, v);
+            sum.add(TimeSeriesAddArgs.entry(5, v));
         }
         assertThat(sum.addAndSum(TimeSeriesAddArgs.entry(5, "1"))).isFalse();
         assertThat(sum.range(0, 10)).containsExactly("19");
@@ -2111,7 +2127,7 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testAddPoliciesIgnoreExpiredEntries() throws InterruptedException {
         RTimeSeries<String, String> t = numeric("test");
-        t.add(5, "1", Duration.ofMillis(200));
+        t.add(TimeSeriesAddArgs.entry(5, "1").timeToLive(Duration.ofMillis(200)));
         Thread.sleep(400);
 
         // the timestamp reads as free, and the stale entry is dropped
@@ -2120,8 +2136,8 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
         assertThat(t.size()).isEqualTo(1);
 
         RTimeSeries<String, String> sum = numeric("sum");
-        sum.add(5, "50", Duration.ofMillis(200));
-        sum.add(5, "3");
+        sum.add(TimeSeriesAddArgs.entry(5, "50").timeToLive(Duration.ofMillis(200)));
+        sum.add(TimeSeriesAddArgs.entry(5, "3"));
         Thread.sleep(400);
         assertThat(sum.addAndSum(TimeSeriesAddArgs.entry(5, "1"))).isFalse();
         assertThat(sum.range(0, 10)).containsExactly("4");
@@ -2130,8 +2146,8 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testTheComparingPoliciesInSequence() {
         RTimeSeries<String, String> t = numeric("test");
-        t.add(1, "5");
-        t.add(2, "5");
+        t.add(TimeSeriesAddArgs.entry(1, "5"));
+        t.add(TimeSeriesAddArgs.entry(2, "5"));
 
         assertThat(t.addIfLess(TimeSeriesAddArgs.entry(1, "9"))).isFalse();
         assertThat(t.addIfLess(TimeSeriesAddArgs.entry(2, "1"))).isTrue();
@@ -2177,7 +2193,7 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     @Test
     public void testAddPoliciesRequireANumericCodec() {
         RTimeSeries<String, String> t = redisson.getTimeSeries("test");
-        t.add(1, "10");
+        t.add(TimeSeriesAddArgs.entry(1, "10"));
 
         assertThatThrownBy(() -> t.addIfLess(TimeSeriesAddArgs.entry(1, "5")))
                 .isInstanceOf(IllegalStateException.class)
@@ -2196,13 +2212,13 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     public void testAddPoliciesRejectValuesThatAreNotFiniteNumbers() {
         for (String bad : new String[]{"abc", "inf", "-inf", "nan"}) {
             RTimeSeries<String, String> t = numeric("test" + bad.hashCode());
-            t.add(5, "1");
+            t.add(TimeSeriesAddArgs.entry(5, "1"));
             assertThatThrownBy(() -> t.addAndSum(TimeSeriesAddArgs.entry(5, bad)))
                     .hasMessageContaining("is not a finite number");
         }
 
         RTimeSeries<String, String> stored = numeric("stored");
-        stored.add(5, "not a number");
+        stored.add(TimeSeriesAddArgs.entry(5, "not a number"));
         assertThatThrownBy(() -> stored.addIfLess(TimeSeriesAddArgs.entry(5, "1")))
                 .hasMessageContaining("is not a finite number");
 
@@ -2217,21 +2233,21 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
         // members are removed in runs, because unpack() is bounded by the Lua stack
         RTimeSeries<String, String> t = numeric("test");
         for (int i = 0; i < 1200; i++) {
-            t.add(5, String.valueOf(i + 1));
+            t.add(TimeSeriesAddArgs.entry(5, String.valueOf(i + 1)));
         }
         assertThat(t.getAll(5)).hasSize(1200);
         assertThat(t.addAndSum(TimeSeriesAddArgs.entry(5, "0"))).isFalse();
         assertThat(t.getAll(5)).containsExactly(String.valueOf(1200 * 1201 / 2));
 
         for (int i = 0; i < 1200; i++) {
-            t.add(6, String.valueOf(i));
+            t.add(TimeSeriesAddArgs.entry(6, String.valueOf(i)));
         }
         assertThat(t.removeAll(6)).isEqualTo(1200);
         assertThat(t.getAll(6)).isEmpty();
 
         RTimeSeries<String, String> u = numeric("u");
         for (int i = 0; i < 1200; i++) {
-            u.add(i, String.valueOf(i));
+            u.add(TimeSeriesAddArgs.entry(i, String.valueOf(i)));
         }
         assertThat(u.pollFirst(700)).hasSize(700);
         assertThat(u.removeRange(0, 2000)).isEqualTo(500);
@@ -2311,7 +2327,7 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     public void testAddAndGetIgnoresEntriesAddedByOtherMeans() {
         RTimeSeries<String, String> t = numeric("test");
         t.addAndGet(TimeSeriesAddArgs.entry(1, "10"));
-        t.add(2, "999");
+        t.add(TimeSeriesAddArgs.entry(2, "999"));
         t.addOrReplace(TimeSeriesAddArgs.entry(3, "-777"));
         assertThat(t.addAndGet(TimeSeriesAddArgs.entry(4, "5"))).isEqualTo(15.0);
         assertThat(t.range(0, 10)).containsExactly("10", "999", "-777", "15");
@@ -2524,18 +2540,37 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
         assertThat(t.getAll(900)).isEmpty();
     }
 
+    /**
+     * The overloads the arguments object replaces are deprecated but still shipped, so this is
+     * where they keep their coverage; everywhere else the tests use the arguments object.
+     */
     @Test
-    public void testAddArgsAgreesWithTheOverloadsItReplaces() {
+    @SuppressWarnings("deprecation")
+    public void testDeprecatedAddOverloadsAgreeWithTheArgumentsObject() throws InterruptedException {
         RTimeSeries<String, String> args = redisson.getTimeSeries("args");
         RTimeSeries<String, String> plain = redisson.getTimeSeries("plain");
 
         args.add(TimeSeriesAddArgs.entry(1, "a"));
         args.add(TimeSeriesAddArgs.entry(2, "b", "cpu"));
+        args.add(TimeSeriesAddArgs.entry(3, "c").timeToLive(Duration.ofMillis(300)));
+        args.add(TimeSeriesAddArgs.entry(4, "d").timeToLive(Duration.ofMillis(300)));
+        args.add(TimeSeriesAddArgs.entry(5, "e", "mem").timeToLive(Duration.ofMillis(300)));
+        args.addAll(Collections.singletonMap(6L, "f"), Duration.ofMillis(300));
+
         plain.add(1, "a");
         plain.add(2, "b", "cpu");
+        plain.add(3, "c", 300, TimeUnit.MILLISECONDS);
+        plain.add(4, "d", Duration.ofMillis(300));
+        plain.add(5, "e", "mem", Duration.ofMillis(300));
+        plain.addAll(Collections.singletonMap(6L, "f"), 300, TimeUnit.MILLISECONDS);
 
         assertThat(args.entryRange(0, 10)).isEqualTo(plain.entryRange(0, 10));
-        assertThat(args.labels()).isEqualTo(plain.labels());
+        assertThat(args.labels()).containsExactlyInAnyOrderElementsOf(plain.labels());
+
+        // and the interval each overload carries is still honoured
+        Thread.sleep(500);
+        assertThat(plain.range(0, 10)).containsExactly("a", "b");
+        assertThat(args.range(0, 10)).isEqualTo(plain.range(0, 10));
     }
 
 }
