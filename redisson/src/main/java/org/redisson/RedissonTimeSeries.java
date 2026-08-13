@@ -320,6 +320,9 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
     private static final int LABEL_MATCH = 1;
     private static final int LABEL_ABSENT = 2;
 
+    private static final int LABEL_FIELD_EMPTY = 2;
+    private static final int LABEL_FIELD_SET = 3;
+
     /*
      * Each script that filters reads the mode and the label into labelMode and labelValue
      * first; the argument positions differ per script, so they are spelled out there rather
@@ -339,24 +342,6 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
                  "matches = label == 0; " +
              "end; ";
 
-    /*
-     * Entry ids are a zero padded counter, shared by the whole collection and held in
-     * KEYS[3]. Ids are unique because the counter never repeats, and members sharing a
-     * score compare equal up to the id, so duplicates of one timestamp read back in the
-     * order they were added.
-     *
-     * INCRBYFLOAT is used rather than INCR because it answers with a bulk string. An
-     * integer reply would be handed to Lua as a double, exact only to 2^53, and past that
-     * consecutive values collapse onto one another and ids repeat. Keeping the counter as
-     * text means it is never converted at all, and Redis does the arithmetic in long
-     * double, which stays exact well beyond a signed 64 bit range.
-     *
-     * How far beyond is a property of the platform, so rather than predict the limit the
-     * counter is checked for having actually moved: once precision runs out an increment
-     * leaves the value unchanged, and that is the only outcome that would issue an id
-     * twice. A value too long to pad is refused as well, since a wider id would sort
-     * before a narrower one and invert the order.
-     */
     static final int SEQUENCE_WIDTH = 20;
 
     private static final String NEXT_ID =
@@ -364,12 +349,12 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
              "local previous; " +
              "local function nextId() " +
                  "if previous == nil then " +
-                     "previous = redis.call('get', KEYS[3]); " +
+                     "previous = redis.call('hget', KEYS[3], 'id'); " +
                      "if previous == false then " +
                          "previous = '0'; " +
                      "end; " +
                  "end; " +
-                 "local sequence = redis.call('incrbyfloat', KEYS[3], 1); " +
+                 "local sequence = redis.call('hincrbyfloat', KEYS[3], 'id', 1); " +
                  "if sequence == previous or #sequence > sequenceWidth then " +
                      "error('RTimeSeries sequence overflow'); " +
                  "end; " +
@@ -379,24 +364,49 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
 
 
     /*
+     * One entry per call, so the five values it carries are named once and read by name
+     * everywhere below. ARGV[9] is the duplicate policy, and only the comparing script has it.
+     */
+    private static final String ENTRY_ARGS =
+             "local timestamp = ARGV[4]; " +
+             "local labelFlag = ARGV[5]; " +
+             "local entryValue = ARGV[6]; " +
+             "local label = ARGV[7]; " +
+             "local expiration = ARGV[8]; ";
+
+    /*
+     * Writes the member both sorted sets hold: the main one scored by timestamp, the timeout
+     * one by when the entry expires. The label and the expiration are the ones the call
+     * carries; the timestamp and the value are parameters because two of the scripts compute
+     * one of them. The id is a parameter as well, because addAndGet has to take it before it
+     * moves anything else.
+     */
+    private static final String STORE_ENTRY =
+             "local function storeEntry(id, timestamp, value) " +
+                 "local field = string.char(labelFlag) .. label; " +
+                 "local packed = struct.pack('BBc0Lc0Lc0', 4, " +
+                                            "string.len(id), id, " +
+                                            "string.len(value), value, " +
+                                            "string.len(field), field); " +
+                 "redis.call('zadd', KEYS[1], timestamp, packed); " +
+                 "redis.call('zadd', KEYS[2], expiration, packed); " +
+             "end; ";
+
+    /*
      * The window is anchored on the highest timestamp the collection holds once this call is
-     * applied: the highest of the entries being added and the highest one already present.
+     * applied: the timestamp being added, or the highest one already present if that is later.
      * An entry that has expired but has not been evicted yet is not a valid anchor - it would
      * drag the window backwards and, sitting inside its own window, keep doing it - so it is
      * removed here, bounded, exactly as the eviction task would remove it. Giving up leaves
      * the anchor low, which under-trims rather than over-trims.
+     *
+     * Reads the `timestamp` the script declared before including this.
      */
     private static final String RETENTION_CUTOFF =
              "local cutoff; " +
              "local retention = tonumber(ARGV[2]); " +
              "if retention > 0 then " +
-                 "local highest; " +
-                 "for i = entryBase, #ARGV, 5 do " +
-                     "local timestamp = tonumber(ARGV[i]); " +
-                     "if highest == nil or timestamp > highest then " +
-                         "highest = timestamp; " +
-                     "end; " +
-                 "end; " +
+                 "local highest = tonumber(timestamp); " +
                  "local probes = 0; " +
                  "while probes < 100 do " +
                      "local top = redis.call('zrevrange', KEYS[1], 0, 0, 'withscores'); " +
@@ -405,9 +415,9 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
                      "end; " +
                      "local expirationDate = redis.call('zscore', KEYS[2], top[1]); " +
                      "if expirationDate == false or tonumber(expirationDate) > tonumber(ARGV[3]) then " +
-                         "local timestamp = tonumber(top[2]); " +
-                         "if highest == nil or timestamp > highest then " +
-                             "highest = timestamp; " +
+                         "local top1 = tonumber(top[2]); " +
+                         "if top1 > highest then " +
+                             "highest = top1; " +
                          "end; " +
                          "break; " +
                      "end; " +
@@ -415,8 +425,29 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
                      "redis.call('zrem', KEYS[2], top[1]); " +
                      "probes = probes + 1; " +
                  "end; " +
-                 "if highest ~= nil then " +
-                     "cutoff = highest - retention; " +
+                 "cutoff = highest - retention; " +
+             "end; ";
+
+    /*
+     * Every add script does nothing at all when the entry it was given falls outside the
+     * retention window, and every one of them trims afterwards.
+     */
+    private static final String WITHIN_RETENTION =
+             "if cutoff == nil or tonumber(timestamp) >= cutoff then ";
+
+    /*
+     * Removing members one at a time costs two calls each, which is what a timestamp holding
+     * thousands of entries was paying. unpack() is bounded by the Lua stack, so a long list
+     * goes in runs rather than in one call.
+     */
+    private static final String REMOVE_MEMBERS =
+             "local function removeMembers(members) " +
+                 "local from = 1; " +
+                 "while from <= #members do " +
+                     "local to = math.min(from + 499, #members); " +
+                     "redis.call('zrem', KEYS[1], unpack(members, from, to)); " +
+                     "redis.call('zrem', KEYS[2], unpack(members, from, to)); " +
+                     "from = to + 1; " +
                  "end; " +
              "end; ";
 
@@ -430,89 +461,61 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
      */
     private static final String RETENTION_TRIM =
              "if cutoff ~= nil then " +
-                 "local stale = redis.call('zrangebyscore', KEYS[1], '-inf', " +
-                                          "'(' .. string.format('%.0f', cutoff), 'limit', 0, 500); " +
-                 "if #stale > 0 then " +
-                     "redis.call('zrem', KEYS[1], unpack(stale)); " +
-                     "redis.call('zrem', KEYS[2], unpack(stale)); " +
-                 "end; " +
+                 "removeMembers(redis.call('zrangebyscore', KEYS[1], '-inf', " +
+                               "'(' .. string.format('%.0f', cutoff), 'limit', 0, 500)); " +
              "end; ";
 
-    /*
-     * Both scripts treat an expired entry at the target timestamp as absent, matching
-     * getEntry(), and delete the ones they find so a stale entry cannot mask a live one.
-     * An entry whose timestamp falls outside the retention window is not written at all,
-     * so a call never reports an entry it went on to delete.
-     * ARGV[1] is the id width, ARGV[2] the retention and ARGV[3] is now,
-     * followed by 5 values per entry:
-     * timestamp, label flag, value, label, expiration time. Ids are assigned by nextId.
-     */
-    private static final String ADD_IF_ABSENT = NEXT_ID +
-             "local entryBase = 4; " +
-             RETENTION_CUTOFF +
+    private static final String ADD_IF_ABSENT = NEXT_ID + REMOVE_MEMBERS + ENTRY_ARGS +
+             STORE_ENTRY + RETENTION_CUTOFF +
+             "local now = tonumber(ARGV[3]); " +
              "local added = 0; " +
-             "local occupiedAt = {}; " +
-             "for i = entryBase, #ARGV, 5 do " +
-                 "if cutoff == nil or tonumber(ARGV[i]) >= cutoff then " +
-                     "local occupied = occupiedAt[ARGV[i]]; " +
-                     "local existing = {}; " +
-                     "if occupied == nil then " +
-                         "occupied = false; " +
-                         "existing = redis.call('zrangebyscore', KEYS[1], ARGV[i], ARGV[i]); " +
-                     "end; " +
-                     "for j = 1, #existing do " +
-                         "local expirationDate = redis.call('zscore', KEYS[2], existing[j]); " +
-                         "if expirationDate == false or tonumber(expirationDate) > tonumber(ARGV[3]) then " +
-                             "occupied = true; " +
-                         "else " +
-                             "redis.call('zrem', KEYS[1], existing[j]); " +
-                             "redis.call('zrem', KEYS[2], existing[j]); " +
+             WITHIN_RETENTION +
+                 "local occupied = false; " +
+                 "local stale; " +
+                 "local existing = redis.call('zrangebyscore', KEYS[1], timestamp, timestamp); " +
+                 "for j = 1, #existing do " +
+                     "local expirationDate = redis.call('zscore', KEYS[2], existing[j]); " +
+                     "if expirationDate == false or tonumber(expirationDate) > now then " +
+                         "occupied = true; " +
+                     "else " +
+                         // usually there are none, so the table is not built until there is
+                         "if stale == nil then " +
+                             "stale = {}; " +
                          "end; " +
+                         "table.insert(stale, existing[j]); " +
                      "end; " +
-                     "if occupied == false then " +
-                         "local id = nextId(); " +
-                         "local lbl = string.char(ARGV[i+1]) .. ARGV[i+3]; " +
-                         "local val = struct.pack('BBc0Lc0Lc0', 4, " +
-                                                               "string.len(id), id, " +
-                                                               "string.len(ARGV[i+2]), ARGV[i+2], " +
-                                                               "string.len(lbl), lbl); " +
-                         "redis.call('zadd', KEYS[1], ARGV[i], val); " +
-                         "redis.call('zadd', KEYS[2], ARGV[i+4], val); " +
-                         "added = added + 1; " +
-                     "end; " +
-                     "occupiedAt[ARGV[i]] = true; " +
+                 "end; " +
+                 "if stale ~= nil then " +
+                     "removeMembers(stale); " +
+                 "end; " +
+                 "if occupied == false then " +
+                     "storeEntry(nextId(), timestamp, entryValue); " +
+                     "added = 1; " +
                  "end; " +
              "end; " +
              RETENTION_TRIM +
              "return added;";
 
-    private static final String ADD_OR_REPLACE = NEXT_ID +
-             "local entryBase = 4; " +
-             RETENTION_CUTOFF +
+    private static final String ADD_OR_REPLACE = NEXT_ID + REMOVE_MEMBERS + ENTRY_ARGS +
+             STORE_ENTRY + RETENTION_CUTOFF +
+             "local now = tonumber(ARGV[3]); " +
              "local created = 0; " +
-             "for i = entryBase, #ARGV, 5 do " +
-                 "if cutoff == nil or tonumber(ARGV[i]) >= cutoff then " +
-                     "local replaced = false; " +
-                     "local existing = redis.call('zrangebyscore', KEYS[1], ARGV[i], ARGV[i]); " +
-                     "for j = 1, #existing do " +
-                         "local expirationDate = redis.call('zscore', KEYS[2], existing[j]); " +
-                         "if expirationDate == false or tonumber(expirationDate) > tonumber(ARGV[3]) then " +
-                             "replaced = true; " +
-                         "end; " +
-                         "redis.call('zrem', KEYS[1], existing[j]); " +
-                         "redis.call('zrem', KEYS[2], existing[j]); " +
+             WITHIN_RETENTION +
+                 "local replaced = false; " +
+                 "local existing = redis.call('zrangebyscore', KEYS[1], timestamp, timestamp); " +
+                 "for j = 1, #existing do " +
+                     "local expirationDate = redis.call('zscore', KEYS[2], existing[j]); " +
+                     "if expirationDate == false or tonumber(expirationDate) > now then " +
+                         "replaced = true; " +
                      "end; " +
-                     "local id = nextId(); " +
-                     "local lbl = string.char(ARGV[i+1]) .. ARGV[i+3]; " +
-                     "local val = struct.pack('BBc0Lc0Lc0', 4, " +
-                                                           "string.len(id), id, " +
-                                                           "string.len(ARGV[i+2]), ARGV[i+2], " +
-                                                           "string.len(lbl), lbl); " +
-                     "redis.call('zadd', KEYS[1], ARGV[i], val); " +
-                     "redis.call('zadd', KEYS[2], ARGV[i+4], val); " +
-                     "if replaced == false then " +
-                         "created = created + 1; " +
-                     "end; " +
+                 "end; " +
+                 "if #existing > 0 then " +
+                     // whether it was live or merely not evicted yet, it is replaced
+                     "removeMembers(existing); " +
+                 "end; " +
+                 "storeEntry(nextId(), timestamp, entryValue); " +
+                 "if replaced == false then " +
+                     "created = 1; " +
                  "end; " +
              "end; " +
              RETENTION_TRIM +
@@ -529,9 +532,21 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
                  "if value == -math.huge then " +
                      "return '-Infinity'; " +
                  "end; " +
-                 "return string.format('%.17g', value); " +
+                 "local text = string.format('%.15g', value); " +
+                 "if tonumber(text) ~= value then " +
+                     "text = string.format('%.16g', value); " +
+                     "if tonumber(text) ~= value then " +
+                         "text = string.format('%.17g', value); " +
+                     "end; " +
+                 "end; " +
+                 "return text; " +
              "end; ";
 
+    /*
+     * Reads a stored or incoming value as a number, refusing anything that is not finite -
+     * tonumber() also reads 'inf' and 'nan', and either of those would spread through every
+     * comparison and sum the entry takes part in from then on.
+     */
     private static final String READ_NUMBER =
              "local function readNumber(text, timestamp) " +
                  "local number = tonumber(text); " +
@@ -549,144 +564,197 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
 
     /*
      * The duplicate policies that have to look at the value: keep the smaller, keep the
-     * larger, or add them together. A timestamp already holding several live entries counts
-     * as holding their extreme, or their total, and a call that stores leaves exactly one
-     * entry there - the shape addOrReplace produces. Entries that have expired are dropped
-     * whether the call stores or not, since they take no part either way.
+     * larger, or add them together. A timestamp already holding several live entries is
+     * folded into the one value the policy asks for, and a call that stores leaves exactly
+     * one entry there - the shape addOrReplace produces. Entries that have expired are
+     * dropped whether the call stores or not, since they take no part either way.
      *
      * ARGV[4] is the policy and the entries start at ARGV[5], five values each.
      */
-    private static final String ADD_COMPARING = NEXT_ID +
-             "local entryBase = 5; " +
-             RETENTION_CUTOFF + FORMAT_NUMBER + READ_NUMBER +
-             "local policy = tonumber(ARGV[4]); " +
+    private static final String ADD_COMPARING = NEXT_ID + REMOVE_MEMBERS + ENTRY_ARGS +
+             STORE_ENTRY + RETENTION_CUTOFF + FORMAT_NUMBER + READ_NUMBER +
+             "local now = tonumber(ARGV[3]); " +
+             "local policy = tonumber(ARGV[9]); " +
              "local result = 0; " +
-             "for i = entryBase, #ARGV, 5 do " +
-                 "if cutoff == nil or tonumber(ARGV[i]) >= cutoff then " +
-                     "local live = {}; " +
-                     "local total = 0; " +
-                     "local extreme; " +
-                     "local existing = redis.call('zrangebyscore', KEYS[1], ARGV[i], ARGV[i]); " +
-                     "for j = 1, #existing do " +
-                         "local expirationDate = redis.call('zscore', KEYS[2], existing[j]); " +
-                         "if expirationDate == false or tonumber(expirationDate) > tonumber(ARGV[3]) then " +
-                             "local n, t, val = struct.unpack('BBc0Lc0Lc0', existing[j]); " +
-                             "local number = readNumber(val, ARGV[i]); " +
-                             "table.insert(live, existing[j]); " +
-                             "total = total + number; " +
-                             "if extreme == nil then " +
-                                 "extreme = number; " +
-                             "elseif policy == 1 and number < extreme then " +
-                                 "extreme = number; " +
-                             "elseif policy == 2 and number > extreme then " +
-                                 "extreme = number; " +
-                             "end; " +
-                         "else " +
-                             "redis.call('zrem', KEYS[1], existing[j]); " +
-                             "redis.call('zrem', KEYS[2], existing[j]); " +
+             WITHIN_RETENTION +
+                 // what the timestamp counts as holding: the smallest of its values, the
+                 // largest, or their total, depending on which policy is asking
+                 "local folded; " +
+                 "local stale; " +
+                 "local existing = redis.call('zrangebyscore', KEYS[1], timestamp, timestamp); " +
+                 "for j = 1, #existing do " +
+                     "local expirationDate = redis.call('zscore', KEYS[2], existing[j]); " +
+                     "if expirationDate == false or tonumber(expirationDate) > now then " +
+                         "local marker, id, val = struct.unpack('BBc0Lc0Lc0', existing[j]); " +
+                         "local number = readNumber(val, timestamp); " +
+                         "if folded == nil then " +
+                             "folded = number; " +
+                         "elseif policy == 3 then " +
+                             "folded = folded + number; " +
+                         "elseif policy == 1 and number < folded then " +
+                             "folded = number; " +
+                         "elseif policy == 2 and number > folded then " +
+                             "folded = number; " +
                          "end; " +
+                     "else " +
+                         // nothing is expired in the ordinary case, so the table that holds
+                         // them is not built until there is one to put in it
+                         "if stale == nil then " +
+                             "stale = {}; " +
+                         "end; " +
+                         "table.insert(stale, existing[j]); " +
                      "end; " +
+                 "end; " +
 
-                     "local incoming = readNumber(ARGV[i+2], ARGV[i]); " +
-                     "local store = true; " +
-                     "local value = ARGV[i+2]; " +
-                     "if extreme ~= nil then " +
-                         "if policy == 1 then " +
-                             "store = incoming < extreme; " +
-                         "elseif policy == 2 then " +
-                             "store = incoming > extreme; " +
-                         "else " +
-                             "local sum = total + incoming; " +
-                             "if sum ~= sum or sum == math.huge or sum == -math.huge then " +
-                                 "error('RTimeSeries sum at timestamp ' .. ARGV[i] " +
-                                        ".. ' is not a finite number'); " +
-                             "end; " +
-                             "value = formatNumber(sum); " +
+                 "local incoming = readNumber(entryValue, timestamp); " +
+                 "local store = true; " +
+                 "local stored = entryValue; " +
+                 "if folded ~= nil then " +
+                     "if policy == 1 then " +
+                         "store = incoming < folded; " +
+                     "elseif policy == 2 then " +
+                         "store = incoming > folded; " +
+                     "else " +
+                         "local sum = folded + incoming; " +
+                         "if sum ~= sum or sum == math.huge or sum == -math.huge then " +
+                             "error('RTimeSeries sum at timestamp ' .. timestamp " +
+                                    ".. ' is not a finite number'); " +
                          "end; " +
+                         "stored = formatNumber(sum); " +
                      "end; " +
+                 "end; " +
 
-                     "if store then " +
-                         "for j = 1, #live do " +
-                             "redis.call('zrem', KEYS[1], live[j]); " +
-                             "redis.call('zrem', KEYS[2], live[j]); " +
-                         "end; " +
-                         "local id = nextId(); " +
-                         "local lbl = string.char(ARGV[i+1]) .. ARGV[i+3]; " +
-                         "local packed = struct.pack('BBc0Lc0Lc0', 4, " +
-                                                                  "string.len(id), id, " +
-                                                                  "string.len(value), value, " +
-                                                                  "string.len(lbl), lbl); " +
-                         "redis.call('zadd', KEYS[1], ARGV[i], packed); " +
-                         "redis.call('zadd', KEYS[2], ARGV[i+4], packed); " +
-                         // summing always stores, so what it reports is what it created;
-                         // the other two report whether the value they were given won
-                         "if policy ~= 3 then " +
-                             "result = result + 1; " +
-                         "elseif #live == 0 then " +
-                             "result = result + 1; " +
-                         "end; " +
+                 "if store then " +
+                     "if #existing > 0 then " +
+                         // the whole timestamp goes, whether it expired or was replaced
+                         "removeMembers(existing); " +
                      "end; " +
+                     "storeEntry(nextId(), timestamp, stored); " +
+                     // summing always stores, so what it reports is what it created;
+                     // the other two report whether the value they were given won
+                     "if policy ~= 3 then " +
+                         "result = 1; " +
+                     "elseif folded == nil then " +
+                         "result = 1; " +
+                     "end; " +
+                 "elseif stale ~= nil then " +
+                     "removeMembers(stale); " +
                  "end; " +
              "end; " +
              RETENTION_TRIM +
              "return result;";
 
-    private Object[] encodeArgs(Collection<? extends TimeSeriesAddArgs<V, ? super L>> entries) {
-        return encodeArgs(entries, null);
-    }
+    private static final String INCREMENT = NEXT_ID + REMOVE_MEMBERS + ENTRY_ARGS +
+             STORE_ENTRY +
+             "local state = redis.call('hmget', KEYS[3], 'incremented', 'total'); " +
+             // a running total only means anything while it is non decreasing in timestamp
+             // order, so an increment that arrives behind one already recorded is recorded at
+             // that one's timestamp rather than behind it. Callers racing for a timestamp is
+             // the ordinary case, not an error. Entries added by other means are untouched by
+             // this and may still arrive in any order.
+             "if state[1] ~= false and tonumber(timestamp) < tonumber(state[1]) then " +
+                 "timestamp = state[1]; " +
+             "end; " +
+             RETENTION_CUTOFF + FORMAT_NUMBER + READ_NUMBER +
+             WITHIN_RETENTION +
+                 "local amount = readNumber(entryValue, timestamp); " +
 
-    private Object[] encodeArgs(Collection<? extends TimeSeriesAddArgs<V, ? super L>> entries,
-                                Integer policy) {
+                 // Redis adds in long double, which reaches far past what a double holds, so
+                 // it would carry on well after the total stopped being readable as one. The
+                 // check has to happen here, before the total is moved.
+                 "local previous = '0'; " +
+                 "if state[2] ~= false then " +
+                     "previous = state[2]; " +
+                 "end; " +
+                 "local moved = tonumber(previous) + amount; " +
+                 "if moved ~= moved or moved == math.huge or moved == -math.huge then " +
+                     "error('RTimeSeries total at timestamp ' .. timestamp " +
+                            ".. ' is not a finite number'); " +
+                 "end; " +
+                 // the id is taken before the total moves, so that running out of ids cannot
+                 // leave a total ahead of the history that records it
+                 "local id = nextId(); " +
+                 "local total = redis.call('hincrbyfloat', KEYS[3], 'total', " +
+                                          "formatNumber(amount)); " +
+                 // %.17Lf is how Redis writes a long double back, so an amount smaller than
+                 // the total can carry is rounded away by the store rather than by the
+                 // arithmetic. Counting nothing has to be an error, not a silence.
+                 "if amount ~= 0 and total == previous then " +
+                     "error('RTimeSeries amount at timestamp ' .. timestamp " +
+                            ".. ' is too small to change a total of ' .. previous); " +
+                 "end; " +
+                 "redis.call('hset', KEYS[3], 'incremented', timestamp); " +
+
+                 "local existing = redis.call('zrangebyscore', KEYS[1], timestamp, timestamp); " +
+                 "if #existing > 0 then " +
+                     "removeMembers(existing); " +
+                 "end; " +
+                 "storeEntry(id, timestamp, total); " +
+             "end; " +
+             RETENTION_TRIM +
+             "local reply = redis.call('hget', KEYS[3], 'total'); " +
+             "if reply == false then " +
+                 "reply = '0'; " +
+             "end; " +
+             "return reply;";
+
+    /**
+     * The arguments every add script reads: the id width, the retention window, the clock, and
+     * then the entry itself as timestamp, label flag, value, label and expiration time.
+     */
+    private List<Object> encodeArgs(TimeSeriesAddArgs<V, ? super L> entry) {
+        TimeSeriesAddParams<V, ?> args = (TimeSeriesAddParams<V, ?>) entry;
         long now = System.currentTimeMillis();
-        long retention = 0;
-        for (TimeSeriesAddArgs<V, ? super L> entry : entries) {
-            Duration value = ((TimeSeriesAddParams<V, ?>) entry).getRetention();
-            if (value == null || value.isNegative()) {
-                continue;
-            }
-            // entries in one call describe one collection, so the widest window wins,
-            // which is both order independent and the reading that loses no data
-            if (value.getSeconds() >= Long.MAX_VALUE / 1000) {
-                retention = Long.MAX_VALUE;
-            } else {
-                retention = Math.max(retention, value.toMillis());
-            }
-        }
 
         List<Object> params = new ArrayList<>();
         params.add(SEQUENCE_WIDTH);
-        params.add(retention);
+        params.add(retentionWindow(args));
         params.add(now);
-        if (policy != null) {
-            params.add(policy);
-        }
-        for (TimeSeriesAddArgs<V, ? super L> entry : entries) {
-            TimeSeriesAddParams<V, ?> args = (TimeSeriesAddParams<V, ?>) entry;
-            // worked out before anything is encoded, so a time to live that cannot be
-            // converted cannot strand a buffer that was allocated for an earlier field
-            Duration ttl = args.getTimeToLive();
-            long expiration = now + TimeUnit.DAYS.toMillis(365 * 100);
-            if (ttl != null && !ttl.isNegative() && ttl.getSeconds() < Long.MAX_VALUE / 1000) {
-                long millis = ttl.toMillis();
-                if (millis > 0) {
-                    expiration = now + millis;
-                }
-            }
-            params.add(args.getTimestamp());
-            if (args.getLabel() == null) {
-                params.add(2);
-            } else {
-                params.add(3);
-            }
+        params.add(args.getTimestamp());
+        // the flag says whether a label follows, and the script writes it as the first byte of
+        // the label field. Both are worked out before anything is encoded, so a duration that
+        // cannot be converted cannot strand a buffer allocated for an earlier field.
+        long expiration = expirationTime(args, now);
+        if (args.getLabel() == null) {
+            params.add(LABEL_FIELD_EMPTY);
             encode(params, args.getObject());
-            if (args.getLabel() == null) {
-                params.add("");
-            } else {
-                encode(params, args.getLabel());
-            }
-            params.add(expiration);
+            params.add("");
+        } else {
+            params.add(LABEL_FIELD_SET);
+            encode(params, args.getObject());
+            encode(params, args.getLabel());
         }
-        return params.toArray();
+        params.add(expiration);
+        return params;
+    }
+
+    /**
+     * Milliseconds of retention, or zero for none. A window too wide to convert is taken as
+     * one nothing can fall outside of.
+     */
+    private static long retentionWindow(TimeSeriesAddParams<?, ?> args) {
+        Duration retention = args.getRetention();
+        if (retention == null || retention.isNegative()) {
+            return 0;
+        }
+        if (retention.getSeconds() >= Long.MAX_VALUE / 1000) {
+            return Long.MAX_VALUE;
+        }
+        return retention.toMillis();
+    }
+
+    /**
+     * When the entry expires. A time to live that is absent, negative or too wide to convert
+     * leaves it a century away, which is what an entry without one gets.
+     */
+    private static long expirationTime(TimeSeriesAddParams<?, ?> args, long now) {
+        Duration timeToLive = args.getTimeToLive();
+        if (timeToLive == null || timeToLive.isNegative()
+                || timeToLive.getSeconds() >= Long.MAX_VALUE / 1000
+                || timeToLive.toMillis() <= 0) {
+            return now + TimeUnit.DAYS.toMillis(365 * 100);
+        }
+        return now + timeToLive.toMillis();
     }
 
     @Override
@@ -699,24 +767,10 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
         return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
                 ADD_IF_ABSENT,
                 Arrays.asList(getRawName(), timeoutSetName, sequenceName),
-                encodeArgs(Collections.singletonList(entry)));
+                encodeArgs(entry).toArray());
     }
 
-    @Override
-    public int addAllIfAbsent(Collection<? extends TimeSeriesAddArgs<V, ? super L>> entries) {
-        return get(addAllIfAbsentAsync(entries));
-    }
 
-    @Override
-    public RFuture<Integer> addAllIfAbsentAsync(Collection<? extends TimeSeriesAddArgs<V, ? super L>> entries) {
-        if (entries.isEmpty()) {
-            return new CompletableFutureWrapper<>(0);
-        }
-        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_INTEGER,
-                ADD_IF_ABSENT,
-                Arrays.asList(getRawName(), timeoutSetName, sequenceName),
-                encodeArgs(entries));
-    }
 
     @Override
     public boolean addIfLess(TimeSeriesAddArgs<V, ? super L> entry) {
@@ -725,9 +779,10 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
 
     @Override
     public RFuture<Boolean> addIfLessAsync(TimeSeriesAddArgs<V, ? super L> entry) {
-        return addComparingAsync(Collections.singletonList(entry), POLICY_LESS,
-                RedisCommands.EVAL_BOOLEAN, "addIfLess");
+        return addComparingAsync(entry, POLICY_LESS, "addIfLess");
     }
+
+
 
     @Override
     public boolean addIfGreater(TimeSeriesAddArgs<V, ? super L> entry) {
@@ -736,9 +791,10 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
 
     @Override
     public RFuture<Boolean> addIfGreaterAsync(TimeSeriesAddArgs<V, ? super L> entry) {
-        return addComparingAsync(Collections.singletonList(entry), POLICY_GREATER,
-                RedisCommands.EVAL_BOOLEAN, "addIfGreater");
+        return addComparingAsync(entry, POLICY_GREATER, "addIfGreater");
     }
+
+
 
     @Override
     public boolean addAndSum(TimeSeriesAddArgs<V, ? super L> entry) {
@@ -747,17 +803,42 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
 
     @Override
     public RFuture<Boolean> addAndSumAsync(TimeSeriesAddArgs<V, ? super L> entry) {
-        return addComparingAsync(Collections.singletonList(entry), POLICY_SUM,
-                RedisCommands.EVAL_BOOLEAN, "addAndSum");
+        return addComparingAsync(entry, POLICY_SUM, "addAndSum");
     }
 
-    private <T> RFuture<T> addComparingAsync(Collection<? extends TimeSeriesAddArgs<V, ? super L>> entries,
-                                             int policy, RedisCommand<?> command, String method) {
+
+
+    @Override
+    public double addAndGet(TimeSeriesAddArgs<V, ? super L> increment) {
+        return get(addAndGetAsync(increment));
+    }
+
+    @Override
+    public RFuture<Double> addAndGetAsync(TimeSeriesAddArgs<V, ? super L> increment) {
+        return incrementAsync(increment, "addAndGet");
+    }
+
+
+
+    private RFuture<Double> incrementAsync(TimeSeriesAddArgs<V, ? super L> increment, String method) {
         checkNumericCodec(method + "() on '" + getName() + "'");
-        return commandExecutor.evalWriteAsync(getRawName(), codec, command,
+        // the reply is text this script wrote, so it is read back as text
+        RFuture<String> reply = commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE,
+                RedisCommands.EVAL_STRING, INCREMENT,
+                Arrays.asList(getRawName(), timeoutSetName, sequenceName),
+                encodeArgs(increment).toArray());
+        return new CompletableFutureWrapper<>(reply.thenApply(Double::parseDouble));
+    }
+
+    private RFuture<Boolean> addComparingAsync(TimeSeriesAddArgs<V, ? super L> entry,
+                                               int policy, String method) {
+        checkNumericCodec(method + "() on '" + getName() + "'");
+        List<Object> params = encodeArgs(entry);
+        params.add(policy);
+        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
                 ADD_COMPARING,
                 Arrays.asList(getRawName(), timeoutSetName, sequenceName),
-                encodeArgs(entries, policy));
+                params.toArray());
     }
 
     @Override
@@ -770,24 +851,10 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
         return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
                 ADD_OR_REPLACE,
                 Arrays.asList(getRawName(), timeoutSetName, sequenceName),
-                encodeArgs(Collections.singletonList(entry)));
+                encodeArgs(entry).toArray());
     }
 
-    @Override
-    public int addAllOrReplace(Collection<? extends TimeSeriesAddArgs<V, ? super L>> entries) {
-        return get(addAllOrReplaceAsync(entries));
-    }
 
-    @Override
-    public RFuture<Integer> addAllOrReplaceAsync(Collection<? extends TimeSeriesAddArgs<V, ? super L>> entries) {
-        if (entries.isEmpty()) {
-            return new CompletableFutureWrapper<>(0);
-        }
-        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_INTEGER,
-                ADD_OR_REPLACE,
-                Arrays.asList(getRawName(), timeoutSetName, sequenceName),
-                encodeArgs(entries));
-    }
 
     private volatile Boolean numericCodec;
 
@@ -1067,6 +1134,9 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
      */
     private static final String LIVE_AT_TIMESTAMP =
              "local result = {}; " +
+             // the ones that only read never fill it, and removeMembers of an empty list
+             // is a comparison and no call at all
+             "local doomed = {}; " +
              "local values = redis.call('zrangebyscore', KEYS[1], ARGV[2], ARGV[2]); " +
              "for i = 1, #values do " +
                  "local expirationDate = redis.call('zscore', KEYS[2], values[i]); " +
@@ -1120,17 +1190,17 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
     @Override
     public RFuture<Integer> removeAllAsync(long timestamp) {
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
-       "local counter = 0; " +
+       REMOVE_MEMBERS +
+             "local doomed = {}; " +
              "local values = redis.call('zrangebyscore', KEYS[1], ARGV[2], ARGV[2]); " +
              "for i = 1, #values do " +
                  "local expirationDate = redis.call('zscore', KEYS[2], values[i]); " +
                  "if expirationDate == false or tonumber(expirationDate) > tonumber(ARGV[1]) then " +
-                     "redis.call('zrem', KEYS[2], values[i]); " +
-                     "redis.call('zrem', KEYS[1], values[i]); " +
-                     "counter = counter + 1; " +
+                     "table.insert(doomed, values[i]); " +
                  "end; " +
              "end; " +
-             "return counter;",
+             "removeMembers(doomed); " +
+             "return #doomed;",
             Arrays.asList(getRawName(), timeoutSetName),
             System.currentTimeMillis(), timestamp);
     }
@@ -1143,13 +1213,13 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
     @Override
     public RFuture<Collection<V>> getAndRemoveAllAsync(long timestamp) {
         return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_LIST,
-            LIVE_AT_TIMESTAMP +
+            REMOVE_MEMBERS + LIVE_AT_TIMESTAMP +
                      "local n, t, val, label = struct.unpack('BBc0Lc0Lc0', values[i]); " +
                      "table.insert(result, val); " +
-                     "redis.call('zrem', KEYS[2], values[i]); " +
-                     "redis.call('zrem', KEYS[1], values[i]); " +
+                     "table.insert(doomed, values[i]); " +
                  "end; " +
              "end; " +
+             "removeMembers(doomed); " +
              "return result;",
             Arrays.asList(getRawName(), timeoutSetName),
             System.currentTimeMillis(), timestamp);
@@ -1163,17 +1233,17 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
     @Override
     public RFuture<Collection<TimeSeriesEntry<V, L>>> getAndRemoveAllEntriesAsync(long timestamp) {
         return commandExecutor.evalWriteAsync(getRawName(), codec, EVAL_ENTRIES,
-            LIVE_AT_TIMESTAMP +
+            REMOVE_MEMBERS + LIVE_AT_TIMESTAMP +
                      "local n, t, val, label = struct.unpack('BBc0Lc0Lc0', values[i]); " +
                      DECODE_LABEL +
                      "table.insert(result, val); " +
                      "table.insert(result, label); " +
                      "table.insert(result, n); " +
                      "table.insert(result, ARGV[2]); " +
-                     "redis.call('zrem', KEYS[2], values[i]); " +
-                     "redis.call('zrem', KEYS[1], values[i]); " +
+                     "table.insert(doomed, values[i]); " +
                  "end; " +
              "end; " +
+             "removeMembers(doomed); " +
              "return result;",
             Arrays.asList(getRawName(), timeoutSetName),
             System.currentTimeMillis(), timestamp);
@@ -1560,7 +1630,7 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
                  "end; " +
              "end; " +
 
-             "local issued = redis.call('get', KEYS[3]); " +
+             "local issued = redis.call('hget', KEYS[3], 'id'); " +
              "if issued == false then " +
                  "issued = '0'; " +
              "end; " +
@@ -1599,17 +1669,15 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
              "end; " +
              "return result;";
 
-    private static final String REMOVE_COLLECTED =
-             "for i = 1, #members do " +
-                 "redis.call('zrem', KEYS[1], members[i]); " +
-                 "redis.call('zrem', KEYS[2], members[i]); " +
-             "end; ";
+    private static final String REMOVE_COLLECTED = "removeMembers(members); ";
 
     private static final String COLLECT_VALUES = KEEP_MEMBERS + COLLECT_RANGE + UNPACK_VALUES;
     private static final String COLLECT_ENTRIES = KEEP_MEMBERS + COLLECT_RANGE + UNPACK_ENTRIES;
     private static final String COLLECT_TIMESTAMPS = KEEP_MEMBERS + COLLECT_RANGE + UNPACK_TIMESTAMPS;
-    private static final String POLL_VALUES = KEEP_MEMBERS + COLLECT_RANGE + REMOVE_COLLECTED + UNPACK_VALUES;
-    private static final String POLL_ENTRIES = KEEP_MEMBERS + COLLECT_RANGE + REMOVE_COLLECTED + UNPACK_ENTRIES;
+    private static final String POLL_VALUES =
+            REMOVE_MEMBERS + KEEP_MEMBERS + COLLECT_RANGE + REMOVE_COLLECTED + UNPACK_VALUES;
+    private static final String POLL_ENTRIES =
+            REMOVE_MEMBERS + KEEP_MEMBERS + COLLECT_RANGE + REMOVE_COLLECTED + UNPACK_ENTRIES;
 
     /*
      * Folds the rows the walk accepts into buckets, in one pass, computing every aggregation
@@ -1800,8 +1868,9 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
              "local labelMode = ARGV[4]; " +
              "local labelValue = ARGV[5]; " +
-       "local values = redis.call('zrangebyscore', KEYS[1], ARGV[2], ARGV[3]);" +
-             "local counter = 0; " +
+       REMOVE_MEMBERS +
+             "local values = redis.call('zrangebyscore', KEYS[1], ARGV[2], ARGV[3]);" +
+             "local doomed = {}; " +
              "for i, v in ipairs(values) do " +
                  "local expirationDate = redis.call('zscore', KEYS[2], v); " +
                  "if expirationDate == false or tonumber(expirationDate) > tonumber(ARGV[1]) then " +
@@ -1813,13 +1882,12 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
                      "end; " +
                      MATCHES_LABEL +
                      "if matches then " +
-                         "counter = counter + 1; " +
-                         "redis.call('zrem', KEYS[2], v); " +
-                         "redis.call('zrem', KEYS[1], v); " +
+                         "table.insert(doomed, v); " +
                      "end; " +
                  "end;" +
              "end;" +
-             "return counter;",
+             "removeMembers(doomed); " +
+             "return #doomed;",
             Arrays.asList(getRawName(), timeoutSetName),
             System.currentTimeMillis(), startTimestamp, endTimestamp,
             labelMode, encodeLabelArg(label, labelMode));

@@ -159,16 +159,6 @@ public interface RTimeSeriesRx<V, L> extends RExpirableRx {
      */
     Single<Boolean> addIfAbsent(TimeSeriesAddArgs<V, ? super L> entry);
 
-    /**
-     * Adds entries to this time-series collection
-     * skipping those whose timestamp is already used by an existing entry.
-     * <p>
-     * Expired entries aren't taken into account.
-     *
-     * @param entries entries arguments
-     * @return amount of added entries
-     */
-    Single<Integer> addAllIfAbsent(Collection<? extends TimeSeriesAddArgs<V, ? super L>> entries);
 
     /**
      * Adds entry to this time-series collection
@@ -180,14 +170,6 @@ public interface RTimeSeriesRx<V, L> extends RExpirableRx {
      */
     Single<Boolean> addOrReplace(TimeSeriesAddArgs<V, ? super L> entry);
 
-    /**
-     * Adds entries to this time-series collection
-     * replacing all entries with the same timestamps if they exist.
-     *
-     * @param entries entries arguments
-     * @return amount of created entries
-     */
-    Single<Integer> addAllOrReplace(Collection<? extends TimeSeriesAddArgs<V, ? super L>> entries);
 
     /**
      * Returns size of this set.
@@ -741,6 +723,7 @@ public interface RTimeSeriesRx<V, L> extends RExpirableRx {
      */
     Single<Boolean> addIfLess(TimeSeriesAddArgs<V, ? super L> entry);
 
+
     /**
      * Adds the entry only if its value is larger than the value already held at that
      * timestamp.
@@ -760,6 +743,7 @@ public interface RTimeSeriesRx<V, L> extends RExpirableRx {
      */
     Single<Boolean> addIfGreater(TimeSeriesAddArgs<V, ? super L> entry);
 
+
     /**
      * Adds the entry, summing its value with whatever is already held at that timestamp.
      * <p>
@@ -776,5 +760,16 @@ public interface RTimeSeriesRx<V, L> extends RExpirableRx {
      * @return <code>true</code> if no entry was held at that timestamp
      */
     Single<Boolean> addAndSum(TimeSeriesAddArgs<V, ? super L> entry);
+
+
+    /**
+     * Adds the entry's value to the collection's running total and records the new total at
+     * the entry's timestamp.
+     *
+     * @param increment timestamp, amount to add, and optionally a label and a time to live
+     * @return the new running total
+     */
+    Single<Double> addAndGet(TimeSeriesAddArgs<V, ? super L> increment);
+
 
 }

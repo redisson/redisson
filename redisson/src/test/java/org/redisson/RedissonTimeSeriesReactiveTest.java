@@ -3,6 +3,8 @@ package org.redisson;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RTimeSeriesReactive;
 import org.redisson.api.TimeSeriesEntry;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import org.redisson.api.ts.TimeSeriesAddArgs;
 import org.redisson.api.ts.TimeSeriesReadArgs;
 import org.redisson.api.ts.TimeSeriesInfo;
 import java.time.Duration;
@@ -84,6 +86,45 @@ public class RedissonTimeSeriesReactiveTest extends BaseReactiveTest {
         assertThat(info.getSize()).isEqualTo(2);
         assertThat(info.getFirstTimestamp()).isEqualTo(10);
         assertThat(info.getLastTimestamp()).isEqualTo(20);
+    }
+
+    @Test
+    public void testComparingPolicies() {
+        RTimeSeriesReactive<String, String> t = redisson.getTimeSeries("cmp", StringCodec.INSTANCE);
+
+        assertThat(sync(t.addIfLess(TimeSeriesAddArgs.entry(1, "10")))).isTrue();
+        assertThat(sync(t.addIfLess(TimeSeriesAddArgs.entry(1, "4")))).isTrue();
+        assertThat(sync(t.addIfLess(TimeSeriesAddArgs.entry(1, "9")))).isFalse();
+        assertThat(sync(t.addIfGreater(TimeSeriesAddArgs.entry(2, "1")))).isTrue();
+        assertThat(sync(t.addAndSum(TimeSeriesAddArgs.entry(2, "2")))).isFalse();
+        assertThat(sync(t.get(2))).isEqualTo("3");
+
+        assertThat(sync(t.addIfLess(TimeSeriesAddArgs.entry(1, "1")))).isTrue();
+        assertThat(sync(t.addIfGreater(TimeSeriesAddArgs.entry(1, "0")))).isFalse();
+        assertThat(sync(t.addAndSum(TimeSeriesAddArgs.entry(3, "7")))).isTrue();
+        assertThat(sync(t.range(0, 10))).containsExactly("1", "3", "7");
+    }
+
+    @Test
+    public void testComparingReportsACodecItCannotUseThroughTheResult() {
+        RTimeSeriesReactive<String, String> t = redisson.getTimeSeries("binary");
+        // building the publisher must not throw; the failure belongs to the subscriber
+        reactor.core.publisher.Mono<Boolean> publisher = t.addIfLess(TimeSeriesAddArgs.entry(1, "1"));
+        // the proxy invokes the async method reflectively, so a validation failure arrives
+        // wrapped, exactly as it does for every other validating method in Redisson
+        assertThatThrownBy(() -> sync(publisher))
+                .hasRootCauseInstanceOf(IllegalStateException.class)
+                .hasStackTraceContaining("addIfLess() on 'binary'");
+    }
+
+    @Test
+    public void testAddAndGet() {
+        RTimeSeriesReactive<String, String> t = redisson.getTimeSeries("incr", StringCodec.INSTANCE);
+        assertThat(sync(t.addAndGet(TimeSeriesAddArgs.entry(1, "5")))).isEqualTo(5.0);
+        assertThat(sync(t.addAndGet(TimeSeriesAddArgs.entry(2, "3")))).isEqualTo(8.0);
+        assertThat(sync(t.addAndGet(TimeSeriesAddArgs.entry(3, "1")))).isEqualTo(9.0);
+        assertThat(sync(t.addAndGet(TimeSeriesAddArgs.entry(4, "1")))).isEqualTo(10.0);
+        assertThat(sync(t.range(0, 10))).containsExactly("5", "8", "9", "10");
     }
 
 }

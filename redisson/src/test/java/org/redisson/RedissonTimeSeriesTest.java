@@ -22,6 +22,10 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.CountDownLatch;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -669,29 +673,29 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     }
 
     @Test
-    public void testAddAllIfAbsentAndAddAllOrReplace() {
+    public void testAddIfAbsentAndAddOrReplaceInSequence() {
         RTimeSeries<String, String> t = redisson.getTimeSeries("test");
-        assertThat(t.addAllIfAbsent(Arrays.asList(TimeSeriesAddArgs.entry(1, "a"),
-                                                  TimeSeriesAddArgs.entry(2, "b"),
-                                                  TimeSeriesAddArgs.entry(3, "c")))).isEqualTo(3);
+        assertThat(t.addIfAbsent(TimeSeriesAddArgs.entry(1, "a"))).isTrue();
+        assertThat(t.addIfAbsent(TimeSeriesAddArgs.entry(2, "b"))).isTrue();
+        assertThat(t.addIfAbsent(TimeSeriesAddArgs.entry(3, "c"))).isTrue();
 
-        assertThat(t.addAllIfAbsent(Arrays.asList(TimeSeriesAddArgs.entry(2, "ignored"),
-                                                  TimeSeriesAddArgs.entry(4, "d")))).isEqualTo(1);
+        assertThat(t.addIfAbsent(TimeSeriesAddArgs.entry(2, "ignored"))).isFalse();
+        assertThat(t.addIfAbsent(TimeSeriesAddArgs.entry(4, "d"))).isTrue();
         assertThat(t.get(2)).isEqualTo("b");
 
-        assertThat(t.addAllOrReplace(Arrays.asList(TimeSeriesAddArgs.entry(2, "B"),
-                                                   TimeSeriesAddArgs.entry(5, "e")))).isEqualTo(1);
-        assertThat(t.get(2)).isEqualTo("B");
+        assertThat(t.addOrReplace(TimeSeriesAddArgs.entry(2, "replaced"))).isFalse();
+        assertThat(t.addOrReplace(TimeSeriesAddArgs.entry(5, "new"))).isTrue();
+        assertThat(t.get(2)).isEqualTo("replaced");
         assertThat(t.size()).isEqualTo(5);
     }
 
     @Test
     public void testAddArgsLabelAndTimeToLive() throws InterruptedException {
         RTimeSeries<String, String> t = redisson.getTimeSeries("test");
-        t.addAllOrReplace(Arrays.asList(
-                TimeSeriesAddArgs.entry(1, "a", "lab1"),
-                TimeSeriesAddArgs.entry(2, "b"),
-                TimeSeriesAddArgs.entry(3, "c", "lab3").timeToLive(Duration.ofMillis(400))));
+        t.addOrReplace(TimeSeriesAddArgs.entry(1, "a", "lab1"));
+        t.addOrReplace(TimeSeriesAddArgs.entry(2, "b"));
+        t.addOrReplace(TimeSeriesAddArgs.<String, String>entry(3, "c", "lab3")
+                .timeToLive(Duration.ofMillis(400)));
 
         assertThat(t.firstEntries(3)).containsExactly(new TimeSeriesEntry<>(1, "a", "lab1"),
                                                       new TimeSeriesEntry<>(2, "b"),
@@ -1018,11 +1022,14 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
         assertThat(t.addOrReplace(TimeSeriesAddArgs.entry(1000, "old").retention(retention))).isFalse();
         assertThat(t.size()).isEqualTo(1);
 
-        // and in a batch, only the entries that survive are counted
-        int created = t.addAllOrReplace(Arrays.asList(
-                TimeSeriesAddArgs.entry(1000, "out").retention(Duration.ofSeconds(2)),
-                TimeSeriesAddArgs.entry(9000, "in").retention(Duration.ofSeconds(2)),
-                TimeSeriesAddArgs.entry(10500, "newer").retention(Duration.ofSeconds(2))));
+        // and over a run of calls, only the entries that survive are counted
+        int created = 0;
+        for (long timestamp : new long[]{1000, 9000, 10500}) {
+            if (t.addOrReplace(TimeSeriesAddArgs.<String, Object>entry(timestamp, "v" + timestamp)
+                    .retention(Duration.ofSeconds(2)))) {
+                created++;
+            }
+        }
         assertThat(created).isEqualTo(2);
         assertThat(t.size()).isEqualTo(3);
         assertThat(t.getAll(1000)).isEmpty();
@@ -1056,15 +1063,19 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     }
 
     @Test
-    public void testWidestRetentionInACallWins() {
+    public void testEachCallAppliesItsOwnRetention() {
         RTimeSeries<String, Object> t = redisson.getTimeSeries("test");
-        t.addAllOrReplace(Arrays.asList(
-                TimeSeriesAddArgs.entry(1000, "a").retention(Duration.ofMillis(300)),
-                // shorter than a millisecond, so it rounds to nothing and must not win
-                TimeSeriesAddArgs.entry(1100, "b").retention(Duration.ofNanos(999_999)),
-                TimeSeriesAddArgs.entry(1200, "c").retention(Duration.ofMillis(100))));
+        t.addOrReplace(TimeSeriesAddArgs.<String, Object>entry(1000, "a")
+                .retention(Duration.ofMillis(300)));
+        // shorter than a millisecond, so it rounds to nothing and trims nothing
+        t.addOrReplace(TimeSeriesAddArgs.<String, Object>entry(1100, "b")
+                .retention(Duration.ofNanos(999_999)));
+        assertThat(t.range(0, 10000)).containsExactly("a", "b");
 
-        assertThat(t.range(0, 10000)).containsExactly("a", "b", "c");
+        // this one is anchored on its own timestamp, so it takes the oldest with it
+        t.addOrReplace(TimeSeriesAddArgs.<String, Object>entry(1200, "c")
+                .retention(Duration.ofMillis(100)));
+        assertThat(t.range(0, 10000)).containsExactly("b", "c");
 
         t.addOrReplace(TimeSeriesAddArgs.entry(1500, "d").retention(Duration.ofMillis(300)));
         assertThat(t.range(0, 10000)).containsExactly("c", "d");
@@ -2118,6 +2129,27 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
     }
 
     @Test
+    public void testTheComparingPoliciesInSequence() {
+        RTimeSeries<String, String> t = numeric("test");
+        t.add(1, "5");
+        t.add(2, "5");
+
+        assertThat(t.addIfLess(TimeSeriesAddArgs.entry(1, "9"))).isFalse();
+        assertThat(t.addIfLess(TimeSeriesAddArgs.entry(2, "1"))).isTrue();
+        assertThat(t.addIfLess(TimeSeriesAddArgs.entry(3, "0"))).isTrue();
+        assertThat(t.range(0, 10)).containsExactly("5", "1", "0");
+
+        assertThat(t.addIfGreater(TimeSeriesAddArgs.entry(1, "6"))).isTrue();
+        assertThat(t.addIfGreater(TimeSeriesAddArgs.entry(2, "0"))).isFalse();
+        assertThat(t.range(0, 10)).containsExactly("6", "1", "0");
+
+        // only the first sum at a timestamp reports a creation
+        assertThat(t.addAndSum(TimeSeriesAddArgs.entry(9, "1"))).isTrue();
+        assertThat(t.addAndSum(TimeSeriesAddArgs.entry(9, "2"))).isFalse();
+        assertThat(t.get(9)).isEqualTo("3");
+    }
+
+    @Test
     public void testAddPoliciesCarryLabelsAndTimeToLive() throws InterruptedException {
         RTimeSeries<String, String> t = numeric("test");
         t.addAndSum(TimeSeriesAddArgs.entry(5, "1", "cpu"));
@@ -2150,9 +2182,15 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
 
         assertThatThrownBy(() -> t.addIfLess(TimeSeriesAddArgs.entry(1, "5")))
                 .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("addIfLess() on 'test'")
                 .hasMessageContaining("StringCodec");
         assertThatThrownBy(() -> t.addAndSum(TimeSeriesAddArgs.entry(1, "5")))
-                .isInstanceOf(IllegalStateException.class);
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("addAndSum() on 'test'");
+        assertThatThrownBy(() -> t.aggregate(TimeSeriesAggregationArgs.between(0, 10)
+                .bucket(Duration.ofMillis(1)).sum()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Aggregation of 'test'");
     }
 
     @Test
@@ -2173,6 +2211,278 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
         over.addAndSum(TimeSeriesAddArgs.entry(5, "1e308"));
         assertThatThrownBy(() -> over.addAndSum(TimeSeriesAddArgs.entry(5, "1e308")))
                 .hasMessageContaining("sum at timestamp");
+    }
+
+    @Test
+    public void testRemovingMoreMembersThanOneCallCanCarry() {
+        // members are removed in runs, because unpack() is bounded by the Lua stack
+        RTimeSeries<String, String> t = numeric("test");
+        for (int i = 0; i < 1200; i++) {
+            t.add(5, String.valueOf(i + 1));
+        }
+        assertThat(t.getAll(5)).hasSize(1200);
+        assertThat(t.addAndSum(TimeSeriesAddArgs.entry(5, "0"))).isFalse();
+        assertThat(t.getAll(5)).containsExactly(String.valueOf(1200 * 1201 / 2));
+
+        for (int i = 0; i < 1200; i++) {
+            t.add(6, String.valueOf(i));
+        }
+        assertThat(t.removeAll(6)).isEqualTo(1200);
+        assertThat(t.getAll(6)).isEmpty();
+
+        RTimeSeries<String, String> u = numeric("u");
+        for (int i = 0; i < 1200; i++) {
+            u.add(i, String.valueOf(i));
+        }
+        assertThat(u.pollFirst(700)).hasSize(700);
+        assertThat(u.removeRange(0, 2000)).isEqualTo(500);
+        assertThat(u.size()).isZero();
+    }
+
+    @Test
+    public void testAddPoliciesUnderEveryCodecTheMessageRecommends() {
+        // a total is written as plain text, so every codec the message recommends has to be
+        // able to read one back
+        RTimeSeries<Long, String> l = redisson.getTimeSeries("l", LongCodec.INSTANCE);
+        assertThat(l.addAndSum(TimeSeriesAddArgs.entry(1, 2L))).isTrue();
+        assertThat(l.addAndSum(TimeSeriesAddArgs.entry(1, 3L))).isFalse();
+        assertThat(l.get(1)).isEqualTo(5L);
+        // and past 2^53 it is still a long, though the arithmetic is done in doubles
+        l.addAndSum(TimeSeriesAddArgs.entry(2, 9007199254740993L));
+        l.addAndSum(TimeSeriesAddArgs.entry(2, 9007199254740993L));
+        assertThat(l.get(2)).isEqualTo(18014398509481984L);
+
+        RTimeSeries<Integer, String> i = redisson.getTimeSeries("i", IntegerCodec.INSTANCE);
+        i.addAndSum(TimeSeriesAddArgs.entry(1, 2));
+        i.addIfGreater(TimeSeriesAddArgs.entry(1, 7));
+        assertThat(i.get(1)).isEqualTo(7);
+
+        RTimeSeries<Double, String> d = redisson.getTimeSeries("d", DoubleCodec.INSTANCE);
+        d.addAndSum(TimeSeriesAddArgs.entry(1, 0.1));
+        d.addAndSum(TimeSeriesAddArgs.entry(1, 0.2));
+        assertThat(d.get(1)).isEqualTo(0.1 + 0.2);
+        // a value that is only compared is stored as it arrived
+        d.addIfLess(TimeSeriesAddArgs.entry(1, 0.05));
+        assertThat(d.get(1)).isEqualTo(0.05);
+    }
+
+    @Test
+    public void testASumIsRenderedAsShortAsItCanBe() {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test", StringCodec.INSTANCE);
+        t.addAndSum(TimeSeriesAddArgs.entry(1, "0.1"));
+        t.addAndSum(TimeSeriesAddArgs.entry(1, "0"));
+        assertThat(t.get(1)).isEqualTo("0.1");
+
+        t.addAndSum(TimeSeriesAddArgs.entry(2, "0.1"));
+        t.addAndSum(TimeSeriesAddArgs.entry(2, "0.2"));
+        assertThat(t.get(2)).isEqualTo("0.30000000000000004");
+        assertThat(Double.parseDouble(t.get(2))).isEqualTo(0.1 + 0.2);
+    }
+
+    @Test
+    public void testAddAndGet() {
+        RTimeSeries<String, String> t = numeric("test");
+
+        assertThat(t.addAndGet(TimeSeriesAddArgs.entry(1, "5"))).isEqualTo(5.0);
+        assertThat(t.addAndGet(TimeSeriesAddArgs.entry(2, "3"))).isEqualTo(8.0);
+        assertThat(t.addAndGet(TimeSeriesAddArgs.entry(3, "-4"))).isEqualTo(4.0);
+        // what is stored is the total as of each timestamp
+        assertThat(t.range(0, 10)).containsExactly("5", "8", "4");
+        assertThat(t.size()).isEqualTo(3);
+
+        // the same timestamp again replaces the entry there
+        assertThat(t.addAndGet(TimeSeriesAddArgs.entry(3, "1"))).isEqualTo(5.0);
+        assertThat(t.getAll(3)).containsExactly("5");
+    }
+
+    @Test
+    public void testAddAndGetKeepsTheTotalOutsideTheEntries() throws InterruptedException {
+        RTimeSeries<String, String> t = numeric("test");
+        t.addAndGet(TimeSeriesAddArgs.<String, String>entry(1, "100")
+                .timeToLive(Duration.ofMillis(300)));
+        Thread.sleep(500);
+        assertThat(t.range(0, 10)).isEmpty();
+
+        // the entry holding the total is gone, and the total is not
+        assertThat(t.addAndGet(TimeSeriesAddArgs.entry(2, "5"))).isEqualTo(105.0);
+        assertThat(t.range(0, 10)).containsExactly("105");
+    }
+
+    @Test
+    public void testAddAndGetIgnoresEntriesAddedByOtherMeans() {
+        RTimeSeries<String, String> t = numeric("test");
+        t.addAndGet(TimeSeriesAddArgs.entry(1, "10"));
+        t.add(2, "999");
+        t.addOrReplace(TimeSeriesAddArgs.entry(3, "-777"));
+        assertThat(t.addAndGet(TimeSeriesAddArgs.entry(4, "5"))).isEqualTo(15.0);
+        assertThat(t.range(0, 10)).containsExactly("10", "999", "-777", "15");
+    }
+
+    @Test
+    public void testAddAndGetRecordsALateIncrementAtTheLastTimestamp() {
+        RTimeSeries<String, String> t = numeric("test");
+        t.addAndGet(TimeSeriesAddArgs.entry(10, "1"));
+
+        // it still counts, and it does not go behind what has already been recorded
+        assertThat(t.addAndGet(TimeSeriesAddArgs.entry(9, "1"))).isEqualTo(2.0);
+        assertThat(t.entryRange(0, 100)).containsExactly(new TimeSeriesEntry<>(10, "2"));
+        assertThat(t.addAndGet(TimeSeriesAddArgs.entry(11, "1"))).isEqualTo(3.0);
+        assertThat(t.entryRange(0, 100)).containsExactly(new TimeSeriesEntry<>(10, "2"),
+                                                         new TimeSeriesEntry<>(11, "3"));
+        // an entry added by another method may still go anywhere
+        assertThat(t.addIfAbsent(TimeSeriesAddArgs.entry(1, "0"))).isTrue();
+    }
+
+    @Test
+    public void testAddAndGetFromSeveralThreadsLosesNothing() throws InterruptedException {
+        RTimeSeries<String, String> t = numeric("test");
+        int threads = 8;
+        int each = 100;
+        AtomicInteger timestamp = new AtomicInteger();
+        AtomicInteger failures = new AtomicInteger();
+        ExecutorService pool = Executors.newFixedThreadPool(threads);
+        CountDownLatch go = new CountDownLatch(1);
+        for (int i = 0; i < threads; i++) {
+            pool.submit(() -> {
+                try {
+                    go.await();
+                    for (int k = 0; k < each; k++) {
+                        t.addAndGet(TimeSeriesAddArgs.entry(timestamp.incrementAndGet(), "1"));
+                    }
+                } catch (Exception e) {
+                    failures.incrementAndGet();
+                }
+            });
+        }
+        go.countDown();
+        pool.shutdown();
+        assertThat(pool.awaitTermination(120, TimeUnit.SECONDS)).isTrue();
+
+        assertThat(failures).hasValue(0);
+        assertThat(t.addAndGet(TimeSeriesAddArgs.entry(timestamp.incrementAndGet(), "0")))
+                .isEqualTo(threads * each);
+
+        // and what was recorded never goes backwards, whatever order the calls arrived in
+        double previous = -1;
+        for (String value : t.range(0, Long.MAX_VALUE)) {
+            double current = Double.parseDouble(value);
+            assertThat(current).isGreaterThanOrEqualTo(previous);
+            previous = current;
+        }
+    }
+
+    @Test
+    public void testAddAndGetKeepsItsTotalThroughAnEvictionPass() throws InterruptedException {
+        RTimeSeries<String, String> t = numeric("evicting");
+        t.addAndGet(TimeSeriesAddArgs.<String, String>entry(1, "100")
+                .timeToLive(Duration.ofMillis(300)));
+        Thread.sleep(500);
+        // the eviction task reclaims the counter key of an emptied collection, but not while
+        // it is holding a total
+        assertThat(t.size()).isZero();
+        assertThat(t.addAndGet(TimeSeriesAddArgs.entry(2, "5"))).isEqualTo(105.0);
+    }
+
+    @Test
+    public void testAddAndGetRefusesAnAmountTooSmallToRecord() {
+        RTimeSeries<String, String> t = numeric("test");
+        assertThatThrownBy(() -> t.addAndGet(TimeSeriesAddArgs.entry(1, "1e-300")))
+                .hasMessageContaining("too small to change a total");
+        assertThat(t.size()).isZero();
+        // zero is not an increment and is allowed
+        t.addAndGet(TimeSeriesAddArgs.entry(1, "1"));
+        assertThat(t.addAndGet(TimeSeriesAddArgs.entry(2, "0"))).isEqualTo(1.0);
+    }
+
+    @Test
+    public void testAddAndGetLeavesTheTotalWhereTheHistoryIsWhenItCannotFinish() {
+        RTimeSeries<String, String> t = numeric("test");
+        t.addAndGet(TimeSeriesAddArgs.entry(1, "5"));
+        redisson.<String, String>getMap("redisson__ts_seq:{test}", StringCodec.INSTANCE)
+                .put("id", "999999999999999999999");
+
+        assertThatThrownBy(() -> t.addAndGet(TimeSeriesAddArgs.entry(2, "7")))
+                .hasMessageContaining("sequence overflow");
+        // the id is taken before the total moves, so the two cannot disagree
+        assertThat(t.range(0, 10)).containsExactly("5");
+    }
+
+    @Test
+    public void testAddAndGetInSequence() {
+        RTimeSeries<String, String> t = numeric("test");
+        assertThat(t.addAndGet(TimeSeriesAddArgs.entry(1, "1"))).isEqualTo(1.0);
+        assertThat(t.addAndGet(TimeSeriesAddArgs.entry(2, "2"))).isEqualTo(3.0);
+        assertThat(t.addAndGet(TimeSeriesAddArgs.entry(3, "3"))).isEqualTo(6.0);
+        assertThat(t.range(0, 10)).containsExactly("1", "3", "6");
+
+        // two at one timestamp leave the later total there
+        assertThat(t.addAndGet(TimeSeriesAddArgs.entry(4, "1"))).isEqualTo(7.0);
+        assertThat(t.addAndGet(TimeSeriesAddArgs.entry(4, "1"))).isEqualTo(8.0);
+        assertThat(t.getAll(4)).containsExactly("8");
+    }
+
+    @Test
+    public void testAddAndGetCarriesLabelsAndTimeToLive() {
+        RTimeSeries<String, String> t = numeric("test");
+        t.addAndGet(TimeSeriesAddArgs.<String, String>entry(1, "1").label("cpu"));
+        t.addAndGet(TimeSeriesAddArgs.<String, String>entry(2, "2").label("cpu"));
+        assertThat(t.entryRangeByLabel(0, 10, "cpu")).containsExactly(
+                new TimeSeriesEntry<>(1, "1", "cpu"),
+                new TimeSeriesEntry<>(2, "3", "cpu"));
+        assertThat(t.labels()).containsExactly("cpu");
+    }
+
+    @Test
+    public void testAddAndGetRefusesWhatItCannotAdd() {
+        RTimeSeries<String, String> t = numeric("test");
+        for (String bad : new String[]{"abc", "inf", "-inf", "nan"}) {
+            assertThatThrownBy(() -> t.addAndGet(TimeSeriesAddArgs.entry(1, bad)))
+                    .as(bad).hasMessageContaining("is not a finite number");
+        }
+        assertThat(t.size()).isZero();
+
+        // the total is added in long double, which reaches well past a double
+        t.addAndGet(TimeSeriesAddArgs.entry(1, "1e308"));
+        assertThatThrownBy(() -> t.addAndGet(TimeSeriesAddArgs.entry(2, "1e308")))
+                .hasMessageContaining("total at timestamp");
+
+        RTimeSeries<String, String> binary = redisson.getTimeSeries("binary");
+        assertThatThrownBy(() -> binary.addAndGet(TimeSeriesAddArgs.entry(1, "1")))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("addAndGet() on 'binary'");
+        assertThatThrownBy(() -> binary.addAndGet(TimeSeriesAddArgs.entry(2, "1")))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("addAndGet() on 'binary'");
+    }
+
+    @Test
+    public void testAddAndGetUnderTheOtherNumericCodecs() {
+        RTimeSeries<Long, String> l = redisson.getTimeSeries("l", LongCodec.INSTANCE);
+        assertThat(l.addAndGet(TimeSeriesAddArgs.entry(1, 5L))).isEqualTo(5.0);
+        assertThat(l.addAndGet(TimeSeriesAddArgs.entry(2, 7L))).isEqualTo(12.0);
+        assertThat(l.get(2)).isEqualTo(12L);
+
+        RTimeSeries<Double, String> d = redisson.getTimeSeries("d", DoubleCodec.INSTANCE);
+        // the total accumulates in long double, so it holds together better than a
+        // running sum of doubles would
+        assertThat(d.addAndGet(TimeSeriesAddArgs.entry(1, 0.1))).isEqualTo(0.1);
+        assertThat(d.addAndGet(TimeSeriesAddArgs.entry(2, 0.2))).isEqualTo(0.3);
+        assertThat(d.get(2)).isEqualTo(0.3);
+    }
+
+    @Test
+    public void testAddAndGetSurvivesTheCollectionBeingRenamedAndCopied() {
+        RTimeSeries<String, String> t = numeric("test");
+        t.addAndGet(TimeSeriesAddArgs.entry(1, "7"));
+        assertThat(t.copy("copy")).isTrue();
+
+        RTimeSeries<String, String> copy = numeric("copy");
+        assertThat(copy.addAndGet(TimeSeriesAddArgs.entry(2, "1"))).isEqualTo(8.0);
+        assertThat(t.addAndGet(TimeSeriesAddArgs.entry(2, "2"))).isEqualTo(9.0);
+
+        t.rename("moved");
+        RTimeSeries<String, String> moved = numeric("moved");
+        assertThat(moved.addAndGet(TimeSeriesAddArgs.entry(3, "1"))).isEqualTo(10.0);
     }
 
 }
