@@ -320,9 +320,22 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
     private static final int LABEL_MATCH = 1;
     private static final int LABEL_ABSENT = 2;
 
+    // the first byte of an entry's label field, saying whether a label follows it. They are
+    // the values 4.7.0 used as its marker byte, which is why its entries still decode.
     private static final int LABEL_FIELD_EMPTY = 2;
     private static final int LABEL_FIELD_SET = 3;
 
+    /*
+     * Each script that filters reads the mode and the label into labelMode and labelValue
+     * first; the argument positions differ per script, so they are spelled out there rather
+     * than derived. Any other value of labelMode, including none at all, means no filter.
+     *
+     * Matching is on the encoded bytes, which asks nothing of the label type beyond a codec
+     * that encodes equal labels identically - the same assumption looking a member up by
+     * value already makes. Expects label to have been decoded by DECODE_LABEL already, where
+     * an absent label is the number 0 and a present one is a string, so a label can never
+     * compare equal to the absent marker.
+     */
     private static final String MATCHES_LABEL =
              "local matches = true; " +
              "if labelMode == '1' then " +
@@ -331,7 +344,33 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
                  "matches = label == 0; " +
              "end; ";
 
+    /*
+     * Entry ids are a zero padded counter, shared by the whole collection and held in
+     * KEYS[3]. Ids are unique because the counter never repeats, and members sharing a
+     * score compare equal up to the id, so duplicates of one timestamp read back in the
+     * order they were added.
+     *
+     * INCRBYFLOAT is used rather than INCR because it answers with a bulk string. An
+     * integer reply would be handed to Lua as a double, exact only to 2^53, and past that
+     * consecutive values collapse onto one another and ids repeat. Keeping the counter as
+     * text means it is never converted at all, and Redis does the arithmetic in long
+     * double, which stays exact well beyond a signed 64 bit range.
+     *
+     * It shares its key with the running total addAndGet keeps, and with the highest
+     * timestamp an increment has recorded, so the three live in one hash rather than in
+     * three keys.
+     *
+     * How far beyond is a property of the platform, so rather than predict the limit the
+     * counter is checked for having actually moved: once precision runs out an increment
+     * leaves the value unchanged, and that is the only outcome that would issue an id
+     * twice. A value too long to pad is refused as well, since a wider id would sort
+     * before a narrower one and invert the order.
+     */
     static final int SEQUENCE_WIDTH = 20;
+
+    static final String FIELD_ID = "id";
+    static final String FIELD_TOTAL = "total";
+    static final String FIELD_INCREMENTED = "incremented";
 
     private static final String NEXT_ID =
              "local sequenceWidth = tonumber(ARGV[1]); " +
@@ -454,6 +493,30 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
                                "'(' .. string.format('%.0f', cutoff), 'limit', 0, 500)); " +
              "end; ";
 
+    /*
+     * Both scripts treat an expired entry at the target timestamp as absent, matching
+     * getEntry(), and delete the ones they find so a stale entry cannot mask a live one.
+     * An entry whose timestamp falls outside the retention window is not written at all,
+     * so a call never reports an entry it went on to delete.
+     * ARGV[1] is the id width, ARGV[2] the retention and ARGV[3] is now,
+     * followed by 5 values per entry:
+     * timestamp, label flag, value, label, expiration time. Ids are assigned by nextId.
+     */
+    /*
+     * The plain add: whatever is at that timestamp already stays, so a collection can hold
+     * several entries there, which is what add(long, Object) has always done. All it has to
+     * decide is whether the entry falls inside its own retention window.
+     */
+    private static final String ADD_ENTRY = NEXT_ID + REMOVE_MEMBERS + ENTRY_ARGS +
+             STORE_ENTRY + RETENTION_CUTOFF +
+             "local added = 0; " +
+             WITHIN_RETENTION +
+                 "storeEntry(nextId(), timestamp, entryValue); " +
+                 "added = 1; " +
+             "end; " +
+             RETENTION_TRIM +
+             "return added;";
+
     private static final String ADD_IF_ABSENT = NEXT_ID + REMOVE_MEMBERS + ENTRY_ARGS +
              STORE_ENTRY + RETENTION_CUTOFF +
              "local now = tonumber(ARGV[3]); " +
@@ -510,6 +573,15 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
              RETENTION_TRIM +
              "return created;";
 
+    /*
+     * %g renders a non-finite number the way C does, which Java cannot read back, so those
+     * three are named instead.
+     *
+     * Seventeen significant digits always read back as the same double, but they are not
+     * always needed: %.17g renders 0.1 as 0.10000000000000001, so summing zero into an entry
+     * would rewrite the text of its value. The shortest of the three that reads back exactly
+     * is used, which is what Double.toString picks as well.
+     */
     private static final String FORMAT_NUMBER =
              "local function formatNumber(value) " +
                  "if value ~= value then " +
@@ -633,6 +705,21 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
              RETENTION_TRIM +
              "return result;";
 
+    /*
+     * A running total that keeps its history: the total is advanced in the counter hash and
+     * the new total is recorded as the entry, so what a caller reads back at a timestamp is
+     * the total as of then.
+     *
+     * The total is deliberately not read out of the last entry, which is what TS.INCRBY does.
+     * Entries here expire one at a time and eviction is asynchronous, so a total kept in the
+     * last entry is forgotten the moment that entry expires - and since the expired entry is
+     * still there until eviction reaches it, the collection would read as a counter that had
+     * reset when it had not. Holding it beside the entry counter also makes the timestamp
+     * check a field read rather than a walk back through whatever has expired.
+     *
+     * ARGV[1] is the id width, ARGV[2] the retention and ARGV[3] is now, followed by 5 values
+     * per increment: timestamp, label flag, delta, label, expiration time.
+     */
     private static final String INCREMENT = NEXT_ID + REMOVE_MEMBERS + ENTRY_ARGS +
              STORE_ENTRY +
              "local state = redis.call('hmget', KEYS[3], 'incremented', 'total'); " +
@@ -744,6 +831,19 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
             return now + TimeUnit.DAYS.toMillis(365 * 100);
         }
         return now + timeToLive.toMillis();
+    }
+
+    @Override
+    public boolean add(TimeSeriesAddArgs<V, ? super L> entry) {
+        return get(addAsync(entry));
+    }
+
+    @Override
+    public RFuture<Boolean> addAsync(TimeSeriesAddArgs<V, ? super L> entry) {
+        return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_BOOLEAN,
+                ADD_ENTRY,
+                Arrays.asList(getRawName(), timeoutSetName, sequenceName),
+                encodeArgs(entry).toArray());
     }
 
     @Override
@@ -1411,6 +1511,27 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
     }
 
     /*
+     * Shared prologue for head/tail lookups.
+     *
+     * Traversal order comes from the main set (KEYS[1]), which is scored by timestamp.
+     * The timeout set (KEYS[2]) is scored by expiration time and is consulted only to
+     * skip already expired entries - it never defines the order.
+     *
+     * Collects into `members` and `scores`. ARGV[1] is now, ARGV[2] the direction,
+     * ARGV[3] the limit. A limit of 0 collects nothing, a negative limit collects everything.
+     *
+     * Three strategies, picked by how many entries are expired but not yet evicted:
+     *
+     *  - nothing expired (always so for entries added without a time to live): a single
+     *    ranged read, no per entry lookup;
+     *  - fewer live entries than expired ones: read the live entries straight out of the
+     *    timeout set and order them by timestamp, so a large backlog of expired entries
+     *    costs nothing;
+     *  - otherwise: page through the main set by index, skipping expired entries. Paging
+     *    is by index rather than by score, so entries sharing a timestamp are never
+     *    skipped when a batch boundary falls between them.
+     */
+    /*
      * A score is a double, so a timestamp at the very top of the long range comes back as
      * 2^63, which %d wraps to a negative and %.0f renders as a number no long can hold. What
      * was stored in that case was Long.MAX_VALUE, so that is what is reported.
@@ -1426,6 +1547,30 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
                  "return string.format('%.0f', score); " +
              "end; ";
 
+    /*
+     * The walk every read shares: the live entries of a timestamp window, oldest or newest
+     * first, optionally only those carrying a given label, at most a given number of them.
+     * It leaves them in members with their scores in scores, in the order to report them.
+     *
+     * Paging is by rank. ZRANGEBYSCORE with an offset walks past that offset on every call,
+     * so advancing an offset turns one pass over a window into a quadratic one, which a
+     * label filter or a backlog of entries the eviction task has not reached yet makes easy
+     * to hit. The first member of the window costs one lookup; every page after it is a rank
+     * slice. A page is a slice of ranks, so its size is what the walk reads rather than what
+     * it returns: bounded above, or a limit far larger than the window would pull the whole
+     * collection into one reply, and below, or rows dropped by the filter or by an expiry
+     * would shrink it towards one row per call.
+     *
+     * ARGV: 1 now, 2 and 3 the window, 4 the limit with 0 meaning no limit and a negative
+     * meaning no results, 5 the direction, 6 the label mode and 7 the label.
+     */
+    /*
+     * What the walk does with a row it has accepted, and whether the walk should carry on.
+     * Keeping the row is the usual answer. An aggregation folds it into its bucket instead and
+     * never asks the walk to stop, so a window is never held whole - though its buckets are,
+     * and a bucket interval far smaller than the spacing of the entries gives one bucket per
+     * entry.
+     */
     private static final String KEEP_MEMBERS = FORMAT_TIMESTAMP +
              "local result = {}; " +
              "local members = {}; " +

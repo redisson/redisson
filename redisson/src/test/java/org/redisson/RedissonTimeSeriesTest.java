@@ -27,7 +27,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.CountDownLatch;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -2483,6 +2482,60 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
         t.rename("moved");
         RTimeSeries<String, String> moved = numeric("moved");
         assertThat(moved.addAndGet(TimeSeriesAddArgs.entry(3, "1"))).isEqualTo(10.0);
+    }
+
+    @Test
+    public void testAddArgs() {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+
+        assertThat(t.add(TimeSeriesAddArgs.entry(5, "a"))).isTrue();
+        // a plain add leaves what is already there, so a timestamp can hold several
+        assertThat(t.add(TimeSeriesAddArgs.entry(5, "b"))).isTrue();
+        assertThat(t.getAll(5)).containsExactly("a", "b");
+        assertThat(t.size()).isEqualTo(2);
+    }
+
+    @Test
+    public void testAddArgsCarriesLabelAndTimeToLive() throws InterruptedException {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        t.add(TimeSeriesAddArgs.entry(1, "a", "cpu"));
+        t.add(TimeSeriesAddArgs.<String, String>entry(2, "b").timeToLive(Duration.ofMillis(300)));
+
+        assertThat(t.entryRange(0, 10)).containsExactly(new TimeSeriesEntry<>(1, "a", "cpu"),
+                                                        new TimeSeriesEntry<>(2, "b"));
+        assertThat(t.rangeByLabel(0, 10, "cpu")).containsExactly("a");
+
+        Thread.sleep(500);
+        assertThat(t.range(0, 10)).containsExactly("a");
+    }
+
+    @Test
+    public void testAddArgsIsRefusedOnlyByItsOwnRetention() {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        assertThat(t.add(TimeSeriesAddArgs.<String, String>entry(1000, "old")
+                .retention(Duration.ofMillis(100)))).isTrue();
+        assertThat(t.add(TimeSeriesAddArgs.<String, String>entry(1200, "new")
+                .retention(Duration.ofMillis(100)))).isTrue();
+        assertThat(t.range(0, 10000)).containsExactly("new");
+
+        // behind the cutoff, so it is not written rather than written and trimmed
+        assertThat(t.add(TimeSeriesAddArgs.<String, String>entry(900, "way back")
+                .retention(Duration.ofMillis(100)))).isFalse();
+        assertThat(t.getAll(900)).isEmpty();
+    }
+
+    @Test
+    public void testAddArgsAgreesWithTheOverloadsItReplaces() {
+        RTimeSeries<String, String> args = redisson.getTimeSeries("args");
+        RTimeSeries<String, String> plain = redisson.getTimeSeries("plain");
+
+        args.add(TimeSeriesAddArgs.entry(1, "a"));
+        args.add(TimeSeriesAddArgs.entry(2, "b", "cpu"));
+        plain.add(1, "a");
+        plain.add(2, "b", "cpu");
+
+        assertThat(args.entryRange(0, 10)).isEqualTo(plain.entryRange(0, 10));
+        assertThat(args.labels()).isEqualTo(plain.labels());
     }
 
 }

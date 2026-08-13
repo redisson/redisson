@@ -39,23 +39,40 @@ import java.util.concurrent.TimeUnit;
 public interface RTimeSeriesAsync<V, L> extends RExpirableAsync {
 
     /**
-     * Adds element to this time-series collection
-     * by specified <code>timestamp</code>.
+     * Use {@link #addAsync(TimeSeriesAddArgs)} instead
      *
      * @param timestamp object timestamp
      * @param object object itself
      * @return void
      */
+    @Deprecated
     RFuture<Void> addAsync(long timestamp, V object);
 
     /**
-     * Adds element with <code>label</code> to this time-series collection
-     * by specified <code>timestamp</code>.
+     * Adds the entry to this time-series collection.
+     * <p>
+     * Whatever is already at that timestamp stays, so a collection can hold several entries
+     * there; {@link #addIfAbsentAsync(TimeSeriesAddArgs)} and
+     * {@link #addOrReplaceAsync(TimeSeriesAddArgs)} are the ones that decide what happens to a
+     * duplicate.
+     * <p>
+     * This is the only add that carries a label, a time to live and a retention window at once,
+     * and the only one that reports what it did.
+     *
+     * @param entry entry to add
+     * @return <code>true</code> if the entry was added, <code>false</code> if it falls outside
+     *         the retention window it carries
+     */
+    RFuture<Boolean> addAsync(TimeSeriesAddArgs<V, ? super L> entry);
+
+    /**
+     * Use {@link #addAsync(TimeSeriesAddArgs)} instead
      *
      * @param timestamp object timestamp
      * @param object object itself
      * @param label object label
      */
+    @Deprecated
     RFuture<Void> addAsync(long timestamp, V object, L label);
 
     /**
@@ -76,7 +93,7 @@ public interface RTimeSeriesAsync<V, L> extends RExpirableAsync {
     RFuture<Void>  addAllAsync(Collection<TimeSeriesEntry<V, L>> entries);
 
     /**
-     * Use {@link #addAsync(long, Object, Duration)} instead
+     * Use {@link #addAsync(TimeSeriesAddArgs)} instead
      *
      * @param timestamp - object timestamp
      * @param object - object itself
@@ -88,18 +105,17 @@ public interface RTimeSeriesAsync<V, L> extends RExpirableAsync {
     RFuture<Void> addAsync(long timestamp, V object, long timeToLive, TimeUnit timeUnit);
 
     /**
-     * Adds element to this time-series collection
-     * by specified <code>timestamp</code>.
+     * Use {@link #addAsync(TimeSeriesAddArgs)} instead
      *
      * @param timestamp object timestamp
      * @param object object itself
      * @param timeToLive time to live interval
      */
+    @Deprecated
     RFuture<Void> addAsync(long timestamp, V object, Duration timeToLive);
 
     /**
-     * Adds element with <code>label</code> to this time-series collection
-     * by specified <code>timestamp</code>.
+     * Use {@link #addAsync(TimeSeriesAddArgs)} instead
      *
      * @param timestamp object timestamp
      * @param object object itself
@@ -107,6 +123,7 @@ public interface RTimeSeriesAsync<V, L> extends RExpirableAsync {
      * @param timeToLive time to live interval
      * @return void
      */
+    @Deprecated
     RFuture<Void> addAsync(long timestamp, V object, L label, Duration timeToLive);
 
     /**
@@ -754,6 +771,34 @@ public interface RTimeSeriesAsync<V, L> extends RExpirableAsync {
     /**
      * Adds the entry's value to the collection's running total and records the new total at
      * the entry's timestamp.
+     * <p>
+     * The value carried by <code>increment</code> is the amount to add, not the value to
+     * store: what is stored is the total of every increment made so far. Reading the
+     * collection back therefore gives the total as it stood at each timestamp, which is what
+     * <code>TS.INCRBY</code> produces and what differencing a counter expects.
+     * <p>
+     * The total is held with the collection rather than in the entries, so it survives entries
+     * expiring or falling outside the retention window. It starts at zero, and is forgotten
+     * only when the collection is deleted or when eviction reclaims an emptied collection.
+     * <p>
+     * Whatever is already at that timestamp is replaced, however it was added, so this
+     * method never leaves more than one entry per timestamp.
+     * <p>
+     * A running total that is not ascending cannot be differenced, so an increment carrying a
+     * timestamp behind one already recorded is recorded at that one's timestamp instead of
+     * behind it. Nothing is lost, and callers racing each other for a timestamp - which is the
+     * ordinary way a shared counter is used - do not have to be ordered. Entries added by the
+     * other methods are untouched by this and may still arrive in any order.
+     * <p>
+     * The amounts are read as numbers by the script, so the collection's codec has to encode
+     * numbers as text; a binary codec, which the default one is, throws
+     * {@link IllegalStateException} naming it. An amount that is not a finite number fails the
+     * call naming its timestamp, and so does a total that stops being finite.
+     * <p>
+     * The total is kept by Redis, which adds in <code>long double</code> and stores the result
+     * with seventeen decimal places. It therefore holds together better than a running sum of
+     * <code>double</code> would, but an amount too small to change it at that many places
+     * fails the call rather than being counted as nothing.
      *
      * @param increment timestamp, amount to add, and optionally a label and a time to live
      * @return the new running total

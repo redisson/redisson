@@ -127,4 +127,15 @@ public class RedissonTimeSeriesReactiveTest extends BaseReactiveTest {
         assertThat(sync(t.range(0, 10))).containsExactly("5", "8", "9", "10");
     }
 
+    @Test
+    public void testAddArgs() {
+        RTimeSeriesReactive<String, String> t = redisson.getTimeSeries("args");
+        assertThat(sync(t.add(TimeSeriesAddArgs.entry(1, "a")))).isTrue();
+        assertThat(sync(t.add(TimeSeriesAddArgs.entry(1, "b")))).isTrue();
+        assertThat(sync(t.getAll(1))).containsExactly("a", "b");
+        // the window is anchored on the highest timestamp held, so this one is behind it
+        assertThat(sync(t.add(TimeSeriesAddArgs.<String, String>entry(-10, "behind")
+                .retention(java.time.Duration.ofMillis(1))))).isFalse();
+    }
+
 }
