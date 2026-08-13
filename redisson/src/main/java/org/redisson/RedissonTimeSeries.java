@@ -323,17 +323,6 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
     private static final int LABEL_FIELD_EMPTY = 2;
     private static final int LABEL_FIELD_SET = 3;
 
-    /*
-     * Each script that filters reads the mode and the label into labelMode and labelValue
-     * first; the argument positions differ per script, so they are spelled out there rather
-     * than derived. Any other value of labelMode, including none at all, means no filter.
-     *
-     * Matching is on the encoded bytes, which asks nothing of the label type beyond a codec
-     * that encodes equal labels identically - the same assumption looking a member up by
-     * value already makes. Expects label to have been decoded by DECODE_LABEL already, where
-     * an absent label is the number 0 and a present one is a string, so a label can never
-     * compare equal to the absent marker.
-     */
     private static final String MATCHES_LABEL =
              "local matches = true; " +
              "if labelMode == '1' then " +
@@ -1422,27 +1411,6 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
     }
 
     /*
-     * Shared prologue for head/tail lookups.
-     *
-     * Traversal order comes from the main set (KEYS[1]), which is scored by timestamp.
-     * The timeout set (KEYS[2]) is scored by expiration time and is consulted only to
-     * skip already expired entries - it never defines the order.
-     *
-     * Collects into `members` and `scores`. ARGV[1] is now, ARGV[2] the direction,
-     * ARGV[3] the limit. A limit of 0 collects nothing, a negative limit collects everything.
-     *
-     * Three strategies, picked by how many entries are expired but not yet evicted:
-     *
-     *  - nothing expired (always so for entries added without a time to live): a single
-     *    ranged read, no per entry lookup;
-     *  - fewer live entries than expired ones: read the live entries straight out of the
-     *    timeout set and order them by timestamp, so a large backlog of expired entries
-     *    costs nothing;
-     *  - otherwise: page through the main set by index, skipping expired entries. Paging
-     *    is by index rather than by score, so entries sharing a timestamp are never
-     *    skipped when a batch boundary falls between them.
-     */
-    /*
      * A score is a double, so a timestamp at the very top of the long range comes back as
      * 2^63, which %d wraps to a negative and %.0f renders as a number no long can hold. What
      * was stored in that case was Long.MAX_VALUE, so that is what is reported.
@@ -1458,30 +1426,6 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
                  "return string.format('%.0f', score); " +
              "end; ";
 
-    /*
-     * The walk every read shares: the live entries of a timestamp window, oldest or newest
-     * first, optionally only those carrying a given label, at most a given number of them.
-     * It leaves them in members with their scores in scores, in the order to report them.
-     *
-     * Paging is by rank. ZRANGEBYSCORE with an offset walks past that offset on every call,
-     * so advancing an offset turns one pass over a window into a quadratic one, which a
-     * label filter or a backlog of entries the eviction task has not reached yet makes easy
-     * to hit. The first member of the window costs one lookup; every page after it is a rank
-     * slice. A page is a slice of ranks, so its size is what the walk reads rather than what
-     * it returns: bounded above, or a limit far larger than the window would pull the whole
-     * collection into one reply, and below, or rows dropped by the filter or by an expiry
-     * would shrink it towards one row per call.
-     *
-     * ARGV: 1 now, 2 and 3 the window, 4 the limit with 0 meaning no limit and a negative
-     * meaning no results, 5 the direction, 6 the label mode and 7 the label.
-     */
-    /*
-     * What the walk does with a row it has accepted, and whether the walk should carry on.
-     * Keeping the row is the usual answer. An aggregation folds it into its bucket instead and
-     * never asks the walk to stop, so a window is never held whole - though its buckets are,
-     * and a bucket interval far smaller than the spacing of the entries gives one bucket per
-     * entry.
-     */
     private static final String KEEP_MEMBERS = FORMAT_TIMESTAMP +
              "local result = {}; " +
              "local members = {}; " +
