@@ -391,7 +391,7 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
              "local retention = tonumber(ARGV[2]); " +
              "if retention > 0 then " +
                  "local highest; " +
-                 "for i = 4, #ARGV, 5 do " +
+                 "for i = entryBase, #ARGV, 5 do " +
                      "local timestamp = tonumber(ARGV[i]); " +
                      "if highest == nil or timestamp > highest then " +
                          "highest = timestamp; " +
@@ -447,10 +447,12 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
      * followed by 5 values per entry:
      * timestamp, label flag, value, label, expiration time. Ids are assigned by nextId.
      */
-    private static final String ADD_IF_ABSENT = NEXT_ID + RETENTION_CUTOFF +
+    private static final String ADD_IF_ABSENT = NEXT_ID +
+             "local entryBase = 4; " +
+             RETENTION_CUTOFF +
              "local added = 0; " +
              "local occupiedAt = {}; " +
-             "for i = 4, #ARGV, 5 do " +
+             "for i = entryBase, #ARGV, 5 do " +
                  "if cutoff == nil or tonumber(ARGV[i]) >= cutoff then " +
                      "local occupied = occupiedAt[ARGV[i]]; " +
                      "local existing = {}; " +
@@ -484,9 +486,11 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
              RETENTION_TRIM +
              "return added;";
 
-    private static final String ADD_OR_REPLACE = NEXT_ID + RETENTION_CUTOFF +
+    private static final String ADD_OR_REPLACE = NEXT_ID +
+             "local entryBase = 4; " +
+             RETENTION_CUTOFF +
              "local created = 0; " +
-             "for i = 4, #ARGV, 5 do " +
+             "for i = entryBase, #ARGV, 5 do " +
                  "if cutoff == nil or tonumber(ARGV[i]) >= cutoff then " +
                      "local replaced = false; " +
                      "local existing = redis.call('zrangebyscore', KEYS[1], ARGV[i], ARGV[i]); " +
@@ -514,7 +518,125 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
              RETENTION_TRIM +
              "return created;";
 
+    private static final String FORMAT_NUMBER =
+             "local function formatNumber(value) " +
+                 "if value ~= value then " +
+                     "return 'NaN'; " +
+                 "end; " +
+                 "if value == math.huge then " +
+                     "return 'Infinity'; " +
+                 "end; " +
+                 "if value == -math.huge then " +
+                     "return '-Infinity'; " +
+                 "end; " +
+                 "return string.format('%.17g', value); " +
+             "end; ";
+
+    private static final String READ_NUMBER =
+             "local function readNumber(text, timestamp) " +
+                 "local number = tonumber(text); " +
+                 "if number == nil or number ~= number " +
+                         "or number == math.huge or number == -math.huge then " +
+                     "error('RTimeSeries value at timestamp ' .. timestamp " +
+                            ".. ' is not a finite number'); " +
+                 "end; " +
+                 "return number; " +
+             "end; ";
+
+    private static final int POLICY_LESS = 1;
+    private static final int POLICY_GREATER = 2;
+    private static final int POLICY_SUM = 3;
+
+    /*
+     * The duplicate policies that have to look at the value: keep the smaller, keep the
+     * larger, or add them together. A timestamp already holding several live entries counts
+     * as holding their extreme, or their total, and a call that stores leaves exactly one
+     * entry there - the shape addOrReplace produces. Entries that have expired are dropped
+     * whether the call stores or not, since they take no part either way.
+     *
+     * ARGV[4] is the policy and the entries start at ARGV[5], five values each.
+     */
+    private static final String ADD_COMPARING = NEXT_ID +
+             "local entryBase = 5; " +
+             RETENTION_CUTOFF + FORMAT_NUMBER + READ_NUMBER +
+             "local policy = tonumber(ARGV[4]); " +
+             "local result = 0; " +
+             "for i = entryBase, #ARGV, 5 do " +
+                 "if cutoff == nil or tonumber(ARGV[i]) >= cutoff then " +
+                     "local live = {}; " +
+                     "local total = 0; " +
+                     "local extreme; " +
+                     "local existing = redis.call('zrangebyscore', KEYS[1], ARGV[i], ARGV[i]); " +
+                     "for j = 1, #existing do " +
+                         "local expirationDate = redis.call('zscore', KEYS[2], existing[j]); " +
+                         "if expirationDate == false or tonumber(expirationDate) > tonumber(ARGV[3]) then " +
+                             "local n, t, val = struct.unpack('BBc0Lc0Lc0', existing[j]); " +
+                             "local number = readNumber(val, ARGV[i]); " +
+                             "table.insert(live, existing[j]); " +
+                             "total = total + number; " +
+                             "if extreme == nil then " +
+                                 "extreme = number; " +
+                             "elseif policy == 1 and number < extreme then " +
+                                 "extreme = number; " +
+                             "elseif policy == 2 and number > extreme then " +
+                                 "extreme = number; " +
+                             "end; " +
+                         "else " +
+                             "redis.call('zrem', KEYS[1], existing[j]); " +
+                             "redis.call('zrem', KEYS[2], existing[j]); " +
+                         "end; " +
+                     "end; " +
+
+                     "local incoming = readNumber(ARGV[i+2], ARGV[i]); " +
+                     "local store = true; " +
+                     "local value = ARGV[i+2]; " +
+                     "if extreme ~= nil then " +
+                         "if policy == 1 then " +
+                             "store = incoming < extreme; " +
+                         "elseif policy == 2 then " +
+                             "store = incoming > extreme; " +
+                         "else " +
+                             "local sum = total + incoming; " +
+                             "if sum ~= sum or sum == math.huge or sum == -math.huge then " +
+                                 "error('RTimeSeries sum at timestamp ' .. ARGV[i] " +
+                                        ".. ' is not a finite number'); " +
+                             "end; " +
+                             "value = formatNumber(sum); " +
+                         "end; " +
+                     "end; " +
+
+                     "if store then " +
+                         "for j = 1, #live do " +
+                             "redis.call('zrem', KEYS[1], live[j]); " +
+                             "redis.call('zrem', KEYS[2], live[j]); " +
+                         "end; " +
+                         "local id = nextId(); " +
+                         "local lbl = string.char(ARGV[i+1]) .. ARGV[i+3]; " +
+                         "local packed = struct.pack('BBc0Lc0Lc0', 4, " +
+                                                                  "string.len(id), id, " +
+                                                                  "string.len(value), value, " +
+                                                                  "string.len(lbl), lbl); " +
+                         "redis.call('zadd', KEYS[1], ARGV[i], packed); " +
+                         "redis.call('zadd', KEYS[2], ARGV[i+4], packed); " +
+                         // summing always stores, so what it reports is what it created;
+                         // the other two report whether the value they were given won
+                         "if policy ~= 3 then " +
+                             "result = result + 1; " +
+                         "elseif #live == 0 then " +
+                             "result = result + 1; " +
+                         "end; " +
+                     "end; " +
+                 "end; " +
+             "end; " +
+             RETENTION_TRIM +
+             "return result;";
+
     private Object[] encodeArgs(Collection<? extends TimeSeriesAddArgs<V, ? super L>> entries) {
+        return encodeArgs(entries, null);
+    }
+
+    private Object[] encodeArgs(Collection<? extends TimeSeriesAddArgs<V, ? super L>> entries,
+                                Integer policy) {
         long now = System.currentTimeMillis();
         long retention = 0;
         for (TimeSeriesAddArgs<V, ? super L> entry : entries) {
@@ -535,6 +657,9 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
         params.add(SEQUENCE_WIDTH);
         params.add(retention);
         params.add(now);
+        if (policy != null) {
+            params.add(policy);
+        }
         for (TimeSeriesAddArgs<V, ? super L> entry : entries) {
             TimeSeriesAddParams<V, ?> args = (TimeSeriesAddParams<V, ?>) entry;
             // worked out before anything is encoded, so a time to live that cannot be
@@ -594,6 +719,48 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
     }
 
     @Override
+    public boolean addIfLess(TimeSeriesAddArgs<V, ? super L> entry) {
+        return get(addIfLessAsync(entry));
+    }
+
+    @Override
+    public RFuture<Boolean> addIfLessAsync(TimeSeriesAddArgs<V, ? super L> entry) {
+        return addComparingAsync(Collections.singletonList(entry), POLICY_LESS,
+                RedisCommands.EVAL_BOOLEAN, "addIfLess");
+    }
+
+    @Override
+    public boolean addIfGreater(TimeSeriesAddArgs<V, ? super L> entry) {
+        return get(addIfGreaterAsync(entry));
+    }
+
+    @Override
+    public RFuture<Boolean> addIfGreaterAsync(TimeSeriesAddArgs<V, ? super L> entry) {
+        return addComparingAsync(Collections.singletonList(entry), POLICY_GREATER,
+                RedisCommands.EVAL_BOOLEAN, "addIfGreater");
+    }
+
+    @Override
+    public boolean addAndSum(TimeSeriesAddArgs<V, ? super L> entry) {
+        return get(addAndSumAsync(entry));
+    }
+
+    @Override
+    public RFuture<Boolean> addAndSumAsync(TimeSeriesAddArgs<V, ? super L> entry) {
+        return addComparingAsync(Collections.singletonList(entry), POLICY_SUM,
+                RedisCommands.EVAL_BOOLEAN, "addAndSum");
+    }
+
+    private <T> RFuture<T> addComparingAsync(Collection<? extends TimeSeriesAddArgs<V, ? super L>> entries,
+                                             int policy, RedisCommand<?> command, String method) {
+        checkNumericCodec(method + "() on '" + getName() + "'");
+        return commandExecutor.evalWriteAsync(getRawName(), codec, command,
+                ADD_COMPARING,
+                Arrays.asList(getRawName(), timeoutSetName, sequenceName),
+                encodeArgs(entries, policy));
+    }
+
+    @Override
     public boolean addOrReplace(TimeSeriesAddArgs<V, ? super L> entry) {
         return get(addOrReplaceAsync(entry));
     }
@@ -635,7 +802,7 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
      * ByteArrayCodec is handed its bytes ready made - so those are left to the script, which
      * names the timestamp of the first value it cannot read.
      */
-    private void checkNumericCodec() {
+    private void checkNumericCodec(String subject) {
         Boolean numeric = numericCodec;
         if (numeric == null) {
             numeric = probeNumericCodec();
@@ -643,7 +810,7 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
         }
         if (!numeric) {
             throw new IllegalStateException(
-                    "Aggregation of '" + getName() + "' requires a codec that encodes numbers as text. "
+                    subject + " requires a codec that encodes numbers as text. "
                   + "The configured codec (" + codec.getClass().getName() + ") encodes them as "
                   + "something else. Use StringCodec, DoubleCodec, LongCodec or IntegerCodec.");
         }
@@ -683,7 +850,7 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
 
     @Override
     public RFuture<Collection<TimeSeriesBucket>> aggregateAsync(TimeSeriesAggregationArgs<? super L> args) {
-        checkNumericCodec();
+        checkNumericCodec("Aggregation of '" + getName() + "'");
 
         TimeSeriesAggregationParams<?> params = (TimeSeriesAggregationParams<?>) args;
         // the script works in milliseconds, so the interval has to survive the conversion:
@@ -1457,20 +1624,8 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
      * value filter is applied with 11 and 12 its bounds, and 13 onwards the aggregation codes
      * in the order to report them.
      */
-    private static final String AGGREGATE = FORMAT_TIMESTAMP +
-             // %g renders a non-finite number the way C does, which Java cannot read back
-             "local function formatNumber(value) " +
-                 "if value ~= value then " +
-                     "return 'NaN'; " +
-                 "end; " +
-                 "if value == math.huge then " +
-                     "return 'Infinity'; " +
-                 "end; " +
-                 "if value == -math.huge then " +
-                     "return '-Infinity'; " +
-                 "end; " +
-                 "return string.format('%.17g', value); " +
-             "end; " +
+
+    private static final String AGGREGATE = FORMAT_TIMESTAMP + FORMAT_NUMBER +
              "local result = {}; " +
              "local bucketSize = tonumber(ARGV[8]); " +
              "local alignment = tonumber(ARGV[9]); " +

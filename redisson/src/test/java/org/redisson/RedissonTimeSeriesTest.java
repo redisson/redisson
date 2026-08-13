@@ -23,6 +23,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -2031,6 +2032,147 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
         renamed.add(9, "later");
         assertThat(renamed.range(0, 100)).containsExactly("fresh", "later");
         assertThat(renamed.size()).isEqualTo(2);
+    }
+
+    @Test
+    public void testAddIfLess() {
+        RTimeSeries<String, String> t = numeric("test");
+        assertThat(t.addIfLess(TimeSeriesAddArgs.entry(5, "10"))).isTrue();
+        assertThat(t.addIfLess(TimeSeriesAddArgs.entry(5, "4"))).isTrue();
+        assertThat(t.get(5)).isEqualTo("4");
+        assertThat(t.addIfLess(TimeSeriesAddArgs.entry(5, "9"))).isFalse();
+        assertThat(t.addIfLess(TimeSeriesAddArgs.entry(5, "4"))).isFalse();
+        assertThat(t.get(5)).isEqualTo("4");
+        assertThat(t.size()).isEqualTo(1);
+    }
+
+    @Test
+    public void testAddIfGreater() {
+        RTimeSeries<String, String> t = numeric("test");
+        assertThat(t.addIfGreater(TimeSeriesAddArgs.entry(5, "10"))).isTrue();
+        assertThat(t.addIfGreater(TimeSeriesAddArgs.entry(5, "12"))).isTrue();
+        assertThat(t.get(5)).isEqualTo("12");
+        assertThat(t.addIfGreater(TimeSeriesAddArgs.entry(5, "1"))).isFalse();
+        assertThat(t.get(5)).isEqualTo("12");
+        assertThat(t.size()).isEqualTo(1);
+    }
+
+    @Test
+    public void testAddAndSum() {
+        RTimeSeries<String, String> t = numeric("test");
+        // nothing there yet, so this one is created
+        assertThat(t.addAndSum(TimeSeriesAddArgs.entry(5, "10"))).isTrue();
+        assertThat(t.addAndSum(TimeSeriesAddArgs.entry(5, "5"))).isFalse();
+        assertThat(t.get(5)).isEqualTo("15");
+        assertThat(t.addAndSum(TimeSeriesAddArgs.entry(5, "-15"))).isFalse();
+        assertThat(t.get(5)).isEqualTo("0");
+        assertThat(t.size()).isEqualTo(1);
+    }
+
+    @Test
+    public void testAddPoliciesCollapseDuplicatesToOneEntry() {
+        RTimeSeries<String, String> t = numeric("test");
+        for (String v : new String[]{"9", "2", "7"}) {
+            t.add(5, v);
+        }
+
+        // the smallest of them is what the incoming value is compared against
+        assertThat(t.addIfLess(TimeSeriesAddArgs.entry(5, "3"))).isFalse();
+        assertThat(t.range(0, 10)).containsExactly("9", "2", "7");
+        assertThat(t.addIfLess(TimeSeriesAddArgs.entry(5, "1"))).isTrue();
+        assertThat(t.range(0, 10)).containsExactly("1");
+
+        RTimeSeries<String, String> g = numeric("greater");
+        for (String v : new String[]{"9", "2", "7"}) {
+            g.add(5, v);
+        }
+        assertThat(g.addIfGreater(TimeSeriesAddArgs.entry(5, "8"))).isFalse();
+        assertThat(g.addIfGreater(TimeSeriesAddArgs.entry(5, "10"))).isTrue();
+        assertThat(g.range(0, 10)).containsExactly("10");
+
+        RTimeSeries<String, String> sum = numeric("sum");
+        for (String v : new String[]{"9", "2", "7"}) {
+            sum.add(5, v);
+        }
+        assertThat(sum.addAndSum(TimeSeriesAddArgs.entry(5, "1"))).isFalse();
+        assertThat(sum.range(0, 10)).containsExactly("19");
+    }
+
+    @Test
+    public void testAddPoliciesIgnoreExpiredEntries() throws InterruptedException {
+        RTimeSeries<String, String> t = numeric("test");
+        t.add(5, "1", Duration.ofMillis(200));
+        Thread.sleep(400);
+
+        // the timestamp reads as free, and the stale entry is dropped
+        assertThat(t.addIfLess(TimeSeriesAddArgs.entry(5, "100"))).isTrue();
+        assertThat(t.range(0, 10)).containsExactly("100");
+        assertThat(t.size()).isEqualTo(1);
+
+        RTimeSeries<String, String> sum = numeric("sum");
+        sum.add(5, "50", Duration.ofMillis(200));
+        sum.add(5, "3");
+        Thread.sleep(400);
+        assertThat(sum.addAndSum(TimeSeriesAddArgs.entry(5, "1"))).isFalse();
+        assertThat(sum.range(0, 10)).containsExactly("4");
+    }
+
+    @Test
+    public void testAddPoliciesCarryLabelsAndTimeToLive() throws InterruptedException {
+        RTimeSeries<String, String> t = numeric("test");
+        t.addAndSum(TimeSeriesAddArgs.entry(5, "1", "cpu"));
+        t.addAndSum(TimeSeriesAddArgs.entry(5, "2", "mem"));
+        assertThat(t.entryRange(0, 10)).containsExactly(new TimeSeriesEntry<>(5, "3", "mem"));
+
+        t.addAndSum(TimeSeriesAddArgs.entry(9, "1").timeToLive(Duration.ofMillis(200)));
+        assertThat(t.size()).isEqualTo(2);
+        Thread.sleep(400);
+        assertThat(t.range(0, 10)).containsExactly("3");
+    }
+
+    @Test
+    public void testAddPoliciesHonourRetention() {
+        RTimeSeries<String, String> t = numeric("test");
+        t.addAndSum(TimeSeriesAddArgs.entry(1000, "1"));
+        t.addAndSum(TimeSeriesAddArgs.entry(1100, "2").retention(Duration.ofMillis(50)));
+        assertThat(t.range(0, 10000)).containsExactly("2");
+
+        // an entry below the cutoff is not stored, as with the other add forms
+        assertThat(t.addAndSum(TimeSeriesAddArgs.entry(900, "5")
+                .retention(Duration.ofMillis(50)))).isFalse();
+        assertThat(t.range(0, 10000)).containsExactly("2");
+    }
+
+    @Test
+    public void testAddPoliciesRequireANumericCodec() {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        t.add(1, "10");
+
+        assertThatThrownBy(() -> t.addIfLess(TimeSeriesAddArgs.entry(1, "5")))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("StringCodec");
+        assertThatThrownBy(() -> t.addAndSum(TimeSeriesAddArgs.entry(1, "5")))
+                .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    public void testAddPoliciesRejectValuesThatAreNotFiniteNumbers() {
+        for (String bad : new String[]{"abc", "inf", "-inf", "nan"}) {
+            RTimeSeries<String, String> t = numeric("test" + bad.hashCode());
+            t.add(5, "1");
+            assertThatThrownBy(() -> t.addAndSum(TimeSeriesAddArgs.entry(5, bad)))
+                    .hasMessageContaining("is not a finite number");
+        }
+
+        RTimeSeries<String, String> stored = numeric("stored");
+        stored.add(5, "not a number");
+        assertThatThrownBy(() -> stored.addIfLess(TimeSeriesAddArgs.entry(5, "1")))
+                .hasMessageContaining("is not a finite number");
+
+        RTimeSeries<String, String> over = numeric("over");
+        over.addAndSum(TimeSeriesAddArgs.entry(5, "1e308"));
+        assertThatThrownBy(() -> over.addAndSum(TimeSeriesAddArgs.entry(5, "1e308")))
+                .hasMessageContaining("sum at timestamp");
     }
 
 }

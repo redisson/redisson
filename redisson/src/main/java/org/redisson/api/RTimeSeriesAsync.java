@@ -711,4 +711,59 @@ public interface RTimeSeriesAsync<V, L> extends RExpirableAsync {
      */
     RFuture<TimeSeriesInfo> infoAsync();
 
+    /**
+     * Adds the entry only if its value is smaller than the value already held at that
+     * timestamp.
+     * <p>
+     * Nothing held there means it is added. Several live entries there count as holding the
+     * smallest of their values, and a call that stores replaces all of them with the one
+     * entry, so used on its own this method never leaves more than one entry per timestamp.
+     * Entries that have expired are dropped either way.
+     * <p>
+     * The values are compared as numbers by the script, so the collection's codec has to
+     * encode numbers as text; a binary codec, which the default one is, throws
+     * {@link IllegalStateException} naming it. A stored or incoming value that is not a
+     * finite number fails the call naming its timestamp.
+     *
+     * @param entry entry to add
+     * @return <code>true</code> if the value was stored
+     */
+    RFuture<Boolean> addIfLessAsync(TimeSeriesAddArgs<V, ? super L> entry);
+
+    /**
+     * Adds the entry only if its value is larger than the value already held at that
+     * timestamp.
+     * <p>
+     * Nothing held there means it is added. Several live entries there count as holding the
+     * largest of their values, and a call that stores replaces all of them with the one
+     * entry, so used on its own this method never leaves more than one entry per timestamp.
+     * Entries that have expired are dropped either way.
+     * <p>
+     * The values are compared as numbers by the script, so the collection's codec has to
+     * encode numbers as text; a binary codec, which the default one is, throws
+     * {@link IllegalStateException} naming it. A stored or incoming value that is not a
+     * finite number fails the call naming its timestamp.
+     *
+     * @param entry entry to add
+     * @return <code>true</code> if the value was stored
+     */
+    RFuture<Boolean> addIfGreaterAsync(TimeSeriesAddArgs<V, ? super L> entry);
+
+    /**
+     * Adds the entry, summing its value with whatever is already held at that timestamp.
+     * <p>
+     * Nothing held there means it is added as it is. Several live entries there are summed
+     * together with it and replaced by the one entry, so used on its own this method never
+     * leaves more than one entry per timestamp. Entries that have expired take no part.
+     * <p>
+     * The values are compared as numbers by the script, so the collection's codec has to
+     * encode numbers as text; a binary codec, which the default one is, throws
+     * {@link IllegalStateException} naming it. A stored or incoming value that is not a
+     * finite number fails the call naming its timestamp.
+     *
+     * @param entry entry to add
+     * @return <code>true</code> if no entry was held at that timestamp
+     */
+    RFuture<Boolean> addAndSumAsync(TimeSeriesAddArgs<V, ? super L> entry);
+
 }
