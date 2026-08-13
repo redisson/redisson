@@ -9,6 +9,8 @@ import org.redisson.api.RScript;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RTimeSeries;
 import org.redisson.api.ts.TimeSeriesAddArgs;
+import org.redisson.api.ts.TimeSeriesReadArgs;
+import org.redisson.api.ts.TimeSeriesInfo;
 import org.assertj.core.data.Offset;
 import java.util.List;
 import org.redisson.api.ts.TimeSeriesBucket;
@@ -1757,6 +1759,278 @@ public class RedissonTimeSeriesTest extends RedisDockerTest {
         t.add(500, "1");
         assertThat(t.aggregate(TimeSeriesAggregationArgs.<String>between(0, 100)
                 .bucket(Duration.ofMillis(10)).avg())).isEmpty();
+    }
+
+    @Test
+    public void testReadTail() {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        t.add(10, "a");
+        t.add(20, "b");
+        t.add(30, "c");
+
+        assertThat(t.readTail(TimeSeriesReadArgs.after(10))).containsExactly(
+                new TimeSeriesEntry<>(20, "b"),
+                new TimeSeriesEntry<>(30, "c"));
+        // the boundary is exclusive
+        assertThat(t.readTail(TimeSeriesReadArgs.after(30))).isEmpty();
+        assertThat(t.readTail(TimeSeriesReadArgs.after(Long.MIN_VALUE))).hasSize(3);
+    }
+
+    @Test
+    public void testReadTailAdvancingACursor() {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        long cursor = Long.MIN_VALUE;
+        List<String> seen = new ArrayList<>();
+        for (int round = 0; round < 5; round++) {
+            t.add(round * 10, "v" + round);
+            for (TimeSeriesEntry<String, String> e : t.readTail(TimeSeriesReadArgs.after(cursor))) {
+                seen.add(e.getValue());
+                cursor = e.getTimestamp();
+            }
+            // nothing new the second time round
+            assertThat(t.readTail(TimeSeriesReadArgs.after(cursor))).isEmpty();
+        }
+        assertThat(seen).containsExactly("v0", "v1", "v2", "v3", "v4");
+    }
+
+    @Test
+    public void testReadTailCountAndLabel() {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        for (int i = 1; i <= 10; i++) {
+            t.add(i, "v" + i, i % 2 == 0 ? "even" : "odd");
+        }
+
+        assertThat(t.readTail(TimeSeriesReadArgs.after(0).count(3)))
+                .extracting(TimeSeriesEntry::getValue).containsExactly("v1", "v2", "v3");
+        assertThat(t.readTail(TimeSeriesReadArgs.<String>after(0).label("even").count(2)))
+                .extracting(TimeSeriesEntry::getValue).containsExactly("v2", "v4");
+        assertThat(t.readTail(TimeSeriesReadArgs.<String>after(0).label(null))).isEmpty();
+        // zero is no limit, and a negative count reports nothing, as elsewhere
+        assertThat(t.readTail(TimeSeriesReadArgs.after(0).count(0))).hasSize(10);
+        assertThat(t.readTail(TimeSeriesReadArgs.after(0).count(-1))).isEmpty();
+    }
+
+    @Test
+    public void testReadTailAtTheEdgeOfTheLongRange() {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        t.add(Long.MAX_VALUE, "max");
+        t.add(0, "zero");
+
+        assertThat(t.readTail(TimeSeriesReadArgs.after(Long.MAX_VALUE))).isEmpty();
+        assertThat(t.readTail(TimeSeriesReadArgs.after(0)))
+                .extracting(TimeSeriesEntry::getValue).containsExactly("max");
+    }
+
+    @Test
+    public void testReadTailIgnoresExpiredEntries() throws InterruptedException {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        t.add(10, "kept");
+        t.add(20, "dying", Duration.ofMillis(300));
+        assertThat(t.readTail(TimeSeriesReadArgs.after(0))).hasSize(2);
+
+        Thread.sleep(500);
+        assertThat(t.readTail(TimeSeriesReadArgs.after(0)))
+                .extracting(TimeSeriesEntry::getValue).containsExactly("kept");
+    }
+
+    @Test
+    public void testInfo() {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        TimeSeriesInfo empty = t.info();
+        assertThat(empty.getSize()).isZero();
+        assertThat(empty.getTotalEntries()).isZero();
+        assertThat(empty.getFirstTimestamp()).isNull();
+        assertThat(empty.getLastTimestamp()).isNull();
+        assertThat(empty.getEntriesIssued()).isZero();
+        assertThat(empty.getTimeToLive()).isEqualTo(-2);
+
+        t.add(30, "c");
+        t.add(10, "a");
+        t.add(20, "b");
+
+        TimeSeriesInfo info = t.info();
+        assertThat(info.getSize()).isEqualTo(3);
+        assertThat(info.getTotalEntries()).isEqualTo(3);
+        assertThat(info.getFirstTimestamp()).isEqualTo(10);
+        assertThat(info.getLastTimestamp()).isEqualTo(30);
+        assertThat(info.getMemoryUsage()).isPositive();
+        assertThat(info.getTimeToLive()).isEqualTo(-1);
+        assertThat(info.getEntriesIssued()).isEqualTo(3);
+
+        // and it agrees with the methods that report the same things one at a time
+        assertThat(info.getSize()).isEqualTo(t.size());
+        assertThat(info.getFirstTimestamp()).isEqualTo(t.firstTimestamp());
+        assertThat(info.getLastTimestamp()).isEqualTo(t.lastTimestamp());
+    }
+
+    @Test
+    public void testInfoCountsWhatEvictionHasNotReclaimed() throws InterruptedException {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        t.add(10, "kept");
+        t.add(20, "dying", Duration.ofMillis(300));
+        t.add(30, "also dying", Duration.ofMillis(300));
+        Thread.sleep(500);
+
+        TimeSeriesInfo info = t.info();
+        assertThat(info.getSize()).isEqualTo(1);
+        assertThat(info.getTotalEntries()).isEqualTo(3);
+        // the expired ones are still held, but they are not the first or the last
+        assertThat(info.getFirstTimestamp()).isEqualTo(10);
+        assertThat(info.getLastTimestamp()).isEqualTo(10);
+    }
+
+    @Test
+    public void testInfoReportsTheCollectionTimeToLive() {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        t.add(1, "a");
+        assertThat(t.info().getTimeToLive()).isEqualTo(-1);
+
+        t.expire(Duration.ofMinutes(10));
+        assertThat(t.info().getTimeToLive()).isGreaterThan(0);
+
+        t.clearExpire();
+        assertThat(t.info().getTimeToLive()).isEqualTo(-1);
+    }
+
+    @Test
+    public void testInfoAtTheEdgeOfTheLongRange() {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        t.add(Long.MIN_VALUE, "min");
+        t.add(Long.MAX_VALUE, "max");
+
+        TimeSeriesInfo info = t.info();
+        assertThat(info.getFirstTimestamp()).isEqualTo(Long.MIN_VALUE);
+        assertThat(info.getLastTimestamp()).isEqualTo(Long.MAX_VALUE);
+    }
+
+    @Test
+    public void testInfoWithATimeToLivePastFourteenDigits() {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        t.add(1, "a");
+        t.expire(Duration.ofDays(365L * 4000));
+
+        // Lua's tostring renders with %.14g, which would have come back as 1.26144e+14
+        assertThat(t.info().getTimeToLive()).isGreaterThan(100_000_000_000_000L);
+    }
+
+    @Test
+    public void testReadTailAboveTwoToTheFiftyThree() {
+        // a long does not survive the conversion to a double up here, so the exclusive
+        // bound cannot simply be the next double above the cursor
+        for (long base : new long[]{1L << 53, (1L << 53) + 1000, 1L << 60}) {
+            RTimeSeries<String, String> t = redisson.getTimeSeries("test" + base);
+            List<Long> stored = new ArrayList<>();
+            for (long d = 0; d <= 16; d += 2) {
+                t.add(base + d, "v" + d);
+            }
+            for (TimeSeriesEntry<String, String> e : t.entryRange(Long.MIN_VALUE, Long.MAX_VALUE)) {
+                stored.add(e.getTimestamp());
+            }
+
+            for (long cursor = base - 1; cursor <= base + 17; cursor++) {
+                List<Long> expected = new ArrayList<>();
+                for (long timestamp : stored) {
+                    if (timestamp > cursor) {
+                        expected.add(timestamp);
+                    }
+                }
+                assertThat(t.readTail(TimeSeriesReadArgs.after(cursor)))
+                        .as("base " + base + " cursor " + cursor)
+                        .extracting(TimeSeriesEntry::getTimestamp)
+                        .containsExactlyElementsOf(expected);
+            }
+        }
+    }
+
+    @Test
+    public void testInfoOfACollectionThatHasEntirelyExpired() throws InterruptedException {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        Map<Long, String> block = new HashMap<>();
+        for (long i = 0; i < 50; i++) {
+            block.put(i, "v" + i);
+        }
+        t.addAll(block, Duration.ofMillis(1));
+        Thread.sleep(200);
+
+        TimeSeriesInfo info = t.info();
+        assertThat(info.getSize()).isZero();
+        assertThat(info.getTotalEntries()).isEqualTo(50);
+        assertThat(info.getFirstTimestamp()).isNull();
+        assertThat(info.getLastTimestamp()).isNull();
+        assertThat(info.getFirstTimestamp()).isEqualTo(t.firstTimestamp());
+        assertThat(info.getLastTimestamp()).isEqualTo(t.lastTimestamp());
+    }
+
+    @Test
+    public void testReadTailNeverEndsInsideATimestamp() {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        for (int i = 0; i < 150; i++) {
+            t.add(1000, "v" + i);
+        }
+        t.add(1001, "next");
+
+        // the count is reached inside the run at 1000, so the whole run comes back
+        assertThat(t.readTail(TimeSeriesReadArgs.after(0).count(100))).hasSize(150);
+
+        // and the loop the javadoc recommends therefore delivers everything
+        long cursor = Long.MIN_VALUE;
+        List<String> seen = new ArrayList<>();
+        while (true) {
+            Collection<TimeSeriesEntry<String, String>> batch =
+                    t.readTail(TimeSeriesReadArgs.after(cursor).count(100));
+            if (batch.isEmpty()) {
+                break;
+            }
+            for (TimeSeriesEntry<String, String> e : batch) {
+                seen.add(e.getValue());
+                cursor = e.getTimestamp();
+            }
+        }
+        assertThat(seen).hasSize(151);
+        assertThat(seen).endsWith("next");
+    }
+
+    @Test
+    public void testSizeCountsAnEntryWithANegativeExpirationAsExpired() {
+        RTimeSeries<String, String> t = redisson.getTimeSeries("test");
+        // a negative time to live puts the expiration before the epoch
+        t.add(7, "gone", Duration.ofDays(-30000));
+        t.add(8, "live");
+
+        assertThat(t.range(0, 100)).containsExactly("live");
+        assertThat(t.size()).isEqualTo(1);
+
+        TimeSeriesInfo info = t.info();
+        assertThat(info.getSize()).isEqualTo(1);
+        assertThat(info.getFirstTimestamp()).isEqualTo(8);
+        assertThat(info.getLastTimestamp()).isEqualTo(8);
+    }
+
+    @Test
+    public void testRenameLeavesTheDestinationMirroringTheSource() {
+        RTimeSeries<String, String> src = redisson.getTimeSeries("src");
+        src.add(1, "a");
+        src.removeAll(1);
+        // emptied, but its counter key outlives the data
+
+        RTimeSeries<String, String> dst = redisson.getTimeSeries("dst");
+        for (int i = 1; i <= 5; i++) {
+            dst.add(i, "d" + i);
+        }
+
+        src.rename("dst");
+        RTimeSeries<String, String> renamed = redisson.getTimeSeries("dst");
+        // the destination holds what the source held, which is nothing
+        assertThat(renamed.size()).isZero();
+        assertThat(renamed.range(0, 100)).isEmpty();
+        assertThat(redisson.getKeys().countExists("dst")).isZero();
+        assertThat(redisson.getKeys().countExists("redisson__ts_ttl:{dst}")).isZero();
+
+        // and the ids the source's counter goes on issuing meet no data to collide with
+        renamed.add(3, "fresh");
+        renamed.add(9, "later");
+        assertThat(renamed.range(0, 100)).containsExactly("fresh", "later");
+        assertThat(renamed.size()).isEqualTo(2);
     }
 
 }

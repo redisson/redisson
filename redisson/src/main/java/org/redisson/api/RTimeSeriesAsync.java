@@ -17,6 +17,8 @@ package org.redisson.api;
 
 import org.redisson.api.ts.TimeSeriesAddArgs;
 import org.redisson.api.ts.TimeSeriesBucket;
+import org.redisson.api.ts.TimeSeriesReadArgs;
+import org.redisson.api.ts.TimeSeriesInfo;
 import org.redisson.api.ts.TimeSeriesAggregationArgs;
 
 import java.time.Duration;
@@ -684,5 +686,29 @@ public interface RTimeSeriesAsync<V, L> extends RExpirableAsync {
      * @return buckets in ascending timestamp order
      */
     RFuture<Collection<TimeSeriesBucket>> aggregateAsync(TimeSeriesAggregationArgs<? super L> args);
+
+    /**
+     * Reports the entries whose timestamp is strictly greater than the one given, oldest
+     * first.
+     * <p>
+     * <b>This does not block.</b> It reports whatever is already there and returns; a sorted
+     * set has no server side wait for "entries after a timestamp". The caller owns the loop.
+     * <pre>
+     *     collection.readTail(TimeSeriesReadArgs.after(cursor).count(100));
+     * </pre>
+     *
+     * @param args read arguments
+     * @return entries collection
+     */
+    RFuture<Collection<TimeSeriesEntry<V, L>>> readTailAsync(TimeSeriesReadArgs<? super L> args);
+
+    /**
+     * Returns what the collection can report about itself, in one round trip: how many
+     * entries it holds live and in total, its first and last timestamp, its memory usage, its
+     * own time to live, and how many entry ids it has issued.
+     *
+     * @return collection info
+     */
+    RFuture<TimeSeriesInfo> infoAsync();
 
 }

@@ -383,6 +383,10 @@ public abstract class RedissonObject implements RObject {
                         + "for j = 1, newKeysIndex, 1 do "
                           +  "if redis.call('exists', KEYS[j]) == 1 then "
                                + "redis.call('rename', KEYS[j], KEYS[newKeysIndex + j]); "
+                           + "else "
+                               // whatever stood at the destination has been replaced, so a
+                               // key the source does not have must not survive there either
+                               + "redis.call('del', KEYS[newKeysIndex + j]); "
                            + "end; "
                         + "end; ",
                 keys);

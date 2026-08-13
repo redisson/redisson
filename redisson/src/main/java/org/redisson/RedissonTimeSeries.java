@@ -29,6 +29,9 @@ import org.redisson.api.ts.TimeSeriesAggregation;
 import org.redisson.api.ts.TimeSeriesAggregationArgs;
 import org.redisson.api.ts.TimeSeriesAggregationParams;
 import org.redisson.api.ts.TimeSeriesBucket;
+import org.redisson.api.ts.TimeSeriesInfo;
+import org.redisson.api.ts.TimeSeriesReadArgs;
+import org.redisson.api.ts.TimeSeriesReadParams;
 import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
@@ -757,6 +760,80 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
     }
 
     @Override
+    public Collection<TimeSeriesEntry<V, L>> readTail(TimeSeriesReadArgs<? super L> args) {
+        return get(readTailAsync(args));
+    }
+
+    /*
+     * The bound is exclusive and a score is a double, so what is wanted is the smallest double
+     * that no timestamp at or below the cursor can reach. Above 2^53 a long does not survive
+     * the conversion: if it rounds up, the double already stands for something past the cursor
+     * and is the bound itself; otherwise the next double up is.
+     */
+    @Override
+    public RFuture<Collection<TimeSeriesEntry<V, L>>> readTailAsync(TimeSeriesReadArgs<? super L> args) {
+        TimeSeriesReadParams<?> params = (TimeSeriesReadParams<?>) args;
+        if (params.getCount() < 0) {
+            return new CompletableFutureWrapper<>(Collections.<TimeSeriesEntry<V, L>>emptyList());
+        }
+
+        int labelMode = LABEL_NONE;
+        if (params.isLabelFiltered()) {
+            labelMode = labelMode(params.getLabel());
+        }
+        double bound = params.getTimestamp();
+        if ((long) bound <= params.getTimestamp()) {
+            bound = Math.nextUp(bound);
+        }
+        return collectAsync(codec, EVAL_ENTRIES, COLLECT_ENTRIES, false,
+                bound, WHOLE_RANGE_END,
+                params.getCount(), params.getLabel(), labelMode, true);
+    }
+
+
+    @Override
+    public TimeSeriesInfo info() {
+        return get(infoAsync());
+    }
+
+    @Override
+    public RFuture<TimeSeriesInfo> infoAsync() {
+        RFuture<List<Object>> future = commandExecutor.evalReadAsync(getRawName(), StringCodec.INSTANCE,
+                RedisCommands.EVAL_LIST, INFO,
+                Arrays.asList(getRawName(), timeoutSetName, sequenceName),
+                System.currentTimeMillis());
+        CompletionStage<TimeSeriesInfo> f = future.thenApply(rows -> new TimeSeriesInfo(
+                Integer.parseInt(rows.get(0).toString()),
+                Integer.parseInt(rows.get(1).toString()),
+                parseTimestamp(rows.get(2)),
+                parseTimestamp(rows.get(3)),
+                Long.parseLong(rows.get(4).toString()),
+                Long.parseLong(rows.get(5).toString()),
+                parseEntriesIssued(rows.get(6))));
+        return new CompletableFutureWrapper<>(f);
+    }
+
+    private static Long parseTimestamp(Object value) {
+        String timestamp = value.toString();
+        if (timestamp.isEmpty()) {
+            return null;
+        }
+        return Long.parseLong(timestamp);
+    }
+
+    /*
+     * The counter is kept as text and can outgrow a long long before it trips the overflow
+     * the script guards against, so it saturates rather than failing the call.
+     */
+    private static long parseEntriesIssued(Object value) {
+        try {
+            return Long.parseLong(value.toString());
+        } catch (NumberFormatException e) {
+            return Long.MAX_VALUE;
+        }
+    }
+
+    @Override
     public int size() {
         return get(sizeAsync());
     }
@@ -764,8 +841,8 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
     @Override
     public RFuture<Integer> sizeAsync() {
         return commandExecutor.evalReadAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
-       "local values = redis.call('zrangebyscore', KEYS[2], 0, ARGV[1]);" +
-             "return redis.call('zcard', KEYS[1]) - #values;",
+       "local expired = redis.call('zcount', KEYS[2], '-inf', ARGV[1]);" +
+             "return redis.call('zcard', KEYS[1]) - expired;",
             Arrays.asList(getRawName(), timeoutSetName),
             System.currentTimeMillis());
     }
@@ -1162,20 +1239,34 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
      * meaning no results, 5 the direction, 6 the label mode and 7 the label.
      */
     /*
-     * What the walk does with a row it has accepted. Keeping it is the usual answer, and the
-     * count it returns is what the walk compares the limit against. An aggregation folds the
-     * row into its bucket instead and returns -1, so a window is never held whole - though
-     * its buckets are, and a bucket interval far smaller than the spacing of the entries
-     * gives one bucket per entry.
+     * What the walk does with a row it has accepted, and whether the walk should carry on.
+     * Keeping the row is the usual answer. An aggregation folds it into its bucket instead and
+     * never asks the walk to stop, so a window is never held whole - though its buckets are,
+     * and a bucket interval far smaller than the spacing of the entries gives one bucket per
+     * entry.
      */
     private static final String KEEP_MEMBERS = FORMAT_TIMESTAMP +
              "local result = {}; " +
              "local members = {}; " +
              "local scores = {}; " +
+             "local keepLimit = tonumber(ARGV[4]); " +
+             // a tail read advances its cursor to the timestamp of the last entry it was
+             // given, so a batch that stopped in the middle of a timestamp would put the rest
+             // of that timestamp behind the cursor for good. It takes the whole of it instead,
+             // which is why a count is a floor rather than a ceiling for that caller.
+             "local wholeTimestamps = ARGV[8] == '1'; " +
              "local function keep(member, score) " +
+                 "if keepLimit > 0 and #members >= keepLimit then " +
+                     "if not wholeTimestamps then " +
+                         "return false; " +
+                     "end; " +
+                     "if score ~= scores[#members] then " +
+                         "return false; " +
+                     "end; " +
+                 "end; " +
                  "table.insert(members, member); " +
                  "table.insert(scores, score); " +
-                 "return #members; " +
+                 "return true; " +
              "end; ";
 
     private static final String COLLECT_RANGE =
@@ -1232,7 +1323,7 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
                              "end; " +
                              MATCHES_LABEL +
                              "if matches then " +
-                                 "if keep(values[i], values[i+1]) == limit then " +
+                                 "if not keep(values[i], values[i+1]) then " +
                                      "return; " +
                                  "end; " +
                              "end; " +
@@ -1242,6 +1333,80 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
                  "end; " +
              "end; " +
              "collect(); ";
+
+    /*
+     * Everything the collection can say about itself in one round trip. Only the two
+     * timestamps can cost more than a lookup, and only while entries that have expired are
+     * still held: they are the same walk first() and last() make.
+     */
+    private static final String INFO = FORMAT_TIMESTAMP +
+             // the same window size() counts, so the two cannot disagree
+             "local expired = redis.call('zcount', KEYS[2], '-inf', ARGV[1]); " +
+             "local total = redis.call('zcard', KEYS[1]); " +
+
+             // the first entry that has not expired is within the first expired + 1 of them,
+             // so with nothing expired one row is read rather than a page of five hundred.
+             // A page carries whole members, so its cost is the size of the values in it.
+             "local pageSize = expired + 1; " +
+             "if pageSize > 500 then " +
+                 "pageSize = 500; " +
+             "end; " +
+
+             "local function firstLive(reverse) " +
+                 "local page = 'zrange'; " +
+                 "if reverse ~= 0 then " +
+                     "page = 'zrevrange'; " +
+                 "end; " +
+                 "local index = 0; " +
+                 "while true do " +
+                     "local values = redis.call(page, KEYS[1], index, index + pageSize - 1, 'withscores'); " +
+                     "if #values == 0 then " +
+                         "return ''; " +
+                     "end; " +
+                     "for i = 1, #values, 2 do " +
+                         "local expirationDate = redis.call('zscore', KEYS[2], values[i]); " +
+                         "if expirationDate == false " +
+                                 "or tonumber(expirationDate) > tonumber(ARGV[1]) then " +
+                             "return formatTimestamp(tonumber(values[i+1])); " +
+                         "end; " +
+                     "end; " +
+                     "index = index + #values/2; " +
+                 "end; " +
+             "end; " +
+
+             // with nothing live to find, the walk from the far end would only repeat what
+             // the walk from the near end has already established
+             "local first = ''; " +
+             "local last = ''; " +
+             "if total > 0 then " +
+                 "first = firstLive(0); " +
+                 "if first ~= '' then " +
+                     "last = firstLive(1); " +
+                 "end; " +
+             "end; " +
+
+             "local memory = 0; " +
+             "for j = 1, #KEYS do " +
+                 "local used = redis.call('memory', 'usage', KEYS[j]); " +
+                 "if used ~= false then " +
+                     "memory = memory + used; " +
+                 "end; " +
+             "end; " +
+
+             "local issued = redis.call('get', KEYS[3]); " +
+             "if issued == false then " +
+                 "issued = '0'; " +
+             "end; " +
+
+             // tostring() renders with %.14g, so anything past fourteen digits - a time to
+             // live of a few thousand years, say - would come back in exponent form
+             "return {string.format('%.0f', total - expired), " +
+                     "string.format('%.0f', total), " +
+                     "first, " +
+                     "last, " +
+                     "string.format('%.0f', memory), " +
+                     "string.format('%.0f', redis.call('pttl', KEYS[1])), " +
+                     "issued};";
 
     private static final String UNPACK_VALUES =
              "for i = 1, #members do " +
@@ -1372,7 +1537,7 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
                             ".. formatTimestamp(tonumber(score)) .. ' is not a finite number'); " +
                  "end; " +
                  "if valueFilter and (value < minValue or value > maxValue) then " +
-                     "return -1; " +
+                     "return true; " +
                  "end; " +
                  "local bucket = math.floor((tonumber(score) - alignment) / bucketSize); " +
                  "if bucket ~= index then " +
@@ -1392,7 +1557,7 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
                  "local delta = value - mean; " +
                  "mean = mean + delta / count; " +
                  "m2 = m2 + delta * (value - mean); " +
-                 "return -1; " +
+                 "return true; " +
              "end; ";
 
     private static final String CLOSE_LAST_BUCKET =
@@ -1420,12 +1585,20 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
     }
 
     private <T> RFuture<T> collectAsync(Codec c, RedisCommand<?> command, String script, boolean reverse,
-                                        long startTimestamp, long endTimestamp, int limit,
+                                        Number startTimestamp, Number endTimestamp, int limit,
                                         Object label, int labelMode) {
+        return collectAsync(c, command, script, reverse, startTimestamp, endTimestamp, limit,
+                label, labelMode, false);
+    }
+
+    private <T> RFuture<T> collectAsync(Codec c, RedisCommand<?> command, String script, boolean reverse,
+                                        Number startTimestamp, Number endTimestamp, int limit,
+                                        Object label, int labelMode, boolean wholeTimestamps) {
         return commandExecutor.evalReadAsync(getRawName(), c, command, script,
                 Arrays.asList(getRawName(), timeoutSetName),
                 System.currentTimeMillis(), startTimestamp, endTimestamp, limit,
-                Boolean.compare(reverse, false), labelMode, encodeLabelArg(label, labelMode));
+                Boolean.compare(reverse, false), labelMode, encodeLabelArg(label, labelMode),
+                Boolean.compare(wholeTimestamps, false));
     }
 
     /*
@@ -1437,7 +1610,8 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
         return commandExecutor.evalWriteAsync(getRawName(), codec, command, script,
                 Arrays.asList(getRawName(), timeoutSetName),
                 System.currentTimeMillis(), WHOLE_RANGE_START, WHOLE_RANGE_END, headTailLimit(count),
-                Boolean.compare(reverse, false), LABEL_NONE, encodeLabelArg(null, LABEL_NONE));
+                Boolean.compare(reverse, false), LABEL_NONE, encodeLabelArg(null, LABEL_NONE),
+                Boolean.compare(false, false));
     }
 
     private RFuture<Long> listTimestampAsync(boolean reverse, int count, RedisCommand<?> evalCommandType) {

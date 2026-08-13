@@ -3,6 +3,8 @@ package org.redisson;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RTimeSeriesReactive;
 import org.redisson.api.TimeSeriesEntry;
+import org.redisson.api.ts.TimeSeriesReadArgs;
+import org.redisson.api.ts.TimeSeriesInfo;
 import java.time.Duration;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.api.ts.TimeSeriesBucket;
@@ -66,6 +68,22 @@ public class RedissonTimeSeriesReactiveTest extends BaseReactiveTest {
 
         assertThat(buckets).hasSize(2);
         assertThat(buckets.iterator().next().getAvg()).isEqualTo(15.0);
+    }
+
+    @Test
+    public void testReadTailAndInfo() {
+        RTimeSeriesReactive<String, String> t = redisson.getTimeSeries("tail");
+        sync(t.add(10, "a"));
+        sync(t.add(20, "b"));
+
+        assertThat(sync(t.readTail(TimeSeriesReadArgs.after(10))))
+                .containsExactly(new TimeSeriesEntry<>(20, "b"));
+        assertThat(sync(t.readTail(TimeSeriesReadArgs.after(20)))).isEmpty();
+
+        TimeSeriesInfo info = sync(t.info());
+        assertThat(info.getSize()).isEqualTo(2);
+        assertThat(info.getFirstTimestamp()).isEqualTo(10);
+        assertThat(info.getLastTimestamp()).isEqualTo(20);
     }
 
 }

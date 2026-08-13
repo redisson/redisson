@@ -3,6 +3,12 @@ package org.redisson.rx;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RTimeSeriesRx;
 import org.redisson.api.TimeSeriesEntry;
+import org.redisson.api.ts.TimeSeriesReadArgs;
+import org.redisson.api.ts.TimeSeriesInfo;
+import java.time.Duration;
+import org.redisson.client.codec.StringCodec;
+import org.redisson.api.ts.TimeSeriesBucket;
+import org.redisson.api.ts.TimeSeriesAggregationArgs;
 
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
@@ -46,6 +52,38 @@ public class RedissonTimeSeriesRxTest extends BaseRxTest {
         assertThat(sync(t.labels())).containsExactlyInAnyOrder("cpu", "mem");
         assertThat(sync(t.labels(2, 2))).containsExactlyInAnyOrder("mem");
         assertThat(sync(t.removeRangeByLabel(0, 10, "cpu"))).isEqualTo(1);
+    }
+
+    @Test
+    public void testAggregate() {
+        RTimeSeriesRx<String, String> t = redisson.getTimeSeries("agg", StringCodec.INSTANCE);
+        sync(t.add(1, "10"));
+        sync(t.add(2, "20"));
+        sync(t.add(500, "30"));
+
+        Collection<TimeSeriesBucket> buckets = sync(t.aggregate(
+                TimeSeriesAggregationArgs.<String>between(0, 1000)
+                        .bucket(Duration.ofMillis(100))
+                        .avg().count()));
+
+        assertThat(buckets).hasSize(2);
+        assertThat(buckets.iterator().next().getAvg()).isEqualTo(15.0);
+    }
+
+    @Test
+    public void testReadTailAndInfo() {
+        RTimeSeriesRx<String, String> t = redisson.getTimeSeries("tail");
+        sync(t.add(10, "a"));
+        sync(t.add(20, "b"));
+
+        assertThat(sync(t.readTail(TimeSeriesReadArgs.after(10))))
+                .containsExactly(new TimeSeriesEntry<>(20, "b"));
+        assertThat(sync(t.readTail(TimeSeriesReadArgs.after(20)))).isEmpty();
+
+        TimeSeriesInfo info = sync(t.info());
+        assertThat(info.getSize()).isEqualTo(2);
+        assertThat(info.getFirstTimestamp()).isEqualTo(10);
+        assertThat(info.getLastTimestamp()).isEqualTo(20);
     }
 
 }
