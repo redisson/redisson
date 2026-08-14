@@ -2728,6 +2728,18 @@ public class RedissonConnection extends AbstractRedisConnection {
     @Override
     public byte[] getEx(byte[] key, Expiration expiration) {
         Assert.notNull(key, "Key must not be null!");
+        Assert.notNull(expiration, "Expiration must not be null!");
+
+        if (expiration.isPersistent()) {
+            return write(key, ByteArrayCodec.INSTANCE, GETEX, key, "PERSIST");
+        }
+        if (expiration.isKeepTtl()) {
+            return write(key, ByteArrayCodec.INSTANCE, GETEX, key);
+        }
+        if (expiration.isUnixTimestamp()) {
+            return write(key, ByteArrayCodec.INSTANCE, GETEX, key,
+                    "PXAT", expiration.getExpirationTimeInMilliseconds());
+        }
 
         return write(key, ByteArrayCodec.INSTANCE, GETEX, key,
                 "PX", expiration.getExpirationTimeInMilliseconds());

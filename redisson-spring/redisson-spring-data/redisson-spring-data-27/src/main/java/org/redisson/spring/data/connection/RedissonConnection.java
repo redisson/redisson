@@ -2792,6 +2792,18 @@ public class RedissonConnection extends AbstractRedisConnection {
     @Override
     public byte[] getEx(byte[] key, Expiration expiration) {
         Assert.notNull(key, "Key must not be null!");
+        Assert.notNull(expiration, "Expiration must not be null!");
+
+        if (expiration.isPersistent()) {
+            return write(key, ByteArrayCodec.INSTANCE, GETEX, key, "PERSIST");
+        }
+        if (expiration.isKeepTtl()) {
+            return write(key, ByteArrayCodec.INSTANCE, GETEX, key);
+        }
+        if (expiration.isUnixTimestamp()) {
+            return write(key, ByteArrayCodec.INSTANCE, GETEX, key,
+                    "PXAT", expiration.getExpirationTimeInMilliseconds());
+        }
 
         return write(key, ByteArrayCodec.INSTANCE, GETEX, key,
                 "PX", expiration.getExpirationTimeInMilliseconds());
@@ -2865,6 +2877,15 @@ public class RedissonConnection extends AbstractRedisConnection {
     @Override
     public void flushAll(FlushOption option) {
         write(null, StringCodec.INSTANCE, RedisCommands.FLUSHALL, option.toString());
+    }
+
+    private static final RedisCommand<Object> HRANDFIELD = new RedisCommand<>("HRANDFIELD");
+
+    @Override
+    public byte[] hRandField(byte[] key) {
+        Assert.notNull(key, "Key must not be null!");
+
+        return read(key, ByteArrayCodec.INSTANCE, HRANDFIELD, key);
     }
 
 }
