@@ -63,7 +63,20 @@ abstract class ConnectionPool<T extends RedisConnection> {
     public Tuple<CompletableFuture<T>, Throwable> getTuple(RedisCommand<?> command, boolean trackChanges) {
         Collection<ClientConnectionsEntry> entries = masterSlaveEntry.getAllEntries();
         List<ClientConnectionsEntry> entriesCopy = new ArrayList<>(entries);
-        entriesCopy.removeIf(n -> n.isFreezed() || !isHealthy(n));
+        entriesCopy.removeIf(entry -> {
+            if (entry.isFreezed()) {
+                return true;
+            }
+            if (isHealthy(entry)) {
+                return false;
+            }
+
+            FailedNodeDetector detector = entry.getClient().getConfig().getFailedNodeDetector();
+            RedisConnectionException cause = new RedisConnectionException(
+                    "Redis node has been marked as failed according to the detection logic defined in " + detector);
+            shutdownAndReconnect(entry, detector, cause);
+            return true;
+        });
         if (!entriesCopy.isEmpty()) {
             ClientConnectionsEntry entry = config.getLoadBalancer().getEntry(entriesCopy, command);
             if (entry != null) {
@@ -124,9 +137,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
                     FailedNodeDetector detector = entry.getClient().getConfig().getFailedNodeDetector();
                     detector.onConnectFailed(e);
                     if (detector.isNodeFailed()) {
-                        log.error("Redis node {} has been marked as failed according to the detection logic defined in {}",
-                                        entry.getClient().getAddr(), detector);
-                        masterSlaveEntry.shutdownAndReconnectAsync(entry.getClient(), e);
+                        shutdownAndReconnect(entry, detector, e);
                     }
                 }
                 cancelableFuture.completeExceptionally(e);
@@ -147,11 +158,18 @@ abstract class ConnectionPool<T extends RedisConnection> {
     }
         
     private boolean isHealthy(ClientConnectionsEntry entry) {
-        if (entry.getNodeType() == NodeType.SLAVE
-                && entry.getClient().getConfig().getFailedNodeDetector().isNodeFailed()) {
-            return false;
+        if (entry.getNodeType() != NodeType.SLAVE) {
+            return true;
         }
-        return true;
+
+        FailedNodeDetector detector = entry.getClient().getConfig().getFailedNodeDetector();
+        return !detector.isNodeFailed();
+    }
+
+    private void shutdownAndReconnect(ClientConnectionsEntry entry, FailedNodeDetector detector, Throwable cause) {
+        log.error("Redis node {} has been marked as failed according to the detection logic defined in {}",
+                entry.getClient().getAddr(), detector);
+        masterSlaveEntry.shutdownAndReconnectAsync(entry.getClient(), cause);
     }
 
 }
