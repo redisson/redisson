@@ -1,12 +1,20 @@
 package org.redisson;
 
+import mockit.Invocation;
+import mockit.Mock;
+import mockit.MockUp;
 import org.joor.Reflect;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.*;
 import org.redisson.client.*;
+import org.redisson.client.codec.Codec;
+import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.command.CommandBatchService;
 import org.redisson.config.Config;
+import org.redisson.connection.ConnectionManager;
+import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.renewal.LockEntry;
 import org.redisson.renewal.LockTask;
 import org.testcontainers.containers.GenericContainer;
@@ -24,6 +32,41 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
 public class RedissonLockTest extends BaseConcurrentTest {
+    @Test
+    public void testLockUsesDirectEvalWhenNoSlavesAvailable() {
+        testInCluster(redisson -> {
+            Config config = redisson.getConfig();
+            config.setUseScriptCache(true);
+
+            RedissonClient instance = Redisson.create(config);
+            try {
+                RLock lock = instance.getLock("testLockUsesDirectEvalWhenNoSlavesAvailable");
+                ConnectionManager connectionManager = Reflect.on(instance).get("connectionManager");
+                MasterSlaveEntry entry = connectionManager.getEntry(lock.getName());
+                entry.setAvailableSlaves(0);
+                entry.setAofEnabled(false);
+
+                AtomicInteger batchEvalCounter = new AtomicInteger();
+                new MockUp<CommandBatchService>() {
+                    @Mock
+                    public <T, R> RFuture<R> evalWriteAsync(Invocation inv, String key, Codec codec,
+                                                            RedisCommand<T> evalCommandType, String script,
+                                                            List<Object> keys, Object... params) {
+                        batchEvalCounter.incrementAndGet();
+                        return inv.proceed(key, codec, evalCommandType, script, keys, params);
+                    }
+                };
+
+                lock.lock();
+                lock.unlock();
+
+                assertThat(batchEvalCounter).hasValue(0);
+            } finally {
+                instance.shutdown();
+            }
+        });
+    }
+
     static class LockWithoutBoolean extends Thread {
         private CountDownLatch latch;
         private RedissonClient redisson;

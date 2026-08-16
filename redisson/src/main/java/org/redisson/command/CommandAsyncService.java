@@ -1195,6 +1195,13 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 e.setAvailableSlaves(availableSlaves);
                 e.setAofEnabled(aofEnabled);
 
+                if (availableSlaves == 0 && !aofEnabled) {
+                    if (retry) {
+                        return evalWriteAsync(key, codec, evalCommandType, script, keys, params);
+                    }
+                    return evalWriteNoRetryAsync(key, codec, evalCommandType, script, keys, params);
+                }
+
                 CommandBatchService executorService = createCommandBatchService(availableSlaves, aofEnabled, timeout);
                 RFuture<T> result = executorService.evalWriteAsync(key, codec, evalCommandType, script, keys, params);
                 if (executorService == this) {
