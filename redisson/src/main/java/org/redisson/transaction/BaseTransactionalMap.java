@@ -703,8 +703,8 @@ public class BaseTransactionalMap<K, V> extends BaseTransactionalObject {
         try {
             return valueBuf.equals(oldValueBuf);
         } finally {
-            valueBuf.readableBytes();
-            oldValueBuf.readableBytes();
+            valueBuf.release();
+            oldValueBuf.release();
         }
     }
 
