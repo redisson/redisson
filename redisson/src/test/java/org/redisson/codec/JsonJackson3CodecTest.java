@@ -16,8 +16,10 @@
 package org.redisson.codec;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.DatabindException;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.SerializationFeature;
 import tools.jackson.databind.json.JsonMapper;
@@ -31,6 +33,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class JsonJackson3CodecTest {
 
@@ -431,6 +434,296 @@ class JsonJackson3CodecTest {
     }
 
     // Test helper classes
+
+    @Nested
+    class AllowedClassesTests {
+
+        private final Set<String> allowed = new HashSet<>(Arrays.asList(TestPerson.class.getName()));
+
+        private Object roundTrip(JsonJackson3Codec decodeWith, Object value) throws IOException {
+            ByteBuf encoded = codec.getValueEncoder().encode(value);
+            try {
+                return decodeWith.getValueDecoder().decode(encoded, null);
+            } finally {
+                encoded.release();
+            }
+        }
+
+        @Test
+        void testAllowedClassIsDecoded() throws IOException {
+            JsonJackson3Codec restricted = new JsonJackson3Codec(allowed);
+
+            Object decoded = roundTrip(restricted, new TestPerson("John", 30));
+
+            assertThat(decoded).isInstanceOf(TestPerson.class);
+            assertThat(((TestPerson) decoded).getName()).isEqualTo("John");
+        }
+
+        @Test
+        void testForbiddenClassIsRejected() {
+            JsonJackson3Codec restricted = new JsonJackson3Codec(allowed);
+
+            assertThatThrownBy(() -> roundTrip(restricted, new TestAddress("Main street", "NY")))
+                    .isInstanceOf(DatabindException.class)
+                    .hasMessageContaining(TestAddress.class.getName());
+        }
+
+        @Test
+        void testForbiddenClassNestedInCollectionIsRejected() {
+            JsonJackson3Codec restricted = new JsonJackson3Codec(allowed);
+
+            assertThatThrownBy(() -> roundTrip(restricted, new ArrayList<>(Arrays.asList(new TestAddress("Main street", "NY")))))
+                    .isInstanceOf(DatabindException.class)
+                    .hasMessageContaining(TestAddress.class.getName());
+        }
+
+        @Test
+        void testAllowedClassArrayIsDecoded() throws IOException {
+            JsonJackson3Codec restricted = new JsonJackson3Codec(allowed);
+
+            Object decoded = roundTrip(restricted, new TestPerson[]{new TestPerson("John", 30)});
+
+            assertThat(decoded).isInstanceOf(TestPerson[].class);
+        }
+
+        @Test
+        void testForbiddenClassArrayIsRejected() {
+            JsonJackson3Codec restricted = new JsonJackson3Codec(allowed);
+
+            assertThatThrownBy(() -> roundTrip(restricted, new TestAddress[]{new TestAddress("Main street", "NY")}))
+                    .isInstanceOf(DatabindException.class)
+                    .hasMessageContaining(TestAddress.class.getName());
+        }
+
+        @Test
+        void testJdkClassesAreDecoded() throws IOException {
+            JsonJackson3Codec restricted = new JsonJackson3Codec(allowed);
+
+            Map<String, Object> value = new HashMap<>();
+            value.put("list", new ArrayList<>(Arrays.asList("one", "two")));
+            value.put("uuid", UUID.randomUUID());
+            value.put("date", new Date(1000000L));
+            value.put("decimal", new BigDecimal("1.5"));
+
+            assertThat(roundTrip(restricted, value)).isEqualTo(value);
+        }
+
+        private Object decode(JsonJackson3Codec codec, String json) throws IOException {
+            ByteBuf buf = Unpooled.wrappedBuffer(json.getBytes(StandardCharsets.UTF_8));
+            try {
+                return codec.getValueDecoder().decode(buf, null);
+            } finally {
+                buf.release();
+            }
+        }
+
+        @Test
+        void testForbiddenClassInGenericTypeIdIsRejected() {
+            JsonJackson3Codec restricted = new JsonJackson3Codec(allowed);
+
+            String json = "[\"java.util.ArrayList<" + TestSecret.class.getName() + ">\",[{\"value\":\"boom\"}]]";
+
+            assertThatThrownBy(() -> decode(restricted, json))
+                    .isInstanceOf(DatabindException.class);
+        }
+
+        @Test
+        void testForbiddenClassInGenericMapTypeIdIsRejected() {
+            JsonJackson3Codec restricted = new JsonJackson3Codec(allowed);
+
+            String json = "{\"@class\":\"java.util.HashMap<java.lang.String," + TestSecret.class.getName()
+                    + ">\",\"k\":{\"value\":\"boom\"}}";
+
+            assertThatThrownBy(() -> decode(restricted, json))
+                    .isInstanceOf(DatabindException.class);
+        }
+
+        @Test
+        void testAllowedClassInGenericTypeIdIsDecoded() throws IOException {
+            JsonJackson3Codec restricted = new JsonJackson3Codec(
+                    new HashSet<>(Arrays.asList(TestSecret.class.getName())));
+
+            String json = "[\"java.util.ArrayList<" + TestSecret.class.getName() + ">\",[{\"value\":\"boom\"}]]";
+
+            Object decoded = decode(restricted, json);
+
+            assertThat(decoded).isInstanceOf(List.class);
+            assertThat(((List<?>) decoded).get(0)).isInstanceOf(TestSecret.class);
+        }
+
+        @Test
+        void testForbiddenEnumOfEnumMapIsRejected() {
+            JsonJackson3Codec restricted = new JsonJackson3Codec(allowed);
+
+            EnumMap<TestStatus, Object> value = new EnumMap<>(TestStatus.class);
+            value.put(TestStatus.ACTIVE, "v");
+
+            assertThatThrownBy(() -> roundTrip(restricted, value))
+                    .isInstanceOf(DatabindException.class);
+        }
+
+        @Test
+        void testAllowedEnumOfEnumMapIsDecoded() throws IOException {
+            JsonJackson3Codec restricted = new JsonJackson3Codec(
+                    new HashSet<>(Arrays.asList(TestStatus.class.getName())));
+
+            EnumMap<TestStatus, Object> value = new EnumMap<>(TestStatus.class);
+            value.put(TestStatus.ACTIVE, "v");
+
+            assertThat(roundTrip(restricted, value)).isEqualTo(value);
+        }
+
+        @Test
+        void testEmptyAllowedClassesAllowsAnyClass() throws IOException {
+            assertThat(roundTrip(new JsonJackson3Codec(Collections.emptySet()), new TestAddress("Main street", "NY")))
+                    .isInstanceOf(TestAddress.class);
+            assertThat(roundTrip(new JsonJackson3Codec((Set<String>) null), new TestAddress("Main street", "NY")))
+                    .isInstanceOf(TestAddress.class);
+            assertThat(roundTrip(new JsonJackson3Codec(), new TestAddress("Main street", "NY")))
+                    .isInstanceOf(TestAddress.class);
+        }
+
+        @Test
+        void testClassLoaderConstructorKeepsAllowedClasses() throws IOException {
+            JsonJackson3Codec restricted = new JsonJackson3Codec(getClass().getClassLoader(), allowed);
+
+            assertThat(roundTrip(restricted, new TestPerson("John", 30))).isInstanceOf(TestPerson.class);
+            assertThatThrownBy(() -> roundTrip(restricted, new TestAddress("Main street", "NY")))
+                    .isInstanceOf(DatabindException.class);
+        }
+
+        @Test
+        void testCopyKeepsAllowedClasses() throws Exception {
+            JsonJackson3Codec restricted = new JsonJackson3Codec(allowed);
+            JsonJackson3Codec copy = new JsonJackson3Codec(getClass().getClassLoader(), restricted);
+
+            java.lang.reflect.Field field = JsonJackson3Codec.class.getDeclaredField("allowedClasses");
+            field.setAccessible(true);
+            assertThat((Set<?>) field.get(copy)).isEqualTo(allowed);
+
+            assertThat(roundTrip(copy, new TestPerson("John", 30))).isInstanceOf(TestPerson.class);
+            assertThatThrownBy(() -> roundTrip(copy, new TestAddress("Main street", "NY")))
+                    .isInstanceOf(DatabindException.class);
+        }
+
+        @Test
+        void testForbiddenClassOfAnnotatedTypeInfoIsRejected() {
+            JsonJackson3Codec restricted = new JsonJackson3Codec(
+                    new HashSet<>(Arrays.asList(TestAnnotatedWrapper.class.getName())));
+
+            TestTracked.instantiated = false;
+            String json = "{\"@class\":\"" + TestAnnotatedWrapper.class.getName() + "\",\"payload\":{\"@class\":\""
+                    + TestTracked.class.getName() + "\",\"value\":\"boom\"}}";
+
+            assertThatThrownBy(() -> decode(restricted, json)).isInstanceOf(DatabindException.class);
+            assertThat(TestTracked.instantiated).isFalse();
+        }
+
+        @Test
+        void testForbiddenClassIsNotLoaded() {
+            JsonJackson3Codec restricted = new JsonJackson3Codec(allowed);
+
+            // the class name is built by hand, referencing the class would load it
+            String neverLoaded = JsonJackson3CodecTest.class.getName() + "$TestNeverLoaded";
+            String json = "{\"@class\":\"" + neverLoaded + "\",\"value\":\"boom\"}";
+
+            assertThatThrownBy(() -> decode(restricted, json)).isInstanceOf(DatabindException.class);
+            assertThat(TestLoadFlag.loaded).isFalse();
+        }
+
+        @Test
+        void testDeeplyNestedTypeIdIsRejected() {
+            JsonJackson3Codec restricted = new JsonJackson3Codec(allowed);
+
+            StringBuilder typeId = new StringBuilder();
+            for (int i = 0; i < 120; i++) {
+                typeId.append("java.util.ArrayList<");
+            }
+            typeId.append("java.lang.String");
+            for (int i = 0; i < 120; i++) {
+                typeId.append('>');
+            }
+
+            assertThatThrownBy(() -> decode(restricted, "[\"" + typeId + "\",[]]"))
+                    .isInstanceOf(DatabindException.class);
+        }
+
+        @Test
+        void testAllowedClassesAreCopied() throws IOException {
+            Set<String> defined = new HashSet<>(Arrays.asList(TestPerson.class.getName()));
+            JsonJackson3Codec restricted = new JsonJackson3Codec(defined);
+
+            defined.add(TestAddress.class.getName());
+
+            assertThatThrownBy(() -> roundTrip(restricted, new TestAddress("Main street", "NY")))
+                    .isInstanceOf(DatabindException.class);
+            assertThat(roundTrip(restricted, new TestPerson("John", 30))).isInstanceOf(TestPerson.class);
+        }
+    }
+
+    public static final class TestSecret {
+        private String value;
+
+        public TestSecret() {
+        }
+
+        public String getValue() {
+            return value;
+        }
+
+        public void setValue(String value) {
+            this.value = value;
+        }
+    }
+
+    public static final class TestTracked {
+        static volatile boolean instantiated;
+
+        private String value;
+
+        public TestTracked() {
+            instantiated = true;
+        }
+
+        public String getValue() {
+            return value;
+        }
+
+        public void setValue(String value) {
+            this.value = value;
+        }
+    }
+
+    public static final class TestLoadFlag {
+        static volatile boolean loaded;
+    }
+
+    public static final class TestNeverLoaded {
+        static {
+            TestLoadFlag.loaded = true;
+        }
+
+        private String value;
+
+        public TestNeverLoaded() {
+        }
+
+        public String getValue() {
+            return value;
+        }
+
+        public void setValue(String value) {
+            this.value = value;
+        }
+    }
+
+    public static class TestAnnotatedWrapper {
+        @com.fasterxml.jackson.annotation.JsonTypeInfo(use = com.fasterxml.jackson.annotation.JsonTypeInfo.Id.CLASS)
+        public Object payload;
+
+        public TestAnnotatedWrapper() {
+        }
+    }
 
     public static class TestPerson {
         private String name;

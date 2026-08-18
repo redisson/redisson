@@ -20,6 +20,8 @@ import org.redisson.api.RedissonNodeInitializer;
 import org.redisson.client.FailedNodeDetector;
 import org.redisson.client.NettyHook;
 import org.redisson.client.codec.Codec;
+import org.redisson.codec.JsonJackson3Codec;
+import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.codec.Kryo5Codec;
 import org.redisson.codec.ReferenceCodecProvider;
 import org.redisson.connection.AddressResolverGroupFactory;
@@ -413,6 +415,8 @@ public class ConfigSupport {
             this.yamlConstructors.put(new Tag("tag:yaml.org,2002:org.redisson.config.ConstantDelay"), delayConstructor);
 
             this.yamlConstructors.put(new Tag("tag:yaml.org,2002:org.redisson.codec.Kryo5Codec"), new ConstructKryo5Codec());
+            this.yamlConstructors.put(new Tag("tag:yaml.org,2002:org.redisson.codec.JsonJacksonCodec"), new ConstructJsonJacksonCodec());
+            this.yamlConstructors.put(new Tag("tag:yaml.org,2002:org.redisson.codec.JsonJackson3Codec"), new ConstructJsonJackson3Codec());
         }
 
         @Override
@@ -558,6 +562,60 @@ public class ConfigSupport {
                 }
 
                 return new Kryo5Codec(allowedClasses, useReferences);
+            }
+        }
+
+        private Set<String> readAllowedClasses(Node node) {
+            if (!(node instanceof MappingNode)) {
+                throw new IllegalStateException("Codec " + codecName(node) + " expects a mapping of settings");
+            }
+
+            MappingNode mappingNode = (MappingNode) node;
+            flattenMapping(mappingNode);
+
+            Set<String> allowedClasses = new LinkedHashSet<>();
+            for (NodeTuple tuple : mappingNode.getValue()) {
+                Node keyNode = tuple.getKeyNode();
+                if (!(keyNode instanceof org.yaml.snakeyaml.nodes.ScalarNode)) {
+                    throw new IllegalStateException("Codec " + codecName(node)
+                                                        + " expects the allowedClasses setting");
+                }
+
+                String key = ((org.yaml.snakeyaml.nodes.ScalarNode) keyNode).getValue();
+                if (!"allowedClasses".equals(key)) {
+                    throw new IllegalStateException("Unknown setting " + key + " defined for codec "
+                                                        + codecName(node));
+                }
+
+                Object value = constructObject(tuple.getValueNode());
+                if (!(value instanceof Collection)) {
+                    throw new IllegalStateException("allowedClasses setting of codec " + codecName(node)
+                                                        + " expects a list of class names");
+                }
+                for (Object item : (Collection<?>) value) {
+                    if (item != null) {
+                        allowedClasses.add(item.toString());
+                    }
+                }
+            }
+            return allowedClasses;
+        }
+
+        private String codecName(Node node) {
+            return node.getTag().getValue().replace(Tag.PREFIX, "");
+        }
+
+        private final class ConstructJsonJacksonCodec extends ConstructMapping {
+            @Override
+            public Object construct(Node node) {
+                return new JsonJacksonCodec(readAllowedClasses(node));
+            }
+        }
+
+        private final class ConstructJsonJackson3Codec extends ConstructMapping {
+            @Override
+            public Object construct(Node node) {
+                return new JsonJackson3Codec(readAllowedClasses(node));
             }
         }
     }

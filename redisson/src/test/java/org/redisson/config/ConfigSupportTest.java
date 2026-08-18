@@ -4,12 +4,16 @@ import mockit.Invocation;
 import mockit.Mock;
 import mockit.MockUp;
 import org.junit.jupiter.api.Test;
+import org.redisson.codec.JsonJackson3Codec;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.codec.Kryo5Codec;
+import org.redisson.client.codec.Codec;
 
 import java.io.IOException;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ConfigSupportTest {
@@ -153,6 +157,86 @@ public class ConfigSupportTest {
         java.lang.reflect.Field field = Kryo5Codec.class.getDeclaredField("useReferences");
         field.setAccessible(true);
         return field.getBoolean(codec);
+    }
+
+    @Test
+    public void testJsonJacksonCodecAllowedClasses() throws Exception {
+        String yaml = "codec: !<org.redisson.codec.JsonJacksonCodec> {allowedClasses: [org.redisson.Foo, org.redisson.Bar]}\n"
+                + "singleServerConfig:\n  address: redis://127.0.0.1";
+
+        Config config = new ConfigSupport().fromYAML(yaml, Config.class);
+
+        assertThat(config.getCodec()).isInstanceOf(JsonJacksonCodec.class);
+        assertThat(readAllowedClasses(config.getCodec())).containsExactlyInAnyOrder("org.redisson.Foo", "org.redisson.Bar");
+    }
+
+    @Test
+    public void testJsonJacksonCodecAllowedClassesDefault() throws Exception {
+        String yaml = "codec: !<org.redisson.codec.JsonJacksonCodec> {}\n"
+                + "singleServerConfig:\n  address: redis://127.0.0.1";
+
+        Config config = new ConfigSupport().fromYAML(yaml, Config.class);
+
+        assertThat(config.getCodec()).isInstanceOf(JsonJacksonCodec.class);
+        assertThat(readAllowedClasses(config.getCodec())).isEmpty();
+    }
+
+    @Test
+    public void testJsonJackson3CodecAllowedClasses() throws Exception {
+        String yaml = "codec: !<org.redisson.codec.JsonJackson3Codec> {allowedClasses: [org.redisson.Foo]}\n"
+                + "singleServerConfig:\n  address: redis://127.0.0.1";
+
+        Config config = new ConfigSupport().fromYAML(yaml, Config.class);
+
+        assertThat(config.getCodec()).isInstanceOf(JsonJackson3Codec.class);
+        assertThat(readAllowedClasses(config.getCodec())).containsExactly("org.redisson.Foo");
+    }
+
+    @Test
+    public void testJsonJackson3CodecAllowedClassesDefault() throws Exception {
+        String yaml = "codec: !<org.redisson.codec.JsonJackson3Codec> {}\n"
+                + "singleServerConfig:\n  address: redis://127.0.0.1";
+
+        Config config = new ConfigSupport().fromYAML(yaml, Config.class);
+
+        assertThat(config.getCodec()).isInstanceOf(JsonJackson3Codec.class);
+        assertThat(readAllowedClasses(config.getCodec())).isEmpty();
+    }
+
+    @Test
+    public void testJsonJacksonCodecAllowedClassesMergeKey() throws Exception {
+        String yaml = "codec: !<org.redisson.codec.JsonJacksonCodec>\n"
+                + "  <<: {allowedClasses: [org.redisson.Foo]}\n"
+                + "singleServerConfig:\n  address: redis://127.0.0.1";
+
+        Config config = new ConfigSupport().fromYAML(yaml, Config.class);
+
+        assertThat(readAllowedClasses(config.getCodec())).containsExactly("org.redisson.Foo");
+    }
+
+    @Test
+    public void testJsonJacksonCodecUnknownSettingIsRejected() {
+        String yaml = "codec: !<org.redisson.codec.JsonJacksonCodec> {allowedClass: [org.redisson.Foo]}\n"
+                + "singleServerConfig:\n  address: redis://127.0.0.1";
+
+        assertThatThrownBy(() -> new ConfigSupport().fromYAML(yaml, Config.class))
+                .hasMessageContaining("allowedClass");
+    }
+
+    @Test
+    public void testJsonJacksonCodecNonListAllowedClassesIsRejected() {
+        String yaml = "codec: !<org.redisson.codec.JsonJacksonCodec> {allowedClasses: org.redisson.Foo}\n"
+                + "singleServerConfig:\n  address: redis://127.0.0.1";
+
+        assertThatThrownBy(() -> new ConfigSupport().fromYAML(yaml, Config.class))
+                .hasMessageContaining("allowedClasses");
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Set<String> readAllowedClasses(Codec codec) throws Exception {
+        java.lang.reflect.Field field = codec.getClass().getDeclaredField("allowedClasses");
+        field.setAccessible(true);
+        return (Set<String>) field.get(codec);
     }
     
     private void mockHostEnv(String host, String port) {
