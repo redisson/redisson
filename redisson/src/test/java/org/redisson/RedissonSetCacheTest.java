@@ -188,7 +188,21 @@ public class RedissonSetCacheTest extends RedisDockerTest {
         set.iterator().next();
         set.destroy();
     }
-    
+
+    @Test
+    public void testAddSlowEncodingValue() {
+        Map<Integer, String> map = new HashMap<>();
+        for (int i = 0; i < 80000; i++) {
+            map.put(i, "value" + i);
+        }
+        RSetCache<Map<Integer, String>> set = redisson.getSetCache("simple");
+        assertThat(set.add(map)).isTrue();
+        assertThat(set.contains(map)).isTrue();
+        assertThat(set.size()).isEqualTo(1);
+        assertThat(set.readAll()).containsExactly(map);
+        set.destroy();
+    }
+
     @Test
     public void testAddBean() throws InterruptedException, ExecutionException {
         SimpleBean sb = new SimpleBean();

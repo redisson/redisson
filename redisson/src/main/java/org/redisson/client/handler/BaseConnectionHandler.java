@@ -63,12 +63,33 @@ public abstract class BaseConnectionHandler<C extends RedisConnection> extends C
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) {
-        List<CompletableFuture<?>> futures = new ArrayList<>(5);
-
-        CompletableFuture<Void> f = authWithCredential();
-        futures.add(f);
-
         RedisClientConfig config = redisClient.getConfig();
+        CompletableFuture<Void> future = authWithCredential()
+                .thenCompose(ignored -> initializeConnection(config));
+
+        future.whenComplete((res, e) -> {
+            if (e != null) {
+                Throwable cause = cause(future);
+                if (cause instanceof RedisRetryException) {
+                    ctx.executor().schedule(() -> {
+                        channelActive(ctx);
+                    }, 1, TimeUnit.SECONDS);
+                    return;
+                }
+                connection.closeAsync();
+                connectionPromise.completeExceptionally(cause);
+                return;
+            }
+
+            startRenewal(ctx, config);
+
+            ctx.fireChannelActive();
+            connectionPromise.complete(connection);
+        });
+    }
+
+    private CompletableFuture<Void> initializeConnection(RedisClientConfig config) {
+        List<CompletableFuture<?>> futures = new ArrayList<>(5);
 
         if (config.getProtocol() == Protocol.RESP3) {
             CompletionStage<Object> f1 = connection.async(RedisCommands.HELLO, "3");
@@ -96,25 +117,7 @@ public abstract class BaseConnectionHandler<C extends RedisConnection> extends C
             futures.add(future.toCompletableFuture());
         }
 
-        CompletableFuture<Void> future = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
-        future.whenComplete((res, e) -> {
-            if (e != null) {
-                if (e instanceof RedisRetryException) {
-                    ctx.executor().schedule(() -> {
-                        channelActive(ctx);
-                    }, 1, TimeUnit.SECONDS);
-                    return;
-                }
-                connection.closeAsync();
-                connectionPromise.completeExceptionally(e);
-                return;
-            }
-
-            startRenewal(ctx, config);
-
-            ctx.fireChannelActive();
-            connectionPromise.complete(connection);
-        });
+        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
     }
 
     private CompletionStage<Void> startRenewal(ChannelHandlerContext ctx, RedisClientConfig config) {
