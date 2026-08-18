@@ -253,9 +253,10 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
             throw new NullPointerException("TimeUnit param can't be null");
         }
 
-        ByteBuf objectState = encode(value);
+        return addAsync(value, System.currentTimeMillis() + unit.toMillis(ttl), encode(value));
+    }
 
-        long timeoutDate = System.currentTimeMillis() + unit.toMillis(ttl);
+    private RFuture<Boolean> addAsync(V value, long timeoutDate, ByteBuf objectState) {
         String name = getRawName(value);
         return commandExecutor.evalWriteAsync(name, codec, RedisCommands.EVAL_BOOLEAN,
                 "local expireDateScore = redis.call('zscore', KEYS[1], ARGV[3]); " +
@@ -274,7 +275,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
 
     @Override
     public RFuture<Boolean> tryAddAsync(V... values) {
-        return tryAddAsync(92233720368547758L - System.currentTimeMillis(), TimeUnit.MILLISECONDS, values);
+        return tryAddAsync(92233720368547758L - System.currentTimeMillis(), values);
     }
 
     @Override
@@ -288,7 +289,10 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
         if (ttl == 0) {
             timeoutDate = 92233720368547758L - System.currentTimeMillis();
         }
+        return tryAddAsync(timeoutDate, values);
+    }
 
+    private RFuture<Boolean> tryAddAsync(long timeoutDate, V... values) {
         List<Object> params = new ArrayList<>();
         params.add(System.currentTimeMillis());
         params.add(timeoutDate);
@@ -311,7 +315,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
 
     @Override
     public RFuture<Boolean> addAsync(V value) {
-        return addAsync(value, 92233720368547758L - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+        return addAsync(value, 92233720368547758L - System.currentTimeMillis(), encode(value));
     }
 
     @Override
