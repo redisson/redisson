@@ -24,19 +24,58 @@ public class RedisException extends RuntimeException {
 
     private static final long serialVersionUID = 3389820652701696154L;
 
+    /**
+     * The raw error string returned by the Redis server on the wire (e.g.
+     * {@code "ERR Exceeded limit of IAM Authentication requests"}), without
+     * the channel/command suffix that appears in {@link #getMessage()}.
+     * <p>
+     * Null when the exception was not produced from a server error response
+     * (e.g. client-side connection failures).
+     */
+    private final String serverError;
+
     public RedisException() {
+        this.serverError = null;
     }
 
     public RedisException(Throwable cause) {
         super(cause);
+        this.serverError = null;
     }
 
     public RedisException(String message, Throwable cause) {
         super(message, cause);
+        this.serverError = null;
     }
 
     public RedisException(String message) {
         super(message);
+        this.serverError = null;
+    }
+
+    /**
+     * Constructs an exception with both a full display message and the raw
+     * server-error prefix. Use this constructor (or subclass it) when the
+     * caller needs to inspect the server error without parsing
+     * {@link #getMessage()}.
+     *
+     * @param message    full display message (may include channel/command context)
+     * @param serverError raw error string from the Redis wire protocol
+     */
+    public RedisException(String message, String serverError) {
+        super(message);
+        this.serverError = serverError;
+    }
+
+    /**
+     * Returns the raw error string from the Redis wire protocol, or
+     * {@code null} if this exception was not created from a server error
+     * response.
+     *
+     * @return raw server error, e.g. {@code "ERR Exceeded limit of IAM Authentication requests"}
+     */
+    public String getServerError() {
+        return serverError;
     }
 
 }
