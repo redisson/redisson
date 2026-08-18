@@ -20,8 +20,6 @@ import org.redisson.api.RedissonNodeInitializer;
 import org.redisson.client.FailedNodeDetector;
 import org.redisson.client.NettyHook;
 import org.redisson.client.codec.Codec;
-import org.redisson.codec.JsonJackson3Codec;
-import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.codec.Kryo5Codec;
 import org.redisson.codec.ReferenceCodecProvider;
 import org.redisson.connection.AddressResolverGroupFactory;
@@ -608,14 +606,24 @@ public class ConfigSupport {
         private final class ConstructJsonJacksonCodec extends ConstructMapping {
             @Override
             public Object construct(Node node) {
-                return new JsonJacksonCodec(readAllowedClasses(node));
+                try {
+                    Class<?> c = Class.forName("org.redisson.codec.JsonJacksonCodec");
+                    return c.getDeclaredConstructor(Set.class).newInstance(readAllowedClasses(node));
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
             }
         }
 
         private final class ConstructJsonJackson3Codec extends ConstructMapping {
             @Override
             public Object construct(Node node) {
-                return new JsonJackson3Codec(readAllowedClasses(node));
+                try {
+                    Class<?> c = Class.forName("org.redisson.codec.JsonJackson3Codec");
+                    return c.getDeclaredConstructor(Set.class).newInstance(readAllowedClasses(node));
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
             }
         }
     }
