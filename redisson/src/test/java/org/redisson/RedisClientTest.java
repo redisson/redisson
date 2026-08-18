@@ -15,7 +15,9 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.config.Config;
+import org.redisson.config.Credentials;
 import org.redisson.config.Protocol;
+import org.testcontainers.containers.GenericContainer;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -169,6 +171,40 @@ public class RedisClientTest  {
             return null;
         });
         assertThat(l.await(10, TimeUnit.SECONDS)).isTrue();
+    }
+
+    @Test
+    public void testCredentialsResolveBeforeConnectionInitialization() throws Exception {
+        GenericContainer<?> redis = RedisDockerTest.createContainer("--requirepass", "1234");
+        redis.start();
+
+        CompletableFuture<Credentials> credentialsFuture = new CompletableFuture<>();
+        CountDownLatch resolverCalled = new CountDownLatch(1);
+        RedisClientConfig config = new RedisClientConfig()
+                .setAddress("redis://127.0.0.1:" + redis.getFirstMappedPort())
+                .setProtocol(Protocol.RESP3)
+                .setDatabase(1)
+                .setClientName("redisson-7295")
+                .setCredentialsResolver(address -> {
+                    resolverCalled.countDown();
+                    return credentialsFuture;
+                });
+        RedisClient client = RedisClient.create(config);
+
+        try {
+            CompletionStage<RedisConnection> connectionFuture = client.connectAsync();
+
+            assertThat(resolverCalled.await(10, TimeUnit.SECONDS)).isTrue();
+            assertThat(connectionFuture.toCompletableFuture().isDone()).isFalse();
+
+            credentialsFuture.complete(new Credentials(null, "1234"));
+
+            RedisConnection connection = connectionFuture.toCompletableFuture().get(10, TimeUnit.SECONDS);
+            assertThat(connection.sync(RedisCommands.PING)).isEqualTo("PONG");
+        } finally {
+            client.shutdown();
+            redis.stop();
+        }
     }
 
     @Test
