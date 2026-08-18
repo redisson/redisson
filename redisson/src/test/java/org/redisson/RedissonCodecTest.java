@@ -29,6 +29,7 @@ public class RedissonCodecTest extends RedisDockerTest {
     private Codec codec = new SerializationCodec();
     private Codec jsonCodec = new JsonJacksonCodec();
     private Codec json3Codec = new JsonJackson3Codec();
+    private Codec jsonForyCodec = new JsonForyCodec();
     private Codec cborCodec = new CborJacksonCodec();
     private Codec snappyCodecV2 = new SnappyCodecV2();
     //    private Codec msgPackCodec = new MsgPackJacksonCodec();
@@ -63,6 +64,28 @@ public class RedissonCodecTest extends RedisDockerTest {
         set.set(value);
         assertThat(set.get()).isEqualTo(value);
         redisson.shutdown();
+    }
+
+    @Test
+    public void testUUIDJsonFory() {
+        Config config = createConfig();
+        config.setCodec(jsonForyCodec);
+        RedissonClient redisson = Redisson.create(config);
+
+        RBucket<UUID> bucket = redisson.getBucket("test");
+        UUID value = UUID.randomUUID();
+        bucket.set(value);
+        assertThat(bucket.get()).isEqualTo(value);
+        redisson.shutdown();
+    }
+
+    @Test
+    public void testJsonFory() {
+        Config config = createConfig();
+        config.setCodec(jsonForyCodec);
+        RedissonClient redisson = Redisson.create(config);
+
+        test(redisson);
     }
 
     @Test

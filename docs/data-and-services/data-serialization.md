@@ -13,6 +13,8 @@ Codec class name| Description
 `org.redisson.codec.ProtobufCodec`| [Protobuf](https://github.com/protocolbuffers/protobuf) binary codec  
 `org.redisson.codec.SerializationCodec`| JDK Serialization binary codec<br/>(**Android** compatible)
 `org.redisson.codec.ForyCodec`| [Apache Fory](https://github.com/apache/fory) codec  
+`org.redisson.codec.JsonForyCodec`| [Apache Fory](https://github.com/apache/fory) JSON codec.<br/>Stores type information in `@class` field  
+`org.redisson.codec.TypedJsonForyCodec`| Apache Fory JSON codec which doesn't store type id (`@class` field)
 `org.redisson.codec.JsonJacksonCodec`| [Jackson JSON](https://github.com/FasterXML/jackson) codec.<br/>Stores type information in `@class` field<br/>(**Android** compatible)  
 `org.redisson.codec.JsonJackson3Codec`| [Jackson 3 JSON](https://github.com/FasterXML/jackson) codec.<br/>Stores type information in `@class` field<br/>(**Android** compatible)  
 `org.redisson.codec.TypedJsonJacksonCodec`| Jackson JSON codec which doesn't store type id (`@class` field)

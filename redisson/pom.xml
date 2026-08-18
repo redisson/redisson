@@ -244,6 +244,13 @@
             <optional>true</optional>
         </dependency>
         <dependency>
+            <groupId>org.apache.fory</groupId>
+            <artifactId>fory-json</artifactId>
+            <version>1.6.0</version>
+            <scope>provided</scope>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>2.0.17</version>
