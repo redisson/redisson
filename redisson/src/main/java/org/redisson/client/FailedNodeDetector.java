@@ -26,6 +26,7 @@ import java.net.InetSocketAddress;
  */
 public interface FailedNodeDetector {
 
+    @Deprecated
     void onConnectSuccessful();
 
     default void onConnectSuccessful(InetSocketAddress address) {
@@ -35,6 +36,7 @@ public interface FailedNodeDetector {
     @Deprecated
     void onConnectFailed();
 
+    @Deprecated
     default void onConnectFailed(Throwable cause) {
         onConnectFailed();
     }
@@ -43,6 +45,7 @@ public interface FailedNodeDetector {
         onConnectFailed(cause);
     }
 
+    @Deprecated
     void onPingSuccessful();
 
     default void onPingSuccessful(InetSocketAddress address) {
@@ -52,6 +55,7 @@ public interface FailedNodeDetector {
     @Deprecated
     void onPingFailed();
 
+    @Deprecated
     default void onPingFailed(Throwable cause) {
         onPingFailed();
     }
@@ -60,18 +64,21 @@ public interface FailedNodeDetector {
         onPingFailed(cause);
     }
 
+    @Deprecated
     void onCommandSuccessful();
 
     default void onCommandSuccessful(InetSocketAddress address) {
         onCommandSuccessful();
     }
 
+    @Deprecated
     void onCommandFailed(Throwable cause);
 
     default void onCommandFailed(Throwable cause, InetSocketAddress address) {
         onCommandFailed(cause);
     }
 
+    @Deprecated
     boolean isNodeFailed();
 
     default boolean isNodeFailed(InetSocketAddress address) {
