@@ -188,7 +188,14 @@ public final class RedisClient {
             if (config.getTcpUserTimeout() > 0) {
                 bootstrap.option(EpollChannelOption.TCP_USER_TIMEOUT, config.getTcpUserTimeout());
             }
-        } else if (config.getSocketChannelClass() == IoUringSocketChannel.class) {
+        } else {
+            applyIoUringSettings(config, bootstrap);
+        }
+    }
+
+    // for Quarkus substitution
+    private static void applyIoUringSettings(RedisClientConfig config, Bootstrap bootstrap) {
+        if (config.getSocketChannelClass() == IoUringSocketChannel.class) {
             if (config.getTcpKeepAliveCount() > 0) {
                 bootstrap.option(IoUringChannelOption.TCP_KEEPCNT, config.getTcpKeepAliveCount());
             }

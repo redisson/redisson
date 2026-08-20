@@ -17,8 +17,14 @@ package io.quarkus.redisson.client.runtime.graal;
 
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
+import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.socket.DuplexChannel;
+import io.netty.resolver.AddressResolverGroup;
+import org.redisson.client.RedisClientConfig;
 import org.redisson.config.Config;
+
+import java.net.InetSocketAddress;
 
 @TargetClass(className = "org.redisson.connection.ServiceManager")
 final class ServiceManagerSubstitute {
@@ -28,13 +34,24 @@ final class ServiceManagerSubstitute {
         throw new IllegalArgumentException("IOUring isn't compatible with native mode");
     }
 
-}
-
-@TargetClass(className = "org.redisson.codec.JsonJacksonCodec")
-final class JsonJacksonCodecSubstitute {
+    @Substitute
+    private static Class<? extends DuplexChannel> createIOUringChannel() {
+        throw new IllegalArgumentException("IOUring isn't compatible with native mode");
+    }
 
     @Substitute
-    private void warmup() {
+    private static AddressResolverGroup<InetSocketAddress> createIOUringResolver(Config cfg) {
+        throw new IllegalArgumentException("IOUring isn't compatible with native mode");
+    }
+
+}
+
+@TargetClass(className = "org.redisson.client.RedisClient")
+final class RedisClientSubstitute {
+
+    @Substitute
+    private static void applyIoUringSettings(RedisClientConfig config, Bootstrap bootstrap) {
+        throw new IllegalArgumentException("IOUring isn't compatible with native mode");
     }
 
 }

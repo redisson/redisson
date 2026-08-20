@@ -219,8 +219,8 @@ public final class ServiceManager {
                 this.group = cfg.getEventLoopGroup();
             }
 
-            this.socketChannelClass = IoUringSocketChannel.class;
-            this.resolverGroup = cfg.getAddressResolverGroupFactory().create(IoUringDatagramChannel.class, IoUringSocketChannel.class, DnsServerAddressStreamProviders.platformDefault());
+            this.socketChannelClass = createIOUringChannel();
+            this.resolverGroup = createIOUringResolver(cfg);
         } else {
             if (cfg.getEventLoopGroup() == null) {
                 if (cfg.getNettyExecutor() != null) {
@@ -275,6 +275,16 @@ public final class ServiceManager {
     // for Quarkus substitution
     private static EventLoopGroup createIOUringGroup(Config cfg) {
         return new MultiThreadIoEventLoopGroup(cfg.getNettyThreads(), new DefaultThreadFactory("redisson-netty"), IoUringIoHandler.newFactory());
+    }
+
+    // for Quarkus substitution
+    private static Class<? extends DuplexChannel> createIOUringChannel() {
+        return IoUringSocketChannel.class;
+    }
+
+    // for Quarkus substitution
+    private static AddressResolverGroup<InetSocketAddress> createIOUringResolver(Config cfg) {
+        return cfg.getAddressResolverGroupFactory().create(IoUringDatagramChannel.class, IoUringSocketChannel.class, DnsServerAddressStreamProviders.platformDefault());
     }
 
     private void initTimer() {
