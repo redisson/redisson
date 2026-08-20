@@ -204,9 +204,9 @@ public final class RedissonReliableTopic extends RedissonExpirable implements RR
                 return;
             }
 
-            CompletableFuture<Void> done = new CompletableFuture<>();
+            CompletableFuture<Void> done = CompletableFuture.completedFuture(null);
             if (!listeners.isEmpty()) {
-                getServiceManager().getExecutor().execute(() -> {
+                done = CompletableFuture.runAsync(() -> {
                     for (Map.Entry<StreamMessageId, Map<String, Object>> entry : res.entrySet()) {
                         Object m = entry.getValue().get("m");
                         listeners.values().forEach(e -> {
@@ -216,13 +216,27 @@ public final class RedissonReliableTopic extends RedissonExpirable implements RR
                             }
                         });
                     }
-                    done.complete(null);
-                });
-            } else {
-                done.complete(null);
+                }, getServiceManager().getExecutor());
             }
 
-            done.thenAccept(r -> {
+            done.whenComplete((r, listenerException) -> {
+                if (listenerException != null) {
+                    if (getServiceManager().isShuttingDown(listenerException)) {
+                        return;
+                    }
+
+                    log.error("Unable to process a message. Subscriber id: {}", id, listenerException);
+
+                    getServiceManager().newTimeout(task -> {
+                        if (getServiceManager().isShuttingDown()) {
+                            return;
+                        }
+
+                        poll(id);
+                    }, 1, TimeUnit.SECONDS);
+                    return;
+                }
+
                 long time = System.currentTimeMillis();
                 RFuture<Boolean> updateFuture = commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                                 "local expired = redis.call('zrangebyscore', KEYS[2], 0, tonumber(ARGV[2]) - 1); "
