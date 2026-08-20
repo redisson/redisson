@@ -3,8 +3,11 @@ package org.redisson;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RReliableTopic;
+import org.redisson.api.RScoredSortedSet;
+import org.redisson.api.RStream;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.listener.MessageListener;
+import org.redisson.api.stream.StreamGroup;
 import org.redisson.config.Config;
 
 import java.time.Duration;
@@ -187,6 +190,56 @@ public class RedissonReliableTopicTest extends RedisDockerTest {
 
         assertThat(rt.publish("2")).isEqualTo(0);
         assertThat(i).hasValue(1);
+    }
+
+    @Test
+    public void testTopicRemovalWhileSubscribed() throws InterruptedException {
+        RReliableTopic rt = redisson.getReliableTopic("testTopicRemovalWhileSubscribed");
+        Queue<Integer> messages = new ConcurrentLinkedQueue<>();
+        rt.addListener(Integer.class, (channel, msg) -> messages.add(msg));
+
+        assertThat(rt.publish(1)).isEqualTo(1);
+        Awaitility.waitAtMost(Duration.ofSeconds(2)).until(() -> messages.size() == 1);
+
+        // topic key is removed while the subscriber is live, e.g. expired by TTL
+        redisson.getKeys().delete("testTopicRemovalWhileSubscribed");
+        // no group exists on the recreated stream, so the message is undeliverable
+        assertThat(rt.publish(9)).isEqualTo(0);
+
+        // the dead subscriber is cleaned up: its timeout ZSET entry is removed
+        RScoredSortedSet<String> timeout = redisson.getScoredSortedSet("{testTopicRemovalWhileSubscribed}:timeout");
+        Awaitility.waitAtMost(Duration.ofSeconds(5)).until(() -> timeout.size() == 0);
+
+        // a new listener can subscribe through the same topic object and receives new messages
+        rt.addListener(Integer.class, (channel, msg) -> messages.add(msg));
+
+        assertThat(rt.publish(2)).isEqualTo(1);
+        Awaitility.waitAtMost(Duration.ofSeconds(2)).until(() -> messages.contains(2));
+    }
+
+    @Test
+    public void testGroupRemovalWhileSubscribed() throws InterruptedException {
+        RReliableTopic rt = redisson.getReliableTopic("testGroupRemovalWhileSubscribed");
+        Queue<Integer> messages = new ConcurrentLinkedQueue<>();
+        rt.addListener(Integer.class, (channel, msg) -> messages.add(msg));
+
+        assertThat(rt.publish(1)).isEqualTo(1);
+        Awaitility.waitAtMost(Duration.ofSeconds(2)).until(() -> messages.size() == 1);
+
+        // the consumer group is removed while the subscriber is live,
+        // e.g. by the expired-subscriber sweep of another instance
+        RStream<String, Integer> stream = redisson.getStream("testGroupRemovalWhileSubscribed");
+        String groupName = stream.listGroups().get(0).getName();
+        stream.removeGroup(groupName);
+        assertThat(rt.publish(9)).isEqualTo(0);
+
+        RScoredSortedSet<String> timeout = redisson.getScoredSortedSet("{testGroupRemovalWhileSubscribed}:timeout");
+        Awaitility.waitAtMost(Duration.ofSeconds(5)).until(() -> timeout.size() == 0);
+
+        rt.addListener(Integer.class, (channel, msg) -> messages.add(msg));
+
+        assertThat(rt.publish(2)).isEqualTo(1);
+        Awaitility.waitAtMost(Duration.ofSeconds(2)).until(() -> messages.contains(2));
     }
 
     @Test
