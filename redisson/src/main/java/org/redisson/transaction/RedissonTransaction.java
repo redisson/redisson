@@ -342,7 +342,7 @@ public class RedissonTransaction implements RTransaction {
         RedissonBatch publishBatch = createBatch();
         for (Entry<HashKey, HashValue> entry : hashes.entrySet()) {
             String name = RedissonObject.suffixName(entry.getKey().getName(), RedissonLocalCachedMap.TOPIC_SUFFIX);
-            RTopicAsync topic = publishBatch.getTopic(name, LocalCachedMessageCodec.INSTANCE);
+            RTopicAsync topic = getLocalCacheInvalidationTopic(publishBatch, name);
             LocalCachedMapEnable msg = new LocalCachedMapEnable(requestId, entry.getValue().getKeyIds().toArray(new byte[entry.getValue().getKeyIds().size()][]), entry.getValue().isAllKeys());
             topic.publishAsync(msg);
         }
@@ -358,7 +358,7 @@ public class RedissonTransaction implements RTransaction {
         RedissonBatch publishBatch = createBatch();
         for (Entry<HashKey, HashValue> entry : hashes.entrySet()) {
             String name = RedissonObject.suffixName(entry.getKey().getName(), RedissonLocalCachedMap.TOPIC_SUFFIX);
-            RTopicAsync topic = publishBatch.getTopic(name, LocalCachedMessageCodec.INSTANCE);
+            RTopicAsync topic = getLocalCacheInvalidationTopic(publishBatch, name);
             LocalCachedMapEnable msg = new LocalCachedMapEnable(requestId, entry.getValue().getKeyIds().toArray(new byte[entry.getValue().getKeyIds().size()][]), entry.getValue().isAllKeys());
             topic.publishAsync(msg);
         }
@@ -368,6 +368,14 @@ public class RedissonTransaction implements RTransaction {
         } catch (Exception e) {
             // skip it. Disabled local cache entries are enabled once reach timeout.
         }
+    }
+
+    // LocalCacheListener subscribes to the invalidation topic with sharded topic if sharding is supported
+    private RTopicAsync getLocalCacheInvalidationTopic(RedissonBatch publishBatch, String name) {
+        if (commandExecutor.getConnectionManager().getSubscribeService().isShardingSupported()) {
+            return publishBatch.getShardedTopic(name, LocalCachedMessageCodec.INSTANCE);
+        }
+        return publishBatch.getTopic(name, LocalCachedMessageCodec.INSTANCE);
     }
 
     private boolean isKeyOperate(TransactionalOperation transactionalOperation) {
@@ -450,7 +458,7 @@ public class RedissonTransaction implements RTransaction {
                 setCache.removeAsync(localCacheKey);
             }
 
-            RTopicAsync topic = publishBatch.getTopic(RedissonObject.suffixName(entry.getKey().getName(), RedissonLocalCachedMap.TOPIC_SUFFIX), LocalCachedMessageCodec.INSTANCE);
+            RTopicAsync topic = getLocalCacheInvalidationTopic(publishBatch, RedissonObject.suffixName(entry.getKey().getName(), RedissonLocalCachedMap.TOPIC_SUFFIX));
             RFuture<Long> future = topic.publishAsync(new LocalCachedMapDisable(requestId,
                     entry.getValue().getKeyIds().toArray(new byte[entry.getValue().getKeyIds().size()][]), options.getResponseTimeout(), entry.getValue().isAllKeys()));
             future.thenAccept(res -> {
@@ -565,8 +573,8 @@ public class RedissonTransaction implements RTransaction {
                         setCache.removeAsync(localCacheKey);
                     }
 
-                    RTopicAsync topic = publishBatch.getTopic(RedissonObject.suffixName(entry.getKey().getName(),
-                            RedissonLocalCachedMap.TOPIC_SUFFIX), LocalCachedMessageCodec.INSTANCE);
+                    RTopicAsync topic = getLocalCacheInvalidationTopic(publishBatch, RedissonObject.suffixName(entry.getKey().getName(),
+                            RedissonLocalCachedMap.TOPIC_SUFFIX));
                     RFuture<Long> publishFuture = topic.publishAsync(new LocalCachedMapDisable(requestId,
                             entry.getValue().getKeyIds().toArray(new byte[entry.getValue().getKeyIds().size()][]),
                             options.getResponseTimeout(), entry.getValue().isAllKeys()));
