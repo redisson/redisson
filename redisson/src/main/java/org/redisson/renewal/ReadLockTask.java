@@ -41,12 +41,12 @@ public class ReadLockTask extends LockTask {
         return AsyncChunkProcessor.processAll(iter, chunkSize, this::buildChunk);
     }
 
-    private ChunkExecution<List<Object>> buildChunk(Iterator<String> iter, int chunkSize) {
-        Map<String, List<Long>> name2threadIds = new HashMap<>();
+    private ChunkExecution<List<String>> buildChunk(Iterator<String> iter, int chunkSize) {
+        Map<String, Set<Long>> name2threadIds = new HashMap<>();
         List<Object> args = new ArrayList<>();
         args.add(internalLockLeaseTime);
 
-        List<Object> keys = new ArrayList<>(chunkSize);
+        List<String> keys = new ArrayList<>(chunkSize);
         List<Object> keysArgs = new ArrayList<>(chunkSize);
 
         // Build chunk, skipping invalid entries
@@ -77,7 +77,7 @@ public class ReadLockTask extends LockTask {
             args.add(lockNames.size());
             args.addAll(lockNames);
 
-            List<Long> threadIds = new ArrayList<>(snapshot.keySet());
+            Set<Long> threadIds = new HashSet<>(snapshot.keySet());
             name2threadIds.put(key, threadIds);
         }
 
@@ -86,9 +86,9 @@ public class ReadLockTask extends LockTask {
             return null;
         }
 
-        String firstName = keys.get(0).toString();
+        String firstName = keys.get(0);
 
-        CompletionStage<List<Object>> f = executor.syncedEval(firstName, LongCodec.INSTANCE,
+        CompletionStage<List<String>> f = trackFailure(executor.syncedEval(firstName, LongCodec.INSTANCE,
                 new RedisCommand<>("EVAL", new ContainsDecoder<>(keys)),
           "local result = {} " +
                 "local argIdx = 2 " +
@@ -115,13 +115,12 @@ public class ReadLockTask extends LockTask {
                 "end; " +
                 "return result;",
                 keysArgs,
-                args.toArray());
+                args.toArray()), name2threadIds);
 
         return new ChunkExecution<>(f, existingNames -> {
             keys.removeAll(existingNames);
-            for (Object k : keys) {
-                String key = k.toString();
-                List<Long> threadIds = name2threadIds.get(key);
+            for (String key : keys) {
+                Set<Long> threadIds = name2threadIds.get(key);
                 if (threadIds != null) {
                     for (Long threadId : threadIds) {
                         cancelExpirationRenewal(key, threadId);

@@ -17,18 +17,23 @@ package org.redisson.renewal;
 
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
+import org.redisson.api.LockRenewalFailureListener;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.AsyncIteratorUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -175,13 +180,102 @@ abstract class RenewalTask implements TimerTask {
         CompletionStage<Void> future = execute();
         future.whenComplete((result, e) -> {
             if (e != null) {
-                log.error("Can't update locks {} expiration", name2entry.keySet(), e);
+                RenewalFailureException failure = getRenewalFailure(e);
+                if (failure == null) {
+                    log.error("Can't update locks {} expiration", name2entry.keySet(), e);
+                    schedule();
+                    return;
+                }
+
+                log.error("Can't update locks {} expiration", failure.getFailedLocks().keySet(), failure.getCause());
                 schedule();
+                notifyListener(failure.getFailedLocks(), failure.getCause());
                 return;
             }
 
             schedule();
         });
+    }
+
+    final <T> CompletionStage<T> trackFailure(CompletionStage<T> future,
+                                               Map<String, Set<Long>> failedLocks) {
+        CompletableFuture<T> result = new CompletableFuture<>();
+        Map<String, Set<Long>> failedLocksSnapshot = new HashMap<>();
+        for (Map.Entry<String, Set<Long>> entry : failedLocks.entrySet()) {
+            failedLocksSnapshot.put(entry.getKey(), new HashSet<>(entry.getValue()));
+        }
+        future.whenComplete((value, cause) -> {
+            if (cause != null) {
+                result.completeExceptionally(new RenewalFailureException(failedLocksSnapshot, unwrap(cause)));
+                return;
+            }
+            result.complete(value);
+        });
+        return result;
+    }
+
+    private RenewalFailureException getRenewalFailure(Throwable cause) {
+        Throwable unwrappedCause = unwrap(cause);
+        if (unwrappedCause instanceof RenewalFailureException) {
+            return (RenewalFailureException) unwrappedCause;
+        }
+        return null;
+    }
+
+    private Throwable unwrap(Throwable cause) {
+        if (cause instanceof CompletionException && cause.getCause() != null) {
+            return cause.getCause();
+        }
+        return cause;
+    }
+
+    private void notifyListener(Map<String, Set<Long>> failedLocks, Throwable cause) {
+        LockRenewalFailureListener listener = executor.getServiceManager().getCfg().getLockRenewalFailureListener();
+        if (listener == null || failedLocks.isEmpty()) {
+            return;
+        }
+
+        try {
+            executor.getServiceManager().getExecutor().execute(() -> invokeListener(listener, failedLocks, cause));
+        } catch (RejectedExecutionException e) {
+            log.error("Can't notify lock renewal failure listener", e);
+        }
+    }
+
+    private void invokeListener(LockRenewalFailureListener listener,
+                                Map<String, Set<Long>> failedLocks, Throwable cause) {
+        for (Map.Entry<String, Set<Long>> entry : failedLocks.entrySet()) {
+            String lockName;
+            try {
+                lockName = executor.getServiceManager().getNameMapper().unmap(entry.getKey());
+            } catch (Exception e) {
+                log.error("Can't map lock name for lock renewal failure listener", e);
+                continue;
+            }
+
+            Set<Long> threadIds = entry.getValue();
+            for (Long threadId : threadIds) {
+                try {
+                    listener.onFailure(lockName, threadId, cause);
+                } catch (Exception e) {
+                    log.error("Can't notify lock renewal failure listener", e);
+                }
+            }
+        }
+    }
+
+    private static final class RenewalFailureException extends Exception {
+
+        private final Map<String, Set<Long>> failedLocks;
+
+        private RenewalFailureException(Map<String, Set<Long>> failedLocks, Throwable cause) {
+            super(cause);
+            this.failedLocks = failedLocks;
+        }
+
+        private Map<String, Set<Long>> getFailedLocks() {
+            return failedLocks;
+        }
     }
 
 }
