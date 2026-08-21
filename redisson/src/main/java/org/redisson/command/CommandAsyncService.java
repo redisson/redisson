@@ -1096,14 +1096,11 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                                       String script, List<Object> keys, Object... params) {
         if (getServiceManager().getCfg().isSingleConfig()
                 || this instanceof CommandBatchService
-                   || (waitSupportedCommands != null && waitSupportedCommands.isEmpty() && syncMode == SyncMode.AUTO)
-                    || (waitSupportedCommands != null && !waitSupportedCommands.contains(RedisCommands.WAIT.getName()) && syncMode == SyncMode.WAIT)
-                        || (waitSupportedCommands != null && !waitSupportedCommands.contains(RedisCommands.WAITAOF.getName()) && syncMode == SyncMode.WAIT_AOF)
+                || (waitSupportedCommands != null && waitSupportedCommands.isEmpty() && syncMode == SyncMode.AUTO)
+                || (waitSupportedCommands != null && !waitSupportedCommands.contains(RedisCommands.WAIT.getName()) && syncMode == SyncMode.WAIT)
+                || (waitSupportedCommands != null && !waitSupportedCommands.contains(RedisCommands.WAITAOF.getName()) && syncMode == SyncMode.WAIT_AOF)
                 ) {
-            if (retry) {
-                return evalWriteAsync(key, codec, evalCommandType, script, keys, params);
-            }
-            return evalWriteNoRetryAsync(key, codec, evalCommandType, script, keys, params);
+            return evalWrite(retry, key, codec, evalCommandType, script, keys, params);
         }
 
         CompletionStage<BatchResult<?>> waitFuture = CompletableFuture.completedFuture(null);
@@ -1195,6 +1192,10 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 e.setAvailableSlaves(availableSlaves);
                 e.setAofEnabled(aofEnabled);
 
+                if (!isSyncRequired(availableSlaves, aofEnabled)) {
+                    return evalWrite(retry, key, codec, evalCommandType, script, keys, params);
+                }
+
                 CommandBatchService executorService = createCommandBatchService(availableSlaves, aofEnabled, timeout);
                 RFuture<T> result = executorService.evalWriteAsync(key, codec, evalCommandType, script, keys, params);
                 if (executorService == this) {
@@ -1232,6 +1233,18 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         }).thenCompose(f -> f);
 
         return new CompletableFutureWrapper<>(resFuture);
+    }
+
+    private boolean isSyncRequired(int availableSlaves, boolean aofEnabled) {
+        return availableSlaves > 0 || aofEnabled;
+    }
+
+    private <T> RFuture<T> evalWrite(boolean retry, String key, Codec codec, RedisCommand<T> evalCommandType,
+                                    String script, List<Object> keys, Object... params) {
+        if (retry) {
+            return evalWriteAsync(key, codec, evalCommandType, script, keys, params);
+        }
+        return evalWriteNoRetryAsync(key, codec, evalCommandType, script, keys, params);
     }
 
     protected CommandBatchService createCommandBatchService(int availableSlaves, boolean aofEnabled, long timeout) {
