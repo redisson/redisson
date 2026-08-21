@@ -15,6 +15,7 @@
  */
 package org.redisson.connection;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.MultiThreadIoEventLoopGroup;
@@ -819,6 +820,100 @@ public final class ServiceManager {
 
     public boolean isClusterSetup() {
         return cfg.isClusterConfig() || clusterDetected;
+    }
+
+    public int calcSlot(String key) {
+        if (!isClusterSetup()) {
+            return 0;
+        }
+
+        int result = hashSlot(key);
+        log.debug("slot {} for {}", result, key);
+
+        return result;
+    }
+
+    public int calcSlot(byte[] key) {
+        if (!isClusterSetup()) {
+            return 0;
+        }
+
+        return hashSlot(key);
+    }
+
+    public int calcSlot(ByteBuf key) {
+        if (!isClusterSetup()) {
+            return 0;
+        }
+
+        int result = hashSlot(key);
+        log.debug("slot {} for {}", result, key);
+
+        return result;
+    }
+
+    private static int hashSlot(String key) {
+        if (key == null) {
+            return 0;
+        }
+
+        int start = key.indexOf('{');
+
+        if (start != -1) {
+            int end = key.indexOf('}');
+
+            if (end != -1 && start + 1 < end) {
+                key = key.substring(start + 1, end);
+            }
+        }
+
+        return CRC16.crc16(key.getBytes()) % MasterSlaveConnectionManager.MAX_SLOT;
+    }
+
+    private static int hashSlot(byte[] key) {
+        if (key == null) {
+            return 0;
+        }
+
+        int start = indexOfByte(key, (byte) '{');
+
+        if (start != -1) {
+            int end = indexOfByte(key, (byte) '}');
+
+            if (end != -1 && start + 1 < end) {
+                key = java.util.Arrays.copyOfRange(key, start + 1, end);
+            }
+        }
+
+        return CRC16.crc16(key) % MasterSlaveConnectionManager.MAX_SLOT;
+    }
+
+    private static int hashSlot(ByteBuf key) {
+        if (key == null) {
+            return 0;
+        }
+
+        int start = key.indexOf(key.readerIndex(), key.readerIndex() + key.readableBytes(), (byte) '{');
+
+        if (start != -1) {
+            int end = key.indexOf(start + 1, key.readerIndex() + key.readableBytes(), (byte) '}');
+
+            if (end != -1 && start + 1 < end) {
+                key = key.slice(start + 1, end - start - 1);
+            }
+        }
+
+        return CRC16.crc16(key) % MasterSlaveConnectionManager.MAX_SLOT;
+    }
+
+    private static int indexOfByte(byte[] array, byte element) {
+        for (int i = 0; i < array.length; i++) {
+            if (array[i] == element) {
+                return i;
+            }
+        }
+
+        return -1;
     }
 
 }
