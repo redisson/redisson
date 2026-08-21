@@ -596,17 +596,17 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     @Override
     public int calcSlot(String key) {
-        return singleSlotRange.getStartSlot();
+        return serviceManager.calcSlot(key);
     }
 
     @Override
     public int calcSlot(byte[] key) {
-        return singleSlotRange.getStartSlot();
+        return serviceManager.calcSlot(key);
     }
 
     @Override
     public int calcSlot(ByteBuf key) {
-        return singleSlotRange.getStartSlot();
+        return serviceManager.calcSlot(key);
     }
 
     @Override
