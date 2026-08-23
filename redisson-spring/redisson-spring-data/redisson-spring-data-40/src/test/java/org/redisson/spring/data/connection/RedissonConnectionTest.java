@@ -28,6 +28,65 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 public class RedissonConnectionTest extends BaseConnectionTest {
 
     @Test
+    public void testSetWithExpirationOptionKeepTtl() {
+        byte[] key = "set-keepttl-repro".getBytes();
+        connection.set(key, "value1".getBytes());
+        connection.expire(key, 100);
+
+        Boolean result = connection.set(key, "value2".getBytes(), Expiration.keepTtl(), SetOption.upsert());
+
+        assertThat(result).isTrue();
+        assertThat(connection.get(key)).isEqualTo("value2".getBytes());
+        assertThat(connection.ttl(key)).isGreaterThan(0);
+    }
+
+    @Test
+    public void testSetExpirationOptionMatrix() {
+        // Full matrix: every Expiration kind x every SetOption, against the exact
+        // set(byte[], byte[], Expiration, SetOption) overload the bug is in.
+        // Prints PASS/FAIL for each of the 12 combinations so the failure surface
+        // is fully characterized, not just the one KEEPTTL case.
+        java.util.List<String> failures = new java.util.ArrayList<>();
+        java.util.List<String> passes = new java.util.ArrayList<>();
+
+        Expiration[] expirations = new Expiration[] {
+            Expiration.milliseconds(60000),
+            Expiration.persistent(),
+            Expiration.keepTtl(),
+            Expiration.unixTimestamp(System.currentTimeMillis() + 60000, TimeUnit.MILLISECONDS)
+        };
+        String[] expirationNames = { "relative(60s)", "persistent", "keepTtl", "unixTimestamp" };
+
+        SetOption[] options = { SetOption.upsert(), SetOption.ifAbsent(), SetOption.ifPresent() };
+        String[] optionNames = { "UPSERT", "IF_ABSENT", "IF_PRESENT" };
+
+        for (int e = 0; e < expirations.length; e++) {
+            for (int o = 0; o < options.length; o++) {
+                byte[] key = ("matrix-" + e + "-" + o).getBytes();
+                connection.set(key, "seed".getBytes());
+                if (optionNames[o].equals("IF_PRESENT") || expirationNames[e].equals("keepTtl")) {
+                    connection.expire(key, 100);
+                }
+                String label = expirationNames[e] + " + " + optionNames[o];
+                try {
+                    connection.set(key, "updated".getBytes(), expirations[e], options[o]);
+                    passes.add(label);
+                } catch (Exception ex) {
+                    failures.add(label + " -> " + ex.getCause());
+                }
+            }
+        }
+
+        System.out.println("=== set(key, value, Expiration, SetOption) matrix ===");
+        System.out.println("PASS (" + passes.size() + "): " + passes);
+        System.out.println("FAIL (" + failures.size() + "): " + failures);
+
+        // All 12 combinations (4 Expiration kinds x 3 SetOptions) must succeed, including KEEPTTL.
+        assertThat(failures).isEmpty();
+        assertThat(passes).hasSize(12);
+    }
+
+    @Test
     public void testHTtlWithTimeUnit() {
         byte[] key = "test-hash".getBytes();
         byte[] field1 = "field1".getBytes();
