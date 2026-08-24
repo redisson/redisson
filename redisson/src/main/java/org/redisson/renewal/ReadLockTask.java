@@ -42,7 +42,7 @@ public class ReadLockTask extends LockTask {
     }
 
     private ChunkExecution<List<String>> buildChunk(Iterator<String> iter, int chunkSize) {
-        Map<String, Set<Long>> name2threadIds = new HashMap<>();
+        Map<String, Map<Long, String>> name2owners = new HashMap<>();
         List<Object> args = new ArrayList<>();
         args.add(internalLockLeaseTime);
 
@@ -77,8 +77,11 @@ public class ReadLockTask extends LockTask {
             args.add(lockNames.size());
             args.addAll(lockNames);
 
-            Set<Long> threadIds = new HashSet<>(snapshot.keySet());
-            name2threadIds.put(key, threadIds);
+            Map<Long, String> owners = new LinkedHashMap<>();
+            for (Long ownerThreadId : snapshot.keySet()) {
+                owners.put(ownerThreadId, entry.getThreadName(ownerThreadId));
+            }
+            name2owners.put(key, owners);
         }
 
         // No valid entries found - signal completion
@@ -115,14 +118,14 @@ public class ReadLockTask extends LockTask {
                 "end; " +
                 "return result;",
                 keysArgs,
-                args.toArray()), name2threadIds);
+                args.toArray()), name2owners);
 
         return new ChunkExecution<>(f, existingNames -> {
             keys.removeAll(existingNames);
             for (String key : keys) {
-                Set<Long> threadIds = name2threadIds.get(key);
-                if (threadIds != null) {
-                    for (Long threadId : threadIds) {
+                Map<Long, String> owners = name2owners.get(key);
+                if (owners != null) {
+                    for (Long threadId : owners.keySet()) {
                         cancelExpirationRenewal(key, threadId);
                     }
                 }

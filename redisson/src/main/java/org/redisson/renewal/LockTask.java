@@ -43,7 +43,7 @@ public class LockTask extends RenewalTask {
     }
 
     private ChunkExecution<List<String>> buildChunk(Iterator<String> iter, int chunkSize) {
-        Map<String, Set<Long>> name2threadIds = new HashMap<>(chunkSize);
+        Map<String, Map<Long, String>> name2owners = new HashMap<>(chunkSize);
         List<Object> args = new ArrayList<>(chunkSize + 1);
         args.add(internalLockLeaseTime);
 
@@ -69,7 +69,7 @@ public class LockTask extends RenewalTask {
 
             keys.add(key);
             args.add(lockName);
-            name2threadIds.put(key, Collections.singleton(threadId));
+            name2owners.put(key, Collections.singletonMap(threadId, entry.getThreadName(threadId)));
         }
 
         // No valid entries found - signal completion
@@ -92,12 +92,12 @@ public class LockTask extends RenewalTask {
                         "end; " +
                         "return result;",
                 new ArrayList<>(keys),
-                args.toArray()), name2threadIds);
+                args.toArray()), name2owners);
 
         return new ChunkExecution<>(f, existingNames -> {
             keys.removeAll(existingNames);
             for (String key : keys) {
-                cancelExpirationRenewal(key, name2threadIds.get(key).iterator().next());
+                cancelExpirationRenewal(key, name2owners.get(key).keySet().iterator().next());
             }
         });
     }

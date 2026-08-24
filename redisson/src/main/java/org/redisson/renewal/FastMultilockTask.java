@@ -41,7 +41,7 @@ public class FastMultilockTask extends LockTask {
     }
 
     private ChunkExecution<Boolean> buildChunk(Iterator<String> iter, int chunkSize) {
-        Map<String, Set<Long>> name2threadIds = new HashMap<>();
+        Map<String, Map<Long, String>> name2owners = new HashMap<>();
         List<Object> args = new ArrayList<>();
         args.add(internalLockLeaseTime);
         args.add(System.currentTimeMillis());
@@ -65,7 +65,7 @@ public class FastMultilockTask extends LockTask {
             keys.add(key);
             args.add(entry.getLockName(threadId));
             args.addAll(entry.getFields());
-            name2threadIds.put(key, Collections.singleton(threadId));
+            name2owners.put(key, Collections.singletonMap(threadId, entry.getThreadName(threadId)));
         }
 
         // No valid entries found - signal completion
@@ -102,11 +102,11 @@ public class FastMultilockTask extends LockTask {
                         "end;" +
                         "return 0;",
                 Collections.singletonList(firstName),
-                args.toArray()), name2threadIds);
+                args.toArray()), name2owners);
 
         return new ChunkExecution<>(f, exists -> {
             if (!exists) {
-                cancelExpirationRenewal(firstName, name2threadIds.get(firstName).iterator().next());
+                cancelExpirationRenewal(firstName, name2owners.get(firstName).keySet().iterator().next());
             }
         });
     }

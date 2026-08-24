@@ -28,7 +28,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -201,9 +200,9 @@ abstract class RenewalTask implements TimerTask {
     }
 
     final <T> CompletionStage<T> trackFailure(CompletionStage<T> future,
-                                               Map<String, Set<Long>> failedLocks) {
+                                               Map<String, Map<Long, String>> failedLocks) {
         CompletableFuture<T> result = new CompletableFuture<>();
-        Map<String, Map<Long, String>> failedLocksSnapshot = snapshotOwners(failedLocks);
+        Map<String, Map<Long, String>> failedLocksSnapshot = new HashMap<>(failedLocks);
         future.whenComplete((value, cause) -> {
             if (cause != null) {
                 result.completeExceptionally(new RenewalFailureException(failedLocksSnapshot, unwrap(cause)));
@@ -212,23 +211,6 @@ abstract class RenewalTask implements TimerTask {
             result.complete(value);
         });
         return result;
-    }
-
-    private Map<String, Map<Long, String>> snapshotOwners(Map<String, Set<Long>> failedLocks) {
-        Map<String, Map<Long, String>> snapshot = new HashMap<>();
-        for (Map.Entry<String, Set<Long>> failedLock : failedLocks.entrySet()) {
-            LockEntry entry = name2entry.get(failedLock.getKey());
-            Map<Long, String> threadId2threadName = new LinkedHashMap<>();
-            for (Long threadId : failedLock.getValue()) {
-                String threadName = String.valueOf(threadId);
-                if (entry != null) {
-                    threadName = entry.getThreadName(threadId);
-                }
-                threadId2threadName.put(threadId, threadName);
-            }
-            snapshot.put(failedLock.getKey(), threadId2threadName);
-        }
-        return snapshot;
     }
 
     private RenewalFailureException getRenewalFailure(Throwable cause) {
