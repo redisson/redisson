@@ -33,6 +33,7 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -133,7 +134,8 @@ abstract class ConnectionPool<T extends RedisConnection> {
         });
         result.whenComplete((r, e) -> {
             if (e != null) {
-                if (entry.getNodeType() == NodeType.SLAVE) {
+                if (entry.getNodeType() == NodeType.SLAVE
+                        && !(e instanceof CancellationException)) {
                     FailedNodeDetector detector = entry.getClient().getConfig().getFailedNodeDetector();
                     detector.onConnectFailed(e);
                     if (detector.isNodeFailed()) {
