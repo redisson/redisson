@@ -23,6 +23,21 @@ import java.util.concurrent.TimeUnit;
 public class RedissonConnectionTest extends BaseConnectionTest {
 
     @Test
+    public void testSetWithExpirationOptionKeepTtl() {
+        // Spring Data Redis 2.4 added Expiration.keepTtl() but not unixTimestamp(...),
+        // so only the KEEPTTL branch applies to this module.
+        byte[] key = "set-keepttl-repro".getBytes();
+        connection.set(key, "value1".getBytes());
+        connection.expire(key, 100);
+
+        Boolean result = connection.set(key, "value2".getBytes(), Expiration.keepTtl(), SetOption.upsert());
+
+        assertThat(result).isTrue();
+        assertThat(connection.get(key)).isEqualTo("value2".getBytes());
+        assertThat(connection.ttl(key)).isGreaterThan(0);
+    }
+
+    @Test
     public void testRandomMembers() {
         RedisTemplate<String, Integer> redisTemplate = new RedisTemplate<>();
         redisTemplate.setConnectionFactory(new RedissonConnectionFactory(redisson));

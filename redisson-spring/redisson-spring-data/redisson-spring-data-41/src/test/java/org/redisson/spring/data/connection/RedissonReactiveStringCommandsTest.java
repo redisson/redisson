@@ -109,4 +109,71 @@ public class RedissonReactiveStringCommandsTest extends BaseConnectionTest {
                 .as("EXAT must set the TTL to ~120s from now, not treat the epoch value as a relative PX delay")
                 .isBetween(110_000L, 120_000L);
     }
+
+    // Reproduction/regression coverage for the sibling bug in this same file: the reactive
+    // set(Publisher<SetCommand>) only checked isPersistent() and fell through to a relative
+    // "PX <millis>" for everything else, so Expiration.keepTtl() sent the reserved negative
+    // sentinel as a literal PX value (Redis rejects it) and Expiration.unixTimestamp(...) sent
+    // the absolute epoch value as a relative delay (silently producing a ~decades-long TTL).
+    // Mirrors testSetExpirationOptionMatrix() added to RedissonConnectionTest (blocking sibling).
+    @Test
+    public void testSetExpirationOptionMatrix() {
+        java.util.List<String> failures = new java.util.ArrayList<>();
+        java.util.List<String> passes = new java.util.ArrayList<>();
+
+        Expiration[] expirations = new Expiration[] {
+            Expiration.milliseconds(60000),
+            Expiration.persistent(),
+            Expiration.keepTtl(),
+            Expiration.unixTimestamp(System.currentTimeMillis() + 60000, java.util.concurrent.TimeUnit.MILLISECONDS)
+        };
+        String[] expirationNames = { "relative(60s)", "persistent", "keepTtl", "unixTimestamp" };
+
+        org.springframework.data.redis.connection.RedisStringCommands.SetOption[] options = {
+            org.springframework.data.redis.connection.RedisStringCommands.SetOption.upsert(),
+            org.springframework.data.redis.connection.RedisStringCommands.SetOption.ifAbsent(),
+            org.springframework.data.redis.connection.RedisStringCommands.SetOption.ifPresent()
+        };
+        String[] optionNames = { "UPSERT", "IF_ABSENT", "IF_PRESENT" };
+
+        for (int e = 0; e < expirations.length; e++) {
+            for (int o = 0; o < options.length; o++) {
+                String key = "matrix-" + e + "-" + o;
+                if (optionNames[o].equals("IF_ABSENT")) {
+                    redisson.getBucket(key).delete();
+                } else {
+                    redisson.getBucket(key, org.redisson.client.codec.StringCodec.INSTANCE).set("seed");
+                    if (optionNames[o].equals("IF_PRESENT") || expirationNames[e].equals("keepTtl")) {
+                        redisson.getBucket(key).expire(java.time.Duration.ofSeconds(100));
+                    }
+                }
+
+                String label = expirationNames[e] + " + " + optionNames[o];
+                try {
+                    ReactiveStringCommands.SetCommand cmd = ReactiveStringCommands.SetCommand
+                            .set(buf(key))
+                            .value(buf("updated"))
+                            .expiring(expirations[e])
+                            .withSetOption(options[o]);
+                    stringCommands().set(reactor.core.publisher.Mono.just(cmd)).blockFirst();
+
+                    if (expirationNames[e].equals("unixTimestamp")) {
+                        Long ttl = ttlMillis(key);
+                        if (ttl == null || ttl <= 0 || ttl > 150_000) {
+                            failures.add(label + " -> wrong TTL: " + ttl + "ms (expected ~60000ms)");
+                            continue;
+                        }
+                    }
+                    passes.add(label);
+                } catch (Exception ex) {
+                    failures.add(label + " -> " + ex);
+                }
+            }
+        }
+
+        System.out.println("PASS (" + passes.size() + "): " + passes);
+        System.out.println("FAIL (" + failures.size() + "): " + failures);
+        assertThat(failures).isEmpty();
+        assertThat(passes).hasSize(12);
+    }
 }

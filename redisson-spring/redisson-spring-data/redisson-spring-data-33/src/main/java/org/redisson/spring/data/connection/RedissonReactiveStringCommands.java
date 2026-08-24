@@ -74,6 +74,22 @@ public class RedissonReactiveStringCommands extends RedissonBaseReactive impleme
                 } else if (command.getOption().get() == SetOption.SET_IF_PRESENT) {
                     m = write(key, StringCodec.INSTANCE, SET, key, value, "XX");
                 }
+            } else if (command.getExpiration().get().isKeepTtl()) {
+                if (!command.getOption().isPresent() || command.getOption().get() == SetOption.UPSERT) {
+                    m = write(key, StringCodec.INSTANCE, SET, key, value, "KEEPTTL");
+                } else if (command.getOption().get() == SetOption.SET_IF_ABSENT) {
+                    m = write(key, StringCodec.INSTANCE, SET, key, value, "KEEPTTL", "NX");
+                } else if (command.getOption().get() == SetOption.SET_IF_PRESENT) {
+                    m = write(key, StringCodec.INSTANCE, SET, key, value, "KEEPTTL", "XX");
+                }
+            } else if (command.getExpiration().get().isUnixTimestamp()) {
+                if (!command.getOption().isPresent() || command.getOption().get() == SetOption.UPSERT) {
+                    m = write(key, StringCodec.INSTANCE, SET, key, value, "PXAT", command.getExpiration().get().getExpirationTimeInMilliseconds());
+                } else if (command.getOption().get() == SetOption.SET_IF_ABSENT) {
+                    m = write(key, StringCodec.INSTANCE, SET, key, value, "PXAT", command.getExpiration().get().getExpirationTimeInMilliseconds(), "NX");
+                } else if (command.getOption().get() == SetOption.SET_IF_PRESENT) {
+                    m = write(key, StringCodec.INSTANCE, SET, key, value, "PXAT", command.getExpiration().get().getExpirationTimeInMilliseconds(), "XX");
+                }
             } else {
                 if (!command.getOption().isPresent() || command.getOption().get() == SetOption.UPSERT) {
                     m = write(key, StringCodec.INSTANCE, SET, key, value, "PX", command.getExpiration().get().getExpirationTimeInMilliseconds());
