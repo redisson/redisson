@@ -27,8 +27,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -203,10 +203,7 @@ abstract class RenewalTask implements TimerTask {
     final <T> CompletionStage<T> trackFailure(CompletionStage<T> future,
                                                Map<String, Set<Long>> failedLocks) {
         CompletableFuture<T> result = new CompletableFuture<>();
-        Map<String, Set<Long>> failedLocksSnapshot = new HashMap<>();
-        for (Map.Entry<String, Set<Long>> entry : failedLocks.entrySet()) {
-            failedLocksSnapshot.put(entry.getKey(), new HashSet<>(entry.getValue()));
-        }
+        Map<String, Map<Long, String>> failedLocksSnapshot = snapshotOwners(failedLocks);
         future.whenComplete((value, cause) -> {
             if (cause != null) {
                 result.completeExceptionally(new RenewalFailureException(failedLocksSnapshot, unwrap(cause)));
@@ -215,6 +212,23 @@ abstract class RenewalTask implements TimerTask {
             result.complete(value);
         });
         return result;
+    }
+
+    private Map<String, Map<Long, String>> snapshotOwners(Map<String, Set<Long>> failedLocks) {
+        Map<String, Map<Long, String>> snapshot = new HashMap<>();
+        for (Map.Entry<String, Set<Long>> failedLock : failedLocks.entrySet()) {
+            LockEntry entry = name2entry.get(failedLock.getKey());
+            Map<Long, String> threadId2threadName = new LinkedHashMap<>();
+            for (Long threadId : failedLock.getValue()) {
+                String threadName = String.valueOf(threadId);
+                if (entry != null) {
+                    threadName = entry.getThreadName(threadId);
+                }
+                threadId2threadName.put(threadId, threadName);
+            }
+            snapshot.put(failedLock.getKey(), threadId2threadName);
+        }
+        return snapshot;
     }
 
     private RenewalFailureException getRenewalFailure(Throwable cause) {
@@ -232,7 +246,7 @@ abstract class RenewalTask implements TimerTask {
         return cause;
     }
 
-    private void notifyListeners(Map<String, Set<Long>> failedLocks, Throwable cause) {
+    private void notifyListeners(Map<String, Map<Long, String>> failedLocks, Throwable cause) {
         List<Runnable> notifications = collectNotifications(failedLocks, cause);
         if (notifications.isEmpty()) {
             return;
@@ -245,19 +259,17 @@ abstract class RenewalTask implements TimerTask {
         }
     }
 
-    private List<Runnable> collectNotifications(Map<String, Set<Long>> failedLocks, Throwable cause) {
+    private List<Runnable> collectNotifications(Map<String, Map<Long, String>> failedLocks, Throwable cause) {
         LockRenewalScheduler scheduler = executor.getServiceManager().getRenewalScheduler();
         List<Runnable> notifications = new ArrayList<>();
 
-        for (Map.Entry<String, Set<Long>> failedLock : failedLocks.entrySet()) {
+        for (Map.Entry<String, Map<Long, String>> failedLock : failedLocks.entrySet()) {
             Collection<LockRenewalFailureListener> listeners = scheduler.getFailureListeners(failedLock.getKey());
             if (listeners.isEmpty()) {
                 continue;
             }
 
-            LockEntry entry = name2entry.get(failedLock.getKey());
-            for (Long threadId : failedLock.getValue()) {
-                String threadName = entry != null ? entry.getThreadName(threadId) : String.valueOf(threadId);
+            for (String threadName : failedLock.getValue().values()) {
                 for (LockRenewalFailureListener listener : listeners) {
                     notifications.add(() -> listener.onFailure(threadName, cause));
                 }
@@ -279,14 +291,14 @@ abstract class RenewalTask implements TimerTask {
 
     private static final class RenewalFailureException extends Exception {
 
-        private final Map<String, Set<Long>> failedLocks;
+        private final Map<String, Map<Long, String>> failedLocks;
 
-        private RenewalFailureException(Map<String, Set<Long>> failedLocks, Throwable cause) {
+        private RenewalFailureException(Map<String, Map<Long, String>> failedLocks, Throwable cause) {
             super(cause);
             this.failedLocks = failedLocks;
         }
 
-        private Map<String, Set<Long>> getFailedLocks() {
+        private Map<String, Map<Long, String>> getFailedLocks() {
             return failedLocks;
         }
     }
