@@ -130,15 +130,15 @@ public class ReadLockTask extends LockTask {
         });
     }
 
-    public void add(String rawName, String lockName, long threadId, String keyPrefix) {
+    public void add(String rawName, String lockName, long threadId, String threadName, String keyPrefix) {
         addSlotName(rawName);
 
         ReadLockEntry entry = new ReadLockEntry();
-        entry.addThreadId(threadId, lockName, keyPrefix);
+        entry.addThreadId(threadId, lockName, threadName, keyPrefix);
 
         ReadLockEntry oldEntry = (ReadLockEntry) name2entry.putIfAbsent(rawName, entry);
         if (oldEntry != null) {
-            oldEntry.addThreadId(threadId, lockName, keyPrefix);
+            oldEntry.addThreadId(threadId, lockName, threadName, keyPrefix);
         } else {
             if (tryRun()) {
                 schedule();

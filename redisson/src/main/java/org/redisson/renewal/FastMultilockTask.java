@@ -111,11 +111,11 @@ public class FastMultilockTask extends LockTask {
         });
     }
 
-    public void add(String rawName, String lockName, long threadId, Collection<String> fields) {
+    public void add(String rawName, String lockName, long threadId, String threadName, Collection<String> fields) {
         FastMultilockEntry entry = new FastMultilockEntry(fields);
-        entry.addThreadId(threadId, lockName);
+        entry.addThreadId(threadId, lockName, threadName);
 
-        add(rawName, lockName, threadId, entry);
+        add(rawName, lockName, threadId, threadName, entry);
     }
 
 }

@@ -102,11 +102,11 @@ public class LockTask extends RenewalTask {
         });
     }
 
-    public void add(String rawName, String lockName, long threadId) {
+    public void add(String rawName, String lockName, long threadId, String threadName) {
         LockEntry entry = new LockEntry();
-        entry.addThreadId(threadId, lockName);
+        entry.addThreadId(threadId, lockName, threadName);
 
-        add(rawName, lockName, threadId, entry);
+        add(rawName, lockName, threadId, threadName, entry);
     }
 
 }

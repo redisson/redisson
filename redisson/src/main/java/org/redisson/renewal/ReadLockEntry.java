@@ -32,7 +32,7 @@ public class ReadLockEntry extends LockEntry {
         return threadId2keyPrefix.get(threadId);
     }
 
-    public void addThreadId(long threadId, String lockName, String keyPrefix) {
+    public void addThreadId(long threadId, String lockName, String threadName, String keyPrefix) {
         threadId2counter.compute(threadId, (t, counter) -> {
             counter = Optional.ofNullable(counter).orElse(0);
             counter++;
@@ -40,6 +40,7 @@ public class ReadLockEntry extends LockEntry {
             return counter;
         });
         threadId2lockName.putIfAbsent(threadId, lockName);
+        threadId2threadName.putIfAbsent(threadId, threadName);
         threadId2keyPrefix.putIfAbsent(threadId, keyPrefix);
     }
 
@@ -50,6 +51,7 @@ public class ReadLockEntry extends LockEntry {
             if (counter == 0) {
                 threadsQueue.remove(threadId);
                 threadId2lockName.remove(threadId);
+                threadId2threadName.remove(threadId);
                 threadId2keyPrefix.remove(threadId);
                 return null;
             }

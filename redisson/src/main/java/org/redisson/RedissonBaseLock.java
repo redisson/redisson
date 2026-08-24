@@ -15,8 +15,10 @@
  */
 package org.redisson;
 
+import org.redisson.api.ObjectListener;
 import org.redisson.api.RFuture;
 import org.redisson.api.RLock;
+import org.redisson.api.listener.LockRenewalFailureListener;
 import org.redisson.client.RedisException;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
@@ -69,12 +71,63 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
         return id + ":" + threadId;
     }
 
-    protected void scheduleExpirationRenewal(long threadId) {
-        renewalScheduler.renewLock(getRawName(), threadId, getLockName(threadId));
+    protected void scheduleExpirationRenewal(long threadId, String threadName) {
+        renewalScheduler.renewLock(getRawName(), threadId, getLockName(threadId), threadName);
     }
 
     protected void cancelExpirationRenewal(Long threadId, Boolean unlockResult) {
         renewalScheduler.cancelLockRenewal(getRawName(), threadId);
+    }
+
+    /**
+     * Resolves the name of the thread owning the lock.
+     * <p>
+     * Renewal is scheduled from a completion callback which may run on a Netty thread,
+     * so the name has to be resolved earlier, while the acquiring thread is still the
+     * current one. Methods invoked with an explicit thread id by another thread fall
+     * back to the thread id itself.
+     *
+     * @param threadId lock owner thread id
+     * @return owner thread name, or its thread id if the name isn't available
+     */
+    protected static String resolveThreadName(long threadId) {
+        Thread currentThread = Thread.currentThread();
+        if (currentThread.getId() == threadId) {
+            return currentThread.getName();
+        }
+        return String.valueOf(threadId);
+    }
+
+    @Override
+    public int addListener(ObjectListener listener) {
+        if (listener instanceof LockRenewalFailureListener) {
+            return renewalScheduler.addFailureListener(getRawName(), (LockRenewalFailureListener) listener);
+        }
+        return super.addListener(listener);
+    }
+
+    @Override
+    public RFuture<Integer> addListenerAsync(ObjectListener listener) {
+        if (listener instanceof LockRenewalFailureListener) {
+            return new CompletableFutureWrapper<>(addListener(listener));
+        }
+        return super.addListenerAsync(listener);
+    }
+
+    @Override
+    public void removeListener(int listenerId) {
+        if (renewalScheduler.removeFailureListener(getRawName(), listenerId)) {
+            return;
+        }
+        super.removeListener(listenerId);
+    }
+
+    @Override
+    public RFuture<Void> removeListenerAsync(int listenerId) {
+        if (renewalScheduler.removeFailureListener(getRawName(), listenerId)) {
+            return CompletableFutureWrapper.completedNull();
+        }
+        return super.removeListenerAsync(listenerId);
     }
 
     protected final <T> RFuture<T> evalWriteSyncedNoRetryAsync(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {

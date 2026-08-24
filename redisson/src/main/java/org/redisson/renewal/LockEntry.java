@@ -31,6 +31,7 @@ public class LockEntry {
     final Queue<Long> threadsQueue = new ConcurrentLinkedQueue<>();
     final Map<Long, Integer> threadId2counter = new ConcurrentHashMap<>();
     final Map<Long, String> threadId2lockName = new ConcurrentHashMap<>();
+    final Map<Long, String> threadId2threadName = new ConcurrentHashMap<>();
 
     LockEntry() {
         super();
@@ -40,7 +41,11 @@ public class LockEntry {
         return threadId2lockName.get(threadId);
     }
 
-    public void addThreadId(long threadId, String lockName) {
+    public String getThreadName(long threadId) {
+        return threadId2threadName.getOrDefault(threadId, String.valueOf(threadId));
+    }
+
+    public void addThreadId(long threadId, String lockName, String threadName) {
         threadId2counter.compute(threadId, (t, counter) -> {
             counter = Optional.ofNullable(counter).orElse(0);
             counter++;
@@ -48,6 +53,7 @@ public class LockEntry {
             return counter;
         });
         threadId2lockName.putIfAbsent(threadId, lockName);
+        threadId2threadName.putIfAbsent(threadId, threadName);
     }
 
     public boolean hasNoThreads() {
@@ -64,6 +70,7 @@ public class LockEntry {
             if (counter == 0) {
                 threadsQueue.removeIf(v-> v == threadId);
                 threadId2lockName.remove(threadId);
+                threadId2threadName.remove(threadId);
                 return null;
             }
             return counter;

@@ -259,6 +259,7 @@ public class RedissonFasterMultiLock extends RedissonBaseLock {
     }
 
     private RFuture<Long> tryAcquireAsync(long leaseTime, TimeUnit unit, long threadId) {
+        String threadName = resolveThreadName(threadId);
         RFuture<Long> ttlRemainingFuture;
         if (leaseTime > 0) {
             ttlRemainingFuture = tryLockInnerAsync(leaseTime, unit, threadId);
@@ -274,7 +275,7 @@ public class RedissonFasterMultiLock extends RedissonBaseLock {
                 if (leaseTime > 0) {
                     internalLockLeaseTime = unit.toMillis(leaseTime);
                 } else {
-                    scheduleExpirationRenewal(threadId);
+                    scheduleExpirationRenewal(threadId, threadName);
                 }
             }
             return ttlRemaining;
@@ -290,6 +291,7 @@ public class RedissonFasterMultiLock extends RedissonBaseLock {
     }
 
     private RFuture<Boolean> tryAcquireOnceAsync(long leaseTime, TimeUnit unit, long threadId) {
+        String threadName = resolveThreadName(threadId);
         CompletionStage<Boolean> acquiredFuture;
         if (leaseTime > 0) {
             acquiredFuture = tryLockOnceInnerAsync(leaseTime, unit, RedisCommands.EVAL_BOOLEAN, threadId);
@@ -306,7 +308,7 @@ public class RedissonFasterMultiLock extends RedissonBaseLock {
                 if (leaseTime > 0) {
                     internalLockLeaseTime = unit.toMillis(leaseTime);
                 } else {
-                    scheduleExpirationRenewal(threadId);
+                    scheduleExpirationRenewal(threadId, threadName);
                 }
             }
             return acquired;
@@ -321,8 +323,8 @@ public class RedissonFasterMultiLock extends RedissonBaseLock {
     }
 
     @Override
-    protected void scheduleExpirationRenewal(long threadId) {
-        renewalScheduler.renewFastMultiLock(getRawName(), threadId, getLockName(threadId), fields);
+    protected void scheduleExpirationRenewal(long threadId, String threadName) {
+        renewalScheduler.renewFastMultiLock(getRawName(), threadId, getLockName(threadId), threadName, fields);
     }
 
     private <T> RFuture<T> tryLockOnceInnerAsync(long leaseTime, TimeUnit unit, RedisStrictCommand<T> command, long threadId) {

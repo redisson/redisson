@@ -13,25 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.api;
+package org.redisson.api.listener;
+
+import org.redisson.api.ObjectListener;
 
 /**
- * Listener notified when a lock watchdog fails to renew a lock expiration.
+ * Redisson Object Event listener for lock watchdog renewal failure.
  * <p>
  * A notification doesn't mean that the lock has expired or ownership has been lost.
  *
  * @author Guilherme Kauã da Silva
  */
 @FunctionalInterface
-public interface LockRenewalFailureListener {
+public interface LockRenewalFailureListener extends ObjectListener {
 
     /**
      * Invoked when a lock watchdog renewal attempt fails.
      *
-     * @param lockName lock name
-     * @param threadId lock owner thread id
+     * @param threadName name of the lock owner thread,
+     *                   or its thread id if the name isn't available
      * @param cause renewal failure
      */
-    void onFailure(String lockName, long threadId, Throwable cause);
+    void onFailure(String threadName, Throwable cause);
 
 }

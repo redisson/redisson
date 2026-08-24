@@ -3,23 +3,19 @@ package org.redisson;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.redisson.api.LockRenewalFailureListener;
 import org.redisson.api.RLock;
 import org.redisson.api.RMap;
 import org.redisson.api.RReadWriteLock;
 import org.redisson.api.RedissonClient;
+import org.redisson.api.listener.LockRenewalFailureListener;
 import org.redisson.config.Config;
-import org.redisson.config.NameMapper;
 import org.testcontainers.containers.GenericContainer;
 
-import java.util.Set;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -38,11 +34,7 @@ public class RedissonLockExpirationRenewalTest extends RedisDockerTest {
     public void beforeEachTest() {
         redis = createContainer();
         redis.start();
-
-        Config c = createConfig(redis);
-        c.setLockWatchdogTimeout(LOCK_WATCHDOG_TIMEOUT);
-        c.setLockWatchdogBatchSize(50);
-        redisson = Redisson.create(c);
+        redisson = createClient(50);
     }
 
     @AfterEach
@@ -139,31 +131,53 @@ public class RedissonLockExpirationRenewalTest extends RedisDockerTest {
     @Test
     public void testLockRenewalFailureListener() throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(1);
-        AtomicReference<String> lockName = new AtomicReference<>();
-        AtomicLong threadId = new AtomicLong();
+        AtomicReference<String> threadName = new AtomicReference<>();
         AtomicReference<Throwable> cause = new AtomicReference<>();
-        recreateClient((name, id, error) -> {
-            lockName.set(name);
-            threadId.set(id);
+        LockRenewalFailureListener listener = (name, error) -> {
+            threadName.set(name);
             cause.set(error);
             latch.countDown();
-        });
+        };
 
-        long expectedThreadId = Thread.currentThread().getId();
-        causeLockRenewalFailure(LOCK_KEY);
+        RLock lock = redisson.getLock(LOCK_KEY);
+        lock.addListener(listener);
+
+        String expectedThreadName = Thread.currentThread().getName();
+        causeLockRenewalFailure(lock);
 
         assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
-        assertThat(lockName.get()).isEqualTo(LOCK_KEY);
-        assertThat(threadId.get()).isEqualTo(expectedThreadId);
+        assertThat(threadName.get()).isEqualTo(expectedThreadName);
         assertThat(cause.get()).isNotNull();
+    }
+
+    @Test
+    public void testLockRenewalFailureListenerReportsThreadIdWhenThreadNameIsUnknown() throws InterruptedException {
+        CountDownLatch latch = new CountDownLatch(1);
+        AtomicReference<String> threadName = new AtomicReference<>();
+        LockRenewalFailureListener listener = (name, error) -> {
+            threadName.set(name);
+            latch.countDown();
+        };
+
+        RLock lock = redisson.getLock(LOCK_KEY);
+        lock.addListener(listener);
+
+        // async API called on behalf of another thread, its name isn't available
+        long ownerThreadId = Thread.currentThread().getId() + 1;
+        lock.lockAsync(ownerThreadId).toCompletableFuture().join();
+        redisson.getBucket(LOCK_KEY).set("not a lock");
+
+        assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
+        assertThat(threadName.get()).isEqualTo(String.valueOf(ownerThreadId));
     }
 
     @Test
     public void testLockRenewalFailureListenerIsNotCalledOnSuccessfulRenewal() throws InterruptedException {
         AtomicInteger calls = new AtomicInteger();
-        recreateClient((name, id, error) -> calls.incrementAndGet());
+        LockRenewalFailureListener listener = (name, error) -> calls.incrementAndGet();
 
         RLock lock = redisson.getLock(LOCK_KEY);
+        lock.addListener(listener);
         lock.lock();
         try {
             Thread.sleep(LOCK_WATCHDOG_TIMEOUT * 2);
@@ -174,71 +188,71 @@ public class RedissonLockExpirationRenewalTest extends RedisDockerTest {
     }
 
     @Test
+    public void testRemovedLockRenewalFailureListenerIsNotNotified() throws InterruptedException {
+        AtomicInteger calls = new AtomicInteger();
+        LockRenewalFailureListener listener = (name, error) -> calls.incrementAndGet();
+
+        RLock lock = redisson.getLock(LOCK_KEY);
+        int listenerId = lock.addListener(listener);
+        lock.removeListener(listenerId);
+
+        causeLockRenewalFailure(lock);
+        Thread.sleep(LOCK_WATCHDOG_TIMEOUT * 3);
+
+        assertThat(calls).hasValue(0);
+    }
+
+    @Test
+    public void testLockRenewalFailureListenerIsRegisteredPerLockName() throws InterruptedException {
+        CountDownLatch latch = new CountDownLatch(1);
+        LockRenewalFailureListener listener = (name, error) -> latch.countDown();
+
+        // listener added through one lock object, lock acquired through another
+        redisson.getLock(LOCK_KEY).addListener(listener);
+        causeLockRenewalFailure(redisson.getLock(LOCK_KEY));
+
+        assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
+    }
+
+    @Test
     public void testLockRenewalFailureListenerExceptionDoesNotStopScheduling() {
         AtomicInteger calls = new AtomicInteger();
-        recreateClient((name, id, error) -> {
+        LockRenewalFailureListener listener = (name, error) -> {
             calls.incrementAndGet();
             throw new IllegalStateException("listener failure");
-        });
+        };
 
-        causeLockRenewalFailure(LOCK_KEY);
+        RLock lock = redisson.getLock(LOCK_KEY);
+        lock.addListener(listener);
+        causeLockRenewalFailure(lock);
 
         await().atMost(5, TimeUnit.SECONDS)
                 .untilAsserted(() -> assertThat(calls.get()).isGreaterThanOrEqualTo(2));
     }
 
     @Test
-    public void testLockRenewalFailureListenerNameMapperExceptionDoesNotStopScheduling() {
-        AtomicInteger unmapCalls = new AtomicInteger();
-        redisson.shutdown();
+    public void testLockRenewalFailureListenerIsNotifiedOnlyForItsOwnLock() throws InterruptedException {
+        // one lock per renewal batch, so the healthy lock isn't renewed by the failing command
+        recreateClient(1);
 
-        Config c = createConfig(redis);
-        c.setLockWatchdogTimeout(LOCK_WATCHDOG_TIMEOUT);
-        c.setLockWatchdogBatchSize(50);
-        c.setLockRenewalFailureListener((name, id, error) -> {
-            // empty
-        });
-        c.setNameMapper(new NameMapper() {
-            @Override
-            public String map(String name) {
-                return name;
-            }
-
-            @Override
-            public String unmap(String name) {
-                unmapCalls.incrementAndGet();
-                throw new IllegalStateException("name mapper failure");
-            }
-        });
-        redisson = Redisson.create(c);
-
-        causeLockRenewalFailure(LOCK_KEY);
-
-        await().atMost(5, TimeUnit.SECONDS)
-                .untilAsserted(() -> assertThat(unmapCalls.get()).isGreaterThanOrEqualTo(2));
-    }
-
-    @Test
-    public void testLockRenewalFailureListenerIsCalledOnlyForFailedBatch() throws InterruptedException {
-        String healthyLockName = "healthy-lock";
-        String failedLockName = "failed-lock";
-        Set<String> notifiedLocks = ConcurrentHashMap.newKeySet();
+        AtomicInteger healthyLockCalls = new AtomicInteger();
         CountDownLatch failedLockNotification = new CountDownLatch(1);
-        recreateClient((name, id, error) -> {
-            notifiedLocks.add(name);
-            if (failedLockName.equals(name)) {
-                failedLockNotification.countDown();
-            }
-        }, 1);
 
-        RLock healthyLock = redisson.getLock(healthyLockName);
+        LockRenewalFailureListener healthyLockListener = (name, error) -> healthyLockCalls.incrementAndGet();
+        LockRenewalFailureListener failedLockListener = (name, error) -> failedLockNotification.countDown();
+
+        RLock healthyLock = redisson.getLock("healthy-lock");
+        healthyLock.addListener(healthyLockListener);
         healthyLock.lock();
-        causeLockRenewalFailure(failedLockName);
+
+        RLock failedLock = redisson.getLock("failed-lock");
+        failedLock.addListener(failedLockListener);
+        causeLockRenewalFailure(failedLock);
 
         assertThat(failedLockNotification.await(5, TimeUnit.SECONDS)).isTrue();
         Thread.sleep(LOCK_WATCHDOG_TIMEOUT / 2);
 
-        assertThat(notifiedLocks).containsExactly(failedLockName);
+        assertThat(healthyLockCalls).hasValue(0);
     }
 
     @Test
@@ -247,7 +261,7 @@ public class RedissonLockExpirationRenewalTest extends RedisDockerTest {
         CountDownLatch secondCallStarted = new CountDownLatch(1);
         CountDownLatch releaseFirstCall = new CountDownLatch(1);
         AtomicInteger calls = new AtomicInteger();
-        recreateClient((name, id, error) -> {
+        LockRenewalFailureListener listener = (name, error) -> {
             if (calls.incrementAndGet() == 1) {
                 firstCallStarted.countDown();
                 try {
@@ -258,9 +272,11 @@ public class RedissonLockExpirationRenewalTest extends RedisDockerTest {
                 return;
             }
             secondCallStarted.countDown();
-        });
+        };
 
-        causeLockRenewalFailure(LOCK_KEY);
+        RLock lock = redisson.getLock(LOCK_KEY);
+        lock.addListener(listener);
+        causeLockRenewalFailure(lock);
 
         try {
             assertThat(firstCallStarted.await(5, TimeUnit.SECONDS)).isTrue();
@@ -269,7 +285,7 @@ public class RedissonLockExpirationRenewalTest extends RedisDockerTest {
             releaseFirstCall.countDown();
         }
     }
-    
+
     @Test
     public void testLockReentrantRenew() throws InterruptedException {
         RLock lock = redisson.getLock(LOCK_KEY);
@@ -286,7 +302,7 @@ public class RedissonLockExpirationRenewalTest extends RedisDockerTest {
                 // doSomething
             }
         });
-        
+
         try {
             Thread.sleep(LOCK_WATCHDOG_TIMEOUT * 10);
         } finally {
@@ -298,24 +314,21 @@ public class RedissonLockExpirationRenewalTest extends RedisDockerTest {
         }
     }
 
-    private void recreateClient(LockRenewalFailureListener listener) {
-        recreateClient(listener, 50);
-    }
-
-    private void causeLockRenewalFailure(String lockName) {
-        RLock lock = redisson.getLock(lockName);
+    private void causeLockRenewalFailure(RLock lock) {
         lock.lock();
-        redisson.getBucket(lockName).set("not a lock");
+        redisson.getBucket(lock.getName()).set("not a lock");
     }
 
-    private void recreateClient(LockRenewalFailureListener listener, int batchSize) {
+    private void recreateClient(int batchSize) {
         redisson.shutdown();
+        redisson = createClient(batchSize);
+    }
 
+    private RedissonClient createClient(int batchSize) {
         Config c = createConfig(redis);
         c.setLockWatchdogTimeout(LOCK_WATCHDOG_TIMEOUT);
         c.setLockWatchdogBatchSize(batchSize);
-        c.setLockRenewalFailureListener(listener);
-        redisson = Redisson.create(c);
+        return Redisson.create(c);
     }
 
 }
