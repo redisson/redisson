@@ -144,4 +144,34 @@ public class RedissonKeysRxTest extends BaseRxTest {
         assertThat(bucketMap).hasSize(expected);
     }
 
+    @Test
+    public void testGetKeysEmptyDatabase() {
+        List<String> result = redisson.getKeys().getKeys().toList().blockingGet();
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    public void testGetKeysPartialRequestReturnsExactCount() {
+        int total = 50;
+        for (int i = 0; i < total; i++) {
+            redisson.getBucket("partial-test:" + i, StringCodec.INSTANCE)
+                    .set(Integer.toString(i)).blockingAwait();
+        }
+
+        // Requests fewer items than exist (via take(5)) while the chunk size (10)
+        // forces multiple SCAN round-trips underneath. Exercises the RxIteratorConsumer's
+        // request-counting path with partial downstream demand instead of unbounded demand.
+        List<String> firstFive = redisson.getKeys()
+                .getKeys(KeysScanOptions.defaults().pattern("partial-test:*").chunkSize(10))
+                .take(5)
+                .toList()
+                .blockingGet();
+
+        assertThat(firstFive).hasSize(5);
+        assertThat(firstFive).doesNotHaveDuplicates();
+        for (String key : firstFive) {
+            assertThat(key).startsWith("partial-test:");
+        }
+    }
+
 }
