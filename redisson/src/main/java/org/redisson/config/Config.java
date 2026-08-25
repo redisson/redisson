@@ -86,6 +86,8 @@ public class Config {
 
     private boolean checkLockSyncedSlaves = true;
 
+    private boolean skipLockSyncedSlaves;
+
     private long slavesSyncTimeout = 1000;
 
     private long reliableTopicWatchdogTimeout = TimeUnit.MINUTES.toMillis(10);
@@ -176,6 +178,7 @@ public class Config {
         setLockWatchdogBatchSize(oldConf.getLockWatchdogBatchSize());
         setFairLockWaitTimeout(oldConf.getFairLockWaitTimeout());
         setCheckLockSyncedSlaves(oldConf.isCheckLockSyncedSlaves());
+        setSkipLockSyncedSlaves(oldConf.isSkipLockSyncedSlaves());
         setSlavesSyncTimeout(oldConf.getSlavesSyncTimeout());
         setNettyThreads(oldConf.getNettyThreads());
         setThreads(oldConf.getThreads());
@@ -714,6 +717,24 @@ public class Config {
 
     public boolean isCheckLockSyncedSlaves() {
         return checkLockSyncedSlaves;
+    }
+
+    /**
+     * Defines whether to skip replica synchronization for lock operations.
+     * <p>
+     * Default is <code>false</code>.
+     *
+     * @param skipLockSyncedSlaves <code>true</code> to skip replica synchronization,
+     *                             <code>false</code> otherwise.
+     * @return config
+     */
+    public Config setSkipLockSyncedSlaves(boolean skipLockSyncedSlaves) {
+        this.skipLockSyncedSlaves = skipLockSyncedSlaves;
+        return this;
+    }
+
+    public boolean isSkipLockSyncedSlaves() {
+        return skipLockSyncedSlaves;
     }
 
     /**
