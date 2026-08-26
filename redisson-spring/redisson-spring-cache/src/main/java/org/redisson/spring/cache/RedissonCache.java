@@ -194,7 +194,7 @@ public class RedissonCache implements Cache {
                 return map.getAsync(key)
                         .thenCompose(r -> {
                             if (r != null) {
-                                return CompletableFuture.completedFuture((T) r);
+                                return CompletableFuture.completedFuture((T) fromStoreValue(r));
                             }
 
                             return valueLoader.get()
