@@ -6,12 +6,18 @@ import mockit.MockUp;
 import org.junit.jupiter.api.Test;
 import org.redisson.RedisDockerTest;
 import org.redisson.RedissonListMultimapCache;
+import org.redisson.RedissonLocalCachedMap;
+import org.redisson.RedissonObject;
+import org.redisson.api.RListMultimapCache;
 import org.redisson.api.RLocalCachedMap;
 import org.redisson.api.RMap;
+import org.redisson.api.RSetCache;
 import org.redisson.api.RTransaction;
 import org.redisson.api.TransactionOptions;
 import org.redisson.api.map.MapLoader;
 import org.redisson.api.options.LocalCachedMapOptions;
+import org.redisson.cache.LocalCachedMapDisabledKey;
+import org.redisson.cache.LocalCachedMessageCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.codec.CompositeCodec;
 import org.redisson.codec.SnappyCodecV2;
@@ -20,6 +26,7 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -75,6 +82,70 @@ public class RedissonTransactionalLocalCachedMapTest extends RedisDockerTest {
 
         RLocalCachedMap < Object, Object > localCachedMap2 = redisson.getLocalCachedMap(
                 org.redisson.api.options.LocalCachedMapOptions.name("test1").codec(CODEC));
+    }
+
+    @Test
+    public void testDisabledCachesClearedAfterCommit() {
+        RLocalCachedMap<String, String> m1 = redisson.getLocalCachedMap(LocalCachedMapOptions.name("test"));
+
+        // a response timeout above the transaction timeout makes the blocking
+        // visible: commit() stalls on it instead of the stall being cut off by
+        // the transaction timeout
+        RTransaction transaction = redisson.createTransaction(TransactionOptions.defaults()
+                .responseTimeout(10, TimeUnit.SECONDS));
+        RLocalCachedMap<String, String> txMap = transaction.getLocalCachedMap(m1);
+        txMap.expire(Duration.ofSeconds(100));
+        transaction.commit();
+
+        // the disabled-caches marker must not survive the commit: it would keep
+        // disabling instances connecting during its TTL window
+        assertThat(disabledCachesSet("test").size()).isZero();
+    }
+
+    @Test
+    public void testDisabledCachesClearedAfterCommitAsync() throws InterruptedException, ExecutionException {
+        RLocalCachedMap<String, String> m1 = redisson.getLocalCachedMap(LocalCachedMapOptions.name("test"));
+
+        RTransaction transaction = redisson.createTransaction(TransactionOptions.defaults());
+        RLocalCachedMap<String, String> txMap = transaction.getLocalCachedMap(m1);
+        txMap.expire(Duration.ofSeconds(100));
+        transaction.commitAsync().get();
+
+        assertThat(disabledCachesSet("test").size()).isZero();
+    }
+
+    @Test
+    public void testInstanceStartsWithDisabledCachesMarker() {
+        // a marker written with the message codec must disable a freshly started
+        // instance on startup instead of failing to decode
+        RSetCache<LocalCachedMapDisabledKey> setCache = disabledCachesSet("test");
+        setCache.add(new LocalCachedMapDisabledKey("request-1", 2000), 2000, TimeUnit.MILLISECONDS);
+
+        RLocalCachedMap<String, String> m2 = redisson.getLocalCachedMap(LocalCachedMapOptions.name("test"));
+        m2.put("1", "0");
+        assertThat(m2.get("1")).isEqualTo("0");
+    }
+
+    @Test
+    public void testDisabledKeysClearedAfterCommit() {
+        RLocalCachedMap<String, String> m1 = redisson.getLocalCachedMap(LocalCachedMapOptions.name("test"));
+
+        RTransaction transaction = redisson.createTransaction(TransactionOptions.defaults());
+        RLocalCachedMap<String, String> txMap = transaction.getLocalCachedMap(m1);
+        txMap.put("1", "1");
+        transaction.commit();
+
+        // the disabled-keys entries must not survive the commit either
+        CompositeCodec localCacheCodec = new CompositeCodec(LocalCachedMessageCodec.INSTANCE,
+                StringCodec.INSTANCE, StringCodec.INSTANCE);
+        RListMultimapCache<LocalCachedMapDisabledKey, String> multimap = redisson.getListMultimapCache(
+                RedissonObject.suffixName("test", RedissonLocalCachedMap.DISABLED_KEYS_SUFFIX), localCacheCodec);
+        assertThat(multimap.readAllKeySet()).isEmpty();
+    }
+
+    private RSetCache<LocalCachedMapDisabledKey> disabledCachesSet(String name) {
+        return redisson.getSetCache(RedissonObject.suffixName(name, RedissonLocalCachedMap.DISABLED_CACHES_SUFFIX),
+                LocalCachedMessageCodec.INSTANCE);
     }
 
     @Test

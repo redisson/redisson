@@ -143,7 +143,7 @@ public abstract class LocalCacheListener {
 
             String disabledCachesName = RedissonObject.suffixName(name, RedissonLocalCachedMap.DISABLED_CACHES_SUFFIX);
             CompositeCodec localCacheCodec = new CompositeCodec(LocalCachedMessageCodec.INSTANCE, StringCodec.INSTANCE, StringCodec.INSTANCE);
-            RSetCache<LocalCachedMapDisabledKey> setCache = new RedissonSetCache<>(localCacheCodec, null, commandExecutor, disabledCachesName, null);
+            RSetCache<LocalCachedMapDisabledKey> setCache = new RedissonSetCache<>(LocalCachedMessageCodec.INSTANCE, null, commandExecutor, disabledCachesName, null);
             for (LocalCachedMapDisabledKey key : setCache.readAll()) {
                 disableCache(key.getRequestId(), key.getTimeout());
             }
