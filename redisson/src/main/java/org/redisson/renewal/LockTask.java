@@ -43,7 +43,7 @@ public class LockTask extends RenewalTask {
     }
 
     private ChunkExecution<List<String>> buildChunk(Iterator<String> iter, int chunkSize) {
-        Map<String, Long> name2threadId = new HashMap<>(chunkSize);
+        Map<String, Map<Long, String>> name2owners = new HashMap<>(chunkSize);
         List<Object> args = new ArrayList<>(chunkSize + 1);
         args.add(internalLockLeaseTime);
 
@@ -69,7 +69,7 @@ public class LockTask extends RenewalTask {
 
             keys.add(key);
             args.add(lockName);
-            name2threadId.put(key, threadId);
+            name2owners.put(key, Collections.singletonMap(threadId, entry.getThreadName(threadId)));
         }
 
         // No valid entries found - signal completion
@@ -79,7 +79,7 @@ public class LockTask extends RenewalTask {
 
         String firstName = keys.get(0);
 
-        CompletionStage<List<String>> f = executor.syncedEval(firstName, LongCodec.INSTANCE,
+        CompletionStage<List<String>> f = trackFailure(executor.syncedEval(firstName, LongCodec.INSTANCE,
                 new RedisCommand<>("EVAL", new ContainsDecoder<>(keys)),
                   "local result = {} " +
                         "for i = 1, #KEYS, 1 do " +
@@ -92,21 +92,21 @@ public class LockTask extends RenewalTask {
                         "end; " +
                         "return result;",
                 new ArrayList<>(keys),
-                args.toArray());
+                args.toArray()), name2owners);
 
         return new ChunkExecution<>(f, existingNames -> {
             keys.removeAll(existingNames);
             for (String key : keys) {
-                cancelExpirationRenewal(key, name2threadId.get(key));
+                cancelExpirationRenewal(key, name2owners.get(key).keySet().iterator().next());
             }
         });
     }
 
-    public void add(String rawName, String lockName, long threadId) {
+    public void add(String rawName, String lockName, long threadId, String threadName) {
         LockEntry entry = new LockEntry();
-        entry.addThreadId(threadId, lockName);
+        entry.addThreadId(threadId, lockName, threadName);
 
-        add(rawName, lockName, threadId, entry);
+        add(rawName, lockName, threadId, threadName, entry);
     }
 
 }

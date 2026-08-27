@@ -82,6 +82,7 @@ public class RedissonFencedLock extends RedissonLock implements RFencedLock {
     }
 
     private <T> RFuture<List<Long>> tryAcquireAsync(long waitTime, long leaseTime, TimeUnit unit, long threadId) {
+        String threadName = resolveThreadName(threadId);
         RFuture<List<Long>> ttlRemainingFuture;
         if (leaseTime > 0) {
             ttlRemainingFuture = tryLockInnerAsync(leaseTime, unit, threadId);
@@ -95,7 +96,7 @@ public class RedissonFencedLock extends RedissonLock implements RFencedLock {
                 if (leaseTime > 0) {
                     internalLockLeaseTime = unit.toMillis(leaseTime);
                 } else {
-                    scheduleExpirationRenewal(threadId);
+                    scheduleExpirationRenewal(threadId, threadName);
                 }
             }
             return res;

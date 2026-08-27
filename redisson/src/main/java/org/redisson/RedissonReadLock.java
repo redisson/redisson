@@ -144,10 +144,10 @@ public class RedissonReadLock extends RedissonLock implements RLock {
     }
 
     @Override
-    protected void scheduleExpirationRenewal(long threadId) {
+    protected void scheduleExpirationRenewal(long threadId, String threadName) {
         String timeoutPrefix = getReadWriteTimeoutNamePrefix(threadId);
         String keyPrefix = getKeyPrefix(threadId, timeoutPrefix);
-        renewalScheduler.renewReadLock(getRawName(), threadId, getLockName(threadId), keyPrefix);
+        renewalScheduler.renewReadLock(getRawName(), threadId, getLockName(threadId), threadName, keyPrefix);
     }
 
     @Override

@@ -105,6 +105,8 @@ public final class RedissonSpinLock extends RedissonBaseLock {
             CompletionStage<Long> s = handleNoSync(threadId, acquiredFuture);
             return new CompletableFutureWrapper<>(s);
         }
+
+        String threadName = resolveThreadName(threadId);
         RFuture<Long> ttlRemainingFuture = tryLockInnerAsync(internalLockLeaseTime,
                 TimeUnit.MILLISECONDS, threadId, RedisCommands.EVAL_LONG);
 
@@ -114,7 +116,7 @@ public final class RedissonSpinLock extends RedissonBaseLock {
         ttlRemainingFuture.thenAccept(ttlRemaining -> {
             // lock acquired
             if (ttlRemaining == null) {
-                scheduleExpirationRenewal(threadId);
+                scheduleExpirationRenewal(threadId, threadName);
             }
         });
         return ttlRemainingFuture;
