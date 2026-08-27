@@ -20,6 +20,7 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.AsyncChunkProcessor;
 import org.redisson.misc.AsyncChunkProcessor.ChunkExecution;
+import org.redisson.misc.Tuple;
 
 import java.util.*;
 import java.util.concurrent.CompletionStage;
@@ -41,7 +42,7 @@ public class FastMultilockTask extends LockTask {
     }
 
     private ChunkExecution<Boolean> buildChunk(Iterator<String> iter, int chunkSize) {
-        Map<String, Map<Long, String>> name2owners = new HashMap<>();
+        Map<String, List<Tuple<Long, String>>> name2owners = new HashMap<>();
         List<Object> args = new ArrayList<>();
         args.add(internalLockLeaseTime);
         args.add(System.currentTimeMillis());
@@ -65,7 +66,7 @@ public class FastMultilockTask extends LockTask {
             keys.add(key);
             args.add(entry.getLockName(threadId));
             args.addAll(entry.getFields());
-            name2owners.put(key, Collections.singletonMap(threadId, entry.getThreadName(threadId)));
+            name2owners.put(key, Collections.singletonList(new Tuple<>(threadId, entry.getThreadName(threadId))));
         }
 
         // No valid entries found - signal completion
@@ -106,7 +107,7 @@ public class FastMultilockTask extends LockTask {
 
         return new ChunkExecution<>(f, exists -> {
             if (!exists) {
-                cancelExpirationRenewal(firstName, name2owners.get(firstName).keySet().iterator().next());
+                cancelExpirationRenewal(firstName, name2owners.get(firstName).get(0).getT1());
             }
         });
     }

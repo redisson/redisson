@@ -21,6 +21,7 @@ import org.redisson.client.protocol.decoder.ContainsDecoder;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.AsyncChunkProcessor;
 import org.redisson.misc.AsyncChunkProcessor.ChunkExecution;
+import org.redisson.misc.Tuple;
 
 import java.util.*;
 import java.util.concurrent.CompletionStage;
@@ -42,7 +43,7 @@ public class ReadLockTask extends LockTask {
     }
 
     private ChunkExecution<List<String>> buildChunk(Iterator<String> iter, int chunkSize) {
-        Map<String, Map<Long, String>> name2owners = new HashMap<>();
+        Map<String, List<Tuple<Long, String>>> name2owners = new HashMap<>();
         List<Object> args = new ArrayList<>();
         args.add(internalLockLeaseTime);
 
@@ -72,14 +73,13 @@ public class ReadLockTask extends LockTask {
             keysArgs.add(key);
             keysArgs.add(keyPrefix);
 
-            Map<Long, String> snapshot = new LinkedHashMap<>(entry.threadId2lockName);
-            List<String> lockNames = new ArrayList<>(snapshot.values());
-            args.add(lockNames.size());
-            args.addAll(lockNames);
+            Map<Long, Tuple<String, String>> snapshot = new LinkedHashMap<>(entry.threadId2owner);
+            args.add(snapshot.size());
 
-            Map<Long, String> owners = new LinkedHashMap<>();
-            for (Long ownerThreadId : snapshot.keySet()) {
-                owners.put(ownerThreadId, entry.getThreadName(ownerThreadId));
+            List<Tuple<Long, String>> owners = new ArrayList<>(snapshot.size());
+            for (Map.Entry<Long, Tuple<String, String>> owner : snapshot.entrySet()) {
+                args.add(owner.getValue().getT1());
+                owners.add(new Tuple<>(owner.getKey(), owner.getValue().getT2()));
             }
             name2owners.put(key, owners);
         }
@@ -123,10 +123,10 @@ public class ReadLockTask extends LockTask {
         return new ChunkExecution<>(f, existingNames -> {
             keys.removeAll(existingNames);
             for (String key : keys) {
-                Map<Long, String> owners = name2owners.get(key);
+                List<Tuple<Long, String>> owners = name2owners.get(key);
                 if (owners != null) {
-                    for (Long threadId : owners.keySet()) {
-                        cancelExpirationRenewal(key, threadId);
+                    for (Tuple<Long, String> owner : owners) {
+                        cancelExpirationRenewal(key, owner.getT1());
                     }
                 }
             }

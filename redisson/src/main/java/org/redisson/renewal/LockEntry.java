@@ -15,6 +15,8 @@
  */
 package org.redisson.renewal;
 
+import org.redisson.misc.Tuple;
+
 import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
@@ -30,19 +32,26 @@ public class LockEntry {
 
     final Queue<Long> threadsQueue = new ConcurrentLinkedQueue<>();
     final Map<Long, Integer> threadId2counter = new ConcurrentHashMap<>();
-    final Map<Long, String> threadId2lockName = new ConcurrentHashMap<>();
-    final Map<Long, String> threadId2threadName = new ConcurrentHashMap<>();
+    final Map<Long, Tuple<String, String>> threadId2owner = new ConcurrentHashMap<>();
 
     LockEntry() {
         super();
     }
 
     public String getLockName(long threadId) {
-        return threadId2lockName.get(threadId);
+        Tuple<String, String> owner = threadId2owner.get(threadId);
+        if (owner == null) {
+            return null;
+        }
+        return owner.getT1();
     }
 
     public String getThreadName(long threadId) {
-        return threadId2threadName.getOrDefault(threadId, String.valueOf(threadId));
+        Tuple<String, String> owner = threadId2owner.get(threadId);
+        if (owner == null) {
+            return String.valueOf(threadId);
+        }
+        return owner.getT2();
     }
 
     public void addThreadId(long threadId, String lockName, String threadName) {
@@ -52,8 +61,7 @@ public class LockEntry {
             threadsQueue.add(threadId);
             return counter;
         });
-        threadId2lockName.putIfAbsent(threadId, lockName);
-        threadId2threadName.putIfAbsent(threadId, threadName);
+        threadId2owner.putIfAbsent(threadId, new Tuple<>(lockName, threadName));
     }
 
     public boolean hasNoThreads() {
@@ -69,8 +77,7 @@ public class LockEntry {
             counter--;
             if (counter == 0) {
                 threadsQueue.removeIf(v-> v == threadId);
-                threadId2lockName.remove(threadId);
-                threadId2threadName.remove(threadId);
+                threadId2owner.remove(threadId);
                 return null;
             }
             return counter;

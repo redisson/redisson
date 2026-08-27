@@ -20,6 +20,7 @@ import io.netty.util.TimerTask;
 import org.redisson.api.listener.LockRenewalFailureListener;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.AsyncIteratorUtils;
+import org.redisson.misc.Tuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -200,9 +201,9 @@ abstract class RenewalTask implements TimerTask {
     }
 
     final <T> CompletionStage<T> trackFailure(CompletionStage<T> future,
-                                               Map<String, Map<Long, String>> failedLocks) {
+                                               Map<String, List<Tuple<Long, String>>> failedLocks) {
         CompletableFuture<T> result = new CompletableFuture<>();
-        Map<String, Map<Long, String>> failedLocksSnapshot = new HashMap<>(failedLocks);
+        Map<String, List<Tuple<Long, String>>> failedLocksSnapshot = new HashMap<>(failedLocks);
         future.whenComplete((value, cause) -> {
             if (cause != null) {
                 result.completeExceptionally(new RenewalFailureException(failedLocksSnapshot, unwrap(cause)));
@@ -228,7 +229,7 @@ abstract class RenewalTask implements TimerTask {
         return cause;
     }
 
-    private void notifyListeners(Map<String, Map<Long, String>> failedLocks, Throwable cause) {
+    private void notifyListeners(Map<String, List<Tuple<Long, String>>> failedLocks, Throwable cause) {
         List<Runnable> notifications = collectNotifications(failedLocks, cause);
         if (notifications.isEmpty()) {
             return;
@@ -241,17 +242,18 @@ abstract class RenewalTask implements TimerTask {
         }
     }
 
-    private List<Runnable> collectNotifications(Map<String, Map<Long, String>> failedLocks, Throwable cause) {
+    private List<Runnable> collectNotifications(Map<String, List<Tuple<Long, String>>> failedLocks, Throwable cause) {
         LockRenewalScheduler scheduler = executor.getServiceManager().getRenewalScheduler();
         List<Runnable> notifications = new ArrayList<>();
 
-        for (Map.Entry<String, Map<Long, String>> failedLock : failedLocks.entrySet()) {
+        for (Map.Entry<String, List<Tuple<Long, String>>> failedLock : failedLocks.entrySet()) {
             Collection<LockRenewalFailureListener> listeners = scheduler.getFailureListeners(failedLock.getKey());
             if (listeners.isEmpty()) {
                 continue;
             }
 
-            for (String threadName : failedLock.getValue().values()) {
+            for (Tuple<Long, String> owner : failedLock.getValue()) {
+                String threadName = owner.getT2();
                 for (LockRenewalFailureListener listener : listeners) {
                     notifications.add(() -> listener.onFailure(threadName, cause));
                 }
@@ -273,14 +275,14 @@ abstract class RenewalTask implements TimerTask {
 
     private static final class RenewalFailureException extends Exception {
 
-        private final Map<String, Map<Long, String>> failedLocks;
+        private final Map<String, List<Tuple<Long, String>>> failedLocks;
 
-        private RenewalFailureException(Map<String, Map<Long, String>> failedLocks, Throwable cause) {
+        private RenewalFailureException(Map<String, List<Tuple<Long, String>>> failedLocks, Throwable cause) {
             super(cause);
             this.failedLocks = failedLocks;
         }
 
-        private Map<String, Map<Long, String>> getFailedLocks() {
+        private Map<String, List<Tuple<Long, String>>> getFailedLocks() {
             return failedLocks;
         }
     }

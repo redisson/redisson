@@ -15,6 +15,8 @@
  */
 package org.redisson.renewal;
 
+import org.redisson.misc.Tuple;
+
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -39,8 +41,7 @@ public class ReadLockEntry extends LockEntry {
             threadsQueue.add(threadId);
             return counter;
         });
-        threadId2lockName.putIfAbsent(threadId, lockName);
-        threadId2threadName.putIfAbsent(threadId, threadName);
+        threadId2owner.putIfAbsent(threadId, new Tuple<>(lockName, threadName));
         threadId2keyPrefix.putIfAbsent(threadId, keyPrefix);
     }
 
@@ -50,8 +51,7 @@ public class ReadLockEntry extends LockEntry {
             counter--;
             if (counter == 0) {
                 threadsQueue.remove(threadId);
-                threadId2lockName.remove(threadId);
-                threadId2threadName.remove(threadId);
+                threadId2owner.remove(threadId);
                 threadId2keyPrefix.remove(threadId);
                 return null;
             }
