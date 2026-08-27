@@ -129,7 +129,7 @@ public class RedissonBinaryStream extends RedissonBucket<byte[]> implements RBin
             if (data.length == 0) {
                 return -1;
             }
-            index += len;
+            index += data.length;
             System.arraycopy(data, 0, b, off, data.length);
             return data.length;
         }
