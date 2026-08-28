@@ -463,6 +463,18 @@ Default value: `true`
 
 Enables TCP noDelay for connections.
 
+**StorageMemoryUsageListener**
+
+Default value: `null`
+
+Storage memory usage listener which is triggered when storage memory usage percentage (Redis INFO MEMORY field: used_memory_dataset_perc) changed in any redis node.
+
+**storageStatisticsInterval**
+
+Default value: 0
+
+Defines the time in milliseconds between storage statistics.
+
 ## Common connection settings
 
 The settings below are shared by every connection mode. Each mode section lists only its mode-specific settings and refers here for the rest.
