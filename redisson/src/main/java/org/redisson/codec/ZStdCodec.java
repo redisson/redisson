@@ -65,6 +65,7 @@ public class ZStdCodec extends BaseCodec {
         @Override
         public Object decode(ByteBuf buf, State state) throws IOException {
             int size = buf.readInt();
+            checkDecompressionSize(size);
             ByteBuf out = ByteBufAllocator.DEFAULT.buffer(size);
 
             try {
