@@ -243,6 +243,18 @@ public class RedissonBinaryStreamTest extends RedisDockerTest {
         
         assertThat(b).isEqualTo(value);
     }
+
+    @Test
+    public void testAvailableAfterPartialRead() throws IOException {
+        RBinaryStream stream = redisson.getBinaryStream("test");
+        byte[] value = {1, 2, 3, 4, 5, 6};
+        stream.set(value);
+
+        InputStream s = stream.getInputStream();
+        byte[] b = new byte[10];
+        assertThat(s.read(b)).isEqualTo(value.length);
+        assertThat(s.available()).isZero();
+    }
     
     @Test
     public void testReadArrayWithOffset() throws IOException {
