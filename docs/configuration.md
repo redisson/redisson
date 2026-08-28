@@ -467,7 +467,7 @@ Enables TCP noDelay for connections.
 
 Default value: `null`
 
-Storage memory usage listener which is triggered when storage memory usage percentage (Redis INFO MEMORY field: used_memory_dataset_perc) changed in any redis node.
+Storage memory usage listener which is triggered when storage memory usage percentage (Valkey or Redis INFO MEMORY field: used_memory_dataset_perc) changed in any redis node.
 
 **storageStatisticsInterval**
 

@@ -1362,7 +1362,7 @@ public class Config {
 
     /**
      * Sets storageMemoryUsageListener listener which is triggered
-     * when storage memory usage percentage (Redis INFO MEMORY field: used_memory_dataset_perc)
+     * when storage memory usage percentage (Valkey or Redis INFO MEMORY field: used_memory_dataset_perc)
      * changed in every redis node.
      *
      * @param storageMemoryUsageListener - storage memory usage listener
