@@ -24,6 +24,7 @@ import org.redisson.codec.Kryo5Codec;
 import org.redisson.connection.AddressResolverGroupFactory;
 import org.redisson.connection.ConnectionListener;
 import org.redisson.connection.SequentialDnsAddressResolverFactory;
+import org.redisson.connection.StorageMemoryUsageListener;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.TrustManagerFactory;
@@ -152,6 +153,10 @@ public class Config {
     
     private boolean tcpNoDelay = true;
 
+    private StorageMemoryUsageListener storageMemoryUsageListener;
+
+    private long storageStatisticsInterval;
+
     public Config() {
     }
 
@@ -204,6 +209,8 @@ public class Config {
         setSslKeyManagerFactory(oldConf.getSslKeyManagerFactory());
         setSslTrustManagerFactory(oldConf.getSslTrustManagerFactory());
         setSslVerificationMode(oldConf.getSslVerificationMode());
+        setStorageMemoryUsageListener(oldConf.storageMemoryUsageListener);
+        setStorageStatisticsInterval(oldConf.storageStatisticsInterval);
 
         if (oldConf.getSingleServerConfig() != null) {
             setSingleServerConfig(new SingleServerConfig(oldConf.getSingleServerConfig()));
@@ -1346,6 +1353,38 @@ public class Config {
      */
     public Config setTcpNoDelay(boolean tcpNoDelay) {
         this.tcpNoDelay = tcpNoDelay;
+        return this;
+    }
+
+    public StorageMemoryUsageListener getStorageMemoryUsageListener() {
+        return storageMemoryUsageListener;
+    }
+
+    /**
+     * Sets storageMemoryUsageListener listener which is triggered
+     * when storage memory usage percentage (Redis INFO MEMORY field: used_memory_dataset_perc)
+     * changed in every redis node.
+     *
+     * @param storageMemoryUsageListener - storage memory usage listener
+     * @return config
+     */
+    public Config setStorageMemoryUsageListener(StorageMemoryUsageListener storageMemoryUsageListener) {
+        this.storageMemoryUsageListener = storageMemoryUsageListener;
+        return this;
+    }
+
+    public long getStorageStatisticsInterval() {
+        return storageStatisticsInterval;
+    }
+
+    /**
+     * Defines the time in milliseconds between storage statistics.
+     *
+     * @param storageStatisticsInterval time interval in milliseconds
+     * @return config
+     */
+    public Config setStorageStatisticsInterval(long storageStatisticsInterval) {
+        this.storageStatisticsInterval = storageStatisticsInterval;
         return this;
     }
 }

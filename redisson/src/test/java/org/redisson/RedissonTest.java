@@ -36,6 +36,8 @@ import org.redisson.connection.*;
 import org.redisson.connection.balancer.RoundRobinLoadBalancer;
 import org.redisson.connection.pool.SlaveConnectionPool;
 import org.redisson.misc.RedisURI;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.ContainerState;
 import org.testcontainers.containers.DockerComposeContainer;
 import org.testcontainers.containers.FixedHostPortGenericContainer;
@@ -55,6 +57,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 public class RedissonTest extends RedisDockerTest {
+
+    private static final Logger log = LoggerFactory.getLogger(RedissonTest.class);
 
     @Test
     public void testValkeyCapabilities() {
@@ -1446,4 +1450,47 @@ public class RedissonTest extends RedisDockerTest {
         });
     }
 
+    @Test
+    public void testStorageMemoryMonitor() {
+        final AtomicInteger counter = new AtomicInteger();
+
+        Config config = createConfig();
+        config.setStorageStatisticsInterval(5000L)
+                .setStorageMemoryUsageListener((uri, currentPercentage) -> {
+                    counter.incrementAndGet();
+                    log.info("memory usage changed, node:{}, current percent:{}", uri, currentPercentage);
+                });
+
+        RedissonClient redissonClient = Redisson.create(config);
+        for (int i = 0; i < 10; i++) {
+            redissonClient.getBucket("test" + i).set(i);
+        }
+
+        Awaitility.waitAtMost(Duration.ofSeconds(5)).until(() -> counter.get() == 1);
+
+        redissonClient.shutdown();
+    }
+
+    @Test
+    public void testStorageMemoryMonitorInCluster() {
+        withNewCluster((nodes, redissonClient) -> {
+            final AtomicInteger counter = new AtomicInteger();
+            Config config = redissonClient.getConfig();
+            config.setStorageStatisticsInterval(5000L);
+            config.setStorageMemoryUsageListener((uri, currentPercentage) -> {
+                counter.incrementAndGet();
+                log.info("memory usage changed, node:{}, current percent:{}", uri, currentPercentage);
+            });
+
+            RedissonClient redisson = Redisson.create(config);
+            for (int i = 0; i < 10; i++) {
+                redisson.getBucket("test" + i).set(i);
+            }
+
+            Awaitility.waitAtMost(Duration.ofSeconds(5)).until(() -> counter.get() == 6);
+
+            redisson.shutdown();
+
+        });
+    }
 }
