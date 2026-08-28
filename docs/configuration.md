@@ -463,7 +463,7 @@ Default value: `true`
 
 Enables TCP noDelay for connections.
 
-**StorageMemoryUsageListener**
+**storageMemoryUsageListener**
 
 Default value: `null`
 
