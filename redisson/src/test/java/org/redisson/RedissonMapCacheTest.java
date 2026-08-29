@@ -1544,7 +1544,17 @@ public class RedissonMapCacheTest extends BaseMapTest {
         mapCache1.destroy();
     }
 
-    
+    @Test
+    public void testAddAndGetMixedNumberTypes() {
+        RMapCache<String, Object> mapCache = redisson.getMapCache("test_addandget_mixed", StringCodec.INSTANCE);
+        mapCache.put("key1", 10.1, 10000L, TimeUnit.SECONDS);
+        assertThat(mapCache.addAndGet("key1", 1)).isEqualTo(11.1);
+        mapCache.put("key2", 20.1, 10000L, TimeUnit.SECONDS);
+        assertThat(mapCache.addAndGet("key2", -10L)).isEqualTo(10.1);
+        mapCache.destroy();
+    }
+
+
     @Test
     public void testFastPutIfAbsentWithTTL() throws Exception {
         RMapCache<SimpleKey, SimpleValue> map = redisson.getMapCache("simpleTTL");
