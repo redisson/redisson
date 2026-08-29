@@ -378,8 +378,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             return result;
         }
 
-        CompletionStage<RedisConnection> connectionFuture = connectToNode(cfg, partition.getMasterAddress(), configEndpointHostName);
-        return connectionFuture.thenCompose(connection -> {
+        return ensureMasterNodeConnection(cfg, partition.getMasterAddress()).thenCompose(ignored -> {
             MasterSlaveServersConfig config = create(cfg);
             config.setMasterAddress(partition.getMasterAddress().toURIString());
 
@@ -396,7 +395,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 entry = new MasterSlaveEntry(ClusterConnectionManager.this, config);
             }
 
-            CompletableFuture<RedisClient> f = entry.setupMasterEntry(new RedisURI(config.getMasterAddress()), configEndpointHostName);
+            CompletableFuture<RedisClient> f = setupAndValidateMasterEntry(
+                    entry, new RedisURI(config.getMasterAddress()));
             CompletableFuture<MasterSlaveEntry> entryFuture = f.thenCompose(masterClient -> {
                 if (!config.isSlaveNotUsed()) {
                     return entry.initSlaveBalancer(r -> configEndpointHostName).handle((r, ex) -> {
@@ -428,6 +428,44 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             });
             return entryFuture;
         }).toCompletableFuture();
+    }
+
+    CompletionStage<Void> ensureMasterNodeConnection(ClusterServersConfig cfg, RedisURI address) {
+        if (configEndpointHostName != null) {
+            // The configuration endpoint connection is used for every topology scan, while
+            // setupMasterEntry initializes and validates the discovered master's command pool.
+            return CompletableFuture.completedFuture(null);
+        }
+        return connectToNode(cfg, address, null).thenApply(r -> null);
+    }
+
+    CompletableFuture<RedisClient> setupAndValidateMasterEntry(MasterSlaveEntry entry, RedisURI address) {
+        CompletableFuture<RedisClient> setupFuture =
+                entry.setupMasterEntry(address, configEndpointHostName);
+        MasterSlaveServersConfig config = entry.getConfig();
+        boolean subscriptionConnectionInitialized = config.getSubscriptionMode() == SubscriptionMode.MASTER
+                && config.getSubscriptionConnectionMinimumIdleSize() > 0;
+        if (configEndpointHostName == null
+                || config.getMasterConnectionMinimumIdleSize() > 0
+                || subscriptionConnectionInitialized) {
+            return setupFuture;
+        }
+
+        if (config.getMasterConnectionPoolSize() == 0) {
+            return setupFuture.thenCompose(client ->
+                    client.connectAsync().thenApply(connection -> {
+                        connection.closeAsync();
+                        return client;
+                    }).toCompletableFuture());
+        }
+
+        // initConnections(0) doesn't open a socket. Acquire one command connection to preserve
+        // startup validation without retaining another topology connection.
+        return setupFuture.thenCompose(client ->
+                entry.connectionWriteOp(RedisCommands.PING).thenApply(connection -> {
+                    entry.releaseWrite(connection);
+                    return client;
+                }));
     }
 
     private void registerMasterEntry(MasterSlaveEntry entry, ClusterPartition partition) {
@@ -1104,4 +1142,3 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     }
     
 }
-
