@@ -590,6 +590,9 @@ public final class RedissonRateLimiter extends RedissonExpirable implements RRat
                      + "if released > 0 then "
                           + "redis.call('zremrangebyscore', permitsName, 0, tonumber(ARGV[1]) - interval); "
                           + "currentValue = tonumber(currentValue) + released; "
+                          + "if currentValue > tonumber(rate) then "
+                               + "currentValue = tonumber(rate); "
+                          + "end; "
                           + "redis.call('set', valueName, currentValue);"
                      + "end;"
 

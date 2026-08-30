@@ -600,4 +600,35 @@ public class RedissonRateLimiterTest extends RedisDockerTest {
         // release -1
         assertThatThrownBy(() -> rateLimiter.release(-1)).isInstanceOf(IllegalArgumentException.class);
     }
+
+    @Test
+    public void testAvailablePermitsAfterReleaseAndExpiration() throws InterruptedException {
+        RRateLimiter rateLimiter = redisson.getRateLimiter("test_available_permits_after_release");
+        rateLimiter.setRate(RateType.OVERALL, 10, Duration.ofSeconds(1));
+
+        // acquire, then hand the permit back before it expires. release() bumps the counter
+        // but leaves the acquisition in the permits sorted set.
+        rateLimiter.acquire(1);
+        rateLimiter.release(1);
+        assertThat(rateLimiter.availablePermits()).isEqualTo(10);
+
+        // once the interval elapses, the still-present sorted set entry is counted as expired
+        // and added on top of the value release() already restored.
+        Thread.sleep(1100);
+
+        assertThat(rateLimiter.availablePermits()).isEqualTo(10);
+    }
+
+    @Test
+    public void testAvailablePermitsNeverExceedsRatePerClient() throws InterruptedException {
+        RRateLimiter rateLimiter = redisson.getRateLimiter("test_available_permits_per_client");
+        rateLimiter.setRate(RateType.PER_CLIENT, 10, Duration.ofSeconds(1));
+
+        rateLimiter.acquire(3);
+        rateLimiter.release(3);
+
+        Thread.sleep(1100);
+
+        assertThat(rateLimiter.availablePermits()).isEqualTo(10);
+    }
 }
