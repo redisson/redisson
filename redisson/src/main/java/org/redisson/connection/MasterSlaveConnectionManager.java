@@ -75,6 +75,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     protected final AtomicInteger rrCounter = new AtomicInteger(0);
 
+    protected StorageMemoryUsageMonitor storageMemoryUsageMonitor;
+
     MasterSlaveConnectionManager(BaseMasterSlaveServersConfig<?> cfg, Config configCopy) {
         if (cfg instanceof MasterSlaveServersConfig) {
             this.config = (MasterSlaveServersConfig) cfg;
@@ -239,6 +241,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 doConnect(u -> null);
 
                 detectCluster();
+
+                startDStorageMemoryUsageMonitoring();
                 return;
             } catch (IllegalArgumentException e) {
                 shutdown();
@@ -260,6 +264,13 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                     throw new RedisConnectionException(ex);
                 }
             }
+        }
+    }
+
+    private void startDStorageMemoryUsageMonitoring() {
+        if (serviceManager.getCfg().getStorageStatisticsInterval() > 0L) {
+            storageMemoryUsageMonitor = new StorageMemoryUsageMonitor(this, serviceManager.getCfg().getStorageStatisticsInterval());
+            storageMemoryUsageMonitor.start();
         }
     }
 
@@ -673,6 +684,11 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         if (dnsMonitor != null) {
             dnsMonitor.stop();
         }
+
+        if (storageMemoryUsageMonitor != null) {
+            storageMemoryUsageMonitor.stop();
+        }
+
         long timeoutInNanos = unit.toNanos(timeout);
 
         serviceManager.close();
@@ -735,6 +751,11 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         if (dnsMonitor != null) {
             dnsMonitor.stop();
         }
+
+        if (storageMemoryUsageMonitor != null) {
+            storageMemoryUsageMonitor.stop();
+        }
+
         long timeoutInNanos = unit.toNanos(timeout);
 
         serviceManager.close();
