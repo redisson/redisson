@@ -1110,6 +1110,21 @@ public interface RedisCommands {
     RedisCommand<CuckooFilterInfo> CF_INFO = new RedisCommand<>("CF.INFO",
                         new ListMultiDecoder2(new CuckooFilterInfoDecoder(), new ObjectListReplayDecoder<>()));
 
+    RedisCommand<Void> CMS_INITBYDIM = new RedisCommand<>("CMS.INITBYDIM", new VoidReplayConvertor());
+
+    RedisCommand<Void> CMS_INITBYPROB = new RedisCommand<>("CMS.INITBYPROB", new VoidReplayConvertor());
+
+    RedisCommand<Long> CMS_INCRBY = new RedisCommand("CMS.INCRBY",
+                        new ListFirstObjectDecoder(), new LongReplayConvertor());
+
+    RedisCommand<Long> CMS_QUERY = new RedisCommand("CMS.QUERY",
+                        new ListFirstObjectDecoder(), new LongReplayConvertor());
+
+    RedisCommand<Void> CMS_MERGE = new RedisCommand<>("CMS.MERGE", new VoidReplayConvertor());
+
+    RedisCommand<CountMinInfo> CMS_INFO = new RedisCommand<>("CMS.INFO",
+                        new ListMultiDecoder2(new CountMinInfoDecoder(), new ObjectListReplayDecoder<>()));
+
     RedisCommand<Void> TDIGEST_CREATE = new RedisCommand<>("TDIGEST.CREATE", new VoidReplayConvertor());
 
     RedisCommand<Void> TDIGEST_RESET = new RedisCommand<>("TDIGEST.RESET", new VoidReplayConvertor());

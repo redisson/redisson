@@ -1312,6 +1312,23 @@ public final class Redisson implements RedissonClient {
     }
 
     @Override
+    public <V> RCountMin<V> getCountMin(String name) {
+        return getCountMin(name, null);
+    }
+
+    @Override
+    public <V> RCountMin<V> getCountMin(String name, Codec codec) {
+        return new RedissonCountMin<V>(codec, commandExecutor, name);
+    }
+
+    @Override
+    public <V> RCountMin<V> getCountMin(PlainOptions options) {
+        PlainParams params = (PlainParams) options;
+        return new RedissonCountMin<V>(params.getCodec(),
+                commandExecutor.copy(params), params.getName());
+    }
+
+    @Override
     public RTDigest getTDigest(String name) {
         return new RedissonTDigest(commandExecutor, name);
     }

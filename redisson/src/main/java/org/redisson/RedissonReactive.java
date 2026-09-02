@@ -1163,6 +1163,27 @@ public final class RedissonReactive implements RedissonReactiveClient {
     }
 
     @Override
+    public <V> RCountMinReactive<V> getCountMin(String name) {
+        return getCountMin(name, null);
+    }
+
+    @Override
+    public <V> RCountMinReactive<V> getCountMin(String name, Codec codec) {
+        return ReactiveProxyBuilder.create(commandExecutor,
+                new RedissonCountMin<V>(codec, commandExecutor, name),
+                RCountMinReactive.class);
+    }
+
+    @Override
+    public <V> RCountMinReactive<V> getCountMin(PlainOptions options) {
+        PlainParams params = (PlainParams) options;
+        CommandReactiveExecutor ca = commandExecutor.copy(params);
+        return ReactiveProxyBuilder.create(commandExecutor,
+                new RedissonCountMin<V>(params.getCodec(), ca, params.getName()),
+                RCountMinReactive.class);
+    }
+
+    @Override
     public RTDigestReactive getTDigest(String name) {
         return ReactiveProxyBuilder.create(commandExecutor,
                 new RedissonTDigest(commandExecutor, name),

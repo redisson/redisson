@@ -1093,6 +1093,27 @@ public final class RedissonRx implements RedissonRxClient {
     }
 
     @Override
+    public <V> RCountMinRx<V> getCountMin(String name) {
+        return getCountMin(name, null);
+    }
+
+    @Override
+    public <V> RCountMinRx<V> getCountMin(String name, Codec codec) {
+        return RxProxyBuilder.create(commandExecutor,
+                new RedissonCountMin<V>(codec, commandExecutor, name),
+                RCountMinRx.class);
+    }
+
+    @Override
+    public <V> RCountMinRx<V> getCountMin(PlainOptions options) {
+        PlainParams params = (PlainParams) options;
+        CommandRxExecutor ca = commandExecutor.copy(params);
+        return RxProxyBuilder.create(commandExecutor,
+                new RedissonCountMin<V>(params.getCodec(), ca, params.getName()),
+                RCountMinRx.class);
+    }
+
+    @Override
     public RTDigestRx getTDigest(String name) {
         return RxProxyBuilder.create(commandExecutor,
                 new RedissonTDigest(commandExecutor, name),

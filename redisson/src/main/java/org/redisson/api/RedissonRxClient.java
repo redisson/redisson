@@ -1832,6 +1832,35 @@ public interface RedissonRxClient {
     <V> RCuckooFilterRx<V> getCuckooFilter(PlainOptions options);
 
     /**
+     * Returns count-min sketch instance by <code>name</code>.
+     *
+     * @param <V> type of value
+     * @param name name of object
+     * @return CountMin object
+     */
+    <V> RCountMinRx<V> getCountMin(String name);
+
+    /**
+     * Returns count-min sketch instance by <code>name</code>
+     * using provided <code>codec</code> for values.
+     *
+     * @param <V> type of value
+     * @param name name of object
+     * @param codec codec for values
+     * @return CountMin object
+     */
+    <V> RCountMinRx<V> getCountMin(String name, Codec codec);
+
+    /**
+     * Returns count-min sketch instance with specified <code>options</code>.
+     *
+     * @param <V> type of value
+     * @param options instance options
+     * @return CountMin object
+     */
+    <V> RCountMinRx<V> getCountMin(PlainOptions options);
+
+    /**
      * Returns Top-K sketch instance by <code>name</code>.
      *
      * @param <V> type of value
