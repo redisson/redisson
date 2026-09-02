@@ -1,6 +1,6 @@
 Probabilistic structures trade exact answers for dramatic memory savings. Rather than storing the elements themselves, they keep a small, fixed-size summary and answer questions approximately - *is this element present?* (with a tunable false-positive rate), *how many distinct elements are there?* (within a small error margin), *which elements are most frequent?*, or *what value falls at a given percentile?* - using far less memory than an exact structure would.
 
-Redisson provides six: the [Bloom filter](#bloom-filter) and its [Bloom filter (Native)](#bloom-filter-native) variant and the [Cuckoo filter](#cuckoo-filter) for membership testing (the Cuckoo filter also supports deletion), [HyperLogLog](#hyperloglog) for estimating the number of distinct elements, [TopK](#topk) for tracking the most frequent elements, and [TDigest](#tdigest) for estimating quantiles and the distribution of a stream of values.
+Redisson provides seven: the [Bloom filter](#bloom-filter) and its [Bloom filter (Native)](#bloom-filter-native) variant and the [Cuckoo filter](#cuckoo-filter) for membership testing (the Cuckoo filter also supports deletion), [HyperLogLog](#hyperloglog) for estimating the number of distinct elements, [TopK](#topk) for tracking the most frequent elements, [Count-min sketch](#count-min-sketch) for the approximate frequency of any given element, and [TDigest](#tdigest) for estimating quantiles and the distribution of a stream of values.
 
 ## Bloom filter
 Java implementation of Valkey or Redis based [RBloomFilter](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RBloomFilter.html) object is a Bloom filter - a compact, probabilistic structure that tests whether an element has been added to a set. It never reports a false negative (an element that was added always tests as present), but allows a tunable rate of false positives (an element that was never added may occasionally test as present), in return for using far less memory than holding the elements themselves. The number of contained bits is limited to `2^32`, raised to `2^63` with [data partitioning](data-partitioning.md), and the object is thread-safe.
@@ -907,6 +907,302 @@ In high-volume traffic - API calls, log lines, network flows - a Top-K surfaces 
 
     Maybe<String> evicted = talkers.incrementBy(apiKey, requestCost);
     Single<Boolean> isHeavyHitter = talkers.contains(apiKey);
+    ```
+
+## Count-min sketch
+
+Java implementation of Redis based [RCountMin](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RCountMin.html) object is a count-min sketch - a probabilistic data structure that keeps the approximate frequency of each element in a stream using a fixed amount of memory, no matter how many distinct elements are counted. A returned count is never lower than the real one but may be an overestimate, and elements cannot be removed once counted. It is backed by the `CMS.*` commands of the Redis Bloom module. This object is thread-safe.
+
+Where [TopK](#topk) answers *which elements are the most frequent?*, a count-min sketch answers *how frequent is this particular element?* for any element asked about.
+
+Unlike the other structures on this page the sketch is never created implicitly - it must be initialized before any other operation, and counting into or querying an uninitialized sketch fails.
+
+### Initialization
+
+A sketch is sized either by explicit dimensions or by the error it is allowed to make, and `CountMinInitArgs` carries whichever was chosen. `dimensions(width, depth)` sets the number of counters per array and the number of arrays directly - a larger `width` reduces overestimation, a larger `depth` reduces the chance of exceeding the expected error. `probability(errorRate, probability)` instead states the tolerated error and lets Redis derive the dimensions: counts deviate by no more than `errorRate` multiplied by the total of all increments, with probability at least `1 - probability`.
+
+=== "Sync"
+    ```java
+    RCountMin<String> sketch = redisson.getCountMin("pageViews");
+
+    // size the sketch directly
+    sketch.init(CountMinInitArgs.dimensions(2000, 5));
+
+    // or state the acceptable error and let Redis size it
+    sketch.init(CountMinInitArgs.probability(0.001, 0.01));
+    ```
+=== "Async"
+    ```java
+    RCountMinAsync<String> sketch = redisson.getCountMin("pageViews");
+
+    RFuture<Void> future = sketch.initAsync(CountMinInitArgs.dimensions(2000, 5));
+
+    RFuture<Void> byError = sketch.initAsync(CountMinInitArgs.probability(0.001, 0.01));
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RCountMinReactive<String> sketch = redisson.getCountMin("pageViews");
+
+    Mono<Void> result = sketch.init(CountMinInitArgs.dimensions(2000, 5));
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RCountMinRx<String> sketch = redisson.getCountMin("pageViews");
+
+    Completable result = sketch.init(CountMinInitArgs.dimensions(2000, 5));
+    ```
+
+### Counting elements
+
+`add(element)` records one occurrence, `add(element, increment)` records several at once, and both return the element's new count. The map overload counts many elements in a single call and returns their new counts, keyed by element.
+
+=== "Sync"
+    ```java
+    RCountMin<String> sketch = redisson.getCountMin("pageViews");
+
+    // one occurrence; returns the new count
+    long views = sketch.add("/home");
+
+    // several occurrences at once
+    long batched = sketch.add("/home", 25);
+
+    // many elements in one call
+    Map<String, Long> counts = sketch.add(Map.of("/home", 25L, "/pricing", 4L));
+    ```
+=== "Async"
+    ```java
+    RCountMinAsync<String> sketch = redisson.getCountMin("pageViews");
+
+    RFuture<Long> addFuture = sketch.addAsync("/home");
+    RFuture<Long> incrFuture = sketch.addAsync("/home", 25);
+    RFuture<Map<String, Long>> bulkFuture = sketch.addAsync(Map.of("/home", 25L, "/pricing", 4L));
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RCountMinReactive<String> sketch = redisson.getCountMin("pageViews");
+
+    Mono<Long> addMono = sketch.add("/home");
+    Mono<Long> incrMono = sketch.add("/home", 25);
+    Mono<Map<String, Long>> bulkMono = sketch.add(Map.of("/home", 25L, "/pricing", 4L));
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RCountMinRx<String> sketch = redisson.getCountMin("pageViews");
+
+    Single<Long> addRx = sketch.add("/home");
+    Single<Long> incrRx = sketch.add("/home", 25);
+    Single<Map<String, Long>> bulkRx = sketch.add(Map.of("/home", 25L, "/pricing", 4L));
+    ```
+
+### Querying counts
+
+`count(element)` returns the approximate count of a single element, and the collection overload returns one count per requested element, keyed by element and iterating in request order. An element that was never counted returns `0`. A count is never an underestimate, so it is safe to use where over-counting is acceptable and under-counting is not.
+
+=== "Sync"
+    ```java
+    RCountMin<String> sketch = redisson.getCountMin("pageViews");
+
+    long home = sketch.count("/home");
+
+    Map<String, Long> counts = sketch.count(List.of("/home", "/pricing", "/docs"));
+    ```
+=== "Async"
+    ```java
+    RCountMinAsync<String> sketch = redisson.getCountMin("pageViews");
+
+    RFuture<Long> countFuture = sketch.countAsync("/home");
+    RFuture<Map<String, Long>> countsFuture = sketch.countAsync(List.of("/home", "/pricing"));
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RCountMinReactive<String> sketch = redisson.getCountMin("pageViews");
+
+    Mono<Long> countMono = sketch.count("/home");
+    Mono<Map<String, Long>> countsMono = sketch.count(List.of("/home", "/pricing"));
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RCountMinRx<String> sketch = redisson.getCountMin("pageViews");
+
+    Single<Long> countRx = sketch.count("/home");
+    Single<Map<String, Long>> countsRx = sketch.count(List.of("/home", "/pricing"));
+    ```
+
+### Merging sketches
+
+`mergeWith(CountMinMergeArgs)` combines several sketches into the one it is invoked on, which is how per-node or per-shard sketches are folded into a single global view. `weights` multiplies each source's counters before they are combined; without it every source counts once.
+
+The merge **replaces** the destination's counters rather than adding to them - whatever the destination held is discarded. To accumulate instead, name the destination among its own sources. All sketches taking part, the destination included, must have the same width and depth.
+
+=== "Sync"
+    ```java
+    RCountMin<String> global = redisson.getCountMin("pageViews:global");
+    global.init(CountMinInitArgs.dimensions(2000, 5));
+
+    // global now holds exactly the sum of the two nodes
+    global.mergeWith(CountMinMergeArgs.sources("pageViews:node1", "pageViews:node2"));
+
+    // weight the sources unequally
+    global.mergeWith(CountMinMergeArgs.sources("pageViews:node1", "pageViews:node2")
+                        .weights(2, 3));
+
+    // accumulate rather than replace, by including the destination
+    global.mergeWith(CountMinMergeArgs.sources("pageViews:global", "pageViews:node1"));
+    ```
+=== "Async"
+    ```java
+    RCountMinAsync<String> global = redisson.getCountMin("pageViews:global");
+
+    RFuture<Void> mergeFuture = global.mergeWithAsync(
+            CountMinMergeArgs.sources("pageViews:node1", "pageViews:node2"));
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RCountMinReactive<String> global = redisson.getCountMin("pageViews:global");
+
+    Mono<Void> mergeMono = global.mergeWith(
+            CountMinMergeArgs.sources("pageViews:node1", "pageViews:node2"));
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RCountMinRx<String> global = redisson.getCountMin("pageViews:global");
+
+    Completable mergeRx = global.mergeWith(
+            CountMinMergeArgs.sources("pageViews:node1", "pageViews:node2"));
+    ```
+
+### Sketch information
+
+`getInfo()` returns a `CountMinInfo` describing the sketch: its width and depth, and the total of every increment applied to it - which is the sum of all counts, not the number of distinct elements.
+
+=== "Sync"
+    ```java
+    RCountMin<String> sketch = redisson.getCountMin("pageViews");
+
+    CountMinInfo info = sketch.getInfo();
+    long width = info.getWidth();
+    long depth = info.getDepth();
+    long total = info.getCount();
+    ```
+=== "Async"
+    ```java
+    RCountMinAsync<String> sketch = redisson.getCountMin("pageViews");
+
+    RFuture<CountMinInfo> infoFuture = sketch.getInfoAsync();
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RCountMinReactive<String> sketch = redisson.getCountMin("pageViews");
+
+    Mono<CountMinInfo> infoMono = sketch.getInfo();
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RCountMinRx<String> sketch = redisson.getCountMin("pageViews");
+
+    Single<CountMinInfo> infoRx = sketch.getInfo();
+    ```
+
+### Use Cases
+
+A count-min sketch answers *how often has this element been seen?* for any element, in memory that stays fixed no matter how many distinct elements arrive. That suits per-entity accounting at cardinalities where one exact counter per entity would be too many keys to hold, provided an occasional overestimate is acceptable - it never reports fewer occurrences than really happened.
+
+**Per-client traffic accounting**
+
+Request volume per API key, IP address or tenant can be counted without creating a key per client. Each request is counted with `add`, and a client's current volume is read back with `count` to drive throttling or abuse detection. Because the sketch only ever overestimates, a client under the threshold by this measure is genuinely under it - the error direction works in favour of not throttling someone unfairly, at the cost of occasionally throttling early.
+
+=== "Sync"
+    ```java
+    RCountMin<String> requests = redisson.getCountMin("requests:hourly");
+    requests.init(CountMinInitArgs.probability(0.001, 0.01));
+
+    // count each request as it arrives
+    requests.add(apiKey);
+
+    // read a client's volume, and several at once for a report
+    long volume = requests.count(apiKey);
+    Map<String, Long> topClients = requests.count(watchList);
+
+    // the sketch cannot forget, so roll the window by expiring the key
+    requests.expire(Duration.ofHours(1));
+    ```
+=== "Async"
+    ```java
+    RCountMinAsync<String> requests = redisson.getCountMin("requests:hourly");
+
+    RFuture<Long> countFuture = requests.addAsync(apiKey);
+    RFuture<Long> volumeFuture = requests.countAsync(apiKey);
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RCountMinReactive<String> requests = redisson.getCountMin("requests:hourly");
+
+    Mono<Long> countMono = requests.add(apiKey);
+    Mono<Long> volumeMono = requests.count(apiKey);
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RCountMinRx<String> requests = redisson.getCountMin("requests:hourly");
+
+    Single<Long> countRx = requests.add(apiKey);
+    Single<Long> volumeRx = requests.count(apiKey);
+    ```
+
+**Folding per-shard counts into a global view**
+
+Each application instance can count into its own sketch, avoiding contention on a single key, and a periodic job combines them with `mergeWith` into one sketch that answers for the whole fleet. Since all the sketches share dimensions, the merge is exact with respect to the counters - it adds no error beyond what the individual sketches already carry.
+
+=== "Sync"
+    ```java
+    // each instance counts into its own sketch
+    RCountMin<String> local = redisson.getCountMin("events:node-" + nodeId);
+    local.init(CountMinInitArgs.dimensions(2000, 5));
+    local.add(eventType);
+
+    // a periodic job folds them into one global view
+    RCountMin<String> global = redisson.getCountMin("events:global");
+    global.init(CountMinInitArgs.dimensions(2000, 5));
+    global.mergeWith(CountMinMergeArgs.sources("events:node-1", "events:node-2"));
+
+    long total = global.count(eventType);
+    ```
+=== "Async"
+    ```java
+    RCountMinAsync<String> global = redisson.getCountMin("events:global");
+
+    RFuture<Void> mergeFuture = global.mergeWithAsync(
+            CountMinMergeArgs.sources("events:node-1", "events:node-2"));
+    RFuture<Long> totalFuture = global.countAsync(eventType);
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RCountMinReactive<String> global = redisson.getCountMin("events:global");
+
+    Mono<Void> mergeMono = global.mergeWith(
+            CountMinMergeArgs.sources("events:node-1", "events:node-2"));
+    Mono<Long> totalMono = global.count(eventType);
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RCountMinRx<String> global = redisson.getCountMin("events:global");
+
+    Completable mergeRx = global.mergeWith(
+            CountMinMergeArgs.sources("events:node-1", "events:node-2"));
+    Single<Long> totalRx = global.count(eventType);
     ```
 
 ## TDigest
