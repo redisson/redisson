@@ -18,13 +18,19 @@ package org.redisson;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.CountMinInfo;
+import org.redisson.api.RBatch;
+import org.redisson.api.RBatchReactive;
 import org.redisson.api.RCountMin;
+import org.redisson.api.RCountMinAsync;
 import org.redisson.api.RCountMinReactive;
 import org.redisson.api.RCountMinRx;
+import org.redisson.api.RFuture;
 import org.redisson.api.countmin.CountMinInitArgs;
 import org.redisson.api.countmin.CountMinMergeArgs;
 import org.redisson.client.RedisException;
 import org.redisson.client.codec.StringCodec;
+
+import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.util.LinkedHashMap;
@@ -420,6 +426,95 @@ public class RedissonCountMinTest extends RedisDockerTest {
 
         RCountMin<String> renamed = redisson.getCountMin("testRenameDst");
         assertThat(renamed.count("foo")).isEqualTo(6);
+    }
+
+    @Test
+    public void testInitArgsRejectsBadDimensions() {
+        Assertions.assertThrows(IllegalArgumentException.class, () -> {
+            CountMinInitArgs.dimensions(0, 5);
+        });
+        Assertions.assertThrows(IllegalArgumentException.class, () -> {
+            CountMinInitArgs.dimensions(2000, 0);
+        });
+    }
+
+    @Test
+    public void testInitArgsRejectsBadProbability() {
+        // the module excludes both bounds, so 0 and 1 are rejected too
+        for (double bad : new double[]{0.0, 1.0, -0.1, 1.5}) {
+            Assertions.assertThrows(IllegalArgumentException.class, () -> {
+                CountMinInitArgs.probability(bad, 0.01);
+            });
+            Assertions.assertThrows(IllegalArgumentException.class, () -> {
+                CountMinInitArgs.probability(0.001, bad);
+            });
+        }
+    }
+
+    @Test
+    public void testAddRejectsNegativeIncrement() {
+        RCountMin<String> cms = redisson.getCountMin("testNegIncr");
+        cms.init(CountMinInitArgs.dimensions(2000, 5));
+
+        Assertions.assertThrows(IllegalArgumentException.class, () -> {
+            cms.add("foo", -1);
+        });
+
+        Assertions.assertThrows(IllegalArgumentException.class, () -> {
+            cms.add(Map.of("foo", -1L));
+        });
+
+        // nothing was sent, so the sketch is untouched
+        assertThat(cms.count("foo")).isEqualTo(0);
+    }
+
+    @Test
+    public void testBulkAddRejectsNullIncrement() {
+        RCountMin<String> cms = redisson.getCountMin("testNullIncr");
+        cms.init(CountMinInitArgs.dimensions(2000, 5));
+
+        Map<String, Long> increments = new LinkedHashMap<>();
+        increments.put("foo", null);
+
+        Assertions.assertThrows(NullPointerException.class, () -> {
+            cms.add(increments);
+        });
+    }
+
+    @Test
+    public void testBatch() {
+        RBatch batch = redisson.createBatch();
+        RCountMinAsync<String> cms = batch.getCountMin("testBatch");
+
+        cms.initAsync(CountMinInitArgs.dimensions(2000, 5));
+        cms.addAsync("foo", 10);
+        cms.addAsync("bar", 4);
+        RFuture<Long> foo = cms.countAsync("foo");
+        RFuture<Map<String, Long>> both = cms.countAsync(List.of("foo", "bar"));
+        RFuture<CountMinInfo> info = cms.getInfoAsync();
+
+        batch.execute();
+
+        assertThat(foo.toCompletableFuture().join()).isEqualTo(10);
+        assertThat(both.toCompletableFuture().join()).containsExactly(
+                Map.entry("foo", 10L),
+                Map.entry("bar", 4L));
+        assertThat(info.toCompletableFuture().join().getCount()).isEqualTo(14);
+    }
+
+    @Test
+    public void testBatchReactive() {
+        RBatchReactive batch = redisson.reactive().createBatch();
+        RCountMinReactive<String> cms = batch.getCountMin("testBatchReactive", StringCodec.INSTANCE);
+
+        cms.init(CountMinInitArgs.dimensions(2000, 5)).subscribe();
+        cms.add("foo", 7).subscribe();
+        Mono<Long> foo = cms.count("foo");
+        foo.subscribe();
+
+        batch.execute().block();
+
+        assertThat(foo.block()).isEqualTo(7);
     }
 
     @Test

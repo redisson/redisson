@@ -453,6 +453,18 @@ public class RedissonBatchReactive implements RBatchReactive {
     }
 
     @Override
+    public <V> RCountMinReactive<V> getCountMin(String name) {
+        return getCountMin(name, null);
+    }
+
+    @Override
+    public <V> RCountMinReactive<V> getCountMin(String name, Codec codec) {
+        return ReactiveProxyBuilder.create(executorService,
+                new RedissonCountMin<V>(codec, executorService, name),
+                RCountMinReactive.class);
+    }
+
+    @Override
     public RVectorSetReactive getVectorSet(String name) {
         return ReactiveProxyBuilder.create(executorService,
                 new RedissonVectorSet(executorService, name),

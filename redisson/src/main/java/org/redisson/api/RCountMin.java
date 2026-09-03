@@ -59,6 +59,10 @@ public interface RCountMin<V> extends RExpirable, RCountMinAsync<V> {
      * Increases the count of an element by 1.
      * <p>
      * Equivalent to {@code CMS.INCRBY}.
+     * <p>
+     * Counters saturate at {@code 2^32-1}. Once a counter reaches that value it
+     * stops rising while {@link CountMinInfo#getCount()} keeps accumulating,
+     * so the two disagree from that point on.
      *
      * @param element element to count
      * @return new count of the element
@@ -71,8 +75,9 @@ public interface RCountMin<V> extends RExpirable, RCountMinAsync<V> {
      * Equivalent to {@code CMS.INCRBY}.
      *
      * @param element element to count
-     * @param increment value to add to the current count
+     * @param increment value to add to the current count, not negative
      * @return new count of the element
+     * @throws IllegalArgumentException if increment is negative
      */
     long add(V element, long increment);
 
@@ -81,8 +86,10 @@ public interface RCountMin<V> extends RExpirable, RCountMinAsync<V> {
      * <p>
      * Equivalent to {@code CMS.INCRBY}.
      *
-     * @param elements map of elements and their increments
+     * @param elements map of elements and their increments,
+     *                 none of them negative
      * @return map of elements and their new counts
+     * @throws IllegalArgumentException if any increment is negative
      */
     Map<V, Long> add(Map<V, Long> elements);
 

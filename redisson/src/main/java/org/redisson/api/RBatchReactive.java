@@ -97,6 +97,26 @@ public interface RBatchReactive {
     <V> RTopKReactive<V> getTopK(String name, Codec codec);
 
     /**
+     * Returns count-min sketch instance by <code>name</code>.
+     *
+     * @param <V> type of value
+     * @param name name of object
+     * @return CountMin object
+     */
+    <V> RCountMinReactive<V> getCountMin(String name);
+
+    /**
+     * Returns count-min sketch instance by <code>name</code>
+     * using provided <code>codec</code> for values.
+     *
+     * @param <V> type of value
+     * @param name name of object
+     * @param codec codec for values
+     * @return CountMin object
+     */
+    <V> RCountMinReactive<V> getCountMin(String name, Codec codec);
+
+    /**
      * Returns t-digest instance by <code>name</code>.
      *
      * @param name name of object

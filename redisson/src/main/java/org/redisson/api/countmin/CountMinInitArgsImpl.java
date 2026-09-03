@@ -28,6 +28,14 @@ public final class CountMinInitArgsImpl implements CountMinInitArgs {
     final Double probability;
 
     CountMinInitArgsImpl(long width, long depth) {
+        // Same bounds the module enforces, checked here so the message names
+        // the parameter instead of arriving as "CMS: invalid init arguments".
+        if (width < 1) {
+            throw new IllegalArgumentException("width should be greater than 0");
+        }
+        if (depth < 1) {
+            throw new IllegalArgumentException("depth should be greater than 0");
+        }
         this.width = width;
         this.depth = depth;
         this.errorRate = null;
@@ -35,6 +43,13 @@ public final class CountMinInitArgsImpl implements CountMinInitArgs {
     }
 
     CountMinInitArgsImpl(double errorRate, double probability) {
+        // The module rejects both bounds, so 0 and 1 are excluded rather than allowed.
+        if (errorRate <= 0 || errorRate >= 1) {
+            throw new IllegalArgumentException("errorRate should be between 0 and 1 exclusive");
+        }
+        if (probability <= 0 || probability >= 1) {
+            throw new IllegalArgumentException("probability should be between 0 and 1 exclusive");
+        }
         this.width = null;
         this.depth = null;
         this.errorRate = errorRate;

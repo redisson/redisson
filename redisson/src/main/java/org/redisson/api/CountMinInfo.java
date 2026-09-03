@@ -55,6 +55,10 @@ public class CountMinInfo {
      * Returns the total count of all items added to the sketch.
      * <p>
      * This is the sum of all increments, not the number of distinct items.
+     * <p>
+     * It keeps accumulating after individual counters have saturated at
+     * {@code 2^32-1}, so on a long-lived sketch it can exceed what any
+     * count query is able to report.
      *
      * @return total count
      */

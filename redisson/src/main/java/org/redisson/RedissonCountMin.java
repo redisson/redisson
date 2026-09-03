@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Distributed implementation of count-min sketch
@@ -96,6 +97,12 @@ public class RedissonCountMin<V> extends RedissonExpirable implements RCountMin<
 
     @Override
     public RFuture<Long> addAsync(V element, long increment) {
+        // CMS.INCRBY parses the increment as a signed value and then rejects it,
+        // so a negative one costs a round trip to learn nothing useful.
+        if (increment < 0) {
+            throw new IllegalArgumentException("increment can't be negative");
+        }
+
         return commandExecutor.writeAsync(
                 getRawName(), codec,
                 RedisCommands.CMS_INCRBY,
@@ -114,9 +121,18 @@ public class RedissonCountMin<V> extends RedissonExpirable implements RCountMin<
         List<Object> params = new ArrayList<>(elements.size() * 2 + 1);
         params.add(getRawName());
         for (Map.Entry<V, Long> entry : elements.entrySet()) {
+            Long increment = entry.getValue();
+            Objects.requireNonNull(increment, "increment can't be null");
+            // Checked per entry, before anything is sent: the command applies
+            // every pair or none, so one bad value would reject the whole batch.
+            if (increment < 0) {
+                throw new IllegalArgumentException(
+                        "increment can't be negative for element: " + entry.getKey());
+            }
+
             elementList.add(entry.getKey());
             params.add(encode(entry.getKey()));
-            params.add(entry.getValue());
+            params.add(increment);
         }
 
         return commandExecutor.writeAsync(

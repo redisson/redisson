@@ -44,9 +44,10 @@ public interface CountMinInitArgs {
      * width reduces the overestimation of counts, a larger depth
      * reduces the probability of exceeding the expected error.
      *
-     * @param width number of counters in each array
-     * @param depth number of counter arrays
+     * @param width number of counters in each array, greater than 0
+     * @param depth number of counter arrays, greater than 0
      * @return arguments instance
+     * @throws IllegalArgumentException if width or depth is less than 1
      */
     static CountMinInitArgs dimensions(long width, long depth) {
         return new CountMinInitArgsImpl(width, depth);
@@ -66,6 +67,8 @@ public interface CountMinInitArgs {
      * @param probability probability of the error exceeding
      *                    the {@code errorRate}, a value between 0 and 1
      * @return arguments instance
+     * @throws IllegalArgumentException if either value is not
+     *         strictly between 0 and 1
      */
     static CountMinInitArgs probability(double errorRate, double probability) {
         return new CountMinInitArgsImpl(errorRate, probability);

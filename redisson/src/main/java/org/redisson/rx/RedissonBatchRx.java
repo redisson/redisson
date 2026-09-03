@@ -470,6 +470,18 @@ public class RedissonBatchRx implements RBatchRx {
     }
 
     @Override
+    public <V> RCountMinRx<V> getCountMin(String name) {
+        return getCountMin(name, null);
+    }
+
+    @Override
+    public <V> RCountMinRx<V> getCountMin(String name, Codec codec) {
+        return RxProxyBuilder.create(executorService,
+                new RedissonCountMin<V>(codec, executorService, name),
+                RCountMinRx.class);
+    }
+
+    @Override
     public RVectorSetRx getVectorSet(String name) {
         return RxProxyBuilder.create(executorService,
                 new RedissonVectorSet(executorService, name),
