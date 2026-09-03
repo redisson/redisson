@@ -21,6 +21,7 @@ import mockit.Verifications;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.NodeType;
 import org.redisson.client.FailedCommandsDetector;
+import org.redisson.client.FailedConnectionDetector;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisClientConfig;
 import org.redisson.client.RedisConnection;
@@ -29,11 +30,14 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.connection.ClientConnectionsEntry;
 import org.redisson.connection.ConnectionManager;
+import org.redisson.connection.ConnectionsHolder;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.misc.Tuple;
 
 import java.net.InetSocketAddress;
 import java.util.Collections;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -72,7 +76,7 @@ class ConnectionPoolTest {
         SlaveConnectionPool pool = new SlaveConnectionPool(
                 new MasterSlaveServersConfig(), connectionManager, masterSlaveEntry);
 
-        Tuple<java.util.concurrent.CompletableFuture<RedisConnection>, Throwable> result =
+        Tuple<CompletableFuture<RedisConnection>, Throwable> result =
                 pool.getTuple(RedisCommands.GET, false);
 
         assertThat(result.getT1()).isNull();
@@ -82,4 +86,85 @@ class ConnectionPoolTest {
             times = 1;
         }};
     }
+
+    @Test
+    void cancelledPoolAcquisitionDoesNotTripFailedConnectionDetector(
+            @Mocked ConnectionManager connectionManager,
+            @Mocked MasterSlaveEntry masterSlaveEntry,
+            @Mocked ClientConnectionsEntry entry,
+            @Mocked ConnectionsHolder<RedisConnection> holder,
+            @Mocked RedisClient client,
+            @Mocked RedisClientConfig clientConfig) throws Exception {
+        CompletableFuture<RedisConnection> pending = new CompletableFuture<>();
+        FailedConnectionDetector detector = new FailedConnectionDetector(1);
+
+        new Expectations() {{
+            entry.getConnectionsHolder();
+            result = holder;
+            holder.acquireConnection(RedisCommands.GET);
+            result = pending;
+            entry.getNodeType();
+            result = NodeType.SLAVE;
+            entry.getClient();
+            result = client;
+            minTimes = 0;
+            client.getConfig();
+            result = clientConfig;
+            minTimes = 0;
+            clientConfig.getFailedNodeDetector();
+            result = detector;
+            minTimes = 0;
+        }};
+
+        SlaveConnectionPool pool = new SlaveConnectionPool(
+                new MasterSlaveServersConfig(), connectionManager, masterSlaveEntry);
+        CompletableFuture<RedisConnection> acquisition =
+                pool.get(RedisCommands.GET, entry, false);
+
+        // RedisExecutor uses this form when a pool acquisition times out.
+        assertThat(acquisition.completeExceptionally(
+                new CancellationException("pool acquisition cancelled"))).isTrue();
+        Thread.sleep(10);
+
+        assertThat(detector.isNodeFailed()).isFalse();
+    }
+
+    @Test
+    void connectionFailureStillTripsFailedConnectionDetector(
+            @Mocked ConnectionManager connectionManager,
+            @Mocked MasterSlaveEntry masterSlaveEntry,
+            @Mocked ClientConnectionsEntry entry,
+            @Mocked ConnectionsHolder<RedisConnection> holder,
+            @Mocked RedisClient client,
+            @Mocked RedisClientConfig clientConfig) throws Exception {
+        CompletableFuture<RedisConnection> failed = new CompletableFuture<>();
+        FailedConnectionDetector detector = new FailedConnectionDetector(1);
+
+        new Expectations() {{
+            entry.getConnectionsHolder();
+            result = holder;
+            holder.acquireConnection(RedisCommands.GET);
+            result = failed;
+            entry.getNodeType();
+            result = NodeType.SLAVE;
+            entry.getClient();
+            result = client;
+            client.getConfig();
+            result = clientConfig;
+            clientConfig.getFailedNodeDetector();
+            result = detector;
+        }};
+
+        SlaveConnectionPool pool = new SlaveConnectionPool(
+                new MasterSlaveServersConfig(), connectionManager, masterSlaveEntry);
+        CompletableFuture<RedisConnection> acquisition =
+                pool.get(RedisCommands.GET, entry, false);
+
+        failed.completeExceptionally(new RedisConnectionException("connection failed"));
+        assertThat(acquisition).isCompletedExceptionally();
+        Thread.sleep(10);
+
+        assertThat(detector.isNodeFailed()).isTrue();
+    }
+
 }
