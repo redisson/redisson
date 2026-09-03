@@ -34,6 +34,12 @@ public class NumberConvertor implements Convertor<Object> {
     @Override
     public Object convert(Object result) {
         String res = (String) result;
+        // decimal result can't be represented by an integer type
+        if ((resultClass.isAssignableFrom(Long.class) || resultClass.isAssignableFrom(Integer.class))
+                && (res.indexOf('.') >= 0 || res.indexOf('E') >= 0 || res.indexOf('e') >= 0)) {
+            Object obj = Double.parseDouble(res);
+            return obj;
+        }
         if (resultClass.isAssignableFrom(Long.class)) {
             Object obj = Long.parseLong(res);
             return obj;
