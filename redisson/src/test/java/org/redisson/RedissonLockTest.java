@@ -24,6 +24,43 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
 public class RedissonLockTest extends BaseConcurrentTest {
+
+    @Test
+    public void testSkipLockSyncedSlaves() {
+        Config config = new Config().setSkipLockSyncedSlaves(true);
+        withNewReplicated(config, (nodes, client) -> {
+            String before = execute(nodes.get(0), "redis-cli", "info", "commandstats");
+            RLock lock = client.getLock("skip-lock-sync");
+            lock.lock();
+            lock.unlock();
+            String after = execute(nodes.get(0), "redis-cli", "info", "commandstats");
+
+            assertThat(commandCalls(before, "wait")).isEqualTo(commandCalls(after, "wait"));
+        });
+    }
+
+    @Test
+    public void testLockSyncedSlavesByDefault() {
+        withNewReplicated((nodes, client) -> {
+            String before = execute(nodes.get(0), "redis-cli", "info", "commandstats");
+            RLock lock = client.getLock("lock-sync-default");
+            lock.lock();
+            lock.unlock();
+            String after = execute(nodes.get(0), "redis-cli", "info", "commandstats");
+
+            assertThat(commandCalls(after, "wait")).isGreaterThan(commandCalls(before, "wait"));
+        });
+    }
+
+    private long commandCalls(String info, String command) {
+        return java.util.Arrays.stream(info.split("\\r?\\n"))
+                .filter(line -> line.startsWith("cmdstat_" + command + ":"))
+                .map(line -> line.substring(line.indexOf("calls=") + 6))
+                .map(value -> value.substring(0, value.indexOf(',')))
+                .mapToLong(Long::parseLong)
+                .findFirst()
+                .orElse(0);
+    }
     static class LockWithoutBoolean extends Thread {
         private CountDownLatch latch;
         private RedissonClient redisson;

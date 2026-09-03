@@ -1067,11 +1067,27 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     @Override
     public <T> RFuture<T> syncedEvalWithRetry(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
+        return syncedEvalWithRetry(false, key, codec, evalCommandType, script, keys, params);
+    }
+
+    @Override
+    public <T> RFuture<T> syncedEvalWithRetry(boolean skipSync, String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
+        if (skipSync) {
+            return getServiceManager().execute(() -> evalWriteAsync(key, codec, evalCommandType, script, keys, params));
+        }
         return getServiceManager().execute(() -> syncedEval(key, codec, evalCommandType, script, keys, params));
     }
 
     @Override
     public <T> RFuture<T> syncedEvalNoRetry(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
+        return syncedEvalNoRetry(false, key, codec, evalCommandType, script, keys, params);
+    }
+
+    @Override
+    public <T> RFuture<T> syncedEvalNoRetry(boolean skipSync, String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
+        if (skipSync) {
+            return evalWriteNoRetryAsync(key, codec, evalCommandType, script, keys, params);
+        }
         return syncedEval(getServiceManager().getCfg().getSlavesSyncTimeout(),
                             SyncMode.WAIT, false, key, codec, evalCommandType, script, keys, params);
     }
