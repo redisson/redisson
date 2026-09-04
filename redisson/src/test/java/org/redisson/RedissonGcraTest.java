@@ -1,10 +1,14 @@
 package org.redisson;
 
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.GcraConfig;
 import org.redisson.api.GcraResult;
 import org.redisson.api.RGcra;
+import org.redisson.api.RedissonClient;
 import org.redisson.client.RedisException;
+import org.testcontainers.containers.GenericContainer;
 
 import java.time.Duration;
 
@@ -17,6 +21,23 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  *
  */
 public class RedissonGcraTest extends RedisDockerTest {
+
+    static RedissonClient redisson;
+    static GenericContainer<?> redis;
+
+    @BeforeAll
+    static void beforeAll() {
+        redis = createContainerByImage("redis:8.8-m03");
+        redis.start();
+
+        redisson = Redisson.create(createConfig(redis));
+    }
+
+    @AfterAll
+    static void afterAll() {
+        redisson.shutdown();
+        redis.stop();
+    }
 
     @Test
     public void testTrySetRate() {
