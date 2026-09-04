@@ -785,6 +785,28 @@ public final class Redisson implements RedissonClient {
     }
 
     @Override
+    public RTimeSeriesNative getTimeSeriesNative(String name) {
+        return new RedissonTimeSeriesNative(commandExecutor, name);
+    }
+
+    @Override
+    public RTimeSeriesNative getTimeSeriesNative(CommonOptions options) {
+        CommonParams params = (CommonParams) options;
+        return new RedissonTimeSeriesNative(commandExecutor.copy(params), params.getName());
+    }
+
+    @Override
+    public RTimeSeriesNatives getTimeSeriesNatives() {
+        return new RedissonTimeSeriesNatives(commandExecutor);
+    }
+
+    @Override
+    public RTimeSeriesNatives getTimeSeriesNatives(OptionalOptions options) {
+        OptionalParams params = (OptionalParams) options;
+        return new RedissonTimeSeriesNatives(commandExecutor.copy(params));
+    }
+
+    @Override
     public RVectorSet getVectorSet(String name) {
         return new RedissonVectorSet(commandExecutor, name);
     }

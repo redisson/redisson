@@ -410,6 +410,12 @@ public class RedissonBatchReactive implements RBatchReactive {
     }
 
     @Override
+    public RTimeSeriesNativeReactive getTimeSeriesNative(String name) {
+        return ReactiveProxyBuilder.create(executorService,
+                new RedissonTimeSeriesNative(executorService, name), RTimeSeriesNativeReactive.class);
+    }
+
+    @Override
     public <T> RBloomFilterNativeReactive<T> getBloomFilterNative(String name) {
         return ReactiveProxyBuilder.create(executorService,
                 new RedissonBloomFilterNative<>(executorService, name), RBloomFilterNativeReactive.class);

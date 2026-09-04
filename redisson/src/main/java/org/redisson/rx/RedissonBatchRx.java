@@ -427,6 +427,12 @@ public class RedissonBatchRx implements RBatchRx {
     }
 
     @Override
+    public RTimeSeriesNativeRx getTimeSeriesNative(String name) {
+        return RxProxyBuilder.create(executorService,
+                new RedissonTimeSeriesNative(executorService, name), RTimeSeriesNativeRx.class);
+    }
+
+    @Override
     public <T> RBloomFilterNativeRx<T> getBloomFilterNative(String name) {
         return RxProxyBuilder.create(executorService,
                 new RedissonBloomFilterNative<>(executorService, name), RBloomFilterNativeRx.class);

@@ -359,6 +359,11 @@ public class RedissonBatch implements RBatch {
     }
 
     @Override
+    public RTimeSeriesNativeAsync getTimeSeriesNative(String name) {
+        return new RedissonTimeSeriesNative(executorService, name);
+    }
+
+    @Override
     public <T> RBloomFilterNativeAsync<T> getBloomFilterNative(String name) {
         return new RedissonBloomFilterNative<>(executorService, name);
     }

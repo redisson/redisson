@@ -368,8 +368,14 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             handleResult(data, parts, result, skipConvertor);
         } else if (code == ',') {
             String str = readString(in, StandardCharsets.US_ASCII);
-            Double result = Double.NaN;
-            if (!"nan".equals(str)) {
+            Double result;
+            if ("nan".equals(str)) {
+                result = Double.NaN;
+            } else if ("inf".equals(str) || "+inf".equals(str)) {
+                result = Double.POSITIVE_INFINITY;
+            } else if ("-inf".equals(str)) {
+                result = Double.NEGATIVE_INFINITY;
+            } else {
                 result = Double.valueOf(str);
             }
 

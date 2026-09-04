@@ -36,6 +36,10 @@ import org.redisson.api.array.ArrayFullInfo;
 import org.redisson.api.array.ArrayInfo;
 import org.redisson.api.bloomfilter.BloomFilterInfo;
 import org.redisson.api.bloomfilter.BloomFilterScanDumpInfo;
+import org.redisson.api.tsnative.TSInfo;
+import org.redisson.api.tsnative.TSSample;
+import org.redisson.api.tsnative.TSSeriesSample;
+import org.redisson.api.tsnative.TSSeriesSamples;
 import org.redisson.api.search.index.IndexInfo;
 import org.redisson.api.search.query.SearchResult;
 import org.redisson.api.stream.FastAutoClaimResult;
@@ -852,9 +856,6 @@ public interface RedisCommands {
 
     RedisCommand<Map<StreamMessageId, Map<Object, Object>>> XREADGROUP_BLOCKING_SINGLE_V2 = new RedisCommand<>(XREADGROUP_SINGLE_V2, "XREADGROUP");
 
-    Set<RedisCommand> BLOCKING_COMMANDS = new HashSet<>(Arrays.asList(
-            XREAD_BLOCKING_SINGLE, XREAD_BLOCKING, XREADGROUP_BLOCKING_SINGLE, XREADGROUP_BLOCKING,
-            XREAD_BLOCKING_SINGLE_V2, XREAD_BLOCKING_V2, XREADGROUP_BLOCKING_SINGLE_V2, XREADGROUP_BLOCKING_V2));
     
     RedisStrictCommand<StreamMessageId> XADD = new RedisStrictCommand<StreamMessageId>("XADD", new StreamIdConvertor());
     RedisStrictCommand<Void> XGROUP = new RedisStrictCommand<Void>("XGROUP", new VoidReplayConvertor());
@@ -1183,5 +1184,102 @@ public interface RedisCommands {
     RedisCommand<TopKInfo> TOPK_INFO = new RedisCommand<>("TOPK.INFO",
                         new ListMultiDecoder2(new TopKInfoDecoder(), new ObjectListReplayDecoder<>()));
 
+    RedisStrictCommand<Void> TS_CREATE = new RedisStrictCommand<>("TS.CREATE", new VoidReplayConvertor());
+
+    RedisStrictCommand<Void> TS_ALTER = new RedisStrictCommand<>("TS.ALTER", new VoidReplayConvertor());
+
+    RedisStrictCommand<Long> TS_ADD = new RedisStrictCommand<>("TS.ADD", new LongReplayConvertor());
+
+    RedisCommand<List<Long>> TS_MADD = new RedisCommand<>("TS.MADD", new ObjectListReplayDecoder<>());
+
+    RedisStrictCommand<Long> TS_INCRBY = new RedisStrictCommand<>("TS.INCRBY", new LongReplayConvertor());
+
+    RedisStrictCommand<Long> TS_DECRBY = new RedisStrictCommand<>("TS.DECRBY", new LongReplayConvertor());
+
+    RedisStrictCommand<Long> TS_DEL = new RedisStrictCommand<>("TS.DEL", new LongReplayConvertor());
+
+    RedisCommand<TSSample> TS_GET = new RedisCommand<>("TS.GET", new TimeSeriesSampleDecoder());
+
+    // Levels 0-3: the reply nests key, labels and samples in RESP2 and key, labels, aggregators
+    // and samples in RESP3, so four decoders cover the deeper of the two shapes.
+    RedisCommand<Map<String, TSSeriesSample>> TS_MGET = new RedisCommand<>("TS.MGET",
+                        new ListMultiDecoder2(new TimeSeriesSeriesSampleDecoder(),
+                                new CodecDecoder(), new CodecDecoder(), new CodecDecoder()));
+
+    RedisCommand<List<TSSample>> TS_RANGE = new RedisCommand<>("TS.RANGE",
+                        new ListMultiDecoder2(new TimeSeriesSampleListDecoder(), new CodecDecoder()));
+
+    RedisCommand<List<TSSample>> TS_REVRANGE = new RedisCommand<>("TS.REVRANGE",
+                        new ListMultiDecoder2(new TimeSeriesSampleListDecoder(), new CodecDecoder()));
+
+    // first() asks for one sample and wants that sample, not a list holding it. Trimming in the
+    // decoder keeps it a single command whose batch response matches its declared type.
+    RedisCommand<TSSample> TS_RANGE_FIRST = new RedisCommand<>("TS.RANGE",
+                        new ListMultiDecoder2(new TimeSeriesFirstSampleDecoder(), new CodecDecoder()));
+
+    RedisCommand<List<TSSample>> TS_READ = new RedisCommand<>("TS.READ",
+                        new ListMultiDecoder2(new TimeSeriesSampleListDecoder(), new CodecDecoder()));
+
+    RedisCommand<List<TSSample>> TS_READ_BLOCKING = new RedisCommand<>(TS_READ, "TS.READ");
+
+    RedisCommand<Map<String, TSSeriesSamples>> TS_MRANGE = new RedisCommand<>("TS.MRANGE",
+                        new ListMultiDecoder2(new TimeSeriesSeriesSamplesDecoder(),
+                                new CodecDecoder(), new CodecDecoder(), new CodecDecoder()));
+
+    RedisCommand<Map<String, TSSeriesSamples>> TS_MREVRANGE = new RedisCommand<>("TS.MREVRANGE",
+                        new ListMultiDecoder2(new TimeSeriesSeriesSamplesDecoder(),
+                                new CodecDecoder(), new CodecDecoder(), new CodecDecoder()));
+
+    RedisCommand<List<TSSample>> TS_NRANGE = new RedisCommand<>("TS.NRANGE",
+                        new ListMultiDecoder2(new TimeSeriesGroupedSampleDecoder(),
+                                new CodecDecoder(), new CodecDecoder()));
+
+    RedisCommand<List<TSSample>> TS_NREVRANGE = new RedisCommand<>("TS.NREVRANGE",
+                        new ListMultiDecoder2(new TimeSeriesGroupedSampleDecoder(),
+                                new CodecDecoder(), new CodecDecoder()));
+
+    RedisCommand<Set<String>> TS_QUERYINDEX = new RedisCommand<>("TS.QUERYINDEX", new ObjectSetReplayDecoder<>());
+
+    RedisCommand<Set<String>> TS_QUERYLABELS = new RedisCommand<>("TS.QUERYLABELS", new ObjectSetReplayDecoder<>());
+
+    RedisStrictCommand<Void> TS_CREATERULE = new RedisStrictCommand<>("TS.CREATERULE", new VoidReplayConvertor());
+
+    RedisStrictCommand<Void> TS_DELETERULE = new RedisStrictCommand<>("TS.DELETERULE", new VoidReplayConvertor());
+
+    // Levels 0-2: labels, rules and the DEBUG chunk list each nest one array below the top-level
+    // field list, and their entries one below that.
+    RedisCommand<TSInfo> TS_INFO = new RedisCommand<>("TS.INFO",
+                        new ListMultiDecoder2(new TimeSeriesInfoDecoder(),
+                                new CodecDecoder(), new CodecDecoder()));
+
+    // TS.INFO is also the only source for a series' sample count, its two boundary timestamps and
+    // its labels. Each gets its own command projecting that one field rather than a TS_INFO call
+    // mapped afterwards: a batch collects what the queued command decoded, so a mapping applied
+    // after the fact would leave BatchResult#getResponses() holding a TSInfo where the caller's
+    // method promised a count, a timestamp or a label map.
+    RedisCommand<Long> TS_INFO_TOTAL_SAMPLES = new RedisCommand<>("TS.INFO",
+                        new ListMultiDecoder2(new TimeSeriesInfoFieldDecoder<>(TSInfo::getTotalSamples),
+                                new CodecDecoder(), new CodecDecoder()));
+
+    RedisCommand<Long> TS_INFO_FIRST_TIMESTAMP = new RedisCommand<>("TS.INFO",
+                        new ListMultiDecoder2(new TimeSeriesInfoFieldDecoder<>(
+                                        info -> TimeSeriesInfoFieldDecoder.timestampOf(info.getFirstTimestamp())),
+                                new CodecDecoder(), new CodecDecoder()));
+
+    RedisCommand<Long> TS_INFO_LAST_TIMESTAMP = new RedisCommand<>("TS.INFO",
+                        new ListMultiDecoder2(new TimeSeriesInfoFieldDecoder<>(
+                                        info -> TimeSeriesInfoFieldDecoder.timestampOf(info.getLastTimestamp())),
+                                new CodecDecoder(), new CodecDecoder()));
+
+    RedisCommand<Map<String, String>> TS_INFO_LABELS = new RedisCommand<>("TS.INFO",
+                        new ListMultiDecoder2(new TimeSeriesInfoFieldDecoder<>(TSInfo::getLabels),
+                                new CodecDecoder(), new CodecDecoder()));
+
+    // Declared last on purpose: an interface field initializer may not refer to a field declared
+    // below it by simple name, and this set names commands from across the whole file.
+    Set<RedisCommand> BLOCKING_COMMANDS = new HashSet<>(Arrays.asList(
+            XREAD_BLOCKING_SINGLE, XREAD_BLOCKING, XREADGROUP_BLOCKING_SINGLE, XREADGROUP_BLOCKING,
+            XREAD_BLOCKING_SINGLE_V2, XREAD_BLOCKING_V2, XREADGROUP_BLOCKING_SINGLE_V2,
+            XREADGROUP_BLOCKING_V2, TS_READ_BLOCKING));
 
 }

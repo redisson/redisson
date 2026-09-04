@@ -1185,6 +1185,36 @@ public final class RedissonRx implements RedissonRxClient {
     }
 
     @Override
+    public RTimeSeriesNativeRx getTimeSeriesNative(String name) {
+        return RxProxyBuilder.create(commandExecutor,
+                new RedissonTimeSeriesNative(commandExecutor, name),
+                new RedissonTimeSeriesNativeRx(commandExecutor, name), RTimeSeriesNativeRx.class);
+    }
+
+    @Override
+    public RTimeSeriesNativeRx getTimeSeriesNative(CommonOptions options) {
+        CommonParams params = (CommonParams) options;
+        CommandRxExecutor ce = commandExecutor.copy(params);
+        return RxProxyBuilder.create(ce,
+                new RedissonTimeSeriesNative(ce, params.getName()),
+                new RedissonTimeSeriesNativeRx(ce, params.getName()), RTimeSeriesNativeRx.class);
+    }
+
+    @Override
+    public RTimeSeriesNativesRx getTimeSeriesNatives() {
+        return RxProxyBuilder.create(commandExecutor,
+                new RedissonTimeSeriesNatives(commandExecutor), RTimeSeriesNativesRx.class);
+    }
+
+    @Override
+    public RTimeSeriesNativesRx getTimeSeriesNatives(OptionalOptions options) {
+        OptionalParams params = (OptionalParams) options;
+        CommandRxExecutor ce = commandExecutor.copy(params);
+        return RxProxyBuilder.create(ce,
+                new RedissonTimeSeriesNatives(ce), RTimeSeriesNativesRx.class);
+    }
+
+    @Override
     public RVectorSetRx getVectorSet(String name) {
         RedissonVectorSet set = new RedissonVectorSet(commandExecutor, name);
         return RxProxyBuilder.create(commandExecutor, set,

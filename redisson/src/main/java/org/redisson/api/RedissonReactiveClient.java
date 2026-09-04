@@ -1961,6 +1961,52 @@ public interface RedissonReactiveClient {
     RScriptReactive getScript(OptionalOptions options);
 
     /**
+     * Returns time series instance by name, backed by the TS.* commands of the RedisTimeSeries
+     * module.
+     * <p>
+     * Unlike {@link #getTimeSeries(String)}, which stores objects in a sorted set, samples here
+     * are timestamps and doubles handled by the module itself, so there is no codec to choose.
+     * <p>
+     * Requires <b>Redis 8.0.0 or higher, or the RedisTimeSeries module.</b>
+     *
+     * @param name name of time series
+     * @return time series instance
+     */
+    RTimeSeriesNativeReactive getTimeSeriesNative(String name);
+
+    /**
+     * Returns time series instance with specified <code>options</code>.
+     * <p>
+     * Requires <b>Redis 8.0.0 or higher, or the RedisTimeSeries module.</b>
+     *
+     * @param options instance options
+     * @return time series instance
+     */
+    RTimeSeriesNativeReactive getTimeSeriesNative(CommonOptions options);
+
+    /**
+     * Returns the object carrying the RedisTimeSeries operations that span several series —
+     * TS.MADD, TS.MGET, TS.MRANGE, TS.MREVRANGE, TS.NRANGE, TS.NREVRANGE, TS.QUERYINDEX and
+     * TS.QUERYLABELS.
+     * <p>
+     * Requires <b>Redis 8.0.0 or higher, or the RedisTimeSeries module.</b>
+     *
+     * @return multi-series time series instance
+     */
+    RTimeSeriesNativesReactive getTimeSeriesNatives();
+
+    /**
+     * Returns the object carrying the multi-series RedisTimeSeries operations, with specified
+     * <code>options</code>.
+     * <p>
+     * Requires <b>Redis 8.0.0 or higher, or the RedisTimeSeries module.</b>
+     *
+     * @param options instance options
+     * @return multi-series time series instance
+     */
+    RTimeSeriesNativesReactive getTimeSeriesNatives(OptionalOptions options);
+
+    /**
      * Returns vector set instance by name.
      * <p>
      * Requires <b>Redis 8.0.0 and higher.</b>

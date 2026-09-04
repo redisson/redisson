@@ -1255,6 +1255,36 @@ public final class RedissonReactive implements RedissonReactiveClient {
     }
 
     @Override
+    public RTimeSeriesNativeReactive getTimeSeriesNative(String name) {
+        return ReactiveProxyBuilder.create(commandExecutor,
+                new RedissonTimeSeriesNative(commandExecutor, name),
+                new RedissonTimeSeriesNativeReactive(commandExecutor, name), RTimeSeriesNativeReactive.class);
+    }
+
+    @Override
+    public RTimeSeriesNativeReactive getTimeSeriesNative(CommonOptions options) {
+        CommonParams params = (CommonParams) options;
+        CommandReactiveExecutor ca = commandExecutor.copy(params);
+        return ReactiveProxyBuilder.create(ca,
+                new RedissonTimeSeriesNative(ca, params.getName()),
+                new RedissonTimeSeriesNativeReactive(ca, params.getName()), RTimeSeriesNativeReactive.class);
+    }
+
+    @Override
+    public RTimeSeriesNativesReactive getTimeSeriesNatives() {
+        return ReactiveProxyBuilder.create(commandExecutor,
+                new RedissonTimeSeriesNatives(commandExecutor), RTimeSeriesNativesReactive.class);
+    }
+
+    @Override
+    public RTimeSeriesNativesReactive getTimeSeriesNatives(OptionalOptions options) {
+        OptionalParams params = (OptionalParams) options;
+        CommandReactiveExecutor ca = commandExecutor.copy(params);
+        return ReactiveProxyBuilder.create(ca,
+                new RedissonTimeSeriesNatives(ca), RTimeSeriesNativesReactive.class);
+    }
+
+    @Override
     public RVectorSetReactive getVectorSet(String name) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonVectorSet(commandExecutor, name),
                 new RedissonVectorSetReactive(commandExecutor, name), RVectorSetReactive.class);
