@@ -202,8 +202,7 @@ public class JsonForyCodec extends BaseCodec {
         // accept twice the depth this codec allows
         ForyJsonBuilder builder = ForyJson.builder()
                                           .maxDepth(2 * DEFAULT_MAX_DEPTH)
-                                          .withFieldMode(true)
-                                          .registerCodec(byte[].class, new Base64ByteArrayCodec());
+                                          .withFieldMode(true);
         if (classLoader != null) {
             builder.withClassLoader(classLoader);
         }
