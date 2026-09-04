@@ -3652,6 +3652,8 @@ Redisson's `RTimeSeries` object is a distributed structure for storing and query
 
 The object is typed as `RTimeSeries<V, L>`, where `V` is the value type and `L` the label type (use any type, such as `Object`, when labels aren't needed). It is thread-safe and implements `Iterable<V>`.
 
+For numeric data on a server with the RedisTimeSeries module, see [Time Series (Native)](#time-series-native): it stores `double` values in the module's own compressed representation and adds retention policies, aggregation buckets, compaction rules and label-based queries across series.
+
 ### Storing entries
 
 Each value is stored against a unique timestamp; adding a value at an existing timestamp overwrites the previous one. A label can be attached per entry, and whole batches can be added in a single call.
@@ -4183,6 +4185,8 @@ Redisson allows binding listeners per `RTimeSeries` object. This requires the `n
     // remove listener
     Completable removeCompletable = ts.removeListener(listenerId);
     ```
+
+{% include 'data-and-services/time-series-native.md' %}
 
 ## Vector Set 
 
