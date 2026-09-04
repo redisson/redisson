@@ -602,9 +602,52 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         is.skipBytes(2);
     }
 
-    private Long readLong(ByteBuf is) {
-        String value = readString(is, StandardCharsets.US_ASCII);
-        return Long.parseLong(value);
+    // Don't use readString()
+    private long readLong(ByteBuf is) {
+        int len = is.bytesBefore((byte) CR);
+        int start = is.readerIndex();
+        if (len <= 0) {
+            throw new NumberFormatException("Empty integer at index " + start);
+        }
+
+        int i = 0;
+        boolean negative = false;
+        byte first = is.getByte(start);
+        if (first == '-' || first == '+') {
+            negative = first == '-';
+            i = 1;
+            if (len == 1) {
+                throw new NumberFormatException("Lone sign at index " + start);
+            }
+        }
+
+        long limit = -Long.MAX_VALUE;
+        if (negative) {
+            limit = Long.MIN_VALUE;
+        }
+        long multiplyLimit = limit / 10;
+
+        long value = 0;
+        for (; i < len; i++) {
+            int digit = is.getByte(start + i) - ZERO;
+            if (digit < 0 || digit > 9) {
+                throw new NumberFormatException("Invalid character in integer at index " + (start + i));
+            }
+            if (value < multiplyLimit) {
+                throw new NumberFormatException("Integer overflow at index " + start);
+            }
+            value *= 10;
+            if (value < limit + digit) {
+                throw new NumberFormatException("Integer overflow at index " + start);
+            }
+            value -= digit;
+        }
+
+        is.skipBytes(len + 2);
+        if (negative) {
+            return value;
+        }
+        return -value;
     }
 
 }
