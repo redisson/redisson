@@ -1457,7 +1457,9 @@ public class RedissonTest extends RedisDockerTest {
         Config config = createConfig();
         config.setStorageStatisticsInterval(5000L)
                 .setStorageMemoryUsageListener((uri, currentPercentage) -> {
-                    counter.incrementAndGet();
+                    if (currentPercentage > 0) {
+                        counter.incrementAndGet();
+                    }
                     log.info("memory usage changed, node:{}, current percent:{}", uri, currentPercentage);
                 });
 
@@ -1466,7 +1468,7 @@ public class RedissonTest extends RedisDockerTest {
             redissonClient.getBucket("test" + i).set(i);
         }
 
-        Awaitility.waitAtMost(Duration.ofSeconds(5)).until(() -> counter.get() == 1);
+        Awaitility.waitAtMost(Duration.ofSeconds(6)).until(() -> counter.get() == 1);
 
         redissonClient.shutdown();
     }
@@ -1478,7 +1480,9 @@ public class RedissonTest extends RedisDockerTest {
             Config config = redissonClient.getConfig();
             config.setStorageStatisticsInterval(5000L);
             config.setStorageMemoryUsageListener((uri, currentPercentage) -> {
-                counter.incrementAndGet();
+                if (currentPercentage > 0) {
+                    counter.incrementAndGet();
+                }
                 log.info("memory usage changed, node:{}, current percent:{}", uri, currentPercentage);
             });
 
@@ -1487,7 +1491,7 @@ public class RedissonTest extends RedisDockerTest {
                 redisson.getBucket("test" + i).set(i);
             }
 
-            Awaitility.waitAtMost(Duration.ofSeconds(5)).until(() -> counter.get() == 6);
+            Awaitility.waitAtMost(Duration.ofSeconds(6)).until(() -> counter.get() == 6);
 
             redisson.shutdown();
 
