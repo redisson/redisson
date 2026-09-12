@@ -430,6 +430,66 @@ public class RedissonBlockingQueueTest extends RedissonQueueTest {
     }
 
     @Test
+    public void testPollFromAnyWithNameInCluster() throws InterruptedException {
+        testInCluster(redisson -> {
+            RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue:pollanycluster1");
+            RBlockingQueue<Integer> queue3 = redisson.getBlockingQueue("queue:pollanycluster3");
+            RBlockingQueue<Integer> queue4 = redisson.getBlockingQueue("queue:pollanycluster4");
+            queue4.add(2);
+
+            // the timeout is shorter than the number of polled queues: the empty
+            // queues must not consume the whole budget before queue4 is polled
+            // https://github.com/redisson/redisson/issues/7256
+            long s = System.currentTimeMillis();
+            Entry<String, Integer> r = Assertions.assertDoesNotThrow(
+                    () -> queue1.pollFromAnyWithName(Duration.ofSeconds(2),
+                            "queue:pollanycluster2", "queue:pollanycluster3", "queue:pollanycluster4"));
+
+            assertThat(r.getValue()).isEqualTo(2);
+            assertThat(System.currentTimeMillis() - s).isLessThan(4000);
+        });
+    }
+
+    @Test
+    public void testPollFromAnyWithNameInClusterReturnsNullAtDeadline() {
+        testInCluster(redisson -> {
+            RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue:pollanycluster-deadline1");
+            RBlockingQueue<Integer> queue2 = redisson.getBlockingQueue("queue:pollanycluster-deadline2");
+            RBlockingQueue<Integer> queue3 = redisson.getBlockingQueue("queue:pollanycluster-deadline3");
+
+            // all queues stay empty: the total timeout must be honored, not
+            // multiplied by the number of queues
+            long s = System.currentTimeMillis();
+            Entry<String, Integer> r = Assertions.assertDoesNotThrow(
+                    () -> queue1.pollFromAnyWithName(Duration.ofSeconds(2),
+                            "queue:pollanycluster-deadline2", "queue:pollanycluster-deadline3"));
+
+            assertThat(r).isNull();
+            assertThat(System.currentTimeMillis() - s).isBetween(1900L, 3500L);
+        });
+    }
+
+    @Test
+    public void testPollFromAnyWithNameInClusterPicksUpLateElement() {
+        testInCluster(redisson -> {
+            RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue:pollanycluster-late1");
+            RBlockingQueue<Integer> queue3 = redisson.getBlockingQueue("queue:pollanycluster-late3");
+
+            // an element pushed after the first queue was polled must still be
+            // found within the total timeout
+            Executors.newSingleThreadScheduledExecutor().schedule(() -> {
+                queue3.add(7);
+            }, 500, TimeUnit.MILLISECONDS);
+
+            Entry<String, Integer> r = Assertions.assertDoesNotThrow(
+                    () -> queue1.pollFromAnyWithName(Duration.ofSeconds(4),
+                            "queue:pollanycluster-late2", "queue:pollanycluster-late3"));
+
+            assertThat(r.getValue()).isEqualTo(7);
+        });
+    }
+
+    @Test
     public void testPollLastFromAnyWithName() throws InterruptedException {
         RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue:polLast");
         RBlockingQueue<Integer> queue2 = redisson.getBlockingQueue("queue:polLast1");

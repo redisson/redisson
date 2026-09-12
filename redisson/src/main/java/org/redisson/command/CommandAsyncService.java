@@ -53,7 +53,6 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.regex.Matcher;
@@ -1003,8 +1002,13 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             names.add(name);
             names.addAll(mappedNames);
             ref.set(names.iterator());
-            AtomicLong counter = new AtomicLong(secondsTimeout);
-            CompletionStage<V> result = poll(codec, ref, names, counter, command);
+            long deadline;
+            if (secondsTimeout > 0) {
+                deadline = System.currentTimeMillis() + secondsTimeout * 1000;
+            } else {
+                deadline = Long.MAX_VALUE;
+            }
+            CompletionStage<V> result = poll(codec, ref, names, deadline, command);
             return new CompletableFutureWrapper<>(result);
         } else {
             List<Object> params = new ArrayList<>(queueNames.length + 1);
@@ -1016,23 +1020,33 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
 
     private <V> CompletionStage<V> poll(Codec codec, AtomicReference<Iterator<String>> ref,
-                                        List<String> names, AtomicLong counter, RedisCommand<?> command) {
-        if (ref.get().hasNext()) {
-            String currentName = ref.get().next();
-            RFuture<V> future = writeAsync(currentName, codec, command, currentName, 1);
-            return future.thenCompose(res -> {
-                if (res != null) {
-                    return CompletableFuture.completedFuture(res);
-                }
-
-                if (counter.decrementAndGet() == 0) {
-                    return CompletableFuture.completedFuture(null);
-                }
-                return poll(codec, ref, names, counter, command);
-            });
+                                        List<String> names, long deadline, RedisCommand<?> command) {
+        long remainingMillis = deadline - System.currentTimeMillis();
+        if (remainingMillis <= 0) {
+            return CompletableFuture.completedFuture(null);
         }
-        ref.set(names.iterator());
-        return poll(codec, ref, names, counter, command);
+        if (!ref.get().hasNext()) {
+            ref.set(names.iterator());
+        }
+        String currentName = ref.get().next();
+        // split the remaining time between the queues of a pass, so that every
+        // queue is polled before the timeout elapses even when there are more
+        // queues than timeout seconds
+        double timeout = Math.min(remainingMillis, names.size() * 1000D) / names.size() / 1000D;
+        Object timeoutParam;
+        if (timeout == Math.rint(timeout)) {
+            timeoutParam = (long) timeout;
+        } else {
+            timeoutParam = timeout;
+        }
+        RFuture<V> future = writeAsync(currentName, codec, command, currentName, timeoutParam);
+        return future.thenCompose(res -> {
+            if (res != null) {
+                return CompletableFuture.completedFuture(res);
+            }
+
+            return poll(codec, ref, names, deadline, command);
+        });
     }
 
     @Override
