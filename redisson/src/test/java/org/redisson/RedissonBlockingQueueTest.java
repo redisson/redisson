@@ -466,6 +466,42 @@ public class RedissonBlockingQueueTest extends RedissonQueueTest {
 
     @Test
     @Timeout(60)
+    public void testPollFromAnyWithNameSeesElementAddedWhileWaitingOnCluster() {
+        // The case above is an element that is already in a queue when the call starts. This one
+        // arrives while the call is waiting, in a name the rotation does not get to, and the call
+        // returned null at the deadline with the element still sitting there. testPollFromAnyWithName
+        // is the single node counterpart and passes, because there one BLPOP covers every key and
+        // the push itself wakes it.
+        testInCluster(client -> {
+            RBlockingQueue<String> first = client.getBlockingQueue("queue:clusterPollAnyLate1");
+            RBlockingQueue<String> second = client.getBlockingQueue("queue:clusterPollAnyLate2");
+            RBlockingQueue<String> third = client.getBlockingQueue("queue:clusterPollAnyLate3");
+            first.clear();
+            second.clear();
+            third.clear();
+
+            Executors.newSingleThreadScheduledExecutor().schedule(
+                    () -> third.add("hello"), 500, TimeUnit.MILLISECONDS);
+
+            long startTime = System.currentTimeMillis();
+            Entry<String, String> r;
+            try {
+                r = first.pollFromAnyWithName(Duration.ofSeconds(2),
+                        "queue:clusterPollAnyLate2", "queue:clusterPollAnyLate3");
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(e);
+            }
+
+            assertThat(r).isNotNull();
+            assertThat(r.getKey()).isEqualTo("queue:clusterPollAnyLate3");
+            assertThat(r.getValue()).isEqualTo("hello");
+            assertThat(System.currentTimeMillis() - startTime).isLessThan(4000);
+        });
+    }
+
+    @Test
+    @Timeout(60)
     public void testPollFromAnyWithNameStopsAtTimeoutOnCluster() {
         // Reaching every name must not cost a blocking attempt per name, otherwise the timeout
         // turns from an upper bound into a lower one: five empty names would keep a two second

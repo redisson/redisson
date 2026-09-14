@@ -71,7 +71,8 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     /**
      * Non-blocking counterpart of every blocking command that {@link #pollFromAnyAsync} rotates
-     * over, used to visit each name once before the rotation starts blocking.
+     * over, used to visit each name once before the rotation starts blocking and once after it
+     * has stopped.
      */
     private static final Map<RedisCommand<?>, RedisCommand<?>> NON_BLOCKING_POLL_COMMANDS = nonBlockingPollCommands();
 
@@ -1021,11 +1022,15 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
             // On a cluster the names can live on different nodes, so one blocking command cannot
             // cover them all and each name is polled in turn with a 1 second block. That makes the
-            // timeout a budget of attempts, and a timeout shorter than the number of names runs out
-            // before the last names are polled even once, hiding elements that are sitting in them.
-            // A single node does not behave that way, because BLPOP inspects every key before it
-            // blocks. Take one non-blocking pass over the names first to get the same reachability,
-            // then start the blocking rotation with the whole timeout still available.
+            // timeout a budget of attempts, and the rotation leaves a name unwatched as soon as it
+            // moves on. A timeout shorter than the number of names runs out before the last names
+            // are polled even once, and a name the rotation has already passed is not looked at
+            // again, so an element in either of them is reported as absent. A single node does not
+            // behave that way: BLPOP covers every key at once, inspecting them all before it blocks
+            // and waking on a push to any of them. Take a non-blocking pass over the names before
+            // the rotation starts waiting, and take it once more before reporting the queues as
+            // empty, so that an element that was already there and an element that arrived during
+            // the wait are both found. Neither pass blocks, so the timeout stays an upper bound.
             CompletionStage<V> result = this.<V>sweep(codec, names, 0, command).thenCompose(res -> {
                 if (res != null) {
                     return CompletableFuture.completedFuture(res);
@@ -1035,6 +1040,11 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 ref.set(names.iterator());
                 AtomicLong counter = new AtomicLong(secondsTimeout);
                 return this.<V>poll(codec, ref, names, counter, command);
+            }).thenCompose(res -> {
+                if (res != null) {
+                    return CompletableFuture.completedFuture(res);
+                }
+                return this.<V>sweep(codec, names, 0, command);
             });
             return new CompletableFutureWrapper<>(result);
         } else {
