@@ -95,6 +95,8 @@ public class Config {
 
     private boolean useScriptCache = true;
 
+    private boolean useMapCacheListenerOptimization = true;
+
     private int minCleanUpDelay = 5;
 
     private int maxCleanUpDelay = 30*60;
@@ -176,6 +178,7 @@ public class Config {
         setMaxCleanUpDelay(oldConf.getMaxCleanUpDelay());
         setCleanUpKeysAmount(oldConf.getCleanUpKeysAmount());
         setUseScriptCache(oldConf.isUseScriptCache());
+        setUseMapCacheListenerOptimization(oldConf.isUseMapCacheListenerOptimization());
         setKeepPubSubOrder(oldConf.isKeepPubSubOrder());
         setLockWatchdogTimeout(oldConf.getLockWatchdogTimeout());
         setLockWatchdogBatchSize(oldConf.getLockWatchdogBatchSize());
@@ -849,6 +852,28 @@ public class Config {
 
     public boolean isUseScriptCache() {
         return useScriptCache;
+    }
+
+    /**
+     * Defines whether RMapCache entry creation, update and removal events are
+     * published only when a listener registration flag is present in Redis or Valkey.
+     * <p>
+     * Set to <code>false</code> to publish events even if the flag is removed,
+     * for example by FLUSHALL. This setting must be applied to all clients
+     * writing to the map, including clients without local listeners.
+     * <p>
+     * Default is <code>true</code>.
+     *
+     * @param useMapCacheListenerOptimization whether to check the listener registration flag
+     * @return config
+     */
+    public Config setUseMapCacheListenerOptimization(boolean useMapCacheListenerOptimization) {
+        this.useMapCacheListenerOptimization = useMapCacheListenerOptimization;
+        return this;
+    }
+
+    public boolean isUseMapCacheListenerOptimization() {
+        return useMapCacheListenerOptimization;
     }
 
     public int getMinCleanUpDelay() {
