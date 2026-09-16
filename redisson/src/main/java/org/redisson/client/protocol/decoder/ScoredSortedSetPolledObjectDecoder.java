@@ -30,20 +30,37 @@ import org.redisson.client.protocol.Decoder;
  */
 public class ScoredSortedSetPolledObjectDecoder implements MultiDecoder<Object> {
 
+    private final int valueIndex;
+
+    /**
+     * Decodes the reply of a blocking poll, {@code [key, value, score]}.
+     */
+    public ScoredSortedSetPolledObjectDecoder() {
+        this(1);
+    }
+
+    /**
+     * @param valueIndex position of the value in the reply. Everything before it is a key
+     *                   decoded as a string, everything after it is a score decoded as a double.
+     */
+    public ScoredSortedSetPolledObjectDecoder(int valueIndex) {
+        this.valueIndex = valueIndex;
+    }
+
     @Override
     public Object decode(List<Object> parts, State state) {
         if (!parts.isEmpty()) {
-            return parts.get(1);
+            return parts.get(valueIndex);
         }
         return null;
     }
 
     @Override
     public Decoder<Object> getDecoder(Codec codec, int paramNum, State state, long size) {
-        if (paramNum == 0) {
+        if (paramNum < valueIndex) {
             return StringCodec.INSTANCE.getValueDecoder();
         }
-        if (paramNum == 2) {
+        if (paramNum > valueIndex) {
             return DoubleCodec.INSTANCE.getValueDecoder();
         }
         return MultiDecoder.super.getDecoder(codec, paramNum, state, size);
