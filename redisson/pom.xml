@@ -185,7 +185,7 @@
         <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-core</artifactId>
-            <version>1.16.6</version>
+            <version>1.17.1</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
