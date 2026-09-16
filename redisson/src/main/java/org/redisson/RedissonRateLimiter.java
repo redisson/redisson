@@ -294,7 +294,7 @@ public final class RedissonRateLimiter extends RedissonExpirable implements RRat
 
                 + "local toRelease = tonumber(ARGV[1]);"
                 + "local values = redis.call('zrange', permitsName, 0, -1, 'withscores');"
-                + "for i = #values - 1, 1, -2 do "
+                + "for i = 1, #values - 1, 2 do"
                 + "    if toRelease <= 0 then break; end;"
                 + "    local v = values[i];"
                 + "    local score = values[i + 1];"
