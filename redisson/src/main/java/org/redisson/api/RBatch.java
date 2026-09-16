@@ -17,6 +17,7 @@ package org.redisson.api;
 
 import org.redisson.client.RedisException;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.protocol.Time;
 import org.redisson.codec.JsonCodec;
 
 /**
@@ -706,6 +707,16 @@ public interface RBatch {
      * @return RSearchAsync object
      */
     RSearchAsync getSearch(Codec codec);
+
+    /**
+     * Returns the current Redis server time when this batch is executed.
+     * <p>
+     * In cluster mode, the request is routed to the shard owning slot 0,
+     * like other keyless commands. This is not a cluster-wide timestamp.
+     *
+     * @return server time in seconds and microseconds
+     */
+    RFuture<Time> timeAsync();
 
     /**
      * Executes all operations accumulated during async methods invocations.
