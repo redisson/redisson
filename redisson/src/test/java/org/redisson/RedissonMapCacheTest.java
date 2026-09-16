@@ -1139,6 +1139,26 @@ public class RedissonMapCacheTest extends BaseMapTest {
     }
 
     @Test
+    public void testPutIfAbsentTTLKeepsFirstValue() throws InterruptedException {
+        Config config = createConfig();
+        config.setMaxCleanUpDelay(2);
+        config.setMinCleanUpDelay(1);
+        RedissonClient redisson = Redisson.create(config);
+
+        RMapCache<String, String> map = redisson.getMapCache("testPutIfAbsentTTLKeepsFirstValue");
+        assertThat(map.putIfAbsent("key", "value-1", 300, TimeUnit.SECONDS)).isNull();
+        assertThat(map.putIfAbsent("key", "value-2", 300, TimeUnit.SECONDS)).isEqualTo("value-1");
+
+        Thread.sleep(3000);
+
+        assertThat(map.get("key")).isEqualTo("value-1");
+        assertThat(map.putIfAbsent("key", "value-3", 300, TimeUnit.SECONDS)).isEqualTo("value-1");
+        assertThat(map.remainTimeToLive("key")).isBetween(290000L, 300000L);
+
+        redisson.shutdown();
+    }
+
+    @Test
     public void testFastPutIfAbsentTTL() throws Exception {
         RMapCache<SimpleKey, SimpleValue> map = redisson.getMapCache("simple");
         SimpleKey key = new SimpleKey("1");
