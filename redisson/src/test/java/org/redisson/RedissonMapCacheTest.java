@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.redisson.api.*;
 import org.redisson.api.MapOptions.WriteMode;
 import org.redisson.api.map.event.*;
@@ -1269,6 +1270,82 @@ public class RedissonMapCacheTest extends BaseMapTest {
         } finally {
             observed.removeListener(created);
             observed.removeListener(updated);
+            writer.shutdown();
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    public void testListenerRemovalsWithoutOptimization(boolean writeThrough) {
+        Config config = createConfig();
+        config.setUseMapCacheListenerOptimization(false);
+        RedissonClient writer = Redisson.create(config);
+        RMapCache<String, String> observed = redisson.getMapCache("listenerRemovals", StringCodec.INSTANCE);
+        List<String> removed = new CopyOnWriteArrayList<>();
+        int listener = observed.addListener((EntryRemovedListener<String, String>) event ->
+                removed.add(event.getKey()));
+        try {
+            redisson.getKeys().flushall();
+            Map<String, String> store = new HashMap<>();
+            MapCacheOptions<String, String> options = MapCacheOptions.defaults();
+            if (writeThrough) {
+                options.writer(createMapWriter(store));
+            }
+            RMapCache<String, String> map = writer.getMapCache(observed.getName(), StringCodec.INSTANCE, options);
+            String quotedKey = "'; return redis.call('del', KEYS[1]); --";
+            Map<String, String> values = new LinkedHashMap<>();
+            values.put("false", "zero");
+            values.put("true", "one");
+            values.put("remove", "value");
+            values.put("conditional", "value");
+            values.put("lease", "value");
+            values.put(quotedKey, "value");
+            values.put("bulk", "value");
+            map.putAll(values);
+
+            assertThat(map.remove("remove")).isEqualTo("value");
+            assertThat(map.remove("conditional", "value")).isTrue();
+            assertThat(map.removeWithLease("lease")).isTrue();
+            assertThat(map.fastRemove(quotedKey, "missing", "bulk")).isEqualTo(2);
+
+            assertThat(map).containsOnlyKeys("false", "true");
+            if (writeThrough) {
+                assertThat(store).doesNotContainKeys(quotedKey, "bulk");
+                assertThat(store).containsEntry("false", "zero").containsEntry("true", "one");
+            }
+            await().atMost(Duration.ofSeconds(5)).untilAsserted(() ->
+                    assertThat(removed).containsExactlyInAnyOrder("remove", "conditional", "lease", quotedKey, "bulk"));
+        } finally {
+            observed.removeListener(listener);
+            writer.shutdown();
+        }
+    }
+
+    @Test
+    public void testListenerUpdatesWithoutOptimization() {
+        Config config = createConfig();
+        config.setUseMapCacheListenerOptimization(false);
+        RedissonClient writer = Redisson.create(config);
+        RMapCache<String, String> observed = redisson.getMapCache("listenerUpdates", StringCodec.INSTANCE);
+        List<String> updated = new CopyOnWriteArrayList<>();
+        int listener = observed.addListener((EntryUpdatedListener<String, String>) event ->
+                updated.add(event.getOldValue() + ":" + event.getValue()));
+        try {
+            redisson.getKeys().flushall();
+            RMapCache<String, String> map = writer.getMapCache(observed.getName(), StringCodec.INSTANCE);
+            map.put("key", "0");
+
+            assertThat(map.putIfExists("key", "1")).isEqualTo("0");
+            assertThat(map.fastPutIfExists("key", "2")).isTrue();
+            assertThat(map.fastReplace("key", "3")).isTrue();
+            assertThat(map.replace("key", "3", "4")).isTrue();
+            assertThat(map.replace("key", "5")).isEqualTo("4");
+
+            assertThat(map.get("key")).isEqualTo("5");
+            await().atMost(Duration.ofSeconds(5)).untilAsserted(() ->
+                    assertThat(updated).containsExactlyInAnyOrder("0:1", "1:2", "2:3", "3:4", "4:5"));
+        } finally {
+            observed.removeListener(listener);
             writer.shutdown();
         }
     }
