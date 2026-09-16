@@ -6,12 +6,15 @@ import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.redisson.api.*;
 import org.redisson.api.BatchOptions.ExecutionMode;
+import org.redisson.api.redisnode.RedisNodes;
 import org.redisson.client.*;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.Time;
 import org.redisson.cluster.ClusterNodeInfo;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.command.BatchPromise;
@@ -32,6 +35,54 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 public class RedissonBatchTest extends RedisDockerTest {
+
+    @ParameterizedTest
+    @EnumSource(ExecutionMode.class)
+    public void testTime(ExecutionMode executionMode) {
+        redisson.getAtomicLong("counter").set(42);
+        redisson.getBucket("name").set("value");
+        Time before = redisson.getRedisNodes(RedisNodes.SINGLE).getInstance().time();
+
+        RBatch batch = redisson.createBatch(BatchOptions.defaults().executionMode(executionMode));
+        RFuture<Long> counter = batch.getAtomicLong("counter").getAsync();
+        RFuture<Time> time = batch.timeAsync();
+        RFuture<String> value = batch.<String>getBucket("name").getAsync();
+
+        assertThat(time.toCompletableFuture()).isNotDone();
+        BatchResult<?> result = batch.execute();
+        Time actual = time.toCompletableFuture().join();
+        Time after = redisson.getRedisNodes(RedisNodes.SINGLE).getInstance().time();
+
+        assertThat(actual.getMicroseconds()).isBetween(0, 999999);
+        assertThat(TimeUnit.SECONDS.toMicros(actual.getSeconds()) + actual.getMicroseconds())
+                .isBetween(TimeUnit.SECONDS.toMicros(before.getSeconds()) + before.getMicroseconds(),
+                        TimeUnit.SECONDS.toMicros(after.getSeconds()) + after.getMicroseconds());
+        assertThat(counter.toCompletableFuture().join()).isEqualTo(42);
+        assertThat(value.toCompletableFuture().join()).isEqualTo("value");
+        assertThat(result.getResponses().toArray()).containsExactly(42L, actual, "value");
+    }
+
+    @ParameterizedTest
+    @EnumSource(ExecutionMode.class)
+    public void testTimeInCluster(ExecutionMode executionMode) {
+        testInCluster(client -> {
+            RBatch batch = client.createBatch(BatchOptions.defaults().executionMode(executionMode));
+            RFuture<Time> first = batch.timeAsync();
+            RFuture<Time> second = batch.timeAsync();
+
+            assertThat(first.toCompletableFuture()).isNotDone();
+            assertThat(second.toCompletableFuture()).isNotDone();
+            BatchResult<?> result = batch.execute();
+
+            Time firstTime = first.toCompletableFuture().join();
+            Time secondTime = second.toCompletableFuture().join();
+            assertThat(firstTime.getSeconds()).isPositive();
+            assertThat(firstTime.getMicroseconds()).isBetween(0, 999999);
+            assertThat(secondTime.getSeconds()).isPositive();
+            assertThat(secondTime.getMicroseconds()).isBetween(0, 999999);
+            assertThat(result.getResponses().toArray()).containsExactly(firstTime, secondTime);
+        });
+    }
 
     public static Iterable<Object[]> data() {
         return Arrays.asList(new Object[][] {
