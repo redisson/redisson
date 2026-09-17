@@ -154,56 +154,104 @@ public class RedissonLock extends RedissonBaseLock {
     }
 
     private RFuture<Long> tryAcquireAsync0(long waitTime, long leaseTime, TimeUnit unit, long threadId) {
-        return getServiceManager().execute(() -> tryAcquireAsync(waitTime, leaseTime, unit, threadId));
+        RFuture<Long> future = getServiceManager().execute(() -> tryAcquireAsync(waitTime, leaseTime, unit, threadId));
+        // get() cancels this outer future on interrupt — drop speculative watchdog / unlock
+        future.toCompletableFuture().whenComplete((r, e) -> {
+            if (future.toCompletableFuture().isCancelled()) {
+                cancelExpirationRenewal(threadId, null);
+                unlockAsync(threadId);
+            }
+        });
+        return future;
     }
 
     private RFuture<Boolean> tryAcquireOnceAsync(long waitTime, long leaseTime, TimeUnit unit, long threadId) {
         CompletionStage<Boolean> acquiredFuture;
         if (leaseTime > 0) {
             acquiredFuture = tryLockInnerAsync(waitTime, leaseTime, unit, threadId, RedisCommands.EVAL_NULL_BOOLEAN);
-        } else {
-            acquiredFuture = tryLockInnerAsync(waitTime, internalLockLeaseTime,
-                    TimeUnit.MILLISECONDS, threadId, RedisCommands.EVAL_NULL_BOOLEAN);
+            acquiredFuture = handleNoSync(threadId, acquiredFuture);
+
+            CompletionStage<Boolean> f = acquiredFuture.thenApply(acquired -> {
+                // lock acquired with fixed lease — no watchdog
+                if (acquired) {
+                    internalLockLeaseTime = unit.toMillis(leaseTime);
+                }
+                return acquired;
+            });
+            return new CompletableFutureWrapper<>(f);
         }
 
+        // Register watchdog before the SET so unlock's cancel cannot race ahead of schedule
+        // (e.g. interrupt during acquire, unlock in finally). See #7272.
+        scheduleExpirationRenewal(threadId);
+        acquiredFuture = tryLockInnerAsync(waitTime, internalLockLeaseTime,
+                TimeUnit.MILLISECONDS, threadId, RedisCommands.EVAL_NULL_BOOLEAN);
         acquiredFuture = handleNoSync(threadId, acquiredFuture);
 
-        CompletionStage<Boolean> f = acquiredFuture.thenApply(acquired -> {
-            // lock acquired
-            if (acquired) {
-                if (leaseTime > 0) {
-                    internalLockLeaseTime = unit.toMillis(leaseTime);
-                } else {
-                    scheduleExpirationRenewal(threadId);
-                }
+        CompletableFuture<Boolean> result = new CompletableFuture<>();
+        acquiredFuture.whenComplete((acquired, ex) -> {
+            if (ex != null) {
+                cancelExpirationRenewal(threadId, null);
+                result.completeExceptionally(ex);
+                return;
             }
-            return acquired;
+            if (!Boolean.TRUE.equals(acquired)) {
+                cancelExpirationRenewal(threadId, null);
+                result.complete(false);
+                return;
+            }
+            // acquired — if the caller already cancelled (interrupt), drop watchdog and unlock
+            if (!result.complete(true)) {
+                cancelExpirationRenewal(threadId, null);
+                unlockAsync(threadId);
+            }
         });
-        return new CompletableFutureWrapper<>(f);
+        return new CompletableFutureWrapper<>(result);
     }
 
     private RFuture<Long> tryAcquireAsync(long waitTime, long leaseTime, TimeUnit unit, long threadId) {
         CompletionStage<Long> ttlRemainingFuture;
         if (leaseTime > 0) {
             ttlRemainingFuture = tryLockInnerAsync(waitTime, leaseTime, unit, threadId, RedisCommands.EVAL_LONG);
-        } else {
-            ttlRemainingFuture = tryLockInnerAsync(waitTime, internalLockLeaseTime,
-                    TimeUnit.MILLISECONDS, threadId, RedisCommands.EVAL_LONG);
+            ttlRemainingFuture = handleNoSync(threadId, ttlRemainingFuture);
+
+            CompletionStage<Long> f = ttlRemainingFuture.thenApply(ttlRemaining -> {
+                // lock acquired with fixed lease — no watchdog
+                if (ttlRemaining == null) {
+                    internalLockLeaseTime = unit.toMillis(leaseTime);
+                }
+                return ttlRemaining;
+            });
+            return new CompletableFutureWrapper<>(f);
         }
+
+        // Register watchdog before the SET so unlock's cancel cannot race ahead of schedule
+        // (e.g. interrupt during acquire, unlock in finally). See #7272.
+        scheduleExpirationRenewal(threadId);
+        ttlRemainingFuture = tryLockInnerAsync(waitTime, internalLockLeaseTime,
+                TimeUnit.MILLISECONDS, threadId, RedisCommands.EVAL_LONG);
         ttlRemainingFuture = handleNoSync(threadId, ttlRemainingFuture);
 
-        CompletionStage<Long> f = ttlRemainingFuture.thenApply(ttlRemaining -> {
-            // lock acquired
-            if (ttlRemaining == null) {
-                if (leaseTime > 0) {
-                    internalLockLeaseTime = unit.toMillis(leaseTime);
-                } else {
-                    scheduleExpirationRenewal(threadId);
-                }
+        CompletableFuture<Long> result = new CompletableFuture<>();
+        ttlRemainingFuture.whenComplete((ttlRemaining, ex) -> {
+            if (ex != null) {
+                cancelExpirationRenewal(threadId, null);
+                result.completeExceptionally(ex);
+                return;
             }
-            return ttlRemaining;
+            // null ttl means acquired
+            if (ttlRemaining != null) {
+                cancelExpirationRenewal(threadId, null);
+                result.complete(ttlRemaining);
+                return;
+            }
+            // acquired — if the caller already cancelled (interrupt), drop watchdog and unlock
+            if (!result.complete(null)) {
+                cancelExpirationRenewal(threadId, null);
+                unlockAsync(threadId);
+            }
         });
-        return new CompletableFutureWrapper<>(f);
+        return new CompletableFutureWrapper<>(result);
     }
 
     @Override
@@ -324,8 +372,7 @@ public class RedissonLock extends RedissonBaseLock {
     }
 
     @Override
-    protected void cancelExpirationRenewal(Long threadId, Boolean unlockResult) {
-        super.cancelExpirationRenewal(threadId, unlockResult);
+    protected void updateLockLeaseTimeOnUnlock(Boolean unlockResult) {
         if (unlockResult == null || unlockResult) {
             internalLockLeaseTime = getServiceManager().getCfg().getLockWatchdogTimeout();
         }
@@ -450,7 +497,14 @@ public class RedissonLock extends RedissonBaseLock {
 
     @Override
     public RFuture<Boolean> tryLockAsync(long threadId) {
-        return getServiceManager().execute(() -> tryAcquireOnceAsync(-1, -1, null, threadId));
+        RFuture<Boolean> future = getServiceManager().execute(() -> tryAcquireOnceAsync(-1, -1, null, threadId));
+        future.toCompletableFuture().whenComplete((r, e) -> {
+            if (future.toCompletableFuture().isCancelled()) {
+                cancelExpirationRenewal(threadId, null);
+                unlockAsync(threadId);
+            }
+        });
+        return future;
     }
 
     @Override
