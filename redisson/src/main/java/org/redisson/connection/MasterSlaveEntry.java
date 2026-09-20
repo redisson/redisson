@@ -78,6 +78,8 @@ public class MasterSlaveEntry {
 
     final AtomicBoolean noPubSubSlaves = new AtomicBoolean();
 
+    final AtomicBoolean masterUsedAsSlave = new AtomicBoolean();
+
     volatile int availableSlaves = -1;
     volatile boolean aofEnabled;
 
@@ -113,9 +115,26 @@ public class MasterSlaveEntry {
     private void useMasterAsSlave() {
         if (hasNoSlaves()
                 || config.getReadMode() == ReadMode.MASTER_SLAVE) {
-            addSlaveEntry(masterEntry);
+            addMasterAsSlave();
         } else {
             removeSlaveEntry(masterEntry);
+            if (masterUsedAsSlave.compareAndSet(true, false)) {
+                log.info("master {} excluded from slaves", masterEntry.getClient().getAddr());
+            }
+        }
+    }
+
+    // master entry is already registered as a slave since setupMasterEntry(),
+    // so the flag rather than the map defines whether the fallback was reported
+    private void addMasterAsSlave() {
+        addSlaveEntry(masterEntry);
+
+        if (config.getReadMode() == ReadMode.MASTER_SLAVE) {
+            return;
+        }
+        if (masterUsedAsSlave.compareAndSet(false, true)) {
+            log.info("master {} is used as slave. readMode = {}",
+                        masterEntry.getClient().getAddr(), config.getReadMode());
         }
     }
 
@@ -220,8 +239,7 @@ public class MasterSlaveEntry {
         if (!config.isSlaveNotUsed()
                 && !masterEntry.getClient().getAddr().equals(entry.getClient().getAddr())
                     && hasNoSlaves()) {
-            addSlaveEntry(masterEntry);
-            log.info("master {} is used as slave", masterEntry.getClient().getAddr());
+            addMasterAsSlave();
         }
 
         entry.nodeDown();
@@ -451,6 +469,7 @@ public class MasterSlaveEntry {
         }
 
         removeSlaveEntry(masterEntry);
+        masterUsedAsSlave.set(false);
         log.info("master {} excluded from slaves", addr);
         return true;
     }
@@ -463,6 +482,7 @@ public class MasterSlaveEntry {
         }
 
         removeSlaveEntry(masterEntry);
+        masterUsedAsSlave.set(false);
         log.info("master {} excluded from slaves", addr);
         return true;
     }
