@@ -810,6 +810,19 @@ public class Config {
     }
 
     /**
+     * Read config object stored in YAML format from <code>URL</code>
+     *
+     * @param url object
+     * @param classLoader class loader used to resolve custom classes during parsing
+     * @return config
+     * @throws IOException error
+     */
+    public static Config fromYAML(URL url, ClassLoader classLoader) throws IOException {
+        ConfigSupport support = new ConfigSupport(classLoader, false);
+        return support.fromYAML(url, Config.class);
+    }
+
+    /**
      * Read config object stored in YAML format from <code>Reader</code>
      *
      * @param reader object
