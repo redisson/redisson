@@ -44,6 +44,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
 /**
@@ -77,6 +78,10 @@ public class MasterSlaveEntry {
     final AtomicBoolean active = new AtomicBoolean(true);
 
     final AtomicBoolean noPubSubSlaves = new AtomicBoolean();
+
+    static final long NO_MASTER_CHANGE = Long.MIN_VALUE;
+
+    final AtomicLong masterChangeStartedAt = new AtomicLong(NO_MASTER_CHANGE);
 
     volatile int availableSlaves = -1;
     volatile boolean aofEnabled;
@@ -498,19 +503,63 @@ public class MasterSlaveEntry {
      * @return client 
      */
     public CompletableFuture<RedisClient> changeMaster(RedisURI address) {
+        long token = startMasterChange(address);
+        if (token == NO_MASTER_CHANGE) {
+            return masterChangeAlreadyInProgress(address);
+        }
         ClientConnectionsEntry oldMaster = masterEntry;
         CompletableFuture<RedisClient> future = setupMasterEntry(address);
-        return changeMaster(address, oldMaster, future);
+        return changeMaster(address, oldMaster, future, token);
     }
     
     public CompletableFuture<RedisClient> changeMaster(InetSocketAddress address, RedisURI uri) {
+        long token = startMasterChange(uri);
+        if (token == NO_MASTER_CHANGE) {
+            return masterChangeAlreadyInProgress(uri);
+        }
         ClientConnectionsEntry oldMaster = masterEntry;
         CompletableFuture<RedisClient> future = setupMasterEntry(address, uri);
-        return changeMaster(uri, oldMaster, future);
+        return changeMaster(uri, oldMaster, future, token);
     }
 
+    private long startMasterChange(RedisURI address) {
+        long now = System.nanoTime();
+        while (true) {
+            long current = masterChangeStartedAt.get();
+            if (current != NO_MASTER_CHANGE) {
+                long elapsed = now - current;
+                if (elapsed < masterChangeTimeoutNanos()) {
+                    return NO_MASTER_CHANGE;
+                }
+                log.warn("Master change started {} ms ago hasn't completed, allowing master change to {}",
+                        TimeUnit.NANOSECONDS.toMillis(elapsed), address);
+            }
+            if (masterChangeStartedAt.compareAndSet(current, now)) {
+                return now;
+            }
+        }
+    }
+
+    long masterChangeTimeoutNanos() {
+        long connections = config.getMasterConnectionMinimumIdleSize()
+                            + config.getSubscriptionConnectionMinimumIdleSize() + 1;
+        return TimeUnit.MILLISECONDS.toNanos(connections * (config.getConnectTimeout() + config.getTimeout()));
+    }
+
+    private CompletableFuture<RedisClient> masterChangeAlreadyInProgress(RedisURI address) {
+        CompletableFuture<RedisClient> f = new CompletableFuture<>();
+        f.completeExceptionally(new RedisConnectionException(
+                "Unable to change master to " + address + ": another master change is in progress"));
+        return f;
+    }
 
     private CompletableFuture<RedisClient> changeMaster(RedisURI address, ClientConnectionsEntry oldMaster,
+                              CompletableFuture<RedisClient> future, long token) {
+        return changeMasterInternal(address, oldMaster, future)
+                .whenComplete((r, e) -> masterChangeStartedAt.compareAndSet(token, NO_MASTER_CHANGE));
+    }
+
+    private CompletableFuture<RedisClient> changeMasterInternal(RedisURI address, ClientConnectionsEntry oldMaster,
                               CompletableFuture<RedisClient> future) {
         return future.whenComplete((newMasterClient, e) -> {
             if (e != null) {
