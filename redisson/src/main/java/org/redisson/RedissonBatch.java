@@ -17,9 +17,6 @@ package org.redisson;
 
 import org.redisson.api.*;
 import org.redisson.client.codec.Codec;
-import org.redisson.client.codec.LongCodec;
-import org.redisson.client.protocol.RedisCommands;
-import org.redisson.client.protocol.Time;
 import org.redisson.codec.JsonCodec;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandBatchService;
@@ -259,11 +256,6 @@ public class RedissonBatch implements RBatch {
     @Override
     public <V> RSetCacheAsync<V> getSetCache(String name, Codec codec) {
         return new RedissonSetCache<V>(codec, evictionScheduler, executorService, name, null);
-    }
-
-    @Override
-    public RFuture<Time> timeAsync() {
-        return executorService.readAsync((String) null, LongCodec.INSTANCE, RedisCommands.TIME);
     }
 
     @Override

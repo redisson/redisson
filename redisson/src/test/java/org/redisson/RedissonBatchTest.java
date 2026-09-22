@@ -45,7 +45,7 @@ public class RedissonBatchTest extends RedisDockerTest {
 
         RBatch batch = redisson.createBatch(BatchOptions.defaults().executionMode(executionMode));
         RFuture<Long> counter = batch.getAtomicLong("counter").getAsync();
-        RFuture<Time> time = batch.timeAsync();
+        RFuture<Time> time = batch.getKeys().timeAsync();
         RFuture<String> value = batch.<String>getBucket("name").getAsync();
 
         assertThat(time.toCompletableFuture()).isNotDone();
@@ -67,8 +67,8 @@ public class RedissonBatchTest extends RedisDockerTest {
     public void testTimeInCluster(ExecutionMode executionMode) {
         testInCluster(client -> {
             RBatch batch = client.createBatch(BatchOptions.defaults().executionMode(executionMode));
-            RFuture<Time> first = batch.timeAsync();
-            RFuture<Time> second = batch.timeAsync();
+            RFuture<Time> first = batch.getKeys().timeAsync();
+            RFuture<Time> second = batch.getKeys().timeAsync();
 
             assertThat(first.toCompletableFuture()).isNotDone();
             assertThat(second.toCompletableFuture()).isNotDone();
