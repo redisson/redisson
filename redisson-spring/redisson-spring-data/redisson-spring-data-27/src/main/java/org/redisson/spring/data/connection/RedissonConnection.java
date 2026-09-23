@@ -550,6 +550,26 @@ public class RedissonConnection extends AbstractRedisConnection {
             if (option == SetOption.SET_IF_PRESENT) {
                 return write(key, StringCodec.INSTANCE, SET, key, value, "XX");
             }
+        } else if (expiration.isKeepTtl()) {
+            if (option == null || option == SetOption.UPSERT) {
+                return write(key, StringCodec.INSTANCE, SET, key, value, "KEEPTTL");
+            }
+            if (option == SetOption.SET_IF_ABSENT) {
+                return write(key, StringCodec.INSTANCE, SET, key, value, "KEEPTTL", "NX");
+            }
+            if (option == SetOption.SET_IF_PRESENT) {
+                return write(key, StringCodec.INSTANCE, SET, key, value, "KEEPTTL", "XX");
+            }
+        } else if (expiration.isUnixTimestamp()) {
+            if (option == null || option == SetOption.UPSERT) {
+                return write(key, StringCodec.INSTANCE, SET, key, value, "PXAT", expiration.getExpirationTimeInMilliseconds());
+            }
+            if (option == SetOption.SET_IF_ABSENT) {
+                return write(key, StringCodec.INSTANCE, SET, key, value, "PXAT", expiration.getExpirationTimeInMilliseconds(), "NX");
+            }
+            if (option == SetOption.SET_IF_PRESENT) {
+                return write(key, StringCodec.INSTANCE, SET, key, value, "PXAT", expiration.getExpirationTimeInMilliseconds(), "XX");
+            }
         } else {
             if (option == null || option == SetOption.UPSERT) {
                 return write(key, StringCodec.INSTANCE, SET, key, value, "PX", expiration.getExpirationTimeInMilliseconds());

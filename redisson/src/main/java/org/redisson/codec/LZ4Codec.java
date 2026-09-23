@@ -70,6 +70,7 @@ public class LZ4Codec extends BaseCodec {
         @Override
         public Object decode(ByteBuf buf, State state) throws IOException {
             int decompressSize = buf.readInt();
+            checkDecompressionSize(decompressSize);
             ByteBuf out = ByteBufAllocator.DEFAULT.buffer(decompressSize);
             try {
                 LZ4SafeDecompressor decompressor = factory.safeDecompressor();

@@ -427,6 +427,12 @@ public class RedissonBatchRx implements RBatchRx {
     }
 
     @Override
+    public RTimeSeriesNativeRx getTimeSeriesNative(String name) {
+        return RxProxyBuilder.create(executorService,
+                new RedissonTimeSeriesNative(executorService, name), RTimeSeriesNativeRx.class);
+    }
+
+    @Override
     public <T> RBloomFilterNativeRx<T> getBloomFilterNative(String name) {
         return RxProxyBuilder.create(executorService,
                 new RedissonBloomFilterNative<>(executorService, name), RBloomFilterNativeRx.class);
@@ -467,6 +473,18 @@ public class RedissonBatchRx implements RBatchRx {
         return RxProxyBuilder.create(executorService,
                 new RedissonTopK<V>(codec, executorService, name),
                 RTopKRx.class);
+    }
+
+    @Override
+    public <V> RCountMinRx<V> getCountMin(String name) {
+        return getCountMin(name, null);
+    }
+
+    @Override
+    public <V> RCountMinRx<V> getCountMin(String name, Codec codec) {
+        return RxProxyBuilder.create(executorService,
+                new RedissonCountMin<V>(codec, executorService, name),
+                RCountMinRx.class);
     }
 
     @Override

@@ -410,6 +410,12 @@ public class RedissonBatchReactive implements RBatchReactive {
     }
 
     @Override
+    public RTimeSeriesNativeReactive getTimeSeriesNative(String name) {
+        return ReactiveProxyBuilder.create(executorService,
+                new RedissonTimeSeriesNative(executorService, name), RTimeSeriesNativeReactive.class);
+    }
+
+    @Override
     public <T> RBloomFilterNativeReactive<T> getBloomFilterNative(String name) {
         return ReactiveProxyBuilder.create(executorService,
                 new RedissonBloomFilterNative<>(executorService, name), RBloomFilterNativeReactive.class);
@@ -450,6 +456,18 @@ public class RedissonBatchReactive implements RBatchReactive {
         return ReactiveProxyBuilder.create(executorService,
                 new RedissonTopK<V>(codec, executorService, name),
                 RTopKReactive.class);
+    }
+
+    @Override
+    public <V> RCountMinReactive<V> getCountMin(String name) {
+        return getCountMin(name, null);
+    }
+
+    @Override
+    public <V> RCountMinReactive<V> getCountMin(String name, Codec codec) {
+        return ReactiveProxyBuilder.create(executorService,
+                new RedissonCountMin<V>(codec, executorService, name),
+                RCountMinReactive.class);
     }
 
     @Override

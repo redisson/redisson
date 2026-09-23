@@ -98,7 +98,9 @@ public interface RBitSet extends RExpirable, RBitSetAsync {
     /**
      * Executes BITFIELD command with multiple subcommands
      * and returns result list in the same order.
-     * if ReadMode is Slave And Args is only get commands,
+     * if ReadMode is Slave or one of the availability zone modes
+     * (AZ_AFFINITY, AZ_AFFINITY_SLAVES_AND_MASTER, AZ_AFFINITY_MASTER_SLAVE)
+     * And Args is only get commands,
      * then BITFIELD_RO command will be executed
      *
      * @param args - bitfield arguments

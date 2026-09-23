@@ -28,6 +28,121 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 public class RedissonConnectionTest extends BaseConnectionTest {
 
     @Test
+    public void testSetWithExpirationOptionKeepTtl() {
+        byte[] key = "set-keepttl-repro".getBytes();
+        connection.set(key, "value1".getBytes());
+        connection.expire(key, 100);
+
+        Boolean result = connection.set(key, "value2".getBytes(), Expiration.keepTtl(), SetOption.upsert());
+
+        assertThat(result).isTrue();
+        assertThat(connection.get(key)).isEqualTo("value2".getBytes());
+        assertThat(connection.ttl(key)).isGreaterThan(0);
+    }
+
+    @Test
+    public void testSetWithExpirationOptionUnixTimestampSetsCorrectTtl() {
+        // set(key, value, Expiration, SetOption) has no isUnixTimestamp() branch at all,
+        // so Expiration.unixTimestamp(...) falls into the relative-time branch and its
+        // absolute epoch-millis value gets sent as a PX delay instead of a PXAT deadline.
+        // This does not throw (unlike KEEPTTL), so it must be checked by TTL value, not
+        // just absence of exception - a repeat of the exact silent-wrong-TTL failure mode
+        // getEx() had for the same Expiration kind before it was fixed.
+        byte[] key = "set-unixtimestamp-repro".getBytes();
+        connection.set(key, "value1".getBytes());
+
+        long targetEpochMillis = System.currentTimeMillis() + 120_000; // 2 minutes from now
+        connection.set(key, "value2".getBytes(), Expiration.unixTimestamp(targetEpochMillis, TimeUnit.MILLISECONDS), SetOption.upsert());
+
+        long ttlMillis = connection.pTtl(key);
+        assertThat(ttlMillis)
+                .as("TTL should be ~120000ms (2 minutes), not the epoch timestamp misread as a PX delay")
+                .isGreaterThan(0)
+                .isLessThan(150_000);
+    }
+
+    @Test
+    public void testSetWithExpirationOptionUnixTimestampSecondsUnit() {
+        // Same as above but constructed with SECONDS instead of MILLISECONDS, to confirm
+        // Expiration.getExpirationTimeInMilliseconds() normalizes correctly regardless of
+        // the unit the Expiration was originally built with.
+        byte[] key = "set-unixtimestamp-seconds-repro".getBytes();
+        connection.set(key, "value1".getBytes());
+
+        long targetEpochSeconds = (System.currentTimeMillis() / 1000) + 120;
+        connection.set(key, "value2".getBytes(), Expiration.unixTimestamp(targetEpochSeconds, TimeUnit.SECONDS), SetOption.upsert());
+
+        long ttlMillis = connection.pTtl(key);
+        assertThat(ttlMillis)
+                .as("TTL should be ~120000ms (2 minutes) when built from a SECONDS-unit unix timestamp too")
+                .isGreaterThan(0)
+                .isLessThan(150_000);
+    }
+
+    @Test
+    public void testSetExpirationOptionMatrix() {
+        // Full matrix: every Expiration kind x every SetOption, against the exact
+        // set(byte[], byte[], Expiration, SetOption) overload the bug is in.
+        // Prints PASS/FAIL for each of the 12 combinations so the failure surface
+        // is fully characterized, not just the one KEEPTTL case.
+        java.util.List<String> failures = new java.util.ArrayList<>();
+        java.util.List<String> passes = new java.util.ArrayList<>();
+
+        Expiration[] expirations = new Expiration[] {
+            Expiration.milliseconds(60000),
+            Expiration.persistent(),
+            Expiration.keepTtl(),
+            Expiration.unixTimestamp(System.currentTimeMillis() + 60000, TimeUnit.MILLISECONDS)
+        };
+        String[] expirationNames = { "relative(60s)", "persistent", "keepTtl", "unixTimestamp" };
+
+        SetOption[] options = { SetOption.upsert(), SetOption.ifAbsent(), SetOption.ifPresent() };
+        String[] optionNames = { "UPSERT", "IF_ABSENT", "IF_PRESENT" };
+
+        for (int e = 0; e < expirations.length; e++) {
+            for (int o = 0; o < options.length; o++) {
+                byte[] key = ("matrix-" + e + "-" + o).getBytes();
+                if (optionNames[o].equals("IF_ABSENT")) {
+                    // NX only applies the write when the key does not already exist -
+                    // seeding it here would make every NX case a guaranteed no-op.
+                    connection.del(key);
+                } else {
+                    connection.set(key, "seed".getBytes());
+                    if (optionNames[o].equals("IF_PRESENT") || expirationNames[e].equals("keepTtl")) {
+                        connection.expire(key, 100);
+                    }
+                }
+                String label = expirationNames[e] + " + " + optionNames[o];
+                try {
+                    connection.set(key, "updated".getBytes(), expirations[e], options[o]);
+
+                    // Absence of an exception is not enough on its own - unixTimestamp
+                    // silently set a ~56-year TTL instead of throwing before this was fixed,
+                    // so the actual TTL has to be checked too, not just "did it not blow up".
+                    if (expirationNames[e].equals("unixTimestamp")) {
+                        long ttl = connection.pTtl(key);
+                        if (ttl <= 0 || ttl > 150_000) {
+                            failures.add(label + " -> wrong TTL: " + ttl + "ms (expected ~60000ms)");
+                            continue;
+                        }
+                    }
+                    passes.add(label);
+                } catch (Exception ex) {
+                    failures.add(label + " -> " + ex.getCause());
+                }
+            }
+        }
+
+        System.out.println("=== set(key, value, Expiration, SetOption) matrix ===");
+        System.out.println("PASS (" + passes.size() + "): " + passes);
+        System.out.println("FAIL (" + failures.size() + "): " + failures);
+
+        // All 12 combinations (4 Expiration kinds x 3 SetOptions) must succeed, including KEEPTTL.
+        assertThat(failures).isEmpty();
+        assertThat(passes).hasSize(12);
+    }
+
+    @Test
     public void testHTtlWithTimeUnit() {
         byte[] key = "test-hash".getBytes();
         byte[] field1 = "field1".getBytes();

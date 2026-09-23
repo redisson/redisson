@@ -208,7 +208,7 @@ public class ConnectionsHolder<T extends RedisConnection> {
             allConnections.add(conn);
 
             if (changeUsage) {
-                promise.thenApply(c -> c.incUsage());
+                conn.incUsage();
             }
             connectedSuccessful(promise, conn);
         });

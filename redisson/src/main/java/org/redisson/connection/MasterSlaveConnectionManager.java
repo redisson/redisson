@@ -75,18 +75,28 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     protected final AtomicInteger rrCounter = new AtomicInteger(0);
 
+    protected StorageMemoryUsageMonitor storageMemoryUsageMonitor;
+
     MasterSlaveConnectionManager(BaseMasterSlaveServersConfig<?> cfg, Config configCopy) {
         if (cfg instanceof MasterSlaveServersConfig) {
             this.config = (MasterSlaveServersConfig) cfg;
+            ReadMode readMode = this.config.getReadMode();
             if (this.config.getSlaveAddresses().isEmpty()
-                    && (this.config.getReadMode() == ReadMode.SLAVE || this.config.getReadMode() == ReadMode.MASTER_SLAVE)) {
-                throw new IllegalArgumentException("Slaves aren't defined. readMode can't be SLAVE or MASTER_SLAVE");
+                    && (readMode == ReadMode.SLAVE || readMode == ReadMode.MASTER_SLAVE
+                        || (readMode != null && readMode.isAvailabilityZoneAware()))) {
+                throw new IllegalArgumentException("Slaves aren't defined. readMode can't be " + readMode);
             }
         } else {
             this.config = create(cfg);
         }
 
+        String clientAvailabilityZone = this.config.getClientAvailabilityZone();
+        if (clientAvailabilityZone != null && clientAvailabilityZone.trim().isEmpty()) {
+            throw new IllegalArgumentException("clientAvailabilityZone can't be blank");
+        }
+
         serviceManager = new ServiceManager(this.config, configCopy);
+        serviceManager.checkClientAvailabilityZone(this.config, this.config.getReadMode());
         subscribeService = new PublishSubscribeService(this);
     }
 
@@ -239,6 +249,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 doConnect(u -> null);
 
                 detectCluster();
+
+                startDStorageMemoryUsageMonitoring();
                 return;
             } catch (IllegalArgumentException e) {
                 shutdown();
@@ -260,6 +272,13 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                     throw new RedisConnectionException(ex);
                 }
             }
+        }
+    }
+
+    private void startDStorageMemoryUsageMonitoring() {
+        if (serviceManager.getCfg().getStorageStatisticsInterval() > 0L) {
+            storageMemoryUsageMonitor = new StorageMemoryUsageMonitor(this, serviceManager.getCfg().getStorageStatisticsInterval());
+            storageMemoryUsageMonitor.start();
         }
     }
 
@@ -437,6 +456,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         c.setSlaveConnectionMinimumIdleSize(cfg.getSlaveConnectionMinimumIdleSize());
         c.setSubscriptionConnectionMinimumIdleSize(cfg.getSubscriptionConnectionMinimumIdleSize());
         c.setReadMode(cfg.getReadMode());
+        c.setClientAvailabilityZone(cfg.getClientAvailabilityZone());
         c.setSubscriptionMode(cfg.getSubscriptionMode());
         c.setDnsMonitoringInterval(cfg.getDnsMonitoringInterval());
         c.setDnsMonitoringTimes(cfg.getDnsMonitoringTimes());
@@ -596,17 +616,17 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     @Override
     public int calcSlot(String key) {
-        return singleSlotRange.getStartSlot();
+        return serviceManager.calcSlot(key);
     }
 
     @Override
     public int calcSlot(byte[] key) {
-        return singleSlotRange.getStartSlot();
+        return serviceManager.calcSlot(key);
     }
 
     @Override
     public int calcSlot(ByteBuf key) {
-        return singleSlotRange.getStartSlot();
+        return serviceManager.calcSlot(key);
     }
 
     @Override
@@ -673,6 +693,11 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         if (dnsMonitor != null) {
             dnsMonitor.stop();
         }
+
+        if (storageMemoryUsageMonitor != null) {
+            storageMemoryUsageMonitor.stop();
+        }
+
         long timeoutInNanos = unit.toNanos(timeout);
 
         serviceManager.close();
@@ -735,6 +760,11 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         if (dnsMonitor != null) {
             dnsMonitor.stop();
         }
+
+        if (storageMemoryUsageMonitor != null) {
+            storageMemoryUsageMonitor.stop();
+        }
+
         long timeoutInNanos = unit.toNanos(timeout);
 
         serviceManager.close();

@@ -27,6 +27,7 @@ import org.springframework.data.domain.Range;
 import org.springframework.data.redis.connection.BitFieldSubCommands;
 import org.springframework.data.redis.connection.ReactiveRedisConnection.*;
 import org.springframework.data.redis.connection.ReactiveStringCommands;
+import org.springframework.data.redis.core.types.Expiration;
 import org.springframework.data.redis.connection.RedisStringCommands.BitOperation;
 import org.springframework.data.redis.connection.RedisStringCommands.SetOption;
 import org.springframework.util.Assert;
@@ -72,6 +73,22 @@ public class RedissonReactiveStringCommands extends RedissonBaseReactive impleme
                     m = write(key, StringCodec.INSTANCE, SET, key, value, "NX");
                 } else if (command.getOption().get() == SetOption.SET_IF_PRESENT) {
                     m = write(key, StringCodec.INSTANCE, SET, key, value, "XX");
+                }
+            } else if (command.getExpiration().get().isKeepTtl()) {
+                if (!command.getOption().isPresent() || command.getOption().get() == SetOption.UPSERT) {
+                    m = write(key, StringCodec.INSTANCE, SET, key, value, "KEEPTTL");
+                } else if (command.getOption().get() == SetOption.SET_IF_ABSENT) {
+                    m = write(key, StringCodec.INSTANCE, SET, key, value, "KEEPTTL", "NX");
+                } else if (command.getOption().get() == SetOption.SET_IF_PRESENT) {
+                    m = write(key, StringCodec.INSTANCE, SET, key, value, "KEEPTTL", "XX");
+                }
+            } else if (command.getExpiration().get().isUnixTimestamp()) {
+                if (!command.getOption().isPresent() || command.getOption().get() == SetOption.UPSERT) {
+                    m = write(key, StringCodec.INSTANCE, SET, key, value, "PXAT", command.getExpiration().get().getExpirationTimeInMilliseconds());
+                } else if (command.getOption().get() == SetOption.SET_IF_ABSENT) {
+                    m = write(key, StringCodec.INSTANCE, SET, key, value, "PXAT", command.getExpiration().get().getExpirationTimeInMilliseconds(), "NX");
+                } else if (command.getOption().get() == SetOption.SET_IF_PRESENT) {
+                    m = write(key, StringCodec.INSTANCE, SET, key, value, "PXAT", command.getExpiration().get().getExpirationTimeInMilliseconds(), "XX");
                 }
             } else {
                 if (!command.getOption().isPresent() || command.getOption().get() == SetOption.UPSERT) {
@@ -475,10 +492,23 @@ public class RedissonReactiveStringCommands extends RedissonBaseReactive impleme
         return execute(commands, command -> {
 
             Assert.notNull(command.getKey(), "Key must not be null!");
+            Assert.notNull(command.getExpiration(), "Expiration must not be null!");
 
             byte[] keyBuf = toByteArray(command.getKey());
-            Mono<byte[]> m = write(keyBuf, ByteArrayCodec.INSTANCE, GETEX, keyBuf,
-                                    "PX", command.getExpiration().getExpirationTimeInMilliseconds());
+            Expiration expiration = command.getExpiration();
+
+            Mono<byte[]> m;
+            if (expiration.isPersistent()) {
+                m = write(keyBuf, ByteArrayCodec.INSTANCE, GETEX, keyBuf, "PERSIST");
+            } else if (expiration.isKeepTtl()) {
+                m = write(keyBuf, ByteArrayCodec.INSTANCE, GETEX, keyBuf);
+            } else if (expiration.isUnixTimestamp()) {
+                m = write(keyBuf, ByteArrayCodec.INSTANCE, GETEX, keyBuf,
+                        "PXAT", expiration.getExpirationTimeInMilliseconds());
+            } else {
+                m = write(keyBuf, ByteArrayCodec.INSTANCE, GETEX, keyBuf,
+                        "PX", expiration.getExpirationTimeInMilliseconds());
+            }
             return m.map(v -> new ByteBufferResponse<>(command, ByteBuffer.wrap(v)))
                     .defaultIfEmpty(new AbsentByteBufferResponse<>(command));
         });

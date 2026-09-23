@@ -16,6 +16,8 @@
 package org.redisson.codec;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import org.redisson.client.codec.BaseCodec;
 import org.redisson.client.codec.Codec;
@@ -25,6 +27,7 @@ import org.redisson.client.protocol.Encoder;
 import org.xerial.snappy.Snappy;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 /**
  * Google's Snappy compression codec.
@@ -64,14 +67,30 @@ public class SnappyCodecV2 extends BaseCodec {
         
         @Override
         public Object decode(ByteBuf buf, State state) throws IOException {
-            byte[] bytes = new byte[buf.readableBytes()];
-            buf.readBytes(bytes);
-            bytes = Snappy.uncompress(bytes);
-            ByteBuf bf = Unpooled.wrappedBuffer(bytes);
+            if (buf.isDirect() && buf.nioBufferCount() == 1) {
+                ByteBuffer source = buf.nioBuffer(buf.readerIndex(), buf.readableBytes());
+
+                int size = Snappy.uncompressedLength(source);
+                checkDecompressionSize(size);
+
+                ByteBuf out = ByteBufAllocator.DEFAULT.directBuffer(size);
+                try {
+                    ByteBuffer target = out.nioBuffer(out.writerIndex(), size);
+                    out.writerIndex(out.writerIndex() + Snappy.uncompress(source, target));
+                    return innerCodec.getValueDecoder().decode(out, state);
+                } finally {
+                    out.release();
+                }
+            }
+
+            // see the encoder: the copy is the price of a non-direct buffer reaching a native call
+            byte[] compressed = ByteBufUtil.getBytes(buf);
+            checkDecompressionSize(Snappy.uncompressedLength(compressed));
+            ByteBuf out = Unpooled.wrappedBuffer(Snappy.uncompress(compressed));
             try {
-                return innerCodec.getValueDecoder().decode(bf, state);
+                return innerCodec.getValueDecoder().decode(out, state);
             } finally {
-                bf.release();
+                out.release();
             }
         }
     };
@@ -81,11 +100,29 @@ public class SnappyCodecV2 extends BaseCodec {
         @Override
         public ByteBuf encode(Object in) throws IOException {
             ByteBuf encoded = innerCodec.getValueEncoder().encode(in);
-            byte[] bytes = new byte[encoded.readableBytes()];
-            encoded.readBytes(bytes);
-            encoded.release();
-            byte[] res = Snappy.compress(bytes);
-            return Unpooled.wrappedBuffer(res);
+            try {
+                int size = encoded.readableBytes();
+
+                ByteBuf out = ByteBufAllocator.DEFAULT.directBuffer(Snappy.maxCompressedLength(size));
+                boolean complete = false;
+                try {
+                    if (encoded.isDirect() && encoded.nioBufferCount() == 1) {
+                        ByteBuffer source = encoded.nioBuffer(encoded.readerIndex(), size);
+                        ByteBuffer target = out.nioBuffer(out.writerIndex(), out.writableBytes());
+                        out.writerIndex(out.writerIndex() + Snappy.compress(source, target));
+                    } else {
+                        out.writeBytes(Snappy.compress(ByteBufUtil.getBytes(encoded)));
+                    }
+                    complete = true;
+                    return out;
+                } finally {
+                    if (!complete) {
+                        out.release();
+                    }
+                }
+            } finally {
+                encoded.release();
+            }
         }
     };
 

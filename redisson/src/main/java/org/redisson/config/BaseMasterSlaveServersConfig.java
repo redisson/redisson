@@ -60,6 +60,8 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
 
     private ReadMode readMode = ReadMode.SLAVE;
 
+    private String clientAvailabilityZone;
+
     private boolean fallbackLoadingToMaster = true;
     
     private SubscriptionMode subscriptionMode = SubscriptionMode.MASTER;
@@ -93,6 +95,7 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
         setSlaveConnectionMinimumIdleSize(config.getSlaveConnectionMinimumIdleSize());
         setSubscriptionConnectionMinimumIdleSize(config.getSubscriptionConnectionMinimumIdleSize());
         setReadMode(config.getReadMode());
+        setClientAvailabilityZone(config.getClientAvailabilityZone());
         setFallbackLoadingToMaster(config.isFallbackLoadingToMaster());
         setSubscriptionMode(config.getSubscriptionMode());
         setDnsMonitoringInterval(config.getDnsMonitoringInterval());
@@ -275,6 +278,8 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
     /**
      * Set node type used for read operation.
      * <p>
+     * The availability zone modes also need {@link #setClientAvailabilityZone(String)}.
+     * <p>
      * Default is <code>SLAVE</code>
      *
      * @param readMode param
@@ -286,6 +291,40 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
     }
     public ReadMode getReadMode() {
         return readMode;
+    }
+
+    /**
+     * Defines the availability zone this client runs in, e.g. <code>us-east-1a</code>.
+     * Required by the availability zone read modes <code>AZ_AFFINITY</code>,
+     * <code>AZ_AFFINITY_SLAVES_AND_MASTER</code> and <code>AZ_AFFINITY_MASTER_SLAVE</code>,
+     * whether used as <code>readMode</code> or per object: they prefer nodes in this zone.
+     * Zone names are compared exactly.
+     * <p>
+     * When set, Redisson reads the zone of each node from the <code>availability_zone</code> field of
+     * <code>INFO SERVER</code> when it sets the node up: at startup, for a slave added later and for a new master
+     * after a failover, and again when a node that was taken out of use as disconnected comes back.
+     * Valkey 8.0 and later reports the node's <code>availability-zone</code> config there; managed services
+     * such as Amazon ElastiCache set it automatically. A node that reports no zone (Redis, older Valkey,
+     * the config left empty, or an <code>INFO</code> command denied by ACL) is treated as being in another zone.
+     * A zone set on a node in use takes effect at the next of these events for that node. No zone is read
+     * when <code>readMode</code> and <code>subscriptionMode</code> are both <code>MASTER</code>, as every read
+     * goes to the master then.
+     * <p>
+     * Default is <code>null</code>, which also skips reading node zones.
+     *
+     * @param clientAvailabilityZone availability zone name
+     * @return config
+     *
+     * @see ReadMode#AZ_AFFINITY
+     * @see ReadMode#AZ_AFFINITY_SLAVES_AND_MASTER
+     * @see ReadMode#AZ_AFFINITY_MASTER_SLAVE
+     */
+    public T setClientAvailabilityZone(String clientAvailabilityZone) {
+        this.clientAvailabilityZone = clientAvailabilityZone;
+        return (T) this;
+    }
+    public String getClientAvailabilityZone() {
+        return clientAvailabilityZone;
     }
 
     /**

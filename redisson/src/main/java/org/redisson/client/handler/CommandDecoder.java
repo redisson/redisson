@@ -368,8 +368,14 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             handleResult(data, parts, result, skipConvertor);
         } else if (code == ',') {
             String str = readString(in, StandardCharsets.US_ASCII);
-            Double result = Double.NaN;
-            if (!"nan".equals(str)) {
+            Double result;
+            if ("nan".equals(str)) {
+                result = Double.NaN;
+            } else if ("inf".equals(str) || "+inf".equals(str)) {
+                result = Double.POSITIVE_INFINITY;
+            } else if ("-inf".equals(str)) {
+                result = Double.NEGATIVE_INFINITY;
+            } else {
                 result = Double.valueOf(str);
             }
 
@@ -602,9 +608,50 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         is.skipBytes(2);
     }
 
-    private Long readLong(ByteBuf is) {
-        String value = readString(is, StandardCharsets.US_ASCII);
-        return Long.parseLong(value);
+    // Don't use readString()
+    private long readLong(ByteBuf is) {
+        int read = is.readByte();
+        boolean negative = false;
+        if (read == '-') {
+            negative = true;
+            read = is.readByte();
+        } else if (read == '+') {
+            read = is.readByte();
+        }
+
+        long limit = -Long.MAX_VALUE;
+        if (negative) {
+            limit = Long.MIN_VALUE;
+        }
+        long multiplyLimit = limit / 10;
+
+        long value = 0;
+        int digits = 0;
+        while (read != CR) {
+            int digit = read - ZERO;
+            if (digit < 0 || digit > 9) {
+                throw new NumberFormatException("Invalid character in integer: " + read);
+            }
+            if (value < multiplyLimit) {
+                throw new NumberFormatException("Integer overflow");
+            }
+            value *= 10;
+            if (value < limit + digit) {
+                throw new NumberFormatException("Integer overflow");
+            }
+            value -= digit;
+            digits++;
+            read = is.readByte();
+        }
+        if (digits == 0) {
+            throw new NumberFormatException("Empty integer");
+        }
+
+        is.skipBytes(1);
+        if (negative) {
+            return value;
+        }
+        return -value;
     }
 
 }

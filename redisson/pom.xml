@@ -206,7 +206,7 @@
         <dependency>
             <groupId>at.yawk.lz4</groupId>
             <artifactId>lz4-java</artifactId>
-            <version>1.11.1</version>
+            <version>1.11.2</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
@@ -239,14 +239,14 @@
         <dependency>
             <groupId>org.apache.fory</groupId>
             <artifactId>fory-core</artifactId>
-            <version>1.6.0</version>
+            <version>1.7.4</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.apache.fory</groupId>
             <artifactId>fory-json</artifactId>
-            <version>1.6.0</version>
+            <version>1.7.4</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>

@@ -12,11 +12,24 @@ import org.redisson.misc.AsyncSemaphore;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 
 public class ConnectionsHolderTest {
+
+    private static final class ActiveConnection extends RedisConnection {
+
+        private ActiveConnection() {
+            super(null);
+        }
+
+        @Override
+        public boolean isActive() {
+            return true;
+        }
+    }
 
     private MasterSlaveConnectionManager buildManager() {
         Config config = new Config();
@@ -72,6 +85,34 @@ public class ConnectionsHolderTest {
             // returns to the pool max — never inflated above it, which would jam idle eviction
             Assertions.assertThat(counter.getCounter()).isEqualTo(poolMaxSize);
             Assertions.assertThat(holder.getFreeConnections()).hasSize(poolMaxSize);
+        } finally {
+            manager.shutdown(0, 0, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    void testCancelledAcquisitionDoesNotLeaveReusedConnectionWithZeroUsage() {
+        MasterSlaveConnectionManager manager = buildManager();
+        try {
+            ActiveConnection connection = new ActiveConnection();
+            CompletableFuture<RedisConnection> physicalConnection = new CompletableFuture<>();
+            ConnectionsHolder<RedisConnection> holder = new ConnectionsHolder<>(null, 1,
+                    r -> physicalConnection, manager.getServiceManager(), true);
+
+            CompletableFuture<RedisConnection> firstAcquisition = holder.acquireConnection(null);
+
+            // Cancel future while physical socket connection is still in flight
+            firstAcquisition.completeExceptionally(new CancellationException("request cancelled"));
+            physicalConnection.complete(connection);
+
+            // ensure consumed permits = 0
+            Assertions.assertThat(connection.getUsage()).isZero();
+
+            // ensure we can still re-acquire the connection
+            CompletableFuture<RedisConnection> nextAcquisition = holder.acquireConnection(null);
+            Assertions.assertThat(nextAcquisition).isCompletedWithValue(connection);
+            // ... and it is correctly tracked
+            Assertions.assertThat(connection.getUsage()).isEqualTo(1);
         } finally {
             manager.shutdown(0, 0, TimeUnit.SECONDS);
         }

@@ -21,6 +21,58 @@ import java.util.concurrent.TimeUnit;
 public class RedissonConnectionTest extends BaseConnectionTest {
 
     @Test
+    public void testSetExpirationOptionMatrix() {
+        java.util.List<String> failures = new java.util.ArrayList<>();
+        java.util.List<String> passes = new java.util.ArrayList<>();
+
+        Expiration[] expirations = new Expiration[] {
+            Expiration.milliseconds(60000),
+            Expiration.persistent(),
+            Expiration.keepTtl(),
+            Expiration.unixTimestamp(System.currentTimeMillis() + 60000, TimeUnit.MILLISECONDS)
+        };
+        String[] expirationNames = { "relative(60s)", "persistent", "keepTtl", "unixTimestamp" };
+
+        SetOption[] options = { SetOption.upsert(), SetOption.ifAbsent(), SetOption.ifPresent() };
+        String[] optionNames = { "UPSERT", "IF_ABSENT", "IF_PRESENT" };
+
+        for (int e = 0; e < expirations.length; e++) {
+            for (int o = 0; o < options.length; o++) {
+                byte[] key = ("matrix-" + e + "-" + o).getBytes();
+                if (optionNames[o].equals("IF_ABSENT")) {
+                    connection.del(key);
+                } else {
+                    connection.set(key, "seed".getBytes());
+                    if (optionNames[o].equals("IF_PRESENT") || expirationNames[e].equals("keepTtl")) {
+                        connection.expire(key, 100);
+                    }
+                }
+                String label = expirationNames[e] + " + " + optionNames[o];
+                try {
+                    connection.set(key, "updated".getBytes(), expirations[e], options[o]);
+                    if (expirationNames[e].equals("unixTimestamp")) {
+                        long ttl = connection.pTtl(key);
+                        if (ttl <= 0 || ttl > 150_000) {
+                            failures.add(label + " -> wrong TTL: " + ttl + "ms (expected ~60000ms)");
+                            continue;
+                        }
+                    }
+                    passes.add(label);
+                } catch (Exception ex) {
+                    failures.add(label + " -> " + ex.getCause());
+                }
+            }
+        }
+
+        System.out.println("=== set(key, value, Expiration, SetOption) matrix ===");
+        System.out.println("PASS (" + passes.size() + "): " + passes);
+        System.out.println("FAIL (" + failures.size() + "): " + failures);
+
+        assertThat(failures).isEmpty();
+        assertThat(passes).hasSize(12);
+    }
+
+    @Test
     public void testExecute() {
         Long s = (Long) connection.execute("ttl", "key".getBytes());
         assertThat(s).isEqualTo(-2);

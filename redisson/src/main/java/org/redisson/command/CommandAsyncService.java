@@ -127,6 +127,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         }
         this.trackChanges = false;
         this.readMode = objectParams.getReadMode();
+        connectionManager.getServiceManager().checkClientAvailabilityZone(connectionManager.getServiceManager().getConfig(), readMode);
     }
 
     protected CommandAsyncService(ConnectionManager connectionManager, RedissonObjectBuilder objectBuilder,

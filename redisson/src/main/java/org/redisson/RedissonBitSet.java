@@ -200,7 +200,9 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
         if (effectiveReadMode == null) {
             effectiveReadMode = commandExecutor.getServiceManager().getConfig().getReadMode();
         }
-        if (effectiveReadMode == ReadMode.SLAVE && isReadOnly) {
+        if (isReadOnly
+                && (effectiveReadMode == ReadMode.SLAVE
+                    || (effectiveReadMode != null && effectiveReadMode.isAvailabilityZoneAware()))) {
             return commandExecutor.readAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_RO_LONG_LIST,
                     commandArgs.toArray());
         }

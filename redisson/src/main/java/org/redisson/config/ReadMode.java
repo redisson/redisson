@@ -39,4 +39,64 @@ public enum ReadMode {
      */
     MASTER_SLAVE,
 
+    /**
+     * Read from slave nodes in the client's availability zone. Falls back to slave nodes
+     * in any zone, then to the master node if no slave is available.
+     * Within each of these steps the node is selected using specified <code>loadBalancer</code>
+     * in Redisson configuration.
+     * <p>
+     * Requires <b>Valkey 8.0 or higher.</b>
+     * <p>
+     * Requires <code>clientAvailabilityZone</code> in Redisson configuration.
+     *
+     * @see BaseMasterSlaveServersConfig#setClientAvailabilityZone(String)
+     */
+    AZ_AFFINITY,
+
+    /**
+     * Read from slave nodes in the client's availability zone, then from the master node
+     * if it is in that zone. Falls back to slave nodes in any zone, then to the master node.
+     * Within each of these steps the node is selected using specified <code>loadBalancer</code>
+     * in Redisson configuration.
+     * <p>
+     * As with <code>MASTER_SLAVE</code>, subscriptions under <code>subscriptionMode</code> <code>SLAVE</code>
+     * are spread over the master node too.
+     * <p>
+     * Requires <b>Valkey 8.0 or higher.</b>
+     * <p>
+     * Requires definition of <code>clientAvailabilityZone</code> in Redisson configuration.
+     *
+     * @see BaseMasterSlaveServersConfig#setClientAvailabilityZone(String)
+     */
+    AZ_AFFINITY_SLAVES_AND_MASTER,
+
+    /**
+     * Read from master and slave nodes in the client's availability zone, without preferring
+     * either type. Falls back to master and slave nodes in any zone.
+     * Within each of these steps the node is selected using specified <code>loadBalancer</code>
+     * in Redisson configuration.
+     * <p>
+     * As with <code>MASTER_SLAVE</code>, subscriptions under <code>subscriptionMode</code> <code>SLAVE</code>
+     * are spread over the master node too.
+     * <p>
+     * Requires <b>Valkey 8.0 or higher.</b>
+     * <p>
+     * Requires definition of <code>clientAvailabilityZone</code> in Redisson configuration.
+     *
+     * @see BaseMasterSlaveServersConfig#setClientAvailabilityZone(String)
+     */
+    AZ_AFFINITY_MASTER_SLAVE;
+
+    public boolean isMasterInSlavePool() {
+        return this == MASTER_SLAVE
+                || this == AZ_AFFINITY_SLAVES_AND_MASTER
+                || this == AZ_AFFINITY_MASTER_SLAVE;
+    }
+
+    public boolean isAvailabilityZoneAware() {
+        return this == AZ_AFFINITY
+                || this == AZ_AFFINITY_SLAVES_AND_MASTER
+                || this == AZ_AFFINITY_MASTER_SLAVE;
+    }
+
 }

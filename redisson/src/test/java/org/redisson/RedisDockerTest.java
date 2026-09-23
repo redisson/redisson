@@ -27,6 +27,8 @@ public class RedisDockerTest {
 
     protected static final String IMAGE = "redis:8.10";
 
+    private static final String REDIS_CLUSTER_COMPOSE_FILE = "src/test/resources/docker-compose-redis-cluster.yml";
+
     protected static final String NOTIFY_KEYSPACE_EVENTS = "--notify-keyspace-events";
 
     protected static final String MAXMEMORY_POLICY = "--maxmemory-policy";
@@ -352,8 +354,12 @@ public class RedisDockerTest {
     record ClusterData(Startable container, RedissonClient redisson, List<ContainerState> nodes) {}
 
     private static ClusterData createCluster() {
+        return createCluster(REDIS_CLUSTER_COMPOSE_FILE);
+    }
+
+    private static ClusterData createCluster(String composeFile) {
         DockerComposeContainer environment =
-                new DockerComposeContainer(new File("src/test/resources/docker-compose-redis-cluster.yml"))
+                new DockerComposeContainer(new File(composeFile))
                         // TODO fix
                         .withOptions("--compatibility")
                         .withExposedService("redis-node-1", 6379)
@@ -421,7 +427,15 @@ public class RedisDockerTest {
     }
 
     protected void withNewCluster(Consumer<ClusterData> callback) {
-        ClusterData data = createCluster();
+        withNewCluster(REDIS_CLUSTER_COMPOSE_FILE, callback);
+    }
+
+    /**
+     * Like {@link #withNewCluster(Consumer)}, over the six-node cluster a different compose file defines,
+     * e.g. docker-compose-valkey-cluster.yml.
+     */
+    protected void withNewCluster(String composeFile, Consumer<ClusterData> callback) {
+        ClusterData data = createCluster(composeFile);
 
         try {
             callback.accept(data);

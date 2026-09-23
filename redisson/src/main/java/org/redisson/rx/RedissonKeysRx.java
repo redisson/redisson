@@ -17,10 +17,11 @@ package org.redisson.rx;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.reactivestreams.Publisher;
 import org.redisson.RedissonKeys;
+import org.redisson.ScanResult;
+import org.redisson.api.RFuture;
 import org.redisson.api.RType;
 import org.redisson.api.options.KeysScanOptions;
 import org.redisson.api.options.KeysScanParams;
@@ -28,7 +29,6 @@ import org.redisson.client.RedisClient;
 import org.redisson.connection.MasterSlaveEntry;
 
 import io.reactivex.rxjava3.core.Flowable;
-import io.reactivex.rxjava3.functions.LongConsumer;
 import io.reactivex.rxjava3.processors.ReplayProcessor;
 
 /**
@@ -73,42 +73,15 @@ public class RedissonKeysRx {
 
     private Publisher<String> createKeysIterator(MasterSlaveEntry entry, String pattern, int count, RType type) {
         ReplayProcessor<String> p = ReplayProcessor.create();
-        return p.doOnRequest(new LongConsumer() {
-
-            private RedisClient client;
-            private String nextIterPos = "0";
-            private final AtomicLong requested = new AtomicLong();
+        return p.doOnRequest(new RxIteratorConsumer<String>(p) {
+            @Override
+            protected boolean tryAgain() {
+                return false;
+            }
 
             @Override
-            public void accept(long value) {
-                if (requested.addAndGet(value) == value) {
-                    nextValues();
-                }
-            }
-            
-            private void nextValues() {
-                instance.scanIteratorAsync(client, entry, nextIterPos, pattern, count, type)
-                        .whenComplete((res, e) -> {
-                            if (e != null) {
-                                p.onError(e);
-                                return;
-                            }
-
-                            client = res.getRedisClient();
-                            nextIterPos = res.getPos();
-
-                            for (Object val : res.getValues()) {
-                                p.onNext((String) val);
-                                requested.decrementAndGet();
-                            }
-
-                            if ("0".equals(nextIterPos)) {
-                                p.onComplete();
-                                return;
-                            }
-
-                            nextValues();
-                        });
+            protected RFuture<ScanResult<Object>> scanIterator(RedisClient client, String nextIterPos) {
+                return instance.scanIteratorAsync(client, entry, nextIterPos, pattern, count, type);
             }
         });
     }

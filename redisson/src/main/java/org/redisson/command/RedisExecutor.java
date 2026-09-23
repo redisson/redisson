@@ -441,9 +441,14 @@ public class RedisExecutor<V, R> {
             long popTimeout = 0;
             if (RedisCommands.BLOCKING_COMMANDS.contains(command)) {
                 for (int i = 0; i < params.length-1; i++) {
-                    if ("BLOCK".equals(params[i])) {
+                    if (!"BLOCK".equals(params[i])) {
+                        continue;
+                    }
+                    try {
                         popTimeout = Long.parseLong(params[i+1].toString());
                         break;
+                    } catch (NumberFormatException e) {
+                        // skip
                     }
                 }
             } else {
@@ -700,8 +705,8 @@ public class RedisExecutor<V, R> {
 
         RedisClient client = connectionFuture.join().getRedisClient();
         FailedNodeDetector detector = client.getConfig().getFailedNodeDetector();
-        detector.onCommandFailed(cause);
-        if (detector.isNodeFailed()) {
+        detector.onCommandFailed(cause, client.getAddr());
+        if (detector.isNodeFailed(client.getAddr())) {
             log.error("Redis node {} has been marked as failed according to the detection logic defined in {}",
                             client.getAddr(), detector);
             entry.shutdownAndReconnectAsync(client, cause);
@@ -714,7 +719,8 @@ public class RedisExecutor<V, R> {
         } else {
             promise.complete(res);
         }
-        connectionFuture.join().getRedisClient().getConfig().getFailedNodeDetector().onCommandSuccessful();
+        RedisClient client = connectionFuture.join().getRedisClient();
+        client.getConfig().getFailedNodeDetector().onCommandSuccessful(client.getAddr());
     }
 
     protected void sendCommand(CompletableFuture<R> attemptPromise, RedisConnection connection) {

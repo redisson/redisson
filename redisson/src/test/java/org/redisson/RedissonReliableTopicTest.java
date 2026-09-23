@@ -190,6 +190,29 @@ public class RedissonReliableTopicTest extends RedisDockerTest {
     }
 
     @Test
+    public void testListenerFailureDoesNotStopPolling() {
+        RReliableTopic topic = redisson.getReliableTopic("testListenerFailure");
+        AtomicInteger attempts = new AtomicInteger();
+        Queue<String> messages = new ConcurrentLinkedQueue<>();
+        topic.addListener(String.class, (channel, message) -> {
+            if (attempts.getAndIncrement() == 0) {
+                throw new IllegalStateException("listener failure");
+            }
+            messages.add(message);
+        });
+
+        topic.publish("first");
+        Awaitility.await().atMost(Duration.ofSeconds(5))
+                .untilAsserted(() -> assertThat(messages).containsExactly("first"));
+
+        assertThat(topic.countSubscribers()).isOne();
+        assertThat(topic.publish("second")).isOne();
+        Awaitility.await().atMost(Duration.ofSeconds(5))
+                .untilAsserted(() -> assertThat(messages).containsExactly("first", "second"));
+        assertThat(attempts).hasValue(3);
+    }
+
+    @Test
     public void test() throws InterruptedException {
         RReliableTopic rt = redisson.getReliableTopic("test3");
         CountDownLatch a = new CountDownLatch(1);

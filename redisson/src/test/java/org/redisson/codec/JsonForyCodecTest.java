@@ -271,7 +271,7 @@ class JsonForyCodecTest {
             TestPerson original = new TestPerson("John Doe", 30);
 
             assertThat(encodeToString(original))
-                    .startsWith("{\"@class\":\"org.redisson.codec.ForyJsonCodecTest$TestPerson\",");
+                    .startsWith("{\"@class\":\"org.redisson.codec.JsonForyCodecTest$TestPerson\",");
 
             Object decoded = roundTrip(original);
             assertThat(decoded).isInstanceOf(TestPerson.class);
@@ -296,7 +296,7 @@ class JsonForyCodecTest {
         @Test
         void testEmptyPOJOSerDe() throws IOException {
             assertThat(encodeToString(new TestEmpty()))
-                    .isEqualTo("{\"@class\":\"org.redisson.codec.ForyJsonCodecTest$TestEmpty\"}");
+                    .isEqualTo("{\"@class\":\"org.redisson.codec.JsonForyCodecTest$TestEmpty\"}");
             assertThat(roundTrip(new TestEmpty())).isInstanceOf(TestEmpty.class);
         }
 
@@ -343,7 +343,7 @@ class JsonForyCodecTest {
 
         @Test
         void testUnknownPropertiesAreIgnored() throws IOException {
-            Object decoded = decode("{\"@class\":\"org.redisson.codec.ForyJsonCodecTest$TestPerson\","
+            Object decoded = decode("{\"@class\":\"org.redisson.codec.JsonForyCodecTest$TestPerson\","
                     + "\"name\":\"Test\",\"age\":30,\"unknownField\":\"ignored\"}");
 
             assertThat(decoded).isInstanceOf(TestPerson.class);
@@ -373,7 +373,7 @@ class JsonForyCodecTest {
         @Test
         void testRenamedFieldIsStoredOnce() throws IOException {
             assertThat(encodeToString(new TestRenamedField("stored")))
-                    .isEqualTo("{\"@class\":\"org.redisson.codec.ForyJsonCodecTest$TestRenamedField\","
+                    .isEqualTo("{\"@class\":\"org.redisson.codec.JsonForyCodecTest$TestRenamedField\","
                             + "\"internalName\":\"stored\"}");
 
             Object decoded = roundTrip(new TestRenamedField("stored"));
@@ -454,7 +454,7 @@ class JsonForyCodecTest {
             original.put("p", new TestPerson("Alice", 25));
 
             assertThat(encodeToString(original))
-                    .contains("\"p\":{\"@class\":\"org.redisson.codec.ForyJsonCodecTest$TestPerson\",");
+                    .contains("\"p\":{\"@class\":\"org.redisson.codec.JsonForyCodecTest$TestPerson\",");
         }
 
         @Test
@@ -1115,7 +1115,7 @@ class JsonForyCodecTest {
                     "[\"java.util.Date\",\"not-a-date\"]",
                     "[\"java.util.UUID\",\"not-a-uuid\"]",
                     "[\"java.math.BigDecimal\",1e]",
-                    "{\"@class\":\"org.redisson.codec.ForyJsonCodecTest$TestPerson\",\"age\":\"x\"}")) {
+                    "{\"@class\":\"org.redisson.codec.JsonForyCodecTest$TestPerson\",\"age\":\"x\"}")) {
                 assertThatThrownBy(() -> decode(malformed))
                         .describedAs("decoding %s", malformed)
                         .isInstanceOf(IOException.class);
@@ -1374,7 +1374,7 @@ class JsonForyCodecTest {
 
         @Test
         void testWhitespaceAroundTypeProperty() throws IOException {
-            Object decoded = decode("{ \"@class\" : \"org.redisson.codec.ForyJsonCodecTest$TestPerson\" ,"
+            Object decoded = decode("{ \"@class\" : \"org.redisson.codec.JsonForyCodecTest$TestPerson\" ,"
                     + " \"name\" : \"Test\" }");
 
             assertThat(decoded).isInstanceOf(TestPerson.class);
