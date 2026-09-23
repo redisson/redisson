@@ -541,6 +541,12 @@ Default value: `1000`
 
 Scan interval in milliseconds. Applied to Valkey or Redis clusters topology scans.
 
+**database**
+
+Default value: 0
+
+Database index used for Valkey Cluster 9.0+ connection.
+
 **topicSlots**
 
 _This setting is available only in [Redisson PRO](https://redisson.pro/feature-comparison.html) edition._
