@@ -111,8 +111,9 @@ public class MasterSlaveEntry {
     }
 
     private void useMasterAsSlave() {
+        ReadMode readMode = config.getReadMode();
         if (hasNoSlaves()
-                || config.getReadMode() == ReadMode.MASTER_SLAVE) {
+                || (readMode != null && readMode.isMasterInSlavePool())) {
             addSlaveEntry(masterEntry);
         } else {
             removeSlaveEntry(masterEntry);
@@ -174,6 +175,8 @@ public class MasterSlaveEntry {
             return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
                     .thenApply(r -> {
                         masterEntry = entry;
+
+                        entry.discoverAvailabilityZone();
 
                         if (!config.isSlaveNotUsed()) {
                             addSlaveEntry(masterEntry);
@@ -354,6 +357,7 @@ public class MasterSlaveEntry {
             CompletableFuture<Void> slaveFuture = entry.initConnections(config.getSlaveConnectionMinimumIdleSize());
             CompletableFuture<Void> pubSubFuture = entry.initPubSubConnections(config.getSubscriptionConnectionMinimumIdleSize());
             return CompletableFuture.allOf(slaveFuture, pubSubFuture).thenAccept(r -> {
+                entry.discoverAvailabilityZone();
                 addSlaveEntry(entry);
             });
         }).whenComplete((r, ex) -> {
@@ -445,8 +449,9 @@ public class MasterSlaveEntry {
 
     public boolean excludeMasterFromSlaves(RedisURI address) {
         InetSocketAddress addr = masterEntry.getClient().getAddr();
+        ReadMode readMode = config.getReadMode();
         if (address.equals(addr)
-                || config.getReadMode() == ReadMode.MASTER_SLAVE) {
+                || (readMode != null && readMode.isMasterInSlavePool())) {
             return false;
         }
 
@@ -457,8 +462,9 @@ public class MasterSlaveEntry {
 
     public boolean excludeMasterFromSlaves(InetSocketAddress address) {
         InetSocketAddress addr = masterEntry.getClient().getAddr();
+        ReadMode readMode = config.getReadMode();
         if (config.isSlaveNotUsed() || addr.equals(address)
-                || config.getReadMode() == ReadMode.MASTER_SLAVE) {
+                || (readMode != null && readMode.isMasterInSlavePool())) {
             return false;
         }
 
@@ -593,7 +599,7 @@ public class MasterSlaveEntry {
             }
             return connectionWriteOp(command);
         }
-        return slaveConnectionPool.get(command, trackChanges);
+        return slaveConnectionPool.get(command, trackChanges, mode);
     }
 
     public CompletableFuture<RedisConnection> connectionReadOp(RedisCommand<?> command, RedisURI addr) {
@@ -804,6 +810,7 @@ public class MasterSlaveEntry {
                         entry.getClient().getConfig().getFailedNodeDetector()
                                 .onConnectSuccessful(entry.getClient().getAddr());
                         entry.setFreezeReason(null);
+                        entry.discoverAvailabilityZone();
                         log.debug("Unfreezed entry: {} after {} attempts", entry, retry);
                         f.complete(true);
                     });

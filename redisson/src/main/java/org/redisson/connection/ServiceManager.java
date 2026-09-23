@@ -916,4 +916,13 @@ public final class ServiceManager {
         return -1;
     }
 
+    public void checkClientAvailabilityZone(MasterSlaveServersConfig config, ReadMode readMode) {
+        if (readMode != null
+                && readMode.isAvailabilityZoneAware()
+                && !config.isSlaveNotUsed()
+                && config.getClientAvailabilityZone() == null) {
+            throw new IllegalArgumentException("clientAvailabilityZone setting is required for readMode " + readMode);
+        }
+    }
+
 }
