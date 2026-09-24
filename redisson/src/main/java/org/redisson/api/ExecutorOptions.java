@@ -28,6 +28,8 @@ public final class ExecutorOptions {
     
     private long taskRetryInterval = 5 * 60000;
 
+    private int taskRetryAttempts;
+
     private IdGenerator idGenerator = IdGenerator.random();
 
     private ExecutorOptions() {
@@ -59,6 +61,27 @@ public final class ExecutorOptions {
      */
     public ExecutorOptions taskRetryInterval(long timeout, TimeUnit unit) {
         this.taskRetryInterval = unit.toMillis(timeout);
+        return this;
+    }
+
+    public int getTaskRetryAttempts() {
+        return taskRetryAttempts;
+    }
+
+    /**
+     * Defines the maximum number of retry attempts for a task
+     * which wasn't marked as completed within <code>taskRetryInterval</code>.
+     * The task is removed if it isn't completed after the last retry attempt.
+     * <p>
+     * Set <code>0</code> for unlimited retry attempts.
+     * <p>
+     * Default is <code>0</code>
+     *
+     * @param attempts value
+     * @return self instance
+     */
+    public ExecutorOptions taskRetryAttempts(int attempts) {
+        this.taskRetryAttempts = attempts;
         return this;
     }
 

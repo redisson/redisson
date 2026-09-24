@@ -723,6 +723,15 @@ ExecutorOptions options = ExecutorOptions.defaults()
 //
 // Default is 5 minutes
 options.taskRetryInterval(10, TimeUnit.MINUTES);
+
+// Defines the maximum number of retry attempts for a task
+// which wasn't marked as completed within taskRetryInterval.
+// The task is removed if it isn't completed after the last retry attempt.
+//
+// Set 0 for unlimited retry attempts.
+//
+// Default is 0
+options.taskRetryAttempts(3);
 ```
 
 ```java
@@ -920,6 +929,15 @@ ExecutorOptions options = ExecutorOptions.defaults()
 //
 // Default is 5 minutes
 options.taskRetryInterval(10, TimeUnit.MINUTES);
+
+// Defines the maximum number of retry attempts for a task
+// which wasn't marked as completed within taskRetryInterval.
+// The task is removed if it isn't completed after the last retry attempt.
+//
+// Set 0 for unlimited retry attempts.
+//
+// Default is 0
+options.taskRetryAttempts(3);
 ```
 
 ```java

@@ -76,6 +76,8 @@ public class TasksRunnerService implements RemoteExecutorService {
     private String schedulerQueueName;
     private String schedulerChannelName;
     private String tasksRetryIntervalName;
+    private String tasksRetryAttemptsName;
+    private String tasksRetryCounterName;
     private String tasksExpirationTimeName;
 
     private TasksInjector tasksInjector;
@@ -103,6 +105,14 @@ public class TasksRunnerService implements RemoteExecutorService {
 
     public void setTasksRetryIntervalName(String tasksRetryInterval) {
         this.tasksRetryIntervalName = tasksRetryInterval;
+    }
+
+    public void setTasksRetryAttemptsName(String tasksRetryAttemptsName) {
+        this.tasksRetryAttemptsName = tasksRetryAttemptsName;
+    }
+
+    public void setTasksRetryCounterName(String tasksRetryCounterName) {
+        this.tasksRetryCounterName = tasksRetryCounterName;
     }
     
     public void setSchedulerQueueName(String schedulerQueueName) {
@@ -191,6 +201,8 @@ public class TasksRunnerService implements RemoteExecutorService {
         scheduledRemoteService.setRequestId(requestId);
         scheduledRemoteService.setTasksExpirationTimeName(tasksExpirationTimeName);
         scheduledRemoteService.setTasksRetryIntervalName(tasksRetryIntervalName);
+        scheduledRemoteService.setTasksRetryAttemptsName(tasksRetryAttemptsName);
+        scheduledRemoteService.setTasksRetryCounterName(tasksRetryCounterName);
         RemoteExecutorServiceAsync asyncScheduledServiceAtFixed = scheduledRemoteService.get(RemoteExecutorServiceAsync.class, RemoteInvocationOptions.defaults().noAck().noResult());
         return asyncScheduledServiceAtFixed;
     }
@@ -441,6 +453,7 @@ public class TasksRunnerService implements RemoteExecutorService {
                     + "end;";
         }
         script += "redis.call('zrem', KEYS[5], 'ff:' .. ARGV[3]);" +
+                  "redis.call('hdel', KEYS[8], ARGV[3]);" +
                   "if redis.call('decr', KEYS[1]) == 0 then "
                    + "redis.call('del', KEYS[1]);"
                     + "if redis.call('get', KEYS[2]) == ARGV[1] then "
@@ -452,7 +465,8 @@ public class TasksRunnerService implements RemoteExecutorService {
 
         RFuture<Object> f = commandExecutor.evalWriteNoRetryAsync(tasksCounterName, StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
                 script,
-                Arrays.asList(tasksCounterName, statusName, terminationTopicName, tasksName, schedulerQueueName, tasksRetryIntervalName, tasksExpirationTimeName),
+                Arrays.asList(tasksCounterName, statusName, terminationTopicName, tasksName, schedulerQueueName, tasksRetryIntervalName, tasksExpirationTimeName,
+                                tasksRetryCounterName),
                 RedissonExecutorService.SHUTDOWN_STATE, RedissonExecutorService.TERMINATED_STATE, requestId);
         commandExecutor.get(f);
     }
