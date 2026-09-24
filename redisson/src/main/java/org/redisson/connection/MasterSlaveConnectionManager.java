@@ -80,15 +80,23 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     MasterSlaveConnectionManager(BaseMasterSlaveServersConfig<?> cfg, Config configCopy) {
         if (cfg instanceof MasterSlaveServersConfig) {
             this.config = (MasterSlaveServersConfig) cfg;
+            ReadMode readMode = this.config.getReadMode();
             if (this.config.getSlaveAddresses().isEmpty()
-                    && (this.config.getReadMode() == ReadMode.SLAVE || this.config.getReadMode() == ReadMode.MASTER_SLAVE)) {
-                throw new IllegalArgumentException("Slaves aren't defined. readMode can't be SLAVE or MASTER_SLAVE");
+                    && (readMode == ReadMode.SLAVE || readMode == ReadMode.MASTER_SLAVE
+                        || (readMode != null && readMode.isAvailabilityZoneAware()))) {
+                throw new IllegalArgumentException("Slaves aren't defined. readMode can't be " + readMode);
             }
         } else {
             this.config = create(cfg);
         }
 
+        String clientAvailabilityZone = this.config.getClientAvailabilityZone();
+        if (clientAvailabilityZone != null && clientAvailabilityZone.trim().isEmpty()) {
+            throw new IllegalArgumentException("clientAvailabilityZone can't be blank");
+        }
+
         serviceManager = new ServiceManager(this.config, configCopy);
+        serviceManager.checkClientAvailabilityZone(this.config, this.config.getReadMode());
         subscribeService = new PublishSubscribeService(this);
     }
 
@@ -448,6 +456,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         c.setSlaveConnectionMinimumIdleSize(cfg.getSlaveConnectionMinimumIdleSize());
         c.setSubscriptionConnectionMinimumIdleSize(cfg.getSubscriptionConnectionMinimumIdleSize());
         c.setReadMode(cfg.getReadMode());
+        c.setClientAvailabilityZone(cfg.getClientAvailabilityZone());
         c.setSubscriptionMode(cfg.getSubscriptionMode());
         c.setDnsMonitoringInterval(cfg.getDnsMonitoringInterval());
         c.setDnsMonitoringTimes(cfg.getDnsMonitoringTimes());

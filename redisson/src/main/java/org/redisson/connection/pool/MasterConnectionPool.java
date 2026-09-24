@@ -18,6 +18,7 @@ package org.redisson.connection.pool;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.config.MasterSlaveServersConfig;
+import org.redisson.config.ReadMode;
 import org.redisson.connection.ClientConnectionsEntry;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.ConnectionsHolder;
@@ -48,7 +49,7 @@ public class MasterConnectionPool extends ConnectionPool<RedisConnection> {
     }
 
     @Override
-    public CompletableFuture<RedisConnection> get(RedisCommand<?> command, boolean trackChanges) {
+    public CompletableFuture<RedisConnection> get(RedisCommand<?> command, boolean trackChanges, ReadMode readMode) {
         return acquireConnection(command, masterSlaveEntry.getEntry(), trackChanges);
     }
 

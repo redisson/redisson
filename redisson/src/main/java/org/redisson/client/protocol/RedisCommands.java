@@ -958,6 +958,20 @@ public interface RedisCommands {
     RedisStrictCommand<Map<String, String>> INFO_ALL = new RedisStrictCommand<Map<String, String>>("INFO", "ALL", new StringMapDataDecoder());
     RedisStrictCommand<Map<String, String>> INFO_DEFAULT = new RedisStrictCommand<Map<String, String>>("INFO", "DEFAULT", new StringMapDataDecoder());
     RedisStrictCommand<Map<String, String>> INFO_SERVER = new RedisStrictCommand<Map<String, String>>("INFO", "SERVER", new StringMapDataDecoder());
+
+    RedisStrictCommand<String> INFO_SERVER_AVAILABILITY_ZONE = new RedisStrictCommand<>("INFO", "SERVER", obj -> {
+        String[] parts = ((String) obj).split("availability_zone:", 2);
+        if (parts.length < 2) {
+            return null;
+        }
+
+        String zone = parts[1].split("\r\n|\n", 2)[0];
+        if (zone.isEmpty()) {
+            return null;
+        }
+        return zone;
+    });
+
     RedisStrictCommand<Map<String, String>> INFO_CLIENTS = new RedisStrictCommand<Map<String, String>>("INFO", "CLIENTS", new StringMapDataDecoder());
     RedisStrictCommand<Map<String, String>> INFO_MEMORY = new RedisStrictCommand<Map<String, String>>("INFO", "MEMORY", new StringMapDataDecoder());
     RedisStrictCommand<Map<String, String>> INFO_PERSISTENCE = new RedisStrictCommand<Map<String, String>>("INFO", "PERSISTENCE", new StringMapDataDecoder());
