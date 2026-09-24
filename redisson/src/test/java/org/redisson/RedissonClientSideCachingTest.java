@@ -8,9 +8,14 @@ import org.redisson.api.RClientSideCaching;
 import org.redisson.api.RScoredSortedSet;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.options.ClientSideCachingOptions;
+import org.redisson.client.RedisException;
+import org.redisson.command.CommandAsyncService;
 import org.redisson.config.Config;
 import org.redisson.config.Protocol;
 
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class RedissonClientSideCachingTest extends RedisDockerTest {
@@ -77,6 +82,94 @@ public class RedissonClientSideCachingTest extends RedisDockerTest {
 
         rs.shutdown();
 
+    }
+
+    @Test
+    public void testInterruptedGet() throws InterruptedException {
+        Config c = redisson.getConfig();
+        c.setProtocol(Protocol.RESP3);
+
+        RedissonClient rs = Redisson.create(c);
+        try {
+            RClientSideCaching csc = rs.getClientSideCaching(ClientSideCachingOptions.defaults());
+            RBucket<String> bucket = csc.getBucket("csc-cancel-test-1");
+
+            AtomicReference<Throwable> caught = new AtomicReference<>();
+            CountDownLatch started = new CountDownLatch(1);
+            CountDownLatch done = new CountDownLatch(1);
+
+            Thread reader = new Thread(() -> {
+                started.countDown();
+                try {
+                    bucket.get();
+                } catch (Throwable t) {
+                    caught.set(t);
+                } finally {
+                    done.countDown();
+                }
+            });
+
+            reader.start();
+            started.await();
+            reader.interrupt();
+            done.await();
+
+            Assertions.assertThat(caught.get())
+                    .isNotNull()
+                    .isInstanceOf(RedisException.class);
+
+            csc.destroy();
+        } finally {
+            rs.shutdown();
+        }
+    }
+
+    @Test
+    public void testCancelledFutureUnwrapping() {
+        Config c = redisson.getConfig();
+        c.setProtocol(Protocol.RESP3);
+
+        RedissonClient rs = Redisson.create(c);
+        try {
+            CommandAsyncService commandService = (CommandAsyncService) ((Redisson) rs).getCommandExecutor();
+
+            CompletableFuture<String> cancelledFuture = new CompletableFuture<>();
+            cancelledFuture.cancel(true);
+
+            Assertions.assertThatThrownBy(() -> {
+                        commandService.get(cancelledFuture);
+                    }).isInstanceOf(RedisException.class)
+                    .hasCauseInstanceOf(CancellationException.class);
+
+        } finally {
+            rs.shutdown();
+        }
+    }
+
+    @Test
+    public void testBucketGetAfterCancellation() {
+        Config c = redisson.getConfig();
+        c.setProtocol(Protocol.RESP3);
+
+        RedissonClient rs = Redisson.create(c);
+        try {
+            RClientSideCaching csc = rs.getClientSideCaching(ClientSideCachingOptions.defaults());
+
+            RBucket<String> cached = csc.getBucket("csc-cancel-test-3");
+            RBucket<String> direct = rs.getBucket("csc-cancel-test-3");
+
+            Assertions.assertThat(cached.get()).isNull();
+
+            direct.set("world");
+            Assertions.assertThat(cached.get()).isEqualTo("world");
+
+            direct.set("updated");
+            Assertions.assertThat(cached.get()).isEqualTo("updated");
+
+            csc.destroy();
+        } finally {
+            rs.shutdown();
+        }
     }
 
 }
