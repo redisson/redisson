@@ -842,7 +842,8 @@ public final class Redisson implements RedissonClient {
         ExecutorParams params = (ExecutorParams) options;
         ExecutorOptions ops = ExecutorOptions.defaults()
                                             .idGenerator(params.getIdGenerator())
-                                            .taskRetryInterval(params.getTaskRetryInterval(), TimeUnit.MILLISECONDS);
+                                            .taskRetryInterval(params.getTaskRetryInterval(), TimeUnit.MILLISECONDS)
+                                            .taskRetryAttempts(params.getTaskRetryAttempts());
         return new RedissonExecutorService(params.getCodec(),
                 commandExecutor.copy(params), this, params.getName(), ops);
     }
