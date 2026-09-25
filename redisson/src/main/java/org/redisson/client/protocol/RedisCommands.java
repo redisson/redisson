@@ -444,6 +444,10 @@ public interface RedisCommands {
     RedisCommand<Object> BZPOPMIN_VALUE = new RedisCommand<Object>("BZPOPMIN", new ScoredSortedSetPolledObjectDecoder());
     RedisCommand<Object> BZPOPMAX_VALUE = new RedisCommand<Object>("BZPOPMAX", new ScoredSortedSetPolledObjectDecoder());
 
+    // non-blocking counterparts, whose reply is [value, score] instead of [key, value, score]
+    RedisCommand<Object> ZPOPMIN_VALUE = new RedisCommand<Object>("ZPOPMIN", new ScoredSortedSetPolledObjectDecoder(0));
+    RedisCommand<Object> ZPOPMAX_VALUE = new RedisCommand<Object>("ZPOPMAX", new ScoredSortedSetPolledObjectDecoder(0));
+
     RedisCommand<org.redisson.api.Entry<String, Object>> BLPOP_NAME = new RedisCommand<>("BLPOP",
                     new ListObjectDecoder(0) {
                         @Override
