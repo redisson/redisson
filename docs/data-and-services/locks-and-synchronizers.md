@@ -49,11 +49,13 @@ Redisson closes this window by default, as the next subsection describes, so `RL
 Redisson can verify after each acquisition that the lock has propagated to the connected replicas. Two `Config` settings control this:
 
 * `checkLockSyncedSlaves` — whether to confirm, after acquisition, that the lock reached the connected replicas. Enabled by default.
+* `skipLockSyncedSlaves` — whether to skip replica synchronization for lock operations. Disabled by default.
 * `slavesSyncTimeout` — how long to wait for that synchronization, in milliseconds (default `1000`). The same timeout applies to `RLock`, `RSemaphore`, and `RPermitExpirableSemaphore`.
 
 ```java
 Config config = new Config();
 config.setCheckLockSyncedSlaves(true)   // default
+      .setSkipLockSyncedSlaves(false)    // default
       .setSlavesSyncTimeout(1000);       // milliseconds, default
 ```
 

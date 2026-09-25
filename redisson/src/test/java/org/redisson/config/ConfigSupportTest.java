@@ -25,6 +25,16 @@ public class ConfigSupportTest {
         
         assertEquals("redis://127.0.0.1", config.getAddress());
     }
+
+    @Test
+    public void testSkipLockSyncedSlaves() throws IOException {
+        String yaml = "skipLockSyncedSlaves: true\n"
+                + "singleServerConfig:\n  address: redis://127.0.0.1";
+        Config config = new ConfigSupport().fromYAML(yaml, Config.class);
+
+        assertThat(config.isSkipLockSyncedSlaves()).isTrue();
+        assertThat(new Config(config).isSkipLockSyncedSlaves()).isTrue();
+    }
     
     @Test
     public void testParsingEnv() throws IOException {
