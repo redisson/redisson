@@ -105,19 +105,31 @@ public final class RedissonSpinLock extends RedissonBaseLock {
             CompletionStage<Long> s = handleNoSync(threadId, acquiredFuture);
             return new CompletableFutureWrapper<>(s);
         }
+
+        // Register watchdog before the SET so unlock's cancel cannot race ahead of schedule (#7272)
+        scheduleExpirationRenewal(threadId);
         RFuture<Long> ttlRemainingFuture = tryLockInnerAsync(internalLockLeaseTime,
                 TimeUnit.MILLISECONDS, threadId, RedisCommands.EVAL_LONG);
 
         CompletionStage<Long> s = handleNoSync(threadId, ttlRemainingFuture);
-        ttlRemainingFuture = new CompletableFutureWrapper<>(s);
-
-        ttlRemainingFuture.thenAccept(ttlRemaining -> {
-            // lock acquired
-            if (ttlRemaining == null) {
-                scheduleExpirationRenewal(threadId);
+        CompletableFuture<Long> result = new CompletableFuture<>();
+        s.whenComplete((ttlRemaining, ex) -> {
+            if (ex != null) {
+                cancelExpirationRenewal(threadId, null);
+                result.completeExceptionally(ex);
+                return;
+            }
+            if (ttlRemaining != null) {
+                cancelExpirationRenewal(threadId, null);
+                result.complete(ttlRemaining);
+                return;
+            }
+            if (!result.complete(null)) {
+                cancelExpirationRenewal(threadId, null);
+                unlockAsync(threadId);
             }
         });
-        return ttlRemainingFuture;
+        return new CompletableFutureWrapper<>(result);
     }
 
     @Override
@@ -179,8 +191,7 @@ public final class RedissonSpinLock extends RedissonBaseLock {
     }
 
     @Override
-    protected void cancelExpirationRenewal(Long threadId, Boolean unlockResult) {
-        super.cancelExpirationRenewal(threadId, unlockResult);
+    protected void updateLockLeaseTimeOnUnlock(Boolean unlockResult) {
         if (unlockResult == null || unlockResult) {
             internalLockLeaseTime = getServiceManager().getCfg().getLockWatchdogTimeout();
         }
