@@ -22,9 +22,12 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.internal.util.ReflectHelper;
 import org.hibernate.persister.collection.CollectionPersister;
 import org.redisson.client.codec.Codec;
+import org.redisson.misc.Tuple;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  *
@@ -32,6 +35,8 @@ import java.lang.reflect.Field;
  *
  */
 public class RedissonCacheKeysFactory extends DefaultCacheKeysFactory {
+
+    private final Map<Tuple<Class<?>, String>, Field> cache = new ConcurrentHashMap<>();
 
     private final Codec codec;
 
@@ -41,10 +46,22 @@ public class RedissonCacheKeysFactory extends DefaultCacheKeysFactory {
 
     @Override
     public Object createCollectionKey(Object id, CollectionPersister persister, SessionFactoryImplementor factory, String tenantIdentifier) {
-        try {
-            String[] parts = persister.getRole().split("\\.");
-            Field f = ReflectHelper.findField(id.getClass(), parts[parts.length - 1]);
+        String[] parts = persister.getRole().split("\\.");
+        String role = parts[parts.length - 1];
 
+        Field f = cache.computeIfAbsent(new Tuple<>(id.getClass(), role), k -> {
+            try {
+                return ReflectHelper.findField(id.getClass(), role);
+            } catch (Exception e) {
+                return null;
+            }
+        });
+
+        if (f == null) {
+            return super.createCollectionKey(id, persister, factory, tenantIdentifier);
+        }
+
+        try {
             Object prev = f.get(id);
             f.set(id, null);
             ByteBuf state = codec.getMapKeyEncoder().encode(id);
@@ -52,8 +69,6 @@ public class RedissonCacheKeysFactory extends DefaultCacheKeysFactory {
             state.release();
             f.set(id, prev);
             return super.createCollectionKey(newId, persister, factory, tenantIdentifier);
-        } catch (PropertyNotFoundException e) {
-            return super.createCollectionKey(id, persister, factory, tenantIdentifier);
         } catch (IllegalAccessException | IOException e) {
             throw new IllegalStateException(e);
         }
