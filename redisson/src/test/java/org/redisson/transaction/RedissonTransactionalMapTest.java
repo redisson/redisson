@@ -41,6 +41,17 @@ public class RedissonTransactionalMapTest extends RedissonBaseTransactionalMapTe
         transaction.commit();
     }
 
+    @Test
+    public void testAddAndGetMixedNumberTypes() {
+        RMap<String, Object> map = redisson.getMap("test_addandget_mixed", StringCodec.INSTANCE);
+        map.put("key1", 10.1);
+
+        RTransaction transaction = redisson.createTransaction(TransactionOptions.defaults());
+        RMap<String, Object> tmap = transaction.getMap("test_addandget_mixed", StringCodec.INSTANCE);
+        assertThat(tmap.addAndGet("key1", 1)).isEqualTo(11.1);
+        transaction.commit();
+    }
+
     static final class TrackingStringCodec extends StringCodec {
 
         final List<ByteBuf> allocated = new ArrayList<ByteBuf>();
