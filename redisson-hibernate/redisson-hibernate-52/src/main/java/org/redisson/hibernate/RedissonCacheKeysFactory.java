@@ -27,6 +27,7 @@ import org.redisson.misc.Tuple;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -36,7 +37,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class RedissonCacheKeysFactory extends DefaultCacheKeysFactory {
 
-    private final Map<Tuple<Class<?>, String>, Field> cache = new ConcurrentHashMap<>();
+    private final Map<Tuple<Class<?>, String>, Optional<Field>> cache = new ConcurrentHashMap<>();
 
     private final Codec codec;
 
@@ -49,25 +50,33 @@ public class RedissonCacheKeysFactory extends DefaultCacheKeysFactory {
         String[] parts = persister.getRole().split("\\.");
         String role = parts[parts.length - 1];
 
-        Field f = cache.computeIfAbsent(new Tuple<>(id.getClass(), role), k -> {
+        Optional<Field> fo = cache.computeIfAbsent(new Tuple<>(id.getClass(), role), k -> {
             try {
-                return ReflectHelper.findField(id.getClass(), role);
+                return Optional.of(ReflectHelper.findField(k.getT1(), k.getT2()));
             } catch (Exception e) {
-                return null;
+                return Optional.empty();
             }
         });
 
-        if (f == null) {
+        if (!fo.isPresent()) {
             return super.createCollectionKey(id, persister, factory, tenantIdentifier);
         }
 
         try {
+            Field f = fo.get();
             Object prev = f.get(id);
             f.set(id, null);
-            ByteBuf state = codec.getMapKeyEncoder().encode(id);
-            Object newId = codec.getMapKeyDecoder().decode(state, null);
-            state.release();
-            f.set(id, prev);
+            ByteBuf state = null;
+            Object newId = null;
+            try {
+                state = codec.getMapKeyEncoder().encode(id);
+                newId = codec.getMapKeyDecoder().decode(state, null);
+            } finally {
+                f.set(id, prev);
+                if (state != null) {
+                    state.release();
+                }
+            }
             return super.createCollectionKey(newId, persister, factory, tenantIdentifier);
         } catch (IllegalAccessException | IOException e) {
             throw new IllegalStateException(e);
