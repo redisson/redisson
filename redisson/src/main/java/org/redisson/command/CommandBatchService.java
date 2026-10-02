@@ -140,6 +140,15 @@ public class CommandBatchService extends CommandAsyncService implements BatchSer
         public boolean isReadOnlyMode() {
             return readOnlyMode;
         }
+
+        public boolean isNoRetry() {
+            for (BatchCommandData<?, ?> command : commands) {
+                if (command.isNoRetry()) {
+                    return true;
+                }
+            }
+            return false;
+        }
         
 
         public void clearErrors() {
@@ -479,7 +488,7 @@ public class CommandBatchService extends CommandAsyncService implements BatchSer
                                 voidPromise.complete(r);
                             });
                             RedisCommonBatchExecutor executor = new RedisCommonBatchExecutor(e.getKey(), mainPromise,
-                                    connectionManager, options, e.getValue(), slots, referenceType, false);
+                                    connectionManager, options, e.getValue(), slots, referenceType, e.getValue().isNoRetry());
                             executor.execute();
                         }
                     } catch (Exception e) {
@@ -720,7 +729,7 @@ public class CommandBatchService extends CommandAsyncService implements BatchSer
                             RedisExecutor<List<Object>, List<Object>> executor = new RedisQueuedBatchExecutor<>(isReadOnly, new NodeSource(entry.getKey()), codec,
                                     RedisCommands.EXEC, new Object[] {}, execPromise,
                                     false, connectionManager, objectBuilder, commands, connections,
-                                    options, index, executed, referenceType, false, aggregatedCommands);
+                                    options, index, executed, referenceType, entry.getValue().isNoRetry(), aggregatedCommands);
                             executor.execute();
 
                             CompletionStage<Void> f = execPromise.thenCompose(r -> {
