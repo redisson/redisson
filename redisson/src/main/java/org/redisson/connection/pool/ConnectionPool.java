@@ -36,6 +36,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -169,7 +170,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
         });
         result.whenComplete((r, e) -> {
             if (e != null) {
-                if (entry.getNodeType() == NodeType.SLAVE) {
+                if (entry.getNodeType() == NodeType.SLAVE && !(e instanceof CancellationException)) {
                     FailedNodeDetector detector = entry.getClient().getConfig().getFailedNodeDetector();
                     detector.onConnectFailed(e, entry.getClient().getAddr());
                     if (detector.isNodeFailed(entry.getClient().getAddr())) {
