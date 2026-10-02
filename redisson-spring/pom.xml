@@ -22,7 +22,7 @@
 
     <properties>
         <!-- Spring Framework version -->
-        <spring.version>6.2.11</spring.version>
+        <spring.version>7.0.9</spring.version>
         <!-- Spring Boot versions -->
         <spring-boot-actuator.version>4.0.5</spring-boot-actuator.version>
         <spring-boot-autoconfigure.version>4.0.5</spring-boot-autoconfigure.version>
