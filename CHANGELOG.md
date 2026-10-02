@@ -3,7 +3,7 @@ Redisson Releases History
 
 Upgrade to __[Redisson PRO](https://redisson.pro/feature-comparison.html)__ with **advanced features**.
 
-### ??-October-2026 - 4.8.0 released
+### 02-October-2026 - 4.8.0 released
 
 Feature - [Redisson AI](https://redisson.pro/docs/data-and-services/ai/) implemented  
 Feature - [REmbeddingModel](https://redisson.pro/docs/data-and-services/ai/#embedding-models) object added  
