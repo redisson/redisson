@@ -17,10 +17,13 @@ package org.redisson.connection;
 
 import io.netty.channel.ChannelFuture;
 import org.redisson.api.NodeType;
+import org.redisson.api.RFuture;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
+import org.redisson.client.RedisException;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.protocol.CommandData;
+import org.redisson.client.protocol.RedisCommands;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.misc.WrappedLock;
 import org.slf4j.Logger;
@@ -33,7 +36,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 
+ *
  * @author Nikita Koksharov
  *
  */
@@ -55,8 +58,13 @@ public class ClientConnectionsEntry {
     private final NodeType nodeType;
     private final IdleConnectionWatcher idleConnectionWatcher;
     private final ConnectionManager connectionManager;
+    private final MasterSlaveServersConfig config;
 
     private volatile boolean initialized = false;
+
+    private volatile String availabilityZone;
+
+    private volatile CompletableFuture<Void> availabilityZoneRead = CompletableFuture.completedFuture(null);
 
     private final WrappedLock lock = new WrappedLock();
 
@@ -65,6 +73,7 @@ public class ClientConnectionsEntry {
     public ClientConnectionsEntry(RedisClient client, int poolMinSize, int poolMaxSize,
                                   ConnectionManager connectionManager, NodeType nodeType, MasterSlaveServersConfig config) {
         this.client = client;
+        this.config = config;
         this.connectionsHolder = new ConnectionsHolder<>(client, poolMaxSize, r -> r.connectAsync(),
                 connectionManager.getServiceManager(), true);
         this.idleConnectionWatcher = connectionManager.getServiceManager().getConnectionWatcher();
@@ -102,8 +111,106 @@ public class ClientConnectionsEntry {
         return nodeType;
     }
 
+    public String getAvailabilityZone() {
+        return availabilityZone;
+    }
+
+    public CompletableFuture<Void> getAvailabilityZoneRead() {
+        return availabilityZoneRead;
+    }
+
+    public void discoverAvailabilityZone() {
+        if (config.getClientAvailabilityZone() == null || config.isSlaveNotUsed()) {
+            return;
+        }
+
+        CompletableFuture<Void> read = new CompletableFuture<>();
+        availabilityZoneRead = read;
+        readAvailabilityZone(read, 1);
+    }
+
+    private void readAvailabilityZone(CompletableFuture<Void> read, int attempt) {
+        if (isAvailabilityZoneReadOver(read)) {
+            read.complete(null);
+            return;
+        }
+
+        connectionsHolder.acquireConnection(RedisCommands.INFO_SERVER_AVAILABILITY_ZONE)
+                .whenComplete((connection, e) -> {
+                    if (e != null) {
+                        scheduleAvailabilityZoneRead(read, attempt, e);
+                        return;
+                    }
+
+                    if (isAvailabilityZoneReadOver(read)) {
+                        connectionsHolder.releaseConnection(this, connection);
+                        read.complete(null);
+                        return;
+                    }
+
+                    RFuture<String> infoFuture = connection.async(RedisCommands.INFO_SERVER_AVAILABILITY_ZONE);
+                    infoFuture.whenComplete((zone, ex) -> {
+                        connectionsHolder.releaseConnection(this, connection);
+
+                        if (ex != null) {
+                            String message = ex.getMessage();
+                            if (ex instanceof RedisException && message != null
+                                    && (message.startsWith("NOPERM") || message.startsWith("ERR unknown command"))) {
+                                log.warn("Unable to read availability zone of {}. The node keeps the zone {}, and without "
+                                                + "one the availability zone read modes use it only after nodes in the "
+                                                + "client's zone; it isn't read again until the node is added or unfreezed. "
+                                                + "The node answered: {}",
+                                        client.getAddr(), getAvailabilityZone(), message);
+                                read.complete(null);
+                                return;
+                            }
+                            scheduleAvailabilityZoneRead(read, attempt, ex);
+                            return;
+                        }
+
+                        if (availabilityZoneRead == read) {
+                            availabilityZone = zone;
+                            if (zone == null) {
+                                log.warn("{} reports no availability zone (Valkey 8.0+ reports its availability-zone config), "
+                                        + "so the availability zone read modes use it only after nodes in the client's zone", client.getAddr());
+                            } else if (attempt > 1) {
+                                log.info("{} reports availability zone {}, read on try {}", client.getAddr(), zone, attempt);
+                            } else {
+                                log.debug("{} reports availability zone {}", client.getAddr(), zone);
+                            }
+                        }
+                        read.complete(null);
+                    });
+                });
+    }
+
+    private void scheduleAvailabilityZoneRead(CompletableFuture<Void> read, int attempt, Throwable cause) {
+        if (isAvailabilityZoneReadOver(read)) {
+            read.complete(null);
+            return;
+        }
+
+        long interval = config.getFailedSlaveReconnectionInterval();
+        if (attempt == 1) {
+            log.warn("Unable to read availability zone of {}, keeping zone: {}, trying again every {} ms",
+                    client.getAddr(), getAvailabilityZone(), interval, cause);
+        } else {
+            log.debug("Unable to read availability zone of {} on try {}", client.getAddr(), attempt, cause);
+        }
+        connectionManager.getServiceManager().newTimeout(t -> readAvailabilityZone(read, attempt + 1),
+                interval, TimeUnit.MILLISECONDS);
+    }
+
+    private boolean isAvailabilityZoneReadOver(CompletableFuture<Void> read) {
+        return availabilityZoneRead != read
+                || isFreezed()
+                || client.isShutdown()
+                || connectionManager.getServiceManager().isShuttingDown();
+    }
+
     public CompletableFuture<Void> shutdownAsync() {
         idleConnectionWatcher.remove(this);
+        availabilityZoneRead.complete(null);
         return client.shutdownAsync().toCompletableFuture();
     }
 
@@ -267,8 +374,8 @@ public class ClientConnectionsEntry {
                 ", freezeReason=" + freezeReason +
                 ", client=" + client +
                 ", nodeType=" + nodeType +
+                ", availabilityZone=" + availabilityZone +
                 ", initialized=" + initialized +
                 '}';
     }
 }
-

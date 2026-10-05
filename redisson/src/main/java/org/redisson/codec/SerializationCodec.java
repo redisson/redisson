@@ -53,7 +53,7 @@ public class SerializationCodec extends BaseCodec {
                         Thread.currentThread().setContextClassLoader(classLoader);
                         inputStream = new CustomObjectInputStream(classLoader, in, allowedClasses);
                     } else {
-                        inputStream = new ObjectInputStream(in);
+                        inputStream = new CustomObjectInputStream(currentThreadClassLoader, in, allowedClasses);
                     }
                     return inputStream.readObject();
                 } finally {

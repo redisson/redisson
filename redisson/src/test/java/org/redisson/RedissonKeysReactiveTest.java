@@ -10,6 +10,7 @@ import org.reactivestreams.Subscription;
 import org.redisson.api.RBucketReactive;
 import org.redisson.api.RKeysReactive;
 import org.redisson.api.RMapReactive;
+import org.redisson.client.protocol.Time;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -20,6 +21,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonKeysReactiveTest extends BaseReactiveTest {
+
+    @Test
+    public void testTime() {
+        Time time = sync(redisson.getKeys().time());
+
+        assertThat(time.getSeconds()).isPositive();
+        assertThat(time.getMicroseconds()).isBetween(0, 999999);
+    }
 
     @Test
     public void testKeysByPatternIterator() {

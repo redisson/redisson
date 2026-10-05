@@ -3,6 +3,95 @@ Redisson Releases History
 
 Upgrade to __[Redisson PRO](https://redisson.pro/feature-comparison.html)__ with **advanced features**.
 
+### 02-October-2026 - 4.8.0 released
+
+Feature - [Redisson AI](https://redisson.pro/docs/data-and-services/ai/) implemented  
+Feature - [REmbeddingModel](https://redisson.pro/docs/data-and-services/ai/#embedding-models) object added  
+Feature - [REmbeddingsCache](https://redisson.pro/docs/data-and-services/ai/#embedding-models) object added  
+Feature - [RVectorStore](https://redisson.pro/docs/data-and-services/ai/#vector-store) object added  
+Feature - [RSemanticCache](https://redisson.pro/docs/data-and-services/ai/#semantic-cache) object added  
+Feature - [RAgentMemory](https://redisson.pro/docs/data-and-services/ai/#agent-memory) object added  
+Feature - Spring AI 2.0.0 integration  
+Feature - [Spring AI Chat Memory](https://redisson.pro/docs/integration-with-spring/#spring-ai-chat-memory) implementation  
+Feature - [Spring AI Semantic Cache](https://redisson.pro/docs/integration-with-spring/#spring-ai-semantic-cache) implementation  
+Feature - [Count-min sketch](https://redisson.pro/docs/data-and-services/probabilistic-structures/#count-min-sketch) object added  
+Feature - [Time Series (Native)](https://redisson.pro/docs/data-and-services/collections/#time-series-native) object added  
+Feature - `RTimeSeriesNatives` object added for mass operations with Time Series (Native) objects  
+Feature - `RCountMin` and `RTimeSeriesNative` objects added to `RBatch` object  
+Feature - Valkey 8.0+ availability zone support through `AZ_AFFINITY`, `AZ_AFFINITY_SLAVES_AND_MASTER`, `AZ_AFFINITY_MASTER_SLAVE` read modes and `clientAvailabilityZone` setting  
+Feature - Apache Fory JSON codec added: `JsonForyCodec` and `TypedJsonForyCodec`  
+Feature - `PrefixNameMapper` object added  
+Feature - `RTimeSeries.add(TimeSeriesAddArgs)` method added, old `add()` methods deprecated  
+Feature - `RTimeSeries.addIfAbsent()` and `addOrReplace()` methods added  
+Feature - `RTimeSeries.aggregate()` method added  
+Feature - `RTimeSeries.addAndGet()`, `addIfLess()`, `addIfGreater()` and `addAndSum()` methods added  
+Feature - `RTimeSeries.getAll()`, `getAllEntries()`, `removeAll()`, `getAndRemoveAll()` and `getAndRemoveAllEntries()` methods added  
+Feature - `RTimeSeries.readTail()` and `info()` methods added  
+Feature - `RTimeSeries.rangeByLabel()`, `rangeReversedByLabel()`, `entryRangeByLabel()`, `entryRangeReversedByLabel()`, `removeRangeByLabel()` and `labels()` methods added  
+Feature - retention setting added to `TimeSeriesAddArgs` of `RTimeSeries` object  
+Feature - `RKeys.time()` method added (thanks to @dlwhdgus0810)  
+Feature - `StorageMemoryUsageListener` and `storageStatisticsInterval` setting added (thanks to @seakider)  
+Feature - `allowedClasses` setting added to `JsonJacksonCodec` and `JsonJackson3Codec`  
+Feature - node address is now passed to `FailedNodeDetector` methods, legacy methods deprecated (thanks to @rahulrane50)  
+
+Improvement - `ZStdCodec` optimization. Up to 18X faster to encode, up to 91X faster to decode  
+Improvement - `ForyCodec` optimization. Up to 2X faster encoding  
+Improvement - `SnappyCodecV2` memory allocation optimization  
+Improvement - `LFUCacheMap` optimization: ~25% faster, elements eviction throughput gain is 1.6X-6.9X  
+Improvement - `RTimeSeries` entries sharing a timestamp keep insertion order  
+Improvement - failed command recording is no longer serialized (thanks to @rahulrane50)  
+Improvement - failed node recovery moved out of health check (thanks to @rahulrane50)  
+Improvement - Netty updated to 4.2.18.Final  
+Improvement - Fory lib updated to 1.7.5  
+Improvement - Kryo lib updated to 5.7.0  
+Improvement - Jackson libs updated to 2.22.1 and 3.2.1  
+Improvement - Caffeine lib updated to 3.2.4  
+Improvement - Javassist lib updated to 3.32.0-GA  
+Improvement - lz4-java lib updated to 1.11.2  
+Improvement - Micrometer lib updated to 1.16.6  
+Improvement - Helidon lib updated to 4.5.4  
+Improvement - Micronaut lib updated to 5.1.13  
+Improvement - Quarkus lib updated to 3.40.1  
+Improvement - Tomcat libs updated to 9.0.121, 10.1.59 and 11.0.25  
+
+Fixed - high CPU usage by Hibernate `RedissonCacheKeysFactory.createCollectionKey()` method  
+Fixed - `CommandDecoder.readLong()` performance regression  
+Fixed - `FastRemovalQueue` isn't atomic  
+Fixed - `AsyncSemaphore.removeListeners()` method should cancel futures  
+Fixed - `AbstractCacheMap` view iterators cannot remove  
+Fixed - `AbstractCacheMap.computeIfPresent()` method drops a mapping without `onValueRemove`  
+Fixed - `AbstractCacheMap.entrySet()` remove/contains methods compare the wrong types  
+Fixed - `SerializationCodec` doesn't use `allowedClasses` if `classLoader` isn't defined  
+Fixed - `ZStdCodec`, `LZ4CodecV2` and `LZ4Codec` don't check decompression size  
+Fixed - incorrect `maxIdleTime=0` handling in `RMapCache.putIfAbsent()` method  
+Fixed - `RObject.renamenx()` method may throw key not found error  
+Fixed - `RSearch.hasIndex()` method throws "unknown index name" error  
+Fixed - `RTimeSeries` get/remove methods skip a live entry if an expired one shares its timestamp  
+Fixed - `RTimeSeries` range with a limit drops entries sharing a timestamp  
+Fixed - `RTimeSeries` fails on timestamps above 1e17 and on an entry missing its expiration  
+Fixed - `RTimeSeries` first/last/poll methods return insertion order instead of timestamp order  
+Fixed - `RRateLimiter` discards permits returned by `release()` method if available permits are recalculated (thanks to @likerhythm)  
+Fixed - `FailedCommandsDetector` undercounts failures sharing the same millisecond (thanks to @rahulrane50)  
+Fixed - `RKeysRx` keys iterator ignores reactive backpressure (thanks to @stlahxm)  
+Fixed - `RSetCache` entry added without TTL may become invisible (thanks to @fudianchn)  
+Fixed - local cache disabled marker isn't cleaned up after transaction commit (thanks to @fudianchn)  
+Fixed - local cache transaction invalidation events aren't published through sharded topic in cluster (thanks to @fudianchn)  
+Fixed - RESP3 boolean reply isn't consumed if completed command's reply is skipped (thanks to @fudianchn)  
+Fixed - `ByteBuf` leak in `BaseTransactionalMap.isEqual()` method (thanks to @kalayciburak)  
+Fixed - `RReliableTopic` stops polling after listener exception (thanks to @49EHyeon42)  
+Fixed - `RBinaryStream` input stream position is incorrect after partial reads (thanks to @daixiheguu)  
+Fixed - CROSSSLOT error in lock renewal if `useSingleServer()` is used behind a cluster proxy (thanks to @govansmailbox)  
+Fixed - missing permit acquisition in connection pool tracking (thanks to @Sebmaster)  
+Fixed - connection bootstrap ordering around AUTH (thanks to @rahulrane50)  
+Fixed - failed replica recovery during connection pool selection (thanks to @rahulrane50)  
+Fixed - Spring Data Redis Reactive hash field expiration ignores expiration type and precision (thanks to @COBI-98)  
+Fixed - `RedissonCache.retrieve()` method returns internal `NullValue` object instead of null (thanks to @stlahxm)  
+Fixed - Spring Data Redis `set()` method ignores KEEPTTL and unixTimestamp expirations (thanks to @stlahxm)  
+Fixed - Spring Data Redis Reactive `getEx()` method ignores PERSIST, KEEPTTL, EXAT and PXAT options (thanks to @stlahxm)  
+Fixed - Spring Data Redis `getEx()` method doesn't apply passed options  
+Fixed - Same slave node reconnection after failover causes timeout exceptions if performanceMode != NORMAL  
+Fixed - Quarkus native build fails with GraalVM 25  
+
 ### 04-August-2026 - 4.7.0 released
 
 Feature - `RMaps` object added for mass operations with Map objects  
