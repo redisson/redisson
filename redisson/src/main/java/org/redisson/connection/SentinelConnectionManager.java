@@ -127,6 +127,11 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                         String flags = map.getOrDefault("flags", "");
                         String masterLinkStatus = map.getOrDefault("master-link-status", "");
 
+                        if (isDown(flags, masterLinkStatus)) {
+                            log.warn("slave: {}:{} is down", host, port);
+                            continue;
+                        }
+
                         InetSocketAddress slaveAddr = resolveIP(host, port).join();
                         RedisURI uri = toURI(slaveAddr);
                         if (isHostname(host)) {
@@ -135,18 +140,20 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
                         log.debug("slave {} state: {}", slaveAddr, map);
 
-                        if (isDown(flags, masterLinkStatus)) {
-                            log.warn("slave: {} is down", slaveAddr);
-                        } else {
-                            this.config.addSlaveAddress(uri.toURIString());
-                            log.info("slave: {} added", slaveAddr);
-                        }
+                        this.config.addSlaveAddress(uri.toURIString());
+                        log.info("slave: {} added", slaveAddr);
                     }
 
                     if (cfg.isSentinelsDiscovery()) {
                         List<Map<String, String>> sentinelSentinels = connection.sync(StringCodec.INSTANCE, RedisCommands.SENTINEL_SENTINELS, cfg.getMasterName());
                         for (Map<String, String> map : sentinelSentinels) {
                             if (map.isEmpty()) {
+                                continue;
+                            }
+
+                            String flags = map.getOrDefault("flags", "");
+                            String masterLinkStatus = map.getOrDefault("master-link-status", "");
+                            if (isDown(flags, masterLinkStatus)) {
                                 continue;
                             }
 
