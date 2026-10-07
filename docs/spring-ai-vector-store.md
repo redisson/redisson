@@ -2,9 +2,9 @@
 
 *This feature is available only in [Redisson PRO](https://redisson.pro/feature-comparison.html) edition.*
 
-Redisson provides [Spring AI](https://spring.io/projects/spring-ai) Vector Store implementation for building AI-powered applications. It supports a wide range of use cases including Retrieval Augmented Generation (RAG), semantic search, document similarity and recommendations, and memory for AI agents. The implementation leverages Redis Stack with RediSearch and RedisJSON modules to store and query vector embeddings.
+Redisson provides [Spring AI](https://spring.io/projects/spring-ai) Vector Store implementation for building AI-powered applications. It supports a wide range of use cases including Retrieval Augmented Generation (RAG), semantic search, document similarity and recommendations, and memory for AI agents. The implementation uses the Redis Query Engine to store and query vector embeddings.
 
-The store uses Redis JSON documents to persist vector embeddings along with their associated document content and metadata. It leverages RediSearch for creating and querying vector similarity indexes.
+The store uses Redis JSON documents to persist vector embeddings along with their associated document content and metadata, and creates a vector similarity index over them.
 
 **Features:**
 
@@ -15,23 +15,43 @@ The store uses Redis JSON documents to persist vector embeddings along with thei
 - Automatic schema initialization
 - Portable filter expressions
 - Batch processing support
+- Observability through Micrometer
 - Semantic search over natural language corpora
 - Document similarity and content-based recommendations
 - Persistent memory for AI agents and multi-turn conversations
 
+### Supported Spring AI versions
+
+Two sets of artifacts are published, one per Spring AI generation. They are identical in features and differ only in the Spring AI API they compile against, so pick the one matching the Spring AI version already on the classpath.
+
+| Spring AI | Artifact suffix | Store artifact | Starter artifact |
+|---|---|---|---|
+| 1.0.x | `-10` | `redisson-spring-ai-store-10` | `redisson-spring-ai-store-starter-10` |
+| 2.0.x | `-20` | `redisson-spring-ai-store-20` | `redisson-spring-ai-store-starter-20` |
+
+Spring AI 2.0 additionally ships two features which have no 1.0 counterpart:
+
+| Feature | Store artifact | Starter artifact |
+|---|---|---|
+| [Chat Memory](spring-ai-chat-memory.md) | `redisson-spring-ai-chat-20` | `redisson-spring-ai-chat-starter-20` |
+| [Semantic Cache](spring-ai-semantic-cache.md) | `redisson-spring-ai-semantic-cache-20` | `redisson-spring-ai-semantic-cache-starter-20` |
+
 ### Prerequisites
 
-1. **Redis Stack** or **Redis 8.4+** instance with RediSearch and RedisJSON modules
+1. **Redis 8.0 or higher**. The Redis Query Engine and JSON are part of Redis itself from Redis 8, so the standard `redis` distribution and Docker image carry everything the store needs and no module has to be loaded. For Redis 7.x and earlier, use **Redis Stack**, which bundles the RediSearch and RedisJSON modules.
 
 2. **EmbeddingModel** instance to compute the document embeddings. Several options are available:
   
      - [OpenAI](https://docs.spring.io/spring-ai/reference/api/embeddings/openai-embeddings.html)
      - [Ollama](https://docs.spring.io/spring-ai/reference/api/embeddings/ollama-embeddings.html)
+     - [Transformers (ONNX)](https://docs.spring.io/spring-ai/reference/api/embeddings/onnx.html) - runs locally in the JVM and needs no API key, which makes it the simplest option to start with
      - [Other supported providers](https://docs.spring.io/spring-ai/reference/api/embeddings.html#available-implementations)
 
 ### Usage
 
 **1. Add dependency into your project**
+
+Replace the `-20` suffix with `-10` if the project uses Spring AI 1.0.x.
 
 **Spring Boot Starter** (recommended)
 
@@ -41,14 +61,14 @@ Maven
 ```xml
 <dependency>
     <groupId>pro.redisson</groupId>
-    <artifactId>redisson-spring-ai-store-starter-10</artifactId>
+    <artifactId>redisson-spring-ai-store-starter-20</artifactId>
     <version>xVERSIONx</version>
 </dependency>
 ```
 
 Gradle
 ```groovy
-compile 'pro.redisson:redisson-spring-ai-store-starter-10:xVERSIONx'
+compile 'pro.redisson:redisson-spring-ai-store-starter-20:xVERSIONx'
 ```
 
 **Store Implementation Only**
@@ -59,14 +79,14 @@ Maven
 ```xml
 <dependency>
     <groupId>pro.redisson</groupId>
-    <artifactId>redisson-spring-ai-store-10</artifactId>
+    <artifactId>redisson-spring-ai-store-20</artifactId>
     <version>xVERSIONx</version>
 </dependency>
 ```
 
 Gradle
 ```groovy
-compile 'pro.redisson:redisson-spring-ai-store-10:xVERSIONx'
+compile 'pro.redisson:redisson-spring-ai-store-20:xVERSIONx'
 ```
 
 [License key configuration](configuration.md/#license-key-configuration)
@@ -130,7 +150,9 @@ Properties starting with `spring.ai.vectorstore.redisson.*` are used to configur
 | `spring.ai.vectorstore.redisson.vector-algorithm` | Vector indexing algorithm (`HNSW` or `FLAT`) | `HNSW` |
 | `spring.ai.vectorstore.redisson.distance-metric` | Distance metric (`COSINE`, `L2`, or `IP`) | `COSINE` |
 
-The `initialize-schema` property must be set to `true` for automatic index creation. This is a breaking change from earlier Spring AI versions where schema initialization happened by default.
+The `initialize-schema` property must be set to `true` for automatic index creation. It is `false` by default so that an application cannot silently create an index against a production database; create the index up front and leave the property unset if schema changes are managed outside the application.
+
+When it is enabled the index is created on startup only if it is absent. Changing a metadata field's type, the vector algorithm or the distance metric afterwards has no effect on an index that already exists - drop the index and let it be recreated, or rebuild it manually.
 
 **Vector Algorithms**
 
@@ -223,7 +245,20 @@ vectorStore.similaritySearch(SearchRequest.builder()
         .build());
 ```
 
-Filter expressions are automatically converted into [Redis search queries](https://redis.io/docs/interact/search-and-query/query/). For example, the portable filter expression `country in ['UK', 'NL'] && year >= 2020` is converted into the Redis filter format `@country:{UK | NL} @year:[2020 inf]`.
+Filter expressions are automatically converted into [Redis search queries](https://redis.io/docs/interact/search-and-query/query/):
+
+| Portable expression | Redis query |
+|---|---|
+| `country == 'BG'` | `@country:{BG}` |
+| `genre == 'drama' && year >= 2020` | `@genre:{drama} @year:[2020 inf]` |
+| `genre in ['comedy', 'documentary', 'drama']` | `@genre:{comedy \| documentary \| drama}` |
+| `year >= 2020 \|\| (country == 'BG' && city != 'Sofia')` | `@year:[2020 inf] \| (@country:{BG} -@city:{Sofia})` |
+| `(year >= 2020 \|\| country == 'BG') && city nin ['Sofia', 'Plovdiv']` | `(@year:[2020 inf] \| @country:{BG}) -@city:{Sofia \| Plovdiv}` |
+| `temperature >= -15.6 && temperature <= 20.13` | `@temperature:[-15.6 inf] @temperature:[-inf 20.13]` |
+
+A field's declared type decides the syntax it converts to, so a field filtered as a range has to be declared `NUMERIC` and a field filtered by exact match `TAG`. **A field that is not declared at all is treated as `TAG`**, which silently turns a range filter over an undeclared field into something that matches nothing.
+
+A key containing spaces is quoted, in either single or double quotes: `"country 1 2 3" == 'BG'` becomes `@"country 1 2 3":{BG}`.
 
 **Distance Metrics**
 
@@ -235,49 +270,66 @@ The Vector Store supports three distance metrics:
 | `L2` | Euclidean distance | Image embeddings, spatial data |
 | `IP` | Inner Product | Pre-normalized embeddings |
 
-Each metric is automatically normalized to a 0-1 similarity score, where 1 indicates maximum similarity.
+Each metric is automatically normalized to a 0-1 similarity score, where 1 indicates maximum similarity. `Document.getScore()` reports that similarity, so a higher value is a closer match, and `similarityThreshold` on a `SearchRequest` is compared against it.
 
-*Manual Configuration*
+**Stored document layout**
 
-Instead of using the Spring Boot auto-configuration, you can manually configure the Redisson Vector Store:
+Each document is stored as a JSON object under `<prefix><document id>` with four fields:
+
+| Field | Holds |
+|-------|-------|
+| `content` | the document text, indexed as `TEXT` |
+| `embedding` | the vector, indexed as `HNSW` or `FLAT` |
+| `metadata` | the document metadata; only the fields declared in `metadata-fields` are indexed |
+
+Metadata that is not declared in `metadata-fields` is still stored and still returned with the document. It simply cannot be filtered on.
+
+A document returned by `similaritySearch` carries two metadata entries it was not stored with - the raw distance under `RedissonVectorStore.DISTANCE_FIELD_NAME` (`vector_score`) and the same value under Spring AI's own `DocumentMetadata.DISTANCE` key (`distance`). A document stored with one metadata field therefore comes back holding three.
+
+**Adding a document with an id that already exists replaces it**, content, embedding and metadata alike, so `add` is an upsert rather than an append:
 
 ```java
-@Configuration
-public class VectorStoreConfig {
+String id = UUID.randomUUID().toString();
+vectorStore.add(List.of(new Document(id, "Spring AI rocks!!", Map.of("meta1", "meta1"))));
 
-    @Bean(destroyMethod = "shutdown")
-    public RedissonClient redisson() {
-        Config config = new Config();
-        config.useSingleServer()
-              .setAddress("redis://127.0.0.1:6379");
-        return Redisson.create(config);
-    }
-
-    @Bean
-    public VectorStore vectorStore(RedissonClient redissonClient, EmbeddingModel embeddingModel) {
-        return RedissonVectorStore.builder(redissonClient, embeddingModel)
-            .indexName("custom-index")
-            .prefix("custom-prefix")
-            .vectorAlgorithm(Algorithm.HNSW)
-            .distanceMetric(DistanceMetric.COSINE)
-            .hnswM(16)
-            .hnswEfConstruction(200)
-            .hnswEfRuntime(10)
-            .metadataFields(
-                MetadataField.tag("category"),
-                MetadataField.numeric("year"),
-                MetadataField.text("description"))
-            .initializeSchema(true)
-            .build();
-    }
-
-    @Bean
-    public EmbeddingModel embeddingModel() {
-        // Configure your embedding model (OpenAI, Ollama, etc.)
-        return new OpenAiEmbeddingModel(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
-    }
-}
+// same id - replaces the document above rather than adding a second one
+vectorStore.add(List.of(new Document(id, "The World is Big", Map.of("meta2", "meta2"))));
 ```
+
+**Deleting**
+
+Documents are removed by id, or by the same filter expressions searching uses:
+
+```java
+vectorStore.delete(List.of(id1, id2));
+
+vectorStore.delete("type == 'A' && priority > 1");
+
+vectorStore.delete(new FilterExpressionBuilder()
+        .and(b.eq("type", "A"), b.gt("priority", 1))
+        .build());
+```
+
+**Observability**
+
+The store extends Spring AI's `AbstractObservationVectorStore`, so `add`, `delete` and `similaritySearch` are recorded through Micrometer whenever an `ObservationRegistry` is present. In a Spring Boot application the registry is injected automatically; with manual configuration pass it to the builder.
+
+Observations are published under Spring AI's standard vector store names, with the provider reported as `redis`:
+
+| Key | Value |
+|-----|-------|
+| `db.system` | `redis` |
+| `db.operation.name` | `add`, `delete` or `query` |
+| `spring.ai.kind` | `vector_store` |
+| `db.collection.name` | the index name |
+| `db.vector.field.name` | `embedding` |
+| `db.vector.dimension_count` | the embedding model's dimensions |
+| `db.search.similarity_metric` | the configured distance metric |
+| `db.vector.query.content`, `db.vector.query.top_k`, `db.vector.query.similarity_threshold` | the query, on `query` observations only |
+
+**Batching**
+
+Embeddings are computed in batches sized by a `BatchingStrategy`, defaulting to `TokenCountBatchingStrategy`, which keeps each request to the embedding model under its token limit. Supply a different strategy through the builder when the model has an unusual limit.
 
 ### RAG Integration Example
 
@@ -307,7 +359,7 @@ public class RagService {
 
         // Build context from retrieved documents
         String context = relevantDocs.stream()
-            .map(Document::getContent)
+            .map(Document::getText)
             .collect(Collectors.joining("\n\n"));
 
         // Generate response with context
@@ -327,6 +379,8 @@ public class RagService {
     }
 }
 ```
+A repeated question costs a model call every time it is asked. [Spring AI Semantic Cache](spring-ai-semantic-cache.md) answers it from a previous response when the two questions mean the same thing.
+
 ### Semantic Search Example
 
 Unlike keyword search, semantic search finds results based on *meaning* rather than exact word matches. This is useful for documentation search, support knowledge bases, product catalogs, or any corpus where users may phrase queries in unexpected ways.
@@ -514,6 +568,8 @@ List<Map<String, Object>> recommended = recommendationService.recommendFromHisto
 
 Agents and multi-turn chat applications can use the vector store as a long-term memory layer, persisting conversation turns and facts as embeddings and retrieving the most contextually relevant ones at each step.
 
+This is *semantic* recall - the memories most relevant to what the user just said, whenever they were stored. For the transcript of a conversation in the order it happened, use [Spring AI Chat Memory](spring-ai-chat-memory.md), which implements Spring AI's own `ChatMemoryRepository`. The two are complementary: the repository holds the recent turns, the vector store holds what is worth remembering from all of them.
+
 Configure metadata fields in `application.yaml`:
 
 ```yaml
@@ -578,7 +634,7 @@ public class AgentMemoryService {
         String memoryContext = memories.isEmpty()
             ? "No relevant memories."
             : memories.stream()
-                .map(Document::getContent)
+                .map(Document::getText)
                 .collect(Collectors.joining("\n- ", "- ", ""));
 
         // 2. Build a system prompt that injects the recalled context

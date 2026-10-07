@@ -797,7 +797,9 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                             + "return nil; "
                         + "else "
                             + "local t, val = struct.unpack('dLc0', value); "
-                            + "redis.call('zadd', KEYS[3], t + ARGV[1], ARGV[5]); "
+                            + "if t ~= 0 then "
+                                + "redis.call('zadd', KEYS[3], t + ARGV[1], ARGV[5]); "
+                            + "end; "
                             + "return val; "
                         + "end; ",
                 Arrays.<Object>asList(name, getTimeoutSetName(name), getIdleSetName(name), getCreatedChannelName(name),

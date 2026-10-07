@@ -98,6 +98,26 @@ public interface RBatchRx {
     <V> RTopKRx<V> getTopK(String name, Codec codec);
 
     /**
+     * Returns count-min sketch instance by <code>name</code>.
+     *
+     * @param <V> type of value
+     * @param name name of object
+     * @return CountMin object
+     */
+    <V> RCountMinRx<V> getCountMin(String name);
+
+    /**
+     * Returns count-min sketch instance by <code>name</code>
+     * using provided <code>codec</code> for values.
+     *
+     * @param <V> type of value
+     * @param name name of object
+     * @param codec codec for values
+     * @return CountMin object
+     */
+    <V> RCountMinRx<V> getCountMin(String name, Codec codec);
+
+    /**
      * Returns t-digest instance by <code>name</code>.
      *
      * @param name name of object
@@ -112,6 +132,22 @@ public interface RBatchRx {
      * @return RVectorSet object
      */
     RVectorSetRx getVectorSet(String name);
+
+    /**
+     * Returns time series instance by <code>name</code>, backed by the TS.* commands of the
+     * RedisTimeSeries module.
+     * <p>
+     * The iterator methods are meaningless here, as they are on every other object a batch
+     * hands out: walking a series takes one round trip per window, each bounded by what the one
+     * before it returned, and a batch has not sent anything yet.
+     * <p>
+     * There is no codec overload, because samples are timestamps and doubles handled by the
+     * module itself.
+     *
+     * @param name - name of object
+     * @return time series instance
+     */
+    RTimeSeriesNativeRx getTimeSeriesNative(String name);
 
     /**
      * Returns bloom filter native instance by <code>name</code>.

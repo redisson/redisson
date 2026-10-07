@@ -15,8 +15,7 @@
  */
 package org.redisson.codec;
 
-import com.github.luben.zstd.ZstdInputStream;
-import com.github.luben.zstd.ZstdOutputStream;
+import com.github.luben.zstd.*;
 import io.netty.buffer.*;
 import org.redisson.client.codec.BaseCodec;
 import org.redisson.client.codec.Codec;
@@ -25,6 +24,11 @@ import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.Objects;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * ZStandard codec.
@@ -42,6 +46,14 @@ import java.io.IOException;
  */
 public class ZStdCodec extends BaseCodec {
 
+    public static final int DEFAULT_MAX_POOLED = 128;
+
+    private final Queue<ZstdCompressCtx> compressors = new ConcurrentLinkedQueue<>();
+    private final AtomicInteger pooledCompressors = new AtomicInteger();
+    private final Queue<ZstdDecompressCtx> decompressors = new ConcurrentLinkedQueue<>();
+    private final AtomicInteger pooledDecompressors = new AtomicInteger();
+
+    private final int maxPooled;
     private final Codec innerCodec;
 
     public ZStdCodec() {
@@ -49,7 +61,7 @@ public class ZStdCodec extends BaseCodec {
     }
 
     public ZStdCodec(Codec innerCodec) {
-        this.innerCodec = innerCodec;
+        this(innerCodec, DEFAULT_MAX_POOLED);
     }
 
     public ZStdCodec(ClassLoader classLoader) {
@@ -59,43 +71,105 @@ public class ZStdCodec extends BaseCodec {
     public ZStdCodec(ClassLoader classLoader, ZStdCodec codec) throws ReflectiveOperationException {
         this(copy(classLoader, codec.innerCodec));
     }
-    
-    private final Decoder<Object> decoder = new Decoder<Object>() {
-        
+
+    public ZStdCodec(Codec innerCodec, int maxPooled) {
+        this.innerCodec = Objects.requireNonNull(innerCodec, "innerCodec");
+        if (maxPooled < 0) {
+            throw new IllegalArgumentException("maxPooled must not be negative: " + maxPooled);
+        }
+        this.maxPooled = maxPooled;
+    }
+
+    private final Encoder encoder = new Encoder() {
         @Override
-        public Object decode(ByteBuf buf, State state) throws IOException {
-            int size = buf.readInt();
-            ByteBuf out = ByteBufAllocator.DEFAULT.buffer(size);
-
+        @SuppressWarnings("NestedTryDepth")
+        public ByteBuf encode(Object in) throws IOException {
+            ByteBuf encoded = innerCodec.getValueEncoder().encode(in);
             try {
-                ZstdInputStream in = new ZstdInputStream(new ByteBufInputStream(buf));
-                out.writeBytes(in, size);
-                in.close();
+                int size = encoded.readableBytes();
+                int bound = (int) Zstd.compressBound(size);
 
-                return innerCodec.getValueDecoder().decode(out, state);
+                ByteBuf out = ByteBufAllocator.DEFAULT.directBuffer(Integer.BYTES + bound);
+                boolean complete = false;
+                try {
+                    out.writeInt(size);
+
+                    ZstdCompressCtx context = compressors.poll();
+                    if (context == null) {
+                        context = new ZstdCompressCtx();
+                    } else {
+                        pooledCompressors.decrementAndGet();
+                    }
+                    try {
+                        if (encoded.isDirect() && encoded.nioBufferCount() == 1) {
+                            ByteBuffer source = encoded.nioBuffer(encoded.readerIndex(), size);
+                            ByteBuffer target = out.nioBuffer(out.writerIndex(), bound);
+                            out.writerIndex(out.writerIndex() + context.compress(target, source));
+                        } else {
+                            out.writeBytes(context.compress(ByteBufUtil.getBytes(encoded)));
+                        }
+                    } finally {
+                        if (pooledCompressors.incrementAndGet() <= maxPooled) {
+                            compressors.offer(context);
+                        } else {
+                            pooledCompressors.decrementAndGet();
+                            context.close();
+                        }
+                    }
+
+                    complete = true;
+                    return out;
+                } finally {
+                    if (!complete) {
+                        out.release();
+                    }
+                }
             } finally {
-                out.release();
+                encoded.release();
             }
         }
     };
 
-    private final Encoder encoder = new Encoder() {
-
+    private final Decoder<Object> decoder = new Decoder<Object>() {
         @Override
-        public ByteBuf encode(Object in) throws IOException {
-            ByteBuf encoded = innerCodec.getValueEncoder().encode(in);
+        public Object decode(ByteBuf buf, State state) throws IOException {
+            int size = buf.readInt();
+            checkDecompressionSize(size);
 
-            ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
-            ZstdOutputStream o = new ZstdOutputStream(new ByteBufOutputStream(out));
+            ZstdDecompressCtx context = decompressors.poll();
+            if (context == null) {
+                context = new ZstdDecompressCtx();
+            } else {
+                pooledDecompressors.decrementAndGet();
+            }
+            try {
+                if (buf.isDirect() && buf.nioBufferCount() == 1) {
+                    ByteBuf out = ByteBufAllocator.DEFAULT.directBuffer(size);
+                    try {
+                        ByteBuffer source = buf.nioBuffer(buf.readerIndex(), buf.readableBytes());
+                        ByteBuffer target = out.nioBuffer(out.writerIndex(), size);
+                        out.writerIndex(out.writerIndex() + context.decompress(target, source));
+                        return innerCodec.getValueDecoder().decode(out, state);
+                    } finally {
+                        out.release();
+                    }
+                }
 
-            int size = encoded.readableBytes();
-            out.writeInt(size);
-            encoded.readBytes(o, size);
-            encoded.release();
-
-            o.flush();
-            o.close();
-            return out;
+                byte[] plain = context.decompress(ByteBufUtil.getBytes(buf), size);
+                ByteBuf out = Unpooled.wrappedBuffer(plain);
+                try {
+                    return innerCodec.getValueDecoder().decode(out, state);
+                } finally {
+                    out.release();
+                }
+            } finally {
+                if (pooledDecompressors.incrementAndGet() <= maxPooled) {
+                    decompressors.offer(context);
+                } else {
+                    pooledDecompressors.decrementAndGet();
+                    context.close();
+                }
+            }
         }
     };
 

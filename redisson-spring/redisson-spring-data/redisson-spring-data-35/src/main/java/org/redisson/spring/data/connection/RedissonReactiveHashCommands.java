@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.reactivestreams.Publisher;
@@ -51,6 +52,7 @@ import org.springframework.data.redis.connection.ReactiveRedisConnection.KeyComm
 import org.springframework.data.redis.connection.ReactiveRedisConnection.KeyScanCommand;
 import org.springframework.data.redis.connection.ReactiveRedisConnection.MultiValueResponse;
 import org.springframework.data.redis.connection.ReactiveRedisConnection.NumericResponse;
+import org.springframework.data.redis.core.types.Expiration;
 import org.springframework.util.Assert;
 
 import reactor.core.publisher.Flux;
@@ -300,6 +302,9 @@ public class RedissonReactiveHashCommands extends RedissonBaseReactive implement
     }
 
     private static final RedisCommand<List<Long>> HEXPIRE = new RedisCommand<>("HEXPIRE", new ObjectListReplayDecoder<>());
+    private static final RedisStrictCommand<List<Long>> HPEXPIRE = new RedisStrictCommand<>("HPEXPIRE", new ObjectListReplayDecoder<>());
+    private static final RedisCommand<List<Long>> HEXPIREAT = new RedisCommand<>("HEXPIREAT", new ObjectListReplayDecoder<>());
+    private static final RedisStrictCommand<List<Long>> HPEXPIREAT = new RedisStrictCommand<>("HPEXPIREAT", new ObjectListReplayDecoder<>());
 
     @Override
     public Flux<NumericResponse<HashExpireCommand, Long>> applyHashFieldExpiration(Publisher<HashExpireCommand> commands) {
@@ -312,18 +317,39 @@ public class RedissonReactiveHashCommands extends RedissonBaseReactive implement
 
             List<Object> args = new ArrayList<>();
             args.add(keyBuf);
-            args.add(command.getExpiration().getExpirationTimeInSeconds());
+            Expiration expiration = command.getExpiration();
+            RedisCommand<List<Long>> cmd;
+            if (expiration.isPersistent()) {
+                cmd = HPERSIST;
+            } else {
+                boolean millis = expiration.getTimeUnit() == TimeUnit.MILLISECONDS;
+                if (expiration.isUnixTimestamp()) {
+                    if (millis) {
+                        cmd = HPEXPIREAT;
+                        args.add(expiration.getExpirationTimeInMilliseconds());
+                    } else {
+                        cmd = HEXPIREAT;
+                        args.add(expiration.getExpirationTimeInSeconds());
+                    }
+                } else if (millis) {
+                    cmd = HPEXPIRE;
+                    args.add(expiration.getExpirationTimeInMilliseconds());
+                } else {
+                    cmd = HEXPIRE;
+                    args.add(expiration.getExpirationTimeInSeconds());
+                }
 
-            if (command.getOptions() != null
-                    && command.getOptions().getCondition() != ExpirationOptions.Condition.ALWAYS) {
-                args.add(command.getOptions().getCondition().name());
+                if (command.getOptions() != null
+                        && command.getOptions().getCondition() != ExpirationOptions.Condition.ALWAYS) {
+                    args.add(command.getOptions().getCondition().name());
+                }
             }
 
             args.add("FIELDS");
             args.add(command.getFields().size());
             args.addAll(command.getFields().stream().map(buf -> toByteArray(buf)).collect(Collectors.toList()));
 
-            Mono<List<Long>> result = write(keyBuf, LongCodec.INSTANCE, HEXPIRE, args.toArray());
+            Mono<List<Long>> result = write(keyBuf, LongCodec.INSTANCE, cmd, args.toArray());
             return result.flatMapMany(Flux::fromIterable)
                     .map(value -> new NumericResponse<>(command, value));
         });

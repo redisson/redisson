@@ -5,6 +5,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.api.Test;
+import org.redisson.api.RMap;
 import org.redisson.api.RedissonClient;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
@@ -26,12 +28,15 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 @SpringJUnitConfig
 public class RedissonSpringCacheTest extends RedisDockerTest {
@@ -211,6 +216,47 @@ public class RedissonSpringCacheTest extends RedisDockerTest {
             SampleBean bean = context.getBean(SampleBean.class);
             bean.read("object2");
         });
+    }
+
+    /**
+     * Reproduces a bug in {@link RedissonCache#retrieve(Object, java.util.function.Supplier)}:
+     * once a key has a cached null value (allowNullValues=true, i.e. negative caching),
+     * every subsequent retrieve() call for that key returns the internal {@link NullValue}
+     * sentinel object instead of unwrapping it back to a real null, because the inner
+     * re-check under the per-key lock reads the raw stored value without calling
+     * fromStoreValue().
+     */
+    @Test
+    public void testRetrieveSecondCallOnCachedNullShouldReturnNullNotSentinel() throws Exception {
+        RedissonClient redisson = createInstance();
+        try {
+            RMap<Object, Object> map = redisson.getMap("retrieve-null-test");
+            RedissonCache cache = new RedissonCache(map, true);
+
+            AtomicInteger loaderCalls = new AtomicInteger();
+
+            // First call: cache miss, loader runs, returns business null -> stored as NullValue.INSTANCE
+            Object first = cache.retrieve("k1", () -> {
+                loaderCalls.incrementAndGet();
+                return CompletableFuture.completedFuture(null);
+            }).get();
+            assertThat(first).as("first call should yield null").isNull();
+            assertThat(loaderCalls.get()).isEqualTo(1);
+
+            // Second call: key already has a cached null. Loader must NOT run again,
+            // and the returned value must be null, not the NullValue sentinel object.
+            Object second = cache.retrieve("k1", () -> {
+                loaderCalls.incrementAndGet();
+                fail("valueLoader should not be invoked again for an already-cached null value");
+                return CompletableFuture.completedFuture("should-not-happen");
+            }).get();
+
+            assertThat(loaderCalls.get()).as("loader must not be invoked again").isEqualTo(1);
+            assertThat(second).as("BUG: retrieve() returned " + second
+                    + " instead of null for an already-cached negative entry").isNull();
+        } finally {
+            redisson.shutdown();
+        }
     }
 
 }

@@ -2092,6 +2092,35 @@ public interface RedissonClient {
     <V> RCuckooFilter<V> getCuckooFilter(PlainOptions options);
 
     /**
+     * Returns count-min sketch instance by <code>name</code>.
+     *
+     * @param <V> type of value
+     * @param name name of object
+     * @return CountMin object
+     */
+    <V> RCountMin<V> getCountMin(String name);
+
+    /**
+     * Returns count-min sketch instance by <code>name</code>
+     * using provided <code>codec</code> for values.
+     *
+     * @param <V> type of value
+     * @param name name of object
+     * @param codec codec for values
+     * @return CountMin object
+     */
+    <V> RCountMin<V> getCountMin(String name, Codec codec);
+
+    /**
+     * Returns count-min sketch instance with specified <code>options</code>.
+     *
+     * @param <V> type of value
+     * @param options instance options
+     * @return CountMin object
+     */
+    <V> RCountMin<V> getCountMin(PlainOptions options);
+
+    /**
      * Returns Top-K sketch instance by <code>name</code>.
      *
      * @param <V> type of value
@@ -2197,6 +2226,52 @@ public interface RedissonClient {
      * @return Script object
      */
     RScript getScript(OptionalOptions options);
+
+    /**
+     * Returns time series instance by name, backed by the TS.* commands of the RedisTimeSeries
+     * module.
+     * <p>
+     * Unlike {@link #getTimeSeries(String)}, which stores objects in a sorted set, samples here
+     * are timestamps and doubles handled by the module itself, so there is no codec to choose.
+     * <p>
+     * Requires <b>Redis 8.0.0 or higher, or the RedisTimeSeries module.</b>
+     *
+     * @param name name of time series
+     * @return time series instance
+     */
+    RTimeSeriesNative getTimeSeriesNative(String name);
+
+    /**
+     * Returns time series instance with specified <code>options</code>.
+     * <p>
+     * Requires <b>Redis 8.0.0 or higher, or the RedisTimeSeries module.</b>
+     *
+     * @param options instance options
+     * @return time series instance
+     */
+    RTimeSeriesNative getTimeSeriesNative(CommonOptions options);
+
+    /**
+     * Returns the object carrying the RedisTimeSeries operations that span several series —
+     * TS.MADD, TS.MGET, TS.MRANGE, TS.MREVRANGE, TS.NRANGE, TS.NREVRANGE, TS.QUERYINDEX and
+     * TS.QUERYLABELS.
+     * <p>
+     * Requires <b>Redis 8.0.0 or higher, or the RedisTimeSeries module.</b>
+     *
+     * @return multi-series time series instance
+     */
+    RTimeSeriesNatives getTimeSeriesNatives();
+
+    /**
+     * Returns the object carrying the multi-series RedisTimeSeries operations, with specified
+     * <code>options</code>.
+     * <p>
+     * Requires <b>Redis 8.0.0 or higher, or the RedisTimeSeries module.</b>
+     *
+     * @param options instance options
+     * @return multi-series time series instance
+     */
+    RTimeSeriesNatives getTimeSeriesNatives(OptionalOptions options);
 
     /**
      * Returns vector set instance by name.

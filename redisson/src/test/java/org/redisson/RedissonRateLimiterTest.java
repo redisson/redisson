@@ -600,4 +600,28 @@ public class RedissonRateLimiterTest extends RedisDockerTest {
         // release -1
         assertThatThrownBy(() -> rateLimiter.release(-1)).isInstanceOf(IllegalArgumentException.class);
     }
+
+    @Test
+    public void testReleasedPermitsPreservedAfterExpiry() throws InterruptedException {
+        RRateLimiter limiter = redisson.getRateLimiter("testNoCollapse");
+        limiter.trySetRate(RateType.OVERALL, 10, 1, RateIntervalUnit.SECONDS);
+
+        limiter.tryAcquire(1);
+        limiter.release(1);
+
+        Thread.sleep(300);
+
+        for (int i = 0; i < 8; i++) {
+            limiter.tryAcquire(1);
+            limiter.release(1);
+        }
+
+        Thread.sleep(900);
+
+        limiter.tryAcquire(1);
+
+        long permits = limiter.availablePermits();
+
+        assertThat(permits).isEqualTo(9);
+    }
 }

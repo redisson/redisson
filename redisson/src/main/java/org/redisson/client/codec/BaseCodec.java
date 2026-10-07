@@ -15,6 +15,7 @@
  */
 package org.redisson.client.codec;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -47,6 +48,12 @@ public abstract class BaseCodec implements Codec {
         }
 
         return (T) codec.getClass().getConstructor(ClassLoader.class, codec.getClass()).newInstance(classLoader, codec);
+    }
+
+    protected static void checkDecompressionSize(int size) throws IOException {
+        if (size < 0 || size > 512 * 1024 * 1024) {
+            throw new IOException("Invalid decompressed size header: " + size + ". Must be between 0 and 512 MB.");
+        }
     }
     
     @Override

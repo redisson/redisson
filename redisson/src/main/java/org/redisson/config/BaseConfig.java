@@ -51,7 +51,7 @@ public class BaseConfig<T extends BaseConfig<T>> {
     private int connectTimeout = 10000;
 
     /**
-     * Redis server response timeout. Starts to countdown when Redis command was succesfully sent.
+     * Redis server response timeout. Starts to countdown when Redis command was successfully sent.
      * Value in milliseconds.
      *
      */
