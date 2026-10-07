@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
@@ -32,6 +33,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.Deque;
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -140,12 +142,57 @@ class JsonForyCodecTest {
 
         @Test
         void testByteArraySerDe() throws IOException {
-            assertThat(encodeToString(new byte[]{1, 2, 3})).isEqualTo("\"AQID\"");
+            assertThat(encodeToString(new byte[]{1, 2, 3})).isEqualTo("[\"[B\",\"AQID\"]");
+            assertThat(roundTrip(new byte[]{1, 2, 3})).isEqualTo(new byte[]{1, 2, 3});
         }
     }
 
     @Nested
     class CollectionTests {
+
+        @Test
+        void testUnmodifiableWrappersKeepTheirType() throws IOException {
+            List<String> mutable = new ArrayList<>(Arrays.asList("a", "b"));
+
+            assertThat(roundTrip(Collections.unmodifiableList(mutable)))
+                    .isEqualTo(mutable)
+                    .isInstanceOf(List.class);
+            assertThat(roundTrip(Collections.unmodifiableList(mutable)).getClass().getName())
+                    .isEqualTo("java.util.Collections$UnmodifiableRandomAccessList");
+            assertThat(roundTrip(Collections.unmodifiableMap(
+                    new LinkedHashMap<>(Collections.singletonMap("k", "v")))).getClass().getName())
+                    .isEqualTo("java.util.Collections$UnmodifiableMap");
+        }
+
+        @Test
+        void testSingletonAndEmptyCollectionsKeepTheirType() throws IOException {
+            assertThat(roundTrip(Collections.singletonList("a")).getClass().getName())
+                    .isEqualTo("java.util.Collections$SingletonList");
+            assertThat(roundTrip(Collections.singletonMap("k", "v")).getClass().getName())
+                    .isEqualTo("java.util.Collections$SingletonMap");
+            assertThat(roundTrip(Collections.emptyList()).getClass().getName())
+                    .isEqualTo("java.util.Collections$EmptyList");
+            assertThat(roundTrip(Collections.emptyMap()).getClass().getName())
+                    .isEqualTo("java.util.Collections$EmptyMap");
+        }
+
+        @Test
+        void testEnumSetKeepsItsType() throws IOException {
+            Set<TestStatus> original = EnumSet.of(TestStatus.ACTIVE, TestStatus.INACTIVE);
+
+            Object decoded = roundTrip(original);
+
+            assertThat(decoded).isInstanceOf(EnumSet.class).isEqualTo(original);
+        }
+
+        @Test
+        void testAnImmutableCollectionStaysImmutable() throws IOException {
+            // List.of and Map.of can't be rebuilt on the Java release this codec targets, so an
+            // unmodifiable wrapper of the same content stands in for them
+            Object list = roundTrip(Collections.unmodifiableList(Arrays.asList("a")));
+            assertThatThrownBy(() -> ((List<?>) list).clear())
+                    .isInstanceOf(UnsupportedOperationException.class);
+        }
 
         @Test
         void testListSerDe() throws IOException {
@@ -359,6 +406,122 @@ class JsonForyCodecTest {
         }
 
         @Test
+        void testOpenFieldTypeKeepsTheClassName() throws IOException {
+            TestOpenFields original = new TestOpenFields("id-1");
+
+            assertThat(encodeToString(original)).contains("\"id\":\"id-1\"");
+
+            Object decoded = roundTrip(original);
+            assertThat(decoded).isInstanceOf(TestOpenFields.class);
+            assertThat(((TestOpenFields) decoded).getId()).isEqualTo("id-1");
+        }
+
+        @Test
+        void testOpenFieldTypeKeepsANonNaturalValue() throws IOException {
+            TestOpenFields original = new TestOpenFields(42L);
+
+            Object decoded = roundTrip(original);
+
+            assertThat(((TestOpenFields) decoded).getId()).isEqualTo(42L);
+        }
+
+        @Test
+        void testPolymorphicFieldKeepsTheSubclass() throws IOException {
+            assertThat(encodeToString(new TestOwner())).contains("TestDog").contains("\"breed\":\"lab\"");
+
+            Object decoded = roundTrip(new TestOwner());
+            assertThat(decoded).isInstanceOf(TestOwner.class);
+            TestAnimal pet = ((TestOwner) decoded).getPet();
+            assertThat(pet).isInstanceOf(TestDog.class);
+            assertThat(((TestDog) pet).getBreed()).isEqualTo("lab");
+        }
+
+        @Test
+        void testHiddenFieldRoundTrips() throws IOException {
+            assertThat(encodeToString(new TestHiding())).contains("\"shared\":\"derived\"");
+
+            Object decoded = roundTrip(new TestHiding());
+            assertThat(((TestHiding) decoded).getShared()).isEqualTo("derived");
+        }
+
+        @Test
+        void testOpenContainerFieldsRoundTrip() throws IOException {
+            TestOpenContainers original = new TestOpenContainers();
+
+            Object decoded = roundTrip(original);
+
+            assertThat(decoded).isInstanceOf(TestOpenContainers.class);
+            TestOpenContainers restored = (TestOpenContainers) decoded;
+            assertThat(restored.getList()).containsExactly("a", 1L);
+            assertThat(restored.getMap()).containsEntry("k", UUID.fromString("cb7e3de6-5801-45d4-bbfb-f8d8ed8e77fd"));
+            assertThat(restored.getArray()).containsExactly("x", 2);
+        }
+
+        @Test
+        void testUnambiguousFieldTypesStoreNoClassName() throws IOException {
+            assertThat(encodeToString(new TestPerson("John Doe", 30)))
+                    .isEqualTo("{\"@class\":\"org.redisson.codec.JsonForyCodecTest$TestPerson\","
+                            + "\"name\":\"John Doe\",\"age\":30}");
+        }
+
+        @Test
+        void testFinalFieldKeepsItsValue() throws IOException {
+            TestFinalField original = new TestFinalField("kept", 5);
+
+            assertThat(encodeToString(original))
+                    .isEqualTo("{\"@class\":\"org.redisson.codec.JsonForyCodecTest$TestFinalField\","
+                            + "\"name\":\"kept\",\"count\":5}");
+
+            Object decoded = roundTrip(original);
+            assertThat(((TestFinalField) decoded).getName()).isEqualTo("kept");
+            assertThat(((TestFinalField) decoded).getCount()).isEqualTo(5);
+        }
+
+        @Test
+        void testFinalClassStoredOnItsOwnKeepsItsType() throws IOException {
+            TestFinalEntry original = new TestFinalEntry("cached", 1L);
+
+            assertThat(encodeToString(original)).startsWith(
+                    "{\"@class\":\"org.redisson.codec.JsonForyCodecTest$TestFinalEntry\"");
+
+            Object decoded = roundTrip(original);
+            assertThat(decoded).isInstanceOf(TestFinalEntry.class);
+            assertThat(((TestFinalEntry) decoded).getValue()).isEqualTo("cached");
+            assertThat(((TestFinalEntry) decoded).getVersion()).isEqualTo(1L);
+        }
+
+        @Test
+        void testRecordWithAnOpenComponentRoundTrips() throws IOException {
+            TestRecord original = new TestRecord(7L, Arrays.asList("a", "b"));
+
+            Object decoded = roundTrip(original);
+
+            assertThat(decoded).isInstanceOf(TestRecord.class);
+            assertThat(((TestRecord) decoded).timestamp()).isEqualTo(7L);
+            assertThat(((TestRecord) decoded).results()).isEqualTo(Arrays.asList("a", "b"));
+        }
+
+        @Test
+        void testFinalFieldsWithoutANoArgConstructorRoundTrip() throws IOException {
+            TestNoArgless original = new TestNoArgless(new Serializable[]{"name", 7L}, "org.example.Person");
+
+            Object decoded = roundTrip(original);
+
+            assertThat(decoded).isInstanceOf(TestNoArgless.class);
+            TestNoArgless restored = (TestNoArgless) decoded;
+            assertThat(restored.getState()).containsExactly("name", 7L);
+            assertThat(restored.getSubclass()).isEqualTo("org.example.Person");
+        }
+
+        @Test
+        void testUnknownPropertyOfAFieldByFieldObjectIsIgnored() throws IOException {
+            Object decoded = decode("{\"@class\":\"org.redisson.codec.JsonForyCodecTest$TestOpenFields\","
+                    + "\"id\":\"kept\",\"unknownField\":{\"a\":[1,2]}}");
+
+            assertThat(((TestOpenFields) decoded).getId()).isEqualTo("kept");
+        }
+
+        @Test
         void testGenericGetterIsStored() throws IOException {
             // org.redisson.MapWriterTask declares its getters this way. Apache Fory rejects such a class
             // when it reads the state from the bean properties, so the codec reads it from the fields
@@ -395,8 +558,11 @@ class JsonForyCodecTest {
 
         @Test
         void testEnumSerDe() throws IOException {
-            assertThat(encodeToString(TestStatus.ACTIVE)).isEqualTo("\"ACTIVE\"");
-            assertThat(roundTrip(TestStatus.ACTIVE)).isEqualTo("ACTIVE");
+            // a value stored on its own carries its class name, otherwise the enum constant would be
+            // indistinguishable from the string of the same name
+            assertThat(encodeToString(TestStatus.ACTIVE))
+                    .isEqualTo("[\"org.redisson.codec.JsonForyCodecTest$TestStatus\",\"ACTIVE\"]");
+            assertThat(roundTrip(TestStatus.ACTIVE)).isEqualTo(TestStatus.ACTIVE);
         }
     }
 
@@ -1617,6 +1783,170 @@ class JsonForyCodecTest {
                 return -1;
             }
             return stored.length();
+        }
+
+    }
+
+    /**
+     * A field declared as an interface, the shape of an <code>@RId</code> of a live object.
+     */
+    public static class TestOpenFields {
+
+        private Serializable id;
+
+        public TestOpenFields() {
+        }
+
+        public TestOpenFields(Serializable id) {
+            this.id = id;
+        }
+
+        public Serializable getId() {
+            return id;
+        }
+
+    }
+
+    public static class TestAnimal {
+
+        private String name = "generic";
+
+        public String getName() {
+            return name;
+        }
+
+    }
+
+    public static class TestDog extends TestAnimal {
+
+        private String breed = "lab";
+
+        public String getBreed() {
+            return breed;
+        }
+
+    }
+
+    public static class TestOwner {
+
+        private TestAnimal pet = new TestDog();
+
+        public TestOwner() {
+        }
+
+        public TestAnimal getPet() {
+            return pet;
+        }
+
+    }
+
+    public static class TestHidden {
+
+        private String shared = "base";
+
+    }
+
+    public static class TestHiding extends TestHidden {
+
+        private String shared = "derived";
+
+        public TestHiding() {
+        }
+
+        public String getShared() {
+            return shared;
+        }
+
+    }
+
+    public static class TestOpenContainers {
+
+        private List<Serializable> list = new ArrayList<>(Arrays.asList("a", 1L));
+
+        private Map<String, Serializable> map = new HashMap<>();
+
+        private Serializable[] array = {"x", 2};
+
+        public TestOpenContainers() {
+            map.put("k", UUID.fromString("cb7e3de6-5801-45d4-bbfb-f8d8ed8e77fd"));
+        }
+
+        public List<Serializable> getList() {
+            return list;
+        }
+
+        public Map<String, Serializable> getMap() {
+            return map;
+        }
+
+        public Serializable[] getArray() {
+            return array;
+        }
+
+    }
+
+    public static class TestFinalField {
+
+        private final String name;
+
+        private final int count;
+
+        public TestFinalField(String name, int count) {
+            this.name = name;
+            this.count = count;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public int getCount() {
+            return count;
+        }
+
+    }
+
+    public static final class TestFinalEntry {
+
+        private final Object value;
+
+        private final Object version;
+
+        public TestFinalEntry(Object value, Object version) {
+            this.value = value;
+            this.version = version;
+        }
+
+        public Object getValue() {
+            return value;
+        }
+
+        public Object getVersion() {
+            return version;
+        }
+
+    }
+
+    public record TestRecord(long timestamp, List<?> results) {
+    }
+
+    public static class TestNoArgless {
+
+        private final Serializable[] state;
+
+        private final String subclass;
+
+        public TestNoArgless(Serializable[] state, String subclass) {
+            this.state = state;
+            this.subclass = subclass;
+        }
+
+        public Serializable[] getState() {
+            return state;
+        }
+
+        public String getSubclass() {
+            return subclass;
         }
 
     }
