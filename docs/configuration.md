@@ -203,11 +203,11 @@ Default value: `true`
 
 Defines whether to check the synchronized slaves amount with the actual slaves amount after lock acquisition.
 
-**skipLockSyncedSlaves**
+**skipSyncedSlaves**
 
 Default value: `false`
 
-Defines whether to skip replica synchronization for lock operations. When enabled, lock operations don't send `WAIT` or wait for replicas to acknowledge the operation.
+Defines whether to skip replica synchronization for lock and semaphore operations. When enabled, these operations don't send `WAIT` or wait for replicas to acknowledge the operation.
 
 **slavesSyncTimeout**
 

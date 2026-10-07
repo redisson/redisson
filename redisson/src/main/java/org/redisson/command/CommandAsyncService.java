@@ -1093,6 +1093,14 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
 
     @Override
+    public <T> RFuture<T> syncedEval(boolean skipSync, String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
+        if (skipSync) {
+            return evalWriteAsync(key, codec, evalCommandType, script, keys, params);
+        }
+        return syncedEval(key, codec, evalCommandType, script, keys, params);
+    }
+
+    @Override
     public <T> RFuture<T> syncedEval(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
         return syncedEval(getServiceManager().getCfg().getSlavesSyncTimeout(),
                             SyncMode.WAIT, true, key, codec, evalCommandType, script, keys, params);

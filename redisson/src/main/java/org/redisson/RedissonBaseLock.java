@@ -78,25 +78,23 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
     }
 
     protected final <T> RFuture<T> evalWriteSyncedNoRetryAsync(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
-        return commandExecutor.syncedEvalNoRetry(getServiceManager().getCfg().isSkipLockSyncedSlaves(),
+        return commandExecutor.syncedEvalNoRetry(getServiceManager().getCfg().isSkipSyncedSlaves(),
                 key, codec, evalCommandType, script, keys, params);
     }
 
     protected final <T> RFuture<T> syncedEvalNoRetry(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
-        return commandExecutor.syncedEvalNoRetry(getServiceManager().getCfg().isSkipLockSyncedSlaves(),
+        return commandExecutor.syncedEvalNoRetry(getServiceManager().getCfg().isSkipSyncedSlaves(),
                 key, codec, evalCommandType, script, keys, params);
     }
 
     protected final <T> RFuture<T> syncedEvalWithRetry(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
-        return commandExecutor.syncedEvalWithRetry(getServiceManager().getCfg().isSkipLockSyncedSlaves(),
+        return commandExecutor.syncedEvalWithRetry(getServiceManager().getCfg().isSkipSyncedSlaves(),
                 key, codec, evalCommandType, script, keys, params);
     }
 
     protected final <T> RFuture<T> syncedEval(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
-        if (getServiceManager().getCfg().isSkipLockSyncedSlaves()) {
-            return commandExecutor.evalWriteAsync(key, codec, evalCommandType, script, keys, params);
-        }
-        return commandExecutor.syncedEval(key, codec, evalCommandType, script, keys, params);
+        return commandExecutor.syncedEval(getServiceManager().getCfg().isSkipSyncedSlaves(),
+                key, codec, evalCommandType, script, keys, params);
     }
 
     protected void acquireFailed(long waitTime, TimeUnit unit, long threadId) {

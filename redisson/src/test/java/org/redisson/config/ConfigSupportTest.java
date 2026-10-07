@@ -27,13 +27,13 @@ public class ConfigSupportTest {
     }
 
     @Test
-    public void testSkipLockSyncedSlaves() throws IOException {
-        String yaml = "skipLockSyncedSlaves: true\n"
+    public void testSkipSyncedSlaves() throws IOException {
+        String yaml = "skipSyncedSlaves: true\n"
                 + "singleServerConfig:\n  address: redis://127.0.0.1";
         Config config = new ConfigSupport().fromYAML(yaml, Config.class);
 
-        assertThat(config.isSkipLockSyncedSlaves()).isTrue();
-        assertThat(new Config(config).isSkipLockSyncedSlaves()).isTrue();
+        assertThat(config.isSkipSyncedSlaves()).isTrue();
+        assertThat(new Config(config).isSkipSyncedSlaves()).isTrue();
     }
     
     @Test
