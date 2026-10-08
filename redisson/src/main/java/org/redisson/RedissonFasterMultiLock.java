@@ -331,7 +331,7 @@ public class RedissonFasterMultiLock extends RedissonBaseLock {
         params.add(String.valueOf(unit.toMillis(leaseTime)));
         params.add(getLockName(threadId));
         params.addAll(fields);
-        return commandExecutor.syncedEval(key, StringCodec.INSTANCE, command,
+        return syncedEval(key, StringCodec.INSTANCE, command,
                 "local currentTime = tonumber(ARGV[1]);" +
                         "local leaseTime = tonumber(ARGV[2]);" +
                         "local currentThread = ARGV[3];" +
@@ -379,7 +379,7 @@ public class RedissonFasterMultiLock extends RedissonBaseLock {
         params.add(String.valueOf(System.currentTimeMillis()));
         params.add(getLockName(threadId));
         params.addAll(fields);
-        return commandExecutor.syncedEval(key, StringCodec.INSTANCE, RedisCommands.EVAL_LONG,
+        return syncedEval(key, StringCodec.INSTANCE, RedisCommands.EVAL_LONG,
                         "local leaseTime = tonumber(ARGV[1]);" +
                                 "local currentTime = tonumber(ARGV[2]);" +
                                 "local currentThread = ARGV[3];" +
@@ -477,7 +477,7 @@ public class RedissonFasterMultiLock extends RedissonBaseLock {
         params.add(timeout);
         params.add(System.currentTimeMillis());
         params.addAll(fields);
-        return commandExecutor.syncedEval(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return syncedEval(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "local val = redis.call('get', KEYS[3]); " +
                         "if val ~= false then " +
                         "   return tonumber(val);" +
@@ -553,7 +553,7 @@ public class RedissonFasterMultiLock extends RedissonBaseLock {
         params.add(LockPubSub.UNLOCK_MESSAGE);
         params.add(getSubscribeService().getPublishCommand());
         params.addAll(fields);
-        return commandExecutor.syncedEvalWithRetry(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return syncedEvalWithRetry(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "local removeCount = 0;" +
                         "for i=3, #ARGV, 1 do " +
                         "    local lockName = redis.call('hget', KEYS[1], ARGV[i]); " +
@@ -725,7 +725,7 @@ public class RedissonFasterMultiLock extends RedissonBaseLock {
         params.add(String.valueOf(System.currentTimeMillis()));
         params.add(getLockName(threadId));
         params.addAll(fields);
-        return commandExecutor.syncedEval(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return syncedEval(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "local currentTime = tonumber(ARGV[1]);" +
                         "local currentThread = ARGV[2];" +
                         "if (redis.call('exists',KEYS[1]) > 0) then" +
@@ -756,7 +756,7 @@ public class RedissonFasterMultiLock extends RedissonBaseLock {
         List<String> params = new ArrayList<>();
         params.add(String.valueOf(System.currentTimeMillis()));
         params.addAll(fields);
-        return commandExecutor.syncedEval(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return syncedEval(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "local currentTime = tonumber(ARGV[1]);" +
                         "for i = 2,#ARGV,1 do" +
                         "   local localThread = redis.call('hget', KEYS[1], ARGV[i]);" +

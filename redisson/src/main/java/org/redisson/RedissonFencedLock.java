@@ -104,7 +104,7 @@ public class RedissonFencedLock extends RedissonLock implements RFencedLock {
     }
 
     RFuture<List<Long>> tryLockInnerAsync(long leaseTime, TimeUnit unit, long threadId) {
-        return commandExecutor.syncedEvalNoRetry(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_LONG_LIST,
+        return syncedEvalNoRetry(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_LONG_LIST,
                 "if (redis.call('exists', KEYS[1]) == 0 " +
                         "or (redis.call('hexists', KEYS[1], ARGV[2]) == 1)) then " +
                             "local token = redis.call('incr', KEYS[2]);" +
@@ -294,7 +294,7 @@ public class RedissonFencedLock extends RedissonLock implements RFencedLock {
 
     @Override
     <T> RFuture<T> tryLockInnerAsync(long waitTime, long leaseTime, TimeUnit unit, long threadId, RedisStrictCommand<T> command) {
-        return commandExecutor.syncedEvalNoRetry(getRawName(), LongCodec.INSTANCE, command,
+        return syncedEvalNoRetry(getRawName(), LongCodec.INSTANCE, command,
                 "if ((redis.call('exists', KEYS[1]) == 0) " +
                         "or (redis.call('hexists', KEYS[1], ARGV[2]) == 1)) then " +
                             "redis.call('incr', KEYS[2]);" +

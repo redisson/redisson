@@ -73,7 +73,7 @@ public class RedissonFairLock extends RedissonLock implements RLock {
             wait = unit.toMillis(waitTime);
         }
 
-        RFuture<Void> f = commandExecutor.syncedEvalWithRetry(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_VOID,
+        RFuture<Void> f = syncedEvalWithRetry(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_VOID,
                 // get the existing timeout for the thread to remove
                 "local queue = redis.call('lrange', KEYS[1], 0, -1);" +
                         // find the location in the queue where the thread is
@@ -105,7 +105,7 @@ public class RedissonFairLock extends RedissonLock implements RLock {
 
         long currentTime = System.currentTimeMillis();
         if (command == RedisCommands.EVAL_NULL_BOOLEAN) {
-            return commandExecutor.syncedEvalNoRetry(getRawName(), LongCodec.INSTANCE, command,
+            return syncedEvalNoRetry(getRawName(), LongCodec.INSTANCE, command,
                     // remove stale threads
                     "while true do " +
                         "local firstThreadId2 = redis.call('lindex', KEYS[2], 0);" +
@@ -150,7 +150,7 @@ public class RedissonFairLock extends RedissonLock implements RLock {
         }
 
         if (command == RedisCommands.EVAL_LONG) {
-            return commandExecutor.syncedEvalNoRetry(getRawName(), LongCodec.INSTANCE, command,
+            return syncedEvalNoRetry(getRawName(), LongCodec.INSTANCE, command,
                     // remove stale threads
                     "while true do " +
                         "local firstThreadId2 = redis.call('lindex', KEYS[2], 0);" +
@@ -319,7 +319,7 @@ public class RedissonFairLock extends RedissonLock implements RLock {
     @Override
     public RFuture<Boolean> forceUnlockAsync() {
         cancelExpirationRenewal(null, null);
-        return commandExecutor.syncedEvalWithRetry(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return syncedEvalWithRetry(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 // remove stale threads
                 "while true do "
                 + "local firstThreadId2 = redis.call('lindex', KEYS[2], 0);"
