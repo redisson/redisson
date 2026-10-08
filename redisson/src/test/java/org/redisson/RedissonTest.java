@@ -30,6 +30,7 @@ import org.redisson.client.protocol.Encoder;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.codec.JsonJacksonCodec;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.codec.SerializationCodec;
 import org.redisson.config.*;
 import org.redisson.connection.*;
@@ -272,7 +273,32 @@ public class RedissonTest extends RedisDockerTest {
         assertThat(e.awaitTermination(12, TimeUnit.SECONDS)).isTrue();
         assertThat(counter.get()).isEqualTo(list.size() * 100);
     }
-    
+
+    @Test
+    public void testStalledConnectionIsNotReusedAfterResponseTimeout() {
+        Config config = createConfig();
+        config.useSingleServer()
+                .setTimeout(500)
+                .setRetryAttempts(0)
+                .setConnectionPoolSize(16)
+                .setConnectionMinimumIdleSize(16);
+        RedissonClient r = Redisson.create(config);
+        try {
+            r.getBucket("test").set("value");
+
+            // WAIT blocks only its own connection, as no replicas are connected
+            CommandAsyncExecutor executor = ((Redisson) r).getCommandExecutor();
+            RFuture<Integer> wait = executor.writeAsync("test", StringCodec.INSTANCE, RedisCommands.WAIT, 1, 3000);
+            Assertions.assertThrows(RedisResponseTimeoutException.class, () -> executor.get(wait),
+                    "WAIT should exceed the response timeout");
+
+            // the next command must not be queued behind the unanswered WAIT on the same connection
+            assertThat(r.getBucket("test").get()).isEqualTo("value");
+        } finally {
+            r.shutdown();
+        }
+    }
+
     @Test
     public void testDecoderError() {
         redisson.getBucket("testbucket", new StringCodec()).set("{INVALID JSON!}");
