@@ -85,22 +85,39 @@ public class RedissonFencedLock extends RedissonLock implements RFencedLock {
         RFuture<List<Long>> ttlRemainingFuture;
         if (leaseTime > 0) {
             ttlRemainingFuture = tryLockInnerAsync(leaseTime, unit, threadId);
-        } else {
-            ttlRemainingFuture = tryLockInnerAsync(internalLockLeaseTime, TimeUnit.MILLISECONDS, threadId);
-        }
-        CompletionStage<List<Long>> f = ttlRemainingFuture.thenApply(res -> {
-            Long ttl = res.get(0);
-            // lock acquired
-            if (ttl == -1) {
-                if (leaseTime > 0) {
+            CompletionStage<List<Long>> f = ttlRemainingFuture.thenApply(res -> {
+                Long ttl = res.get(0);
+                // lock acquired with fixed lease — no watchdog
+                if (ttl == -1) {
                     internalLockLeaseTime = unit.toMillis(leaseTime);
-                } else {
-                    scheduleExpirationRenewal(threadId);
                 }
+                return res;
+            });
+            return new CompletableFutureWrapper<>(f);
+        }
+
+        // Register watchdog before the SET so unlock's cancel cannot race ahead of schedule (#7272)
+        scheduleExpirationRenewal(threadId);
+        ttlRemainingFuture = tryLockInnerAsync(internalLockLeaseTime, TimeUnit.MILLISECONDS, threadId);
+        CompletableFuture<List<Long>> result = new CompletableFuture<>();
+        ttlRemainingFuture.whenComplete((res, ex) -> {
+            if (ex != null) {
+                cancelExpirationRenewal(threadId, null);
+                result.completeExceptionally(ex);
+                return;
             }
-            return res;
+            Long ttl = (res != null && !res.isEmpty()) ? res.get(0) : null;
+            if (ttl == null || ttl != -1L) {
+                cancelExpirationRenewal(threadId, null);
+                result.complete(res);
+                return;
+            }
+            if (!result.complete(res)) {
+                cancelExpirationRenewal(threadId, null);
+                unlockAsync(threadId);
+            }
         });
-        return new CompletableFutureWrapper<>(f);
+        return new CompletableFutureWrapper<>(result);
     }
 
     RFuture<List<Long>> tryLockInnerAsync(long leaseTime, TimeUnit unit, long threadId) {
