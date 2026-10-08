@@ -39,6 +39,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.DateTimeException;
 import java.time.temporal.TemporalAccessor;
 import java.util.*;
+import java.util.function.UnaryOperator;
 
 /**
  * <a href="https://fory.apache.org">Apache Fory</a> JSON codec.
@@ -80,17 +81,8 @@ public class JsonForyCodec extends BaseCodec {
     private static final byte[] TYPE_PROPERTY_PREFIX = ("{\"" + TYPE_PROPERTY + "\":").getBytes(StandardCharsets.UTF_8);
     private static final byte[] TYPE_PROPERTY_NAME = ("\"" + TYPE_PROPERTY + "\"").getBytes(StandardCharsets.UTF_8);
 
-    /**
-     * Types a JSON document expresses natively. They are never stored with a class name.
-     */
     private static final Set<Class<?>> NATURAL_TYPES = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
             String.class, Integer.class, Double.class, Boolean.class)));
-
-    /**
-     * Types never stored with a class name.
-     */
-    private static final Set<Class<?>> NEVER_WRAPPED = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
-            String.class, Integer.class, Boolean.class)));
 
     /**
      * Value types of the JDK this codec stores a class name for on its own.
@@ -111,6 +103,12 @@ public class JsonForyCodec extends BaseCodec {
     private static final Map<Class<?>, Class<?>> BOXED_TYPES;
 
     private static final Map<Class<?>, Object> DEFAULT_VALUES;
+
+    private static final Map<Class<?>, UnaryOperator<Object>> RESTORERS;
+
+    private static final String UNMODIFIABLE_VIEW = Collections.class.getName() + "$Unmodifiable";
+
+    private static final String IMMUTABLE_COLLECTION = "java.util.ImmutableCollections$";
 
     static {
         Map<Class<?>, Class<?>> boxed = new HashMap<>();
@@ -134,6 +132,36 @@ public class JsonForyCodec extends BaseCodec {
         defaults.put(float.class, 0F);
         defaults.put(double.class, 0D);
         DEFAULT_VALUES = Collections.unmodifiableMap(defaults);
+
+        Map<Class<?>, UnaryOperator<Object>> restorers = new HashMap<>();
+        restorers.put(Collections.emptyList().getClass(), members -> Collections.emptyList());
+        restorers.put(Collections.emptySet().getClass(), members -> Collections.emptySet());
+        restorers.put(Collections.emptyMap().getClass(), members -> Collections.emptyMap());
+        // a document holding a different number of members than the stored type takes is left as it was
+        // read, which is what the caller does with any other type it cannot rebuild
+        restorers.put(Collections.singletonList(null).getClass(), members -> {
+            Collection<?> elements = (Collection<?>) members;
+            if (elements.size() != 1) {
+                return members;
+            }
+            return Collections.singletonList(elements.iterator().next());
+        });
+        restorers.put(Collections.singleton(null).getClass(), members -> {
+            Collection<?> elements = (Collection<?>) members;
+            if (elements.size() != 1) {
+                return members;
+            }
+            return Collections.singleton(elements.iterator().next());
+        });
+        restorers.put(Collections.singletonMap(null, null).getClass(), members -> {
+            Map<?, ?> entries = (Map<?, ?>) members;
+            if (entries.size() != 1) {
+                return members;
+            }
+            Map.Entry<?, ?> only = entries.entrySet().iterator().next();
+            return Collections.singletonMap(only.getKey(), only.getValue());
+        });
+        RESTORERS = Collections.unmodifiableMap(restorers);
     }
 
     private final Map<String, Class<?>> resolvedClasses = new LRUCacheMap<>(MAX_CACHED_CLASSES, 0, 0);
@@ -243,8 +271,12 @@ public class JsonForyCodec extends BaseCodec {
         return foryJson;
     }
 
-    protected boolean useTypeInfo(Class<?> type) {
-        return ambiguousType(type);
+    protected boolean useTypeInfo(Object value) {
+        Class<?> type = declaredType(value.getClass());
+        if (!NATURAL_TYPES.contains(type)) {
+            return true;
+        }
+        return type == Double.class && !Double.isFinite((Double) value);
     }
 
     private static boolean ambiguousType(Class<?> type) {
@@ -256,23 +288,6 @@ public class JsonForyCodec extends BaseCodec {
             component = component.getComponentType();
         }
         return !component.isPrimitive() && !Modifier.isFinal(component.getModifiers());
-    }
-
-    protected boolean useNestedTypeInfo(Object value) {
-        Class<?> type = declaredType(value.getClass());
-        if (!NATURAL_TYPES.contains(type)) {
-            return true;
-        }
-        // a JSON document has no representation for a non-finite number, Apache Fory writes NaN and
-        // the infinities as strings, so such a value needs its class name even though its type is natural
-        return type == Double.class && !Double.isFinite((Double) value);
-    }
-
-    private boolean useMemberTypeInfo(Class<?> component, Object value) {
-        if (component != null && !ambiguousType(component)) {
-            return false;
-        }
-        return useNestedTypeInfo(value);
     }
 
     private void writeValue(ByteBuf out, Object in, int depth) throws IOException {
@@ -291,7 +306,7 @@ public class JsonForyCodec extends BaseCodec {
         // on its own by its type being non-final, which leaves a final class unreadable: it comes back as
         // a map rather than as itself
         String typeId = null;
-        if (useNestedTypeInfo(in) || (depth == 0 && useTypeInfo(type))) {
+        if (useTypeInfo(in) || (depth == 0 && ambiguousType(type))) {
             typeId = type.getName();
         }
 
@@ -374,17 +389,20 @@ public class JsonForyCodec extends BaseCodec {
             return cached;
         }
 
-        Field[] fields = WHOLE_OBJECT;
-        if (!serializedByFory(type)) {
-            fields = collectFields(type);
-        }
+        Field[] fields = collectFields(type);
         serializedFields.put(type, fields);
         return fields;
     }
 
-    private static boolean serializedByFory(Class<?> type) {
+    /**
+     * Decides which fields of a class this codec writes one at a time, or {@link #WHOLE_OBJECT} when
+     * Apache Fory serializes it in a single call.
+     */
+    private static Field[] collectFields(Class<?> type) {
+        // Apache Fory has a representation of its own for these, rather than storing them as the object
+        // their fields describe
         if (type.isEnum() || type.isPrimitive() || type.isArray() || type.isInterface()) {
-            return true;
+            return WHOLE_OBJECT;
         }
         if (Number.class.isAssignableFrom(type)
                 || CharSequence.class.isAssignableFrom(type)
@@ -392,19 +410,18 @@ public class JsonForyCodec extends BaseCodec {
                 || Calendar.class.isAssignableFrom(type)
                 || TemporalAccessor.class.isAssignableFrom(type)
                 || Collection.class.isAssignableFrom(type)
-                || Map.class.isAssignableFrom(type)
-                || type == Boolean.class
-                || type == Character.class
-                || type == UUID.class) {
-            return true;
+                || Map.class.isAssignableFrom(type)) {
+            return WHOLE_OBJECT;
         }
-        // the rest of the JDK is left alone, reflecting into another module is refused anyway
-        String name = type.getName();
-        return name.startsWith("java.") || name.startsWith("javax.")
-                || name.startsWith("jdk.") || name.startsWith("sun.");
-    }
+        // the rest of the JDK is left alone, reflecting into another module is refused anyway. This also
+        // covers Boolean, Character and UUID, which are final and named java.*, so the tests above need
+        // no case of their own for them. Narrowing this test means putting those three back
+        String typeName = type.getName();
+        if (typeName.startsWith("java.") || typeName.startsWith("javax.")
+                || typeName.startsWith("jdk.") || typeName.startsWith("sun.")) {
+            return WHOLE_OBJECT;
+        }
 
-    private static Field[] collectFields(Class<?> type) {
         Deque<Class<?>> hierarchy = new ArrayDeque<>();
         for (Class<?> c = type; c != null && c != Object.class; c = c.getSuperclass()) {
             hierarchy.addFirst(c);
@@ -511,6 +528,10 @@ public class JsonForyCodec extends BaseCodec {
             writeString(out, typeId);
             out.writeByte(',');
         }
+        // the declared element type is the same for every element, so it is settled once rather than per
+        // element. It settles them here only for an array of arrays: every array class carries ABSTRACT,
+        // so the caller routes one here for Apache Fory's sake even when the leaf component is final
+        boolean elementTypeSettles = component != null && !ambiguousType(component);
         out.writeByte('[');
         boolean first = true;
         for (Object member : members) {
@@ -518,7 +539,7 @@ public class JsonForyCodec extends BaseCodec {
                 out.writeByte(',');
             }
             first = false;
-            if (member != null && !useMemberTypeInfo(component, member)) {
+            if (member != null && (elementTypeSettles || !useTypeInfo(member))) {
                 writeJson(member, declaredType(member.getClass()), new ByteBufOutputStream(out));
             } else {
                 writeValue(out, member, depth + 1);
@@ -550,7 +571,7 @@ public class JsonForyCodec extends BaseCodec {
                 return true;
             }
             Object value = entry.getValue();
-            if (value != null && useNestedTypeInfo(value)) {
+            if (value != null && useTypeInfo(value)) {
                 return true;
             }
         }
@@ -562,8 +583,13 @@ public class JsonForyCodec extends BaseCodec {
         if (component != null && (component.isInterface() || Modifier.isAbstract(component.getModifiers()))) {
             return true;
         }
+        if (component != null && !ambiguousType(component)) {
+            // the declared element type settles what every element is, so none of them names its class
+            // and Apache Fory can write the whole array in one call
+            return false;
+        }
         for (Object member : members) {
-            if (member != null && useMemberTypeInfo(component, member)) {
+            if (member != null && useTypeInfo(member)) {
                 return true;
             }
         }
@@ -633,7 +659,7 @@ public class JsonForyCodec extends BaseCodec {
             @SuppressWarnings("unchecked")
             Map<Object, Object> map = (Map<Object, Object>) newInstance(target);
             readMembers(reader, depth, map);
-            return restoreMap(type, map);
+            return restore(type, map);
         }
 
         Field[] fields = serializedFields(target);
@@ -691,7 +717,10 @@ public class JsonForyCodec extends BaseCodec {
             return null;
         }
         Class<?> type = resolveClass(readString(data, reader.position, quote), false);
-        if (type == null || NEVER_WRAPPED.contains(type)) {
+        // a value of a natural type is stored without a class name, so a leading string naming one is an
+        // element of a plain array rather than a wrapper. A double is the exception the set documents:
+        // a non-finite one does carry its class name, so a wrapper naming Double is real
+        if (type == null || (NATURAL_TYPES.contains(type) && type != Double.class)) {
             return null;
         }
 
@@ -699,25 +728,31 @@ public class JsonForyCodec extends BaseCodec {
         return type;
     }
 
+    private String memberName(JsonReader reader) throws IOException {
+        byte[] data = reader.data;
+        int quote = endOfString(data, reader.position, reader.end);
+        if (quote < 0) {
+            throw new IOException("Expected a JSON member name at position " + reader.position);
+        }
+        String name = readString(data, reader.position, quote);
+
+        int colon = skipWhitespace(data, quote + 1, reader.end);
+        if (colon == reader.end || data[colon] != ':') {
+            throw new IOException("Expected ':' at position " + colon);
+        }
+        reader.position = skipWhitespace(data, colon + 1, reader.end);
+        return name;
+    }
+
     private void readMembers(JsonReader reader, int depth, Map<Object, Object> map) throws IOException {
         byte[] data = reader.data;
         while (reader.position < reader.end && data[reader.position] != '}') {
-            int quote = endOfString(data, reader.position, reader.end);
-            if (quote < 0) {
-                throw new IOException("Expected a JSON member name at position " + reader.position);
-            }
-            String name = readString(data, reader.position, quote);
-
-            int colon = skipWhitespace(data, quote + 1, reader.end);
-            if (colon == reader.end || data[colon] != ':') {
-                throw new IOException("Expected ':' at position " + colon);
-            }
-            reader.position = skipWhitespace(data, colon + 1, reader.end);
+            String name = memberName(reader);
             Object member = read(reader, depth + 1);
             try {
                 map.put(name, member);
             } catch (NullPointerException | ClassCastException | IllegalArgumentException
-                        | IllegalStateException | UnsupportedOperationException e) {
+                     | IllegalStateException | UnsupportedOperationException e) {
                 throw new IOException("Unable to store member " + name + " into " + map.getClass().getName(), e);
             }
 
@@ -744,17 +779,7 @@ public class JsonForyCodec extends BaseCodec {
 
         byte[] data = reader.data;
         while (reader.position < reader.end && data[reader.position] != '}') {
-            int quote = endOfString(data, reader.position, reader.end);
-            if (quote < 0) {
-                throw new IOException("Expected a JSON member name at position " + reader.position);
-            }
-            String name = readString(data, reader.position, quote);
-
-            int colon = skipWhitespace(data, quote + 1, reader.end);
-            if (colon == reader.end || data[colon] != ':') {
-                throw new IOException("Expected ':' at position " + colon);
-            }
-            reader.position = skipWhitespace(data, colon + 1, reader.end);
+            String name = memberName(reader);
 
             int index = -1;
             for (int i = 0; i < fields.length; i++) {
@@ -914,78 +939,10 @@ public class JsonForyCodec extends BaseCodec {
         try {
             collection.addAll(members);
         } catch (NullPointerException | ClassCastException | IllegalArgumentException
-                    | IllegalStateException | UnsupportedOperationException e) {
+                 | IllegalStateException | UnsupportedOperationException e) {
             throw new IOException("Unable to store the elements into " + target.getName(), e);
         }
-        return restoreCollection(stored, collection);
-    }
-
-    private static Object restoreCollection(Class<?> stored, Collection<Object> members) {
-        if (stored == members.getClass()) {
-            return members;
-        }
-        String name = stored.getName();
-        if ("java.util.Collections$EmptyList".equals(name)) {
-            return Collections.emptyList();
-        }
-        if ("java.util.Collections$EmptySet".equals(name)) {
-            return Collections.emptySet();
-        }
-        if ("java.util.Collections$SingletonList".equals(name) && members.size() == 1) {
-            return Collections.singletonList(members.iterator().next());
-        }
-        if ("java.util.Collections$SingletonSet".equals(name) && members.size() == 1) {
-            return Collections.singleton(members.iterator().next());
-        }
-        if (EnumSet.class.isAssignableFrom(stored)) {
-            return enumSetOf(members);
-        }
-        if (name.startsWith("java.util.Collections$Unmodifiable")
-                || name.startsWith("java.util.ImmutableCollections$")) {
-            if (SortedSet.class.isAssignableFrom(stored)) {
-                return Collections.unmodifiableSortedSet(new TreeSet<>(members));
-            }
-            if (Set.class.isAssignableFrom(stored) || members instanceof Set) {
-                return Collections.unmodifiableSet(new LinkedHashSet<>(members));
-            }
-            return Collections.unmodifiableList(new ArrayList<>(members));
-        }
-        return members;
-    }
-
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    private static Object enumSetOf(Collection<Object> members) {
-        for (Object member : members) {
-            if (!(member instanceof Enum)) {
-                return members;
-            }
-        }
-        if (members.isEmpty()) {
-            return members;
-        }
-        return EnumSet.copyOf((Collection) members);
-    }
-
-    private static Object restoreMap(Class<?> stored, Map<Object, Object> members) {
-        if (stored == members.getClass()) {
-            return members;
-        }
-        String name = stored.getName();
-        if ("java.util.Collections$EmptyMap".equals(name)) {
-            return Collections.emptyMap();
-        }
-        if ("java.util.Collections$SingletonMap".equals(name) && members.size() == 1) {
-            Map.Entry<Object, Object> only = members.entrySet().iterator().next();
-            return Collections.singletonMap(only.getKey(), only.getValue());
-        }
-        if (name.startsWith("java.util.Collections$Unmodifiable")
-                || name.startsWith("java.util.ImmutableCollections$")) {
-            if (SortedMap.class.isAssignableFrom(stored)) {
-                return Collections.unmodifiableSortedMap(new TreeMap<>(members));
-            }
-            return Collections.unmodifiableMap(new LinkedHashMap<>(members));
-        }
-        return members;
+        return restore(stored, collection);
     }
 
     private Object readPlainArray(JsonReader reader, int depth, String name) throws IOException {
@@ -1016,7 +973,7 @@ public class JsonForyCodec extends BaseCodec {
             try {
                 target.add(member);
             } catch (NullPointerException | ClassCastException | IllegalArgumentException
-                        | IllegalStateException | UnsupportedOperationException e) {
+                     | IllegalStateException | UnsupportedOperationException e) {
                 throw new IOException("Unable to store an element into " + target.getClass().getName(), e);
             }
 
@@ -1272,7 +1229,7 @@ public class JsonForyCodec extends BaseCodec {
             return true;
         }
         return name.startsWith("java.util.")
-                    && (Collection.class.isAssignableFrom(component) || Map.class.isAssignableFrom(component));
+                && (Collection.class.isAssignableFrom(component) || Map.class.isAssignableFrom(component));
     }
 
     private Class<?> instantiableType(Class<?> type) {
@@ -1307,6 +1264,54 @@ public class JsonForyCodec extends BaseCodec {
         }
         instantiableClasses.put(type, result);
         return result;
+    }
+
+    private static Object restore(Class<?> stored, Object members) {
+        if (stored == members.getClass()) {
+            return members;
+        }
+
+        UnaryOperator<Object> restorer = RESTORERS.get(stored);
+        if (restorer != null) {
+            return restorer.apply(members);
+        }
+        if (EnumSet.class.isAssignableFrom(stored)) {
+            return enumSetOf((Collection<?>) members);
+        }
+
+        String name = stored.getName();
+        if (!name.startsWith(UNMODIFIABLE_VIEW) && !name.startsWith(IMMUTABLE_COLLECTION)) {
+            return members;
+        }
+        if (members instanceof Map) {
+            Map<?, ?> entries = (Map<?, ?>) members;
+            if (SortedMap.class.isAssignableFrom(stored)) {
+                return Collections.unmodifiableSortedMap(new TreeMap<>(entries));
+            }
+            return Collections.unmodifiableMap(new LinkedHashMap<>(entries));
+        }
+        Collection<?> elements = (Collection<?>) members;
+        if (SortedSet.class.isAssignableFrom(stored)) {
+            return Collections.unmodifiableSortedSet(new TreeSet<>(elements));
+        }
+        if (Set.class.isAssignableFrom(stored) || elements instanceof Set) {
+            return Collections.unmodifiableSet(new LinkedHashSet<>(elements));
+        }
+        return Collections.unmodifiableList(new ArrayList<>(elements));
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private static Object enumSetOf(Collection<?> members) {
+        // the enum class comes from the members, an empty set leaves no way to name it
+        if (members.isEmpty()) {
+            return members;
+        }
+        for (Object member : members) {
+            if (!(member instanceof Enum)) {
+                return members;
+            }
+        }
+        return EnumSet.copyOf((Collection) members);
     }
 
     private Object newInstance(Class<?> type) throws IOException {
