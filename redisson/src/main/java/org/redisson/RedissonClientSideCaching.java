@@ -19,6 +19,7 @@ import org.redisson.api.*;
 import org.redisson.api.options.ClientSideCachingOptions;
 import org.redisson.api.options.ClientSideCachingParams;
 import org.redisson.cache.*;
+import org.redisson.client.RedisException;
 import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.pubsub.PublishSubscribeService;
@@ -86,28 +87,48 @@ public final class RedissonClientSideCaching implements RClientSideCaching {
 
     public <T> T create(Object instance, Class<T> clazz) {
         InvocationHandler handler = (proxy, method, args) -> {
-            if (!method.getName().contains("read")) {
-                return method.invoke(instance, args);
-            }
-
-            String name = (String) Arrays.stream(args)
-                                        .filter(r -> r instanceof String)
-                                        .findFirst()
-                                        .orElse(null);
-            if (name == null) {
-                return method.invoke(instance, args);
-            }
-
-            CacheKeyParams key = new CacheKeyParams(args);
-            Set<CacheKeyParams> values = name2cacheKey.computeIfAbsent(name, v -> Collections.newSetFromMap(new ConcurrentHashMap<>()));
-            values.add(key);
-            return cache.computeIfAbsent(key, k -> {
-                try {
+            try {
+                if (!method.getName().contains("read")) {
                     return method.invoke(instance, args);
-                } catch (IllegalAccessException | InvocationTargetException e) {
-                    throw new IllegalStateException(e);
                 }
-            });
+
+                String name = (String) Arrays.stream(args)
+                        .filter(r -> r instanceof String)
+                        .findFirst()
+                        .orElse(null);
+                if (name == null) {
+                    return method.invoke(instance, args);
+                }
+
+                CacheKeyParams key = new CacheKeyParams(args);
+                Set<CacheKeyParams> values = name2cacheKey.computeIfAbsent(name, v -> Collections.newSetFromMap(new ConcurrentHashMap<>()));
+                values.add(key);
+
+                Object result = cache.computeIfAbsent(key, k -> {
+                    try {
+                        return method.invoke(instance, args);
+                    } catch (InvocationTargetException e) {
+                        Throwable cause = e.getCause();
+                        if (cause instanceof RuntimeException) {
+                            throw (RuntimeException) cause;
+                        }
+                        throw new RedisException("Unexpected exception while processing command", cause);
+                    } catch (IllegalAccessException e) {
+                        throw new RedisException("Unexpected exception while processing command", e);
+                    }
+                });
+
+                return result;
+
+            } catch (InvocationTargetException e) {
+                Throwable cause = e.getCause();
+                if (cause instanceof RuntimeException) {
+                    throw (RuntimeException) cause;
+                }
+                throw new RedisException("Unexpected exception while processing command", cause);
+            } catch (IllegalAccessException e) {
+                throw new RedisException("Unexpected exception while processing command", e);
+            }
         };
         return (T) Proxy.newProxyInstance(clazz.getClassLoader(), new Class[] { clazz }, handler);
     }
