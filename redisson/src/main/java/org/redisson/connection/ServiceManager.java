@@ -324,6 +324,9 @@ public final class ServiceManager {
     }
 
     public boolean isShuttingDown(Throwable e) {
+        if (e == null) {
+            return false;
+        }
         return e instanceof RedissonShutdownException
                     || e.getCause() instanceof RedissonShutdownException;
     }
