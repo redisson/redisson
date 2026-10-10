@@ -24,11 +24,14 @@ import org.redisson.client.RedisClientConfig;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisRetryException;
 import org.redisson.client.codec.StringCodec;
+import org.redisson.client.protocol.CommandsData;
 import org.redisson.client.protocol.QueueCommand;
+import org.redisson.client.protocol.QueueCommandHolder;
 import org.redisson.client.protocol.RedisCommands;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Queue;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeUnit;
@@ -68,7 +71,8 @@ public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
 
         RFuture<String> future;
         QueueCommand currentCommand = connection.getCurrentCommandData();
-        if (currentCommand == null || !currentCommand.isBlockingCommand()) {
+        if ((currentCommand == null || !currentCommand.isBlockingCommand())
+                && !isBatchInProgress(connection)) {
             int timeout = Math.max(config.getCommandTimeout(), config.getPingConnectionInterval() / 2);
             future = connection.async(timeout, StringCodec.INSTANCE, RedisCommands.PING);
         } else {
@@ -110,6 +114,24 @@ public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
                 sendPing(ctx);
             }
         }, config.getPingConnectionInterval(), TimeUnit.MILLISECONDS);
+    }
+
+    /*
+     * PING queued after a batch is answered only after the whole batch is processed,
+     * so its response time doesn't reflect connection health until the batch completes.
+     */
+    private static boolean isBatchInProgress(RedisConnection connection) {
+        Queue<QueueCommandHolder> queue = connection.getChannel().attr(CommandsQueue.COMMANDS_QUEUE).get();
+        if (queue == null) {
+            return false;
+        }
+        for (QueueCommandHolder holder : queue) {
+            QueueCommand command = holder.getCommand();
+            if (command instanceof CommandsData && !command.isExecuted()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static boolean isClosed(ChannelHandlerContext ctx, RedisConnection connection) {
