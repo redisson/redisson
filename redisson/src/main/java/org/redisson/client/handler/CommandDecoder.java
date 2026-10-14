@@ -333,7 +333,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             if (commandData != null && !commandData.isSuccess()) {
                 if (error == null) {
                     error = commandData.cause();
-                } else {
+                } else if (error != commandData.cause()) {
                     error.addSuppressed(commandData.cause());
                 }
 
