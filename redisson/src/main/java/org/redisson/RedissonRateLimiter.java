@@ -195,6 +195,9 @@ public final class RedissonRateLimiter extends RedissonExpirable implements RRat
     }
     
     private <T> RFuture<T> tryAcquireAsync(RedisCommand<T> command, Long value) {
+        if (value < 0) {
+            throw new IllegalArgumentException("Permits amount can't be negative");
+        }
         byte[] random = getServiceManager().generateIdArray();
 
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, command,
