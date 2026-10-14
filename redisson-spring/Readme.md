@@ -8,4 +8,6 @@ Documentation:
 
 &nbsp;
 - [Spring AI Vector Store](https://redisson.pro/docs/integration-with-spring/#spring-ai-vector-store)
+- [Spring AI Chat Memory](https://redisson.pro/docs/integration-with-spring/#spring-ai-chat-memory)
+- [Spring AI Semantic Cache](https://redisson.pro/docs/integration-with-spring/#spring-ai-semantic-cache)
 - [Spring Cloud Stream](https://redisson.pro/docs/integration-with-spring/#spring-cloud-stream)  

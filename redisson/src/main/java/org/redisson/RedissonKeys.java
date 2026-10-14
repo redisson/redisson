@@ -30,11 +30,13 @@ import org.redisson.client.RedisClient;
 import org.redisson.client.RedisException;
 import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
+import org.redisson.client.protocol.Time;
 import org.redisson.client.protocol.decoder.ListMultiDecoder2;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.client.protocol.decoder.ListScanResultReplayDecoder;
@@ -443,6 +445,16 @@ public final class RedissonKeys implements RKeys {
         CompletableFuture<Void> f = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
         CompletableFuture<Long> s = f.thenApply(r -> futures.stream().mapToLong(v -> v.getNow(0L)).sum());
         return new CompletableFutureWrapper<>(s);
+    }
+
+    @Override
+    public Time time() {
+        return commandExecutor.get(timeAsync());
+    }
+
+    @Override
+    public RFuture<Time> timeAsync() {
+        return commandExecutor.readAsync((String) null, LongCodec.INSTANCE, RedisCommands.TIME);
     }
 
     @Override

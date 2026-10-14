@@ -19,6 +19,7 @@ import java.time.Duration;
 import java.time.Instant;
 import org.redisson.api.options.KeysScanOptions;
 import org.redisson.api.keys.MigrateArgs;
+import org.redisson.client.protocol.Time;
 
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
@@ -361,6 +362,16 @@ public interface RKeys extends RKeysAsync {
      * @return count of keys
      */
     long count();
+
+    /**
+     * Returns the current Redis server time.
+     * <p>
+     * In cluster mode, the request is routed to the shard owning slot 0.
+     * This is not a cluster-wide timestamp.
+     *
+     * @return server time in seconds and microseconds
+     */
+    Time time();
 
     /**
      * Swap two databases.

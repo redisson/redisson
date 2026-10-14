@@ -3252,7 +3252,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         args.add("FIELDS");
         args.add(fields.length);
         args.addAll(Arrays.asList(fields));
-        return write(key, ByteArrayCodec.INSTANCE, HGETDEL, args.toArray());
+        return write(key, ByteArrayCodec.INSTANCE, HGETEX, args.toArray());
     }
 
     private static final RedisStrictCommand<Boolean> HSETEX = new RedisStrictCommand<>("HSETEX", new BooleanReplayConvertor());
