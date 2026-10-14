@@ -14,6 +14,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 
@@ -113,6 +114,28 @@ public class ConnectionsHolderTest {
             Assertions.assertThat(nextAcquisition).isCompletedWithValue(connection);
             // ... and it is correctly tracked
             Assertions.assertThat(connection.getUsage()).isEqualTo(1);
+        } finally {
+            manager.shutdown(0, 0, TimeUnit.SECONDS);
+        }
+    }
+
+    @Test
+    void testConnectFailureIsReportedAfterAcquisitionCancellation() {
+        MasterSlaveConnectionManager manager = buildManager();
+        try {
+            CompletableFuture<RedisConnection> physicalConnection = new CompletableFuture<>();
+            ConnectionsHolder<RedisConnection> holder = new ConnectionsHolder<>(null, 1,
+                    r -> physicalConnection, manager.getServiceManager(), false);
+            AtomicReference<Throwable> reportedFailure = new AtomicReference<>();
+
+            CompletableFuture<RedisConnection> acquisition =
+                    holder.acquireConnection(null, reportedFailure::set);
+            acquisition.completeExceptionally(new CancellationException("request cancelled"));
+
+            RuntimeException connectFailure = new RuntimeException("connect failed");
+            physicalConnection.completeExceptionally(connectFailure);
+
+            Assertions.assertThat(reportedFailure).hasValue(connectFailure);
         } finally {
             manager.shutdown(0, 0, TimeUnit.SECONDS);
         }

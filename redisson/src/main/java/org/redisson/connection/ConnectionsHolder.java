@@ -30,6 +30,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -194,12 +195,20 @@ public class ConnectionsHolder<T extends RedisConnection> {
     }
 
     private void createConnection(CompletableFuture<T> promise) {
+        createConnection(promise, e -> {});
+    }
+
+    private void createConnection(CompletableFuture<T> promise, Consumer<Throwable> connectFailedListener) {
         CompletionStage<T> connFuture = connectionCallback.apply(client);
         connFuture.whenComplete((conn, e) -> {
             if (e != null) {
                 releaseConnection();
 
-                promise.completeExceptionally(e);
+                try {
+                    connectFailedListener.accept(e);
+                } finally {
+                    promise.completeExceptionally(e);
+                }
                 return;
             }
 
@@ -222,11 +231,15 @@ public class ConnectionsHolder<T extends RedisConnection> {
     }
 
     public CompletableFuture<T> acquireConnection(RedisCommand<?> command) {
+        return acquireConnection(command, e -> {});
+    }
+
+    public CompletableFuture<T> acquireConnection(RedisCommand<?> command, Consumer<Throwable> connectFailedListener) {
         CompletableFuture<T> result = new CompletableFuture<>();
 
         CompletableFuture<Void> f = acquireConnection();
         f.thenAccept(r -> {
-            connectTo(result, command);
+            connectTo(result, command, connectFailedListener);
         });
         result.whenComplete((r, e) -> {
             if (e != null) {
@@ -236,7 +249,8 @@ public class ConnectionsHolder<T extends RedisConnection> {
         return result;
     }
 
-    private void connectTo(CompletableFuture<T> promise, RedisCommand<?> command) {
+    private void connectTo(CompletableFuture<T> promise, RedisCommand<?> command,
+                           Consumer<Throwable> connectFailedListener) {
         if (promise.isDone()) {
             releaseConnection();
             return;
@@ -248,7 +262,7 @@ public class ConnectionsHolder<T extends RedisConnection> {
             return;
         }
 
-        createConnection(promise);
+        createConnection(promise, connectFailedListener);
     }
 
     @Override

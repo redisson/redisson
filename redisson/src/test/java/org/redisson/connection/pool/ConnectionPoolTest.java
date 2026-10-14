@@ -16,6 +16,7 @@
 package org.redisson.connection.pool;
 
 import mockit.Expectations;
+import mockit.Delegate;
 import mockit.Mocked;
 import mockit.Verifications;
 import org.junit.jupiter.api.Test;
@@ -26,6 +27,7 @@ import org.redisson.client.RedisClient;
 import org.redisson.client.RedisClientConfig;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisConnectionException;
+import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.connection.ClientConnectionsEntry;
@@ -38,6 +40,8 @@ import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -101,10 +105,11 @@ class ConnectionPoolTest {
         new Expectations() {{
             entry.getConnectionsHolder();
             result = holder;
-            holder.acquireConnection(RedisCommands.GET);
+            holder.acquireConnection(RedisCommands.GET, (Consumer<Throwable>) any);
             result = pending;
             entry.getNodeType();
             result = NodeType.SLAVE;
+            minTimes = 0;
             entry.getClient();
             result = client;
             minTimes = 0;
@@ -130,7 +135,7 @@ class ConnectionPoolTest {
     }
 
     @Test
-    void connectionFailureStillTripsFailedConnectionDetector(
+    void connectionFailureAfterCancellationStillTripsFailedConnectionDetector(
             @Mocked ConnectionManager connectionManager,
             @Mocked MasterSlaveEntry masterSlaveEntry,
             @Mocked ClientConnectionsEntry entry,
@@ -139,12 +144,19 @@ class ConnectionPoolTest {
             @Mocked RedisClientConfig clientConfig) throws Exception {
         CompletableFuture<RedisConnection> failed = new CompletableFuture<>();
         FailedConnectionDetector detector = new FailedConnectionDetector(1);
+        AtomicReference<Consumer<Throwable>> connectFailedListener = new AtomicReference<>();
 
         new Expectations() {{
             entry.getConnectionsHolder();
             result = holder;
-            holder.acquireConnection(RedisCommands.GET);
-            result = failed;
+            holder.acquireConnection(RedisCommands.GET, (Consumer<Throwable>) any);
+            result = new Delegate<CompletableFuture<RedisConnection>>() {
+                CompletableFuture<RedisConnection> delegate(RedisCommand<?> command,
+                                                             Consumer<Throwable> listener) {
+                    connectFailedListener.set(listener);
+                    return failed;
+                }
+            };
             entry.getNodeType();
             result = NodeType.SLAVE;
             entry.getClient();
@@ -160,7 +172,10 @@ class ConnectionPoolTest {
         CompletableFuture<RedisConnection> acquisition =
                 pool.get(RedisCommands.GET, entry, false);
 
-        failed.completeExceptionally(new RedisConnectionException("connection failed"));
+        acquisition.completeExceptionally(new CancellationException("request cancelled"));
+
+        RedisConnectionException exception = new RedisConnectionException("connection failed");
+        connectFailedListener.get().accept(exception);
         assertThat(acquisition).isCompletedExceptionally();
         Thread.sleep(10);
 

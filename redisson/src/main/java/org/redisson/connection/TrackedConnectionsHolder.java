@@ -25,6 +25,7 @@ import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 /**
  *
@@ -73,12 +74,18 @@ public class TrackedConnectionsHolder extends ConnectionsHolder<RedisConnection>
 
     @Override
     public CompletableFuture<RedisConnection> acquireConnection(RedisCommand<?> command) {
+        return acquireConnection(command, e -> {});
+    }
+
+    @Override
+    public CompletableFuture<RedisConnection> acquireConnection(RedisCommand<?> command,
+                                                                 Consumer<Throwable> connectFailedListener) {
         CompletableFuture<RedisConnection> newFuture = new CompletableFuture<>();
         if (!connectionFuture.compareAndSet(null, newFuture)) {
             return connectionFuture.get();
         }
 
-        CompletableFuture<RedisConnection> f = holder.acquireConnection(command);
+        CompletableFuture<RedisConnection> f = holder.acquireConnection(command, connectFailedListener);
         newFuture.whenComplete((r, e) -> {
             if (e != null) {
                 f.completeExceptionally(e);
