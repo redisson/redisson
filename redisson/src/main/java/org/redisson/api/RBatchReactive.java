@@ -520,6 +520,31 @@ public interface RBatchReactive {
     <K, V> RMapReactive<K, V> getMap(String name, Codec codec);
 
     /**
+     * Returns map instance by name
+     * using provided {@link MapOptions}.
+     *
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @param options - map options
+     * @return Map object
+     */
+    <K, V> RMapReactive<K, V> getMap(String name, MapOptions<K, V> options);
+
+    /**
+     * Returns map instance by name
+     * using provided codec for both map keys and values and {@link MapOptions}.
+     *
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @param codec - codec for keys and values
+     * @param options - map options
+     * @return Map object
+     */
+    <K, V> RMapReactive<K, V> getMap(String name, Codec codec, MapOptions<K, V> options);
+
+    /**
      * Returns set instance by name.
      * 
      * @param <V> type of value

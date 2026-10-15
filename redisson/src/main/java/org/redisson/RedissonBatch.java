@@ -94,6 +94,16 @@ public class RedissonBatch implements RBatch {
     }
 
     @Override
+    public <K, V> RMapAsync<K, V> getMap(String name, MapOptions<K, V> options) {
+        return new RedissonMap<K, V>(executorService, name, null, options, null);
+    }
+
+    @Override
+    public <K, V> RMapAsync<K, V> getMap(String name, Codec codec, MapOptions<K, V> options) {
+        return new RedissonMap<K, V>(codec, executorService, name, null, options, null);
+    }
+
+    @Override
     public <V> RSetAsync<V> getSet(String name) {
         return new RedissonSet<V>(executorService, name, null);
     }
