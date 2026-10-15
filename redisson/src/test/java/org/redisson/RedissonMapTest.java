@@ -500,6 +500,35 @@ public class RedissonMapTest extends BaseMapTest {
     }
 
     @Test
+    public void testKeyIteratorWithoutNovalues() {
+        GenericContainer<?> redis = createContainerByImage("redis:6.2");
+        redis.start();
+
+        RedissonClient client = Redisson.create(createConfig(redis));
+        try {
+            RMap<Integer, Integer> map = client.getMap("simple");
+            map.put(1, 0);
+            map.put(3, 5);
+            map.put(4, 6);
+            map.put(7, 8);
+
+            Collection<Integer> keys = map.keySet();
+            assertThat(keys).containsOnly(1, 3, 4, 7);
+            for (Iterator<Integer> iterator = map.keySet().iterator(); iterator.hasNext(); ) {
+                Integer value = iterator.next();
+                if (!keys.remove(value)) {
+                    Assertions.fail("value can't be removed");
+                }
+            }
+
+            assertThat(keys.size()).isEqualTo(0);
+        } finally {
+            client.shutdown();
+            redis.stop();
+        }
+    }
+
+    @Test
     public void testAsyncIteratorException() {
         GenericContainer<?> redis = createContainer();
         redis.start();
