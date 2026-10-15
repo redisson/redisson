@@ -71,7 +71,7 @@ jobs:
     - name: Build with Maven
       run: |
         mvn -v
-        mvn -T 1C -B clean package --file pom.xml \
+        mvn -B clean package --file pom.xml \
           -DskipTests \
           -Dmaven.javadoc.skip=true \
           -Dcheckstyle.skip=true \
