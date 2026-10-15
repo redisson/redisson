@@ -1,6 +1,6 @@
 name: Java CI
 
-on: 
+on:
   push:
     branches: [main, master]
   pull_request:
@@ -14,20 +14,30 @@ permissions:
   actions: read
   checks: write
   pull-requests: write
-  
+
+env:
+  MAVEN_VERSION: 3.9.16
+
 jobs:
   build:
-
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v6
-    - name: Set up JDK 25
-      uses: actions/setup-java@v5
-      with:
-        java-version: 25
-        distribution: temurin
-        cache: maven
+      - uses: actions/checkout@v6
 
-    - name: Build with Maven
-      run: mvn -T 1C -B clean verify -DskipTests -Dmaven.test.skip=false --file pom.xml
+      - name: Set up JDK 25
+        uses: actions/setup-java@v5
+        with:
+          java-version: 25
+          distribution: temurin
+          cache: maven
+
+      - name: Set up Maven ${{ env.MAVEN_VERSION }}
+        run: |
+          curl -fsSL "https://archive.apache.org/dist/maven/maven-3/${MAVEN_VERSION}/binaries/apache-maven-${MAVEN_VERSION}-bin.tar.gz" \
+            | tar xz -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/apache-maven-${MAVEN_VERSION}/bin" >> "$GITHUB_PATH"
+
+      - name: Build with Maven
+        run: |
+          mvn -v
+          mvn -T 1C -B clean verify -DskipTests -Dmaven.test.skip=false --file pom.xml
