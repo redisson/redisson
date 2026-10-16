@@ -17,6 +17,8 @@ import org.redisson.api.listener.MapRemoveListener;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
+import org.redisson.codec.CompositeCodec;
+import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.config.Config;
 import org.testcontainers.containers.GenericContainer;
 
@@ -33,6 +35,46 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.AbstractMap;
 
 public class RedissonMapTest extends BaseMapTest {
+
+    @Test
+    public void testAddAndGetMixedNumberTypes() {
+        RMap<String, Object> map = redisson.getMap("testAddAndGetMixedNumberTypes", StringCodec.INSTANCE);
+
+        map.put("key1", 10);
+        assertThat(map.addAndGet("key1", 1)).isEqualTo(11);
+
+        map.put("key2", 10.1);
+        assertThat(map.addAndGet("key2", 1)).isEqualTo(11.1);
+
+        map.put("key3", 20.1);
+        assertThat(map.addAndGet("key3", -10L)).isEqualTo(10.1);
+
+        map.put("key4", 20L);
+        assertThat(map.addAndGet("key4", -10L)).isEqualTo(10L);
+
+        map.put("key5", 10.5f);
+        assertThat(map.addAndGet("key5", 1)).isEqualTo(11.5);
+
+        assertThat(map.addAndGet("key6", 1)).isEqualTo(1);
+    }
+
+    @Test
+    public void testAddAndGetJsonCodec() {
+        CompositeCodec codec = new CompositeCodec(StringCodec.INSTANCE, JsonJacksonCodec.INSTANCE, JsonJacksonCodec.INSTANCE);
+        RMap<String, Object> map = redisson.getMap("testAddAndGetJsonCodec", codec);
+
+        map.put("key1", 10);
+        assertThat(map.addAndGet("key1", 1)).isEqualTo(11);
+
+        map.put("key2", 10.1);
+        assertThat(map.addAndGet("key2", 1)).isEqualTo(11.1);
+
+        map.put("key3", 10.1);
+        assertThat(map.addAndGet("key3", -10)).isEqualTo(0.1);
+
+        map.put("key4", 20.1);
+        assertThat(map.addAndGet("key4", -10L)).isEqualTo(10.1);
+    }
 
     @Test
     public void testAddAndGetMapWriter() {
