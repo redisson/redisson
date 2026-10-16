@@ -11,6 +11,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.redisson.api.*;
 import org.redisson.api.BatchOptions.ExecutionMode;
+import org.redisson.api.map.MapWriter;
 import org.redisson.api.redisnode.RedisNodes;
 import org.redisson.client.*;
 import org.redisson.client.codec.StringCodec;
@@ -775,6 +776,55 @@ public class RedissonBatchTest extends RedisDockerTest {
 
         org.junit.jupiter.api.Assertions.assertEquals("2", val1.toCompletableFuture().getNow(null));
         org.junit.jupiter.api.Assertions.assertEquals("3", val2.toCompletableFuture().getNow(null));
+    }
+
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testMapOptions(BatchOptions batchOptions) {
+        RBatch b = redisson.createBatch(batchOptions);
+        MapOptions<String, String> options = MapOptions.defaults();
+        RMapAsync<String, String> map1 = b.getMap("testMapOptions1", options);
+        RMapAsync<String, String> map2 = b.getMap("testMapOptions2", StringCodec.INSTANCE, options);
+        map1.putAsync("1", "2");
+        map2.putAsync("21", "3");
+        RFuture<String> val1 = map1.getAsync("1");
+        RFuture<String> val2 = map2.getAsync("21");
+        b.execute();
+
+        org.junit.jupiter.api.Assertions.assertEquals("2", val1.toCompletableFuture().getNow(null));
+        org.junit.jupiter.api.Assertions.assertEquals("3", val2.toCompletableFuture().getNow(null));
+    }
+
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testMapOptionsWithWriter(BatchOptions batchOptions) {
+        Map<String, String> store = new ConcurrentHashMap<>();
+        MapWriter<String, String> writer = new MapWriter<String, String>() {
+            @Override
+            public void write(Map<String, String> map) {
+                store.putAll(map);
+            }
+
+            @Override
+            public void delete(Collection<String> keys) {
+                for (String key : keys) {
+                    store.remove(key);
+                }
+            }
+        };
+
+        MapOptions<String, String> options = MapOptions.<String, String>defaults().writer(writer);
+        RBatch b = redisson.createBatch(batchOptions);
+        RMapAsync<String, String> map1 = b.getMap("testMapOptionsWriter1", options);
+        RMapAsync<String, String> map2 = b.getMap("testMapOptionsWriter2", StringCodec.INSTANCE, options);
+        map1.putAsync("k1", "v1");
+        map2.putAsync("k2", "v2");
+        b.execute();
+
+        await().atMost(Duration.ofSeconds(3)).untilAsserted(() -> {
+            assertThat(store.get("k1")).isEqualTo("v1");
+            assertThat(store.get("k2")).isEqualTo("v2");
+        });
     }
 
     @ParameterizedTest
