@@ -17,20 +17,25 @@ import io.netty.util.CharsetUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.redisson.client.RedisException;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.CommandData;
+import org.redisson.client.protocol.CommandsData;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.config.CommandMapper;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class CommandDecoderSkipTest {
 
@@ -189,6 +194,26 @@ class CommandDecoderSkipTest {
         // still receive their own replies
         assertThat(scardPromise.get(10, TimeUnit.SECONDS)).isEqualTo(5);
         assertThat(pingPromise.get(10, TimeUnit.SECONDS)).isEqualTo("PONG");
+    }
+
+    @Test
+    void testBatchCommandsFailedWithSameExceptionCompleteBatchWithIt() throws Exception {
+        // CommandBatchService fails every command of a batch with the same exception instance
+        RedisException failure = new RedisException("connection closed");
+        List<CommandData<?, ?>> commands = new ArrayList<>();
+        for (int i = 0; i < 2; i++) {
+            CompletableFuture<Object> promise = new CompletableFuture<>();
+            promise.completeExceptionally(failure);
+            commands.add(new CommandData<>(promise, StringCodec.INSTANCE, RedisCommands.PING, new Object[0]));
+        }
+        CompletableFuture<Void> batchPromise = new CompletableFuture<>();
+
+        clientChannel.writeAndFlush(new CommandsData(batchPromise, commands, false, false));
+
+        assertThatThrownBy(() -> batchPromise.get(10, TimeUnit.SECONDS))
+                .isInstanceOf(ExecutionException.class)
+                .cause()
+                .isSameAs(failure);
     }
 
 }

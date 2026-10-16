@@ -25,10 +25,12 @@ import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.reactive.CommandReactiveExecutor;
 import org.springframework.data.domain.Range;
 import org.springframework.data.redis.connection.BitFieldSubCommands;
+import org.springframework.data.redis.connection.CompareCondition;
 import org.springframework.data.redis.connection.ReactiveRedisConnection.*;
 import org.springframework.data.redis.connection.ReactiveStringCommands;
 import org.springframework.data.redis.connection.RedisStringCommands.BitOperation;
 import org.springframework.data.redis.connection.RedisStringCommands.SetOption;
+import org.springframework.data.redis.connection.SetCondition;
 import org.springframework.data.redis.core.types.Expiration;
 import org.springframework.util.Assert;
 import reactor.core.publisher.Flux;
@@ -63,44 +65,24 @@ public class RedissonReactiveStringCommands extends RedissonBaseReactive impleme
             byte[] key = toByteArray(command.getKey());
             byte[] value = toByteArray(command.getValue());
 
-            Mono<Boolean> m = Mono.empty();
-            
-            if (!command.getExpiration().isPresent()) {
-                m = write(key, StringCodec.INSTANCE, SET, key, value);
-            } else if (command.getExpiration().get().isPersistent()) {
-                if (!command.getOption().isPresent() || command.getOption().get() == SetOption.UPSERT) {
-                    m = write(key, StringCodec.INSTANCE, SET, key, value);
-                } else if (command.getOption().get() == SetOption.SET_IF_ABSENT) {
-                    m = write(key, StringCodec.INSTANCE, SET, key, value, "NX");
-                } else if (command.getOption().get() == SetOption.SET_IF_PRESENT) {
-                    m = write(key, StringCodec.INSTANCE, SET, key, value, "XX");
+            List<Object> args = new ArrayList<>();
+            args.add(key);
+            args.add(value);
+            command.getCondition().ifPresent(condition -> appendSetCondition(args, condition));
+
+            command.getExpiration().ifPresent(expiration -> {
+                if (expiration.isKeepTtl()) {
+                    args.add("KEEPTTL");
+                } else if (expiration.isUnixTimestamp()) {
+                    args.add("PXAT");
+                    args.add(expiration.getExpirationTimeInMilliseconds());
+                } else if (!expiration.isPersistent()) {
+                    args.add("PX");
+                    args.add(expiration.getExpirationTimeInMilliseconds());
                 }
-            } else if (command.getExpiration().get().isKeepTtl()) {
-                if (!command.getOption().isPresent() || command.getOption().get() == SetOption.UPSERT) {
-                    m = write(key, StringCodec.INSTANCE, SET, key, value, "KEEPTTL");
-                } else if (command.getOption().get() == SetOption.SET_IF_ABSENT) {
-                    m = write(key, StringCodec.INSTANCE, SET, key, value, "KEEPTTL", "NX");
-                } else if (command.getOption().get() == SetOption.SET_IF_PRESENT) {
-                    m = write(key, StringCodec.INSTANCE, SET, key, value, "KEEPTTL", "XX");
-                }
-            } else if (command.getExpiration().get().isUnixTimestamp()) {
-                if (!command.getOption().isPresent() || command.getOption().get() == SetOption.UPSERT) {
-                    m = write(key, StringCodec.INSTANCE, SET, key, value, "PXAT", command.getExpiration().get().getExpirationTimeInMilliseconds());
-                } else if (command.getOption().get() == SetOption.SET_IF_ABSENT) {
-                    m = write(key, StringCodec.INSTANCE, SET, key, value, "PXAT", command.getExpiration().get().getExpirationTimeInMilliseconds(), "NX");
-                } else if (command.getOption().get() == SetOption.SET_IF_PRESENT) {
-                    m = write(key, StringCodec.INSTANCE, SET, key, value, "PXAT", command.getExpiration().get().getExpirationTimeInMilliseconds(), "XX");
-                }
-            } else {
-                if (!command.getOption().isPresent() || command.getOption().get() == SetOption.UPSERT) {
-                    m = write(key, StringCodec.INSTANCE, SET, key, value, "PX", command.getExpiration().get().getExpirationTimeInMilliseconds());
-                } else if (command.getOption().get() == SetOption.SET_IF_ABSENT) {
-                    m = write(key, StringCodec.INSTANCE, SET, key, value, "PX", command.getExpiration().get().getExpirationTimeInMilliseconds(), "NX");
-                } else if (command.getOption().get() == SetOption.SET_IF_PRESENT) {
-                    m = write(key, StringCodec.INSTANCE, SET, key, value, "PX", command.getExpiration().get().getExpirationTimeInMilliseconds(), "XX");
-                    return m.map(v -> new BooleanResponse<>(command, v));
-                }
-            }
+            });
+
+            Mono<Boolean> m = write(key, StringCodec.INSTANCE, SET, args.toArray());
             return m.map(v -> new BooleanResponse<>(command, v))
                     .switchIfEmpty(Mono.just(new BooleanResponse<>(command, Boolean.FALSE)));
         });
@@ -515,6 +497,23 @@ public class RedissonReactiveStringCommands extends RedissonBaseReactive impleme
         });
     }
 
+    private static void appendSetCondition(List<Object> args, SetCondition condition) {
+        CompareCondition compareCondition = condition.getCompareCondition();
+        if (compareCondition != null) {
+            boolean equals = compareCondition.getOperator() == CompareCondition.ComparisonOperator.EQUALS;
+            if (compareCondition.getComparison() == CompareCondition.ComparisonFunction.DIGEST) {
+                args.add(equals ? "IFDEQ" : "IFDNE");
+            } else {
+                args.add(equals ? "IFEQ" : "IFNE");
+            }
+            args.add(compareCondition.getValue().asBytes());
+        } else if (condition.getKeyCondition() == SetCondition.KeyCondition.IF_ABSENT) {
+            args.add("NX");
+        } else if (condition.getKeyCondition() == SetCondition.KeyCondition.IF_PRESENT) {
+            args.add("XX");
+        }
+    }
+
     private static final RedisCommand<Object> SET_VALUE = new RedisCommand<>("SET");
 
     @Override
@@ -529,16 +528,7 @@ public class RedissonReactiveStringCommands extends RedissonBaseReactive impleme
             args.add(keyBuf);
             args.add(toByteArray(command.getValue()));
 
-            command.getOption().ifPresent(v -> {
-                switch (v) {
-                    case SET_IF_ABSENT:
-                        args.add("NX");
-                        break;
-                    case SET_IF_PRESENT:
-                        args.add("XX");
-                        break;
-                }
-            });
+            command.getCondition().ifPresent(condition -> appendSetCondition(args, condition));
 
             args.add("GET");
 
@@ -564,7 +554,7 @@ public class RedissonReactiveStringCommands extends RedissonBaseReactive impleme
                 }
             });
 
-            Mono<byte[]> result = write(keyBuf, ByteArrayCodec.INSTANCE, RedisCommands.SET, args.toArray());
+            Mono<byte[]> result = write(keyBuf, ByteArrayCodec.INSTANCE, SET_VALUE, args.toArray());
             return result.map(oldValue -> {
                 ByteBuffer responseValue = oldValue != null ? ByteBuffer.wrap(oldValue) : null;
                 return new ByteBufferResponse<>(command, responseValue);

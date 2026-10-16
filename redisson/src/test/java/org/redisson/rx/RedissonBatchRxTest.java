@@ -317,6 +317,23 @@ public class RedissonBatchRxTest extends BaseRxTest {
         Assertions.assertEquals("2", sync(val1));
         Assertions.assertEquals("3", sync(val2));
     }
+
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testMapOptions(BatchOptions batchOptions) {
+        RBatchRx b = redisson.createBatch(batchOptions);
+        MapOptions<String, String> options = MapOptions.defaults();
+        RMapRx<String, String> map1 = b.getMap("testMapOptions1", options);
+        RMapRx<String, String> map2 = b.getMap("testMapOptions2", StringCodec.INSTANCE, options);
+        map1.put("1", "2");
+        map2.put("21", "3");
+        Maybe<String> val1 = map1.get("1");
+        Maybe<String> val2 = map2.get("21");
+        sync(b.execute());
+
+        Assertions.assertEquals("2", sync(val1));
+        Assertions.assertEquals("3", sync(val2));
+    }
     
     @ParameterizedTest
     @MethodSource("data")

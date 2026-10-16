@@ -602,6 +602,20 @@ public class RedissonRateLimiterTest extends RedisDockerTest {
     }
 
     @Test
+    public void testAcquireNegativePermits() {
+        RRateLimiter rateLimiter = redisson.getRateLimiter("test_acquire_negative");
+        rateLimiter.setRate(RateType.OVERALL, 5, Duration.ofSeconds(10));
+
+        assertThatThrownBy(() -> rateLimiter.tryAcquire(-1)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> rateLimiter.tryAcquire(-1, Duration.ofSeconds(1))).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> rateLimiter.tryAcquireAsync(-1)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> rateLimiter.acquire(-1)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> rateLimiter.acquireAsync(-1)).isInstanceOf(IllegalArgumentException.class);
+
+        assertThat(rateLimiter.availablePermits()).isEqualTo(5);
+    }
+
+    @Test
     public void testReleasedPermitsPreservedAfterExpiry() throws InterruptedException {
         RRateLimiter limiter = redisson.getRateLimiter("testNoCollapse");
         limiter.trySetRate(RateType.OVERALL, 10, 1, RateIntervalUnit.SECONDS);

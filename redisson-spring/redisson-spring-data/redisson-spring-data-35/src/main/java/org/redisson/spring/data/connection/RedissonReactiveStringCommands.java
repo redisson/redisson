@@ -564,7 +564,7 @@ public class RedissonReactiveStringCommands extends RedissonBaseReactive impleme
                 }
             });
 
-            Mono<byte[]> result = write(keyBuf, ByteArrayCodec.INSTANCE, RedisCommands.SET, args.toArray());
+            Mono<byte[]> result = write(keyBuf, ByteArrayCodec.INSTANCE, SET_VALUE, args.toArray());
             return result.map(oldValue -> {
                 ByteBuffer responseValue = oldValue != null ? ByteBuffer.wrap(oldValue) : null;
                 return new ByteBufferResponse<>(command, responseValue);
