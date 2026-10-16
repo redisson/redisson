@@ -65,6 +65,22 @@ public class RedissonTransactionalMap<K, V> extends RedissonMap<K, V> {
         RedissonMap<K, V> innerMap = new RedissonMap<K, V>(codec, commandExecutor, name, null, null, null);
         this.transactionalMap = new BaseTransactionalMap<K, V>(commandExecutor, timeout, operations, innerMap, transactionId);
     }
+
+    public RedissonTransactionalMap(CommandAsyncExecutor commandExecutor, String name,
+            List<TransactionalOperation> operations, long timeout, AtomicBoolean executed, String transactionId, MapOptions<K, V> options) {
+        super(commandExecutor, name, null, options, null);
+        this.executed = executed;
+        RedissonMap<K, V> innerMap = new RedissonMap<K, V>(commandExecutor, name, null, options, null);
+        this.transactionalMap = new BaseTransactionalMap<K, V>(commandExecutor, timeout, operations, innerMap, transactionId);
+    }
+
+    public RedissonTransactionalMap(Codec codec, CommandAsyncExecutor commandExecutor, String name,
+            List<TransactionalOperation> operations, long timeout, AtomicBoolean executed, String transactionId, MapOptions<K, V> options) {
+        super(codec, commandExecutor, name, null, options, null);
+        this.executed = executed;
+        RedissonMap<K, V> innerMap = new RedissonMap<K, V>(codec, commandExecutor, name, null, options, null);
+        this.transactionalMap = new BaseTransactionalMap<K, V>(commandExecutor, timeout, operations, innerMap, transactionId);
+    }
     
     @Override
     public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit, String param, String... keys) {
