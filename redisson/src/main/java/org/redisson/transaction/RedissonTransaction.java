@@ -264,13 +264,19 @@ public class RedissonTransaction implements RTransaction {
 
                     enableLocalCacheAsync(id, (Map<HashKey, HashValue>) hashes);
                     executed.set(true);
+
+                    if (batchOptions.getSyncSlaves() > 0 && r.getSyncedSlaves() < batchOptions.getSyncSlaves()) {
+                        throw new CompletionException(new TransactionException("Unable to sync " + batchOptions.getSyncSlaves()
+                                + " slaves within " + options.getSyncTimeout() + " ms"));
+                    }
+
                     return null;
                 });
             });
         return new CompletableFutureWrapper<>(ff);
     }
 
-    private BatchOptions createOptions() {
+    BatchOptions createOptions() {
         MasterSlaveEntry entry = commandExecutor.getConnectionManager().getEntrySet().iterator().next();
         int syncSlaves = entry.getAvailableSlaves();
         if (options.getSyncSlaves() == -1) {
@@ -315,16 +321,21 @@ public class RedissonTransaction implements RTransaction {
             throw e;
         }
 
+        BatchResult<?> result;
         try {
-            
-            transactionExecutor.execute();
+            result = transactionExecutor.execute();
         } catch (Exception e) {
             throw new TransactionException("Unable to execute transaction", e);
         }
-        
+
         enableLocalCache(id, hashes);
-        
+
         executed.set(true);
+
+        if (batchOptions.getSyncSlaves() > 0 && result.getSyncedSlaves() < batchOptions.getSyncSlaves()) {
+            throw new TransactionException("Unable to sync " + batchOptions.getSyncSlaves()
+                    + " slaves within " + options.getSyncTimeout() + " ms");
+        }
     }
 
     private void checkTimeout() {
