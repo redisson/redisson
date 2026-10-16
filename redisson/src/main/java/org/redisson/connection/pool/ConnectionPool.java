@@ -171,7 +171,6 @@ abstract class ConnectionPool<T extends RedisConnection> {
             if (e != null) {
                 if (entry.getNodeType() == NodeType.SLAVE) {
                     FailedNodeDetector detector = entry.getClient().getConfig().getFailedNodeDetector();
-                    detector.onConnectFailed(e, entry.getClient().getAddr());
                     if (detector.isNodeFailed(entry.getClient().getAddr())) {
                         shutdownAndReconnect(entry, detector, e);
                     }

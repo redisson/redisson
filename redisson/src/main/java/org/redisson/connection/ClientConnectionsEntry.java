@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
@@ -74,13 +75,15 @@ public class ClientConnectionsEntry {
                                   ConnectionManager connectionManager, NodeType nodeType, MasterSlaveServersConfig config) {
         this.client = client;
         this.config = config;
-        this.connectionsHolder = new ConnectionsHolder<>(client, poolMaxSize, r -> r.connectAsync(),
+        this.connectionsHolder = new ConnectionsHolder<>(client, poolMaxSize,
+                r -> reportFailure(r.connectAsync()),
                 connectionManager.getServiceManager(), true);
         this.idleConnectionWatcher = connectionManager.getServiceManager().getConnectionWatcher();
         this.connectionManager = connectionManager;
         this.nodeType = nodeType;
         this.pubSubConnectionsHolder = new ConnectionsHolder<>(client, config.getSubscriptionConnectionPoolSize(),
-                r -> r.connectPubSubAsync(), connectionManager.getServiceManager(), false);
+                r -> reportFailure(r.connectPubSubAsync()),
+                connectionManager.getServiceManager(), false);
 
         if (config.getSubscriptionConnectionPoolSize() > 0) {
             idleConnectionWatcher.add(this, config.getSubscriptionConnectionMinimumIdleSize(),
@@ -89,6 +92,22 @@ public class ClientConnectionsEntry {
         idleConnectionWatcher.add(this, poolMinSize, poolMaxSize, connectionsHolder);
 
         this.trackedConnectionsHolder = new TrackedConnectionsHolder(connectionsHolder);
+    }
+
+    private <C extends RedisConnection> CompletionStage<C> reportFailure(CompletionStage<C> connectFuture) {
+        if (nodeType == NodeType.SLAVE) {
+            connectFuture.whenComplete((c, e) -> {
+                if (e == null) {
+                    return;
+                }
+                try {
+                    client.getConfig().getFailedNodeDetector().onConnectFailed(e, client.getAddr());
+                } catch (Exception ex) {
+                    log.error("Unable to report connection failure of {}", client.getAddr(), ex);
+                }
+            });
+        }
+        return connectFuture;
     }
 
     public CompletableFuture<Void> initConnections(int minimumIdleSize) {
