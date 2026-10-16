@@ -1151,8 +1151,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 }
 
                 if (commands.isEmpty()) {
-                    CompletionStage<T> f = evalWriteAsync(key, codec, evalCommandType, script, keys, params);
-                    return f;
+                    return evalWrite(this, retry, key, codec, evalCommandType, script, keys, params);
                 }
             }
 
@@ -1197,7 +1196,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 e.setAofEnabled(aofEnabled);
 
                 CommandBatchService executorService = createCommandBatchService(availableSlaves, aofEnabled, timeout);
-                RFuture<T> result = executorService.evalWriteAsync(key, codec, evalCommandType, script, keys, params);
+                RFuture<T> result = evalWrite(executorService, retry, key, codec, evalCommandType, script, keys, params);
                 if (executorService == this) {
                     return result;
                 }
@@ -1233,6 +1232,14 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         }).thenCompose(f -> f);
 
         return new CompletableFutureWrapper<>(resFuture);
+    }
+
+    private <T> RFuture<T> evalWrite(CommandAsyncService executor, boolean retry, String key, Codec codec,
+                                     RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
+        if (retry) {
+            return executor.evalWriteAsync(key, codec, evalCommandType, script, keys, params);
+        }
+        return executor.evalWriteNoRetryAsync(key, codec, evalCommandType, script, keys, params);
     }
 
     protected CommandBatchService createCommandBatchService(int availableSlaves, boolean aofEnabled, long timeout) {

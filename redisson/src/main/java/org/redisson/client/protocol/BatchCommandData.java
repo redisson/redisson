@@ -35,6 +35,7 @@ public class BatchCommandData<T, R> extends CommandData<T, R> implements Compara
 
     private final int index;
     private final AtomicReference<RedisException> retryError = new AtomicReference<>();
+    private boolean noRetry;
 
     public BatchCommandData(RedisCommand<T> command, Object[] params, int index) {
         this(new CompletableFuture<>(), StringCodec.INSTANCE, command, params, index);
@@ -85,5 +86,13 @@ public class BatchCommandData<T, R> extends CommandData<T, R> implements Compara
 
     public int getIndex() {
         return index;
+    }
+
+    public void setNoRetry(boolean noRetry) {
+        this.noRetry = noRetry;
+    }
+
+    public boolean isNoRetry() {
+        return noRetry;
     }
 }
