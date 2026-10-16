@@ -58,6 +58,7 @@ public class RedissonSessionManager extends ManagerBase {
     private UpdateMode updateMode = UpdateMode.DEFAULT;
 
     protected String keyPrefix = "";
+    protected String topicName;
     private boolean broadcastSessionEvents = false;
     private boolean broadcastSessionUpdates = true;
 
@@ -125,6 +126,14 @@ public class RedissonSessionManager extends ManagerBase {
         this.keyPrefix = keyPrefix;
     }
 
+    public String getTopicName() {
+        return topicName;
+    }
+
+    public void setTopicName(String topicName) {
+        this.topicName = topicName;
+    }
+
     @Override
     public String getName() {
         return RedissonSessionManager.class.getSimpleName();
@@ -165,6 +174,13 @@ public class RedissonSessionManager extends ManagerBase {
     }
 
     public RTopic getTopic() {
+        if (topicName != null) {
+            PublishSubscribeService ss = ((Redisson) redisson).getCommandExecutor().getConnectionManager().getSubscribeService();
+            if (ss.isShardingSupported()) {
+                return redisson.getShardedTopic(topicName);
+            }
+            return redisson.getTopic(topicName);
+        }
         String separator = keyPrefix == null || keyPrefix.isEmpty() ? "" : ":";
         final String name = keyPrefix + separator + "redisson:tomcat_session_updates:" + getContext().getName();
         PublishSubscribeService ss = ((Redisson) redisson).getCommandExecutor().getConnectionManager().getSubscribeService();
