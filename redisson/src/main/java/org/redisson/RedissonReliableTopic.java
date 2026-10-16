@@ -18,7 +18,6 @@ package org.redisson;
 import io.netty.util.Timeout;
 import org.redisson.api.RFuture;
 import org.redisson.api.RReliableTopic;
-import org.redisson.api.RStream;
 import org.redisson.api.stream.StreamMessageId;
 import org.redisson.api.listener.MessageListener;
 import org.redisson.api.stream.StreamReadGroupArgs;
@@ -73,7 +72,7 @@ public final class RedissonReliableTopic extends RedissonExpirable implements RR
     private final String subscriberId;
     private volatile RFuture<Map<StreamMessageId, Map<String, Object>>> readFuture;
     private volatile Timeout timeoutTask;
-    private final RStream<String, Object> stream;
+    private final RedissonStream<String, Object> stream;
     private final AtomicBoolean subscribed = new AtomicBoolean();
     private final String timeoutName;
 
@@ -167,7 +166,7 @@ public final class RedissonReliableTopic extends RedissonExpirable implements RR
     }
 
     private void poll(String id) {
-        RFuture<Map<StreamMessageId, Map<String, Object>>> f = stream.pendingRangeAsync(id, StreamMessageId.MIN, StreamMessageId.MAX, 100);
+        RFuture<Map<StreamMessageId, Map<String, Object>>> f = stream.pendingRangeFromMasterAsync(id, StreamMessageId.MIN, StreamMessageId.MAX, 100);
         CompletionStage<Map<StreamMessageId, Map<String, Object>>> ff = f.thenCompose(r -> {
             if (!subscribed.get()) {
                 return CompletableFuture.completedFuture(r);
