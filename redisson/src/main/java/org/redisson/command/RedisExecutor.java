@@ -559,7 +559,7 @@ public class RedisExecutor<V, R> {
                 return;
             }
 
-            if (connectionManager.getServiceManager().isShuttingDown(e)) {
+            if (e != null && connectionManager.getServiceManager().isShuttingDown(e)) {
                 attemptPromise.completeExceptionally(e);
             }
         });
