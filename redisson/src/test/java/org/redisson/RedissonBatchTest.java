@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.redisson.api.*;
 import org.redisson.api.BatchOptions.ExecutionMode;
 import org.redisson.api.redisnode.RedisNodes;
@@ -649,6 +650,40 @@ public class RedissonBatchTest extends RedisDockerTest {
 
         assertThat(redisson.getBucket("A1").isExists()).isFalse();
         assertThat(redisson.getBucket("A3").isExists()).isTrue();
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testPingDuringLongBatchExecution(boolean skipResult) {
+        Config config = createConfig();
+        config.useSingleServer()
+                .setConnectionMinimumIdleSize(1)
+                .setConnectionPoolSize(1)
+                .setPingConnectionInterval(50)
+                .setTimeout(50);
+        RedissonClient r = Redisson.create(config);
+        try {
+            BatchOptions options = BatchOptions.defaults()
+                    .executionMode(ExecutionMode.IN_MEMORY)
+                    .responseTimeout(5, TimeUnit.SECONDS)
+                    .retryAttempts(0);
+            if (skipResult) {
+                options.skipResult();
+            }
+
+            // large enough to keep the connection busy for much longer than the PING timeout
+            int size = 300_000;
+            RBatch batch = r.createBatch(options);
+            for (int i = 0; i < size; i++) {
+                batch.getBucket("pingDuringBatch:" + i, StringCodec.INSTANCE).setAsync("v");
+            }
+            batch.execute();
+
+            assertThat(r.getBucket("pingDuringBatch:0", StringCodec.INSTANCE).isExists()).isTrue();
+            assertThat(r.getBucket("pingDuringBatch:" + (size - 1), StringCodec.INSTANCE).isExists()).isTrue();
+        } finally {
+            r.shutdown();
+        }
     }
 
     @ParameterizedTest
