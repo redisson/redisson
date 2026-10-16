@@ -192,6 +192,12 @@ public class RedissonAutoConfigurationV4 {
                 .setSentinelUsername(sentinelUsername)
                 .setDatabase(database)
                 .setClientName(clientName);
+        if (redissonProperties.getReadMode() != null) {
+            c.setReadMode(redissonProperties.getReadMode());
+        }
+        if (redissonProperties.getSubscriptionMode() != null) {
+            c.setSubscriptionMode(redissonProperties.getSubscriptionMode());
+        }
 
         setTimeouts(c);
         initSSL(config);
@@ -215,6 +221,12 @@ public class RedissonAutoConfigurationV4 {
         ClusterServersConfig c = config.useClusterServers()
                 .addNodeAddress(nodes)
                 .setClientName(clientName);
+        if (redissonProperties.getReadMode() != null) {
+            c.setReadMode(redissonProperties.getReadMode());
+        }
+        if (redissonProperties.getSubscriptionMode() != null) {
+            c.setSubscriptionMode(redissonProperties.getSubscriptionMode());
+        }
 
         setTimeouts(c);
         initSSL(config);
