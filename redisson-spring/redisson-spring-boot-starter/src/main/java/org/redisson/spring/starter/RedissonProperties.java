@@ -15,6 +15,8 @@
  */
 package org.redisson.spring.starter;
 
+import org.redisson.config.ReadMode;
+import org.redisson.config.SubscriptionMode;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
@@ -30,6 +32,10 @@ public class RedissonProperties {
 
     private String file;
 
+    private ReadMode readMode;
+
+    private SubscriptionMode subscriptionMode;
+
     public String getConfig() {
         return config;
     }
@@ -44,5 +50,21 @@ public class RedissonProperties {
 
     public void setFile(String file) {
         this.file = file;
+    }
+
+    public ReadMode getReadMode() {
+        return readMode;
+    }
+
+    public void setReadMode(ReadMode readMode) {
+        this.readMode = readMode;
+    }
+
+    public SubscriptionMode getSubscriptionMode() {
+        return subscriptionMode;
+    }
+
+    public void setSubscriptionMode(SubscriptionMode subscriptionMode) {
+        this.subscriptionMode = subscriptionMode;
     }
 }

@@ -244,6 +244,12 @@ public class RedissonAutoConfiguration {
                     .setSentinelUsername(sentinelUsername)
                     .setDatabase(database)
                     .setClientName(clientName);
+            if (redissonProperties.getReadMode() != null) {
+                c.setReadMode(redissonProperties.getReadMode());
+            }
+            if (redissonProperties.getSubscriptionMode() != null) {
+                c.setSubscriptionMode(redissonProperties.getSubscriptionMode());
+            }
             if (connectTimeout != null) {
                 c.setConnectTimeout(connectTimeout);
             }
@@ -277,6 +283,12 @@ public class RedissonAutoConfiguration {
             ClusterServersConfig c = config.useClusterServers()
                     .addNodeAddress(nodes)
                     .setClientName(clientName);
+            if (redissonProperties.getReadMode() != null) {
+                c.setReadMode(redissonProperties.getReadMode());
+            }
+            if (redissonProperties.getSubscriptionMode() != null) {
+                c.setSubscriptionMode(redissonProperties.getSubscriptionMode());
+            }
             if (connectTimeout != null) {
                 c.setConnectTimeout(connectTimeout);
             }
