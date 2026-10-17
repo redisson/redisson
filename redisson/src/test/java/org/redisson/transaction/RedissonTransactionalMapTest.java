@@ -2,6 +2,7 @@ package org.redisson.transaction;
 
 import io.netty.buffer.ByteBuf;
 import org.junit.jupiter.api.Test;
+import org.redisson.api.MapOptions;
 import org.redisson.api.RMap;
 import org.redisson.api.RTransaction;
 import org.redisson.api.TransactionOptions;
@@ -50,6 +51,20 @@ public class RedissonTransactionalMapTest extends RedissonBaseTransactionalMapTe
         RMap<String, Object> tmap = transaction.getMap("test_addandget_mixed", StringCodec.INSTANCE);
         assertThat(tmap.addAndGet("key1", 1)).isEqualTo(11.1);
         transaction.commit();
+    }
+
+    @Test
+    public void testMapOptions() {
+        MapOptions<String, String> options = MapOptions.defaults();
+        RTransaction transaction = redisson.createTransaction(TransactionOptions.defaults());
+        RMap<String, String> map1 = transaction.getMap("testMapOptions1", options);
+        RMap<String, String> map2 = transaction.getMap("testMapOptions2", StringCodec.INSTANCE, options);
+        map1.put("1", "2");
+        map2.put("21", "3");
+        transaction.commit();
+
+        assertThat(redisson.getMap("testMapOptions1").get("1")).isEqualTo("2");
+        assertThat(redisson.getMap("testMapOptions2", StringCodec.INSTANCE).get("21")).isEqualTo("3");
     }
 
     static final class TrackingStringCodec extends StringCodec {
