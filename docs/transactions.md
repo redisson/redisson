@@ -12,9 +12,11 @@ The following transaction options are available:
 
 ```java
 TransactionOptions options = TransactionOptions.defaults()
-    // Data synchronization timeout between the master participating in the transaction and its replicas.
-    // Default is 5000 milliseconds.
-    .syncSlavesTimeout(5, TimeUnit.SECONDS)
+    // Synchronize write operations execution across specified amount of Redis replica nodes within defined timeout.
+    // Throws TransactionSyncException if the required amount of replicas fail to acknowledge within the timeout.
+    // Default slaves value is 0 (available replicas at execution time, best-effort) and -1 means no sync.
+    // Default timeout is 5000 milliseconds.
+    .syncSlaves(2, 5, TimeUnit.SECONDS)
 
     // Response timeout.
     // Default is 3000 milliseconds.
