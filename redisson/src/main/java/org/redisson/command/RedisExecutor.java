@@ -742,7 +742,7 @@ public class RedisExecutor<V, R> {
             }
             writeFuture = connection.send(new CommandData<>(attemptPromise, codec, command, params));
 
-            if (connectionManager.getServiceManager().getConfig().getMasterConnectionPoolSize() < 10
+            if (isEagerConnectionRelease()
                     && !command.isBlockingCommand()) {
                 release(connection);
             }
@@ -761,7 +761,7 @@ public class RedisExecutor<V, R> {
         }
 
         RedisConnection connection = getNow(connectionFuture);
-        if (connectionManager.getServiceManager().getConfig().getMasterConnectionPoolSize() < 10) {
+        if (isEagerConnectionRelease()) {
             if (source.getRedirect() == Redirect.ASK
                     || getClass() != RedisExecutor.class
                         || (command != null && command.isBlockingCommand())) {
@@ -780,6 +780,11 @@ public class RedisExecutor<V, R> {
             log.debug("connection{}released for {} from slot {} using connection {}",
                     connectionType, LogHelper.toString(command, params), source, connection);
         }
+    }
+
+    protected boolean isEagerConnectionRelease() {
+        return connectionManager.getServiceManager().getCfg().isEagerConnectionRelease()
+                || connectionManager.getServiceManager().getConfig().getMasterConnectionPoolSize() < 10;
     }
 
     private void release(RedisConnection connection) {

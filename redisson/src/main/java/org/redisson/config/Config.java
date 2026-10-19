@@ -111,6 +111,8 @@ public class Config {
 
     private boolean lazyInitialization;
 
+    private boolean eagerConnectionRelease;
+
     private Protocol protocol = Protocol.RESP2;
 
     private Set<ValkeyCapability> valkeyCapabilities = Collections.emptySet();
@@ -194,6 +196,7 @@ public class Config {
         setAddressResolverGroupFactory(oldConf.getAddressResolverGroupFactory());
         setReliableTopicWatchdogTimeout(oldConf.getReliableTopicWatchdogTimeout());
         setLazyInitialization(oldConf.isLazyInitialization());
+        setEagerConnectionRelease(oldConf.isEagerConnectionRelease());
         setProtocol(oldConf.getProtocol());
         setValkeyCapabilities(oldConf.getValkeyCapabilities());
         setNameMapper(oldConf.getNameMapper());
@@ -998,6 +1001,29 @@ public class Config {
      */
     public Config setLazyInitialization(boolean lazyInitialization) {
         this.lazyInitialization = lazyInitialization;
+        return this;
+    }
+
+    public boolean isEagerConnectionRelease() {
+        return eagerConnectionRelease;
+    }
+
+    /**
+     * Defines whether to return the connection to the pool right after a command has been
+     * written to the channel regardless of the connection pool size. Allows a single connection
+     * to be shared by multiple commands.
+     * <p>
+     * Eager release is always used if master connection pool size is less than <code>10</code>.
+     * Blocking commands, ASK redirects, and batch executors are always released after the response.
+     * <p>
+     * Default value is <code>false</code>
+     *
+     * @param eagerConnectionRelease <code>true</code> enables eager release regardless of the connection pool size,
+     *                               <code>false</code> preserves behavior based on the connection pool size.
+     * @return config
+     */
+    public Config setEagerConnectionRelease(boolean eagerConnectionRelease) {
+        this.eagerConnectionRelease = eagerConnectionRelease;
         return this;
     }
 
