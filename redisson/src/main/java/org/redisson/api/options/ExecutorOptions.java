@@ -56,6 +56,20 @@ public interface ExecutorOptions extends CodecOptions<ExecutorOptions, Codec> {
     ExecutorOptions taskRetryInterval(Duration interval);
 
     /**
+     * Defines the maximum number of retry attempts for a task
+     * which wasn't marked as completed within <code>taskRetryInterval</code>.
+     * The task is removed if it isn't completed after the last retry attempt.
+     * <p>
+     * Set <code>0</code> for unlimited retry attempts.
+     * <p>
+     * Default is <code>0</code>
+     *
+     * @param attempts value
+     * @return options instance
+     */
+    ExecutorOptions taskRetryAttempts(int attempts);
+
+    /**
      * Defines identifier generator
      *
      * @param idGenerator identifier generator
