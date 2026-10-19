@@ -209,6 +209,12 @@ public class Config {
         setSslKeyManagerFactory(oldConf.getSslKeyManagerFactory());
         setSslTrustManagerFactory(oldConf.getSslTrustManagerFactory());
         setSslVerificationMode(oldConf.getSslVerificationMode());
+        setTcpKeepAlive(oldConf.isTcpKeepAlive());
+        setTcpKeepAliveCount(oldConf.getTcpKeepAliveCount());
+        setTcpKeepAliveIdle(oldConf.getTcpKeepAliveIdle());
+        setTcpKeepAliveInterval(oldConf.getTcpKeepAliveInterval());
+        setTcpUserTimeout(oldConf.getTcpUserTimeout());
+        setTcpNoDelay(oldConf.isTcpNoDelay());
         setStorageMemoryUsageListener(oldConf.storageMemoryUsageListener);
         setStorageStatisticsInterval(oldConf.storageStatisticsInterval);
 
