@@ -265,10 +265,7 @@ public class RedissonTransaction implements RTransaction {
                     enableLocalCacheAsync(id, (Map<HashKey, HashValue>) hashes);
                     executed.set(true);
 
-                    if (batchOptions.getSyncSlaves() > 0 && r.getSyncedSlaves() < batchOptions.getSyncSlaves()) {
-                        throw new CompletionException(new TransactionException("Unable to sync " + batchOptions.getSyncSlaves()
-                                + " slaves within " + options.getSyncTimeout() + " ms"));
-                    }
+                    checkSyncSlaves(r);
 
                     return null;
                 });
@@ -276,7 +273,14 @@ public class RedissonTransaction implements RTransaction {
         return new CompletableFutureWrapper<>(ff);
     }
 
-    BatchOptions createOptions() {
+    private void checkSyncSlaves(BatchResult<?> result) {
+        if (options.getSyncSlaves() > 0 && result.getMinSyncedSlaves() < options.getSyncSlaves()) {
+            throw new TransactionSyncException("Transaction committed, but only " + result.getMinSyncedSlaves()
+                    + " of " + options.getSyncSlaves() + " replicas acknowledged within " + options.getSyncTimeout() + " ms");
+        }
+    }
+
+    private BatchOptions createOptions() {
         MasterSlaveEntry entry = commandExecutor.getConnectionManager().getEntrySet().iterator().next();
         int syncSlaves = entry.getAvailableSlaves();
         if (options.getSyncSlaves() == -1) {
@@ -332,10 +336,7 @@ public class RedissonTransaction implements RTransaction {
 
         executed.set(true);
 
-        if (batchOptions.getSyncSlaves() > 0 && result.getSyncedSlaves() < batchOptions.getSyncSlaves()) {
-            throw new TransactionException("Unable to sync " + batchOptions.getSyncSlaves()
-                    + " slaves within " + options.getSyncTimeout() + " ms");
-        }
+        checkSyncSlaves(result);
     }
 
     private void checkTimeout() {
