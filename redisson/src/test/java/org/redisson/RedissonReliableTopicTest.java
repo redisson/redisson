@@ -3,8 +3,12 @@ package org.redisson;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RReliableTopic;
+import org.redisson.api.RScoredSortedSet;
+import org.redisson.api.RStream;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.listener.MessageListener;
+import org.redisson.api.stream.StreamGroup;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.config.Config;
 
 import java.time.Duration;
@@ -210,6 +214,111 @@ public class RedissonReliableTopicTest extends RedisDockerTest {
         Awaitility.await().atMost(Duration.ofSeconds(5))
                 .untilAsserted(() -> assertThat(messages).containsExactly("first", "second"));
         assertThat(attempts).hasValue(3);
+    }
+
+    @Test
+    public void testTopicRemovalWhileSubscribed() throws InterruptedException {
+        RReliableTopic rt = redisson.getReliableTopic("testTopicRemovalWhileSubscribed");
+        Queue<Integer> messages = new ConcurrentLinkedQueue<>();
+        rt.addListener(Integer.class, (channel, msg) -> messages.add(msg));
+
+        assertThat(rt.publish(1)).isEqualTo(1);
+        Awaitility.waitAtMost(Duration.ofSeconds(2)).until(() -> messages.size() == 1);
+
+        // topic key is removed while the subscriber is live, e.g. expired by TTL
+        redisson.getKeys().delete("testTopicRemovalWhileSubscribed");
+        // no group exists on the recreated stream, so the message is undeliverable
+        assertThat(rt.publish(9)).isEqualTo(0);
+
+        // the dead subscriber is cleaned up: its timeout ZSET entry is removed
+        RScoredSortedSet<String> timeout = redisson.getScoredSortedSet("{testTopicRemovalWhileSubscribed}:timeout");
+        Awaitility.waitAtMost(Duration.ofSeconds(5)).until(() -> timeout.size() == 0);
+
+        // a new listener can subscribe through the same topic object and receives new messages
+        rt.addListener(Integer.class, (channel, msg) -> messages.add(msg));
+
+        assertThat(rt.publish(2)).isEqualTo(1);
+        Awaitility.waitAtMost(Duration.ofSeconds(2)).until(() -> messages.contains(2));
+    }
+
+    @Test
+    public void testGroupRemovalWhileSubscribed() throws InterruptedException {
+        RReliableTopic rt = redisson.getReliableTopic("testGroupRemovalWhileSubscribed");
+        Queue<Integer> messages = new ConcurrentLinkedQueue<>();
+        rt.addListener(Integer.class, (channel, msg) -> messages.add(msg));
+
+        assertThat(rt.publish(1)).isEqualTo(1);
+        Awaitility.waitAtMost(Duration.ofSeconds(2)).until(() -> messages.size() == 1);
+
+        // the consumer group is removed while the subscriber is live,
+        // e.g. by the expired-subscriber sweep of another instance
+        RStream<String, Integer> stream = redisson.getStream("testGroupRemovalWhileSubscribed");
+        String groupName = stream.listGroups().get(0).getName();
+        stream.removeGroup(groupName);
+        assertThat(rt.publish(9)).isEqualTo(0);
+
+        RScoredSortedSet<String> timeout = redisson.getScoredSortedSet("{testGroupRemovalWhileSubscribed}:timeout");
+        Awaitility.waitAtMost(Duration.ofSeconds(5)).until(() -> timeout.size() == 0);
+
+        rt.addListener(Integer.class, (channel, msg) -> messages.add(msg));
+
+        assertThat(rt.publish(2)).isEqualTo(1);
+        Awaitility.waitAtMost(Duration.ofSeconds(2)).until(() -> messages.contains(2));
+    }
+
+    @Test
+    public void testTransientUpdateFailureDoesNotStopPolling() throws InterruptedException {
+        RReliableTopic rt = redisson.getReliableTopic("testTransientUpdateFailure");
+        Queue<Integer> received = new ConcurrentLinkedQueue<>();
+        rt.addListener(Integer.class, (channel, msg) -> received.add(msg));
+
+        // capture the registration entry, then break the status update once
+        RScoredSortedSet<String> timeout = redisson.getScoredSortedSet("{testTransientUpdateFailure}:timeout", StringCodec.INSTANCE);
+        Awaitility.waitAtMost(Duration.ofSeconds(2)).until(() -> timeout.size() == 1);
+        String member = timeout.readAll().iterator().next();
+        double score = timeout.getScore(member);
+
+        redisson.getKeys().delete("{testTransientUpdateFailure}:timeout");
+        redisson.getBucket("{testTransientUpdateFailure}:timeout", StringCodec.INSTANCE).set("x");
+
+        assertThat(rt.publish(1)).isEqualTo(1);
+        Awaitility.waitAtMost(Duration.ofSeconds(2)).until(() -> received.size() == 1);
+
+        // registration restored, so a retrying subscriber would continue
+        redisson.getKeys().delete("{testTransientUpdateFailure}:timeout");
+        timeout.add(score, member);
+
+        assertThat(rt.publish(2)).isEqualTo(1);
+        Awaitility.waitAtMost(Duration.ofSeconds(5)).until(() -> received.contains(2));
+    }
+
+    @Test
+    public void testRenewalFailureDoesNotStopWatchdog() throws InterruptedException {
+        Config config = createConfig();
+        config.setReliableTopicWatchdogTimeout(1000);
+        RedissonClient secondInstance = Redisson.create(config);
+        try {
+            RReliableTopic rt = secondInstance.getReliableTopic("testRenewalFailure");
+            rt.addListener(Integer.class, (channel, msg) -> { });
+
+            RScoredSortedSet<String> timeout = secondInstance.getScoredSortedSet("{testRenewalFailure}:timeout", StringCodec.INSTANCE);
+            Awaitility.waitAtMost(Duration.ofSeconds(2)).until(() -> timeout.size() == 1);
+            String member = timeout.readAll().iterator().next();
+            double score = timeout.getScore(member);
+
+            // renewal fails for at least one tick: wrong-type key
+            secondInstance.getKeys().delete("{testRenewalFailure}:timeout");
+            secondInstance.getBucket("{testRenewalFailure}:timeout", StringCodec.INSTANCE).set("x");
+            Thread.sleep(1000);
+
+            // registration restored, so a retrying watchdog renews it again
+            secondInstance.getKeys().delete("{testRenewalFailure}:timeout");
+            timeout.add(score, member);
+
+            Awaitility.waitAtMost(Duration.ofSeconds(5)).until(() -> timeout.getScore(member) > score);
+            } finally {
+                secondInstance.shutdown();
+            }
     }
 
     @Test

@@ -189,6 +189,12 @@ public final class RedissonReliableTopic extends RedissonExpirable implements RR
 
                 if (ex.getCause() != null
                         && ex.getCause().getMessage().contains("NOGROUP")) {
+                    if (!subscribed.get()) {
+                        // group has been destroyed by removeListener() call
+                        return;
+                    }
+
+                    checkGroupAsync(id, ex.getCause());
                     return;
                 }
 
@@ -270,6 +276,7 @@ public final class RedissonReliableTopic extends RedissonExpirable implements RR
                             return;
                         }
                         log.error("Unable to update subscriber status", exc);
+                        schedulePoll(id);
                         return;
                     }
 
@@ -282,6 +289,56 @@ public final class RedissonReliableTopic extends RedissonExpirable implements RR
             });
 
         });
+    }
+
+    private void checkGroupAsync(String id, Throwable cause) {
+        RFuture<Long> future = commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_LONG,
+                "if redis.call('exists', KEYS[1]) == 0 then return -1; end; "
+                    + "local groups = redis.call('xinfo', 'groups', KEYS[1]); "
+                    + "for i, v in ipairs(groups) do "
+                        + "if v[2] == ARGV[1] then return 1; end; "
+                    + "end; "
+                    + "return 0;",
+                Arrays.asList(getRawName()), id);
+        future.whenComplete((res, exc) -> {
+            if (exc != null) {
+                if (getServiceManager().isShuttingDown(exc)) {
+                    return;
+                }
+
+                log.error("Unable to check consumer group state. Subscriber id: {}", id, exc);
+
+                schedulePoll(id);
+                return;
+            }
+
+            if (res != null && res == 1) {
+                // group still exists on the master, NOGROUP was received
+                // due to reading from an outdated replica
+                log.error("Unable to poll a new element. Subscriber id: {}", id, cause);
+
+                schedulePoll(id);
+                return;
+            }
+
+            log.error("Consumer group of subscriber {} has been removed", id, cause);
+
+            removeSubscriber().whenComplete((r, e) -> {
+                if (e != null && !getServiceManager().isShuttingDown(e)) {
+                    log.error("Unable to remove subscriber {}", id, e);
+                }
+            });
+        });
+    }
+
+    private void schedulePoll(String id) {
+        getServiceManager().newTimeout(task -> {
+            if (getServiceManager().isShuttingDown() || !subscribed.get()) {
+                return;
+            }
+
+            poll(id);
+        }, 1, TimeUnit.SECONDS);
     }
 
     @Override
@@ -342,8 +399,10 @@ public final class RedissonReliableTopic extends RedissonExpirable implements RR
         }
 
         return commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
-                "redis.call('xgroup', 'destroy', KEYS[1], ARGV[1]); "
-                      + "redis.call('zrem', KEYS[2], ARGV[1]); ",
+                "if redis.call('exists', KEYS[1]) == 1 then "
+                      + "redis.call('xgroup', 'destroy', KEYS[1], ARGV[1]); "
+                + "end; "
+                + "redis.call('zrem', KEYS[2], ARGV[1]); ",
                 Arrays.asList(getRawName(), timeoutName),
                 subscriberId);
     }
@@ -378,6 +437,12 @@ public final class RedissonReliableTopic extends RedissonExpirable implements RR
             future.whenComplete((res, e) -> {
                 if (e != null) {
                     log.error("Can't update reliable topic {} expiration time", getRawName(), e);
+                    getServiceManager().newTimeout(task -> {
+                        if (getServiceManager().isShuttingDown()) {
+                            return;
+                        }
+                        renewExpiration();
+                    }, 1, TimeUnit.SECONDS);
                     return;
                 }
 
