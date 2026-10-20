@@ -19,6 +19,7 @@ import java.time.Duration;
 import java.time.Instant;
 import org.redisson.api.options.KeysScanOptions;
 import org.redisson.api.keys.MigrateArgs;
+import org.redisson.client.protocol.Time;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -299,6 +300,16 @@ public interface RKeysReactive {
      * @return count of keys
      */
     Mono<Long> count();
+
+    /**
+     * Returns the current Redis server time.
+     * <p>
+     * In cluster mode, the request is routed to the shard owning slot 0.
+     * This is not a cluster-wide timestamp.
+     *
+     * @return server time in seconds and microseconds
+     */
+    Mono<Time> time();
     
     /**
      * Delete all the keys of the currently selected database

@@ -232,6 +232,24 @@ public class ConfigSupportTest {
                 .hasMessageContaining("allowedClasses");
     }
 
+    @Test
+    public void testAvailabilityZoneReadMode() throws IOException {
+        String yaml = "clusterServersConfig:\n"
+                + "  nodeAddresses:\n"
+                + "  - \"redis://127.0.0.1:7000\"\n"
+                + "  readMode: \"AZ_AFFINITY_SLAVES_AND_MASTER\"\n"
+                + "  clientAvailabilityZone: \"Uocm:PHX-AD-1\"\n";
+
+        Config config = new ConfigSupport().fromYAML(yaml, Config.class);
+
+        assertThat(config.getClusterServersConfig().getReadMode()).isEqualTo(ReadMode.AZ_AFFINITY_SLAVES_AND_MASTER);
+        assertThat(config.getClusterServersConfig().getClientAvailabilityZone()).isEqualTo("Uocm:PHX-AD-1");
+
+        Config roundTrip = new ConfigSupport().fromYAML(config.toYAML(), Config.class);
+        assertThat(roundTrip.getClusterServersConfig().getReadMode()).isEqualTo(ReadMode.AZ_AFFINITY_SLAVES_AND_MASTER);
+        assertThat(roundTrip.getClusterServersConfig().getClientAvailabilityZone()).isEqualTo("Uocm:PHX-AD-1");
+    }
+
     @SuppressWarnings("unchecked")
     private static Set<String> readAllowedClasses(Codec codec) throws Exception {
         java.lang.reflect.Field field = codec.getClass().getDeclaredField("allowedClasses");

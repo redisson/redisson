@@ -600,4 +600,42 @@ public class RedissonRateLimiterTest extends RedisDockerTest {
         // release -1
         assertThatThrownBy(() -> rateLimiter.release(-1)).isInstanceOf(IllegalArgumentException.class);
     }
+
+    @Test
+    public void testAcquireNegativePermits() {
+        RRateLimiter rateLimiter = redisson.getRateLimiter("test_acquire_negative");
+        rateLimiter.setRate(RateType.OVERALL, 5, Duration.ofSeconds(10));
+
+        assertThatThrownBy(() -> rateLimiter.tryAcquire(-1)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> rateLimiter.tryAcquire(-1, Duration.ofSeconds(1))).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> rateLimiter.tryAcquireAsync(-1)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> rateLimiter.acquire(-1)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> rateLimiter.acquireAsync(-1)).isInstanceOf(IllegalArgumentException.class);
+
+        assertThat(rateLimiter.availablePermits()).isEqualTo(5);
+    }
+
+    @Test
+    public void testReleasedPermitsPreservedAfterExpiry() throws InterruptedException {
+        RRateLimiter limiter = redisson.getRateLimiter("testNoCollapse");
+        limiter.trySetRate(RateType.OVERALL, 10, 1, RateIntervalUnit.SECONDS);
+
+        limiter.tryAcquire(1);
+        limiter.release(1);
+
+        Thread.sleep(300);
+
+        for (int i = 0; i < 8; i++) {
+            limiter.tryAcquire(1);
+            limiter.release(1);
+        }
+
+        Thread.sleep(900);
+
+        limiter.tryAcquire(1);
+
+        long permits = limiter.availablePermits();
+
+        assertThat(permits).isEqualTo(9);
+    }
 }

@@ -45,6 +45,12 @@ import java.util.Set;
  */
 public class ForyCodec extends BaseCodec {
 
+    private static final int MIN_BUFFER = 512;
+
+    private static final int MAX_BUFFER = 128 * 1024;
+
+    private volatile int sizeHint = MIN_BUFFER;
+
     private final ThreadSafeFory fory;
     private final Set<String> allowedClasses;
     private final Language language;
@@ -117,34 +123,41 @@ public class ForyCodec extends BaseCodec {
     private final Encoder encoder = new Encoder() {
         @Override
         public ByteBuf encode(Object in) throws IOException {
-            ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
-            MemoryBuffer furyBuffer = null;
-            int remainingSize = out.capacity() - out.writerIndex();
-            if (out.hasArray()) {
-                furyBuffer = MemoryUtils.wrap(out.array(), out.arrayOffset() + out.writerIndex(),
-                  remainingSize);
-            } else if (out.nioBufferCount() == 1) {
-                furyBuffer = MemoryUtils.wrap(out.nioBuffer(out.writerIndex(), remainingSize));
-            }
-            if (furyBuffer != null) {
-                int size = furyBuffer.size();
-                fory.serialize(furyBuffer, in);
-                if (furyBuffer.size() > size) {
-                    out.writeBytes(furyBuffer.getHeapMemory(), 0, furyBuffer.size());
-                } else {
-                    out.writerIndex(out.writerIndex() + furyBuffer.writerIndex());
-                }
-                return out;
-            } else {
-                try {
-                    ByteBufOutputStream baos = new ByteBufOutputStream(out);
-                    fory.serialize(baos, in);
-                    return baos.buffer();
-                } catch (Exception e) {
-                    out.release();
-                    throw e;
+            ByteBuf out = ByteBufAllocator.DEFAULT.buffer(sizeHint);
+            boolean complete = false;
+            try {
+                int remainingSize = out.capacity() - out.writerIndex();
+                MemoryBuffer foryBuffer = null;
+                if (out.hasArray()) {
+                    foryBuffer = MemoryUtils.wrap(out.array(), out.arrayOffset() + out.writerIndex(), remainingSize);
+                } else if (out.nioBufferCount() == 1) {
+                    foryBuffer = MemoryUtils.wrap(out.nioBuffer(out.writerIndex(), remainingSize));
                 }
 
+                if (foryBuffer == null) {
+                    ByteBufOutputStream stream = new ByteBufOutputStream(out);
+                    fory.serialize(stream, in);
+                    complete = true;
+                    return out;
+                }
+
+                int before = foryBuffer.size();
+                fory.serialize(foryBuffer, in);
+                int written = foryBuffer.writerIndex();
+                if (foryBuffer.size() > before) {
+                    out.writeBytes(foryBuffer.getHeapMemory(), 0, foryBuffer.writerIndex());
+                } else {
+                    out.writerIndex(out.writerIndex() + written);
+                }
+
+                int produced = out.readableBytes();
+                sizeHint = Math.max(MIN_BUFFER, Math.min(MAX_BUFFER, produced + produced / 4));
+                complete = true;
+                return out;
+            } finally {
+                if (!complete) {
+                    out.release();
+                }
             }
         }
     };

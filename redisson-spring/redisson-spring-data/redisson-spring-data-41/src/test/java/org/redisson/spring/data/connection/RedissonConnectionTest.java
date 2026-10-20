@@ -195,6 +195,26 @@ public class RedissonConnectionTest extends BaseConnectionTest {
     }
 
     @Test
+    public void testHGetEx() {
+        byte[] key = "test-hgetex".getBytes();
+        byte[] field1 = "field1".getBytes();
+        byte[] field2 = "field2".getBytes();
+
+        connection.hSet(key, field1, "value1".getBytes());
+        connection.hSet(key, field2, "value2".getBytes());
+
+        List<byte[]> values = connection.hGetEx(key, Expiration.seconds(100), field1);
+        assertThat(values).containsExactly("value1".getBytes());
+        assertThat(connection.hExists(key, field1)).isTrue();
+        assertThat(connection.hTtl(key, TimeUnit.SECONDS, field1).get(0)).isGreaterThan(0L).isLessThanOrEqualTo(100L);
+
+        values = connection.hGetEx(key, Expiration.persistent(), field1);
+        assertThat(values).containsExactly("value1".getBytes());
+        assertThat(connection.hTtl(key, TimeUnit.SECONDS, field1).get(0)).isEqualTo(-1L);
+        assertThat(connection.hLen(key)).isEqualTo(2L);
+    }
+
+    @Test
     public void testHTtlTimeUnitConversion() {
         byte[] key = "test-hash-conversion".getBytes();
         byte[] field = "field".getBytes();

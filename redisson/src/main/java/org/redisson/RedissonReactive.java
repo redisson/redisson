@@ -1163,6 +1163,27 @@ public final class RedissonReactive implements RedissonReactiveClient {
     }
 
     @Override
+    public <V> RCountMinReactive<V> getCountMin(String name) {
+        return getCountMin(name, null);
+    }
+
+    @Override
+    public <V> RCountMinReactive<V> getCountMin(String name, Codec codec) {
+        return ReactiveProxyBuilder.create(commandExecutor,
+                new RedissonCountMin<V>(codec, commandExecutor, name),
+                RCountMinReactive.class);
+    }
+
+    @Override
+    public <V> RCountMinReactive<V> getCountMin(PlainOptions options) {
+        PlainParams params = (PlainParams) options;
+        CommandReactiveExecutor ca = commandExecutor.copy(params);
+        return ReactiveProxyBuilder.create(commandExecutor,
+                new RedissonCountMin<V>(params.getCodec(), ca, params.getName()),
+                RCountMinReactive.class);
+    }
+
+    @Override
     public RTDigestReactive getTDigest(String name) {
         return ReactiveProxyBuilder.create(commandExecutor,
                 new RedissonTDigest(commandExecutor, name),
@@ -1231,6 +1252,36 @@ public final class RedissonReactive implements RedissonReactiveClient {
         OptionalParams params = (OptionalParams) options;
         CommandReactiveExecutor ca = commandExecutor.copy(params);
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonScript(ca, params.getCodec()), RScriptReactive.class);
+    }
+
+    @Override
+    public RTimeSeriesNativeReactive getTimeSeriesNative(String name) {
+        return ReactiveProxyBuilder.create(commandExecutor,
+                new RedissonTimeSeriesNative(commandExecutor, name),
+                new RedissonTimeSeriesNativeReactive(commandExecutor, name), RTimeSeriesNativeReactive.class);
+    }
+
+    @Override
+    public RTimeSeriesNativeReactive getTimeSeriesNative(CommonOptions options) {
+        CommonParams params = (CommonParams) options;
+        CommandReactiveExecutor ca = commandExecutor.copy(params);
+        return ReactiveProxyBuilder.create(ca,
+                new RedissonTimeSeriesNative(ca, params.getName()),
+                new RedissonTimeSeriesNativeReactive(ca, params.getName()), RTimeSeriesNativeReactive.class);
+    }
+
+    @Override
+    public RTimeSeriesNativesReactive getTimeSeriesNatives() {
+        return ReactiveProxyBuilder.create(commandExecutor,
+                new RedissonTimeSeriesNatives(commandExecutor), RTimeSeriesNativesReactive.class);
+    }
+
+    @Override
+    public RTimeSeriesNativesReactive getTimeSeriesNatives(OptionalOptions options) {
+        OptionalParams params = (OptionalParams) options;
+        CommandReactiveExecutor ca = commandExecutor.copy(params);
+        return ReactiveProxyBuilder.create(ca,
+                new RedissonTimeSeriesNatives(ca), RTimeSeriesNativesReactive.class);
     }
 
     @Override

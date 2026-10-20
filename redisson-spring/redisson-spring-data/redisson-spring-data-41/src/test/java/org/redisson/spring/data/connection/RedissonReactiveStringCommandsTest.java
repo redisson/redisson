@@ -3,6 +3,8 @@ package org.redisson.spring.data.connection;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.redis.connection.ReactiveRedisConnection;
 import org.springframework.data.redis.connection.ReactiveStringCommands;
+import org.springframework.data.redis.connection.SetCondition;
+import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.data.redis.core.types.Expiration;
 
 import java.nio.ByteBuffer;
@@ -175,5 +177,69 @@ public class RedissonReactiveStringCommandsTest extends BaseConnectionTest {
         System.out.println("FAIL (" + failures.size() + "): " + failures);
         assertThat(failures).isEmpty();
         assertThat(passes).hasSize(12);
+    }
+
+    @Test
+    public void testSetIfAbsentWithDurationKeepsExistingValue() {
+        redisson.getBucket("cond1", org.redisson.client.codec.StringCodec.INSTANCE).set("v1");
+
+        ReactiveStringRedisTemplate template = new ReactiveStringRedisTemplate(new RedissonConnectionFactory(redisson));
+        Boolean result = template.opsForValue().setIfAbsent("cond1", "v2", Duration.ofSeconds(60)).block();
+
+        assertThat(result).isFalse();
+        assertThat(template.opsForValue().get("cond1").block()).isEqualTo("v1");
+        assertThat(ttlMillis("cond1")).isEqualTo(-1L);
+    }
+
+    @Test
+    public void testSetIfPresentWithDurationOnMissingKey() {
+        ReactiveStringRedisTemplate template = new ReactiveStringRedisTemplate(new RedissonConnectionFactory(redisson));
+        Boolean result = template.opsForValue().setIfPresent("cond2", "v1", Duration.ofSeconds(60)).block();
+
+        assertThat(result).isFalse();
+        assertThat(template.hasKey("cond2").block()).isFalse();
+    }
+
+    @Test
+    public void testSetWithCompareCondition() {
+        redisson.getBucket("cond3", org.redisson.client.codec.StringCodec.INSTANCE).set("v1");
+
+        Boolean mismatch = stringCommands().set(buf("cond3"), buf("v2"),
+                SetCondition.ifEquals("other".getBytes(StandardCharsets.UTF_8)), Expiration.persistent()).block();
+        assertThat(mismatch).isFalse();
+        assertThat(redisson.getBucket("cond3", org.redisson.client.codec.StringCodec.INSTANCE).get()).isEqualTo("v1");
+
+        Boolean match = stringCommands().set(buf("cond3"), buf("v3"),
+                SetCondition.ifEquals("v1".getBytes(StandardCharsets.UTF_8)), Expiration.persistent()).block();
+        assertThat(match).isTrue();
+        assertThat(redisson.getBucket("cond3", org.redisson.client.codec.StringCodec.INSTANCE).get()).isEqualTo("v3");
+    }
+
+    @Test
+    public void testSetGetWithIfAbsentConditionKeepsExistingValue() {
+        redisson.getBucket("cond4", org.redisson.client.codec.StringCodec.INSTANCE).set("v1");
+
+        ByteBuffer old = stringCommands().setGet(buf("cond4"), buf("v2"),
+                SetCondition.ifAbsent(), Expiration.persistent()).block();
+
+        assertThat(StandardCharsets.UTF_8.decode(old).toString()).isEqualTo("v1");
+        assertThat(redisson.getBucket("cond4", org.redisson.client.codec.StringCodec.INSTANCE).get()).isEqualTo("v1");
+    }
+
+    @Test
+    public void testSetGetReturnsPreviousValue() {
+        redisson.getBucket("setget1", org.redisson.client.codec.StringCodec.INSTANCE).set("v1");
+
+        ReactiveStringCommands.SetCommand cmd = ReactiveStringCommands.SetCommand
+                .set(buf("setget1"))
+                .value(buf("v2"))
+                .expiring(Expiration.persistent())
+                .withSetOption(org.springframework.data.redis.connection.RedisStringCommands.SetOption.UPSERT);
+        ByteBuffer old = stringCommands().setGet(reactor.core.publisher.Mono.just(cmd))
+                .map(r -> r.getOutput()).blockFirst();
+
+        assertThat(old).isNotNull();
+        assertThat(StandardCharsets.UTF_8.decode(old).toString()).isEqualTo("v1");
+        assertThat(redisson.getBucket("setget1", org.redisson.client.codec.StringCodec.INSTANCE).get()).isEqualTo("v2");
     }
 }

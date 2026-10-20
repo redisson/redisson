@@ -16,6 +16,7 @@ import org.redisson.api.stream.StreamAddArgs;
 import org.redisson.api.stream.StreamCreateGroupArgs;
 import org.redisson.config.Config;
 import org.redisson.config.Protocol;
+import org.redisson.client.protocol.Time;
 import org.testcontainers.containers.GenericContainer;
 
 import java.time.Duration;
@@ -28,6 +29,17 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonKeysTest extends RedisDockerTest {
+
+    @Test
+    public void testTime() {
+        Time time = redisson.getKeys().time();
+        Time asyncTime = redisson.getKeys().timeAsync().toCompletableFuture().join();
+
+        assertThat(time.getSeconds()).isPositive();
+        assertThat(time.getMicroseconds()).isBetween(0, 999999);
+        assertThat(asyncTime.getSeconds()).isPositive();
+        assertThat(asyncTime.getMicroseconds()).isBetween(0, 999999);
+    }
 
     @Test
     public void testNewObjectListener() {

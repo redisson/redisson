@@ -195,6 +195,9 @@ public final class RedissonRateLimiter extends RedissonExpirable implements RRat
     }
     
     private <T> RFuture<T> tryAcquireAsync(RedisCommand<T> command, Long value) {
+        if (value < 0) {
+            throw new IllegalArgumentException("Permits amount can't be negative");
+        }
         byte[] random = getServiceManager().generateIdArray();
 
         return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, command,
@@ -290,6 +293,23 @@ public final class RedissonRateLimiter extends RedissonExpirable implements RRat
                 + "if type == '1' then "
                 + "    valueName = KEYS[3];"
                 + "    permitsName = KEYS[5];"
+                + "end;"
+
+                + "local toRelease = tonumber(ARGV[1]);"
+                + "local values = redis.call('zrange', permitsName, 0, -1, 'withscores');"
+                + "for i = 1, #values - 1, 2 do"
+                + "    if toRelease <= 0 then break; end;"
+                + "    local v = values[i];"
+                + "    local score = values[i + 1];"
+                + "    local random, permits = struct.unpack('Bc0I', v);"
+                + "    redis.call('zrem', permitsName, v);"
+                + "    if permits <= toRelease then "
+                + "        toRelease = toRelease - permits;"
+                + "    else "
+                + "        local remained = permits - toRelease;"
+                + "        redis.call('zadd', permitsName, score, struct.pack('Bc0I', string.len(random), random, remained));"
+                + "        toRelease = 0;"
+                + "    end;"
                 + "end;"
 
                 + "local currentValue = redis.call('get', valueName);"

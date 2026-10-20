@@ -114,6 +114,20 @@ public class RedissonBatchReactive implements RBatchReactive {
     }
 
     @Override
+    public <K, V> RMapReactive<K, V> getMap(String name, MapOptions<K, V> options) {
+        RMap<K, V> map = new RedissonMap<K, V>(executorService, name, null, options, null);
+        return ReactiveProxyBuilder.create(executorService, map,
+                new RedissonMapReactive<>(map, executorService), RMapReactive.class);
+    }
+
+    @Override
+    public <K, V> RMapReactive<K, V> getMap(String name, Codec codec, MapOptions<K, V> options) {
+        RedissonMap<K, V> map = new RedissonMap<>(codec, executorService, name, null, options, null);
+        return ReactiveProxyBuilder.create(executorService, map,
+                new RedissonMapReactive<>(map, executorService), RMapReactive.class);
+    }
+
+    @Override
     public <K, V> RMapCacheReactive<K, V> getMapCache(String name, Codec codec) {
         RMapCache<K, V> map = new RedissonMapCache<K, V>(codec, evictionScheduler, executorService, name, null, null, null);
         return ReactiveProxyBuilder.create(executorService, map, 
@@ -410,6 +424,12 @@ public class RedissonBatchReactive implements RBatchReactive {
     }
 
     @Override
+    public RTimeSeriesNativeReactive getTimeSeriesNative(String name) {
+        return ReactiveProxyBuilder.create(executorService,
+                new RedissonTimeSeriesNative(executorService, name), RTimeSeriesNativeReactive.class);
+    }
+
+    @Override
     public <T> RBloomFilterNativeReactive<T> getBloomFilterNative(String name) {
         return ReactiveProxyBuilder.create(executorService,
                 new RedissonBloomFilterNative<>(executorService, name), RBloomFilterNativeReactive.class);
@@ -450,6 +470,18 @@ public class RedissonBatchReactive implements RBatchReactive {
         return ReactiveProxyBuilder.create(executorService,
                 new RedissonTopK<V>(codec, executorService, name),
                 RTopKReactive.class);
+    }
+
+    @Override
+    public <V> RCountMinReactive<V> getCountMin(String name) {
+        return getCountMin(name, null);
+    }
+
+    @Override
+    public <V> RCountMinReactive<V> getCountMin(String name, Codec codec) {
+        return ReactiveProxyBuilder.create(executorService,
+                new RedissonCountMin<V>(codec, executorService, name),
+                RCountMinReactive.class);
     }
 
     @Override

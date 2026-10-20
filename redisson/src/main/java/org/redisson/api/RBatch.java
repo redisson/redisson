@@ -57,6 +57,22 @@ public interface RBatch {
     <V> RArrayAsync<V> getArray(String name, Codec codec);
 
     /**
+     * Returns time series instance by <code>name</code>, backed by the TS.* commands of the
+     * RedisTimeSeries module.
+     * <p>
+     * The iterator methods are meaningless here, as they are on every other object a batch
+     * hands out: walking a series takes one round trip per window, each bounded by what the one
+     * before it returned, and a batch has not sent anything yet.
+     * <p>
+     * There is no codec overload, because samples are timestamps and doubles handled by the
+     * module itself.
+     *
+     * @param name - name of object
+     * @return time series instance
+     */
+    RTimeSeriesNativeAsync getTimeSeriesNative(String name);
+
+    /**
      * Returns bloom filter native instance by <code>name</code>.
      * Covers BF.* commands.
      *
@@ -117,6 +133,26 @@ public interface RBatch {
      * @return TopK object
      */
     <V> RTopKAsync<V> getTopK(String name, Codec codec);
+
+    /**
+     * Returns count-min sketch instance by <code>name</code>.
+     *
+     * @param <V> type of value
+     * @param name name of object
+     * @return CountMin object
+     */
+    <V> RCountMinAsync<V> getCountMin(String name);
+
+    /**
+     * Returns count-min sketch instance by <code>name</code>
+     * using provided <code>codec</code> for values.
+     *
+     * @param <V> type of value
+     * @param name name of object
+     * @param codec codec for values
+     * @return CountMin object
+     */
+    <V> RCountMinAsync<V> getCountMin(String name, Codec codec);
 
     /**
      * Returns t-digest instance by <code>name</code>.
@@ -484,6 +520,31 @@ public interface RBatch {
     <K, V> RMapAsync<K, V> getMap(String name);
 
     <K, V> RMapAsync<K, V> getMap(String name, Codec codec);
+
+    /**
+     * Returns map instance by name
+     * using provided {@link MapOptions}.
+     *
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @param options - map options
+     * @return Map object
+     */
+    <K, V> RMapAsync<K, V> getMap(String name, MapOptions<K, V> options);
+
+    /**
+     * Returns map instance by name
+     * using provided codec for both map keys and values and {@link MapOptions}.
+     *
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @param codec - codec for keys and values
+     * @param options - map options
+     * @return Map object
+     */
+    <K, V> RMapAsync<K, V> getMap(String name, Codec codec, MapOptions<K, V> options);
 
     /**
      * Returns set instance by name.

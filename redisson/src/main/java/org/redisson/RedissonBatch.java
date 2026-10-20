@@ -94,6 +94,16 @@ public class RedissonBatch implements RBatch {
     }
 
     @Override
+    public <K, V> RMapAsync<K, V> getMap(String name, MapOptions<K, V> options) {
+        return new RedissonMap<K, V>(executorService, name, null, options, null);
+    }
+
+    @Override
+    public <K, V> RMapAsync<K, V> getMap(String name, Codec codec, MapOptions<K, V> options) {
+        return new RedissonMap<K, V>(codec, executorService, name, null, options, null);
+    }
+
+    @Override
     public <V> RSetAsync<V> getSet(String name) {
         return new RedissonSet<V>(executorService, name, null);
     }
@@ -359,6 +369,11 @@ public class RedissonBatch implements RBatch {
     }
 
     @Override
+    public RTimeSeriesNativeAsync getTimeSeriesNative(String name) {
+        return new RedissonTimeSeriesNative(executorService, name);
+    }
+
+    @Override
     public <T> RBloomFilterNativeAsync<T> getBloomFilterNative(String name) {
         return new RedissonBloomFilterNative<>(executorService, name);
     }
@@ -391,6 +406,16 @@ public class RedissonBatch implements RBatch {
     @Override
     public <V> RTopKAsync<V> getTopK(String name, Codec codec) {
         return new RedissonTopK<V>(codec, executorService, name);
+    }
+
+    @Override
+    public <V> RCountMinAsync<V> getCountMin(String name) {
+        return getCountMin(name, null);
+    }
+
+    @Override
+    public <V> RCountMinAsync<V> getCountMin(String name, Codec codec) {
+        return new RedissonCountMin<V>(codec, executorService, name);
     }
 
     @Override

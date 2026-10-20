@@ -109,4 +109,21 @@ public class RedissonReactiveStringCommandsTest extends BaseConnectionTest {
                 .as("EXAT must set the TTL to ~120s from now, not treat the epoch value as a relative PX delay")
                 .isBetween(110_000L, 120_000L);
     }
+
+    @Test
+    public void testSetGetReturnsPreviousValue() {
+        redisson.getBucket("setget1", org.redisson.client.codec.StringCodec.INSTANCE).set("v1");
+
+        ReactiveStringCommands.SetCommand cmd = ReactiveStringCommands.SetCommand
+                .set(buf("setget1"))
+                .value(buf("v2"))
+                .expiring(Expiration.persistent())
+                .withSetOption(org.springframework.data.redis.connection.RedisStringCommands.SetOption.UPSERT);
+        ByteBuffer old = stringCommands().setGet(reactor.core.publisher.Mono.just(cmd))
+                .map(r -> r.getOutput()).blockFirst();
+
+        assertThat(old).isNotNull();
+        assertThat(StandardCharsets.UTF_8.decode(old).toString()).isEqualTo("v1");
+        assertThat(redisson.getBucket("setget1", org.redisson.client.codec.StringCodec.INSTANCE).get()).isEqualTo("v2");
+    }
 }

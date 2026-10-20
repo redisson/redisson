@@ -484,7 +484,7 @@ public abstract class LocalCacheListener {
 
         object.isExistsAsync().whenComplete((res, e) -> {
             if (e != null) {
-                log.error("Can't check existance", e);
+                log.error("Can't check existence", e);
                 return;
             }
 

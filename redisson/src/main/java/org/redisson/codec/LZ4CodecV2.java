@@ -65,6 +65,7 @@ public class LZ4CodecV2 extends BaseCodec {
         @Override
         public Object decode(ByteBuf buf, State state) throws IOException {
             int decompressionSize = buf.readInt();
+            checkDecompressionSize(decompressionSize);
             byte[] bytes = new byte[decompressionSize];
             ByteBufInputStream ios = new ByteBufInputStream(buf);
             try (DataInputStream in = new DataInputStream(new BlockLZ4CompressorInputStream(ios))) {

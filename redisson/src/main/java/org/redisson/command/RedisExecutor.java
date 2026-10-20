@@ -441,9 +441,14 @@ public class RedisExecutor<V, R> {
             long popTimeout = 0;
             if (RedisCommands.BLOCKING_COMMANDS.contains(command)) {
                 for (int i = 0; i < params.length-1; i++) {
-                    if ("BLOCK".equals(params[i])) {
+                    if (!"BLOCK".equals(params[i])) {
+                        continue;
+                    }
+                    try {
                         popTimeout = Long.parseLong(params[i+1].toString());
                         break;
+                    } catch (NumberFormatException e) {
+                        // skip
                     }
                 }
             } else {
@@ -554,7 +559,7 @@ public class RedisExecutor<V, R> {
                 return;
             }
 
-            if (connectionManager.getServiceManager().isShuttingDown(e)) {
+            if (e != null && connectionManager.getServiceManager().isShuttingDown(e)) {
                 attemptPromise.completeExceptionally(e);
             }
         });

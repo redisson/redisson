@@ -22,9 +22,13 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.internal.util.ReflectHelper;
 import org.hibernate.persister.collection.CollectionPersister;
 import org.redisson.client.codec.Codec;
+import org.redisson.misc.Tuple;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  *
@@ -32,6 +36,8 @@ import java.lang.reflect.Field;
  *
  */
 public class RedissonCacheKeysFactory extends DefaultCacheKeysFactory {
+
+    private final Map<Tuple<Class<?>, String>, Optional<Field>> cache = new ConcurrentHashMap<>();
 
     private final Codec codec;
 
@@ -41,19 +47,37 @@ public class RedissonCacheKeysFactory extends DefaultCacheKeysFactory {
 
     @Override
     public Object createCollectionKey(Object id, CollectionPersister persister, SessionFactoryImplementor factory, String tenantIdentifier) {
-        try {
-            String[] parts = persister.getRole().split("\\.");
-            Field f = ReflectHelper.findField(id.getClass(), parts[parts.length - 1]);
+        String[] parts = persister.getRole().split("\\.");
+        String role = parts[parts.length - 1];
 
+        Optional<Field> fo = cache.computeIfAbsent(new Tuple<>(id.getClass(), role), k -> {
+            try {
+                return Optional.of(ReflectHelper.findField(k.getT1(), k.getT2()));
+            } catch (Exception e) {
+                return Optional.empty();
+            }
+        });
+
+        if (!fo.isPresent()) {
+            return super.createCollectionKey(id, persister, factory, tenantIdentifier);
+        }
+
+        try {
+            Field f = fo.get();
             Object prev = f.get(id);
             f.set(id, null);
-            ByteBuf state = codec.getMapKeyEncoder().encode(id);
-            Object newId = codec.getMapKeyDecoder().decode(state, null);
-            state.release();
-            f.set(id, prev);
+            ByteBuf state = null;
+            Object newId = null;
+            try {
+                state = codec.getMapKeyEncoder().encode(id);
+                newId = codec.getMapKeyDecoder().decode(state, null);
+            } finally {
+                f.set(id, prev);
+                if (state != null) {
+                    state.release();
+                }
+            }
             return super.createCollectionKey(newId, persister, factory, tenantIdentifier);
-        } catch (PropertyNotFoundException e) {
-            return super.createCollectionKey(id, persister, factory, tenantIdentifier);
         } catch (IllegalAccessException | IOException e) {
             throw new IllegalStateException(e);
         }

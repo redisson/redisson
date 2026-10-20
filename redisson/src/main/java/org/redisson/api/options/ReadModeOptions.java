@@ -40,19 +40,27 @@ public interface ReadModeOptions<T extends InvocationOptions<T>> extends Invocat
      * being initialized, which is governed by the globally configured
      * {@code readMode} and {@code subscriptionMode}. The slave pool is
      * not initialized when both global settings are {@code MASTER}, so an
-     * override of {@code SLAVE} or {@code MASTER_SLAVE} has no effect in
+     * override of any other read mode has no effect in
      * that configuration. Furthermore, when the slave pool is initialized,
      * the master node is included in it only when the global {@code readMode}
-     * is {@code MASTER_SLAVE}. As a result:
+     * is {@code MASTER_SLAVE}, {@code AZ_AFFINITY_SLAVES_AND_MASTER} or
+     * {@code AZ_AFFINITY_MASTER_SLAVE}. As a result:
      * <ul>
      * <li>Override {@code MASTER}: always honored unconditionally.</li>
      * <li>Override {@code SLAVE}: requires the global setting to be
-     *     {@code SLAVE} or {@code MASTER_SLAVE}. When global is
-     *     {@code MASTER_SLAVE}, reads may still land on the master because
-     *     master is part of the slave pool.</li>
+     *     other than {@code MASTER}. When global is {@code MASTER_SLAVE},
+     *     {@code AZ_AFFINITY_SLAVES_AND_MASTER} or {@code AZ_AFFINITY_MASTER_SLAVE},
+     *     reads may still land on the master because master is part of the slave pool.</li>
      * <li>Override {@code MASTER_SLAVE}: requires the global setting to be
-     *     {@code MASTER_SLAVE}; when global is {@code SLAVE}, behaves like
-     *     {@code SLAVE} because master is not in the slave pool.</li>
+     *     {@code MASTER_SLAVE}, {@code AZ_AFFINITY_SLAVES_AND_MASTER} or
+     *     {@code AZ_AFFINITY_MASTER_SLAVE}; when global is {@code SLAVE} or
+     *     {@code AZ_AFFINITY}, behaves like {@code SLAVE} because master is not in the slave pool.</li>
+     * <li>Override {@code AZ_AFFINITY}: requires the global setting to be
+     *     other than {@code MASTER}, and {@code clientAvailabilityZone} to be set.
+     *     Reads land on the master only when no slave is available, whatever the global setting.</li>
+     * <li>Override {@code AZ_AFFINITY_SLAVES_AND_MASTER} or {@code AZ_AFFINITY_MASTER_SLAVE}:
+     *     same requirements as {@code AZ_AFFINITY}; when global is {@code SLAVE} or
+     *     {@code AZ_AFFINITY}, behaves like {@code AZ_AFFINITY} because master is not in the slave pool.</li>
      * </ul>
      *
      * @param readMode read mode applied to this object instance

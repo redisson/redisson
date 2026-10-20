@@ -6,12 +6,17 @@ import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.redisson.api.*;
 import org.redisson.api.BatchOptions.ExecutionMode;
+import org.redisson.api.map.MapWriter;
+import org.redisson.api.redisnode.RedisNodes;
 import org.redisson.client.*;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.Time;
 import org.redisson.cluster.ClusterNodeInfo;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.command.BatchPromise;
@@ -32,6 +37,54 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 public class RedissonBatchTest extends RedisDockerTest {
+
+    @ParameterizedTest
+    @EnumSource(ExecutionMode.class)
+    public void testTime(ExecutionMode executionMode) {
+        redisson.getAtomicLong("counter").set(42);
+        redisson.getBucket("name").set("value");
+        Time before = redisson.getRedisNodes(RedisNodes.SINGLE).getInstance().time();
+
+        RBatch batch = redisson.createBatch(BatchOptions.defaults().executionMode(executionMode));
+        RFuture<Long> counter = batch.getAtomicLong("counter").getAsync();
+        RFuture<Time> time = batch.getKeys().timeAsync();
+        RFuture<String> value = batch.<String>getBucket("name").getAsync();
+
+        assertThat(time.toCompletableFuture()).isNotDone();
+        BatchResult<?> result = batch.execute();
+        Time actual = time.toCompletableFuture().join();
+        Time after = redisson.getRedisNodes(RedisNodes.SINGLE).getInstance().time();
+
+        assertThat(actual.getMicroseconds()).isBetween(0, 999999);
+        assertThat(TimeUnit.SECONDS.toMicros(actual.getSeconds()) + actual.getMicroseconds())
+                .isBetween(TimeUnit.SECONDS.toMicros(before.getSeconds()) + before.getMicroseconds(),
+                        TimeUnit.SECONDS.toMicros(after.getSeconds()) + after.getMicroseconds());
+        assertThat(counter.toCompletableFuture().join()).isEqualTo(42);
+        assertThat(value.toCompletableFuture().join()).isEqualTo("value");
+        assertThat(result.getResponses().toArray()).containsExactly(42L, actual, "value");
+    }
+
+    @ParameterizedTest
+    @EnumSource(ExecutionMode.class)
+    public void testTimeInCluster(ExecutionMode executionMode) {
+        testInCluster(client -> {
+            RBatch batch = client.createBatch(BatchOptions.defaults().executionMode(executionMode));
+            RFuture<Time> first = batch.getKeys().timeAsync();
+            RFuture<Time> second = batch.getKeys().timeAsync();
+
+            assertThat(first.toCompletableFuture()).isNotDone();
+            assertThat(second.toCompletableFuture()).isNotDone();
+            BatchResult<?> result = batch.execute();
+
+            Time firstTime = first.toCompletableFuture().join();
+            Time secondTime = second.toCompletableFuture().join();
+            assertThat(firstTime.getSeconds()).isPositive();
+            assertThat(firstTime.getMicroseconds()).isBetween(0, 999999);
+            assertThat(secondTime.getSeconds()).isPositive();
+            assertThat(secondTime.getMicroseconds()).isBetween(0, 999999);
+            assertThat(result.getResponses().toArray()).containsExactly(firstTime, secondTime);
+        });
+    }
 
     public static Iterable<Object[]> data() {
         return Arrays.asList(new Object[][] {
@@ -601,6 +654,40 @@ public class RedissonBatchTest extends RedisDockerTest {
     }
 
     @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void testPingDuringLongBatchExecution(boolean skipResult) {
+        Config config = createConfig();
+        config.useSingleServer()
+                .setConnectionMinimumIdleSize(1)
+                .setConnectionPoolSize(1)
+                .setPingConnectionInterval(50)
+                .setTimeout(50);
+        RedissonClient r = Redisson.create(config);
+        try {
+            BatchOptions options = BatchOptions.defaults()
+                    .executionMode(ExecutionMode.IN_MEMORY)
+                    .responseTimeout(5, TimeUnit.SECONDS)
+                    .retryAttempts(0);
+            if (skipResult) {
+                options.skipResult();
+            }
+
+            // large enough to keep the connection busy for much longer than the PING timeout
+            int size = 300_000;
+            RBatch batch = r.createBatch(options);
+            for (int i = 0; i < size; i++) {
+                batch.getBucket("pingDuringBatch:" + i, StringCodec.INSTANCE).setAsync("v");
+            }
+            batch.execute();
+
+            assertThat(r.getBucket("pingDuringBatch:0", StringCodec.INSTANCE).isExists()).isTrue();
+            assertThat(r.getBucket("pingDuringBatch:" + (size - 1), StringCodec.INSTANCE).isExists()).isTrue();
+        } finally {
+            r.shutdown();
+        }
+    }
+
+    @ParameterizedTest
     @MethodSource("data")
     public void testBatchNPE(BatchOptions batchOptions) {
         RBatch batch = redisson.createBatch(batchOptions);
@@ -689,6 +776,55 @@ public class RedissonBatchTest extends RedisDockerTest {
 
         org.junit.jupiter.api.Assertions.assertEquals("2", val1.toCompletableFuture().getNow(null));
         org.junit.jupiter.api.Assertions.assertEquals("3", val2.toCompletableFuture().getNow(null));
+    }
+
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testMapOptions(BatchOptions batchOptions) {
+        RBatch b = redisson.createBatch(batchOptions);
+        MapOptions<String, String> options = MapOptions.defaults();
+        RMapAsync<String, String> map1 = b.getMap("testMapOptions1", options);
+        RMapAsync<String, String> map2 = b.getMap("testMapOptions2", StringCodec.INSTANCE, options);
+        map1.putAsync("1", "2");
+        map2.putAsync("21", "3");
+        RFuture<String> val1 = map1.getAsync("1");
+        RFuture<String> val2 = map2.getAsync("21");
+        b.execute();
+
+        org.junit.jupiter.api.Assertions.assertEquals("2", val1.toCompletableFuture().getNow(null));
+        org.junit.jupiter.api.Assertions.assertEquals("3", val2.toCompletableFuture().getNow(null));
+    }
+
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testMapOptionsWithWriter(BatchOptions batchOptions) {
+        Map<String, String> store = new ConcurrentHashMap<>();
+        MapWriter<String, String> writer = new MapWriter<String, String>() {
+            @Override
+            public void write(Map<String, String> map) {
+                store.putAll(map);
+            }
+
+            @Override
+            public void delete(Collection<String> keys) {
+                for (String key : keys) {
+                    store.remove(key);
+                }
+            }
+        };
+
+        MapOptions<String, String> options = MapOptions.<String, String>defaults().writer(writer);
+        RBatch b = redisson.createBatch(batchOptions);
+        RMapAsync<String, String> map1 = b.getMap("testMapOptionsWriter1", options);
+        RMapAsync<String, String> map2 = b.getMap("testMapOptionsWriter2", StringCodec.INSTANCE, options);
+        map1.putAsync("k1", "v1");
+        map2.putAsync("k2", "v2");
+        b.execute();
+
+        await().atMost(Duration.ofSeconds(3)).untilAsserted(() -> {
+            assertThat(store.get("k1")).isEqualTo("v1");
+            assertThat(store.get("k2")).isEqualTo("v2");
+        });
     }
 
     @ParameterizedTest

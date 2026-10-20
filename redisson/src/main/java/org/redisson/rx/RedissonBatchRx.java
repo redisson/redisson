@@ -115,6 +115,20 @@ public class RedissonBatchRx implements RBatchRx {
     }
 
     @Override
+    public <K, V> RMapRx<K, V> getMap(String name, MapOptions<K, V> options) {
+        RedissonMap<K, V> map = new RedissonMap<K, V>(executorService, name, null, options, null);
+        return RxProxyBuilder.create(executorService, map, 
+                new RedissonMapRx<K, V>(map, null), RMapRx.class);
+    }
+
+    @Override
+    public <K, V> RMapRx<K, V> getMap(String name, Codec codec, MapOptions<K, V> options) {
+        RedissonMap<K, V> map = new RedissonMap<K, V>(codec, executorService, name, null, options, null);
+        return RxProxyBuilder.create(executorService, map, 
+                new RedissonMapRx<K, V>(map, null), RMapRx.class);
+    }
+
+    @Override
     public <K, V> RMapCacheRx<K, V> getMapCache(String name, Codec codec) {
         RMapCache<K, V> map = new RedissonMapCache<K, V>(codec, evictionScheduler, executorService, name, null, null, null);
         return RxProxyBuilder.create(executorService, map,
@@ -427,6 +441,12 @@ public class RedissonBatchRx implements RBatchRx {
     }
 
     @Override
+    public RTimeSeriesNativeRx getTimeSeriesNative(String name) {
+        return RxProxyBuilder.create(executorService,
+                new RedissonTimeSeriesNative(executorService, name), RTimeSeriesNativeRx.class);
+    }
+
+    @Override
     public <T> RBloomFilterNativeRx<T> getBloomFilterNative(String name) {
         return RxProxyBuilder.create(executorService,
                 new RedissonBloomFilterNative<>(executorService, name), RBloomFilterNativeRx.class);
@@ -467,6 +487,18 @@ public class RedissonBatchRx implements RBatchRx {
         return RxProxyBuilder.create(executorService,
                 new RedissonTopK<V>(codec, executorService, name),
                 RTopKRx.class);
+    }
+
+    @Override
+    public <V> RCountMinRx<V> getCountMin(String name) {
+        return getCountMin(name, null);
+    }
+
+    @Override
+    public <V> RCountMinRx<V> getCountMin(String name, Codec codec) {
+        return RxProxyBuilder.create(executorService,
+                new RedissonCountMin<V>(codec, executorService, name),
+                RCountMinRx.class);
     }
 
     @Override

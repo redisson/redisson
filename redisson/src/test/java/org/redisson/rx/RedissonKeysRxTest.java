@@ -8,6 +8,7 @@ import org.redisson.api.RKeysRx;
 import org.redisson.api.RMapRx;
 import org.redisson.api.options.KeysScanOptions;
 import org.redisson.client.codec.StringCodec;
+import org.redisson.client.protocol.Time;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -19,6 +20,14 @@ import java.util.concurrent.TimeUnit;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonKeysRxTest extends BaseRxTest {
+
+    @Test
+    public void testTime() {
+        Time time = sync(redisson.getKeys().time());
+
+        assertThat(time.getSeconds()).isPositive();
+        assertThat(time.getMicroseconds()).isBetween(0, 999999);
+    }
 
     @Test
     public void testGetKeys() {

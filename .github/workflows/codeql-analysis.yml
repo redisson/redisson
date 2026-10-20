@@ -24,6 +24,9 @@ permissions:
   security-events: write
   packages: read
 
+env:
+  MAVEN_VERSION: 3.9.16
+
 jobs:
   analyze:
     permissions:
@@ -53,38 +56,28 @@ jobs:
         distribution: temurin
         cache: maven
         
-
-    # If this run was triggered by a pull request event, then checkout
-    # the head of the pull request instead of the merge commit.
-#    - run: git checkout HEAD^2
-#      if: ${{ github.event_name == 'pull_request' }}
-
-    # Initializes the CodeQL tools for scanning.
+    - name: Set up Maven ${{ env.MAVEN_VERSION }}
+      run: |
+        curl -fsSL "https://archive.apache.org/dist/maven/maven-3/${MAVEN_VERSION}/binaries/apache-maven-${MAVEN_VERSION}-bin.tar.gz" \
+          | tar xz -C "$RUNNER_TEMP"
+        echo "$RUNNER_TEMP/apache-maven-${MAVEN_VERSION}/bin" >> "$GITHUB_PATH"
+  
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v4
       with:
         queries: security-extended
         languages: ${{ matrix.language }}
-        # If you wish to specify custom queries, you can do so here or in a config file.
-        # By default, queries listed here will override any specified in a config file. 
-        # Prefix the list here with "+" to use these queries and those in the config file.
-        # queries: ./path/to/local/query, your-org/your-repo/queries@main
-
-    # Autobuild attempts to build any compiled languages  (C/C++, C#, or Java).
-    # If this step fails, then you should remove it and run the build manually (see below)
-    - name: Autobuild
-      uses: github/codeql-action/autobuild@v4
-
-    # ℹ️ Command-line programs to run using the OS shell.
-    # 📚 https://git.io/JvXDl
-
-    # ✏️ If the Autobuild fails above, remove it and uncomment the following three lines
-    #    and modify them (or add more) to build your code if your project
-    #    uses a compiled language
-
-    #- run: |
-    #   make bootstrap
-    #   make release
+  
+    - name: Build with Maven
+      run: |
+        mvn -v
+        mvn -B clean package --file pom.xml \
+          -DskipTests \
+          -Dmaven.javadoc.skip=true \
+          -Dcheckstyle.skip=true \
+          -Dpmd.skip=true \
+          -Dcpd.skip=true \
+          -Dlicense.skip=true
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v4
