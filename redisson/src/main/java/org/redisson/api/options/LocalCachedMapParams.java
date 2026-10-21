@@ -36,6 +36,7 @@ public final class LocalCachedMapParams<K, V> extends BaseMapOptions<LocalCached
     private long maxIdleInMillis;
     private CacheProvider cacheProvider = CacheProvider.REDISSON;
     private StoreMode storeMode = StoreMode.LOCALCACHE_REDIS;
+    private ReadMode readMode = ReadMode.LOCALCACHE_REDIS;
     private boolean storeCacheMiss;
 
     private ExpirationEventPolicy expirationEventPolicy = ExpirationEventPolicy.SUBSCRIBE_WITH_KEYEVENT_PATTERN;
@@ -96,6 +97,7 @@ public final class LocalCachedMapParams<K, V> extends BaseMapOptions<LocalCached
      * @param reconnectionStrategy
      *          <p><code>CLEAR</code> - clear local cache if map instance has been disconnected for a while.
      *          <p><code>LOAD</code> - store invalidated entry hash in invalidation log for 10 minutes. Cache keys for stored invalidated entry hashes will be removed if LocalCachedMap instance has been disconnected less than 10 minutes or whole cache will be cleaned otherwise
+     *          <p><code>RELOAD</code> - Reload local cache if map instance connect/disconnected.
      *          <p><code>NONE</code> - Default. No reconnection handling
      * @return LocalCachedMapOptions instance
      */
@@ -173,6 +175,10 @@ public final class LocalCachedMapParams<K, V> extends BaseMapOptions<LocalCached
         return storeMode;
     }
 
+    public ReadMode getReadMode() {
+        return readMode;
+    }
+
     /**
      * Defines store mode of cache data.
      *
@@ -183,6 +189,19 @@ public final class LocalCachedMapParams<K, V> extends BaseMapOptions<LocalCached
      */
     public LocalCachedMapParams<K, V> storeMode(StoreMode storeMode) {
         this.storeMode = storeMode;
+        return this;
+    }
+
+    /**
+     * Defines read mode of cache data.
+     *
+     * @param readMode
+     *         <p><code>LOCALCACHE</code> - read data in local cache only.
+     *         <p><code>LOCALCACHE_REDIS</code> - read data in Redis if not found in local cache.
+     * @return LocalCachedMapOptions instance
+     */
+    public LocalCachedMapParams<K, V> readMode(ReadMode readMode) {
+        this.readMode = readMode;
         return this;
     }
 
