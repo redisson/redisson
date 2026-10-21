@@ -79,7 +79,8 @@ public class LockTask extends RenewalTask {
 
         String firstName = keys.get(0);
 
-        CompletionStage<List<String>> f = executor.syncedEval(firstName, LongCodec.INSTANCE,
+        CompletionStage<List<String>> f = executor.syncedEval(
+                executor.getServiceManager().getCfg().isSkipSyncedSlaves(), firstName, LongCodec.INSTANCE,
                 new RedisCommand<>("EVAL", new ContainsDecoder<>(keys)),
                   "local result = {} " +
                         "for i = 1, #KEYS, 1 do " +
