@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -973,6 +974,61 @@ public class RedissonListTest extends RedisDockerTest {
         assertThat(subList.iterator()).toIterable().containsExactly(4, 6, 7, 8);
     }
     
+    @Test
+    public void testEmptySubListRemovalsLeaveParentUntouched() {
+        assertEmptySubListRemoval(subList -> subList.remove((Object) 1));
+    }
+
+    @Test
+    public void testEmptySubListRemoveAllLeavesParentUntouched() {
+        assertEmptySubListRemoval(subList -> subList.removeAll(List.of(1, 2)));
+    }
+
+    @Test
+    public void testEmptySubListRetainAllLeavesParentUntouched() {
+        assertEmptySubListRemoval(subList -> subList.retainAll(Collections.emptyList()));
+    }
+
+    private void assertEmptySubListRemoval(Function<RList<Integer>, Boolean> removal) {
+        RList<Integer> list = redisson.getList("list");
+        list.addAll(List.of(1, 2, 3));
+        for (int index : new int[] {0, 1, 3}) {
+            RList<Integer> subList = list.subList(index, index);
+            assertThat(removal.apply(subList)).isFalse();
+            assertThat(subList.readAll()).isEmpty();
+            assertThat(subList.iterator().hasNext()).isFalse();
+            assertThat(list.readAll()).containsExactly(1, 2, 3);
+        }
+    }
+
+    @Test
+    public void testEmptySubListQueries() {
+        RList<Integer> list = redisson.getList("list");
+        list.addAll(List.of(1, 2, 3));
+        RList<Integer> subList = list.subList(0, 0);
+
+        assertThat(subList.readAll()).isEmpty();
+        assertThat(subList.contains(1)).isFalse();
+        assertThat(subList.containsAll(List.of(1))).isFalse();
+        assertThat(subList.containsAll(Collections.emptyList())).isTrue();
+        assertThat(subList.indexOf(1)).isEqualTo(-1);
+        assertThat(subList.lastIndexOf(1)).isEqualTo(-1);
+        assertThat(subList.iterator().hasNext()).isFalse();
+    }
+
+    @Test
+    public void testEmptySubListRemoveOccurrencesAsync() {
+        RList<Integer> list = redisson.getList("list");
+        list.addAll(List.of(1, 2, 3));
+        for (int index : new int[] {0, 1, 3}) {
+            RList<Integer> subList = list.subList(index, index);
+            for (int count : new int[] {0, 1, -1}) {
+                assertThat(subList.removeAsync(1, count).toCompletableFuture().join()).isFalse();
+                assertThat(list.readAll()).containsExactly(1, 2, 3);
+            }
+        }
+    }
+
     @Test
     public void testSubListLastIndexOf() {
         List<Integer> list = redisson.getList("list");

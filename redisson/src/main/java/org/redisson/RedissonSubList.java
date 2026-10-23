@@ -66,7 +66,14 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
 
     @Override
     public RFuture<List<V>> readAllAsync() {
+        if (isEmptyRange()) {
+            return new CompletableFutureWrapper<>(Collections.<V>emptyList());
+        }
         return commandExecutor.readAsync(getRawName(), codec, LRANGE, getRawName(), fromIndex, toIndex.get()-1);
+    }
+
+    private boolean isEmptyRange() {
+        return fromIndex == toIndex.get();
     }
 
     @Override
@@ -80,7 +87,18 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
     }
 
     @Override
+    public RFuture<Boolean> removeAsync(Object o, int count) {
+        if (isEmptyRange()) {
+            return new CompletableFutureWrapper<>(false);
+        }
+        return super.removeAsync(o, count);
+    }
+
+    @Override
     public RFuture<Boolean> containsAllAsync(Collection<?> c) {
+        if (isEmptyRange()) {
+            return new CompletableFutureWrapper<>(c.isEmpty());
+        }
         List<Object> params = new ArrayList<Object>();
         params.add(fromIndex);
         params.add(toIndex.get() - 1);
@@ -154,6 +172,9 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
     }
 
     private RFuture<Boolean> removeAllAsync(Collection<?> c, int count) {
+        if (isEmptyRange()) {
+            return new CompletableFutureWrapper<>(false);
+        }
         List<Object> params = new ArrayList<Object>();
         params.add(fromIndex);
         params.add(toIndex.get() - 1);
@@ -181,6 +202,9 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
 
     @Override
     public RFuture<Boolean> retainAllAsync(Collection<?> c) {
+        if (isEmptyRange()) {
+            return new CompletableFutureWrapper<>(false);
+        }
         List<Object> params = new ArrayList<Object>();
         params.add(fromIndex);
         params.add(toIndex.get() - 1);
@@ -314,6 +338,9 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
     }
 
     public <R> RFuture<R> indexOfAsync(Object o, Convertor<R> convertor) {
+        if (isEmptyRange()) {
+            return new CompletableFutureWrapper<>(convertor.convert(-1L));
+        }
         return commandExecutor.evalReadAsync(getRawName(), codec, new RedisCommand<R>("EVAL", convertor),
                 "local items = redis.call('lrange', KEYS[1], tonumber(ARGV[2]), tonumber(ARGV[3])) " +
                 "for i=1,#items do " +
@@ -327,6 +354,9 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
 
     @Override
     public RFuture<Integer> lastIndexOfAsync(Object o) {
+        if (isEmptyRange()) {
+            return new CompletableFutureWrapper<>(-1);
+        }
         return commandExecutor.evalReadAsync(getRawName(), codec, RedisCommands.EVAL_INTEGER,
                 "local key = KEYS[1] " +
                 "local obj = table.remove(ARGV, 1);" +
@@ -349,7 +379,9 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
 
     @Override
     public ListIterator<V> listIterator(final int fromIndex) {
-        checkIndex(fromIndex);
+        if (!isEmptyRange() || fromIndex != this.fromIndex) {
+            checkIndex(fromIndex);
+        }
         return new ListIterator<V>() {
 
             private V prevCurrentValue;
