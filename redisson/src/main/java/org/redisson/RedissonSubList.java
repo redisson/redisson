@@ -172,6 +172,7 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
     }
 
     private RFuture<Boolean> removeAllAsync(Collection<?> c, int count) {
+        Objects.requireNonNull(c);
         if (isEmptyRange()) {
             return new CompletableFutureWrapper<>(false);
         }
@@ -202,6 +203,7 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
 
     @Override
     public RFuture<Boolean> retainAllAsync(Collection<?> c) {
+        Objects.requireNonNull(c);
         if (isEmptyRange()) {
             return new CompletableFutureWrapper<>(false);
         }

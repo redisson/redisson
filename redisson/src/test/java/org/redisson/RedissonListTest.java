@@ -1002,6 +1002,30 @@ public class RedissonListTest extends RedisDockerTest {
     }
 
     @Test
+    public void testEmptySubListRemoveAllRejectsNull() {
+        RList<Integer> list = redisson.getList("list");
+        list.addAll(List.of(1, 2, 3));
+        for (int index : new int[] {0, 1, 3}) {
+            RList<Integer> subList = list.subList(index, index);
+            Assertions.assertThrows(NullPointerException.class, () -> subList.removeAll(null));
+            Assertions.assertThrows(NullPointerException.class, () -> subList.removeAllAsync(null));
+            assertThat(list.readAll()).containsExactly(1, 2, 3);
+        }
+    }
+
+    @Test
+    public void testEmptySubListRetainAllRejectsNull() {
+        RList<Integer> list = redisson.getList("list");
+        list.addAll(List.of(1, 2, 3));
+        for (int index : new int[] {0, 1, 3}) {
+            RList<Integer> subList = list.subList(index, index);
+            Assertions.assertThrows(NullPointerException.class, () -> subList.retainAll(null));
+            Assertions.assertThrows(NullPointerException.class, () -> subList.retainAllAsync(null));
+            assertThat(list.readAll()).containsExactly(1, 2, 3);
+        }
+    }
+
+    @Test
     public void testEmptySubListQueries() {
         RList<Integer> list = redisson.getList("list");
         list.addAll(List.of(1, 2, 3));
