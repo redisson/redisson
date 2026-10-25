@@ -297,29 +297,29 @@ Code examples:
 
 Cuckoo filters provide fast, memory-efficient set membership testing where occasional false positives are acceptable but false negatives are not. Beyond what a Bloom filter offers, they support deletion and approximate counting, which makes them a fit for membership sets that change over time and for soft frequency limits.
 
-**Deduplication of Processed Items**
+**Best-Effort Duplicate Suppression**
 
-Idempotent message handling, web-crawler URL frontiers, and "process each item once" pipelines need a compact record of what has already been seen. `addIfAbsent` both records and tests in a single call - it returns `true` only the first time an element is seen - so duplicates are skipped without a per-id lookup in a backing store. Because membership has no false negatives, a "seen" verdict is safe to act on, and unlike a Bloom filter an id can later be removed once it is safe to reprocess.
+For best-effort deduplication of messages, records, or crawler URLs, `addIfAbsent` both tests and records an element in a single call, returning `false` if it may already exist. A false positive can therefore skip a genuinely new item, so filter-only suppression is suitable only when occasional misses are acceptable. When new items must not be skipped, confirm possible duplicates against an authoritative store. Recording an id does not prove that processing completed. Unlike a Bloom filter, an id known to have been added can later be removed when it is safe to reprocess; do not remove an id merely because it tested positive.
 
 === "Sync"
     ```java
     RCuckooFilter<String> seen = redisson.getCuckooFilter("processed-events");
     seen.init(1_000_000);
 
-    // addIfAbsent returns true only the first time this id is seen
+    // true if this id was added; false if it may already exist
     if (seen.addIfAbsent(eventId)) {
-        process(event);          // first occurrence - handle it
+        process(event);          // newly recorded id - handle it
     }
-    // else: duplicate, already processed - skip
+    // else: possible duplicate or false positive - skip
 
-    // allow the id to be processed again once the window has passed
+    // later, remove only an id known to have been added
     seen.remove(eventId);
     ```
 === "Async"
     ```java
     RCuckooFilter<String> seen = redisson.getCuckooFilter("processed-events");
 
-    // true only on first sight of the id
+    // true if this id was added; false if it may already exist
     RFuture<Boolean> firstSeen = seen.addIfAbsentAsync(eventId);
     firstSeen.whenComplete((isNew, exception) -> {
         if (isNew) {
@@ -327,7 +327,7 @@ Idempotent message handling, web-crawler URL frontiers, and "process each item o
         }
     });
 
-    // allow reprocessing later
+    // later, remove only an id known to have been added
     RFuture<Boolean> removed = seen.removeAsync(eventId);
     ```
 === "Reactive"
@@ -335,10 +335,10 @@ Idempotent message handling, web-crawler URL frontiers, and "process each item o
     RedissonReactiveClient redisson = redissonClient.reactive();
     RCuckooFilterReactive<String> seen = redisson.getCuckooFilter("processed-events");
 
-    // true only on first sight of the id
+    // true if this id was added; false if it may already exist
     Mono<Boolean> firstSeen = seen.addIfAbsent(eventId);
 
-    // allow reprocessing later
+    // later, remove only an id known to have been added
     Mono<Boolean> removed = seen.remove(eventId);
     ```
 === "RxJava3"
@@ -346,10 +346,10 @@ Idempotent message handling, web-crawler URL frontiers, and "process each item o
     RedissonRxClient redisson = redissonClient.rxJava();
     RCuckooFilterRx<String> seen = redisson.getCuckooFilter("processed-events");
 
-    // true only on first sight of the id
+    // true if this id was added; false if it may already exist
     Single<Boolean> firstSeen = seen.addIfAbsent(eventId);
 
-    // allow reprocessing later
+    // later, remove only an id known to have been added
     Single<Boolean> removed = seen.remove(eventId);
     ```
 
