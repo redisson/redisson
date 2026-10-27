@@ -30,11 +30,13 @@ public class ContainsDecoder<T> implements MultiDecoder<List<T>> {
     private final List<T> args;
 
     public ContainsDecoder(Collection<T> args) {
-        if (args instanceof List) {
-            this.args = (List<T>) args;
-        } else {
-            this.args = new ArrayList<>(args);
-        }
+        // Snapshot the collection: callers such as LockTask.renew()/ReadLockTask.renew()
+        // keep a mutable reference to the same List and may remove entries from it
+        // (keys.removeAll(...)) inside the completion callback. Since decoding of the
+        // reply can happen after that callback runs (delayed response, command retry,
+        // connection switch), holding the live reference caused
+        // IndexOutOfBoundsException in decode() when args got shorter than parts.
+        this.args = new ArrayList<>(args);
     }
 
     @Override
