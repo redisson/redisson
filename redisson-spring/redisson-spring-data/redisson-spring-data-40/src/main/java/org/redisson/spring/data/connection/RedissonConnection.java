@@ -3299,7 +3299,7 @@ public class RedissonConnection extends AbstractRedisConnection {
             params.add(v);
         });
 
-        return write(key, StringCodec.INSTANCE, HSETEX, key, params.toArray());
+        return write(key, StringCodec.INSTANCE, HSETEX, params.toArray());
     }
 
     private static final RedisStrictCommand<Long> SINTERCARD = new RedisStrictCommand<>("SINTERCARD");

@@ -8,6 +8,7 @@ import org.springframework.data.geo.Point;
 import org.springframework.data.redis.connection.Limit;
 import org.springframework.data.redis.connection.ReactiveRedisConnection;
 import org.springframework.data.redis.connection.RedisGeoCommands;
+import org.springframework.data.redis.connection.RedisHashCommands;
 import org.springframework.data.redis.connection.RedisStringCommands.SetOption;
 import org.springframework.data.redis.connection.zset.Tuple;
 import org.springframework.data.redis.core.*;
@@ -212,6 +213,87 @@ public class RedissonConnectionTest extends BaseConnectionTest {
         assertThat(values).containsExactly("value1".getBytes());
         assertThat(connection.hTtl(key, TimeUnit.SECONDS, field1).get(0)).isEqualTo(-1L);
         assertThat(connection.hLen(key)).isEqualTo(2L);
+    }
+
+    @Test
+    public void testHSetEx() {
+        byte[] key = "test-hsetex".getBytes();
+        byte[] field1 = "field1".getBytes();
+        byte[] field2 = "field2".getBytes();
+
+        Boolean result = connection.hSetEx(key, Map.of(field1, "value1".getBytes(), field2, "value2".getBytes()),
+                RedisHashCommands.HashFieldSetOption.UPSERT, Expiration.seconds(100));
+        assertThat(result).isTrue();
+        assertThat(connection.hGet(key, field1)).isEqualTo("value1".getBytes());
+        assertThat(connection.hGet(key, field2)).isEqualTo("value2".getBytes());
+        assertThat(connection.hTtl(key, TimeUnit.SECONDS, field1).get(0)).isGreaterThan(0L).isLessThanOrEqualTo(100L);
+        assertThat(connection.hTtl(key, TimeUnit.SECONDS, field2).get(0)).isGreaterThan(0L).isLessThanOrEqualTo(100L);
+
+        // one existing field is enough to reject the whole write
+        byte[] field3 = "field3".getBytes();
+        result = connection.hSetEx(key, Map.of(field1, "value3".getBytes(), field3, "value3".getBytes()),
+                RedisHashCommands.HashFieldSetOption.IF_NONE_EXIST, Expiration.seconds(100));
+        assertThat(result).isFalse();
+        assertThat(connection.hGet(key, field1)).isEqualTo("value1".getBytes());
+        assertThat(connection.hExists(key, field3)).isFalse();
+    }
+
+    @Test
+    public void testHSetExExpirationOptions() {
+        byte[] key = "test-hsetex-options".getBytes();
+        byte[] field = "field".getBytes();
+        RedisHashCommands.HashFieldSetOption upsert = RedisHashCommands.HashFieldSetOption.UPSERT;
+
+        // FXX fails while the field is absent
+        assertThat(connection.hSetEx(key, Map.of(field, "v0".getBytes()),
+                RedisHashCommands.HashFieldSetOption.IF_ALL_EXIST, Expiration.seconds(100))).isFalse();
+        assertThat(connection.hExists(key, field)).isFalse();
+
+        // PX
+        assertThat(connection.hSetEx(key, Map.of(field, "v1".getBytes()), upsert, Expiration.milliseconds(50_000))).isTrue();
+        assertThat(connection.hTtl(key, TimeUnit.MILLISECONDS, field).get(0)).isGreaterThan(0L).isLessThanOrEqualTo(50_000L);
+
+        // KEEPTTL keeps the previous TTL and updates the value
+        assertThat(connection.hSetEx(key, Map.of(field, "v2".getBytes()), upsert, Expiration.keepTtl())).isTrue();
+        assertThat(connection.hGet(key, field)).isEqualTo("v2".getBytes());
+        assertThat(connection.hTtl(key, TimeUnit.MILLISECONDS, field).get(0)).isGreaterThan(0L).isLessThanOrEqualTo(50_000L);
+
+        // PXAT
+        long targetMillis = System.currentTimeMillis() + 120_000;
+        assertThat(connection.hSetEx(key, Map.of(field, "v3".getBytes()), upsert,
+                Expiration.unixTimestamp(targetMillis, TimeUnit.MILLISECONDS))).isTrue();
+        assertThat(connection.hTtl(key, TimeUnit.MILLISECONDS, field).get(0)).isGreaterThan(100_000L).isLessThanOrEqualTo(120_000L);
+
+        // EXAT
+        long targetSeconds = System.currentTimeMillis() / 1000 + 200;
+        assertThat(connection.hSetEx(key, Map.of(field, "v4".getBytes()), upsert,
+                Expiration.unixTimestamp(targetSeconds, TimeUnit.SECONDS))).isTrue();
+        assertThat(connection.hTtl(key, TimeUnit.SECONDS, field).get(0)).isGreaterThan(150L).isLessThanOrEqualTo(200L);
+
+        // no expiration option discards the previous TTL
+        assertThat(connection.hSetEx(key, Map.of(field, "v5".getBytes()), upsert, Expiration.persistent())).isTrue();
+        assertThat(connection.hGet(key, field)).isEqualTo("v5".getBytes());
+        assertThat(connection.hTtl(key, TimeUnit.SECONDS, field).get(0)).isEqualTo(-1L);
+
+        // a null expiration does the same
+        assertThat(connection.hSetEx(key, Map.of(field, "v5".getBytes()), upsert, Expiration.seconds(100))).isTrue();
+        assertThat(connection.hSetEx(key, Map.of(field, "v5".getBytes()), upsert, null)).isTrue();
+        assertThat(connection.hTtl(key, TimeUnit.SECONDS, field).get(0)).isEqualTo(-1L);
+
+        // FXX succeeds once the field exists
+        assertThat(connection.hSetEx(key, Map.of(field, "v6".getBytes()),
+                RedisHashCommands.HashFieldSetOption.IF_ALL_EXIST, Expiration.seconds(100))).isTrue();
+        assertThat(connection.hGet(key, field)).isEqualTo("v6".getBytes());
+    }
+
+    @Test
+    public void testHSetExThroughRedisTemplate() {
+        Boolean result = redisTemplate.opsForHash().putAndExpire("test-hsetex-template", Map.of("field1", "value1"),
+                RedisHashCommands.HashFieldSetOption.UPSERT, Expiration.seconds(100));
+        assertThat(result).isTrue();
+        assertThat(redisTemplate.opsForHash().get("test-hsetex-template", "field1")).isEqualTo("value1");
+        assertThat(connection.hTtl("test-hsetex-template".getBytes(), TimeUnit.SECONDS, "field1".getBytes()).get(0))
+                .isGreaterThan(0L).isLessThanOrEqualTo(100L);
     }
 
     @Test
