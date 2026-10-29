@@ -130,8 +130,6 @@ public final class TransactionOptions {
      * @param timeout synchronization timeout
      * @param unit synchronization timeout time unit
      * @return self instance
-     * @throws org.redisson.transaction.TransactionSyncException if specified amount of replicas
-     *         failed to acknowledge the synchronization within defined timeout
      */
     public TransactionOptions syncSlaves(int slaves, long timeout, TimeUnit unit) {
         this.syncSlaves = slaves;

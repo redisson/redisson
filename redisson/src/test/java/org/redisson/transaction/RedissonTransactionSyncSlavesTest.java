@@ -87,4 +87,56 @@ public class RedissonTransactionSyncSlavesTest extends RedisDockerTest {
         assertThat(noSync.getSyncSlaves()).isEqualTo(-1);
     }
 
+    @Test
+    public void testSyncSlavesInCluster() {
+        testInCluster(clusterClient -> {
+            // "test1" (slot 4768) and "test2" (slot 8899) map to two distinct cluster master nodes.
+            // In the test cluster, each master has exactly 1 replica.
+            // If the transaction requires 2 replicas per shard, commit must fail with TransactionSyncException.
+            // If getSyncedSlaves() (sum = 1 + 1 = 2) were incorrectly used instead of getMinSyncedSlaves() (min = 1),
+            // this check would falsely pass.
+            RTransaction transaction = clusterClient.createTransaction(
+                    TransactionOptions.defaults().syncSlaves(2, 1, TimeUnit.SECONDS));
+            transaction.getBucket("test1").set("val1");
+            transaction.getBucket("test2").set("val2");
+
+            TransactionSyncException ex = Assertions.assertThrows(TransactionSyncException.class, () -> {
+                transaction.commit();
+            });
+
+            assertThat(ex.getMessage()).isEqualTo("Transaction committed, but only 1 of 2 replicas acknowledged within 1000 ms");
+            assertThat(clusterClient.getBucket("test1").get()).isEqualTo("val1");
+            assertThat(clusterClient.getBucket("test2").get()).isEqualTo("val2");
+
+            // When required replicas is 1, each participating shard meets quorum and commit succeeds
+            RTransaction txSucceed = clusterClient.createTransaction(
+                    TransactionOptions.defaults().syncSlaves(1, 1, TimeUnit.SECONDS));
+            txSucceed.getBucket("test1").set("val1-updated");
+            txSucceed.getBucket("test2").set("val2-updated");
+            txSucceed.commit();
+
+            assertThat(clusterClient.getBucket("test1").get()).isEqualTo("val1-updated");
+            assertThat(clusterClient.getBucket("test2").get()).isEqualTo("val2-updated");
+
+            clusterClient.getBucket("test1").delete();
+            clusterClient.getBucket("test2").delete();
+        });
+    }
+
+    @Test
+    public void testDefaultOptionsPassInCluster() {
+        testInCluster(clusterClient -> {
+            RTransaction transaction = clusterClient.createTransaction(TransactionOptions.defaults());
+            transaction.getBucket("test1").set("defaultVal1");
+            transaction.getBucket("test2").set("defaultVal2");
+            transaction.commit();
+
+            assertThat(clusterClient.getBucket("test1").get()).isEqualTo("defaultVal1");
+            assertThat(clusterClient.getBucket("test2").get()).isEqualTo("defaultVal2");
+
+            clusterClient.getBucket("test1").delete();
+            clusterClient.getBucket("test2").delete();
+        });
+    }
+
 }

@@ -16,7 +16,7 @@ TransactionOptions options = TransactionOptions.defaults()
     // Throws TransactionSyncException if the required amount of replicas fail to acknowledge within the timeout.
     // Default slaves value is 0 (available replicas at execution time, best-effort) and -1 means no sync.
     // Default timeout is 5000 milliseconds.
-    .syncSlaves(2, 5, TimeUnit.SECONDS)
+    .syncSlaves(0, 5, TimeUnit.SECONDS)
 
     // Response timeout.
     // Default is 3000 milliseconds.
