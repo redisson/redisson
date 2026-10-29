@@ -59,6 +59,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     private int invalidateEntryOnChange;
     private SyncStrategy syncStrategy;
     private LocalCachedMapOptions.StoreMode storeMode;
+    private LocalCachedMapOptions.ReadMode readMode;
     private boolean storeCacheMiss;
     private boolean isUseObjectAsCacheKey;
 
@@ -79,6 +80,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         }
         syncStrategy = options.getSyncStrategy();
         storeMode = options.getStoreMode();
+        readMode = options.getReadMode();
         storeCacheMiss = options.isStoreCacheMiss();
         isUseObjectAsCacheKey = options.isUseObjectAsCacheKey();
         localCacheView = new LocalCacheView<>(options, this);
@@ -93,6 +95,11 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 Object value = codec.getMapValueDecoder().decode(valueBuf, null);
                 cachePut(cacheKey, key, value);
                 return new CacheValue(key, value);
+            }
+
+            @Override
+            protected void reloadCache() {
+                RedissonLocalCachedMap.this.reloadCache();
             }
 
         };
@@ -212,7 +219,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
 
     @Override
     public RFuture<Integer> sizeAsync() {
-        if (storeMode == LocalCachedMapOptions.StoreMode.LOCALCACHE) {
+        if (storeMode == LocalCachedMapOptions.StoreMode.LOCALCACHE || readMode == LocalCachedMapOptions.ReadMode.LOCALCACHE) {
             return new CompletableFutureWrapper<>(cache.size());
         }
         return super.sizeAsync();
@@ -225,7 +232,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         CacheKey cacheKey = localCacheView.toCacheKey(key);
         CacheValue cacheValue = cache.get(cacheKey);
         if (cacheValue == null) {
-            if (storeMode == LocalCachedMapOptions.StoreMode.LOCALCACHE) {
+            if (storeMode == LocalCachedMapOptions.StoreMode.LOCALCACHE || readMode == LocalCachedMapOptions.ReadMode.LOCALCACHE) {
                 if (hasNoLoader()) {
                     return new CompletableFutureWrapper<>(false);
                 }
@@ -272,7 +279,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         
         CacheValue cacheValue = new CacheValue(null, value);
         if (!cache.containsValue(cacheValue)) {
-            if (storeMode == LocalCachedMapOptions.StoreMode.LOCALCACHE) {
+            if (storeMode == LocalCachedMapOptions.StoreMode.LOCALCACHE || readMode == LocalCachedMapOptions.ReadMode.LOCALCACHE) {
                 return new CompletableFutureWrapper<>(false);
             }
 
@@ -291,7 +298,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
             return new CompletableFutureWrapper<>((V) cacheValue.getValue());
         }
 
-        if (storeMode == LocalCachedMapOptions.StoreMode.LOCALCACHE) {
+        if (storeMode == LocalCachedMapOptions.StoreMode.LOCALCACHE || readMode == LocalCachedMapOptions.ReadMode.LOCALCACHE) {
             if (hasNoLoader()) {
                 return CompletableFutureWrapper.completedNull();
             }
@@ -677,7 +684,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
             }
         }
 
-        if (storeMode == LocalCachedMapOptions.StoreMode.LOCALCACHE) {
+        if (storeMode == LocalCachedMapOptions.StoreMode.LOCALCACHE || readMode == LocalCachedMapOptions.ReadMode.LOCALCACHE) {
             if (hasNoLoader()) {
                 return new CompletableFutureWrapper<>(result);
             }
@@ -940,7 +947,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
             result.add((V) value.getValue());
         }
 
-        if (storeMode == LocalCachedMapOptions.StoreMode.LOCALCACHE) {
+        if (storeMode == LocalCachedMapOptions.StoreMode.LOCALCACHE || readMode == LocalCachedMapOptions.ReadMode.LOCALCACHE) {
             return new CompletableFutureWrapper<>(result);
         }
 
@@ -985,7 +992,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
             result.put((K) value.getKey(), (V) value.getValue());
         }
 
-        if (storeMode == LocalCachedMapOptions.StoreMode.LOCALCACHE) {
+        if (storeMode == LocalCachedMapOptions.StoreMode.LOCALCACHE || readMode == LocalCachedMapOptions.ReadMode.LOCALCACHE) {
             return new CompletableFutureWrapper<>(result);
         }
 
@@ -1007,6 +1014,19 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         for (Entry<K, V> entry : super.entrySet()) {
             CacheKey cacheKey = localCacheView.toCacheKey(entry.getKey());
             cachePut(cacheKey, entry.getKey(), entry.getValue());
+        }
+    }
+
+    @Override
+    public void reloadCache() {
+        Set<CacheKey> existingCacheKeys = new HashSet<>(cache.keySet());
+        for (Entry<K, V> entry : super.entrySet(null, 10)) {
+            CacheKey cacheKey = localCacheView.toCacheKey(entry.getKey());
+            cachePut(cacheKey, entry.getKey(), entry.getValue());
+            existingCacheKeys.remove(cacheKey);
+        }
+        for (CacheKey cacheKey : existingCacheKeys) {
+            cacheRemove(cacheKey);
         }
     }
 
@@ -1043,7 +1063,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
             result.add(new AbstractMap.SimpleEntry<K, V>((K) value.getKey(), (V) value.getValue()));
         }
 
-        if (storeMode == LocalCachedMapOptions.StoreMode.LOCALCACHE) {
+        if (storeMode == LocalCachedMapOptions.StoreMode.LOCALCACHE || readMode == LocalCachedMapOptions.ReadMode.LOCALCACHE) {
             return new CompletableFutureWrapper<>(result);
         }
 
@@ -1414,7 +1434,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
 
     @Override
     public Set<K> keySet(String pattern, int count) {
-        if (storeMode == LocalCachedMapOptions.StoreMode.LOCALCACHE) {
+        if (storeMode == LocalCachedMapOptions.StoreMode.LOCALCACHE || readMode == LocalCachedMapOptions.ReadMode.LOCALCACHE) {
             return cachedKeySet();
         }
         return super.keySet(pattern, count);
@@ -1422,7 +1442,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
 
     @Override
     public Collection<V> values(String keyPattern, int count) {
-        if (storeMode == LocalCachedMapOptions.StoreMode.LOCALCACHE) {
+        if (storeMode == LocalCachedMapOptions.StoreMode.LOCALCACHE || readMode == LocalCachedMapOptions.ReadMode.LOCALCACHE) {
             return cachedValues();
         }
         return super.values(keyPattern, count);
@@ -1430,7 +1450,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
 
     @Override
     public Set<Entry<K, V>> entrySet(String keyPattern, int count) {
-        if (storeMode == LocalCachedMapOptions.StoreMode.LOCALCACHE) {
+        if (storeMode == LocalCachedMapOptions.StoreMode.LOCALCACHE || readMode == LocalCachedMapOptions.ReadMode.LOCALCACHE) {
             return cachedEntrySet();
         }
         return super.entrySet(keyPattern, count);
