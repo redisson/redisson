@@ -326,6 +326,8 @@ public class CommandBatchService extends CommandAsyncService implements BatchSer
                 try {
                     List<Object> responses = new ArrayList<>();
                     int syncedSlaves = 0;
+                    int minSyncedSlaves = Integer.MAX_VALUE;
+                    int waitCommandsCount = 0;
 
                     if (!res.isEmpty()) {
                         List<BatchCommandData> entries = new ArrayList<BatchCommandData>();
@@ -335,12 +337,16 @@ public class CommandBatchService extends CommandAsyncService implements BatchSer
                         Collections.sort(entries);
                         for (BatchCommandData<?, ?> commandEntry : entries) {
                             if (isWaitCommand(commandEntry)) {
+                                waitCommandsCount++;
+                                int synced;
                                 if (commandEntry.getCommand().getName().equals(RedisCommands.WAIT.getName())) {
-                                    syncedSlaves += ((CompletableFuture<Integer>) commandEntry.getPromise()).getNow(0);
+                                    synced = ((CompletableFuture<Integer>) commandEntry.getPromise()).getNow(0);
                                 } else {
                                     List<Integer> list = ((CompletableFuture<List<Integer>>) commandEntry.getPromise()).getNow(Arrays.asList(0, 0));
-                                    syncedSlaves += list.get(1);
+                                    synced = list.get(1);
                                 }
+                                syncedSlaves += synced;
+                                minSyncedSlaves = Math.min(minSyncedSlaves, synced);
                             } else if (!commandEntry.getCommand().getName().equals(RedisCommands.MULTI.getName())
                                     && !commandEntry.getCommand().getName().equals(RedisCommands.EXEC.getName())
                                     && !this.options.isSkipResult()) {
@@ -367,7 +373,11 @@ public class CommandBatchService extends CommandAsyncService implements BatchSer
                         }
                     }
 
-                    BatchResult<Object> result = new BatchResult<>(responses, syncedSlaves);
+                    if (waitCommandsCount == 0) {
+                        minSyncedSlaves = 0;
+                    }
+
+                    BatchResult<Object> result = new BatchResult<>(responses, syncedSlaves, minSyncedSlaves);
                     promise.complete(result);
                 } catch (Exception e) {
                     promise.completeExceptionally(ex);
@@ -769,14 +779,20 @@ public class CommandBatchService extends CommandAsyncService implements BatchSer
                                 Collections.sort(entries);
                                 List<Object> responses = new ArrayList<>(entries.size());
                                 int syncedSlaves = 0;
+                                int minSyncedSlaves = Integer.MAX_VALUE;
+                                int waitCommandsCount = 0;
                                 for (BatchCommandData<?, ?> commandEntry : entries) {
                                     if (isWaitCommand(commandEntry)) {
+                                        waitCommandsCount++;
+                                        int synced;
                                         if (commandEntry.getCommand().getName().equals(RedisCommands.WAIT.getName())) {
-                                            syncedSlaves += ((CompletableFuture<Integer>) commandEntry.getPromise()).getNow(0);
+                                            synced = ((CompletableFuture<Integer>) commandEntry.getPromise()).getNow(0);
                                         } else {
                                             List<Integer> list = ((CompletableFuture<List<Integer>>) commandEntry.getPromise()).getNow(Arrays.asList(0, 0));
-                                            syncedSlaves += list.get(1);
+                                            synced = list.get(1);
                                         }
+                                        syncedSlaves += synced;
+                                        minSyncedSlaves = Math.min(minSyncedSlaves, synced);
                                     } else if (!commandEntry.getCommand().getName().equals(RedisCommands.MULTI.getName())
                                             && !commandEntry.getCommand().getName().equals(RedisCommands.EXEC.getName())) {
                                         Object entryResult = commandEntry.getPromise().getNow(null);
@@ -793,7 +809,11 @@ public class CommandBatchService extends CommandAsyncService implements BatchSer
                                     }
                                 }
 
-                                BatchResult<Object> r = new BatchResult<>(responses, syncedSlaves);
+                                if (waitCommandsCount == 0) {
+                                    minSyncedSlaves = 0;
+                                }
+
+                                BatchResult<Object> r = new BatchResult<>(responses, syncedSlaves, minSyncedSlaves);
                                 resultPromise.complete((R) r);
                             } catch (Exception e) {
                                 resultPromise.completeExceptionally(e);
