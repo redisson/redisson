@@ -246,20 +246,23 @@ public final class RedissonReliableTopic extends RedissonExpirable implements RR
                                 + "end; "
                                 + "local r = redis.call('zscore', KEYS[2], ARGV[1]); "
 
-                                + "local score = 92233720368547758;"
-                                + "local groups = redis.call('xinfo', 'groups', KEYS[1]); " +
-                                  "for i, v in ipairs(groups) do "
-                                     + "local id1, id2 = string.match(v[8], '(.*)%-(.*)'); "
-                                     + "score = math.min(tonumber(id1), score); "
-                                + "end; " +
-
-                                  "score = tostring(score) .. '-0';"
-                                + "local range = redis.call('xrange', KEYS[1], score, '+'); "
-                                + "if #range == 0 or (#range == 1 and range[1][1] == score) then "
+                                + "local groups = redis.call('xinfo', 'groups', KEYS[1]); "
+                                + "if #groups == 0 then "
                                     + "redis.call('xtrim', KEYS[1], 'maxlen', 0); "
                                 + "else "
-                                    + "redis.call('xtrim', KEYS[1], 'maxlen', #range); "
-                                + "end;"
+                                    + "local score = 92233720368547758; "
+                                    + "for i, v in ipairs(groups) do "
+                                         + "local id1, id2 = string.match(v[8], '(.*)%-(.*)'); "
+                                         + "score = math.min(tonumber(id1), score); "
+                                    + "end; "
+                                    + "score = string.format('%.0f', score) .. '-0'; "
+                                    + "local range = redis.call('xrange', KEYS[1], score, '+'); "
+                                    + "if #range == 0 or (#range == 1 and range[1][1] == score) then "
+                                        + "redis.call('xtrim', KEYS[1], 'maxlen', 0); "
+                                    + "else "
+                                        + "redis.call('xtrim', KEYS[1], 'maxlen', #range); "
+                                    + "end; "
+                                + "end; "
                                 + "return r ~= false; ",
                         Arrays.asList(getRawName(), timeoutName),
                         id, time);
@@ -270,6 +273,9 @@ public final class RedissonReliableTopic extends RedissonExpirable implements RR
                             return;
                         }
                         log.error("Unable to update subscriber status", exc);
+                        if (subscribed.get()) {
+                            getServiceManager().newTimeout(t -> poll(id), 1, TimeUnit.SECONDS);
+                        }
                         return;
                     }
 
@@ -378,6 +384,9 @@ public final class RedissonReliableTopic extends RedissonExpirable implements RR
             future.whenComplete((res, e) -> {
                 if (e != null) {
                     log.error("Can't update reliable topic {} expiration time", getRawName(), e);
+                    if (subscribed.get()) {
+                        renewExpiration();
+                    }
                     return;
                 }
 
