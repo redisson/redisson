@@ -88,7 +88,8 @@ public class ReadLockTask extends LockTask {
 
         String firstName = keys.get(0).toString();
 
-        CompletionStage<List<Object>> f = executor.syncedEval(firstName, LongCodec.INSTANCE,
+        CompletionStage<List<Object>> f = executor.syncedEval(
+                executor.getServiceManager().getCfg().isSkipSyncedSlaves(), firstName, LongCodec.INSTANCE,
                 new RedisCommand<>("EVAL", new ContainsDecoder<>(keys)),
           "local result = {} " +
                 "local argIdx = 2 " +
