@@ -171,6 +171,52 @@ public class RedissonScoredSortedSetTest extends RedisDockerTest {
     }
 
     @Test
+    public void testPollFirstFromAnyReachesLastSetOnCluster() {
+        // same rotation as RBlockingQueue.pollFromAny, so the last names have to stay reachable
+        // when the timeout is shorter than the number of names
+        testInCluster(client -> {
+            RScoredSortedSet<String> first = client.getScoredSortedSet("set:clusterPollAny1");
+            RScoredSortedSet<String> second = client.getScoredSortedSet("set:clusterPollAny2");
+            RScoredSortedSet<String> third = client.getScoredSortedSet("set:clusterPollAny3");
+            first.clear();
+            second.clear();
+            third.clear();
+            third.add(0.1, "hello");
+
+            long startTime = System.currentTimeMillis();
+            String value = first.pollFirstFromAny(2, TimeUnit.SECONDS,
+                    "set:clusterPollAny2", "set:clusterPollAny3");
+
+            assertThat(value).isEqualTo("hello");
+            assertThat(System.currentTimeMillis() - startTime).isLessThan(1000);
+        });
+    }
+
+    @Test
+    public void testPollLastFromAnyReachesLastSetOnCluster() {
+        testInCluster(client -> {
+            RScoredSortedSet<String> first = client.getScoredSortedSet("set:clusterPollLastAny1");
+            RScoredSortedSet<String> second = client.getScoredSortedSet("set:clusterPollLastAny2");
+            RScoredSortedSet<String> third = client.getScoredSortedSet("set:clusterPollLastAny3");
+            first.clear();
+            second.clear();
+            third.clear();
+            third.add(0.1, "lowest");
+            third.add(0.9, "highest");
+
+            String value = first.pollLastFromAny(2, TimeUnit.SECONDS,
+                    "set:clusterPollLastAny2", "set:clusterPollLastAny3");
+            // polled again rather than read back, because reads go to a replica by default
+            String next = first.pollLastFromAny(2, TimeUnit.SECONDS,
+                    "set:clusterPollLastAny2", "set:clusterPollLastAny3");
+
+            // the highest score first, and only one element per call
+            assertThat(value).isEqualTo("highest");
+            assertThat(next).isEqualTo("lowest");
+        });
+    }
+
+    @Test
     public void testPollFirstFromAnyCount() {
         RScoredSortedSet<Integer> queue1 = redisson.getScoredSortedSet("queue:pollany");
         RScoredSortedSet<Integer> queue2 = redisson.getScoredSortedSet("queue:pollany1");
