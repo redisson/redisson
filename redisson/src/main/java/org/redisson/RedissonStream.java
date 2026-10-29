@@ -868,18 +868,32 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     }
 
     private static final RedisCommand<Map<StreamMessageId, Map<Object, Object>>> EVAL_XRANGE = new RedisCommand("EVAL", RedisCommands.XRANGE.getReplayMultiDecoder());
-    
-    @Override
-    public RFuture<Map<StreamMessageId, Map<K, V>>> pendingRangeAsync(String groupName, StreamMessageId startId,
-            StreamMessageId endId, int count) {
-        return commandExecutor.evalReadAsync(getRawName(), codec, EVAL_XRANGE,
+
+    private static final String PENDING_RANGE_SCRIPT =
                 "local pendingData = redis.call('xpending', KEYS[1], ARGV[1], ARGV[2], ARGV[3], ARGV[4]);" +
                 "local result = {}; " +
                 "for i = 1, #pendingData, 1 do " +
                     "local value = redis.call('xrange', KEYS[1], pendingData[i][1], pendingData[i][1]);" +
-                    "table.insert(result, value[1]);" + 
+                    "table.insert(result, value[1]);" +
                 "end; " +
-                "return result;",
+                "return result;";
+
+    @Override
+    public RFuture<Map<StreamMessageId, Map<K, V>>> pendingRangeAsync(String groupName, StreamMessageId startId,
+            StreamMessageId endId, int count) {
+        return commandExecutor.evalReadAsync(getRawName(), codec, EVAL_XRANGE, PENDING_RANGE_SCRIPT,
+                Collections.<Object>singletonList(getRawName()),
+                groupName, startId, endId, count);
+    }
+
+    /**
+     * Same as {@link #pendingRangeAsync(String, StreamMessageId, StreamMessageId, int)}
+     * but always executed on the master node. Used by callers which read consumer group
+     * state they have just written themselves, where a replica may not have it yet.
+     */
+    RFuture<Map<StreamMessageId, Map<K, V>>> pendingRangeFromMasterAsync(String groupName, StreamMessageId startId,
+            StreamMessageId endId, int count) {
+        return commandExecutor.evalWriteAsync(getRawName(), codec, EVAL_XRANGE, PENDING_RANGE_SCRIPT,
                 Collections.<Object>singletonList(getRawName()),
                 groupName, startId, endId, count);
     }
