@@ -296,6 +296,82 @@ public class RedissonScheduledExecutorServiceTest extends RedisDockerTest {
         assertThat(redisson.getKeys().count()).isEqualTo(1);
     }
 
+    public static class FailingTask implements Runnable, Serializable {
+
+        @RInject
+        RedissonClient redisson;
+
+        @Override
+        public void run() {
+            redisson.getAtomicLong("attempts").incrementAndGet();
+            throw new IllegalStateException("task failed");
+        }
+
+    }
+
+    public static class EveryOtherRunFailingTask implements Runnable, Serializable {
+
+        @RInject
+        RedissonClient redisson;
+
+        @Override
+        public void run() {
+            if (redisson.getAtomicLong("attempts").incrementAndGet() % 2 == 1) {
+                throw new IllegalStateException("task failed");
+            }
+        }
+
+    }
+
+    private static final String RETRY_COUNTER_NAME = "{test:" + RemoteExecutorService.class.getName() + "}:retry-counter";
+
+    @Test
+    public void testTaskRetryAttempts() throws InterruptedException {
+        RScheduledExecutorService executor = redisson.getExecutorService("test", ExecutorOptions.defaults()
+                                                        .taskRetryInterval(2, TimeUnit.SECONDS)
+                                                        .taskRetryAttempts(2));
+        RScheduledFuture<?> future = executor.schedule(new FailingTask(), 1, TimeUnit.SECONDS);
+
+        Thread.sleep(10000);
+
+        // executed once and retried twice
+        assertThat(redisson.getAtomicLong("attempts").get()).isEqualTo(3);
+        assertThat(executor.hasTask(future.getTaskId())).isFalse();
+        assertThat(executor.getTaskCount()).isZero();
+        assertThat(redisson.getKeys().countExists(RETRY_COUNTER_NAME)).isZero();
+    }
+
+    @Test
+    public void testTaskRetryAttemptsResetAfterSuccess() throws InterruptedException {
+        RScheduledExecutorService executor = redisson.getExecutorService(org.redisson.api.options.ExecutorOptions.name("test")
+                                                        .taskRetryInterval(Duration.ofSeconds(2))
+                                                        .taskRetryAttempts(1));
+        RScheduledFuture<?> future = executor.scheduleAtFixedRate(new EveryOtherRunFailingTask(), 0, 1, TimeUnit.SECONDS);
+
+        Thread.sleep(7000);
+
+        // each failed run is retried once and succeeds, so the task keeps running
+        assertThat(redisson.getAtomicLong("attempts").get()).isGreaterThanOrEqualTo(4);
+        assertThat(executor.hasTask(future.getTaskId())).isTrue();
+    }
+
+    @Test
+    public void testTaskRetryAttemptsCancel() throws InterruptedException {
+        RScheduledExecutorService executor = redisson.getExecutorService("test", ExecutorOptions.defaults()
+                                                        .taskRetryInterval(2, TimeUnit.SECONDS)
+                                                        .taskRetryAttempts(5));
+        RScheduledFuture<?> future = executor.schedule(new FailingTask(), 1, TimeUnit.SECONDS);
+
+        Thread.sleep(5000);
+        // executed and retried at least once
+        assertThat(redisson.getAtomicLong("attempts").get()).isGreaterThanOrEqualTo(2);
+        assertThat(redisson.getKeys().countExists(RETRY_COUNTER_NAME)).isOne();
+
+        executor.cancelTask(future.getTaskId());
+        assertThat(executor.hasTask(future.getTaskId())).isFalse();
+        assertThat(redisson.getKeys().countExists(RETRY_COUNTER_NAME)).isZero();
+    }
+
     @Test
     @Timeout(7)
     public void testTaskResume() throws ExecutionException, InterruptedException {
