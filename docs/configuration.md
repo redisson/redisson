@@ -233,6 +233,12 @@ Default value: `true`
 
 Defines whether to use the Lua-script cache on the Valkey or Redis side. Most Redisson methods are Lua-script-based, and turning this setting on could increase the speed of such methods' execution and save network traffic.
 
+**useMapCacheListenerOptimization**
+
+Default value: `true`
+
+Defines whether `RMapCache` entry creation, update and removal events are published only when a listener registration flag is present in Valkey or Redis. Set to `false` to publish events unconditionally, so existing listeners continue receiving events after `FLUSHALL` or removal of the registration flag. Apply this setting to every client that writes to the map, including clients without local listeners. Disabling the optimization can increase message serialization and Pub/Sub traffic.
+
 **keepPubSubOrder**
 
 Default value: `true`
