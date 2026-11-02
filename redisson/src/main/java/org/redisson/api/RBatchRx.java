@@ -293,6 +293,34 @@ public interface RBatchRx {
     <V> RSetCacheRx<V> getSetCache(String name, Codec codec);
 
     /**
+     * Returns set instance by <code>name</code>.
+     * Supports value eviction with a given TTL value.
+     * Uses Redis native commands for value expiration and not a scheduled eviction task.
+     * <p>
+     * Requires <b>Redis 8.12.0 or higher.</b>
+     *
+     * @param <V> type of value
+     * @param name name of object
+     * @return SetCacheNative object
+     */
+    <V> RSetCacheNativeRx<V> getSetCacheNative(String name);
+
+    /**
+     * Returns set instance by <code>name</code>
+     * using provided <code>codec</code> for values.
+     * Supports value eviction with a given TTL value.
+     * Uses Redis native commands for value expiration and not a scheduled eviction task.
+     * <p>
+     * Requires <b>Redis 8.12.0 or higher.</b>
+     *
+     * @param <V> type of value
+     * @param name name of object
+     * @param codec codec for values
+     * @return SetCacheNative object
+     */
+    <V> RSetCacheNativeRx<V> getSetCacheNative(String name, Codec codec);
+
+    /**
      * Returns map-based cache instance by <code>name</code>
      * using provided <code>codec</code> for both cache keys and values.
      * Supports entry eviction with a given TTL value.

@@ -965,6 +965,29 @@ public final class RedissonRx implements RedissonRxClient {
     }
 
     @Override
+    public <V> RSetCacheNativeRx<V> getSetCacheNative(String name) {
+        RSetCacheNative<V> set = new RedissonSetCacheNative<>(commandExecutor, name, null);
+        return RxProxyBuilder.create(commandExecutor, set,
+                new RedissonSetRx<V>(set, this), RSetCacheNativeRx.class);
+    }
+
+    @Override
+    public <V> RSetCacheNativeRx<V> getSetCacheNative(String name, Codec codec) {
+        RSetCacheNative<V> set = new RedissonSetCacheNative<>(codec, commandExecutor, name, null);
+        return RxProxyBuilder.create(commandExecutor, set,
+                new RedissonSetRx<V>(set, this), RSetCacheNativeRx.class);
+    }
+
+    @Override
+    public <V> RSetCacheNativeRx<V> getSetCacheNative(PlainOptions options) {
+        PlainParams params = (PlainParams) options;
+        CommandRxExecutor ce = commandExecutor.copy(params);
+        RSetCacheNative<V> set = new RedissonSetCacheNative<>(params.getCodec(), ce, params.getName(), null);
+        return RxProxyBuilder.create(commandExecutor, set,
+                new RedissonSetRx<V>(set, this), RSetCacheNativeRx.class);
+    }
+
+    @Override
     public RAtomicLongRx getAtomicLong(String name) {
         return RxProxyBuilder.create(commandExecutor, new RedissonAtomicLong(commandExecutor, name), RAtomicLongRx.class);
     }

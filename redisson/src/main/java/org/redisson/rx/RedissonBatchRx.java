@@ -280,6 +280,20 @@ public class RedissonBatchRx implements RBatchRx {
     }
 
     @Override
+    public <V> RSetCacheNativeRx<V> getSetCacheNative(String name) {
+        RSetCacheNative<V> set = new RedissonSetCacheNative<>(executorService, name, null);
+        return RxProxyBuilder.create(executorService, set,
+                new RedissonSetRx<V>(set, null), RSetCacheNativeRx.class);
+    }
+
+    @Override
+    public <V> RSetCacheNativeRx<V> getSetCacheNative(String name, Codec codec) {
+        RSetCacheNative<V> set = new RedissonSetCacheNative<>(codec, executorService, name, null);
+        return RxProxyBuilder.create(executorService, set,
+                new RedissonSetRx<V>(set, null), RSetCacheNativeRx.class);
+    }
+
+    @Override
     public <V> RScoredSortedSetRx<V> getScoredSortedSet(String name) {
         RedissonScoredSortedSet<V> set = new RedissonScoredSortedSet<V>(executorService, name, null);
         return RxProxyBuilder.create(executorService, set, 

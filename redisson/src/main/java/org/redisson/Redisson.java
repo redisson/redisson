@@ -582,6 +582,22 @@ public final class Redisson implements RedissonClient {
     }
 
     @Override
+    public <V> RSetCacheNative<V> getSetCacheNative(String name) {
+        return new RedissonSetCacheNative<>(commandExecutor, name, this);
+    }
+
+    @Override
+    public <V> RSetCacheNative<V> getSetCacheNative(String name, Codec codec) {
+        return new RedissonSetCacheNative<>(codec, commandExecutor, name, this);
+    }
+
+    @Override
+    public <V> RSetCacheNative<V> getSetCacheNative(PlainOptions options) {
+        PlainParams params = (PlainParams) options;
+        return new RedissonSetCacheNative<>(params.getCodec(), commandExecutor.copy(params), params.getName(), this);
+    }
+
+    @Override
     public <K, V> RMapCache<K, V> getMapCache(String name) {
         return new RedissonMapCache<K, V>(evictionScheduler, commandExecutor, name, this, null, null);
     }

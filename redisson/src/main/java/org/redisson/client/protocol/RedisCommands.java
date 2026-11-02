@@ -390,6 +390,22 @@ public interface RedisCommands {
     RedisCommand<Set<Object>> SINTER = new RedisCommand<Set<Object>>("SINTER", new ObjectSetReplayDecoder<Object>());
     RedisCommand<List<Long>> SMISMEMBER = new RedisCommand<>("SMISMEMBER", new ObjectListReplayDecoder<Long>());
 
+    RedisStrictCommand<Boolean> SADDEX = new RedisStrictCommand<>("SADDEX", new BooleanReplayConvertor());
+    RedisCommand<Boolean> SPEXPIRE = new RedisCommand("SPEXPIRE", new ListFirstObjectDecoder(),
+                                            (Convertor<Boolean>) obj -> (Long) obj >= 1);
+    RedisCommand<Boolean> SPEXPIREAT = new RedisCommand("SPEXPIREAT", new ListFirstObjectDecoder(),
+                                            (Convertor<Boolean>) obj -> (Long) obj >= 1);
+    RedisCommand<Boolean> SPERSIST = new RedisCommand("SPERSIST", new ListFirstObjectDecoder(), (Convertor<Boolean>) obj -> {
+        Long val = (Long) obj;
+        if (val == -2) {
+            return null;
+        }
+
+        return val == 1;
+    });
+    RedisCommand<Long> SPTTL = new RedisCommand("SPTTL", new ListFirstObjectDecoder(), new LongReplayConvertor());
+    RedisCommand<Long> SPEXPIRETIME = new RedisCommand("SPEXPIRETIME", new ListFirstObjectDecoder(), new LongReplayConvertor());
+
     RedisStrictCommand<Long> LPOS = new RedisStrictCommand<>("LPOS");
     RedisCommand<Void> LSET = new RedisCommand<Void>("LSET", new VoidReplayConvertor());
     RedisCommand<Object> LPOP = new RedisCommand<Object>("LPOP");

@@ -1034,6 +1034,29 @@ public final class RedissonReactive implements RedissonReactiveClient {
     }
 
     @Override
+    public <V> RSetCacheNativeReactive<V> getSetCacheNative(String name) {
+        RSetCacheNative<V> set = new RedissonSetCacheNative<>(commandExecutor, name, null);
+        return ReactiveProxyBuilder.create(commandExecutor, set,
+                new RedissonSetReactive<V>(set, this), RSetCacheNativeReactive.class);
+    }
+
+    @Override
+    public <V> RSetCacheNativeReactive<V> getSetCacheNative(String name, Codec codec) {
+        RSetCacheNative<V> set = new RedissonSetCacheNative<>(codec, commandExecutor, name, null);
+        return ReactiveProxyBuilder.create(commandExecutor, set,
+                new RedissonSetReactive<V>(set, this), RSetCacheNativeReactive.class);
+    }
+
+    @Override
+    public <V> RSetCacheNativeReactive<V> getSetCacheNative(PlainOptions options) {
+        PlainParams params = (PlainParams) options;
+        CommandReactiveExecutor ca = commandExecutor.copy(params);
+        RSetCacheNative<V> set = new RedissonSetCacheNative<>(params.getCodec(), ca, params.getName(), null);
+        return ReactiveProxyBuilder.create(commandExecutor, set,
+                new RedissonSetReactive<V>(set, this), RSetCacheNativeReactive.class);
+    }
+
+    @Override
     public RAtomicLongReactive getAtomicLong(String name) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonAtomicLong(commandExecutor, name), RAtomicLongReactive.class);
     }

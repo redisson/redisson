@@ -1965,6 +1965,7 @@ Every implementation shares the operations above and differs in two capabilities
 | ------------- | :---------------: | :------------------: | ------------ |
 | `getSet()` | ❌ | ❌ | open-source |
 | `getSetCache()` | ❌ | ✔️ (scripted) | open-source |
+| `getSetCacheNative()` | ❌ | ✔️ (native) | open-source |
 | `getSetCacheV2()` | ✔️ | ✔️ (server-side) | PRO |
 | `getClusteredSet()` | ✔️ | ❌ | PRO |
 | `getClusteredSetCache()` | ✔️ | ✔️ | PRO |
@@ -2003,6 +2004,52 @@ Beyond the whole-set expiration that `RSet` inherits from `RExpirable`, the cach
     Single<Boolean> added = set.add(new SomeObject(), 10, TimeUnit.MINUTES);
     ```
 
+#### Native eviction
+
+`RSetCacheNative` stores a `time to live` on each set member with the member expiration commands added in **Redis 8.12** (`SADDEX`, `SPEXPIRE`, `SPTTL`, `SPERSIST` and their relatives). Redis removes expired members itself, so there is no eviction task, no `destroy()`, and no extra keys: the object is a plain Redis set, and every `RSet` method works on it. A member past its expiration is invisible to reads even before Redis reclaims it; `size()` is the exception and can still count it.
+
+`add`, `addIfAbsent` and `addIfExists` take a `Duration` or an `Instant` per value; a `0` duration stores the value without expiration. `addAll`, `addIfAllAbsent` and `addIfAllExist` take `SetAddArgs`, which gives a group of values one expiration or keeps the one they already have. The `expireValue*` and `expireValues*` methods change the expiration of existing values with the `NX`, `XX`, `GT` and `LT` conditions; there, a `0` duration or a past date removes the value, as `expire` does for a whole key.
+
+=== "Sync"
+    ```java
+    RSetCacheNative<String> set = redisson.getSetCacheNative("sessions");
+
+    set.add("s1", Duration.ofMinutes(30));
+    boolean added = set.addIfAbsent("s2", Duration.ofMinutes(30));
+    set.addAll(SetAddArgs.values(Arrays.asList("s3", "s4"))
+                         .timeToLive(Duration.ofMinutes(10)));
+
+    set.expireValueIfGreater("s1", Duration.ofHours(1));
+    long ttl = set.remainTimeToLive("s1");
+    Map<String, Long> expireAt = set.getExpireTime(new HashSet<>(Arrays.asList("s1", "s2")));
+    set.clearExpire("s2");
+    ```
+=== "Async"
+    ```java
+    RSetCacheNativeAsync<String> set = redisson.getSetCacheNative("sessions");
+
+    RFuture<Boolean> added = set.addAsync("s1", Duration.ofMinutes(30));
+    RFuture<Integer> updated = set.expireValuesAsync(new HashSet<>(Arrays.asList("s1", "s2")),
+                                                     Duration.ofMinutes(5));
+    RFuture<Long> ttl = set.remainTimeToLiveAsync("s1");
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RSetCacheNativeReactive<String> set = redisson.getSetCacheNative("sessions");
+
+    Mono<Boolean> added = set.add("s1", Duration.ofMinutes(30));
+    Mono<Long> ttl = set.remainTimeToLive("s1");
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RSetCacheNativeRx<String> set = redisson.getSetCacheNative("sessions");
+
+    Single<Boolean> added = set.add("s1", Duration.ofMinutes(30));
+    Maybe<Boolean> cleared = set.clearExpire("s1");
+    ```
+
 ### Listeners
 
 Redisson allows binding listeners per `RSet` object. This requires the `notify-keyspace-events` setting to be enabled on Valkey or Redis side.
@@ -2015,6 +2062,10 @@ Redisson allows binding listeners per `RSet` object. This requires the `notify-k
 |org.redisson.api.listener.SetAddListener|Element added| Es|
 |org.redisson.api.listener.SetRemoveListener|Element removed| Es|
 |org.redisson.api.listener.SetRemoveRandomListener|Element randomly removed|Es|
+|org.redisson.api.listener.SetMemberExpiredListener|Element expired.<br/>`RSetCacheNative` only|Es or Ts|
+|org.redisson.api.listener.SetMemberClearExpireListener|Element's expiration removed.<br/>`RSetCacheNative` only|Es or Ts|
+
+With `Ts`, the member listeners receive the element as Redis stores it: encoded by the object's codec and read as UTF-8, so it is the value itself with `StringCodec`. With only `Es` they receive the set name and a `null` element.
 
 Usage example:
 

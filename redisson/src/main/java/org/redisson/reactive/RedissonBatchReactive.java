@@ -273,6 +273,20 @@ public class RedissonBatchReactive implements RBatchReactive {
     }
 
     @Override
+    public <V> RSetCacheNativeReactive<V> getSetCacheNative(String name) {
+        RSetCacheNative<V> set = new RedissonSetCacheNative<>(executorService, name, null);
+        return ReactiveProxyBuilder.create(executorService, set,
+                new RedissonSetReactive<V>(set, null), RSetCacheNativeReactive.class);
+    }
+
+    @Override
+    public <V> RSetCacheNativeReactive<V> getSetCacheNative(String name, Codec codec) {
+        RSetCacheNative<V> set = new RedissonSetCacheNative<>(codec, executorService, name, null);
+        return ReactiveProxyBuilder.create(executorService, set,
+                new RedissonSetReactive<V>(set, null), RSetCacheNativeReactive.class);
+    }
+
+    @Override
     public <V> RScoredSortedSetReactive<V> getScoredSortedSet(String name) {
         return ReactiveProxyBuilder.create(executorService, new RedissonScoredSortedSet<V>(executorService, name, null), 
                 new RedissonScoredSortedSetReactive<V>(executorService, name), RScoredSortedSetReactive.class);

@@ -269,6 +269,16 @@ public class RedissonBatch implements RBatch {
     }
 
     @Override
+    public <V> RSetCacheNativeAsync<V> getSetCacheNative(String name) {
+        return new RedissonSetCacheNative<>(executorService, name, null);
+    }
+
+    @Override
+    public <V> RSetCacheNativeAsync<V> getSetCacheNative(String name, Codec codec) {
+        return new RedissonSetCacheNative<>(codec, executorService, name, null);
+    }
+
+    @Override
     public BatchResult<?> execute() {
         return executorService.execute();
     }
