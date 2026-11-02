@@ -29,9 +29,15 @@ public class CountMinInfoDecoder implements MultiDecoder<CountMinInfo> {
 
     @Override
     public CountMinInfo decode(List<Object> parts, State state) {
-        return new CountMinInfo(getLong(parts, "width"),
-                                getLong(parts, "depth"),
-                                getLong(parts, "count"));
+        long width = getLong(parts, "width");
+        long depth = getLong(parts, "depth");
+        long count = getLong(parts, "count");
+
+        long cellSize = getLong(parts, "cell_size");
+        if (cellSize == 0) {
+            return new CountMinInfo(width, depth, count);
+        }
+        return new CountMinInfo(width, depth, count, (int) cellSize);
     }
 
     private static long getLong(List<Object> list, String key) {

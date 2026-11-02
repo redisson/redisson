@@ -911,7 +911,7 @@ In high-volume traffic - API calls, log lines, network flows - a Top-K surfaces 
 
 ## Count-min sketch
 
-Java implementation of Redis based [RCountMin](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RCountMin.html) object is a count-min sketch - a probabilistic data structure that keeps the approximate frequency of each element in a stream using a fixed amount of memory, no matter how many distinct elements are counted. A returned count is never lower than the real one but may be an overestimate, and elements cannot be removed once counted. It is backed by the `CMS.*` commands of the Redis Bloom module. This object is thread-safe.
+Java implementation of Redis based [RCountMin](https://static.javadoc.io/org.redisson/redisson/latest/org/redisson/api/RCountMin.html) object is a count-min sketch - a probabilistic data structure that keeps the approximate frequency of each element in a stream using a fixed amount of memory, no matter how many distinct elements are counted. A returned count is never lower than the real one but may be an overestimate. On Redis 8.12.0 or higher a count can also be decreased. It is backed by the `CMS.*` commands of the Redis Bloom module. This object is thread-safe.
 
 Where [TopK](#topk) answers *which elements are the most frequent?*, a count-min sketch answers *how frequent is this particular element?* for any element asked about.
 
@@ -920,6 +920,8 @@ Unlike the other structures on this page the sketch is never created implicitly 
 ### Initialization
 
 A sketch is sized either by explicit dimensions or by the error it is allowed to make, and `CountMinInitArgs` carries whichever was chosen. `dimensions(width, depth)` sets the number of counters per array and the number of arrays directly - a larger `width` reduces overestimation, a larger `depth` reduces the chance of exceeding the expected error. `probability(errorRate, probability)` instead states the tolerated error and lets Redis derive the dimensions: counts deviate by no more than `errorRate` multiplied by the total of all increments, with probability at least `1 - probability`.
+
+Each counter takes 4 bytes by default. On Redis 8.12.0 or higher `cellSize(bytes)` sets it to 1, 2, 4 or 8 bytes in either mode. The counters take `width * depth * cellSize` bytes, and a counter holds at most 255, 65 535, 2^32-1 or 2^63-1 respectively. A counter holds the sum of every element that hashes to it, so leave room above the largest count you expect for one element: an increment that would go past the maximum fails.
 
 === "Sync"
     ```java
@@ -930,6 +932,9 @@ A sketch is sized either by explicit dimensions or by the error it is allowed to
 
     // or state the acceptable error and let Redis size it
     sketch.init(CountMinInitArgs.probability(0.001, 0.01));
+
+    // 1-byte counters: a quarter of the default memory, counts up to 255
+    sketch.init(CountMinInitArgs.dimensions(2000, 5).cellSize(1));
     ```
 === "Async"
     ```java
@@ -958,6 +963,10 @@ A sketch is sized either by explicit dimensions or by the error it is allowed to
 
 `add(element)` records one occurrence, `add(element, increment)` records several at once, and both return the element's new count. The map overload counts many elements in a single call and returns their new counts, keyed by element.
 
+On Redis 8.12.0 or higher a negative increment decreases the count. A change that would take one of the element's counters above the maximum of the cell size, or below zero, fails with `RedisException` and leaves the sketch unchanged. In the map overload each element succeeds or fails on its own: if one fails the call throws, but the others have been applied. Older versions reject negative increments, and saturate a counter at 2^32-1 instead of rejecting an overflow.
+
+A decrease keeps counts an upper bound only if it is no larger than what was really added for the element. Counters are shared, so a larger decrease can succeed, and then it takes the excess from other elements, whose counts can become underestimates.
+
 === "Sync"
     ```java
     RCountMin<String> sketch = redisson.getCountMin("pageViews");
@@ -970,6 +979,9 @@ A sketch is sized either by explicit dimensions or by the error it is allowed to
 
     // many elements in one call
     Map<String, Long> counts = sketch.add(Map.of("/home", 25L, "/pricing", 4L));
+
+    // take back occurrences counted by mistake (Redis 8.12.0 or higher)
+    long corrected = sketch.add("/home", -5);
     ```
 === "Async"
     ```java
@@ -1038,7 +1050,7 @@ A sketch is sized either by explicit dimensions or by the error it is allowed to
 
 `mergeWith(CountMinMergeArgs)` combines several sketches into the one it is invoked on, which is how per-node or per-shard sketches are folded into a single global view. `weights` multiplies each source's counters before they are combined; without it every source counts once.
 
-The merge **replaces** the destination's counters rather than adding to them - whatever the destination held is discarded. To accumulate instead, name the destination among its own sources. All sketches taking part, the destination included, must have the same width and depth.
+The merge **replaces** the destination's counters rather than adding to them - whatever the destination held is discarded. To accumulate instead, name the destination among its own sources. All sketches taking part, the destination included, must have the same width, depth and cell size.
 
 === "Sync"
     ```java
@@ -1081,7 +1093,7 @@ The merge **replaces** the destination's counters rather than adding to them - w
 
 ### Sketch information
 
-`getInfo()` returns a `CountMinInfo` describing the sketch: its width and depth, and the total of every increment applied to it - which is the sum of all counts, not the number of distinct elements.
+`getInfo()` returns a `CountMinInfo` describing the sketch: its width and depth, the size of each counter in bytes, and the total of every increment applied to it - which is the sum of all counts, not the number of distinct elements. Versions before Redis 8.12.0 do not report the cell size; all their sketches have 4-byte cells, and `getCellSize()` returns 4 for them.
 
 === "Sync"
     ```java
@@ -1091,6 +1103,7 @@ The merge **replaces** the destination's counters rather than adding to them - w
     long width = info.getWidth();
     long depth = info.getDepth();
     long total = info.getCount();
+    int cellSize = info.getCellSize();
     ```
 === "Async"
     ```java

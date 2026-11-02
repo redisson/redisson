@@ -15,7 +15,9 @@
  */
 package org.redisson;
 
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.CountMinInfo;
 import org.redisson.api.RBatch;
@@ -25,10 +27,15 @@ import org.redisson.api.RCountMinAsync;
 import org.redisson.api.RCountMinReactive;
 import org.redisson.api.RCountMinRx;
 import org.redisson.api.RFuture;
+import org.redisson.api.RedissonClient;
 import org.redisson.api.countmin.CountMinInitArgs;
 import org.redisson.api.countmin.CountMinMergeArgs;
 import org.redisson.client.RedisException;
 import org.redisson.client.codec.StringCodec;
+import org.redisson.client.protocol.decoder.CountMinInfoDecoder;
+import org.redisson.config.Config;
+import org.redisson.config.Protocol;
+import org.testcontainers.containers.GenericContainer;
 
 import reactor.core.publisher.Mono;
 
@@ -38,6 +45,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  *
@@ -452,20 +460,300 @@ public class RedissonCountMinTest extends RedisDockerTest {
     }
 
     @Test
-    public void testAddRejectsNegativeIncrement() {
-        RCountMin<String> cms = redisson.getCountMin("testNegIncr");
+    public void testAddRejectsMinValueIncrement() {
+        RCountMin<String> cms = redisson.getCountMin("testMinValueIncr");
         cms.init(CountMinInitArgs.dimensions(2000, 5));
 
         Assertions.assertThrows(IllegalArgumentException.class, () -> {
-            cms.add("foo", -1);
+            cms.add("foo", Long.MIN_VALUE);
         });
 
         Assertions.assertThrows(IllegalArgumentException.class, () -> {
-            cms.add(Map.of("foo", -1L));
+            cms.add(Map.of("foo", Long.MIN_VALUE));
         });
 
         // nothing was sent, so the sketch is untouched
         assertThat(cms.count("foo")).isEqualTo(0);
+        assertThat(cms.getInfo().getCount()).isEqualTo(0);
+    }
+
+    @Test
+    public void testNegativeIncrementBeforeRedis812() {
+        RCountMin<String> cms = redisson.getCountMin("testNegIncrOld");
+        cms.init(CountMinInitArgs.dimensions(2000, 5));
+        cms.add("foo", 5);
+
+        assertThatThrownBy(() -> cms.add("foo", -1))
+                .isInstanceOf(RedisException.class)
+                .hasMessageContaining("CMS: Number cannot be negative");
+
+        Map<String, Long> increments = new LinkedHashMap<>();
+        increments.put("bar", 3L);
+        increments.put("foo", -1L);
+        assertThatThrownBy(() -> cms.add(increments))
+                .isInstanceOf(RedisException.class)
+                .hasMessageContaining("CMS: Number cannot be negative");
+
+        assertThat(cms.count(List.of("foo", "bar"))).containsExactly(
+                Map.entry("foo", 5L),
+                Map.entry("bar", 0L));
+    }
+
+    @Test
+    public void testInfoCellSizeBeforeRedis812() {
+        RCountMin<String> cms = redisson.getCountMin("testCellSizeOld");
+        cms.init(CountMinInitArgs.dimensions(2000, 5));
+
+        assertThat(cms.getInfo().getCellSize()).isEqualTo(4);
+    }
+
+    @Test
+    public void testInfoDecoderCellSize() {
+        CountMinInfoDecoder decoder = new CountMinInfoDecoder();
+
+        CountMinInfo old = decoder.decode(
+                List.of("width", 2000L, "depth", 5L, "count", 7L), null);
+        assertThat(old.getWidth()).isEqualTo(2000);
+        assertThat(old.getDepth()).isEqualTo(5);
+        assertThat(old.getCount()).isEqualTo(7);
+        assertThat(old.getCellSize()).isEqualTo(4);
+
+        CountMinInfo current = decoder.decode(
+                List.of("width", 2000L, "depth", 5L, "count", 7L, "cell_size", 2L), null);
+        assertThat(current.getCellSize()).isEqualTo(2);
+    }
+
+    @Test
+    public void testInitArgsRejectsBadCellSize() {
+        for (int bad : new int[]{-1, 0, 3, 5, 16}) {
+            Assertions.assertThrows(IllegalArgumentException.class, () -> {
+                CountMinInitArgs.dimensions(2000, 5).cellSize(bad);
+            });
+            Assertions.assertThrows(IllegalArgumentException.class, () -> {
+                CountMinInitArgs.probability(0.001, 0.01).cellSize(bad);
+            });
+        }
+    }
+
+    private static GenericContainer<?> redis812;
+    private static RedissonClient redisson812;
+
+    @BeforeAll
+    static void startRedis812() {
+        redis812 = createRedis812();
+        redis812.start();
+        redisson812 = Redisson.create(createConfig(redis812));
+    }
+
+    @AfterAll
+    static void stopRedis812() {
+        redisson812.shutdown();
+        redis812.stop();
+    }
+
+    @Test
+    public void testInitWithCellSize() {
+        RCountMin<String> byDim = redisson812.getCountMin("testCellSizeDim");
+        byDim.init(CountMinInitArgs.dimensions(1000, 5).cellSize(1));
+
+        CountMinInfo info = byDim.getInfo();
+        assertThat(info.getWidth()).isEqualTo(1000);
+        assertThat(info.getDepth()).isEqualTo(5);
+        assertThat(info.getCount()).isEqualTo(0);
+        assertThat(info.getCellSize()).isEqualTo(1);
+
+        RCountMin<String> byProb = redisson812.getCountMin("testCellSizeProb");
+        byProb.init(CountMinInitArgs.probability(0.001, 0.01).cellSize(8));
+
+        info = byProb.getInfo();
+        assertThat(info.getWidth()).isEqualTo(2000);
+        assertThat(info.getDepth()).isEqualTo(7);
+        assertThat(info.getCellSize()).isEqualTo(8);
+
+        // the last call wins
+        RCountMin<String> twice = redisson812.getCountMin("testCellSizeTwice");
+        twice.init(CountMinInitArgs.dimensions(1000, 5).cellSize(1).cellSize(2));
+        assertThat(twice.getInfo().getCellSize()).isEqualTo(2);
+    }
+
+    @Test
+    public void testDefaultCellSize() {
+        RCountMin<String> cms = redisson812.getCountMin("testCellSizeDefault");
+        cms.init(CountMinInitArgs.dimensions(1000, 5));
+
+        assertThat(cms.getInfo().getCellSize()).isEqualTo(4);
+    }
+
+    @Test
+    public void testCellSizeMaximum() {
+        Map<Integer, Long> maximums = new LinkedHashMap<>();
+        maximums.put(1, 255L);
+        maximums.put(2, 65535L);
+        maximums.put(4, 4294967295L);
+        maximums.put(8, Long.MAX_VALUE);
+
+        for (Map.Entry<Integer, Long> entry : maximums.entrySet()) {
+            RCountMin<String> cms = redisson812.getCountMin("testCellSizeMax" + entry.getKey());
+            cms.init(CountMinInitArgs.dimensions(1000, 5).cellSize(entry.getKey()));
+            long max = entry.getValue();
+
+            assertThat(cms.add("foo", max)).isEqualTo(max);
+            assertThatThrownBy(() -> cms.add("foo"))
+                    .isInstanceOf(RedisException.class)
+                    .hasMessageContaining("CMS: INCRBY overflow");
+
+            assertThat(cms.count("foo")).isEqualTo(max);
+            assertThat(cms.getInfo().getCount()).isEqualTo(max);
+        }
+    }
+
+    @Test
+    public void testNegativeIncrement() {
+        RCountMin<String> cms = redisson812.getCountMin("testNegIncr");
+        cms.init(CountMinInitArgs.dimensions(2000, 5));
+
+        assertThat(cms.add("foo", 10)).isEqualTo(10);
+        assertThat(cms.add("foo", -3)).isEqualTo(7);
+        assertThat(cms.count("foo")).isEqualTo(7);
+        assertThat(cms.getInfo().getCount()).isEqualTo(7);
+
+        assertThat(cms.add("foo", -7)).isEqualTo(0);
+        assertThat(cms.getInfo().getCount()).isEqualTo(0);
+    }
+
+    @Test
+    public void testUnderflowIsRejected() {
+        RCountMin<String> cms = redisson812.getCountMin("testUnderflow");
+        cms.init(CountMinInitArgs.dimensions(2000, 5));
+        cms.add("foo", 2);
+
+        assertThatThrownBy(() -> cms.add("foo", -3))
+                .isInstanceOf(RedisException.class)
+                .hasMessageContaining("CMS: INCRBY underflow");
+        assertThatThrownBy(() -> cms.add("never-added", -1))
+                .isInstanceOf(RedisException.class)
+                .hasMessageContaining("CMS: INCRBY underflow");
+
+        assertThatThrownBy(() -> cms.add("foo", Long.MIN_VALUE + 1))
+                .isInstanceOf(RedisException.class)
+                .hasMessageContaining("CMS: INCRBY underflow");
+
+        assertThat(cms.count("foo")).isEqualTo(2);
+        assertThat(cms.count("never-added")).isEqualTo(0);
+        assertThat(cms.getInfo().getCount()).isEqualTo(2);
+    }
+
+    @Test
+    public void testBulkAddWithNegativeIncrements() {
+        RCountMin<String> cms = redisson812.getCountMin("testBulkNegIncr");
+        cms.init(CountMinInitArgs.dimensions(2000, 5));
+
+        Map<String, Long> increments = new LinkedHashMap<>();
+        increments.put("foo", 10L);
+        increments.put("bar", 5L);
+        cms.add(increments);
+
+        Map<String, Long> decrements = new LinkedHashMap<>();
+        decrements.put("foo", -4L);
+        decrements.put("bar", -5L);
+        assertThat(cms.add(decrements)).containsExactly(
+                Map.entry("foo", 6L),
+                Map.entry("bar", 0L));
+        assertThat(cms.getInfo().getCount()).isEqualTo(6);
+    }
+
+    @Test
+    public void testBulkAddAppliesOthersWhenOneFails() {
+        RCountMin<String> cms = redisson812.getCountMin("testBulkPartial");
+        cms.init(CountMinInitArgs.dimensions(2000, 5));
+        cms.add("foo", 1);
+
+        Map<String, Long> increments = new LinkedHashMap<>();
+        increments.put("bar", 3L);
+        increments.put("foo", -5L);
+        increments.put("baz", 2L);
+        assertThatThrownBy(() -> cms.add(increments))
+                .isInstanceOf(RedisException.class)
+                .hasMessageContaining("CMS: INCRBY underflow");
+
+        assertThat(cms.count(List.of("foo", "bar", "baz"))).containsExactly(
+                Map.entry("foo", 1L),
+                Map.entry("bar", 3L),
+                Map.entry("baz", 2L));
+        assertThat(cms.getInfo().getCount()).isEqualTo(6);
+    }
+
+    @Test
+    public void testMergeRequiresSameCellSize() {
+        RCountMin<String> source = redisson812.getCountMin("testMergeCellSrc");
+        RCountMin<String> dest = redisson812.getCountMin("testMergeCellDest");
+        RCountMin<String> narrow = redisson812.getCountMin("testMergeCellNarrow");
+
+        source.init(CountMinInitArgs.dimensions(1000, 5).cellSize(2));
+        dest.init(CountMinInitArgs.dimensions(1000, 5).cellSize(2));
+        narrow.init(CountMinInitArgs.dimensions(1000, 5).cellSize(1));
+
+        source.add("foo", 300);
+        dest.mergeWith(CountMinMergeArgs.sources("testMergeCellSrc"));
+        assertThat(dest.count("foo")).isEqualTo(300);
+
+        assertThatThrownBy(() -> narrow.mergeWith(CountMinMergeArgs.sources("testMergeCellSrc")))
+                .isInstanceOf(RedisException.class)
+                .hasMessageContaining("CMS: cell size is not equal");
+    }
+
+    @Test
+    public void testInfoCellSizeResp3() {
+        Config config = createConfig(redis812);
+        config.setProtocol(Protocol.RESP3);
+        RedissonClient resp3 = Redisson.create(config);
+        try {
+            RCountMin<String> cms = resp3.getCountMin("testInfoResp3");
+            cms.init(CountMinInitArgs.dimensions(1000, 5).cellSize(2));
+            cms.add("foo", 9);
+
+            CountMinInfo info = cms.getInfo();
+            assertThat(info.getWidth()).isEqualTo(1000);
+            assertThat(info.getDepth()).isEqualTo(5);
+            assertThat(info.getCount()).isEqualTo(9);
+            assertThat(info.getCellSize()).isEqualTo(2);
+        } finally {
+            resp3.shutdown();
+        }
+    }
+
+    @Test
+    public void testBatchWithCellSizeAndDecrement() {
+        RBatch batch = redisson812.createBatch();
+        RCountMinAsync<String> cms = batch.getCountMin("testBatchCellSize");
+
+        cms.initAsync(CountMinInitArgs.dimensions(1000, 5).cellSize(2));
+        cms.addAsync("foo", 10);
+        RFuture<Long> decreased = cms.addAsync("foo", -4);
+        RFuture<CountMinInfo> info = cms.getInfoAsync();
+
+        batch.execute();
+
+        assertThat(decreased.toCompletableFuture().join()).isEqualTo(6);
+        assertThat(info.toCompletableFuture().join().getCount()).isEqualTo(6);
+        assertThat(info.toCompletableFuture().join().getCellSize()).isEqualTo(2);
+    }
+
+    @Test
+    public void testReactiveAndRxDecrement() {
+        RCountMinReactive<String> reactive =
+                redisson812.reactive().getCountMin("testReactiveDecr", StringCodec.INSTANCE);
+        reactive.init(CountMinInitArgs.dimensions(1000, 5).cellSize(1)).block();
+        assertThat(reactive.add("foo", 10).block()).isEqualTo(10);
+        assertThat(reactive.add("foo", -4).block()).isEqualTo(6);
+        assertThat(reactive.getInfo().block().getCellSize()).isEqualTo(1);
+
+        RCountMinRx<String> rx =
+                redisson812.rxJava().getCountMin("testRxDecr", StringCodec.INSTANCE);
+        rx.init(CountMinInitArgs.dimensions(1000, 5).cellSize(1)).blockingAwait();
+        assertThat(rx.add("foo", 10).blockingGet()).isEqualTo(10);
+        assertThat(rx.add("foo", -4).blockingGet()).isEqualTo(6);
+        assertThat(rx.getInfo().blockingGet().getCellSize()).isEqualTo(1);
     }
 
     @Test

@@ -27,7 +27,8 @@ import java.util.Map;
  * A count-min sketch is a probabilistic data structure that keeps
  * the approximate count of elements in a sublinear amount of memory.
  * The returned count is never lower than the real count and may be
- * overestimated depending on the sketch dimensions.
+ * overestimated depending on the sketch dimensions. Counts can be
+ * decreased too, with the limits described for {@link #add(Object, long)}.
  * <p>
  * Unlike other probabilistic structures a sketch is not created
  * implicitly, {@link #init(CountMinInitArgs)} has to be invoked
@@ -60,9 +61,7 @@ public interface RCountMin<V> extends RExpirable, RCountMinAsync<V> {
      * <p>
      * Equivalent to {@code CMS.INCRBY}.
      * <p>
-     * Counters saturate at {@code 2^32-1}. Once a counter reaches that value it
-     * stops rising while {@link CountMinInfo#getCount()} keeps accumulating,
-     * so the two disagree from that point on.
+     * Overflow is handled as described for {@link #add(Object, long)}.
      *
      * @param element element to count
      * @return new count of the element
@@ -70,26 +69,52 @@ public interface RCountMin<V> extends RExpirable, RCountMinAsync<V> {
     long add(V element);
 
     /**
-     * Increases the count of an element by the defined increment.
+     * Changes the count of an element by the defined increment.
+     * A negative increment decreases the count.
      * <p>
      * Equivalent to {@code CMS.INCRBY}.
+     * <p>
+     * The change is applied to all counters of the element or to none.
+     * It fails with {@link org.redisson.client.RedisException} and leaves
+     * the sketch unchanged if it would take one of them above the maximum
+     * of the cell size (see {@link CountMinInitArgs#cellSize(int)}) or below 0,
+     * or the total count of the sketch above {@link Long#MAX_VALUE}.
+     * <p>
+     * The count stays an upper bound of the real count only while no element
+     * is decreased by more than was added for it. Counters are shared between
+     * elements, so a larger decrease can succeed, and then it lowers the counts
+     * of other elements too.
+     * <p>
+     * Negative increments require <b>Redis 8.12.0 or higher.</b>
+     * Older versions reject them. Their counters saturate at {@code 2^32-1}
+     * instead of rejecting an overflow, while {@link CountMinInfo#getCount()}
+     * keeps accumulating.
      *
      * @param element element to count
-     * @param increment value to add to the current count, not negative
+     * @param increment value to add to the current count, negative to decrease it
      * @return new count of the element
-     * @throws IllegalArgumentException if increment is negative
+     * @throws IllegalArgumentException if increment is {@link Long#MIN_VALUE}
      */
     long add(V element, long increment);
 
     /**
-     * Increases the count of multiple elements at once.
+     * Changes the counts of multiple elements at once.
+     * A negative increment decreases the count.
      * <p>
      * Equivalent to {@code CMS.INCRBY}.
+     * <p>
+     * Each element is changed on its own, as described for
+     * {@link #add(Object, long)}. If the change of one element fails,
+     * the call fails with {@link org.redisson.client.RedisException},
+     * but the other elements are still changed. Only the failed one
+     * is left as it was.
+     * <p>
+     * Negative increments require <b>Redis 8.12.0 or higher.</b>
+     * Older versions reject the whole call and change nothing.
      *
-     * @param elements map of elements and their increments,
-     *                 none of them negative
+     * @param elements map of elements and their increments
      * @return map of elements and their new counts
-     * @throws IllegalArgumentException if any increment is negative
+     * @throws IllegalArgumentException if any increment is {@link Long#MIN_VALUE}
      */
     Map<V, Long> add(Map<V, Long> elements);
 
@@ -99,7 +124,8 @@ public interface RCountMin<V> extends RExpirable, RCountMinAsync<V> {
      * Equivalent to {@code CMS.QUERY}.
      * <p>
      * The returned count is never lower than the real count
-     * and may be overestimated.
+     * and may be overestimated. A decrease larger than what was
+     * added for an element breaks this, see {@link #add(Object, long)}.
      *
      * @param element element to query
      * @return count of the element
@@ -130,7 +156,7 @@ public interface RCountMin<V> extends RExpirable, RCountMinAsync<V> {
      * </pre>
      * <p>
      * This sketch has to be initialized and all merged sketches,
-     * including this one, have to share the same width and depth.
+     * including this one, have to share the same width, depth and cell size.
      *
      * @param args merge arguments
      */

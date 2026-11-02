@@ -27,7 +27,7 @@ import java.util.Objects;
  * accumulation.
  * <p>
  * All sketches, including the destination, must have the same
- * width and depth.
+ * width, depth and cell size.
  *
  * <p>Usage example:
  * <pre>

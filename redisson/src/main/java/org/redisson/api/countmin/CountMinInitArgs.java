@@ -27,6 +27,8 @@ package org.redisson.api.countmin;
  *     sketch.init(CountMinInitArgs.dimensions(2000, 5));
  *
  *     sketch.init(CountMinInitArgs.probability(0.001, 0.01));
+ *
+ *     sketch.init(CountMinInitArgs.dimensions(2000, 5).cellSize(2));
  * </pre>
  *
  * @author Nikita Koksharov
@@ -73,5 +75,34 @@ public interface CountMinInitArgs {
     static CountMinInitArgs probability(double errorRate, double probability) {
         return new CountMinInitArgsImpl(errorRate, probability);
     }
+
+    /**
+     * Defines the size of each counter in bytes.
+     * <p>
+     * Equivalent to the {@code CELL_SIZE} option of {@code CMS.INITBYDIM}
+     * and {@code CMS.INITBYPROB}.
+     * <p>
+     * The counters take {@code width * depth * cellSize} bytes, and a larger
+     * cell holds a larger count:
+     * <ul>
+     *     <li>{@code 1} - up to {@code 255}</li>
+     *     <li>{@code 2} - up to {@code 65535}</li>
+     *     <li>{@code 4} - up to {@code 2^32-1}</li>
+     *     <li>{@code 8} - up to {@code 2^63-1}</li>
+     * </ul>
+     * An increment that would take a counter above this maximum fails
+     * and changes nothing. A counter holds the sum of every element
+     * that hashes to it, so it can be higher than the count of any one
+     * element.
+     * <p>
+     * Default value is 4, which is also the only size before Redis 8.12.0.
+     * <p>
+     * Requires <b>Redis 8.12.0 or higher.</b>
+     *
+     * @param bytes size of each counter in bytes: 1, 2, 4 or 8
+     * @return arguments instance
+     * @throws IllegalArgumentException if bytes is not 1, 2, 4 or 8
+     */
+    CountMinInitArgs cellSize(int bytes);
 
 }

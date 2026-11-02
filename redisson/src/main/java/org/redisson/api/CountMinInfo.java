@@ -26,11 +26,33 @@ public class CountMinInfo {
     private final long width;
     private final long depth;
     private final long count;
+    private final int cellSize;
 
+    /**
+     * Creates information about a sketch with 4-byte cells,
+     * the only size before Redis 8.12.0.
+     *
+     * @param width number of counters in each array
+     * @param depth number of counter arrays
+     * @param count total count of all items added to the sketch
+     */
     public CountMinInfo(long width, long depth, long count) {
+        this(width, depth, count, 4);
+    }
+
+    /**
+     * Creates information about a sketch.
+     *
+     * @param width number of counters in each array
+     * @param depth number of counter arrays
+     * @param count total count of all items added to the sketch
+     * @param cellSize size of each counter in bytes
+     */
+    public CountMinInfo(long width, long depth, long count, int cellSize) {
         this.width = width;
         this.depth = depth;
         this.count = count;
+        this.cellSize = cellSize;
     }
 
     /**
@@ -54,15 +76,31 @@ public class CountMinInfo {
     /**
      * Returns the total count of all items added to the sketch.
      * <p>
-     * This is the sum of all increments, not the number of distinct items.
+     * This is the sum of all increments, negative ones included,
+     * not the number of distinct items.
      * <p>
-     * It keeps accumulating after individual counters have saturated at
-     * {@code 2^32-1}, so on a long-lived sketch it can exceed what any
-     * count query is able to report.
+     * Before Redis 8.12.0 it keeps accumulating after individual counters
+     * have saturated at {@code 2^32-1}, so on a long-lived sketch it can
+     * exceed what any count query is able to report. Since Redis 8.12.0
+     * an increment that would overflow a counter is rejected and not
+     * counted here either.
      *
      * @return total count
      */
     public long getCount() {
         return count;
+    }
+
+    /**
+     * Returns the size of each counter in bytes: 1, 2, 4 or 8.
+     * <p>
+     * Servers before Redis 8.12.0 do not report it. Every sketch
+     * they hold has 4-byte cells, so 4 is returned for them.
+     *
+     * @return cell size in bytes
+     * @see org.redisson.api.countmin.CountMinInitArgs#cellSize(int)
+     */
+    public int getCellSize() {
+        return cellSize;
     }
 }

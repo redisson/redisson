@@ -62,6 +62,21 @@ public class RedisDockerTest {
 //        return createRedisWithVersion("valkey/valkey-bundle:latest", params);
     }
 
+    // Features that ship in Redis 8.12 are tested on the Redis client libraries' test image,
+    // since no official redis image has 8.12 yet. Its entrypoint differs from the official one
+    // in two ways that createContainerByImage does not allow for: it listens on port 3000
+    // unless PORT says otherwise, and it appends the container command to its own
+    // redis-server invocation, so the command carries only the options.
+    private static final String IMAGE_8_12 = "redislabs/client-libs-test:8.12-rc2";
+
+    protected static GenericContainer<?> createRedis812(String... options) {
+        return new GenericContainer<>(IMAGE_8_12)
+                .withEnv("PORT", "6379")
+                .withCommand(options)
+                .withExposedPorts(6379)
+                .withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger("redis")));
+    }
+
     static {
         CONTAINER.start();
         Config config = createConfig();

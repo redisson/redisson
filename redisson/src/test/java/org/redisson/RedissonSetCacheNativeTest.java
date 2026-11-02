@@ -16,8 +16,6 @@ import org.redisson.config.Config;
 import org.redisson.config.ReadMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
-import org.testcontainers.containers.output.Slf4jLogConsumer;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import java.io.Serializable;
@@ -32,23 +30,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class RedissonSetCacheNativeTest extends RedisDockerTest {
 
-    // Set member expiration (redis/redis#15938) ships in 8.12, and no official redis image
-    // has it yet. This is the Redis client libraries' test image, whose entrypoint differs
-    // from the official one in two ways that createContainerByImage does not allow for:
-    // it listens on port 3000 unless PORT says otherwise, and it appends the container
-    // command to its own redis-server invocation, so the command carries only the options.
-    private static final String IMAGE_8_12 = "redislabs/client-libs-test:8.12-rc2";
-
+    // Set member expiration (redis/redis#15938) ships in 8.12, see createRedis812.
     static RedissonClient redisson;
     static GenericContainer<?> redis;
-
-    private static GenericContainer<?> createRedis812(String... options) {
-        return new GenericContainer<>(IMAGE_8_12)
-                .withEnv("PORT", "6379")
-                .withCommand(options)
-                .withExposedPorts(6379)
-                .withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger("redis")));
-    }
 
     @BeforeAll
     static void beforeAll() {

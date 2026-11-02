@@ -26,6 +26,7 @@ public final class CountMinInitArgsImpl implements CountMinInitArgs {
     final Long depth;
     final Double errorRate;
     final Double probability;
+    Integer cellSize;
 
     CountMinInitArgsImpl(long width, long depth) {
         // Same bounds the module enforces, checked here so the message names
@@ -56,6 +57,15 @@ public final class CountMinInitArgsImpl implements CountMinInitArgs {
         this.probability = probability;
     }
 
+    @Override
+    public CountMinInitArgs cellSize(int bytes) {
+        if (bytes != 1 && bytes != 2 && bytes != 4 && bytes != 8) {
+            throw new IllegalArgumentException("cellSize should be 1, 2, 4 or 8");
+        }
+        this.cellSize = bytes;
+        return this;
+    }
+
     public Long getWidth() {
         return width;
     }
@@ -70,6 +80,10 @@ public final class CountMinInitArgsImpl implements CountMinInitArgs {
 
     public Double getProbability() {
         return probability;
+    }
+
+    public Integer getCellSize() {
+        return cellSize;
     }
 
     public boolean isByDimensions() {

@@ -64,19 +64,31 @@ public class RedissonCountMin<V> extends RedissonExpirable implements RCountMin<
     public RFuture<Void> initAsync(CountMinInitArgs args) {
         CountMinInitArgsImpl a = (CountMinInitArgsImpl) args;
 
+        List<Object> params = new ArrayList<>(5);
+        params.add(getRawName());
+
         // The two initialization modes are separate Redis commands rather than
         // flags on one, so the args type carries which of them was asked for.
+        RedisCommand<Void> command;
         if (a.isByDimensions()) {
-            return commandExecutor.writeAsync(
-                    getRawName(), codec,
-                    RedisCommands.CMS_INITBYDIM,
-                    getRawName(), a.getWidth(), a.getDepth());
+            command = RedisCommands.CMS_INITBYDIM;
+            params.add(a.getWidth());
+            params.add(a.getDepth());
+        } else {
+            command = RedisCommands.CMS_INITBYPROB;
+            params.add(a.getErrorRate());
+            params.add(a.getProbability());
+        }
+
+        if (a.getCellSize() != null) {
+            params.add("CELL_SIZE");
+            params.add(a.getCellSize());
         }
 
         return commandExecutor.writeAsync(
                 getRawName(), codec,
-                RedisCommands.CMS_INITBYPROB,
-                getRawName(), a.getErrorRate(), a.getProbability());
+                command,
+                params.toArray());
     }
 
     @Override
@@ -86,7 +98,6 @@ public class RedissonCountMin<V> extends RedissonExpirable implements RCountMin<
 
     @Override
     public RFuture<Long> addAsync(V element) {
-        // CMS.INCRBY has no single-element form, the increment is always explicit.
         return addAsync(element, 1);
     }
 
@@ -97,10 +108,8 @@ public class RedissonCountMin<V> extends RedissonExpirable implements RCountMin<
 
     @Override
     public RFuture<Long> addAsync(V element, long increment) {
-        // CMS.INCRBY parses the increment as a signed value and then rejects it,
-        // so a negative one costs a round trip to learn nothing useful.
-        if (increment < 0) {
-            throw new IllegalArgumentException("increment can't be negative");
+        if (increment == Long.MIN_VALUE) {
+            throw new IllegalArgumentException("increment can't be Long.MIN_VALUE");
         }
 
         return commandExecutor.writeAsync(
@@ -123,11 +132,9 @@ public class RedissonCountMin<V> extends RedissonExpirable implements RCountMin<
         for (Map.Entry<V, Long> entry : elements.entrySet()) {
             Long increment = entry.getValue();
             Objects.requireNonNull(increment, "increment can't be null");
-            // Checked per entry, before anything is sent: the command applies
-            // every pair or none, so one bad value would reject the whole batch.
-            if (increment < 0) {
+            if (increment == Long.MIN_VALUE) {
                 throw new IllegalArgumentException(
-                        "increment can't be negative for element: " + entry.getKey());
+                        "increment can't be Long.MIN_VALUE for element: " + entry.getKey());
             }
 
             elementList.add(entry.getKey());
