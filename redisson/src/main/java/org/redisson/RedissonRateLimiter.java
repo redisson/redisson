@@ -367,6 +367,12 @@ public final class RedissonRateLimiter extends RedissonExpirable implements RRat
 
     @Override
     public RFuture<Boolean> trySetRateAsync(RateType type, long rate, Duration rateInterval, Duration keepAliveTime) {
+        if (rate <= 0) {
+            throw new IllegalArgumentException("Rate can't be negative or zero");
+        }
+        if (rateInterval.isZero() || rateInterval.isNegative()) {
+            throw new IllegalArgumentException("Rate interval can't be negative or zero");
+        }
         if (!keepAliveTime.equals(Duration.ZERO) && keepAliveTime.toMillis() < rateInterval.toMillis()) {
             throw new IllegalArgumentException("The parameter keepAliveTime should be greater than or equal to rateInterval");
         }
@@ -405,6 +411,12 @@ public final class RedissonRateLimiter extends RedissonExpirable implements RRat
 
     @Override
     public RFuture<Void> setRateAsync(RateType type, long rate, Duration rateInterval, Duration keepAliveTime) {
+        if (rate <= 0) {
+            throw new IllegalArgumentException("Rate can't be negative or zero");
+        }
+        if (rateInterval.isZero() || rateInterval.isNegative()) {
+            throw new IllegalArgumentException("Rate interval can't be negative or zero");
+        }
         if (!keepAliveTime.isZero() && keepAliveTime.toMillis() < rateInterval.toMillis()) {
             throw new IllegalArgumentException("The parameter keepAliveTime should be greater than or equal to rateInterval");
         }
