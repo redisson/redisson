@@ -170,6 +170,101 @@ public interface RKeysAsync {
     RFuture<Long> countExistsAsync(String... names);
 
     /**
+     * Protects a key from eviction: under {@code maxmemory} it is never
+     * chosen for eviction, whatever the eviction policy.
+     * <p>
+     * The protection belongs to the key, not to its value. It survives
+     * overwriting the value, {@code RENAME}, {@code COPY}, {@code MOVE} and
+     * a restart from RDB or AOF. It is lost when the key is deleted or expires,
+     * even if the key is written again, and {@code DUMP}/{@code RESTORE}
+     * doesn't carry it. It doesn't protect the key from expiration or deletion.
+     * Removing the last element of a collection deletes its key, and the
+     * protection with it.
+     * <p>
+     * Only the named key is protected. Some Redisson objects keep auxiliary keys
+     * beside their data, such as the configuration of a Bloom filter;
+     * {@link RObject#bless()} protects all of them.
+     * <p>
+     * When protected keys hold the memory eviction needs, used memory may grow
+     * up to 1.25 times {@code maxmemory} before writes are rejected with OOM.
+     * This method is rejected then too, unlike {@link #unblessAsync(String)},
+     * so memory can always be released.
+     * <p>
+     * Uses {@code BLESS SET name NO-EVICT} command.
+     * <p>
+     * Requires <b>Redis 8.12.0 or higher.</b>
+     *
+     * @param name name of key
+     * @return {@code true} if the key was protected by this call,
+     *         {@code false} if it already was.
+     *         Fails with {@link org.redisson.client.RedisException}
+     *         if the key doesn't exist
+     */
+    RFuture<Boolean> blessAsync(String name);
+
+    /**
+     * Removes the protection from eviction set by {@link #blessAsync(String)}.
+     * <p>
+     * Allowed when memory is full, so the memory that protected keys hold
+     * can always be released.
+     * <p>
+     * Uses {@code BLESS CLEAR name NO-EVICT} command.
+     * <p>
+     * Requires <b>Redis 8.12.0 or higher.</b>
+     *
+     * @param name name of key
+     * @return {@code true} if the protection was removed,
+     *         {@code false} if the key wasn't protected.
+     *         Fails with {@link org.redisson.client.RedisException}
+     *         if the key doesn't exist
+     */
+    RFuture<Boolean> unblessAsync(String name);
+
+    /**
+     * Checks if a key is protected from eviction by {@link #blessAsync(String)}.
+     * <p>
+     * Uses {@code BLESS GET} command.
+     * <p>
+     * Requires <b>Redis 8.12.0 or higher.</b>
+     *
+     * @param name name of key
+     * @return {@code true} if the key is protected.
+     *         Fails with {@link org.redisson.client.RedisException}
+     *         if the key doesn't exist
+     */
+    RFuture<Boolean> isBlessedAsync(String name);
+
+    /**
+     * Returns the keys of the current database protected from eviction by
+     * {@link #blessAsync(String)}, on all master nodes. Keys are traversed with
+     * {@code BLESS SCAN} using the server's default {@code COUNT} of 1024.
+     * <p>
+     * As with {@code SCAN}, a key may be returned more than once, and a key
+     * blessed or unblessed during the traversal may or may not be returned.
+     * <p>
+     * Requires <b>Redis 8.12.0 or higher.</b>
+     *
+     * @return names of the protected keys
+     */
+    AsyncIterator<String> getBlessedKeysAsync();
+
+    /**
+     * Returns the keys of the current database protected from eviction by
+     * {@link #blessAsync(String)}, on all master nodes. Keys are traversed with
+     * {@code BLESS SCAN}.
+     * <p>
+     * As with {@code SCAN}, a key may be returned more than once, and a key
+     * blessed or unblessed during the traversal may or may not be returned.
+     * <p>
+     * Requires <b>Redis 8.12.0 or higher.</b>
+     *
+     * @param chunkSize keys loaded per request, a hint as for {@code SCAN COUNT};
+     *                  0 or less uses the server default
+     * @return names of the protected keys
+     */
+    AsyncIterator<String> getBlessedKeysAsync(int chunkSize);
+
+    /**
      * Get all keys using iterable. Keys traversing with SCAN operation.
      * Each SCAN operation loads up to <code>10</code> keys per request.
      *

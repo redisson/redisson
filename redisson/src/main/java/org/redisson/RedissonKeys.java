@@ -15,17 +15,14 @@
  */
 package org.redisson;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.util.concurrent.CompletionStage;
 import org.redisson.api.*;
+import org.redisson.api.keys.MigrateArgs;
+import org.redisson.api.keys.MigrateParams;
 import org.redisson.api.listener.FlushListener;
 import org.redisson.api.listener.NewObjectListener;
 import org.redisson.api.listener.SetObjectListener;
 import org.redisson.api.options.KeysScanOptions;
 import org.redisson.api.options.KeysScanParams;
-import org.redisson.api.keys.MigrateArgs;
-import org.redisson.api.keys.MigrateParams;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisException;
 import org.redisson.client.codec.ByteArrayCodec;
@@ -54,9 +51,12 @@ import org.redisson.pubsub.PublishSubscribeService;
 import org.redisson.reactive.CommandReactiveBatchService;
 import org.redisson.rx.CommandRxBatchService;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -259,6 +259,98 @@ public final class RedissonKeys implements RKeys {
         }
 
         return commandExecutor.readBatchedAsync(StringCodec.INSTANCE, RedisCommands.EXISTS_LONG, new LongSlotCallback(), map(names));
+    }
+
+    @Override
+    public boolean bless(String name) {
+        return commandExecutor.get(blessAsync(name));
+    }
+
+    @Override
+    public RFuture<Boolean> blessAsync(String name) {
+        String key = map(name);
+        return commandExecutor.writeAsync(key, StringCodec.INSTANCE, RedisCommands.BLESS_SET, key, RedissonObject.NO_EVICT);
+    }
+
+    @Override
+    public boolean unbless(String name) {
+        return commandExecutor.get(unblessAsync(name));
+    }
+
+    @Override
+    public RFuture<Boolean> unblessAsync(String name) {
+        String key = map(name);
+        return commandExecutor.writeAsync(key, StringCodec.INSTANCE, RedisCommands.BLESS_CLEAR, key, RedissonObject.NO_EVICT);
+    }
+
+    @Override
+    public boolean isBlessed(String name) {
+        return commandExecutor.get(isBlessedAsync(name));
+    }
+
+    @Override
+    public RFuture<Boolean> isBlessedAsync(String name) {
+        String key = map(name);
+        return commandExecutor.readAsync(key, StringCodec.INSTANCE, RedisCommands.BLESS_GET, key);
+    }
+
+    private final RedisCommand<ListScanResult<String>> blessScan =
+            new RedisCommand<>("BLESS", "SCAN", scan.getReplayMultiDecoder());
+
+    public RFuture<ScanResult<Object>> blessScanIteratorAsync(RedisClient client, MasterSlaveEntry entry,
+                                                              String startPos, int count) {
+        List<Object> args = new ArrayList<>(4);
+        args.add(startPos);
+        args.add(RedissonObject.NO_EVICT);
+        // the server refuses COUNT 0, and without COUNT it uses 1024
+        if (count > 0) {
+            args.add("COUNT");
+            args.add(count);
+        }
+        return commandExecutor.readAsync(client, entry, StringCodec.INSTANCE, blessScan, args.toArray());
+    }
+
+    @Override
+    public Iterable<String> getBlessedKeys() {
+        return getBlessedKeys(0);
+    }
+
+    @Override
+    public Iterable<String> getBlessedKeys(int chunkSize) {
+        List<Iterable<String>> iterables = new ArrayList<>();
+        for (MasterSlaveEntry entry : commandExecutor.getConnectionManager().getEntrySet()) {
+            iterables.add(() -> new RedissonBaseIterator<String>() {
+                @Override
+                protected ScanResult<Object> iterator(RedisClient client, String nextIterPos) {
+                    return commandExecutor.get(blessScanIteratorAsync(client, entry, nextIterPos, chunkSize));
+                }
+
+                @Override
+                protected void remove(Object value) {
+                    throw new UnsupportedOperationException("Use unbless() to remove the protection of a key");
+                }
+            });
+        }
+        return new CompositeIterable<>(iterables, 0);
+    }
+
+    @Override
+    public AsyncIterator<String> getBlessedKeysAsync() {
+        return getBlessedKeysAsync(0);
+    }
+
+    @Override
+    public AsyncIterator<String> getBlessedKeysAsync(int chunkSize) {
+        List<AsyncIterator<String>> asyncIterators = new ArrayList<>();
+        for (MasterSlaveEntry entry : commandExecutor.getConnectionManager().getEntrySet()) {
+            asyncIterators.add(new BaseAsyncIterator<String, Object>() {
+                @Override
+                protected RFuture<ScanResult<Object>> iterator(RedisClient client, String nextItPos) {
+                    return blessScanIteratorAsync(client, entry, nextItPos, chunkSize);
+                }
+            });
+        }
+        return new CompositeAsyncIterator<>(asyncIterators, 0);
     }
 
     @Override

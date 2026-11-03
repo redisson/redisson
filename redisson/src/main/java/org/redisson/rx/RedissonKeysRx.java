@@ -71,6 +71,29 @@ public class RedissonKeysRx {
         return getKeys(KeysScanOptions.defaults().pattern(pattern).chunkSize(count));
     }
 
+    public Flowable<String> getBlessedKeys() {
+        return getBlessedKeys(0);
+    }
+
+    public Flowable<String> getBlessedKeys(int chunkSize) {
+        List<Publisher<String>> publishers = new ArrayList<>();
+        for (MasterSlaveEntry entry : commandExecutor.getConnectionManager().getEntrySet()) {
+            ReplayProcessor<String> p = ReplayProcessor.create();
+            publishers.add(p.doOnRequest(new RxIteratorConsumer<String>(p) {
+                @Override
+                protected boolean tryAgain() {
+                    return false;
+                }
+
+                @Override
+                protected RFuture<ScanResult<Object>> scanIterator(RedisClient client, String nextIterPos) {
+                    return instance.blessScanIteratorAsync(client, entry, nextIterPos, chunkSize);
+                }
+            }));
+        }
+        return Flowable.merge(publishers);
+    }
+
     private Publisher<String> createKeysIterator(MasterSlaveEntry entry, String pattern, int count, RType type) {
         ReplayProcessor<String> p = ReplayProcessor.create();
         return p.doOnRequest(new RxIteratorConsumer<String>(p) {

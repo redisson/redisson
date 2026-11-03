@@ -3,14 +3,15 @@ package org.redisson;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
-import org.redisson.api.RBucketReactive;
-import org.redisson.api.RKeysReactive;
-import org.redisson.api.RMapReactive;
+import org.redisson.api.*;
 import org.redisson.client.protocol.Time;
+import org.testcontainers.containers.GenericContainer;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -28,6 +29,40 @@ public class RedissonKeysReactiveTest extends BaseReactiveTest {
 
         assertThat(time.getSeconds()).isPositive();
         assertThat(time.getMicroseconds()).isBetween(0, 999999);
+    }
+
+    private static GenericContainer<?> redis812;
+    private static RedissonClient redisson812;
+
+    @BeforeAll
+    static void startRedis812() {
+        redis812 = createRedis812();
+        redis812.start();
+        redisson812 = Redisson.create(createConfig(redis812));
+    }
+
+    @AfterAll
+    static void stopRedis812() {
+        redisson812.shutdown();
+        redis812.stop();
+    }
+
+    @Test
+    public void testBlessReactiveAndRx() {
+        redisson812.getKeys().flushall();
+        redisson812.getBucket("testBlessReactive").set("v");
+
+        RKeysReactive reactive = redisson812.reactive().getKeys();
+        assertThat(reactive.bless("testBlessReactive").block()).isTrue();
+        assertThat(reactive.isBlessed("testBlessReactive").block()).isTrue();
+
+        assertThat(reactive.getBlessedKeys().collectList().block())
+                .containsExactlyInAnyOrder("testBlessReactive");
+        assertThat(reactive.getBlessedKeys(1).collectList().block())
+                .containsExactlyInAnyOrder("testBlessReactive");
+
+        assertThat(reactive.unbless("testBlessReactive").block()).isTrue();
+        assertThat(reactive.getBlessedKeys().collectList().block()).isEmpty();
     }
 
     @Test

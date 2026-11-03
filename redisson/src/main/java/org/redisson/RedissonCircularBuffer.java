@@ -556,6 +556,11 @@ public class RedissonCircularBuffer<V> extends RedissonExpirable implements RCir
     }
 
     @Override
+    protected RFuture<Boolean> blessKeysAsync(String subcommand, String... keys) {
+        return super.blessKeysAsync(subcommand, getRawName(), settingsName);
+    }
+
+    @Override
     protected RFuture<Boolean> expireAtAsync(long timestamp, String param, String... keys) {
         return super.expireAtAsync(timestamp, param, getRawName(), settingsName);
     }

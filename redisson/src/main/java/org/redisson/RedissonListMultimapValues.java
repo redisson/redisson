@@ -68,6 +68,11 @@ public class RedissonListMultimapValues<V> extends RedissonExpirable implements 
     }
 
     @Override
+    protected RFuture<Boolean> blessKeysAsync(String subcommand, String... keys) {
+        throw new UnsupportedOperationException("This operation is not supported for ListMultimap values List");
+    }
+
+    @Override
     protected RFuture<Boolean> expireAtAsync(long timestamp, String param, String... keys) {
         throw new UnsupportedOperationException("This operation is not supported for SetMultimap values Set");
     }

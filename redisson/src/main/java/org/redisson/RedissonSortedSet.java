@@ -700,6 +700,11 @@ public class RedissonSortedSet<V> extends RedissonExpirable implements RSortedSe
     }
 
     @Override
+    protected RFuture<Boolean> blessKeysAsync(String subcommand, String... keys) {
+        return super.blessKeysAsync(subcommand, getRawName(), getComparatorKeyName(), getComparatorInstanceKeyName(), getLockName());
+    }
+
+    @Override
     protected RFuture<Boolean> expireAtAsync(long timestamp, String param, String... keys) {
         return super.expireAtAsync(timestamp, param, getRawName(), getComparatorKeyName(), getComparatorInstanceKeyName(), getLockName());
     }

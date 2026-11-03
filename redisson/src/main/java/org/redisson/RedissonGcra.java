@@ -187,6 +187,11 @@ public final class RedissonGcra extends RedissonExpirable implements RGcra {
     }
 
     @Override
+    protected RFuture<Boolean> blessKeysAsync(String subcommand, String... keys) {
+        return super.blessKeysAsync(subcommand, getRawName(), getConfigName());
+    }
+
+    @Override
     protected RFuture<Boolean> expireAtAsync(long timestamp, String param, String... keys) {
         return super.expireAtAsync(timestamp, param, getRawName(), getConfigName());
     }

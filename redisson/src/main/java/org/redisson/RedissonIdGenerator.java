@@ -211,6 +211,11 @@ public final class RedissonIdGenerator extends RedissonExpirable implements RIdG
     }
 
     @Override
+    protected RFuture<Boolean> blessKeysAsync(String subcommand, String... keys) {
+        return super.blessKeysAsync(subcommand, getRawName(), allocationSizeName);
+    }
+
+    @Override
     protected RFuture<Boolean> expireAtAsync(long timestamp, String param, String... keys) {
         return super.expireAtAsync(timestamp, param, getRawName(), allocationSizeName);
     }

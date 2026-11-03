@@ -15,36 +15,21 @@
  */
 package org.redisson.client.protocol;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 import org.redisson.api.*;
 import org.redisson.api.array.ArrayEntry;
 import org.redisson.api.array.ArrayFullInfo;
 import org.redisson.api.array.ArrayInfo;
 import org.redisson.api.bloomfilter.BloomFilterInfo;
 import org.redisson.api.bloomfilter.BloomFilterScanDumpInfo;
-import org.redisson.api.tsnative.TSInfo;
-import org.redisson.api.tsnative.TSSample;
-import org.redisson.api.tsnative.TSSeriesSample;
-import org.redisson.api.tsnative.TSSeriesSamples;
 import org.redisson.api.search.index.IndexInfo;
 import org.redisson.api.search.query.hybrid.HybridSearchResult;
 import org.redisson.api.stream.FastAutoClaimResult;
 import org.redisson.api.stream.StreamInfo;
 import org.redisson.api.stream.StreamMessageId;
+import org.redisson.api.tsnative.TSInfo;
+import org.redisson.api.tsnative.TSSample;
+import org.redisson.api.tsnative.TSSeriesSample;
+import org.redisson.api.tsnative.TSSeriesSamples;
 import org.redisson.api.vector.VectorInfo;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.DoubleCodec;
@@ -55,6 +40,13 @@ import org.redisson.client.protocol.decoder.*;
 import org.redisson.client.protocol.pubsub.PubSubStatusDecoder;
 import org.redisson.cluster.ClusterNodeInfo;
 import org.redisson.codec.CompositeCodec;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * 
@@ -1317,5 +1309,13 @@ public interface RedisCommands {
             XREAD_BLOCKING_SINGLE, XREAD_BLOCKING, XREADGROUP_BLOCKING_SINGLE, XREADGROUP_BLOCKING,
             XREAD_BLOCKING_SINGLE_V2, XREAD_BLOCKING_V2, XREADGROUP_BLOCKING_SINGLE_V2,
             XREADGROUP_BLOCKING_V2, TS_READ_BLOCKING));
+
+    RedisStrictCommand<Boolean> BLESS_SET =
+            new RedisStrictCommand<>("BLESS", "SET", new BooleanReplayConvertor());
+    RedisStrictCommand<Boolean> BLESS_CLEAR =
+            new RedisStrictCommand<>("BLESS", "CLEAR", new BooleanReplayConvertor());
+    RedisStrictCommand<Boolean> BLESS_GET = new RedisStrictCommand<>("BLESS", "GET",
+            (parts, state) -> parts.contains("NO-EVICT"));
+
 
 }

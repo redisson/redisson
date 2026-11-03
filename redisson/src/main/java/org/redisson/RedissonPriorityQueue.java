@@ -500,6 +500,11 @@ public class RedissonPriorityQueue<V> extends BaseRedissonList<V> implements RPr
     }
 
     @Override
+    protected RFuture<Boolean> blessKeysAsync(String subcommand, String... keys) {
+        return super.blessKeysAsync(subcommand, getRawName(), getComparatorKeyName());
+    }
+
+    @Override
     protected RFuture<Boolean> expireAtAsync(long timestamp, String param, String... keys) {
         return super.expireAtAsync(timestamp, param, getRawName(), getComparatorKeyName());
     }

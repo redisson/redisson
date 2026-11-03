@@ -1,14 +1,19 @@
 package org.redisson.rx;
 
 import io.reactivex.rxjava3.core.Flowable;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.redisson.Redisson;
 import org.redisson.api.RBucketRx;
 import org.redisson.api.RKeysRx;
 import org.redisson.api.RMapRx;
+import org.redisson.api.RedissonClient;
 import org.redisson.api.options.KeysScanOptions;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.Time;
+import org.testcontainers.containers.GenericContainer;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -27,6 +32,39 @@ public class RedissonKeysRxTest extends BaseRxTest {
 
         assertThat(time.getSeconds()).isPositive();
         assertThat(time.getMicroseconds()).isBetween(0, 999999);
+    }
+
+    private static GenericContainer<?> redis812;
+    private static RedissonClient redisson812;
+
+    @BeforeAll
+    static void startRedis812() {
+        redis812 = createRedis812();
+        redis812.start();
+        redisson812 = Redisson.create(createConfig(redis812));
+    }
+
+    @AfterAll
+    static void stopRedis812() {
+        redisson812.shutdown();
+        redis812.stop();
+    }
+
+    @Test
+    public void testBlessReactiveAndRx() {
+        redisson812.getKeys().flushall();
+        redisson812.getBucket("testBlessRx").set("v");
+
+        RKeysRx rx = redisson812.rxJava().getKeys();
+        assertThat(rx.bless("testBlessRx").blockingGet()).isTrue();
+        assertThat(rx.isBlessed("testBlessRx").blockingGet()).isTrue();
+
+        assertThat(rx.getBlessedKeys().toList().blockingGet())
+                .containsExactlyInAnyOrder("testBlessRx");
+        assertThat(rx.getBlessedKeys(1).toList().blockingGet())
+                .containsExactlyInAnyOrder("testBlessRx");
+
+        assertThat(rx.unbless("testBlessRx").blockingGet()).isTrue();
     }
 
     @Test

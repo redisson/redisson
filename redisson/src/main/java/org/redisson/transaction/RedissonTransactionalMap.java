@@ -85,6 +85,16 @@ public class RedissonTransactionalMap<K, V> extends RedissonMap<K, V> {
     public RFuture<Boolean> moveAsync(int database) {
         throw new UnsupportedOperationException("move method is not supported in transaction");
     }
+
+    @Override
+    public RFuture<Boolean> blessAsync() {
+        throw new UnsupportedOperationException("bless method is not supported in transaction");
+    }
+
+    @Override
+    public RFuture<Boolean> unblessAsync() {
+        throw new UnsupportedOperationException("unbless method is not supported in transaction");
+    }
     
     @Override
     public RFuture<Void> migrateAsync(String host, int port, int database, long timeout) {

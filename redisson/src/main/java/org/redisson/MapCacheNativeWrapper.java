@@ -832,6 +832,21 @@ public class MapCacheNativeWrapper<K, V> implements RMapCache<K, V>, Supplier<RM
     }
 
     @Override
+    public boolean bless() {
+        return cache.bless();
+    }
+
+    @Override
+    public boolean unbless() {
+        return cache.unbless();
+    }
+
+    @Override
+    public boolean isBlessed() {
+        return cache.isBlessed();
+    }
+
+    @Override
     public Codec getCodec() {
         return cache.getCodec();
     }
@@ -974,6 +989,21 @@ public class MapCacheNativeWrapper<K, V> implements RMapCache<K, V>, Supplier<RM
     @Override
     public RFuture<Boolean> isExistsAsync() {
         return cache.isExistsAsync();
+    }
+
+    @Override
+    public RFuture<Boolean> blessAsync() {
+        return cache.blessAsync();
+    }
+
+    @Override
+    public RFuture<Boolean> unblessAsync() {
+        return cache.unblessAsync();
+    }
+
+    @Override
+    public RFuture<Boolean> isBlessedAsync() {
+        return cache.isBlessedAsync();
     }
 
     @Override

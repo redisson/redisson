@@ -295,6 +295,44 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
     }
 
     @Override
+    protected RFuture<Boolean> blessKeysAsync(String subcommand, String... keys) {
+        return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+          "local entries = redis.call('hgetall', KEYS[1]) " +
+                "local keys = {KEYS[1]} " +
+                "for i, v in ipairs(entries) do " +
+                    "if i % 2 == 0 then " +
+                        "table.insert(keys, ARGV[3] .. v) " +
+                    "end " +
+                "end " +
+
+              "local result = 0 "
+            + "for j = 1, #keys, 1 do "
+                 // An auxiliary key may not exist yet, and BLESS refuses a missing key.
+                + "if redis.call('exists', keys[j]) == 1 then "
+                // get answers 1 only if at least one key exists and every existing key has the flag.
+                    + "if ARGV[1] == 'get' then "
+                        + "local flags = redis.call('bless', 'get', keys[j]) "
+                        + "local found = 0 "
+                        + "for i = 1, #flags, 1 do "
+                            + "if flags[i] == ARGV[2] then "
+                                + "found = 1 "
+                            + "end "
+                        + "end "
+                        + "if found == 0 then "
+                            + "return 0 "
+                        + "end "
+                        + "result = 1 "
+                        // set and clear answer 1 if any key changed.
+                    + "elseif redis.call('bless', ARGV[1], keys[j], ARGV[2]) == 1 then "
+                        + "result = 1 "
+                    + "end "
+                + "end "
+            + "end "
+            + "return result",
+                Arrays.asList(getRawName()), subcommand, NO_EVICT, prefix);
+    }
+
+    @Override
     public RFuture<Void> renameAsync(String newName) {
         String newPrefix = suffixName(newName, "");
         RFuture<Void> future = commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_VOID,

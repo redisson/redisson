@@ -226,6 +226,62 @@ public interface RObjectReactive {
     Mono<Boolean> isExists();
 
     /**
+     * Protects this object from eviction: under {@code maxmemory} none of its keys
+     * is chosen for eviction, whatever the eviction policy.
+     * <p>
+     * Every key the object has now is protected, including the auxiliary keys some
+     * objects keep beside their data, such as the configuration of a Bloom filter or
+     * the expiration index of a map cache. A key the object creates later is not:
+     * an auxiliary key that doesn't exist yet, or the key of a collection emptied and
+     * filled again, since removing the last element deletes the key. Call this method
+     * again after such a change.
+     * <p>
+     * The protection stays with the keys when values are overwritten, through
+     * {@code rename}, {@code copy} (the copy is protected too), {@code move} and a restart
+     * from RDB or AOF, and is lost when a key is deleted or expires. {@code dump} doesn't
+     * carry it. It doesn't protect the object from expiration or deletion.
+     * <p>
+     * When protected keys hold the memory eviction needs, used memory may grow up to
+     * 1.25 times {@code maxmemory} before writes are rejected with OOM. This method is
+     * rejected then too, unlike {@link #unbless()}, so memory can always be released.
+     * <p>
+     * Uses {@code BLESS SET key NO-EVICT} on each key.
+     * <p>
+     * Requires <b>Redis 8.12.0 or higher.</b>
+     *
+     * @return {@code true} if a key was protected by this call,
+     *         {@code false} if every key already was or the object doesn't exist
+     */
+    Mono<Boolean> bless();
+
+    /**
+     * Removes the protection from eviction set by {@link #bless()} from every key
+     * of this object.
+     * <p>
+     * Allowed when memory is full, so the memory that protected keys hold
+     * can always be released.
+     * <p>
+     * Uses {@code BLESS CLEAR key NO-EVICT} on each key.
+     * <p>
+     * Requires <b>Redis 8.12.0 or higher.</b>
+     *
+     * @return {@code true} if the protection was removed from a key,
+     *         {@code false} if no key had it or the object doesn't exist
+     */
+    Mono<Boolean> unbless();
+
+    /**
+     * Checks if this object is protected from eviction by {@link #bless()}.
+     * <p>
+     * Uses {@code BLESS GET} on each key.
+     * <p>
+     * Requires <b>Redis 8.12.0 or higher.</b>
+     *
+     * @return {@code true} if the object exists and every key it has now is protected
+     */
+    Mono<Boolean> isBlessed();
+
+    /**
      * Adds object event listener
      * 
      * @see org.redisson.api.ExpiredObjectListener

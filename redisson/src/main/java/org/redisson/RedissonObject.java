@@ -23,6 +23,7 @@ import org.redisson.client.ChannelName;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.pubsub.PubSubType;
@@ -576,6 +577,68 @@ public abstract class RedissonObject implements RObject {
     @Override
     public RFuture<Boolean> isExistsAsync() {
         return commandExecutor.readAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EXISTS, getRawName());
+    }
+
+    static final String NO_EVICT = "NO-EVICT";
+
+    @Override
+    public boolean bless() {
+        return get(blessAsync());
+    }
+
+    @Override
+    public RFuture<Boolean> blessAsync() {
+        return blessKeysAsync("set", getRawName());
+    }
+
+    @Override
+    public boolean unbless() {
+        return get(unblessAsync());
+    }
+
+    @Override
+    public RFuture<Boolean> unblessAsync() {
+        return blessKeysAsync("clear", getRawName());
+    }
+
+    @Override
+    public boolean isBlessed() {
+        return get(isBlessedAsync());
+    }
+
+    @Override
+    public RFuture<Boolean> isBlessedAsync() {
+        return blessKeysAsync("get", getRawName());
+    }
+
+    protected RFuture<Boolean> blessKeysAsync(String subcommand, String... keys) {
+        return commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        "local keys = KEYS " +
+              "local result = 0 "
+            + "for j = 1, #keys, 1 do "
+                 // An auxiliary key may not exist yet, and BLESS refuses a missing key.
+                + "if redis.call('exists', keys[j]) == 1 then "
+                // get answers 1 only if at least one key exists and every existing key has the flag.
+                    + "if ARGV[1] == 'get' then "
+                        + "local flags = redis.call('bless', 'get', keys[j]) "
+                        + "local found = 0 "
+                        + "for i = 1, #flags, 1 do "
+                            + "if flags[i] == ARGV[2] then "
+                                + "found = 1 "
+                            + "end "
+                        + "end "
+                        + "if found == 0 then "
+                            + "return 0 "
+                        + "end "
+                        + "result = 1 "
+                        // set and clear answer 1 if any key changed.
+                    + "elseif redis.call('bless', ARGV[1], keys[j], ARGV[2]) == 1 then "
+                        + "result = 1 "
+                    + "end "
+                + "end "
+            + "end "
+            + "return result",
+                Arrays.asList(keys), subcommand, NO_EVICT);
     }
 
     @Override

@@ -190,6 +190,11 @@ public class RedissonSetMultimapCache<K, V> extends RedissonSetMultimap<K, V> im
     }
 
     @Override
+    protected RFuture<Boolean> blessKeysAsync(String subcommand, String... keys) {
+        return baseCache.blessKeysAsync(subcommand);
+    }
+
+    @Override
     public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit, String param, String... keys) {
         return baseCache.expireAsync(timeToLive, timeUnit, param);
     }

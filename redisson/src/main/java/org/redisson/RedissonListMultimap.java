@@ -458,6 +458,11 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
         }
 
         @Override
+        protected RFuture<Boolean> blessKeysAsync(String subcommand, String... keys) {
+            throw new UnsupportedOperationException("This operation is not supported for ListMultimap values List");
+        }
+
+        @Override
         protected RFuture<Boolean> expireAtAsync(long timestamp, String param, String... keys) {
             throw new UnsupportedOperationException("This operation is not supported for SetMultimap values Set");
         }

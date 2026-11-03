@@ -71,6 +71,29 @@ public class RedissonKeysReactive {
         return Flux.merge(publishers);
     }
 
+    public Flux<String> getBlessedKeys() {
+        return getBlessedKeys(0);
+    }
+
+    public Flux<String> getBlessedKeys(int chunkSize) {
+        List<Publisher<String>> publishers = new ArrayList<>();
+        for (MasterSlaveEntry entry : commandExecutor.getConnectionManager().getEntrySet()) {
+            publishers.add(Flux.create(emitter -> emitter.onRequest(new IteratorConsumer<String>(emitter) {
+
+                @Override
+                protected boolean tryAgain() {
+                    return false;
+                }
+
+                @Override
+                protected RFuture<ScanResult<Object>> scanIterator(RedisClient client, String nextIterPos) {
+                    return instance.blessScanIteratorAsync(client, entry, nextIterPos, chunkSize);
+                }
+            })));
+        }
+        return Flux.merge(publishers);
+    }
+
     private Flux<String> createKeysIterator(MasterSlaveEntry entry, String pattern, int count, RType type) {
         return Flux.create(emitter -> emitter.onRequest(new IteratorConsumer<String>(emitter) {
 

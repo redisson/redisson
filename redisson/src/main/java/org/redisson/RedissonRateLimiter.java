@@ -638,6 +638,11 @@ public final class RedissonRateLimiter extends RedissonExpirable implements RRat
     }
 
     @Override
+    protected RFuture<Boolean> blessKeysAsync(String subcommand, String... keys) {
+        return super.blessKeysAsync(subcommand, getRawName(), getValueName(), getClientValueName(), getPermitsName(), getClientPermitsName());
+    }
+
+    @Override
     protected RFuture<Boolean> expireAtAsync(long timestamp, String param, String... keys) {
         return super.expireAtAsync(timestamp, param, getRawName(), getValueName(), getClientValueName(), getPermitsName(), getClientPermitsName());
     }

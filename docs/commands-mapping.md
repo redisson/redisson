@@ -385,6 +385,10 @@ This table lists the commands that map directly to Redisson methods. Redisson al
 
 | Valkey or Redis command | Sync / Async API<br/><sub>Redisson.create(config)</sub> | Reactive API<br/><sub>redisson.reactive()</sub> | RxJava3 API<br/><sub>redisson.rxJava()</sub> |
 | --- | --- | --- | --- |
+| BLESS CLEAR | RObject.<br/>unbless()<br/>unblessAsync()<br/><br/>RKeys.<br/>unbless()<br/>unblessAsync() | RObjectReactive.<br/>unbless()<br/><br/>RKeysReactive.<br/>unbless() | RObjectRx.<br/>unbless()<br/><br/>RKeysRx.<br/>unbless() |
+| BLESS GET | RObject.<br/>isBlessed()<br/>isBlessedAsync()<br/><br/>RKeys.<br/>isBlessed()<br/>isBlessedAsync() | RObjectReactive.<br/>isBlessed()<br/><br/>RKeysReactive.<br/>isBlessed() | RObjectRx.<br/>isBlessed()<br/><br/>RKeysRx.<br/>isBlessed() |
+| BLESS SCAN | RKeys.<br/>getBlessedKeys()<br/>getBlessedKeysAsync() | RKeysReactive.<br/>getBlessedKeys() | RKeysRx.<br/>getBlessedKeys() |
+| BLESS SET | RObject.<br/>bless()<br/>blessAsync()<br/><br/>RKeys.<br/>bless()<br/>blessAsync() | RObjectReactive.<br/>bless()<br/><br/>RKeysReactive.<br/>bless() | RObjectRx.<br/>bless()<br/><br/>RKeysRx.<br/>bless() |
 | COPY | RObject.<br/>copy()<br/>copyAsync() | RObjectReactive.<br/>copy() | RObjectRx.<br/>copy() |
 | DEL | RObject.<br/>delete()<br/>deleteAsync()<br/><br/>RKeys.<br/>delete()<br/>deleteAsync() | RObjectReactive.<br/>delete()<br/><br/>RKeysReactive.<br/>delete() | RObjectRx.<br/>delete()<br/><br/>RKeysRx.<br/>delete() |
 | DUMP | RObject.<br/>dump()<br/>dumpAsync() | RObjectReactive.<br/>dump() | RObjectRx.<br/>dump() |

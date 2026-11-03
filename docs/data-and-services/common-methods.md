@@ -200,6 +200,70 @@ keys.flushdb();           // delete all keys of the currently selected database
 keys.flushdbParallel();   // delete all keys of the currently selected database in the background
 ```
 
+### Protecting keys from eviction
+
+`bless` protects data from eviction: under `maxmemory` its keys are never chosen for eviction, whatever the eviction policy, so data that must stay in memory can share an instance with a cache. `unbless` removes the protection and `isBlessed` checks it. These use the `BLESS` command with its `NO-EVICT` flag. Requires Redis 8.12.0 or higher.
+
+On an object, `bless` covers every key the object has, including the auxiliary keys some objects keep beside their data, such as the configuration of a Bloom filter or the expiration index of a map cache. `RKeys` offers the same methods for a single key by name, and `getBlessedKeys` iterates the protected keys of the current database on every master node.
+
+The protection belongs to the keys that exist when `bless` is called. A key created afterwards is not protected: the bit array of a Bloom filter appears on the first `add`, the expiration index of a map cache on the first entry with a time to live, and removing the last element of a collection deletes its key. Call `bless` again after such a change. The protection survives overwriting values, renaming, copying and a restart, and is lost once a key is deleted or expires. It does not protect data from expiration or deletion.
+
+When protected keys hold the memory eviction needs, used memory may grow up to 1.25 times `maxmemory` before writes are rejected with an OOM error. `bless` is rejected then too, while `unbless` is not, so memory can always be released.
+
+On an object that doesn't exist, the methods return `false`; the `RKeys` methods fail if the key doesn't exist. `bless` and `unbless` are not supported in a transaction, nor on the values of a multimap entry.
+
+=== "Sync"
+    ```java
+    RBloomFilter<String> filter = redisson.getBloomFilter("users");
+    filter.tryInit(1000000, 0.01);
+    filter.add("alice");
+
+    boolean protectedNow = filter.bless();     // config and bit array
+    boolean isProtected = filter.isBlessed();
+    boolean removed = filter.unbless();
+
+    RKeys keys = redisson.getKeys();
+    keys.bless("config");                      // a single key by name
+    for (String name : keys.getBlessedKeys()) {
+        // ...
+    }
+    ```
+=== "Async"
+    ```java
+    RBloomFilter<String> filter = redisson.getBloomFilter("users");
+    RFuture<Boolean> blessFuture = filter.blessAsync();
+    RFuture<Boolean> isBlessedFuture = filter.isBlessedAsync();
+    RFuture<Boolean> unblessFuture = filter.unblessAsync();
+
+    RKeysAsync keys = redisson.getKeys();
+    RFuture<Boolean> keyFuture = keys.blessAsync("config");
+    AsyncIterator<String> blessedKeys = keys.getBlessedKeysAsync();
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RBloomFilterReactive<String> filter = redisson.getBloomFilter("users");
+    Mono<Boolean> blessMono = filter.bless();
+    Mono<Boolean> isBlessedMono = filter.isBlessed();
+    Mono<Boolean> unblessMono = filter.unbless();
+
+    RKeysReactive keys = redisson.getKeys();
+    Mono<Boolean> keyMono = keys.bless("config");
+    Flux<String> blessedKeys = keys.getBlessedKeys();
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RBloomFilterRx<String> filter = redisson.getBloomFilter("users");
+    Single<Boolean> blessRx = filter.bless();
+    Single<Boolean> isBlessedRx = filter.isBlessed();
+    Single<Boolean> unblessRx = filter.unbless();
+
+    RKeysRx keys = redisson.getKeys();
+    Single<Boolean> keyRx = keys.bless("config");
+    Flowable<String> blessedKeys = keys.getBlessedKeys();
+    ```
+
 ### Global listeners
 
 Global listeners are registered on the `RKeys` interface and fire for every object rather than one instance, covering the full lifecycle of a key:

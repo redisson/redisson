@@ -2451,6 +2451,11 @@ public class RedissonTimeSeries<V, L> extends RedissonExpirable implements RTime
     }
 
     @Override
+    protected RFuture<Boolean> blessKeysAsync(String subcommand, String... keys) {
+        return super.blessKeysAsync(subcommand, getRawName(), timeoutSetName, sequenceName);
+    }
+
+    @Override
     protected RFuture<Boolean> expireAtAsync(long timestamp, String param, String... keys) {
         return super.expireAtAsync(timestamp, param, getRawName(), timeoutSetName, sequenceName);
     }

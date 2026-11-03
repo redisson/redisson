@@ -1,0 +1,116 @@
+# Like docker-compose-redis-cluster.yml, on Redis 8.12 (the client libraries' test image,
+# until an official redis:8.12 image is published). The image's own entrypoint is
+# bypassed, so the nodes start as in the base file, plus cluster-bus-port-protected-mode no:
+# since 8.12 a node refuses to start with an unauthenticated cluster bus unless told the
+# port is reachable by trusted hosts only, which holds on this private network.
+services:
+  redis-node-1:
+    image: redislabs/client-libs-test:8.12-rc2
+    entrypoint: ["redis-server"]
+    command: --cluster-enabled yes --cluster-config-file nodes-6379.conf --cluster-node-timeout 5000 --appendonly yes --port 6379 --protected-mode no --cluster-bus-port-protected-mode no
+    ports:
+      - "6379"
+      - "16379"
+    volumes:
+      - redis-data-1:/data
+    networks:
+      - rediscluster
+
+  redis-node-2:
+    image: redislabs/client-libs-test:8.12-rc2
+    entrypoint: ["redis-server"]
+    command: --cluster-enabled yes --cluster-config-file nodes-6379.conf --cluster-node-timeout 5000 --appendonly yes --port 6379 --protected-mode no --cluster-bus-port-protected-mode no
+    ports:
+      - "6379"
+      - "16379"
+    volumes:
+      - redis-data-2:/data
+    networks:
+      - rediscluster
+
+  redis-node-3:
+    image: redislabs/client-libs-test:8.12-rc2
+    entrypoint: ["redis-server"]
+    command: --cluster-enabled yes --cluster-config-file nodes-6379.conf --cluster-node-timeout 5000 --appendonly yes --port 6379 --protected-mode no --cluster-bus-port-protected-mode no
+    ports:
+      - "6379"
+      - "16379"
+    volumes:
+      - redis-data-3:/data
+    networks:
+      - rediscluster
+
+  redis-node-4:
+    image: redislabs/client-libs-test:8.12-rc2
+    entrypoint: ["redis-server"]
+    command: --cluster-enabled yes --cluster-config-file nodes-6379.conf --cluster-node-timeout 5000 --appendonly yes --port 6379 --protected-mode no --cluster-bus-port-protected-mode no
+    ports:
+      - "6379"
+      - "16379"
+    volumes:
+      - redis-data-4:/data
+    networks:
+      - rediscluster
+
+  redis-node-5:
+    image: redislabs/client-libs-test:8.12-rc2
+    entrypoint: ["redis-server"]
+    command: --cluster-enabled yes --cluster-config-file nodes-6379.conf --cluster-node-timeout 5000 --appendonly yes --port 6379 --protected-mode no --cluster-bus-port-protected-mode no
+    ports:
+      - "6379"
+      - "16379"
+    volumes:
+      - redis-data-5:/data
+    networks:
+      - rediscluster
+
+  redis-node-6:
+    image: redislabs/client-libs-test:8.12-rc2
+    entrypoint: ["redis-server"]
+    command: --cluster-enabled yes --cluster-config-file nodes-6379.conf --cluster-node-timeout 5000 --appendonly yes --port 6379 --protected-mode no --cluster-bus-port-protected-mode no
+    ports:
+      - "6379"
+      - "16379"
+    volumes:
+      - redis-data-6:/data
+    networks:
+      - rediscluster
+
+  cluster-init:
+    image: redislabs/client-libs-test:8.12-rc2
+    entrypoint: ["sh", "-c"]
+    depends_on:
+      - redis-node-1
+      - redis-node-2
+      - redis-node-3
+      - redis-node-4
+      - redis-node-5
+      - redis-node-6
+    command: >
+      "
+        sleep 5 &&
+        redis-cli -h redis-node-1 -p 6379 ping &&
+        redis-cli -h redis-node-2 -p 6379 ping &&
+        redis-cli -h redis-node-3 -p 6379 ping &&
+        redis-cli -h redis-node-4 -p 6379 ping &&
+        redis-cli -h redis-node-5 -p 6379 ping &&
+        redis-cli -h redis-node-6 -p 6379 ping &&
+        echo 'All nodes are ready. Creating cluster...' &&
+        redis-cli --cluster create redis-node-1:6379 redis-node-2:6379 redis-node-3:6379 redis-node-4:6379 redis-node-5:6379 redis-node-6:6379 --cluster-replicas 1 --cluster-yes &&
+        echo 'Cluster created successfully!'
+      "
+    networks:
+      - rediscluster
+    restart: "no"
+
+volumes:
+  redis-data-1:
+  redis-data-2:
+  redis-data-3:
+  redis-data-4:
+  redis-data-5:
+  redis-data-6:
+
+networks:
+  rediscluster:
+    driver: bridge
