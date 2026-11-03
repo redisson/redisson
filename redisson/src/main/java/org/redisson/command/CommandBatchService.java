@@ -737,7 +737,7 @@ public class CommandBatchService extends CommandAsyncService implements BatchSer
                                 BatchCommandData<?, ?> lastCommand = entry.getValue().getCommands().peekLast();
                                 result.put(entry.getKey(), r);
 
-                                if (RedisCommands.WAIT.getName().equals(lastCommand.getCommand().getName())) {
+                                if (lastCommand != null && isWaitCommand(lastCommand)) {
                                     return lastCommand.getPromise().thenApply(i -> null);
                                 }
                                 return CompletableFuture.completedFuture(null);
