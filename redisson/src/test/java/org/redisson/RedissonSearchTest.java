@@ -3,7 +3,9 @@ package org.redisson;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.awaitility.Awaitility;
 import org.awaitility.Durations;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.*;
@@ -20,14 +22,21 @@ import org.redisson.api.search.profile.SearchProfileResult;
 import org.redisson.api.search.query.Document;
 import org.redisson.api.search.query.QueryOptions;
 import org.redisson.api.search.query.ReturnAttribute;
+import org.redisson.api.search.query.ScoreExplanation;
 import org.redisson.api.search.query.SearchResult;
 import org.redisson.api.search.query.hybrid.Combine;
 import org.redisson.api.search.query.hybrid.HybridQueryArgs;
 import org.redisson.api.search.query.hybrid.HybridSearchResult;
 import org.redisson.api.search.query.hybrid.VectorSimilarity;
+import org.redisson.client.RedisException;
 import org.redisson.client.codec.StringCodec;
+import org.redisson.client.handler.State;
+import org.redisson.client.protocol.decoder.HybridSearchResultDecoder;
 import org.redisson.codec.CompositeCodec;
 import org.redisson.codec.JacksonCodec;
+import org.redisson.config.Config;
+import org.redisson.config.Protocol;
+import org.testcontainers.containers.GenericContainer;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -39,6 +48,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class RedissonSearchTest extends RedisDockerTest {
 //public class RedissonSearchTest extends DockerRedisStackTest {
@@ -1626,15 +1636,307 @@ public class RedissonSearchTest extends RedisDockerTest {
                     Map.of("category","clothing", "price","150", "rating","4", "sale_price","127.5", "title","Product 10", "vector_score","0.999999970198"));
         }
 
-        private byte[] floatsToBytes(float[] floats) {
-            ByteBuffer buffer = ByteBuffer.allocate(floats.length * 4);
-            buffer.order(ByteOrder.LITTLE_ENDIAN);
-            for (float f : floats) {
-                buffer.putFloat(f);
+        // Two documents where ex:1 wins both branches: a shorter text for BM25
+        // and a vector closer to the query vector used by the EXPLAINSCORE tests.
+        private void createExplainScoreIndex(RSearch s) {
+            s.createIndex("hybrid-explain-idx", IndexOptions.defaults()
+                            .on(IndexType.JSON)
+                            .prefix(Arrays.asList("ex:")),
+                    FieldIndex.text("$.description").as("description"),
+                    FieldIndex.numeric("$.score").as("score"),
+                    FieldIndex.flatVector("$.vec")
+                            .as("vec")
+                            .type(VectorTypeParam.Type.FLOAT32)
+                            .dim(2)
+                            .distance(VectorDistParam.DistanceMetric.L2));
+
+            record Doc(String key, String description, int score, List<Float> vec) {}
+            List<Doc> docs = List.of(
+                    new Doc("ex:1", "red shoes", 7, List.of(0f, 0f)),
+                    new Doc("ex:2", "red running shoes", 3, List.of(1f, 0f)));
+            for (Doc d : docs) {
+                RJsonBucket<Map<String, Object>> doc = redisson.getJsonBucket(d.key(),
+                        new JacksonCodec<>(new TypeReference<Map<String, Object>>() {}));
+                doc.set(Map.of("description", d.description(), "score", d.score(), "vec", d.vec()));
             }
-            return buffer.array();
         }
 
+        @Test
+        public void testHybridSearchExplainScore() {
+            RSearch s = redisson.getSearch(StringCodec.INSTANCE);
+            createExplainScoreIndex(s);
+
+            HybridSearchResult result = s.hybridSearch("hybrid-explain-idx",
+                    HybridQueryArgs.query("shoes")
+                            .vectorSimilarity(VectorSimilarity.of("@vec", "$vec"))
+                            .params(Map.of("vec", floatsToBytes(new float[]{0.1f, 0.1f})))
+                            .explainScore());
+
+            // the EXPLAINSCORE entry doesn't show up among the result fields
+            assertThat(result.getResults()).containsExactly(
+                    Map.of("__key", "ex:1", "__score", "0.0327868852459"),
+                    Map.of("__key", "ex:2", "__score", "0.0322580645161"));
+            assertThat(result.getScoreExplanations()).hasSize(2);
+
+            for (int i = 0; i < 2; i++) {
+                int rank = i + 1;
+                ScoreExplanation root = result.getScoreExplanations().get(i);
+                assertThat(root.getDescription()).startsWith("final score: 1 / (constant 60.00 + rank " + rank
+                        + ") + 1 / (constant 60.00 + rank " + rank + ") = ");
+                assertThat(root.getDetails()).hasSize(1);
+
+                ScoreExplanation hybrid = root.getDetails().get(0);
+                assertThat(hybrid.getDescription()).isEqualTo("Hybrid score (RRF: window=20, constant=60.00)");
+                assertThat(hybrid.getDetails()).hasSize(2);
+
+                ScoreExplanation text = hybrid.getDetails().get(0);
+                assertThat(text.getDescription()).isEqualTo("text rank = " + rank);
+                assertThat(text.getDetails()).hasSize(1);
+                ScoreExplanation scorer = text.getDetails().get(0);
+                assertThat(scorer.getDescription()).isEqualTo("Text scorer: BM25STD");
+                // the scorer subtree is FT.SEARCH's own explanation, which nests further
+                assertThat(scorer.getDetails().get(0).getDescription()).startsWith("Final BM25 : ");
+                assertThat(scorer.getDetails().get(0).getDetails()).isNotEmpty();
+
+                assertThat(hybrid.getDetails().get(1)).isEqualTo(
+                        new ScoreExplanation("vector branch (KNN)", List.of(new ScoreExplanation("vector rank = " + rank, List.of()))));
+            }
+
+            HybridSearchResult plain = s.hybridSearch("hybrid-explain-idx",
+                    HybridQueryArgs.query("shoes")
+                            .vectorSimilarity(VectorSimilarity.of("@vec", "$vec"))
+                            .params(Map.of("vec", floatsToBytes(new float[]{0.1f, 0.1f}))));
+            assertThat(plain.getResults()).isEqualTo(result.getResults());
+            assertThat(plain.getScoreExplanations()).isEmpty();
+        }
+
+        @Test
+        public void testHybridSearchExplainScoreWithLoadedScoreField() {
+            RSearch s = redisson.getSearch(StringCodec.INSTANCE);
+            createExplainScoreIndex(s);
+
+            // Redis sends the EXPLAINSCORE entry and the loaded field both named "score"
+            HybridSearchResult result = s.hybridSearch("hybrid-explain-idx",
+                    HybridQueryArgs.query("shoes")
+                            .vectorSimilarity(VectorSimilarity.of("@vec", "$vec"))
+                            .params(Map.of("vec", floatsToBytes(new float[]{0.1f, 0.1f})))
+                            .combine(Combine.linear().alpha(0.7).beta(0.3))
+                            .load("@score", "@description")
+                            .explainScore());
+
+            assertThat(result.getResults()).containsExactly(
+                    Map.of("score", "7", "description", "red shoes"),
+                    Map.of("score", "3", "description", "red running shoes"));
+            assertThat(result.getScoreExplanations()).hasSize(2);
+
+            for (ScoreExplanation root : result.getScoreExplanations()) {
+                assertThat(root.getDescription()).startsWith("final score: 0.7000 * ");
+                ScoreExplanation hybrid = root.getDetails().get(0);
+                assertThat(hybrid.getDescription()).isEqualTo("Hybrid score (LINEAR: alpha=0.7000, beta=0.3000, window=20)");
+                assertThat(hybrid.getDetails().get(0).getDescription()).startsWith("text contribution = 0.7000 * ");
+
+                ScoreExplanation vector = hybrid.getDetails().get(1);
+                assertThat(vector.getDescription()).isEqualTo("vector branch (KNN)");
+                assertThat(vector.getDetails()).extracting(ScoreExplanation::getDescription).satisfiesExactly(
+                        d -> assertThat(d).startsWith("vector contribution = 0.3000 * "),
+                        d -> assertThat(d).startsWith("normalized vector score = "));
+                assertThat(vector.getDetails()).allSatisfy(d -> assertThat(d.getDetails()).isEmpty());
+            }
+
+            // without EXPLAINSCORE the loaded "score" field comes first and stays a field
+            HybridSearchResult plain = s.hybridSearch("hybrid-explain-idx",
+                    HybridQueryArgs.query("shoes")
+                            .vectorSimilarity(VectorSimilarity.of("@vec", "$vec"))
+                            .params(Map.of("vec", floatsToBytes(new float[]{0.1f, 0.1f})))
+                            .combine(Combine.linear().alpha(0.7).beta(0.3))
+                            .load("@score", "@description"));
+            assertThat(plain.getResults()).isEqualTo(result.getResults());
+            assertThat(plain.getScoreExplanations()).isEmpty();
+        }
+
+        @Test
+        public void testHybridSearchExplainScoreRejectsGroupBy() {
+            RSearch s = redisson.getSearch(StringCodec.INSTANCE);
+            createExplainScoreIndex(s);
+
+            assertThatThrownBy(() -> s.hybridSearch("hybrid-explain-idx",
+                    HybridQueryArgs.query("shoes")
+                            .vectorSimilarity(VectorSimilarity.of("@vec", "$vec"))
+                            .params(Map.of("vec", floatsToBytes(new float[]{0.1f, 0.1f})))
+                            .groupBy(org.redisson.api.search.GroupBy.fieldNames("@description"))
+                            .explainScore()))
+                    .isInstanceOf(RedisException.class)
+                    .hasMessageContaining("EXPLAINSCORE is not supported with GROUPBY");
+        }
+
+        @Test
+        public void testHybridSearchExplainScoreResp3() {
+            Config config = createConfig();
+            config.setProtocol(Protocol.RESP3);
+            RedissonClient resp3 = Redisson.create(config);
+            try {
+                RSearch s = resp3.getSearch(StringCodec.INSTANCE);
+                createExplainScoreIndex(s);
+
+                // RESP3 sends the score next to the explanation as a double, not a string
+                HybridSearchResult result = s.hybridSearch("hybrid-explain-idx",
+                        HybridQueryArgs.query("shoes")
+                                .vectorSimilarity(VectorSimilarity.of("@vec", "$vec"))
+                                .params(Map.of("vec", floatsToBytes(new float[]{0.1f, 0.1f})))
+                                .explainScore());
+
+                assertThat(result.getResults()).containsExactly(
+                        Map.of("__key", "ex:1", "__score", "0.0327868852459"),
+                        Map.of("__key", "ex:2", "__score", "0.0322580645161"));
+                assertThat(result.getScoreExplanations()).hasSize(2);
+                ScoreExplanation hybrid = result.getScoreExplanations().get(1).getDetails().get(0);
+                assertThat(hybrid.getDetails().get(0).getDescription()).isEqualTo("text rank = 2");
+                assertThat(hybrid.getDetails().get(1)).isEqualTo(
+                        new ScoreExplanation("vector branch (KNN)", List.of(new ScoreExplanation("vector rank = 2", List.of()))));
+            } finally {
+                resp3.shutdown();
+            }
+        }
+
+    }
+
+    // Shared by the hybrid search tests and the HNSW compression tests.
+    private static byte[] floatsToBytes(float[] floats) {
+        ByteBuffer buffer = ByteBuffer.allocate(floats.length * 4);
+        buffer.order(ByteOrder.LITTLE_ENDIAN);
+        for (float f : floats) {
+            buffer.putFloat(f);
+        }
+        return buffer.array();
+    }
+
+    @Test
+    public void testHybridSearchResultDecoderExplanationShapes() {
+        HybridSearchResultDecoder decoder = new HybridSearchResultDecoder();
+        State state = new State();
+        // level 2 is a single result of the reply
+        state.incLevel();
+        state.incLevel();
+        state.incLevel();
+        // Redis sends null for a result it has no explanation tree for, and the description alone
+        // where the tree would nest deeper than the protocol allows
+        Object withoutTree = decoder.decode(List.<Object>of("score", Arrays.asList("0.5", null), "__key", "k1"), state);
+        Object flatTree = decoder.decode(List.<Object>of("score", List.of("0.4", "final score: 0.4"), "__key", "k2"), state);
+        Object withoutEntry = decoder.decode(List.<Object>of("__key", "k3"), state);
+        state.decLevel();
+        state.decLevel();
+
+        HybridSearchResult result = (HybridSearchResult) decoder.decode(
+                List.<Object>of("total_results", 3L, "results", List.of(withoutTree, flatTree, withoutEntry)), state);
+
+        assertThat(result.getTotal()).isEqualTo(3);
+        assertThat(result.getResults()).containsExactly(Map.of("__key", "k1"), Map.of("__key", "k2"), Map.of("__key", "k3"));
+        // each explanation stays at the index of its result
+        assertThat(result.getScoreExplanations()).containsExactly(
+                null, new ScoreExplanation("final score: 0.4", List.of()), null);
+    }
+
+    @Test
+    public void testHnswCompression() {
+        RSearch s = redisson812.getSearch(StringCodec.INSTANCE);
+        s.createIndex("sq8-idx", IndexOptions.defaults()
+                        .on(IndexType.JSON)
+                        .prefix(Arrays.asList("sq8:")),
+                FieldIndex.hnswVector("$.vec")
+                        .as("vec")
+                        .type(VectorTypeParam.Type.FLOAT32)
+                        .dim(4)
+                        .distance(VectorDistParam.DistanceMetric.L2)
+                        .compression(HNSWVectorOptionalArgs.CompressionAlgorithm.SQ8)
+                        .trainingThreshold(0),
+                FieldIndex.hnswVector("$.vec")
+                        .as("vec_trained")
+                        .type(VectorTypeParam.Type.FLOAT32)
+                        .dim(4)
+                        .distance(VectorDistParam.DistanceMetric.L2)
+                        .m(8)
+                        .compression(HNSWVectorOptionalArgs.CompressionAlgorithm.SQ8));
+
+        List<Map<String, Object>> attributes = s.info("sq8-idx").getAttributes();
+        // 0 is kept as given: it turns off the training, it isn't replaced by the default
+        assertThat(attributes.get(0))
+                .containsEntry("attribute", "vec")
+                .containsEntry("compression", "SQ8")
+                .containsEntry("training_threshold", 0L);
+        assertThat(attributes.get(1))
+                .containsEntry("attribute", "vec_trained")
+                .containsEntry("M", 8L)
+                .containsEntry("compression", "SQ8")
+                .containsEntry("training_threshold", 10240L);
+
+        for (int i = 1; i <= 3; i++) {
+            RJsonBucket<Map<String, Object>> doc = redisson812.getJsonBucket("sq8:" + i,
+                    new JacksonCodec<>(new TypeReference<Map<String, Object>>() {}));
+            doc.set(Map.of("vec", List.of(0.1f * i, 0.2f * i, 0.3f * i, 0.4f * i)));
+        }
+
+        // the field without training compresses from the first vector and serves queries
+        SearchResult r = s.search("sq8-idx", "*=>[KNN 1 @vec $q]", QueryOptions.defaults()
+                .params(Map.of("q", floatsToBytes(new float[]{0.2f, 0.4f, 0.6f, 0.8f})))
+                .noContent(true)
+                .dialect(2));
+        assertThat(r.getDocuments()).extracting(Document::getId).containsExactly("sq8:2");
+    }
+
+    @Test
+    public void testHnswCompressionValidatedByRedis() {
+        RSearch s = redisson812.getSearch(StringCodec.INSTANCE);
+
+        assertThatThrownBy(() -> s.createIndex("sq8-f64", IndexOptions.defaults(),
+                FieldIndex.hnswVector("vec")
+                        .type(VectorTypeParam.Type.FLOAT64)
+                        .dim(4)
+                        .distance(VectorDistParam.DistanceMetric.L2)
+                        .compression(HNSWVectorOptionalArgs.CompressionAlgorithm.SQ8)))
+                .isInstanceOf(RedisException.class)
+                .hasMessageContaining("COMPRESSION is only supported for FLOAT32 and FLOAT16 vector types");
+
+        assertThatThrownBy(() -> s.createIndex("sq8-threshold", IndexOptions.defaults(),
+                FieldIndex.hnswVector("vec")
+                        .type(VectorTypeParam.Type.FLOAT32)
+                        .dim(4)
+                        .distance(VectorDistParam.DistanceMetric.L2)
+                        .trainingThreshold(1024)))
+                .isInstanceOf(RedisException.class)
+                .hasMessageContaining("TRAINING_THRESHOLD is irrelevant when compression was not requested");
+    }
+
+    // Pins what an application sees on a server without HNSW compression; needs an image older
+    // than 8.12 once IMAGE is raised to it.
+    @Test
+    public void testHnswCompressionBeforeRedis812() {
+        RSearch s = redisson.getSearch(StringCodec.INSTANCE);
+
+        assertThatThrownBy(() -> s.createIndex("sq8-old", IndexOptions.defaults(),
+                FieldIndex.hnswVector("vec")
+                        .type(VectorTypeParam.Type.FLOAT32)
+                        .dim(4)
+                        .distance(VectorDistParam.DistanceMetric.L2)
+                        .compression(HNSWVectorOptionalArgs.CompressionAlgorithm.SQ8)))
+                .isInstanceOf(RedisException.class)
+                .hasMessageContaining("Bad arguments for algorithm HNSW: COMPRESSION");
+    }
+
+    private static GenericContainer<?> redis812;
+    private static RedissonClient redisson812;
+
+    // HNSW compression ships in Redis 8.12, see createRedis812.
+    @BeforeAll
+    static void startRedis812() {
+        redis812 = createRedis812();
+        redis812.start();
+        redisson812 = Redisson.create(createConfig(redis812));
+    }
+
+    @AfterAll
+    static void stopRedis812() {
+        redisson812.shutdown();
+        redis812.stop();
     }
 
     private static final Pattern CALLS_PATTERN = Pattern.compile("\\bcalls=(\\d+)");

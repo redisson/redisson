@@ -56,6 +56,7 @@ public final class HybridQueryParams implements QueryStep, ParamsStep, SortStep,
     private List<Expression> expressions;
     private Duration timeout;
     private String postFilter;
+    private boolean explainScore;
 
     HybridQueryParams(String query) {
         this.query = query;
@@ -141,6 +142,12 @@ public final class HybridQueryParams implements QueryStep, ParamsStep, SortStep,
         return this;
     }
 
+    @Override
+    public HybridQueryArgs explainScore() {
+        this.explainScore = true;
+        return this;
+    }
+
     public String getQuery() {
         return query;
     }
@@ -203,5 +210,9 @@ public final class HybridQueryParams implements QueryStep, ParamsStep, SortStep,
 
     public String getPostFilter() {
         return postFilter;
+    }
+
+    public boolean isExplainScore() {
+        return explainScore;
     }
 }

@@ -34,6 +34,8 @@ public final class HNSWVectorIndexParams implements HNSWVectorIndex,
     private Integer efConstruction;
     private Integer efRuntime;
     private Double epsilon;
+    private CompressionAlgorithm compressionAlgorithm;
+    private Integer trainingThreshold;
     private int count;
     private String as;
 
@@ -103,6 +105,20 @@ public final class HNSWVectorIndexParams implements HNSWVectorIndex,
         return this;
     }
 
+    @Override
+    public HNSWVectorOptionalArgs compression(CompressionAlgorithm algorithm) {
+        count++;
+        this.compressionAlgorithm = algorithm;
+        return this;
+    }
+
+    @Override
+    public HNSWVectorOptionalArgs trainingThreshold(int value) {
+        count++;
+        this.trainingThreshold = value;
+        return this;
+    }
+
     public String getFieldName() {
         return fieldName;
     }
@@ -137,6 +153,14 @@ public final class HNSWVectorIndexParams implements HNSWVectorIndex,
 
     public Double getEpsilon() {
         return epsilon;
+    }
+
+    public CompressionAlgorithm getCompressionAlgorithm() {
+        return compressionAlgorithm;
+    }
+
+    public Integer getTrainingThreshold() {
+        return trainingThreshold;
     }
 
     public int getCount() {

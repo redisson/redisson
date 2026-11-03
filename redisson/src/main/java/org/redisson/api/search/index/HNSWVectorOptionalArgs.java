@@ -23,6 +23,15 @@ package org.redisson.api.search.index;
  */
 public interface HNSWVectorOptionalArgs extends FieldIndex {
 
+    enum CompressionAlgorithm {
+
+        /**
+         * Scalar quantization of each vector component to 8 bits.
+         */
+        SQ8
+
+    }
+
     /**
      * Defines initial vector capacity.
      *
@@ -62,5 +71,35 @@ public interface HNSWVectorOptionalArgs extends FieldIndex {
      * @return
      */
     HNSWVectorOptionalArgs epsilon(double value);
+
+    /**
+     * Defines compression algorithm of the stored vectors.
+     * <p>
+     * Supported for {@link VectorTypeParam.Type#FLOAT32} vectors;
+     * {@link VectorTypeParam.Type#FLOAT64} vectors are rejected by Redis.
+     * Vectors are stored at full precision until the training threshold
+     * defined by {@link #trainingThreshold(int)} is reached, then compressed.
+     * <p>
+     * Requires <b>Redis 8.12.0 and higher.</b>
+     *
+     * @param algorithm compression algorithm
+     * @return vector options
+     */
+    HNSWVectorOptionalArgs compression(CompressionAlgorithm algorithm);
+
+    /**
+     * Defines number of vectors collected at full precision to learn compression parameters
+     * before the index is compressed. <code>0</code> compresses from the first vector,
+     * without learning mean normalization.
+     * <p>
+     * Allowed only with {@link #compression(CompressionAlgorithm)}.
+     * Default value is <code>10240</code>, maximum value is <code>102400</code>.
+     * <p>
+     * Requires <b>Redis 8.12.0 and higher.</b>
+     *
+     * @param value number of vectors
+     * @return vector options
+     */
+    HNSWVectorOptionalArgs trainingThreshold(int value);
 
 }

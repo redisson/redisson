@@ -15,6 +15,9 @@
  */
 package org.redisson.api.search.query.hybrid;
 
+import org.redisson.api.search.query.ScoreExplanation;
+
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -31,9 +34,16 @@ public final class HybridSearchResult {
 
     private final List<Map<String, String>> results;
 
+    private final List<ScoreExplanation> scoreExplanations;
+
     public HybridSearchResult(long total, List<Map<String, String>> scores) {
+        this(total, scores, Collections.emptyList());
+    }
+
+    public HybridSearchResult(long total, List<Map<String, String>> results, List<ScoreExplanation> scoreExplanations) {
         this.total = total;
-        this.results = scores;
+        this.results = results;
+        this.scoreExplanations = scoreExplanations;
     }
 
     /**
@@ -52,5 +62,16 @@ public final class HybridSearchResult {
      */
     public List<Map<String, String>> getResults() {
         return results;
+    }
+
+    /**
+     * Returns score explanations requested by {@link HybridQueryArgs#explainScore()}.
+     * The explanation at each index belongs to the result at the same index
+     * of {@link #getResults()}; it's <code>null</code> if Redis sent none for that result.
+     *
+     * @return score explanations, empty if they weren't requested
+     */
+    public List<ScoreExplanation> getScoreExplanations() {
+        return scoreExplanations;
     }
 }

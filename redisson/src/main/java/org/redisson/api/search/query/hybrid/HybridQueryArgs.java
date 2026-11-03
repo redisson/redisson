@@ -97,4 +97,17 @@ public interface HybridQueryArgs {
      */
     HybridQueryArgs filter(String value);
 
+    /**
+     * Requests an explanation of each result score: how the text search score,
+     * the vector similarity rank or score and the combine method produced it.
+     * Explanations are returned by {@link HybridSearchResult#getScoreExplanations()}.
+     * <p>
+     * Can't be used with {@link #groupBy(GroupBy...)}, Redis rejects the combination.
+     * <p>
+     * Requires <b>Redis 8.10.0 and higher.</b>
+     *
+     * @return this instance
+     */
+    HybridQueryArgs explainScore();
+
 }

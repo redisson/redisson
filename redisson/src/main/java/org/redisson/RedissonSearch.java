@@ -253,6 +253,14 @@ public class RedissonSearch implements RSearch {
                 args.add("EPSILON");
                 args.add(params.getEpsilon());
             }
+            if (params.getCompressionAlgorithm() != null) {
+                args.add("COMPRESSION");
+                args.add(params.getCompressionAlgorithm());
+            }
+            if (params.getTrainingThreshold() != null) {
+                args.add("TRAINING_THRESHOLD");
+                args.add(params.getTrainingThreshold());
+            }
         }
     }
 
@@ -1434,6 +1442,10 @@ public class RedissonSearch implements RSearch {
         if (options.getPostFilter() != null) {
             cmdArgs.add("FILTER");
             cmdArgs.add(options.getPostFilter());
+        }
+
+        if (options.isExplainScore()) {
+            cmdArgs.add("EXPLAINSCORE");
         }
 
         if (options.getParams() != null && !options.getParams().isEmpty()) {

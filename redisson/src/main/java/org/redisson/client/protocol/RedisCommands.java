@@ -41,7 +41,7 @@ import org.redisson.api.tsnative.TSSample;
 import org.redisson.api.tsnative.TSSeriesSample;
 import org.redisson.api.tsnative.TSSeriesSamples;
 import org.redisson.api.search.index.IndexInfo;
-import org.redisson.api.search.query.SearchResult;
+import org.redisson.api.search.query.hybrid.HybridSearchResult;
 import org.redisson.api.stream.FastAutoClaimResult;
 import org.redisson.api.stream.StreamInfo;
 import org.redisson.api.stream.StreamMessageId;
@@ -1108,11 +1108,7 @@ public interface RedisCommands {
 
     RedisCommand<Void> FT_SYNUPDATE = new RedisCommand("FT.SYNUPDATE", new VoidReplayConvertor());
 
-    RedisCommand<SearchResult> HYBRID_SEARCH =
-            new RedisCommand<>("FT.HYBRID", new ListMultiDecoder2(
-                    new HybridSearchResultDecoder(),
-                    new ObjectListReplayDecoder<>(),
-                    new ObjectMapReplayDecoder()));
+    RedisCommand<HybridSearchResult> HYBRID_SEARCH = new RedisCommand("FT.HYBRID", new HybridSearchResultDecoder());
 
     RedisCommand<Long> BF_CARD = new RedisCommand("BF.CARD", new LongReplayConvertor());
 
