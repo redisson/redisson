@@ -18,6 +18,7 @@ package org.redisson.api;
 import java.util.BitSet;
 import java.util.List;
 import org.redisson.api.bitset.BitFieldArgs;
+import org.redisson.api.bitset.BitRangeArgs;
 
 /**
  * Vector of bits that grows as needed.
@@ -329,6 +330,31 @@ public interface RBitSet extends RExpirable, RBitSetAsync {
      * @return number of bits
      */
     long cardinality();
+
+    /**
+     * Returns the indexes of the bits set to one in a range, in ascending order,
+     * or of the bits set to zero with {@link BitRangeArgs#zeros()}.
+     * The range covers the same bits as {@code BITCOUNT} would.
+     * <p>
+     * Indexes are numbered as in {@link #get(long)}, so the result can be
+     * passed to {@link #set(long[], boolean)} as is.
+     * <p>
+     * Returns an empty array if the object doesn't exist or the range is empty.
+     * <p>
+     * Usage example:
+     * <pre>
+     *     long[] all = bitSet.getIndexes(BitRangeArgs.bytes(0, -1));
+     *     long[] page = bitSet.getIndexes(BitRangeArgs.bits(0, 999).limit(100));
+     * </pre>
+     * <p>
+     * Uses {@code BITRANGEINTARRAY} command.
+     * <p>
+     * Requires <b>Redis 8.12.0 or higher.</b>
+     *
+     * @param args range, limit and the value of the bits to return
+     * @return indexes of the matching bits
+     */
+    long[] getIndexes(BitRangeArgs args);
 
     /**
      * Set bit to zero at specified <code>bitIndex</code>

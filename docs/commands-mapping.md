@@ -43,6 +43,7 @@ This table lists the commands that map directly to Redisson methods. Redisson al
 | BITFIELD | RBitSet.<br/>getByte()<br/>setByte()<br/>incrementAndGetByte()<br/><br/>getShort()<br/>setShort()<br/>incrementAndGetShort()<br/><br/>getInteger()<br/>setInteger()<br/>incrementAndGetInteger()<br/><br/>getLong()<br/>setLong()<br/>incrementAndGetLong() | RBitSetReactive.<br/>getByte()<br/>setByte()<br/>incrementAndGetByte()<br/><br/>getShort()<br/>setShort()<br/>incrementAndGetShort()<br/><br/>getInteger()<br/>setInteger()<br/>incrementAndGetInteger()<br/><br/>getLong()<br/>setLong()<br/>incrementAndGetLong() | RBitSetRx.<br/>getByte()<br/>setByte()<br/>incrementAndGetByte()<br/><br/>getShort()<br/>setShort()<br/>incrementAndGetShort()<br/><br/>getInteger()<br/>setInteger()<br/>incrementAndGetInteger()<br/><br/>getLong()<br/>setLong()<br/>incrementAndGetLong() |
 | BITOP | RBitSet.<br/>or()<br/>and()<br/>xor()<br/>orAsync()<br/>andAsync()<br/>xorAsync() | RBitSetReactive.<br/>or()<br/>and()<br/>xor() | RBitSetRx.<br/>or()<br/>and()<br/>xor() |
 | BITPOS | RBitSet.<br/>length()<br/>lengthAsync() | RBitSetReactive.<br/>length() | RBitSetRx.<br/>length() |
+| BITRANGEINTARRAY | RBitSet.<br/>getIndexes()<br/>getIndexesAsync() | RBitSetReactive.<br/>getIndexes() | RBitSetRx.<br/>getIndexes() |
 | GETBIT | RBitSet.<br/>get()<br/>getAsync() | RBitSetReactive.<br/>get() | RBitSetRx.<br/>get() |
 | SETBIT | RBitSet.<br/>set()<br/>clear()<br/>setAsync()<br/>clearAsync() | RBitSetReactive.<br/>set()<br/>clear() | RBitSetRx.<br/>set()<br/>clear() |
 

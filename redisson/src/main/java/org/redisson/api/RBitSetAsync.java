@@ -18,6 +18,7 @@ package org.redisson.api;
 import java.util.BitSet;
 import java.util.List;
 import org.redisson.api.bitset.BitFieldArgs;
+import org.redisson.api.bitset.BitRangeArgs;
 
 /**
  * Vector of bits that grows as needed. Asynchronous interface.
@@ -331,6 +332,25 @@ public interface RBitSetAsync extends RExpirableAsync {
      * @return number of bits
      */
     RFuture<Long> cardinalityAsync();
+
+    /**
+     * Returns the indexes of the bits set to one in a range, in ascending order,
+     * or of the bits set to zero with {@link BitRangeArgs#zeros()}.
+     * The range covers the same bits as {@code BITCOUNT} would.
+     * <p>
+     * Indexes are numbered as in {@link #getAsync(long)}, so the result can be
+     * passed to {@link #setAsync(long[], boolean)} as is.
+     * <p>
+     * Returns an empty array if the object doesn't exist or the range is empty.
+     * <p>
+     * Uses {@code BITRANGEINTARRAY} command.
+     * <p>
+     * Requires <b>Redis 8.12.0 or higher.</b>
+     *
+     * @param args range, limit and the value of the bits to return
+     * @return indexes of the matching bits
+     */
+    RFuture<long[]> getIndexesAsync(BitRangeArgs args);
 
     /**
      * Set bit to zero at specified <code>bitIndex</code>

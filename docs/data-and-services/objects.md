@@ -1749,6 +1749,57 @@ Code examples:
     Single<Long> sizeRx = set.size();
     ```
 
+**Listing set bits**
+
+`getIndexes` returns the indexes of the bits set to one in a range, in ascending order - the ids of the present entities rather than their count. Requires Redis 8.12.0 or higher.
+
+The range is inclusive and read as in `BITCOUNT`: `BitRangeArgs.bits(start, end)` addresses bits and `BitRangeArgs.bytes(start, end)` addresses bytes of 8 bits, and a negative index counts from the end of the value. `zeros()` returns the bits set to zero instead, though never past the end of the value. Indexes are numbered as in `get` and `set`, so a result can be passed to `set(long[], boolean)` as is.
+
+`limit(count)` returns the lowest `count` indexes, which pages through a large bitset. In bit units the next page starts at the bit after the last index returned. In byte units a page also completes the byte holding its last index, so it can hold up to 7 indexes more than `count`, and the next page starts at the following byte.
+
+=== "Sync"
+    ```
+    RBitSet set = redisson.getBitSet("activeUsers");
+
+    long[] all = set.getIndexes(BitRangeArgs.bytes(0, -1));             // every bit set to one
+    long[] some = set.getIndexes(BitRangeArgs.bits(1000, 1999));        // within bits 1000 to 1999
+    long[] free = set.getIndexes(BitRangeArgs.bits(0, 999).zeros());    // bits set to zero
+
+    // page through the bitset 1000 indexes at a time
+    long start = 0;
+    long[] page;
+    do {
+        page = set.getIndexes(BitRangeArgs.bits(start, -1).limit(1000));
+        // ...
+        if (page.length > 0) {
+            start = page[page.length - 1] + 1;
+        }
+    } while (page.length == 1000);
+    ```
+=== "Async"
+    ```
+    RBitSetAsync set = redisson.getBitSet("activeUsers");
+
+    RFuture<long[]> allFuture = set.getIndexesAsync(BitRangeArgs.bytes(0, -1));
+    RFuture<long[]> pageFuture = set.getIndexesAsync(BitRangeArgs.bits(0, -1).limit(1000));
+    ```
+=== "Reactive"
+    ```
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RBitSetReactive set = redisson.getBitSet("activeUsers");
+
+    Mono<long[]> allMono = set.getIndexes(BitRangeArgs.bytes(0, -1));
+    Mono<long[]> pageMono = set.getIndexes(BitRangeArgs.bits(0, -1).limit(1000));
+    ```
+=== "RxJava3"
+    ```
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RBitSetRx set = redisson.getBitSet("activeUsers");
+
+    Single<long[]> allRx = set.getIndexes(BitRangeArgs.bytes(0, -1));
+    Single<long[]> pageRx = set.getIndexes(BitRangeArgs.bits(0, -1).limit(1000));
+    ```
+
 **Combining bitsets**
 
 `and`, `or`, `xor`, and `not` combine this bitset with one or more named bitsets - intersecting or unioning sets of ids, for example - and store the result back into this bitset. They return the byte length of the resulting value, so to count the matching bits afterwards read `cardinality`.

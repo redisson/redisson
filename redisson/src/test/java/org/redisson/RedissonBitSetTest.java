@@ -3,14 +3,27 @@ package org.redisson;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicReference;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.redisson.api.RBatch;
+import org.redisson.api.RBitSetAsync;
+import org.redisson.api.RBitSetReactive;
+import org.redisson.api.RBitSetRx;
+import org.redisson.api.RFuture;
 import org.redisson.api.RBucket;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.bitset.BitFieldArgs;
 import org.redisson.api.bitset.BitFieldOverflow;
 import org.redisson.api.bitset.BitOffset;
+import org.redisson.api.bitset.BitRangeArgs;
+import org.redisson.client.RedisException;
+import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.decoder.MultiDecoder;
+import org.testcontainers.containers.GenericContainer;
 import org.redisson.api.RBitSet;
 
+import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
 import org.redisson.api.listener.TrackingListener;
@@ -20,6 +33,7 @@ import org.redisson.config.ReadMode;
 import org.redisson.config.SubscriptionMode;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class RedissonBitSetTest extends RedisDockerTest {
 
@@ -340,6 +354,132 @@ public class RedissonBitSetTest extends RedisDockerTest {
 
         assertThat(bs1.cardinality()).isEqualTo(1);
         assertThat(bs1.size()).isEqualTo(16);
+    }
+
+    private static GenericContainer<?> redis812;
+    private static RedissonClient redisson812;
+
+    @BeforeAll
+    static void startRedis812() {
+        redis812 = createRedis812();
+        redis812.start();
+        redisson812 = Redisson.create(createConfig(redis812));
+    }
+
+    @AfterAll
+    static void stopRedis812() {
+        redisson812.shutdown();
+        redis812.stop();
+    }
+
+    @Test
+    public void testGetIndexesByBytes() {
+        RBitSet bs = redisson812.getBitSet("testGetIndexesByBytes");
+        bs.set(new long[] {3, 10, 17}, true);
+
+        assertThat(bs.getIndexes(BitRangeArgs.bytes(0, -1))).containsExactly(3, 10, 17);
+        assertThat(bs.getIndexes(BitRangeArgs.bytes(1, 1))).containsExactly(10);
+        assertThat(bs.getIndexes(BitRangeArgs.bytes(-1, -1))).containsExactly(17);
+
+        assertThat(bs.getIndexes(BitRangeArgs.bytes(2, 100))).containsExactly(17);
+        assertThat(bs.getIndexes(BitRangeArgs.bytes(1, 0))).isEmpty();
+        assertThat(bs.getIndexes(BitRangeArgs.bytes(3, 5))).isEmpty();
+
+        RBitSet missing = redisson812.getBitSet("testGetIndexesMissing");
+        assertThat(missing.getIndexes(BitRangeArgs.bytes(0, -1))).isEmpty();
+    }
+
+    @Test
+    public void testGetIndexesByBits() {
+        RBitSet bs = redisson812.getBitSet("testGetIndexesByBits");
+        bs.set(new long[] {3, 10, 17}, true);
+
+        assertThat(bs.getIndexes(BitRangeArgs.bits(4, 17))).containsExactly(10, 17);
+        assertThat(bs.getIndexes(BitRangeArgs.bits(3, 3))).containsExactly(3);
+        assertThat(bs.getIndexes(BitRangeArgs.bits(11, 16))).isEmpty();
+
+        assertThat(bs.getIndexes(BitRangeArgs.bits(-8, -1))).containsExactly(17);
+
+        assertThat(bs.getIndexes(BitRangeArgs.bits(1, 1))).isEmpty();
+        assertThat(bs.getIndexes(BitRangeArgs.bytes(1, 1))).containsExactly(10);
+    }
+
+    @Test
+    public void testGetIndexesZeros() {
+        RBitSet bs = redisson812.getBitSet("testGetIndexesZeros");
+        bs.set(new long[] {3, 10, 17}, true);
+
+        assertThat(bs.getIndexes(BitRangeArgs.bits(0, 7).zeros())).containsExactly(0, 1, 2, 4, 5, 6, 7);
+        assertThat(bs.getIndexes(BitRangeArgs.bytes(2, 2).zeros())).containsExactly(16, 18, 19, 20, 21, 22, 23);
+
+
+        long[] zeros = bs.getIndexes(BitRangeArgs.bytes(0, -1).zeros());
+        assertThat(zeros).hasSize(21).doesNotContain(3, 10, 17);
+        assertThat(zeros[zeros.length - 1]).isEqualTo(23);
+        assertThat(bs.getIndexes(BitRangeArgs.bits(0, 1000).zeros())).hasSize(21);
+
+        RBitSet missing = redisson812.getBitSet("testGetIndexesZerosMissing");
+        assertThat(missing.getIndexes(BitRangeArgs.bytes(0, -1).zeros())).isEmpty();
+    }
+
+    @Test
+    public void testGetIndexesLimitByBits() {
+        RBitSet bs = redisson812.getBitSet("testGetIndexesLimitByBits");
+        bs.set(new long[] {0, 1, 2, 9, 30}, true);
+
+        assertThat(bs.getIndexes(BitRangeArgs.bits(0, -1).limit(2))).containsExactly(0, 1);
+        assertThat(bs.getIndexes(BitRangeArgs.bits(0, -1).limit(0))).isEmpty();
+        assertThat(bs.getIndexes(BitRangeArgs.bits(0, -1).limit(1).limit(3))).containsExactly(0, 1, 2);
+
+        List<Long> all = new ArrayList<>();
+        long start = 0;
+        while (true) {
+            long[] page = bs.getIndexes(BitRangeArgs.bits(start, -1).limit(2));
+            assertThat(page.length).isLessThanOrEqualTo(2);
+            for (long index : page) {
+                all.add(index);
+            }
+            if (page.length < 2) {
+                break;
+            }
+            start = page[page.length - 1] + 1;
+        }
+        assertThat(all).containsExactly(0L, 1L, 2L, 9L, 30L);
+    }
+
+    @Test
+    public void testGetIndexesLimitByBytes() {
+        RBitSet bs = redisson812.getBitSet("testGetIndexesLimitByBytes");
+        bs.set(new long[] {0, 1, 2, 9, 30}, true);
+
+        assertThat(bs.getIndexes(BitRangeArgs.bytes(0, -1).limit(1))).containsExactly(0, 1, 2);
+        assertThat(bs.getIndexes(BitRangeArgs.bytes(0, -1).limit(4))).containsExactly(0, 1, 2, 9);
+
+        List<Long> all = new ArrayList<>();
+        long startByte = 0;
+        while (true) {
+            long[] page = bs.getIndexes(BitRangeArgs.bytes(startByte, -1).limit(1));
+            if (page.length == 0) {
+                break;
+            }
+            for (long index : page) {
+                all.add(index);
+            }
+            startByte = (page[page.length - 1] >> 3) + 1;
+        }
+        assertThat(all).containsExactly(0L, 1L, 2L, 9L, 30L);
+    }
+
+    @Test
+    public void testGetIndexesFeedsSet() {
+        RBitSet bs = redisson812.getBitSet("testGetIndexesFeedsSet");
+        bs.set(new long[] {5, 64, 100, 1000}, true);
+
+        long[] indexes = bs.getIndexes(BitRangeArgs.bytes(0, -1));
+        assertThat(bs.get(indexes)).containsOnly(true);
+        bs.set(indexes, false);
+        assertThat(bs.cardinality()).isZero();
+        assertThat(bs.getIndexes(BitRangeArgs.bytes(0, -1))).isEmpty();
     }
 
 

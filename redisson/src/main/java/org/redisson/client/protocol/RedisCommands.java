@@ -179,6 +179,16 @@ public interface RedisCommands {
     RedisStrictCommand<Long> STRLEN = new RedisStrictCommand<Long>("STRLEN");
     RedisStrictCommand<Long> BITCOUNT = new RedisStrictCommand<Long>("BITCOUNT");
     RedisStrictCommand<Integer> BITPOS = new RedisStrictCommand<Integer>("BITPOS", new IntegerReplayConvertor());
+    // Integer replies arrive as Long whatever the codec. A primitive array holds
+    // a large page without a box per index, and feeds RBitSet.set(long[], boolean) directly.
+    RedisStrictCommand<long[]> BITRANGEINTARRAY = new RedisStrictCommand<>("BITRANGEINTARRAY",
+            (MultiDecoder<long[]>) (parts, state) -> {
+                long[] result = new long[parts.size()];
+                for (int i = 0; i < result.length; i++) {
+                    result[i] = (Long) parts.get(i);
+                }
+                return result;
+            });
     RedisStrictCommand<Void> SETBIT_VOID = new RedisStrictCommand<Void>("SETBIT", new VoidReplayConvertor());
     RedisStrictCommand<Boolean> SETBIT = new RedisStrictCommand<Boolean>("SETBIT", new BooleanReplayConvertor());
     RedisStrictCommand<Long> BITOP = new RedisStrictCommand<Long>("BITOP");

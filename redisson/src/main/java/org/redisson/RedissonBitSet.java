@@ -18,6 +18,8 @@ package org.redisson;
 import org.redisson.api.bitset.BitFieldArgs;
 import org.redisson.api.bitset.BitFieldOverflow;
 import org.redisson.api.bitset.BitFieldParams;
+import org.redisson.api.bitset.BitRangeArgs;
+import org.redisson.api.bitset.BitRangeParams;
 import org.redisson.api.RBitSet;
 import org.redisson.api.RFuture;
 import org.redisson.api.bitset.BitOffset;
@@ -470,6 +472,35 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
     @Override
     public long cardinality() {
         return get(cardinalityAsync());
+    }
+
+    @Override
+    public long[] getIndexes(BitRangeArgs args) {
+        return get(getIndexesAsync(args));
+    }
+
+    @Override
+    public RFuture<long[]> getIndexesAsync(BitRangeArgs args) {
+        BitRangeParams params = (BitRangeParams) args;
+        List<Object> commandArgs = new ArrayList<>(7);
+        commandArgs.add(getRawName());
+        commandArgs.add(params.getStart());
+        commandArgs.add(params.getEnd());
+
+        if (params.isBitUnit()) {
+            commandArgs.add("BIT");
+        } else {
+            commandArgs.add("BYTE");
+        }
+        if (params.getLimit() != null) {
+            commandArgs.add("LIMIT");
+            commandArgs.add(params.getLimit());
+        }
+        if (params.isZeros()) {
+            commandArgs.add("ZEROS");
+        }
+        return commandExecutor.readAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.BITRANGEINTARRAY,
+                                            commandArgs.toArray());
     }
 
     @Override

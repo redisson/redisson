@@ -21,6 +21,7 @@ import io.reactivex.rxjava3.core.Single;
 import java.util.BitSet;
 import java.util.List;
 import org.redisson.api.bitset.BitFieldArgs;
+import org.redisson.api.bitset.BitRangeArgs;
 
 
 /**
@@ -327,6 +328,24 @@ public interface RBitSetRx extends RExpirableRx {
      * @return number of bits
      */
     Single<Long> cardinality();
+
+    /**
+     * Returns the indexes of the bits set to one in a range, in ascending order,
+     * or of the bits set to zero with {@link BitRangeArgs#zeros()}.
+     * The range covers the same bits as {@code BITCOUNT} would.
+     * <p>
+     * Indexes are numbered as in {@link #get(long)}.
+     * <p>
+     * Returns an empty array if the object doesn't exist or the range is empty.
+     * <p>
+     * Uses {@code BITRANGEINTARRAY} command.
+     * <p>
+     * Requires <b>Redis 8.12.0 or higher.</b>
+     *
+     * @param args range, limit and the value of the bits to return
+     * @return indexes of the matching bits
+     */
+    Single<long[]> getIndexes(BitRangeArgs args);
 
     /**
      * Set bit to zero at specified <code>bitIndex</code>
