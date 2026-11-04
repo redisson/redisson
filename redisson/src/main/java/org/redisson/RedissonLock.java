@@ -108,6 +108,21 @@ public class RedissonLock extends RedissonBaseLock {
             return;
         }
 
+        scheduleWaiterRenewal(threadId);
+        boolean acquired = false;
+        try {
+            waitForLock(leaseTime, unit, interruptibly, threadId);
+            acquired = true;
+        } finally {
+            if (!acquired) {
+                acquireFailedAsync(-1, null, threadId);
+            }
+            cancelWaiterRenewal(threadId);
+        }
+//        get(lockAsync(leaseTime, unit));
+    }
+
+    private void waitForLock(long leaseTime, TimeUnit unit, boolean interruptibly, long threadId) throws InterruptedException {
         CompletableFuture<RedissonLockEntry> future = subscribe(threadId);
         pubSub.timeout(future);
         RedissonLockEntry entry;
@@ -119,7 +134,7 @@ public class RedissonLock extends RedissonBaseLock {
 
         try {
             while (true) {
-                ttl = tryAcquire(-1, leaseTime, unit, threadId);
+                Long ttl = tryAcquire(-1, leaseTime, unit, threadId);
                 // lock acquired
                 if (ttl == null) {
                     break;
@@ -146,7 +161,23 @@ public class RedissonLock extends RedissonBaseLock {
         } finally {
             unsubscribe(entry, threadId);
         }
-//        get(lockAsync(leaseTime, unit));
+    }
+
+    /**
+     * Called once, when an acquisition attempt has queued the current thread. A lock
+     * type with a queue starts its waiter watchdog here.
+     *
+     * @param threadId thread that waits
+     */
+    protected void scheduleWaiterRenewal(long threadId) {
+    }
+
+    /**
+     * Called once, when the wait ends. The way the wait ends does not matter.
+     *
+     * @param threadId thread that waited
+     */
+    protected void cancelWaiterRenewal(long threadId) {
     }
     
     private Long tryAcquire(long waitTime, long leaseTime, TimeUnit unit, long threadId) {
@@ -233,14 +264,31 @@ public class RedissonLock extends RedissonBaseLock {
         if (ttl == null) {
             return true;
         }
-        
-        time -= System.currentTimeMillis() - current;
+
+        scheduleWaiterRenewal(threadId);
+        boolean finished = false;
+        try {
+            time -= System.currentTimeMillis() - current;
+            boolean acquired = tryWaitForLock(time, waitTime, leaseTime, unit, threadId);
+            finished = true;
+            return acquired;
+        } finally {
+            if (!finished) {
+                acquireFailedAsync(waitTime, unit, threadId);
+            }
+            cancelWaiterRenewal(threadId);
+        }
+//        return get(tryLockAsync(waitTime, leaseTime, unit));
+    }
+
+    private boolean tryWaitForLock(long remaining, long waitTime, long leaseTime, TimeUnit unit, long threadId) throws InterruptedException {
+        long time = remaining;
         if (time <= 0) {
             acquireFailed(waitTime, unit, threadId);
             return false;
         }
-        
-        current = System.currentTimeMillis();
+
+        long current = System.currentTimeMillis();
         CompletableFuture<RedissonLockEntry> subscribeFuture = subscribe(threadId);
         try {
             subscribeFuture.get(time, TimeUnit.MILLISECONDS);
@@ -268,9 +316,10 @@ public class RedissonLock extends RedissonBaseLock {
                 acquireFailed(waitTime, unit, threadId);
                 return false;
             }
-        
+
             while (true) {
                 long currentTime = System.currentTimeMillis();
+                Long ttl;
                 try {
                     ttl = tryAcquire(waitTime, leaseTime, unit, threadId);
                 } catch (RedisResponseTimeoutException e) {
@@ -307,7 +356,6 @@ public class RedissonLock extends RedissonBaseLock {
         } finally {
             unsubscribe(commandExecutor.getNow(subscribeFuture), threadId);
         }
-//        return get(tryLockAsync(waitTime, leaseTime, unit));
     }
 
     protected CompletableFuture<RedissonLockEntry> subscribe(long threadId) {
@@ -388,10 +436,13 @@ public class RedissonLock extends RedissonBaseLock {
                 return;
             }
 
+            scheduleWaiterRenewal(currentThreadId);
             CompletableFuture<RedissonLockEntry> subscribeFuture = subscribe(currentThreadId);
             pubSub.timeout(subscribeFuture);
             subscribeFuture.whenComplete((res, ex) -> {
                 if (ex != null) {
+                    cancelWaiterRenewal(currentThreadId);
+                    acquireFailedAsync(-1, null, currentThreadId);
                     result.completeExceptionally(ex);
                     return;
                 }
@@ -409,6 +460,8 @@ public class RedissonLock extends RedissonBaseLock {
         ttlFuture.whenComplete((ttl, e) -> {
             if (e != null) {
                 unsubscribe(entry, currentThreadId);
+                cancelWaiterRenewal(currentThreadId);
+                acquireFailedAsync(-1, null, currentThreadId);
                 result.completeExceptionally(e);
                 return;
             }
@@ -416,6 +469,7 @@ public class RedissonLock extends RedissonBaseLock {
             // lock acquired
             if (ttl == null) {
                 unsubscribe(entry, currentThreadId);
+                cancelWaiterRenewal(currentThreadId);
                 if (!result.complete(null)) {
                     unlockAsync(currentThreadId);
                 }
@@ -457,6 +511,12 @@ public class RedissonLock extends RedissonBaseLock {
     public RFuture<Boolean> tryLockAsync(long waitTime, long leaseTime, TimeUnit unit,
             long currentThreadId) {
         CompletableFuture<Boolean> result = new CompletableFuture<>();
+        result.whenComplete((r, e) -> {
+            cancelWaiterRenewal(currentThreadId);
+            if (e != null) {
+                acquireFailedAsync(waitTime, unit, currentThreadId);
+            }
+        });
 
         AtomicLong time = new AtomicLong(unit.toMillis(waitTime));
         long currentTime = System.currentTimeMillis();
@@ -475,11 +535,18 @@ public class RedissonLock extends RedissonBaseLock {
                 return;
             }
 
+            scheduleWaiterRenewal(currentThreadId);
+            if (result.isDone()) {
+                cancelWaiterRenewal(currentThreadId);
+                acquireFailedAsync(waitTime, unit, currentThreadId);
+                return;
+            }
+
             long el = System.currentTimeMillis() - currentTime;
             time.addAndGet(-el);
             
             if (time.get() <= 0) {
-                trySuccessFalse(currentThreadId, result);
+                trySuccessFalse(waitTime, unit, currentThreadId, result);
                 return;
             }
             
@@ -506,7 +573,7 @@ public class RedissonLock extends RedissonBaseLock {
                 Timeout scheduledFuture = getServiceManager().newTimeout(timeout -> {
                     if (!subscribeFuture.isDone()) {
                         subscribeFuture.cancel(false);
-                        trySuccessFalse(currentThreadId, result);
+                        trySuccessFalse(waitTime, unit, currentThreadId, result);
                     }
                 }, time.get(), TimeUnit.MILLISECONDS);
                 futureRef.set(scheduledFuture);
@@ -526,7 +593,7 @@ public class RedissonLock extends RedissonBaseLock {
         
         if (time.get() <= 0) {
             unsubscribe(entry, currentThreadId);
-            trySuccessFalse(currentThreadId, result);
+            trySuccessFalse(waitTime, unit, currentThreadId, result);
             return;
         }
         
@@ -547,13 +614,23 @@ public class RedissonLock extends RedissonBaseLock {
                     }
                     return;
                 }
-                
+
+                // The result was cancelled during this attempt. The handler that removed the
+                // thread from the queue can have run before this attempt queued the thread
+                // again. Thus the thread leaves the queue once more. It does not wait for the
+                // eviction.
+                if (result.isDone()) {
+                    unsubscribe(entry, currentThreadId);
+                    acquireFailedAsync(waitTime, unit, currentThreadId);
+                    return;
+                }
+
                 long el = System.currentTimeMillis() - curr;
                 time.addAndGet(-el);
                 
                 if (time.get() <= 0) {
                     unsubscribe(entry, currentThreadId);
-                    trySuccessFalse(currentThreadId, result);
+                    trySuccessFalse(waitTime, unit, currentThreadId, result);
                     return;
                 }
 

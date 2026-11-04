@@ -661,6 +661,12 @@ public class Config {
      * This prevents against infinity locked locks due to Redisson client crush or
      * any other reason when lock can't be released in proper way.
      * <p>
+     * The same interval applies to a thread that waits for a fair lock. The watchdog
+     * renews the queue entry of the thread. The entry is removed when a full interval
+     * has passed without a renewal. Thus the waiting threads of a crashed client block
+     * the queue for at most about two intervals. The clocks of the Redisson clients that
+     * share a fair lock must agree to within this interval minus a third of it.
+     * <p>
      * Default is 30000 milliseconds
      *
      * @param lockWatchdogTimeout timeout in milliseconds
@@ -677,18 +683,38 @@ public class Config {
 
 
     /**
-     * This parameter is only used if fair lock has been acquired without waitTimeout parameter definition
+     * Wait time, in milliseconds, that a thread queued for a fair lock adds to the turn
+     * estimate of every thread behind it. The lock uses this value when a thread acquires
+     * the lock without a waitTime parameter. When a thread gives a waitTime, this value
+     * caps it.
+     * <p>
+     * This setting is deprecated. Only Redisson versions without liveness tracking of
+     * waiting threads read the turn estimates. When every client has liveness tracking,
+     * this setting has no effect. A thread whose Redisson instance died is removed from
+     * the queue within {@link #setLockWatchdogTimeout(long) lockWatchdogTimeout}. This
+     * setting limits the time that such a thread blocks the queue only when an older
+     * Redisson version queued the thread. The setting will be removed together with the
+     * turn estimates.
      *
      * Default is 5*60000 milliseconds
      *
      * @param fairLockWaitTimeout in milliseconds
      * @return config
+     * @deprecated {@link #setLockWatchdogTimeout(long) lockWatchdogTimeout} limits the time
+     *             that a dead waiting thread blocks a fair lock queue. This setting only
+     *             affects clients of older Redisson versions during a rolling upgrade.
      */
+    @Deprecated
     public Config setFairLockWaitTimeout(long fairLockWaitTimeout) {
         this.fairLockWaitTimeout = fairLockWaitTimeout;
         return this;
     }
 
+    /**
+     * @return the fair lock wait time in milliseconds
+     * @deprecated see {@link #setFairLockWaitTimeout(long)}
+     */
+    @Deprecated
     public long getFairLockWaitTimeout() {
         return fairLockWaitTimeout;
     }

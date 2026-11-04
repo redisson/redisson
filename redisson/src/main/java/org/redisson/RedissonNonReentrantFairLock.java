@@ -22,6 +22,7 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.CompletableFutureWrapper;
+import org.redisson.pubsub.LockPubSub;
 
 import java.util.Arrays;
 import java.util.concurrent.CompletionException;
@@ -47,29 +48,19 @@ public class RedissonNonReentrantFairLock extends RedissonFairLock {
     @Override
     <T> RFuture<T> tryLockInnerAsync(long waitTime, long leaseTime, TimeUnit unit,
                                      long threadId, RedisStrictCommand<T> command) {
-        long wait = getServiceManager().getCfg().getFairLockWaitTimeout();
-        if (waitTime > 0) {
-            wait = unit.toMillis(waitTime);
-        }
+        long wait = queuedWaitTime(waitTime, unit);
         long currentTime = System.currentTimeMillis();
 
         RFuture<T> raw;
         if (command == RedisCommands.EVAL_NULL_BOOLEAN) {
             raw = evalWriteSyncedNoRetryAsync(getRawName(), LongCodec.INSTANCE, command,
-                    // remove stale waiters
-                    "while true do " +
-                        "local firstThreadId2 = redis.call('lindex', KEYS[2], 0);" +
-                        "if firstThreadId2 == false then " +
-                            "break;" +
-                        "end;" +
-                        "local timeout = redis.call('zscore', KEYS[3], firstThreadId2);" +
-                        "if timeout ~= false and tonumber(timeout) <= tonumber(ARGV[3]) then " +
-                            "redis.call('zrem', KEYS[3], firstThreadId2);" +
-                            "redis.call('lpop', KEYS[2]);" +
-                        "else " +
-                            "break;" +
-                        "end;" +
-                    "end;" +
+                    EVICT_DEAD_WAITERS +
+                    PUBLISH_TO_NEW_HEAD +
+                    PRUNE_ALIVE_SET +
+
+                    "if evictDeadWaiters(KEYS[2], KEYS[3], KEYS[4], tonumber(ARGV[3])) then " +
+                        "publishToNewHead(KEYS[1], KEYS[2], KEYS[5], ARGV[2], ARGV[6], ARGV[7]); " +
+                    "end; " +
 
                     // first acquire path
                     "if (redis.call('exists', KEYS[1]) == 0) " +
@@ -77,6 +68,8 @@ public class RedissonNonReentrantFairLock extends RedissonFairLock {
                             "or (redis.call('lindex', KEYS[2], 0) == ARGV[2])) then " +
                         "redis.call('lpop', KEYS[2]);" +
                         "redis.call('zrem', KEYS[3], ARGV[2]);" +
+                        "redis.call('zrem', KEYS[4], ARGV[2]);" +
+                        "pruneAliveSet(KEYS[3], KEYS[4]); " +
 
                         // decrease timeouts for all waiting in the queue
                         "local keys = redis.call('zrange', KEYS[3], 0, -1);" +
@@ -93,25 +86,22 @@ public class RedissonNonReentrantFairLock extends RedissonFairLock {
                         "return redis.error_reply(ARGV[5]);" +
                     "end;" +
                     "return 1;",
-                    Arrays.asList(getRawName(), threadsQueueName, timeoutSetName),
+                    Arrays.asList(getRawName(), threadsQueueName, timeoutSetName, aliveSetName, getChannelName()),
                     unit.toMillis(leaseTime), getLockName(threadId), currentTime, wait,
-                    RedissonNonReentrantLock.REENTRY_ERR);
+                    RedissonNonReentrantLock.REENTRY_ERR,
+                    getSubscribeService().getPublishCommand(), LockPubSub.UNLOCK_MESSAGE);
         } else if (command == RedisCommands.EVAL_LONG) {
             raw = evalWriteSyncedNoRetryAsync(getRawName(), LongCodec.INSTANCE, command,
-                    // remove stale waiters
-                    "while true do " +
-                        "local firstThreadId2 = redis.call('lindex', KEYS[2], 0);" +
-                        "if firstThreadId2 == false then " +
-                            "break;" +
-                        "end;" +
-                        "local timeout = redis.call('zscore', KEYS[3], firstThreadId2);" +
-                        "if timeout ~= false and tonumber(timeout) <= tonumber(ARGV[4]) then " +
-                            "redis.call('zrem', KEYS[3], firstThreadId2);" +
-                            "redis.call('lpop', KEYS[2]);" +
-                        "else " +
-                            "break;" +
-                        "end;" +
-                    "end;" +
+                    EVICT_DEAD_WAITERS +
+                    PUBLISH_TO_NEW_HEAD +
+                    PRUNE_ALIVE_SET +
+                    TTL_WHEN_QUEUED +
+
+                    "local now = tonumber(ARGV[4]); " +
+                    "local liveness = tonumber(ARGV[8]); " +
+                    "if evictDeadWaiters(KEYS[2], KEYS[3], KEYS[4], now) then " +
+                        "publishToNewHead(KEYS[1], KEYS[2], KEYS[5], ARGV[2], ARGV[6], ARGV[7]); " +
+                    "end; " +
 
                     // first acquire path
                     "if (redis.call('exists', KEYS[1]) == 0) " +
@@ -120,6 +110,8 @@ public class RedissonNonReentrantFairLock extends RedissonFairLock {
 
                         "redis.call('lpop', KEYS[2]);" +
                         "redis.call('zrem', KEYS[3], ARGV[2]);" +
+                        "redis.call('zrem', KEYS[4], ARGV[2]);" +
+                        "pruneAliveSet(KEYS[3], KEYS[4]); " +
 
                         // decrease timeouts for all waiting in the queue
                         "local keys = redis.call('zrange', KEYS[3], 0, -1);" +
@@ -137,29 +129,35 @@ public class RedissonNonReentrantFairLock extends RedissonFairLock {
                         "return redis.error_reply(ARGV[5]);" +
                     "end;" +
 
-                    // contention path: already in queue?
+                    // contention path: check if the thread is already in the queue. A thread
+                    // that asks again is alive, so the deadline moves forward here as well.
                     "local timeout = redis.call('zscore', KEYS[3], ARGV[2]);" +
                     "if timeout ~= false then " +
-                        "local ttl = redis.call('pttl', KEYS[1]);" +
-                        "return math.max(0, ttl); " +
+                        "redis.call('zadd', KEYS[4], now + liveness, ARGV[2]); " +
+                        "return ttlWhenQueued(KEYS[1], KEYS[2], KEYS[3], KEYS[4], now, liveness); " +
                     "end;" +
 
                     // enqueue
                     "local lastThreadId = redis.call('lindex', KEYS[2], -1);" +
                     "local ttl;" +
                     "if lastThreadId ~= false and lastThreadId ~= ARGV[2] and redis.call('zscore', KEYS[3], lastThreadId) ~= false then " +
-                        "ttl = tonumber(redis.call('zscore', KEYS[3], lastThreadId)) - tonumber(ARGV[4]);" +
+                        "ttl = tonumber(redis.call('zscore', KEYS[3], lastThreadId)) - now;" +
                     "else " +
                         "ttl = redis.call('pttl', KEYS[1]);" +
                     "end;" +
-                    "local timeout = ttl + tonumber(ARGV[3]) + tonumber(ARGV[4]);" +
+                    "local timeout = ttl + tonumber(ARGV[3]) + now;" +
                     "if redis.call('zadd', KEYS[3], timeout, ARGV[2]) == 1 then " +
                         "redis.call('rpush', KEYS[2], ARGV[2]);" +
                     "end;" +
-                    "return ttl;",
-                    Arrays.asList(getRawName(), threadsQueueName, timeoutSetName),
+                    "redis.call('zadd', KEYS[4], now + liveness, ARGV[2]); " +
+                    // the turn estimate is only a hint for the sleep time. See
+                    // RedissonFairLock for the reason why a negative value becomes 0.
+                    "return math.max(ttl, 0);",
+                    Arrays.asList(getRawName(), threadsQueueName, timeoutSetName, aliveSetName, getChannelName()),
                     unit.toMillis(leaseTime), getLockName(threadId), wait, currentTime,
-                    RedissonNonReentrantLock.REENTRY_ERR);
+                    RedissonNonReentrantLock.REENTRY_ERR,
+                    getSubscribeService().getPublishCommand(), LockPubSub.UNLOCK_MESSAGE,
+                    waiterLiveness);
         } else {
             throw new IllegalArgumentException();
         }

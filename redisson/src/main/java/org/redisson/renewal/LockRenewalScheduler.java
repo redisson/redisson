@@ -30,6 +30,7 @@ public final class LockRenewalScheduler {
     private final AtomicReference<LockTask> reference = new AtomicReference<>();
     private final AtomicReference<FastMultilockTask> multilockReference = new AtomicReference<>();
     private final AtomicReference<ReadLockTask> readLockReference = new AtomicReference<>();
+    private final AtomicReference<FairLockWaiterTask> fairLockWaiterReference = new AtomicReference<>();
     private final CommandAsyncExecutor executor;
 
     private final int batchSize;
@@ -57,6 +58,19 @@ public final class LockRenewalScheduler {
         reference.compareAndSet(null, new LockTask(internalLockLeaseTime, executor, batchSize));
         LockTask task = reference.get();
         task.add(name, lockName, threadId);
+    }
+
+    public void renewFairLockWaiter(String name, String aliveSetName, String timeoutSetName, Long threadId, String lockName) {
+        fairLockWaiterReference.compareAndSet(null, new FairLockWaiterTask(internalLockLeaseTime, executor, batchSize));
+        FairLockWaiterTask task = fairLockWaiterReference.get();
+        task.add(name, aliveSetName, timeoutSetName, lockName, threadId);
+    }
+
+    public void cancelFairLockWaiterRenewal(String name, Long threadId) {
+        FairLockWaiterTask task = fairLockWaiterReference.get();
+        if (task != null) {
+            task.cancelExpirationRenewal(name, threadId);
+        }
     }
 
     public void cancelReadLockRenewal(String name, Long threadId) {

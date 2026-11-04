@@ -86,7 +86,11 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
     }
 
     protected void trySuccessFalse(long currentThreadId, CompletableFuture<Boolean> result) {
-        acquireFailedAsync(-1, null, currentThreadId).whenComplete((res, e) -> {
+        trySuccessFalse(-1, null, currentThreadId, result);
+    }
+
+    protected void trySuccessFalse(long waitTime, TimeUnit unit, long currentThreadId, CompletableFuture<Boolean> result) {
+        acquireFailedAsync(waitTime, unit, currentThreadId).whenComplete((res, e) -> {
             if (e == null) {
                 result.complete(false);
             } else {

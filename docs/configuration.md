@@ -191,6 +191,14 @@ Default value: `30000`
 
 RLock object watchdog timeout in milliseconds. This parameter is only used if an RLock object is acquired without the `leaseTimeout` parameter. The lock expires after `lockWatchdogTimeout` if the watchdog didn’t extend it to the next `lockWatchdogTimeout` time interval. This prevents infinity-locked locks due to a Redisson client crash, or any other reason why a lock can’t be released properly.
 
+The same interval bounds a thread waiting for a fair lock: the watchdog renews its queue entry, and the entry is removed once a full interval has passed without a renewal, so the waiting threads of a crashed client block the queue for at most about two such intervals. The clocks of the Redisson clients that share a fair lock must agree to within this interval minus a third of it.
+
+**fairLockWaitTimeout**
+
+Default value: `300000`
+
+Deprecated. Wait time in milliseconds that a thread queued for a fair lock adds to the turn estimate of every thread queued behind it. It is used when the lock is acquired without a `waitTime` parameter and caps the `waitTime` when one is given. Only Redisson versions without liveness tracking of waiting threads read the turn estimates, so the setting has no effect once every client has been upgraded; `lockWatchdogTimeout` limits the time a dead waiting thread blocks the queue. The setting will be removed together with the turn estimates.
+
 **lockWatchdogBatchSize**  
 
 Default value: `100`
