@@ -291,4 +291,7 @@ public abstract class RedissonBaseLock extends RedissonExpirable implements RLoc
         throw new UnsupportedOperationException();
     }
 
+    protected boolean isExpirationRenewalScheduled(long threadId) {
+        return renewalScheduler.isLockRenewed(getRawName(), threadId);
+    }
 }

@@ -30,6 +30,7 @@ import org.redisson.pubsub.LockPubSub;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -898,6 +899,26 @@ public class RedissonFasterMultiLock extends RedissonBaseLock {
                 }
             }
         });
+    }
+
+    @Override
+    public boolean updateLeaseTime(Duration leaseTime) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public RFuture<Boolean> updateLeaseTimeAsync(Duration leaseTime) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean setLeaseTimeIfNotSet(Duration leaseTime) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public RFuture<Boolean> setLeaseTimeIfNotSetAsync(Duration leaseTime) {
+        throw new UnsupportedOperationException();
     }
 
 }

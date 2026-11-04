@@ -94,4 +94,16 @@ public final class LockRenewalScheduler {
         }
     }
 
+    public boolean isLockRenewed(String name, long threadId) {
+        return isRenewed(reference.get(), name, threadId);
+    }
+
+    private boolean isRenewed(RenewalTask task, String name, long threadId) {
+        if (task == null) {
+            return false;
+        }
+        LockEntry entry = task.name2entry.get(name);
+        return entry != null && entry.getLockName(threadId) != null;
+    }
+
 }

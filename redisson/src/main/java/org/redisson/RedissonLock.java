@@ -28,6 +28,7 @@ import org.redisson.pubsub.LockPubSub;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.concurrent.*;
@@ -673,5 +674,59 @@ public class RedissonLock extends RedissonBaseLock {
         });
     }
 
+    protected RFuture<Boolean> updateLeaseTimeInnerAsync(long threadId, long leaseTime) {
+        return evalWriteSyncedNoRetryAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                "if (redis.call('hexists', KEYS[1], ARGV[1]) == 0) then " +
+                    "return 0; " +
+                "end; " +
+                "redis.call('pexpire', KEYS[1], ARGV[2]); " +
+                "return 1; ",
+                Collections.singletonList(getRawName()),
+                getLockName(threadId), leaseTime);
+    }
 
+    @Override
+    public RFuture<Boolean> updateLeaseTimeAsync(Duration leaseTime) {
+        long threadId = Thread.currentThread().getId();
+        if (isExpirationRenewalScheduled(threadId)) {
+            return new CompletableFutureWrapper<>(false);
+        }
+
+        CompletionStage<Boolean> f = updateLeaseTimeInnerAsync(threadId, leaseTime.toMillis())
+                .thenApply(updated -> {
+                    if (updated) {
+                        internalLockLeaseTime = leaseTime.toMillis();
+                    }
+                    return updated;
+                });
+        return new CompletableFutureWrapper<>(f);
+    }
+
+    @Override
+    public boolean updateLeaseTime(Duration leaseTime) {
+        return get(updateLeaseTimeAsync(leaseTime));
+    }
+
+    @Override
+    public boolean setLeaseTimeIfNotSet(Duration leaseTime) {
+        return get(setLeaseTimeIfNotSetAsync(leaseTime));
+    }
+
+    @Override
+    public RFuture<Boolean> setLeaseTimeIfNotSetAsync(Duration leaseTime) {
+        long threadId = Thread.currentThread().getId();
+        if (!isExpirationRenewalScheduled(threadId)) {
+            return new CompletableFutureWrapper<>(false);
+        }
+
+        CompletionStage<Boolean> f = updateLeaseTimeInnerAsync(threadId, leaseTime.toMillis())
+                .thenApply(updated -> {
+                    if (updated) {
+                        cancelExpirationRenewal(threadId, false);
+                        internalLockLeaseTime = leaseTime.toMillis();
+                    }
+                    return updated;
+                });
+        return new CompletableFutureWrapper<>(f);
+    }
 }
