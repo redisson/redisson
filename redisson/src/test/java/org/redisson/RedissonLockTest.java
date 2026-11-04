@@ -11,6 +11,7 @@ import org.redisson.renewal.LockEntry;
 import org.redisson.renewal.LockTask;
 import org.testcontainers.containers.GenericContainer;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
@@ -284,6 +285,36 @@ public class RedissonLockTest extends BaseConcurrentTest {
         assertThat(lock.remainTimeToLive()).isEqualTo(-2);
         lock.lock();
         assertThat(lock.remainTimeToLive()).isBetween(redisson.getConfig().getLockWatchdogTimeout() - 10, redisson.getConfig().getLockWatchdogTimeout());
+    }
+
+    @Test
+    public void testUpdateLeaseTime() {
+        RLock lock = redisson.getLock("test-lock:1");
+        lock.lock(5, TimeUnit.SECONDS);
+        assertThat(lock.updateLeaseTime(Duration.ofSeconds(10))).isTrue();
+        assertThat(lock.remainTimeToLive()).isBetween(9000L, 10000L);
+        lock.unlock();
+
+        assertThat(lock.isLocked()).isFalse();
+        assertThat(lock.updateLeaseTime(Duration.ofSeconds(10))).isFalse();
+        assertThat(lock.setLeaseTimeIfNotSet(Duration.ofSeconds(10))).isFalse();
+
+        lock.lock();
+        assertThat(lock.updateLeaseTime(Duration.ofSeconds(10))).isFalse();
+        lock.unlock();
+    }
+
+    @Test
+    public void testSetLeaseTimeIfNotSet() {
+        RLock lock = redisson.getLock("test-lock:1");
+        lock.lock();
+        assertThat(lock.setLeaseTimeIfNotSet(Duration.ofSeconds(2))).isTrue();
+        assertThat(lock.remainTimeToLive()).isBetween(1000L, 2000L);
+        await().atMost(3, TimeUnit.SECONDS).until(() -> !lock.isLocked());
+
+        lock.lock(5, TimeUnit.SECONDS);
+        assertThat(lock.setLeaseTimeIfNotSet(Duration.ofSeconds(10))).isFalse();
+        lock.unlock();
     }
 
     @Test
