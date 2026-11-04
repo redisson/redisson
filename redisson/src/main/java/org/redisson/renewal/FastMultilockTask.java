@@ -75,7 +75,8 @@ public class FastMultilockTask extends LockTask {
 
         String firstName = keys.get(0);
 
-        CompletionStage<Boolean> f = executor.syncedEval(firstName, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        CompletionStage<Boolean> f = executor.syncedEval(
+                executor.getServiceManager().getCfg().isSkipSyncedSlaves(), firstName, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                         "local leaseTime = tonumber(ARGV[1]);" +
                         "local currentTime = tonumber(ARGV[2]);" +
                         "local currentThread = ARGV[3];" +

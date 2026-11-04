@@ -263,7 +263,8 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
     }
 
     private RFuture<Boolean> tryAcquireAsync0(int permits) {
-        return commandExecutor.syncedEvalNoRetry(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return commandExecutor.syncedEvalNoRetry(getServiceManager().getCfg().isSkipSyncedSlaves(),
+                getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                   "local value = redis.call('get', KEYS[1]); " +
                   "if (value ~= false and tonumber(value) >= tonumber(ARGV[1])) then " +
                       "local val = redis.call('decrby', KEYS[1], ARGV[1]); " +
@@ -455,7 +456,8 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
             return CompletableFutureWrapper.completedNull();
         }
 
-        RFuture<Void> future = commandExecutor.syncedEvalNoRetry(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
+        RFuture<Void> future = commandExecutor.syncedEvalNoRetry(getServiceManager().getCfg().isSkipSyncedSlaves(),
+                getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
                 "local value = redis.call('incrby', KEYS[1], ARGV[1]); " +
                         "redis.call(ARGV[2], KEYS[2], value); ",
                 Arrays.asList(getRawName(), getChannelName()), permits, getSubscribeService().getPublishCommand());
@@ -481,7 +483,8 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
             return new CompletableFutureWrapper<>(false);
         }
 
-        RFuture<Boolean> future = commandExecutor.syncedEvalNoRetry(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        RFuture<Boolean> future = commandExecutor.syncedEvalNoRetry(getServiceManager().getCfg().isSkipSyncedSlaves(),
+                getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                   "if redis.call('exists', KEYS[1]) == 0 then " +
                            "return 0 " +
                         "end " +
@@ -505,7 +508,8 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
 
     @Override
     public RFuture<Integer> drainPermitsAsync() {
-        return commandExecutor.syncedEvalWithRetry(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
+        return commandExecutor.syncedEvalWithRetry(getServiceManager().getCfg().isSkipSyncedSlaves(),
+                getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
                 "local value = redis.call('get', KEYS[1]); " +
                 "if (value == false) then " +
                     "return 0; " +
@@ -532,7 +536,8 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
     
     @Override
     public RFuture<Boolean> trySetPermitsAsync(int permits) {
-        RFuture<Boolean> future = commandExecutor.syncedEvalWithRetry(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        RFuture<Boolean> future = commandExecutor.syncedEvalWithRetry(getServiceManager().getCfg().isSkipSyncedSlaves(),
+                getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                   "local value = redis.call('get', KEYS[1]); " +
                         "if (value == false) then "
                           + "redis.call('set', KEYS[1], ARGV[1]); "
@@ -562,7 +567,8 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
 
     @Override
     public RFuture<Boolean> trySetPermitsAsync(int permits, Duration timeToLive) {
-        RFuture<Boolean> future = commandExecutor.syncedEvalWithRetry(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        RFuture<Boolean> future = commandExecutor.syncedEvalWithRetry(getServiceManager().getCfg().isSkipSyncedSlaves(),
+                getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                   "local value = redis.call('get', KEYS[1]); " +
                         "if (value == false) then "
                           + "redis.call('set', KEYS[1], ARGV[1], 'px', ARGV[3]); "
@@ -592,7 +598,8 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
 
     @Override
     public RFuture<Void> addPermitsAsync(int permits) {
-        return commandExecutor.syncedEvalWithRetry(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_VOID,
+        return commandExecutor.syncedEvalWithRetry(getServiceManager().getCfg().isSkipSyncedSlaves(),
+                getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_VOID,
                 "local value = redis.call('get', KEYS[1]); " +
                 "if (value == false) then "
                   + "value = 0;"

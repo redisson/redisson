@@ -463,6 +463,10 @@ public class RedisDockerTest {
     record ReplicatedData(Startable container, RedissonClient redisson, List<ContainerState> nodes) {}
 
     private static ReplicatedData createReplicated() {
+        return createReplicated(new Config());
+    }
+
+    private static ReplicatedData createReplicated(Config config) {
         DockerComposeContainer environment =
                 new DockerComposeContainer(new File("src/test/resources/docker-compose-redis-replicated.yml"))
                         .withOptions("--compatibility")
@@ -488,7 +492,6 @@ public class RedisDockerTest {
         Ports.Binding[] replicaPort = replica.get().getContainerInfo().getNetworkSettings()
                 .getPorts().getBindings().get(new ExposedPort(replica.get().getExposedPorts().get(0)));
 
-        Config config = new Config();
         config.setProtocol(protocol);
         config.useReplicatedServers()
                 .setNatMapper(new NatMapper() {
@@ -525,6 +528,16 @@ public class RedisDockerTest {
     protected void withNewReplicated(BiConsumer<List<ContainerState>, RedissonClient> callback) {
         ReplicatedData data = createReplicated();
 
+        try {
+            callback.accept(data.nodes, data.redisson);
+        } finally {
+            data.redisson.shutdown();
+            data.container.stop();
+        }
+    }
+
+    protected void withNewReplicated(Config config, BiConsumer<List<ContainerState>, RedissonClient> callback) {
+        ReplicatedData data = createReplicated(config);
         try {
             callback.accept(data.nodes, data.redisson);
         } finally {

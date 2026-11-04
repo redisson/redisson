@@ -163,7 +163,13 @@ public interface CommandAsyncExecutor {
 
     <T> RFuture<T> syncedEvalWithRetry(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params);
 
+    <T> RFuture<T> syncedEvalWithRetry(boolean skipSync, String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params);
+
     <T> RFuture<T> syncedEvalNoRetry(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params);
+
+    <T> RFuture<T> syncedEvalNoRetry(boolean skipSync, String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params);
+
+    <T> RFuture<T> syncedEval(boolean skipSync, String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params);
 
     <T> RFuture<T> syncedEvalNoRetry(long timeout, SyncMode syncMode, String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params);
 
