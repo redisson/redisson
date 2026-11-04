@@ -44,6 +44,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 /**
@@ -77,6 +78,8 @@ public class MasterSlaveEntry {
     final AtomicBoolean active = new AtomicBoolean(true);
 
     final AtomicBoolean noPubSubSlaves = new AtomicBoolean();
+
+    final AtomicReference<RedisClient> masterUsedAsSlave = new AtomicReference<>();
 
     volatile int availableSlaves = -1;
     volatile boolean aofEnabled;
@@ -114,9 +117,28 @@ public class MasterSlaveEntry {
         ReadMode readMode = config.getReadMode();
         if (hasNoSlaves()
                 || (readMode != null && readMode.isMasterInSlavePool())) {
-            addSlaveEntry(masterEntry);
+            addMasterAsSlave();
         } else {
             removeSlaveEntry(masterEntry);
+            if (masterUsedAsSlave.getAndSet(null) != null) {
+                log.info("master {} excluded from slaves", masterEntry.getClient().getAddr());
+            }
+        }
+    }
+
+    // setupMasterEntry() provisionally registers the master in the slave pool.
+    // Track the client separately to report fallback again when the master changes.
+    private void addMasterAsSlave() {
+        ClientConnectionsEntry entry = masterEntry;
+        addSlaveEntry(entry);
+
+        ReadMode readMode = config.getReadMode();
+        if (readMode == null || readMode == ReadMode.MASTER || readMode.isMasterInSlavePool()) {
+            return;
+        }
+        if (masterUsedAsSlave.getAndSet(entry.getClient()) != entry.getClient()) {
+            log.info("master {} is used as slave. readMode = {}",
+                        entry.getClient().getAddr(), readMode);
         }
     }
 
@@ -223,8 +245,7 @@ public class MasterSlaveEntry {
         if (!config.isSlaveNotUsed()
                 && !masterEntry.getClient().getAddr().equals(entry.getClient().getAddr())
                     && hasNoSlaves()) {
-            addSlaveEntry(masterEntry);
-            log.info("master {} is used as slave", masterEntry.getClient().getAddr());
+            addMasterAsSlave();
         }
 
         entry.nodeDown();
@@ -456,6 +477,7 @@ public class MasterSlaveEntry {
         }
 
         removeSlaveEntry(masterEntry);
+        masterUsedAsSlave.set(null);
         log.info("master {} excluded from slaves", addr);
         return true;
     }
@@ -469,6 +491,7 @@ public class MasterSlaveEntry {
         }
 
         removeSlaveEntry(masterEntry);
+        masterUsedAsSlave.set(null);
         log.info("master {} excluded from slaves", addr);
         return true;
     }
