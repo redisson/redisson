@@ -524,11 +524,37 @@ public class RedissonReactiveStreamCommands extends RedissonBaseReactive impleme
         return execute(publisher, command -> {
 
             Assert.notNull(command.getKey(), "Key must not be null!");
-            Assert.notNull(command.getCount(), "Count must not be null!");
+            Assert.notNull(command.getOptions(), "Options must not be null!");
 
             byte[] k = toByteArray(command.getKey());
+            RedisStreamCommands.TrimOptions trimOptions = command.getOptions().getTrimOptions();
+            RedisStreamCommands.TrimStrategy strategy = trimOptions.getTrimStrategy();
+            boolean minId = strategy instanceof RedisStreamCommands.MinIdTrimStrategy;
 
-            Mono<Long> m = write(k, StringCodec.INSTANCE, RedisCommands.XTRIM, k, "MAXLEN", command.getCount());
+            List<Object> params = new ArrayList<>();
+            params.add(k);
+            params.add(minId ? "MINID" : "MAXLEN");
+
+            if (trimOptions.getTrimOperator() == RedisStreamCommands.TrimOperator.APPROXIMATE) {
+                params.add("~");
+            }
+
+            if (minId) {
+                params.add(((RedisStreamCommands.MinIdTrimStrategy) strategy).threshold().getValue());
+            } else {
+                params.add(((RedisStreamCommands.MaxLenTrimStrategy) strategy).threshold());
+            }
+
+            if (trimOptions.hasLimit()) {
+                params.add("LIMIT");
+                params.add(trimOptions.getLimit());
+            }
+
+            if (trimOptions.hasDeletionPolicy()) {
+                params.add(toDeletionPolicy(trimOptions.getDeletionPolicy()));
+            }
+
+            Mono<Long> m = write(k, StringCodec.INSTANCE, RedisCommands.XTRIM, params.toArray());
             return m.map(v -> new ReactiveRedisConnection.NumericResponse<>(command, v));
         });
     }
