@@ -46,6 +46,7 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.net.URL;
+import java.net.URLConnection;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
@@ -847,10 +848,14 @@ public class ConfigSupport {
     }
 
     public <T> T fromYAML(URL url, Class<T> configType) throws IOException {
-        String content = resolveEnvParams(new InputStreamReader(url.openStream()));
-        content = unfixTagFormat(content);
-        Yaml yaml = createYamlParser(classLoader, useCaseInsensitive);
-        return yaml.loadAs(content, configType);
+        URLConnection connection = url.openConnection();
+        connection.setUseCaches(false);
+        try (InputStream inputStream = connection.getInputStream()) {
+            String content = resolveEnvParams(new InputStreamReader(inputStream));
+            content = unfixTagFormat(content);
+            Yaml yaml = createYamlParser(classLoader, useCaseInsensitive);
+            return yaml.loadAs(content, configType);
+        }
     }
 
     public <T> T fromYAML(Reader reader, Class<T> configType) throws IOException {
