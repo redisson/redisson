@@ -30,11 +30,7 @@ public class ContainsDecoder<T> implements MultiDecoder<List<T>> {
     private final List<T> args;
 
     public ContainsDecoder(Collection<T> args) {
-        if (args instanceof List) {
-            this.args = (List<T>) args;
-        } else {
-            this.args = new ArrayList<>(args);
-        }
+        this.args = new ArrayList<>(args);
     }
 
     @Override
