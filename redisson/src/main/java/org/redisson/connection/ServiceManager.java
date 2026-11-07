@@ -87,6 +87,7 @@ import java.util.stream.StreamSupport;
 /**
  *
  * @author Nikita Koksharov
+ * @author Taewoong Kim
  *
  */
 public final class ServiceManager {
@@ -147,6 +148,8 @@ public final class ServiceManager {
     private NatMapper natMapper = NatMapper.direct();
 
     private volatile boolean hashImportDisabled;
+
+    private volatile boolean bitFieldRODisabled;
 
     private static final Map<InetSocketAddress, Set<String>> SCRIPT_SHA_CACHE = new ConcurrentHashMap<>();
 
@@ -485,6 +488,14 @@ public final class ServiceManager {
 
     public void disableHashImport() {
         hashImportDisabled = true;
+    }
+
+    public boolean isBitFieldRODisabled() {
+        return bitFieldRODisabled;
+    }
+
+    public void disableBitFieldRO() {
+        bitFieldRODisabled = true;
     }
 
     public NameMapper getNameMapper() {
