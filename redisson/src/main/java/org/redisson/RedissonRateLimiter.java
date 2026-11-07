@@ -473,6 +473,12 @@ public final class RedissonRateLimiter extends RedissonExpirable implements RRat
     private RFuture<Boolean> setOrUpdateAsync(RateLimiterArgs args, boolean requireExist) {
         RateLimiterParams params = (RateLimiterParams) args;
 
+        if (params.getRate() <= 0) {
+            throw new IllegalArgumentException("Rate can't be negative or zero");
+        }
+        if (params.getRateInterval().isZero() || params.getRateInterval().isNegative()) {
+            throw new IllegalArgumentException("Rate interval can't be negative or zero");
+        }
         if (!params.getKeepAliveTime().isZero() && params.getKeepAliveTime().toMillis() < params.getRateInterval().toMillis()) {
             throw new IllegalArgumentException("The parameter keepAliveTime should be greater than or equal to rateInterval");
         }
