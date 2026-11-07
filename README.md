@@ -4,6 +4,8 @@
 
 Redisson is the Java Client and Real-Time Data Platform for Valkey and Redis.
 
+Top 1% of all Maven Central publishers by popularity.
+
 Redisson greatly extends the capabilities of Valkey and Redis by providing additional services and data structures not natively available in either platform. This enhancement includes distributed Java collections, objects, and service implementations.
 
 ## Features
