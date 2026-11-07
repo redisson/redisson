@@ -1,11 +1,14 @@
 package org.redisson;
 
 import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.redisson.api.RBatch;
 import org.redisson.api.RBitSetAsync;
 import org.redisson.api.RBitSetReactive;
@@ -17,10 +20,13 @@ import org.redisson.api.bitset.BitFieldArgs;
 import org.redisson.api.bitset.BitFieldOverflow;
 import org.redisson.api.bitset.BitOffset;
 import org.redisson.api.bitset.BitRangeArgs;
+import org.redisson.api.redisnode.RedisNode;
+import org.redisson.api.redisnode.RedisNodes;
 import org.redisson.client.RedisException;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.MultiDecoder;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.Network;
 import org.redisson.api.RBitSet;
 
 import java.util.ArrayList;
@@ -36,6 +42,75 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class RedissonBitSetTest extends RedisDockerTest {
+
+    @ParameterizedTest
+    @ValueSource(strings = {"redis:5.0.14", IMAGE})
+    public void testNumericReadsWithSlaveReadMode(String image) throws Exception {
+        try (Network network = Network.newNetwork();
+             GenericContainer<?> master = createContainerByImage(image).withNetwork(network).withNetworkAliases("master");
+             GenericContainer<?> slave = createContainerByImage(image, "--replicaof", "master", "6379").withNetwork(network)) {
+            master.start();
+            slave.start();
+
+            Config config = new Config();
+            config.useMasterSlaveServers()
+                    .setMasterAddress("redis://" + master.getHost() + ":" + master.getFirstMappedPort())
+                    .addSlaveAddress("redis://" + slave.getHost() + ":" + slave.getFirstMappedPort())
+                    .setReadMode(ReadMode.SLAVE)
+                    .setRetryAttempts(0);
+            RedissonClient client = Redisson.create(config);
+            try {
+                RBitSet bitSet = client.getBitSet("numericReads");
+                bitSet.setLong(0, -1L);
+                Awaitility.await().atMost(Duration.ofSeconds(30)).untilAsserted(() ->
+                        assertThat(bitSet.get(0L)).isTrue());
+
+                assertThat(bitSet.getSigned(8, 0)).isEqualTo(-1L);
+                assertThat(bitSet.getUnsigned(8, 0)).isEqualTo(255L);
+                assertThat(bitSet.getByte(0)).isEqualTo((byte) -1);
+                assertThat(bitSet.getShort(0)).isEqualTo((short) -1);
+                assertThat(bitSet.getInteger(0)).isEqualTo(-1);
+                assertThat(bitSet.getLong(0)).isEqualTo(-1L);
+                assertThat(bitSet.get(0L, 63L, 64L)).containsExactly(true, true, false);
+                assertThatThrownBy(() -> bitSet.getSigned(0, 0))
+                        .isInstanceOf(RedisException.class)
+                        .hasMessageContaining("Invalid bitfield type");
+
+                String masterStats = master.execInContainer("redis-cli", "INFO", "commandstats").getStdout();
+                String slaveStats = slave.execInContainer("redis-cli", "INFO", "commandstats").getStdout();
+                if (image.equals(IMAGE)) {
+                    assertThat(masterStats).contains("cmdstat_bitfield:calls=1,");
+                    assertThat(slaveStats).contains("cmdstat_bitfield_ro:calls=8,");
+                } else {
+                    assertThat(masterStats).contains("cmdstat_bitfield:calls=9,");
+                }
+            } finally {
+                client.shutdown();
+            }
+        }
+    }
+
+    @Test
+    public void testCancelBitFieldReadWaitingForConnection() throws Exception {
+        Config config = createConfig();
+        config.useSingleServer().setConnectionMinimumIdleSize(1).setConnectionPoolSize(1);
+        RedissonClient client = Redisson.create(config);
+        try {
+            RedisNode node = client.getRedisNodes(RedisNodes.SINGLE).getInstance();
+            String before = node.info(RedisNode.InfoSection.COMMANDSTATS).get("cmdstat_bitfield_ro");
+            RFuture<String> blocking = client.<String>getBlockingQueue("holdConnection").takeAsync();
+
+            RFuture<Byte> read = client.getBitSet("bits").getByteAsync(0);
+            assertThat(read.cancel(false)).isTrue();
+            redisson.getBlockingQueue("holdConnection").add("release");
+            blocking.toCompletableFuture().get(5, TimeUnit.SECONDS);
+
+            assertThat(node.info(RedisNode.InfoSection.COMMANDSTATS).get("cmdstat_bitfield_ro"))
+                    .isEqualTo(before);
+        } finally {
+            client.shutdown();
+        }
+    }
 
     @Test
     public void testUnsigned() {
@@ -105,17 +180,12 @@ public class RedissonBitSetTest extends RedisDockerTest {
                     .setSigned(8, BitOffset.index(1), 200));
             assertThat(set).containsExactly(0L, 0L);
 
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-
-            List<Long> result = bs.bitField(BitFieldArgs.create()
-                    .getUnsigned(8, BitOffset.bit(0))
-                    .getUnsigned(8, BitOffset.bit(8)));
-
-            assertThat(result).containsExactly(100L, 200L);
+            Awaitility.await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> {
+                List<Long> result = bs.bitField(BitFieldArgs.create()
+                        .getUnsigned(8, BitOffset.bit(0))
+                        .getUnsigned(8, BitOffset.bit(8)));
+                assertThat(result).containsExactly(100L, 200L);
+            });
 
             redissonClient.shutdown();
         });

@@ -63,6 +63,7 @@ import java.util.stream.Collectors;
 /**
  *
  * @author Nikita Koksharov
+ * @author Taewoong Kim
  *
  */
 public class CommandAsyncService implements CommandAsyncExecutor {
@@ -692,6 +693,10 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             RedisCommand<V> command, Object[] params, boolean ignoreRedirect, boolean noRetry) {
         RedisCommand<V> cmnd = getServiceManager().resp3(command);
 
+        if (readOnlyMode && (cmnd.getName().equals("BITFIELD") || cmnd.getName().equals("BITFIELD_RO"))) {
+            return readBitFieldAsync(source, codec, cmnd, params, ignoreRedirect, noRetry);
+        }
+
         if (readOnlyMode && cmnd.getName().equals("SORT") && !SORT_RO_SUPPORTED.get()) {
             readOnlyMode = false;
         } else if (readOnlyMode && cmnd.getName().equals("SORT") && SORT_RO_SUPPORTED.get()) {
@@ -715,6 +720,44 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         }
 
         CompletableFuture<R> mainPromise = createPromise();
+        executeCommand(readOnlyMode, source, codec, cmnd, params, ignoreRedirect, noRetry, mainPromise);
+        return new CompletableFutureWrapper<>(mainPromise);
+    }
+
+    private <V, R> RFuture<R> readBitFieldAsync(NodeSource source, Codec codec, RedisCommand<V> command,
+                                                 Object[] params, boolean ignoreRedirect, boolean noRetry) {
+        // Redis classifies BITFIELD as a write command even when it only contains GET operations.
+        RedisCommand<V> writeCommand = new RedisCommand<>(command, "BITFIELD");
+        if (getServiceManager().isBitFieldRODisabled()) {
+            return async(false, source, codec, writeCommand, params, ignoreRedirect, noRetry);
+        }
+
+        CompletableFuture<R> result = createPromise();
+        CompletableFuture<R> readPromise = new CompletableFuture<>();
+        result.whenComplete((value, error) -> {
+            if (result.isCancelled()) {
+                readPromise.cancel(false);
+            }
+        });
+        readPromise.whenComplete((value, error) -> {
+            if (error == null) {
+                result.complete(value);
+            } else if (error instanceof RedisException && error.getMessage() != null
+                    && error.getMessage().startsWith("ERR unknown command")) {
+                getServiceManager().disableBitFieldRO();
+                executeCommand(false, source, codec, writeCommand, params, ignoreRedirect, noRetry, result);
+            } else {
+                result.completeExceptionally(error);
+            }
+        });
+
+        RedisCommand<V> readCommand = new RedisCommand<>(command, "BITFIELD_RO");
+        executeCommand(true, source, codec, readCommand, params, ignoreRedirect, noRetry, readPromise);
+        return new CompletableFutureWrapper<>(result);
+    }
+
+    private <V, R> void executeCommand(boolean readOnlyMode, NodeSource source, Codec codec, RedisCommand<V> cmnd,
+                                       Object[] params, boolean ignoreRedirect, boolean noRetry, CompletableFuture<R> mainPromise) {
         if (!readOnlyMode && getServiceManager().hasCachingInstances()) {
             Arrays.stream(params)
                     .filter(r -> r instanceof String)
@@ -730,7 +773,6 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                                                             ignoreRedirect, connectionManager, objectBuilder, referenceType, noRetry,
                                                             retryAttempts, retryDelay, responseTimeout, trackChanges, readMode);
         executor.execute();
-        return new CompletableFutureWrapper<>(mainPromise);
     }
 
     private void free(Object[] params) {
