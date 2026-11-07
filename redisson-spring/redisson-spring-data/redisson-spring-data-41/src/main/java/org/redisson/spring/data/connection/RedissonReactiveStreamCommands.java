@@ -56,6 +56,26 @@ public class RedissonReactiveStreamCommands extends RedissonBaseReactive impleme
         return recordIds.stream().map(RecordId::getValue).collect(Collectors.toList());
     }
 
+    private static void appendXClaimOptions(List<Object> params, RedisStreamCommands.XClaimOptions options) {
+        params.addAll(Arrays.asList(options.getIdsAsStringArray()));
+
+        if (options.getIdleTime() != null) {
+            params.add("IDLE");
+            params.add(options.getIdleTime().toMillis());
+        }
+        if (options.getUnixTime() != null) {
+            params.add("TIME");
+            params.add(options.getUnixTime().toEpochMilli());
+        }
+        if (options.getRetryCount() != null) {
+            params.add("RETRYCOUNT");
+            params.add(options.getRetryCount());
+        }
+        if (options.isForce()) {
+            params.add("FORCE");
+        }
+    }
+
     @Override
     public Flux<ReactiveRedisConnection.CommandResponse<XClaimCommand, Flux<RecordId>>> xClaimJustId(Publisher<XClaimCommand> publisher) {
         return execute(publisher, command -> {
@@ -71,7 +91,7 @@ public class RedissonReactiveStreamCommands extends RedissonBaseReactive impleme
             params.add(command.getGroupName());
             params.add(command.getNewOwner());
             params.add(Objects.requireNonNull(command.getOptions().getMinIdleTime()).toMillis());
-            params.addAll(Arrays.asList(command.getOptions().getIdsAsStringArray()));
+            appendXClaimOptions(params, command.getOptions());
             params.add("JUSTID");
 
             Mono<Map<StreamMessageId, Map<byte[], byte[]>>> m = write(k, ByteArrayCodec.INSTANCE, RedisCommands.XCLAIM, params.toArray());
@@ -96,7 +116,7 @@ public class RedissonReactiveStreamCommands extends RedissonBaseReactive impleme
             params.add(command.getGroupName());
             params.add(command.getNewOwner());
             params.add(Objects.requireNonNull(command.getOptions().getMinIdleTime()).toMillis());
-            params.addAll(Arrays.asList(command.getOptions().getIdsAsStringArray()));
+            appendXClaimOptions(params, command.getOptions());
 
             Mono<Map<StreamMessageId, Map<byte[], byte[]>>> m = write(k, ByteArrayCodec.INSTANCE, RedisCommands.XCLAIM, params.toArray());
             return m.map(v -> new ReactiveRedisConnection.CommandResponse<>(command, Flux.fromStream(v.entrySet().stream()).map(e -> {
