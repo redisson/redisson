@@ -116,6 +116,18 @@ Default value: `null`
 
 The connection listener, which is triggered when Redisson is connected/disconnected to a Valkey or Redis server.
 
+**eagerConnectionRelease**
+
+Default value: `false`
+
+Defines whether to return the connection to the pool right after a command has been written to the channel regardless of the connection pool size. Allows a single connection to be shared by multiple commands.
+
+Eager release is always used if `masterConnectionPoolSize` is less than `10`. Blocking commands, ASK redirects, and batch executors are always released after the response.
+
+`true` - enables eager release regardless of the connection pool size
+
+`false` - preserves behavior based on the connection pool size
+
 **lazyInitialization**
 
 Default value: `false`
