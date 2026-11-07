@@ -22,11 +22,15 @@ package org.redisson.api;
  * @author Nikita Koksharov
  *
  */
-public interface RDestroyable {
+public interface RDestroyable extends AutoCloseable {
 
     /**
      * Destroys object when it's not necessary anymore.
      */
     void destroy();
-    
+
+    @Override
+    default void close() {
+        destroy();
+    }
 }
