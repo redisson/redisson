@@ -94,10 +94,9 @@ public class RedissonReactiveStreamCommands extends RedissonBaseReactive impleme
             appendXClaimOptions(params, command.getOptions());
             params.add("JUSTID");
 
-            Mono<Map<StreamMessageId, Map<byte[], byte[]>>> m = write(k, ByteArrayCodec.INSTANCE, RedisCommands.XCLAIM, params.toArray());
-            return m.map(v -> new ReactiveRedisConnection.CommandResponse<>(command, Flux.fromStream(v.entrySet().stream()).map(e -> {
-                return RecordId.of(e.getKey().toString());
-            })));
+            Mono<List<StreamMessageId>> m = write(k, ByteArrayCodec.INSTANCE, RedisCommands.XCLAIM_IDS, params.toArray());
+            return m.map(ids -> new ReactiveRedisConnection.CommandResponse<>(command,
+                    Flux.fromIterable(ids).map(id -> RecordId.of(id.toString()))));
         });
     }
 
