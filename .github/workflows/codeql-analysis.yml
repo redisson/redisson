@@ -58,8 +58,10 @@ jobs:
         
     - name: Set up Maven ${{ env.MAVEN_VERSION }}
       run: |
-        curl -fsSL "https://archive.apache.org/dist/maven/maven-3/${MAVEN_VERSION}/binaries/apache-maven-${MAVEN_VERSION}-bin.tar.gz" \
-          | tar xz -C "$RUNNER_TEMP"
+        curl -fsSL --retry 3 --connect-timeout 10 --max-time 120 \
+          "https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/${MAVEN_VERSION}/apache-maven-${MAVEN_VERSION}-bin.tar.gz" \
+          -o "$RUNNER_TEMP/apache-maven-${MAVEN_VERSION}-bin.tar.gz"
+        tar xzf "$RUNNER_TEMP/apache-maven-${MAVEN_VERSION}-bin.tar.gz" -C "$RUNNER_TEMP"
         echo "$RUNNER_TEMP/apache-maven-${MAVEN_VERSION}/bin" >> "$GITHUB_PATH"
   
     - name: Initialize CodeQL
