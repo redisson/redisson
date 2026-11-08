@@ -13,13 +13,31 @@ import reactor.core.publisher.Mono;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class RedissonReactiveXAddCommandsTest extends BaseConnectionTest {
+
+    @Test
+    public void testXAddRejectsNullOptions() {
+        ByteBufferRecord record = StreamRecords.newRecord()
+                .in(ByteBuffer.wrap(bytes("reactive-xadd-null-options")))
+                .ofBuffer(Collections.singletonMap(
+                        ByteBuffer.wrap(bytes("field")), ByteBuffer.wrap(bytes("value"))));
+        ReactiveStreamCommands.AddStreamRecord command = ReactiveStreamCommands.AddStreamRecord
+                .of(record)
+                .withOptions(null);
+        RedissonReactiveStreamCommands commands = new RedissonReactiveStreamCommands(null);
+
+        assertThatThrownBy(() -> commands.xAdd(Mono.just(command)).blockFirst(Duration.ofSeconds(10)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Options must not be null!");
+    }
 
     @Test
     public void testXAddSerializesAllOptions() {

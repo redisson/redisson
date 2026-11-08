@@ -285,6 +285,7 @@ public class RedissonReactiveStreamCommands extends RedissonBaseReactive impleme
 
             Assert.notNull(command.getKey(), "Key must not be null!");
             Assert.notNull(command.getBody(), "Body must not be null!");
+            Assert.notNull(command.getOptions(), "Options must not be null!");
 
             byte[] k = toByteArray(command.getKey());
             List<Object> params = new LinkedList<>();
@@ -296,11 +297,11 @@ public class RedissonReactiveStreamCommands extends RedissonBaseReactive impleme
             }
 
             RedisStreamCommands.TrimOptions trimOptions = options.getTrimOptions();
-            if (trimOptions != null && trimOptions.hasDeletionPolicy()) {
-                params.add(toDeletionPolicy(trimOptions.getDeletionPolicy()));
-            }
-
             if (trimOptions != null) {
+                if (trimOptions.hasDeletionPolicy()) {
+                    params.add(toDeletionPolicy(trimOptions.getDeletionPolicy()));
+                }
+
                 RedisStreamCommands.TrimStrategy strategy = trimOptions.getTrimStrategy();
                 boolean minId = strategy instanceof RedisStreamCommands.MinIdTrimStrategy;
                 params.add(minId ? "MINID" : "MAXLEN");
