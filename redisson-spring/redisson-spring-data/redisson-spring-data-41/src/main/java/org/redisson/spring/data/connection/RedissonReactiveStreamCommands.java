@@ -56,6 +56,26 @@ public class RedissonReactiveStreamCommands extends RedissonBaseReactive impleme
         return recordIds.stream().map(RecordId::getValue).collect(Collectors.toList());
     }
 
+    private static void appendXClaimOptions(List<Object> params, RedisStreamCommands.XClaimOptions options) {
+        params.addAll(Arrays.asList(options.getIdsAsStringArray()));
+
+        if (options.getIdleTime() != null) {
+            params.add("IDLE");
+            params.add(options.getIdleTime().toMillis());
+        }
+        if (options.getUnixTime() != null) {
+            params.add("TIME");
+            params.add(options.getUnixTime().toEpochMilli());
+        }
+        if (options.getRetryCount() != null) {
+            params.add("RETRYCOUNT");
+            params.add(options.getRetryCount());
+        }
+        if (options.isForce()) {
+            params.add("FORCE");
+        }
+    }
+
     @Override
     public Flux<ReactiveRedisConnection.CommandResponse<XClaimCommand, Flux<RecordId>>> xClaimJustId(Publisher<XClaimCommand> publisher) {
         return execute(publisher, command -> {
@@ -71,13 +91,12 @@ public class RedissonReactiveStreamCommands extends RedissonBaseReactive impleme
             params.add(command.getGroupName());
             params.add(command.getNewOwner());
             params.add(Objects.requireNonNull(command.getOptions().getMinIdleTime()).toMillis());
-            params.addAll(Arrays.asList(command.getOptions().getIdsAsStringArray()));
+            appendXClaimOptions(params, command.getOptions());
             params.add("JUSTID");
 
-            Mono<Map<StreamMessageId, Map<byte[], byte[]>>> m = write(k, ByteArrayCodec.INSTANCE, RedisCommands.XCLAIM, params.toArray());
-            return m.map(v -> new ReactiveRedisConnection.CommandResponse<>(command, Flux.fromStream(v.entrySet().stream()).map(e -> {
-                return RecordId.of(e.getKey().toString());
-            })));
+            Mono<List<StreamMessageId>> m = write(k, ByteArrayCodec.INSTANCE, RedisCommands.XCLAIM_IDS, params.toArray());
+            return m.map(ids -> new ReactiveRedisConnection.CommandResponse<>(command,
+                    Flux.fromIterable(ids).map(id -> RecordId.of(id.toString()))));
         });
     }
 
@@ -96,7 +115,7 @@ public class RedissonReactiveStreamCommands extends RedissonBaseReactive impleme
             params.add(command.getGroupName());
             params.add(command.getNewOwner());
             params.add(Objects.requireNonNull(command.getOptions().getMinIdleTime()).toMillis());
-            params.addAll(Arrays.asList(command.getOptions().getIdsAsStringArray()));
+            appendXClaimOptions(params, command.getOptions());
 
             Mono<Map<StreamMessageId, Map<byte[], byte[]>>> m = write(k, ByteArrayCodec.INSTANCE, RedisCommands.XCLAIM, params.toArray());
             return m.map(v -> new ReactiveRedisConnection.CommandResponse<>(command, Flux.fromStream(v.entrySet().stream()).map(e -> {
@@ -276,20 +295,50 @@ public class RedissonReactiveStreamCommands extends RedissonBaseReactive impleme
         });
     }
 
+    private static final RedisStrictCommand<RecordId> XADD = new RedisStrictCommand<>("XADD",
+            id -> id != null ? RecordId.of(id.toString()) : null);
+
     @Override
     public Flux<ReactiveRedisConnection.CommandResponse<AddStreamRecord, RecordId>> xAdd(Publisher<AddStreamRecord> publisher) {
         return execute(publisher, command -> {
 
             Assert.notNull(command.getKey(), "Key must not be null!");
             Assert.notNull(command.getBody(), "Body must not be null!");
+            Assert.notNull(command.getOptions(), "Options must not be null!");
 
             byte[] k = toByteArray(command.getKey());
             List<Object> params = new LinkedList<>();
             params.add(k);
 
-            if (command.getMaxlen() != null) {
-                params.add("MAXLEN");
-                params.add(command.getMaxlen());
+            RedisStreamCommands.XAddOptions options = command.getOptions();
+            if (options.isNoMkStream()) {
+                params.add("NOMKSTREAM");
+            }
+
+            RedisStreamCommands.TrimOptions trimOptions = options.getTrimOptions();
+            if (trimOptions != null) {
+                if (trimOptions.hasDeletionPolicy()) {
+                    params.add(toDeletionPolicy(trimOptions.getDeletionPolicy()));
+                }
+
+                RedisStreamCommands.TrimStrategy strategy = trimOptions.getTrimStrategy();
+                boolean minId = strategy instanceof RedisStreamCommands.MinIdTrimStrategy;
+                params.add(minId ? "MINID" : "MAXLEN");
+
+                if (trimOptions.getTrimOperator() == RedisStreamCommands.TrimOperator.APPROXIMATE) {
+                    params.add("~");
+                }
+
+                if (minId) {
+                    params.add(((RedisStreamCommands.MinIdTrimStrategy) strategy).threshold().getValue());
+                } else {
+                    params.add(((RedisStreamCommands.MaxLenTrimStrategy) strategy).threshold());
+                }
+
+                if (trimOptions.hasLimit()) {
+                    params.add("LIMIT");
+                    params.add(trimOptions.getLimit());
+                }
             }
 
             if (!command.getRecord().getId().shouldBeAutoGenerated()) {
@@ -303,8 +352,8 @@ public class RedissonReactiveStreamCommands extends RedissonBaseReactive impleme
                 params.add(toByteArray(entry.getValue()));
             }
 
-            Mono<StreamMessageId> m = write(k, StringCodec.INSTANCE, RedisCommands.XADD, params.toArray());
-            return m.map(v -> new ReactiveRedisConnection.CommandResponse<>(command, RecordId.of(v.toString())));
+            Mono<RecordId> m = write(k, StringCodec.INSTANCE, XADD, params.toArray());
+            return m.map(v -> new ReactiveRedisConnection.CommandResponse<>(command, v));
         });
     }
 

@@ -12,6 +12,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class RedissonSemaphoreTest extends BaseConcurrentTest {
 
@@ -363,6 +364,31 @@ public class RedissonSemaphoreTest extends BaseConcurrentTest {
         });
 
         assertThat(lockedCounter.get()).isEqualTo(iterations);
+    }
+
+    @Test
+    public void testTrySetPermitsWithTTLRejectsInvalidDuration() {
+        RSemaphore semaphore = redisson.getSemaphore("testTrySetPermitsWithTTLRejectsInvalidDuration");
+
+        // Zero duration
+        assertThatThrownBy(() -> semaphore.trySetPermits(10, Duration.ZERO))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("timeToLive must be at least 1 ms");
+
+        // Negative duration
+        assertThatThrownBy(() -> semaphore.trySetPermits(10, Duration.ofMillis(-100)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("timeToLive must be at least 1 ms");
+
+        // Positive but below 1 ms: toMillis() truncates to 0, which would be sent as 'PX 0'
+        assertThatThrownBy(() -> semaphore.trySetPermits(10, Duration.ofNanos(500_000)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("timeToLive must be at least 1 ms");
+
+        assertThat(semaphore.isExists()).isFalse();
+
+        // Smallest valid value is still accepted
+        assertThat(semaphore.trySetPermits(10, Duration.ofMillis(1))).isTrue();
     }
 
 }
