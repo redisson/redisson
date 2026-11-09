@@ -13,6 +13,10 @@
 
     <name>Redisson Quarkus v3.x.x Cache integration Tests</name>
 
+    <properties>
+        <skipPublishing>true</skipPublishing>
+    </properties>
+
     <dependencies>
       <dependency>
         <groupId>io.quarkus</groupId>

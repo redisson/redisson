@@ -13,6 +13,10 @@
 
     <name>Redisson Quarkus v1.6.x - 1.13.x integration Tests</name>
 
+    <properties>
+        <skipPublishing>true</skipPublishing>
+    </properties>
+
     <dependencies>
       <dependency>
         <groupId>io.quarkus</groupId>

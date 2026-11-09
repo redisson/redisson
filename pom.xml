@@ -225,12 +225,16 @@
           <plugin>
                 <groupId>org.sonatype.central</groupId>
                 <artifactId>central-publishing-maven-plugin</artifactId>
-                <version>0.10.0</version>
+                <version>0.12.0</version>
                 <extensions>true</extensions>
                 <configuration>
                     <publishingServerId>central</publishingServerId>
                     <autoPublish>true</autoPublish>
                     <waitUntil>published</waitUntil>
+                    <!-- MD5 and SHA-1 are the only checksums Maven Central requires; the default (all)
+                         adds SHA-256 and SHA-512, i.e. two more files per artifact against the
+                         monthly publishing file limit. -->
+                    <checksums>required</checksums>
                 </configuration>
           </plugin>
           <plugin>
