@@ -562,6 +562,11 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
 
     @Override
     public RFuture<Boolean> trySetPermitsAsync(int permits, Duration timeToLive) {
+        if (timeToLive.toMillis() <= 0) {
+            throw new IllegalArgumentException("timeToLive must be at least 1 ms, was " + timeToLive
+                    + ". Use trySetPermits(int) for permanent permits.");
+        }
+
         RFuture<Boolean> future = commandExecutor.syncedEvalWithRetry(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                   "local value = redis.call('get', KEYS[1]); " +
                         "if (value == false) then "
