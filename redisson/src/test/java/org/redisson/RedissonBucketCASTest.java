@@ -70,6 +70,22 @@ public class RedissonBucketCASTest extends RedisDockerTest {
     }
 
     @Test
+    public void testCompareAndSetArgsRejectsTTLBelowOneMillisecond() {
+        RBucket<String> bucket = redisson.getBucket("testCompareAndSetArgsRejectsTTLBelowOneMillisecond");
+        bucket.set("value1");
+
+        for (Duration ttl : Arrays.asList(Duration.ZERO, Duration.ofMillis(-100), Duration.ofNanos(500_000))) {
+            assertThatThrownBy(() -> bucket.compareAndSet(CompareAndSetArgs.expected("value1")
+                    .set("value2")
+                    .timeToLive(ttl)))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("timeToLive must be at least 1 ms");
+        }
+
+        assertThat(bucket.get()).isEqualTo("value1");
+    }
+
+    @Test
     public void testCompareAndSetArgsExpectedWithExpireAt() throws InterruptedException {
         RBucket<String> bucket = redisson.getBucket("testCompareAndSetArgsExpectedWithExpireAt");
 

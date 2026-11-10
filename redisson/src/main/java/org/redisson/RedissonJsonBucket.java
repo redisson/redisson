@@ -153,7 +153,7 @@ public class RedissonJsonBucket<V> extends RedissonExpirable implements RJsonBuc
                     "return 1;" +
                 "end;" +
                 "return 0; ",
-        Collections.singletonList(getRawName()), encode(value), duration.toMillis());
+        Collections.singletonList(getRawName()), encode(value), toTimeToLiveMillis(duration));
     }
 
     @Override
@@ -218,7 +218,7 @@ public class RedissonJsonBucket<V> extends RedissonExpirable implements RJsonBuc
                             "return 1;" +
                         "end;" +
                         "return 0; ",
-                Collections.singletonList(getRawName()), encode(value), timeUnit.toMillis(timeToLive));
+                Collections.singletonList(getRawName()), encode(value), toTimeToLiveMillis(timeToLive, timeUnit));
     }
 
     @Override
@@ -265,7 +265,7 @@ public class RedissonJsonBucket<V> extends RedissonExpirable implements RJsonBuc
                          "return 1;" +
                       "end;" +
                       "return 0; ",
-                Collections.singletonList(getRawName()), encode(value), timeUnit.toMillis(timeToLive));
+                Collections.singletonList(getRawName()), encode(value), toTimeToLiveMillis(timeToLive, timeUnit));
     }
 
     @Override
@@ -282,7 +282,7 @@ public class RedissonJsonBucket<V> extends RedissonExpirable implements RJsonBuc
                          "return 1;" +
                       "end;" +
                       "return 0; ",
-                Collections.singletonList(getRawName()), encode(value), duration.toMillis());
+                Collections.singletonList(getRawName()), encode(value), toTimeToLiveMillis(duration));
     }
 
     @Override
@@ -413,7 +413,7 @@ public class RedissonJsonBucket<V> extends RedissonExpirable implements RJsonBuc
                         "redis.call('json.set', KEYS[1], '$', ARGV[1]); " +
                         "redis.call('pexpire', KEYS[1], ARGV[2]); " +
                         "return currValue; ",
-                Collections.singletonList(getRawName()), encode(value), timeUnit.toMillis(timeToLive));
+                Collections.singletonList(getRawName()), encode(value), toTimeToLiveMillis(timeToLive, timeUnit));
     }
 
     @Override
@@ -436,7 +436,7 @@ public class RedissonJsonBucket<V> extends RedissonExpirable implements RJsonBuc
                         "redis.call('json.set', KEYS[1], '$', ARGV[1]); " +
                         "redis.call('pexpire', KEYS[1], ARGV[2]); " +
                         "return currValue; ",
-                Collections.singletonList(getRawName()), encode(value), duration.toMillis());
+                Collections.singletonList(getRawName()), encode(value), toTimeToLiveMillis(duration));
     }
 
     @Override
@@ -450,7 +450,7 @@ public class RedissonJsonBucket<V> extends RedissonExpirable implements RJsonBuc
                    "local currValue = redis.call('json.get', KEYS[1]); " +
                         "redis.call('pexpire', KEYS[1], ARGV[1]); " +
                         "return currValue; ",
-                Collections.singletonList(getRawName()), duration.toMillis());
+                Collections.singletonList(getRawName()), toTimeToLiveMillis(duration));
     }
 
     @Override
@@ -521,7 +521,7 @@ public class RedissonJsonBucket<V> extends RedissonExpirable implements RJsonBuc
         return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_VOID,
                         "redis.call('json.set', KEYS[1], '$', ARGV[1]); " +
                               "redis.call('pexpire', KEYS[1], ARGV[2]); ",
-                Collections.singletonList(getRawName()), encode(value), timeUnit.toMillis(timeToLive));
+                Collections.singletonList(getRawName()), encode(value), toTimeToLiveMillis(timeToLive, timeUnit));
     }
 
     @Override
@@ -534,7 +534,7 @@ public class RedissonJsonBucket<V> extends RedissonExpirable implements RJsonBuc
         return commandExecutor.evalWriteAsync(getRawName(), codec, RedisCommands.EVAL_VOID,
                         "redis.call('json.set', KEYS[1], '$', ARGV[1]); " +
                               "redis.call('pexpire', KEYS[1], ARGV[2]); ",
-                Collections.singletonList(getRawName()), encode(value), duration.toMillis());
+                Collections.singletonList(getRawName()), encode(value), toTimeToLiveMillis(duration));
     }
 
     @Override
@@ -1103,6 +1103,22 @@ public class RedissonJsonBucket<V> extends RedissonExpirable implements RJsonBuc
         return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
                 script,
                 Collections.singletonList(getName()), encode(unexpected));
+    }
+
+    private static long toTimeToLiveMillis(Duration timeToLive) {
+        long millis = timeToLive.toMillis();
+        if (millis <= 0) {
+            throw new IllegalArgumentException("timeToLive must be at least 1 ms, was " + timeToLive);
+        }
+        return millis;
+    }
+
+    private static long toTimeToLiveMillis(long timeToLive, TimeUnit timeUnit) {
+        long millis = timeUnit.toMillis(timeToLive);
+        if (millis <= 0) {
+            throw new IllegalArgumentException("timeToLive must be at least 1 ms, was " + timeToLive + " " + timeUnit);
+        }
+        return millis;
     }
 
 }
