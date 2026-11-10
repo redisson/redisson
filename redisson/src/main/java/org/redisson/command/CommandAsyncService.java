@@ -693,7 +693,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             RedisCommand<V> command, Object[] params, boolean ignoreRedirect, boolean noRetry) {
         RedisCommand<V> cmnd = getServiceManager().resp3(command);
 
-        if (readOnlyMode && (cmnd.getName().equals("BITFIELD") || cmnd.getName().equals("BITFIELD_RO"))) {
+        if (readOnlyMode && isBitFieldROApplicable(cmnd, params)) {
             return readBitFieldAsync(source, codec, cmnd, params, ignoreRedirect, noRetry);
         }
 
@@ -724,6 +724,43 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         return new CompletableFutureWrapper<>(mainPromise);
     }
 
+    // BITFIELD read is sent as BITFIELD_RO only if it may be routed to a replica
+    // and all its subcommands are GET
+    private boolean isBitFieldROApplicable(RedisCommand<?> command, Object[] params) {
+        if (command.getName().equals("BITFIELD_RO")) {
+            return true;
+        }
+        if (!command.getName().equals("BITFIELD")) {
+            return false;
+        }
+
+        ReadMode mode = readMode;
+        if (mode == null) {
+            mode = getServiceManager().getConfig().getReadMode();
+        }
+        if (mode == ReadMode.MASTER) {
+            return false;
+        }
+
+        // params are the key followed by subcommands, each GET takes three of them: GET <encoding> <offset>
+        for (int i = 1; i < params.length; i += 3) {
+            if (!"GET".equalsIgnoreCase(String.valueOf(params[i]))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // BITFIELD_RO is missing in Redis versions prior to 6.0 and may be denied to the user by ACL rules
+    private static boolean isBitFieldROUnavailable(Throwable error) {
+        if (!(error instanceof RedisException) || error.getMessage() == null) {
+            return false;
+        }
+        String message = error.getMessage();
+        return message.startsWith("ERR unknown command")
+                || (message.startsWith("NOPERM") && message.contains("'bitfield_ro'"));
+    }
+
     private <V, R> RFuture<R> readBitFieldAsync(NodeSource source, Codec codec, RedisCommand<V> command,
                                                  Object[] params, boolean ignoreRedirect, boolean noRetry) {
         // Redis classifies BITFIELD as a write command even when it only contains GET operations.
@@ -742,8 +779,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         readPromise.whenComplete((value, error) -> {
             if (error == null) {
                 result.complete(value);
-            } else if (error instanceof RedisException && error.getMessage() != null
-                    && error.getMessage().startsWith("ERR unknown command")) {
+            } else if (isBitFieldROUnavailable(error)) {
                 getServiceManager().disableBitFieldRO();
                 executeCommand(false, source, codec, writeCommand, params, ignoreRedirect, noRetry, result);
             } else {

@@ -23,8 +23,10 @@ import org.redisson.api.bitset.BitRangeArgs;
 import org.redisson.api.redisnode.RedisNode;
 import org.redisson.api.redisnode.RedisNodes;
 import org.redisson.client.RedisException;
+import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.MultiDecoder;
+import org.redisson.command.CommandAsyncExecutor;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.redisson.api.RBitSet;
@@ -32,6 +34,8 @@ import org.redisson.api.RBitSet;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.redisson.api.listener.TrackingListener;
 import org.redisson.config.Config;
 import org.redisson.config.Protocol;
@@ -91,12 +95,128 @@ public class RedissonBitSetTest extends RedisDockerTest {
     }
 
     @Test
-    public void testCancelBitFieldReadWaitingForConnection() throws Exception {
-        Config config = createConfig();
-        config.useSingleServer().setConnectionMinimumIdleSize(1).setConnectionPoolSize(1);
+    public void testNumericReadsWithMasterReadMode() {
+        // single server mode reads with the master read mode
+        RedisNode node = redisson.getRedisNodes(RedisNodes.SINGLE).getInstance();
+        String before = node.info(RedisNode.InfoSection.COMMANDSTATS).get("cmdstat_bitfield_ro");
+
+        RBitSet bitSet = redisson.getBitSet("masterReads");
+        bitSet.setLong(0, -1L);
+        assertThat(bitSet.getLong(0)).isEqualTo(-1L);
+        assertThat(bitSet.get(0L, 63L, 64L)).containsExactly(true, true, false);
+
+        assertThat(node.info(RedisNode.InfoSection.COMMANDSTATS).get("cmdstat_bitfield_ro"))
+                .isEqualTo(before);
+    }
+
+    @Test
+    public void testBitFieldWritesOnReadPath() {
+        // slave read mode enables BITFIELD_RO for reads, without replicas they are served by the master
+        Config config = new Config();
+        config.useReplicatedServers()
+                .addNodeAddress(redisson.getConfig().useSingleServer().getAddress())
+                .setReadMode(ReadMode.SLAVE);
         RedissonClient client = Redisson.create(config);
         try {
-            RedisNode node = client.getRedisNodes(RedisNodes.SINGLE).getInstance();
+            // older Spring Data modules send BITFIELD with write subcommands as a read command
+            CommandAsyncExecutor executor = ((Redisson) client).getCommandExecutor();
+            RFuture<List<Long>> written = executor.readAsync("readPathWrites", LongCodec.INSTANCE,
+                    RedisCommands.BITFIELD_LONG_LIST, "readPathWrites",
+                    "GET", "u8", 0, "SET", "u8", 0, 100, "SET", "u8", 8, 200, "INCRBY", "u8", 16, 1);
+            assertThat(executor.get(written)).containsExactly(0L, 0L, 0L, 1L);
+
+            assertThat(client.getBitSet("readPathWrites").getUnsigned(8, 8)).isEqualTo(200L);
+        } finally {
+            client.shutdown();
+        }
+    }
+
+    @Test
+    public void testBitFieldROFallbackIsRemembered() throws Exception {
+        try (Network network = Network.newNetwork();
+             GenericContainer<?> master = createContainer("--rename-command", "BITFIELD_RO", "BITFIELD_RO_DISABLED")
+                     .withNetwork(network).withNetworkAliases("master");
+             GenericContainer<?> slave = createContainer("--replicaof", "master", "6379",
+                     "--rename-command", "BITFIELD_RO", "BITFIELD_RO_DISABLED").withNetwork(network)) {
+            master.start();
+            slave.start();
+
+            Config config = new Config();
+            config.useMasterSlaveServers()
+                    .setMasterAddress("redis://" + master.getHost() + ":" + master.getFirstMappedPort())
+                    .addSlaveAddress("redis://" + slave.getHost() + ":" + slave.getFirstMappedPort())
+                    .setReadMode(ReadMode.SLAVE)
+                    .setRetryAttempts(0);
+            RedissonClient client = Redisson.create(config);
+            try {
+                RBitSet bitSet = client.getBitSet("fallbackReads");
+                bitSet.setLong(0, -1L);
+                Awaitility.await().atMost(Duration.ofSeconds(30)).untilAsserted(() ->
+                        assertThat(bitSet.get(0L)).isTrue());
+
+                long slaveErrors = errorReplies(slave);
+                for (int i = 0; i < 5; i++) {
+                    assertThat(bitSet.getLong(0)).isEqualTo(-1L);
+                }
+
+                assertThat(errorReplies(slave) - slaveErrors).isEqualTo(1);
+                assertThat(master.execInContainer("redis-cli", "INFO", "commandstats").getStdout())
+                        .contains("cmdstat_bitfield:calls=6,");
+            } finally {
+                client.shutdown();
+            }
+        }
+    }
+
+    @Test
+    public void testBitFieldROFallbackWithoutPermission() throws Exception {
+        try (GenericContainer<?> node = createContainer()) {
+            node.start();
+            node.execInContainer("redis-cli", "ACL", "SETUSER", "nobitfieldro", "on", ">secret", "~*",
+                    "+@all", "-bitfield_ro");
+
+            // slave read mode enables BITFIELD_RO for reads, without replicas they are served by the master
+            Config config = new Config();
+            config.setUsername("nobitfieldro").setPassword("secret");
+            config.useReplicatedServers()
+                    .addNodeAddress("redis://" + node.getHost() + ":" + node.getFirstMappedPort())
+                    .setReadMode(ReadMode.SLAVE);
+            RedissonClient client = Redisson.create(config);
+            try {
+                RBitSet bitSet = client.getBitSet("deniedReads");
+                bitSet.setLong(0, -1L);
+
+                long errors = errorReplies(node);
+                for (int i = 0; i < 5; i++) {
+                    assertThat(bitSet.getLong(0)).isEqualTo(-1L);
+                }
+
+                assertThat(errorReplies(node) - errors).isEqualTo(1);
+            } finally {
+                client.shutdown();
+            }
+        }
+    }
+
+    private long errorReplies(GenericContainer<?> container) throws Exception {
+        String stats = container.execInContainer("redis-cli", "INFO", "stats").getStdout();
+        Matcher matcher = Pattern.compile("total_error_replies:(\\d+)").matcher(stats);
+        assertThat(matcher.find()).isTrue();
+        return Long.parseLong(matcher.group(1));
+    }
+
+    @Test
+    public void testCancelBitFieldReadWaitingForConnection() throws Exception {
+        // slave read mode enables BITFIELD_RO for reads, without replicas they wait for the only master connection
+        Config config = new Config();
+        config.useReplicatedServers()
+                .addNodeAddress(redisson.getConfig().useSingleServer().getAddress())
+                .setReadMode(ReadMode.SLAVE)
+                .setMasterConnectionMinimumIdleSize(1)
+                .setMasterConnectionPoolSize(1);
+        RedissonClient client = Redisson.create(config);
+        try {
+            RedisNode node = client.getRedisNodes(RedisNodes.MASTER_SLAVE).getMaster();
             String before = node.info(RedisNode.InfoSection.COMMANDSTATS).get("cmdstat_bitfield_ro");
             RFuture<String> blocking = client.<String>getBlockingQueue("holdConnection").takeAsync();
 
