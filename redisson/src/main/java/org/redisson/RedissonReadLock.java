@@ -23,6 +23,7 @@ import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.pubsub.LockPubSub;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
@@ -186,6 +187,26 @@ public class RedissonReadLock extends RedissonLock implements RLock {
                 Arrays.asList(getRawName()));
 
         return get(future);
+    }
+
+    @Override
+    public boolean updateLeaseTime(Duration leaseTime) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public RFuture<Boolean> updateLeaseTimeAsync(Duration leaseTime) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean setLeaseTimeIfNotSet(Duration leaseTime) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public RFuture<Boolean> setLeaseTimeIfNotSetAsync(Duration leaseTime) {
+        throw new UnsupportedOperationException();
     }
 
 }
