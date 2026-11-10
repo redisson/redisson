@@ -5,11 +5,19 @@ import org.springframework.data.domain.Range;
 import org.springframework.data.geo.Circle;
 import org.springframework.data.geo.GeoResults;
 import org.springframework.data.geo.Point;
+import org.springframework.data.redis.connection.BitFieldSubCommands;
+import org.springframework.data.redis.connection.BitFieldSubCommands.BitFieldIncrBy;
+import org.springframework.data.redis.connection.BitFieldSubCommands.BitFieldType;
+import org.springframework.data.redis.connection.CompareCondition;
+import org.springframework.data.redis.connection.DefaultSortParameters;
 import org.springframework.data.redis.connection.Limit;
 import org.springframework.data.redis.connection.ReactiveRedisConnection;
 import org.springframework.data.redis.connection.RedisGeoCommands;
 import org.springframework.data.redis.connection.RedisHashCommands;
+import org.springframework.data.redis.connection.RedisListCommands.Direction;
+import org.springframework.data.redis.connection.RedisStringCommands.BitOperation;
 import org.springframework.data.redis.connection.RedisStringCommands.SetOption;
+import org.springframework.data.redis.connection.SetCondition;
 import org.springframework.data.redis.connection.zset.Tuple;
 import org.springframework.data.redis.core.*;
 import org.springframework.data.redis.core.types.Expiration;
@@ -25,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 public class RedissonConnectionTest extends BaseConnectionTest {
 
@@ -43,12 +52,6 @@ public class RedissonConnectionTest extends BaseConnectionTest {
 
     @Test
     public void testSetWithExpirationOptionUnixTimestampSetsCorrectTtl() {
-        // set(key, value, Expiration, SetOption) has no isUnixTimestamp() branch at all,
-        // so Expiration.unixTimestamp(...) falls into the relative-time branch and its
-        // absolute epoch-millis value gets sent as a PX delay instead of a PXAT deadline.
-        // This does not throw (unlike KEEPTTL), so it must be checked by TTL value, not
-        // just absence of exception - a repeat of the exact silent-wrong-TTL failure mode
-        // getEx() had for the same Expiration kind before it was fixed.
         byte[] key = "set-unixtimestamp-repro".getBytes();
         connection.set(key, "value1".getBytes());
 
@@ -64,9 +67,6 @@ public class RedissonConnectionTest extends BaseConnectionTest {
 
     @Test
     public void testSetWithExpirationOptionUnixTimestampSecondsUnit() {
-        // Same as above but constructed with SECONDS instead of MILLISECONDS, to confirm
-        // Expiration.getExpirationTimeInMilliseconds() normalizes correctly regardless of
-        // the unit the Expiration was originally built with.
         byte[] key = "set-unixtimestamp-seconds-repro".getBytes();
         connection.set(key, "value1".getBytes());
 
@@ -82,10 +82,6 @@ public class RedissonConnectionTest extends BaseConnectionTest {
 
     @Test
     public void testSetExpirationOptionMatrix() {
-        // Full matrix: every Expiration kind x every SetOption, against the exact
-        // set(byte[], byte[], Expiration, SetOption) overload the bug is in.
-        // Prints PASS/FAIL for each of the 12 combinations so the failure surface
-        // is fully characterized, not just the one KEEPTTL case.
         java.util.List<String> failures = new java.util.ArrayList<>();
         java.util.List<String> passes = new java.util.ArrayList<>();
 
@@ -350,6 +346,28 @@ public class RedissonConnectionTest extends BaseConnectionTest {
     }
 
     @Test
+    public void testBitFieldIncrByWithOverflow() {
+        BitFieldSubCommands incr = BitFieldSubCommands.create()
+                .incr(BitFieldType.unsigned(8)).valueAt(0).overflow(BitFieldIncrBy.Overflow.SAT).by(300);
+        ReactiveRedisConnection reactive = new RedissonConnectionFactory(redisson).getReactiveConnection();
+
+        assertThat(connection.stringCommands().bitField("bitfield-overflow".getBytes(), incr)).containsExactly(255L);
+        assertThat(reactive.stringCommands().bitField(ByteBuffer.wrap("bitfield-overflow-reactive".getBytes()), incr).block())
+                .containsExactly(255L);
+    }
+
+    @Test
+    public void testSortWithStore() {
+        byte[] key = "sort-source".getBytes();
+        byte[] storeKey = "sort-copy".getBytes();
+        connection.listCommands().rPush(key, "2".getBytes(), "1".getBytes(), "3".getBytes());
+
+        assertThat(connection.keyCommands().sort(key, new DefaultSortParameters(), storeKey)).isEqualTo(3);
+        assertThat(connection.listCommands().lRange(storeKey, 0, -1))
+                .containsExactly("1".getBytes(), "2".getBytes(), "3".getBytes());
+    }
+
+    @Test
     public void testBZPop() {
         redisTemplate.boundZSetOps("test").add("1", 10);
         redisTemplate.boundZSetOps("test").add("2", 20);
@@ -368,6 +386,30 @@ public class RedissonConnectionTest extends BaseConnectionTest {
     }
 
     @Test
+    public void testBZPopWithTimeoutUnderOneSecond() {
+        byte[] key = "empty-zset".getBytes();
+
+        long start = System.nanoTime();
+        assertTimeoutPreemptively(Duration.ofSeconds(10), () -> {
+            assertThat(connection.zSetCommands().bZPopMin(key, 500, TimeUnit.MILLISECONDS)).isNull();
+            assertThat(connection.zSetCommands().bZPopMax(key, 500, TimeUnit.MILLISECONDS)).isNull();
+        });
+        assertThat(Duration.ofNanos(System.nanoTime() - start)).isGreaterThanOrEqualTo(Duration.ofMillis(1000));
+    }
+
+    @Test
+    public void testBZPopRejectsNegativeTimeout() {
+        byte[] key = "empty-zset".getBytes();
+
+        assertTimeoutPreemptively(Duration.ofSeconds(10), () -> {
+            assertThatThrownBy(() -> connection.zSetCommands().bZPopMin(key, -500, TimeUnit.MILLISECONDS))
+                    .isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> connection.zSetCommands().bZPopMax(key, -500, TimeUnit.MILLISECONDS))
+                    .isInstanceOf(IllegalArgumentException.class);
+        });
+    }
+
+    @Test
     public void testZPop() {
         redisTemplate.boundZSetOps("test").add("1", 10);
         redisTemplate.boundZSetOps("test").add("2", 20);
@@ -383,6 +425,63 @@ public class RedissonConnectionTest extends BaseConnectionTest {
         Tuple r2 = cc.zSetCommands().zPopMin(ByteBuffer.wrap("test".getBytes())).block();
         assertThat(r2.getValue()).isEqualTo("2".getBytes());
         assertThat(r2.getScore()).isEqualTo(20);
+    }
+
+    @Test
+    public void testBZPopReturnsNullWhenTimeoutExpires() {
+        byte[] key = "empty-zset".getBytes();
+
+        assertThat(connection.zSetCommands().bZPopMin(key, 1, TimeUnit.SECONDS)).isNull();
+        assertThat(connection.zSetCommands().bZPopMax(key, 1, TimeUnit.SECONDS)).isNull();
+    }
+
+    @Test
+    public void testBLMove() {
+        byte[] source = "blmove-source".getBytes();
+        byte[] destination = "blmove-destination".getBytes();
+        connection.listCommands().rPush(source, "a".getBytes(), "b".getBytes());
+
+        assertTimeoutPreemptively(Duration.ofSeconds(10), () -> {
+            assertThat(connection.listCommands().bLMove(source, destination, Direction.LEFT, Direction.RIGHT, 1))
+                    .isEqualTo("a".getBytes());
+        });
+        assertThat(connection.listCommands().lRange(destination, 0, -1)).containsExactly("a".getBytes());
+        assertThat(connection.listCommands().lRange(source, 0, -1)).containsExactly("b".getBytes());
+    }
+
+    @Test
+    public void testBLMoveWithTimeoutUnderOneSecond() {
+        byte[] source = "blmove-empty".getBytes();
+        byte[] destination = "blmove-destination".getBytes();
+
+        long start = System.nanoTime();
+        assertTimeoutPreemptively(Duration.ofSeconds(10), () -> {
+            assertThat(connection.listCommands().bLMove(source, destination, Direction.LEFT, Direction.RIGHT, 0.5))
+                    .isNull();
+        });
+        assertThat(Duration.ofNanos(System.nanoTime() - start)).isGreaterThanOrEqualTo(Duration.ofMillis(500));
+    }
+
+    @Test
+    public void testBLMoveWithTimeoutUnderOneMillisecond() {
+        byte[] source = "blmove-empty".getBytes();
+        byte[] destination = "blmove-destination".getBytes();
+
+        assertTimeoutPreemptively(Duration.ofSeconds(10), () -> {
+            assertThat(connection.listCommands().bLMove(source, destination, Direction.LEFT, Direction.RIGHT, 0.0004))
+                    .isNull();
+        });
+    }
+
+    @Test
+    public void testBLMoveRejectsNegativeTimeout() {
+        byte[] source = "blmove-empty".getBytes();
+        byte[] destination = "blmove-destination".getBytes();
+
+        assertTimeoutPreemptively(Duration.ofSeconds(10), () -> {
+            assertThatThrownBy(() -> connection.listCommands().bLMove(source, destination, Direction.LEFT, Direction.RIGHT, -0.5))
+                    .isInstanceOf(IllegalArgumentException.class);
+        });
     }
 
     @Test
@@ -509,6 +608,119 @@ public class RedissonConnectionTest extends BaseConnectionTest {
 
         assertThat(connection.zRangeByScore(new byte[] {1}, Double.NEGATIVE_INFINITY, 5))
                 .containsOnly(new byte[] {1}, new byte[] {2});
+    }
+
+    @Test
+    public void testDeprecatedSetGetWithSetOption() {
+        byte[] key = "setget-setoption".getBytes();
+
+        assertThat(connection.setGet(key, "v1".getBytes(), Expiration.seconds(100), SetOption.ifAbsent())).isNull();
+        assertThat(connection.get(key)).isEqualTo("v1".getBytes());
+        assertThat(connection.ttl(key)).isPositive();
+
+        assertThat(connection.setGet(key, "v2".getBytes(), Expiration.persistent(), SetOption.ifAbsent()))
+                .isEqualTo("v1".getBytes());
+        assertThat(connection.get(key)).isEqualTo("v1".getBytes());
+
+        assertThat(connection.setGet(key, "v3".getBytes(), Expiration.keepTtl(), SetOption.ifPresent()))
+                .isEqualTo("v1".getBytes());
+        assertThat(connection.get(key)).isEqualTo("v3".getBytes());
+        assertThat(connection.ttl(key)).isPositive();
+    }
+
+    @Test
+    public void testDeprecatedSetWithSetOption() {
+        byte[] key = "set-setoption".getBytes();
+
+        assertThat(connection.set(key, "v1".getBytes(), Expiration.persistent(), SetOption.ifPresent())).isFalse();
+        assertThat(connection.get(key)).isNull();
+
+        assertThat(connection.set(key, "v1".getBytes(), Expiration.seconds(100), SetOption.ifAbsent())).isTrue();
+        assertThat(connection.get(key)).isEqualTo("v1".getBytes());
+        assertThat(connection.ttl(key)).isPositive();
+
+        assertThat(connection.set(key, "v2".getBytes(), Expiration.persistent(), SetOption.ifAbsent())).isFalse();
+        assertThat(connection.get(key)).isEqualTo("v1".getBytes());
+
+        assertThat(connection.set(key, "v3".getBytes(), Expiration.keepTtl(), SetOption.ifPresent())).isTrue();
+        assertThat(connection.get(key)).isEqualTo("v3".getBytes());
+        assertThat(connection.ttl(key)).isPositive();
+    }
+
+    @Test
+    public void testSetWithCompareConditions() {
+        byte[] key = "set-compare".getBytes();
+        connection.set(key, "v1".getBytes());
+
+        assertThat(connection.set(key, "v2".getBytes(), SetCondition.ifEquals("other".getBytes()), Expiration.persistent())).isFalse();
+        assertThat(connection.set(key, "v2".getBytes(), SetCondition.ifEquals("v1".getBytes()), Expiration.persistent())).isTrue();
+        assertThat(connection.set(key, "v3".getBytes(), SetCondition.ifNotEquals("v2".getBytes()), Expiration.persistent())).isFalse();
+        assertThat(connection.set(key, "v3".getBytes(), SetCondition.ifNotEquals("other".getBytes()), Expiration.seconds(100))).isTrue();
+        assertThat(connection.get(key)).isEqualTo("v3".getBytes());
+        assertThat(connection.ttl(key)).isPositive();
+
+        String digest = connection.keyCommands().digest(key);
+        assertThat(connection.set(key, "v4".getBytes(), SetCondition.ifDigestNotEquals(digest), Expiration.persistent())).isFalse();
+        assertThat(connection.set(key, "v4".getBytes(), SetCondition.ifDigestEquals(digest), Expiration.persistent())).isTrue();
+        assertThat(connection.get(key)).isEqualTo("v4".getBytes());
+    }
+
+    @Test
+    public void testSetGetWithCompareConditions() {
+        byte[] key = "setget-compare".getBytes();
+        connection.set(key, "v1".getBytes());
+
+        assertThat(connection.setGet(key, "v2".getBytes(), SetCondition.ifEquals("other".getBytes()), Expiration.persistent()))
+                .isEqualTo("v1".getBytes());
+        assertThat(connection.get(key)).isEqualTo("v1".getBytes());
+
+        assertThat(connection.setGet(key, "v2".getBytes(), SetCondition.ifEquals("v1".getBytes()), Expiration.persistent()))
+                .isEqualTo("v1".getBytes());
+        String digest = connection.keyCommands().digest(key);
+        assertThat(connection.setGet(key, "v3".getBytes(), SetCondition.ifDigestEquals(digest), Expiration.persistent()))
+                .isEqualTo("v2".getBytes());
+        assertThat(connection.get(key)).isEqualTo("v3".getBytes());
+    }
+
+    @Test
+    public void testDelexAndDigest() {
+        byte[] key = "delex".getBytes();
+        connection.set(key, "value".getBytes());
+        assertThat(connection.keyCommands().delex(key, CompareCondition.ifEquals("other".getBytes()))).isFalse();
+        assertThat(connection.keyCommands().delex(key, CompareCondition.ifEquals("value".getBytes()))).isTrue();
+        assertThat(connection.keyCommands().exists(key)).isFalse();
+
+        connection.set(key, "value".getBytes());
+        assertThat(connection.keyCommands().delex(key, CompareCondition.ifNotEquals("value".getBytes()))).isFalse();
+        assertThat(connection.keyCommands().delex(key, CompareCondition.ifNotEquals("other".getBytes()))).isTrue();
+
+        connection.set(key, "value".getBytes());
+        String digest = connection.keyCommands().digest(key);
+        assertThat(digest).hasSize(16);
+        assertThat(connection.keyCommands().delex(key, CompareCondition.ifDigestNotEquals(digest))).isFalse();
+        assertThat(connection.keyCommands().delex(key, CompareCondition.ifDigestEquals(digest))).isTrue();
+        assertThat(connection.keyCommands().exists(key)).isFalse();
+    }
+
+    @Test
+    public void testBitOpOperationsAddedInRedis82() {
+        // a = 11110000, b = 11001100, c = 10101010
+        connection.set("a".getBytes(), new byte[] {(byte) 0xF0});
+        connection.set("b".getBytes(), new byte[] {(byte) 0xCC});
+        connection.set("c".getBytes(), new byte[] {(byte) 0xAA});
+
+        // in a, but in none of the others: a & ~(b | c)
+        assertThat(connection.stringCommands().bitOp(BitOperation.DIFF, "d".getBytes(), "a".getBytes(), "b".getBytes(), "c".getBytes())).isEqualTo(1);
+        assertThat(connection.get("d".getBytes())).containsExactly(0x10);
+        // in at least one of the others, but not in a: ~a & (b | c)
+        assertThat(connection.stringCommands().bitOp(BitOperation.DIFF1, "d".getBytes(), "a".getBytes(), "b".getBytes(), "c".getBytes())).isEqualTo(1);
+        assertThat(connection.get("d".getBytes())).containsExactly(0x0E);
+        // in a and in at least one of the others: a & (b | c)
+        assertThat(connection.stringCommands().bitOp(BitOperation.ANDOR, "d".getBytes(), "a".getBytes(), "b".getBytes(), "c".getBytes())).isEqualTo(1);
+        assertThat(connection.get("d".getBytes())).containsExactly(0xE0);
+        // in exactly one key
+        assertThat(connection.stringCommands().bitOp(BitOperation.ONE, "d".getBytes(), "a".getBytes(), "b".getBytes(), "c".getBytes())).isEqualTo(1);
+        assertThat(connection.get("d".getBytes())).containsExactly(0x16);
     }
 
     @Test

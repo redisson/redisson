@@ -16,6 +16,7 @@
 package org.redisson.spring.data.connection;
 
 import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -35,6 +36,7 @@ import org.springframework.data.redis.connection.ReactiveRedisConnection.Command
 import org.springframework.data.redis.connection.ReactiveRedisConnection.KeyCommand;
 import org.springframework.data.redis.connection.ReactiveRedisConnection.NumericResponse;
 import org.springframework.data.redis.connection.ReactiveRedisConnection.RangeCommand;
+import org.springframework.data.redis.core.TimeoutUtils;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 
@@ -226,6 +228,14 @@ public class RedissonReactiveListCommands extends RedissonBaseReactive implement
         });
     }
 
+    private static long toSeconds(Duration timeout) {
+        long seconds = TimeoutUtils.toSeconds(timeout);
+        if (seconds == 0 && !timeout.isZero()) {
+            return 1;
+        }
+        return seconds;
+    }
+
     @Override
     public Flux<PopResponse> bPop(Publisher<BPopCommand> commands) {
         return execute(commands, command -> {
@@ -241,7 +251,7 @@ public class RedissonReactiveListCommands extends RedissonBaseReactive implement
             
             List<Object> params = new ArrayList<Object>(command.getKeys().size() + 1);
             params.addAll(command.getKeys().stream().map(v -> toByteArray(v)).collect(Collectors.toList()));
-            params.add(command.getTimeout().getSeconds());
+            params.add(toSeconds(command.getTimeout()));
             
             Mono<List<byte[]>> m = write((byte[])params.get(0), ByteArrayCodec.INSTANCE, redisCommand, params.toArray());
             return m.map(v -> new PopResponse(command, 
@@ -276,7 +286,7 @@ public class RedissonReactiveListCommands extends RedissonBaseReactive implement
             byte[] destinationBuf = toByteArray(command.getDestination());
             
             Mono<byte[]> m = write(keyBuf, ByteArrayCodec.INSTANCE, RedisCommands.BRPOPLPUSH, 
-                                    keyBuf, destinationBuf, command.getTimeout().getSeconds());
+                                    keyBuf, destinationBuf, toSeconds(command.getTimeout()));
             return m.map(v -> new ByteBufferResponse<>(command, ByteBuffer.wrap(v)));
         });
     }
@@ -338,7 +348,7 @@ public class RedissonReactiveListCommands extends RedissonBaseReactive implement
             byte[] destinationBuf = toByteArray(command.getDestinationKey());
 
             Mono<byte[]> m = write(keyBuf, ByteArrayCodec.INSTANCE, RedisCommands.BLMOVE,
-                    keyBuf, destinationBuf, command.getFrom(), command.getTo(), command.getTimeout().getSeconds());
+                    keyBuf, destinationBuf, command.getFrom(), command.getTo(), toSeconds(command.getTimeout()));
             return m.map(v -> new ByteBufferResponse<>(command, ByteBuffer.wrap(v)));
         });
     }

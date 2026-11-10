@@ -8,8 +8,19 @@ import org.junit.jupiter.api.Test;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.protocol.CommandData;
+import org.redisson.config.Config;
+import org.redisson.config.Protocol;
 import org.redisson.connection.ClientConnectionsEntry;
+import org.springframework.data.domain.Range;
+import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.connection.RedisStreamCommands;
+import org.springframework.data.redis.connection.RedisStreamCommands.StreamEntryDeletionResult;
+import org.springframework.data.redis.connection.RedisStreamCommands.TrimOptions;
+import org.springframework.data.redis.connection.RedisStreamCommands.XAddOptions;
+import org.springframework.data.redis.connection.RedisStreamCommands.XClaimOptions;
+import org.springframework.data.redis.connection.RedisStreamCommands.XDelOptions;
+import org.springframework.data.redis.connection.RedisStreamCommands.XTrimOptions;
 import org.springframework.data.redis.connection.stream.*;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.stream.StreamListener;
@@ -17,12 +28,14 @@ import org.springframework.data.redis.stream.StreamMessageListenerContainer;
 import org.springframework.data.redis.stream.Subscription;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
 /**
  * @author Nikita Koksharov
@@ -186,6 +199,267 @@ public class RedissonStreamTest extends BaseConnectionTest {
         assertThat(s1.get(0).pendingCount()).isEqualTo(6);
         assertThat(s1.get(0).idleTimeMs()).isLessThan(100L);
         assertThat(s1.get(0).groupName()).isEqualTo("testGroup");
+    }
+
+    @Test
+    public void testXAddNoMkStreamDoesNotCreateStream() {
+        byte[] key = "xadd-nomkstream".getBytes();
+        ByteRecord record = StreamRecords.newRecord().in(key)
+                .ofBytes(Collections.singletonMap("field".getBytes(), "value".getBytes()));
+
+        RecordId id = connection.streamCommands().xAdd(record, XAddOptions.makeNoStream());
+
+        assertThat(id).isNull();
+        assertThat(connection.keyCommands().exists(key)).isFalse();
+    }
+
+    @Test
+    public void testXAddTrimsByMinId() {
+        byte[] key = "xadd-minid".getBytes();
+        addRecords(key, XAddOptions.none(), "1-0", "2-0", "3-0");
+
+        addRecords(key, XAddOptions.trim(TrimOptions.minId(RecordId.of("3-0"))), "4-0");
+
+        assertThat(connection.streamCommands().xRange(key, Range.unbounded()))
+                .extracting(record -> record.getId().getValue())
+                .containsExactly("3-0", "4-0");
+    }
+
+    @Test
+    public void testXAddTrimsApproximatelyWithLimit() {
+        byte[] key = "xadd-approximate".getBytes();
+        addRecords(key, XAddOptions.none(), ids(1, 300));
+
+        addRecords(key, XAddOptions.trim(TrimOptions.maxLen(0).approximate().limit(100)), "301-0");
+
+        assertThat(connection.streamCommands().xLen(key)).isEqualTo(201);
+    }
+
+    @Test
+    public void testXAddLeavesLimitOutOfExactTrim() {
+        byte[] key = "xadd-exact-limit".getBytes();
+        addRecords(key, XAddOptions.none(), "1-0", "2-0", "3-0");
+
+        addRecords(key, XAddOptions.trim(TrimOptions.maxLen(2).limit(10)), "4-0");
+
+        assertThat(connection.streamCommands().xRange(key, Range.unbounded()))
+                .extracting(record -> record.getId().getValue())
+                .containsExactly("3-0", "4-0");
+    }
+
+    @Test
+    public void testXAddTrimsWithDeletionPolicy() {
+        byte[] key = "xadd-acked".getBytes();
+        readIntoGroup(key, "1-0", "2-0");
+        connection.streamCommands().xAck(key, "group", RecordId.of("1-0"));
+
+        addRecords(key, XAddOptions.trim(TrimOptions.maxLen(1)
+                .deletionPolicy(RedisStreamCommands.StreamDeletionPolicy.ACKNOWLEDGED)), "3-0");
+
+        assertThat(connection.streamCommands().xRange(key, Range.unbounded()))
+                .extracting(record -> record.getId().getValue())
+                .containsExactly("2-0", "3-0");
+    }
+
+    @Test
+    public void testXTrimByMinId() {
+        byte[] key = "xtrim-minid".getBytes();
+        addRecords(key, XAddOptions.none(), "1-0", "2-0", "3-0");
+
+        Long trimmed = connection.streamCommands().xTrim(key, XTrimOptions.trim(TrimOptions.minId(RecordId.of("2-0"))));
+
+        assertThat(trimmed).isEqualTo(1);
+        assertThat(connection.streamCommands().xRange(key, Range.unbounded()))
+                .extracting(record -> record.getId().getValue())
+                .containsExactly("2-0", "3-0");
+    }
+
+    @Test
+    public void testXTrimApproximatelyWithLimit() {
+        byte[] key = "xtrim-approximate".getBytes();
+        addRecords(key, XAddOptions.none(), ids(1, 300));
+
+        Long trimmed = connection.streamCommands().xTrim(key, XTrimOptions.trim(TrimOptions.maxLen(0).approximate().limit(100)));
+
+        assertThat(trimmed).isEqualTo(100);
+        assertThat(connection.streamCommands().xLen(key)).isEqualTo(200);
+    }
+
+    @Test
+    public void testXTrimLeavesLimitOutOfExactTrim() {
+        byte[] key = "xtrim-exact-limit".getBytes();
+        addRecords(key, XAddOptions.none(), "1-0", "2-0", "3-0");
+
+        Long trimmed = connection.streamCommands().xTrim(key, XTrimOptions.trim(TrimOptions.maxLen(1).limit(10)));
+
+        assertThat(trimmed).isEqualTo(2);
+        assertThat(connection.streamCommands().xRange(key, Range.unbounded()))
+                .extracting(record -> record.getId().getValue())
+                .containsExactly("3-0");
+    }
+
+    @Test
+    public void testXTrimWithDeletionPolicy() {
+        byte[] key = "xtrim-acked".getBytes();
+        readIntoGroup(key, "1-0", "2-0", "3-0");
+        connection.streamCommands().xAck(key, "group", RecordId.of("1-0"));
+
+        Long trimmed = connection.streamCommands().xTrim(key, XTrimOptions.trim(TrimOptions.maxLen(0)
+                .deletionPolicy(RedisStreamCommands.StreamDeletionPolicy.ACKNOWLEDGED)));
+
+        assertThat(trimmed).isEqualTo(1);
+        assertThat(connection.streamCommands().xRange(key, Range.unbounded()))
+                .extracting(record -> record.getId().getValue())
+                .containsExactly("2-0", "3-0");
+    }
+
+    @Test
+    public void testXDelEx() {
+        byte[] key = "xdelex".getBytes();
+        addRecords(key, XAddOptions.none(), "1-0", "2-0");
+
+        List<StreamEntryDeletionResult> results = connection.streamCommands().xDelEx(key,
+                XDelOptions.defaults(), RecordId.of("1-0"), RecordId.of("9-0"));
+
+        assertThat(results).containsExactly(StreamEntryDeletionResult.DELETED, StreamEntryDeletionResult.NOT_FOUND);
+        assertThat(connection.streamCommands().xLen(key)).isEqualTo(1);
+    }
+
+    @Test
+    public void testXAckDel() {
+        byte[] key = "xackdel".getBytes();
+        readIntoGroup(key, "1-0");
+
+        List<StreamEntryDeletionResult> results = connection.streamCommands().xAckDel(key, "group",
+                XDelOptions.defaults(), RecordId.of("1-0"));
+
+        assertThat(results).containsExactly(StreamEntryDeletionResult.DELETED);
+        assertThat(connection.streamCommands().xPending(key, "group").getTotalPendingMessages()).isZero();
+    }
+
+    @Test
+    public void testXDelExAndXAckDelInPipeline() {
+        byte[] key = "xdelex-pipeline".getBytes();
+        readIntoGroup(key, "1-0", "2-0");
+
+        RedissonConnection pipelined = new RedissonConnection(redisson);
+        pipelined.openPipeline();
+        assertThat(pipelined.streamCommands().xDelEx(key, XDelOptions.defaults(), RecordId.of("1-0"))).isNull();
+        assertThat(pipelined.streamCommands().xAckDel(key, "group", XDelOptions.defaults(), RecordId.of("2-0"))).isNull();
+        List<Object> results = pipelined.closePipeline();
+
+        assertThat(results).containsExactly(
+                Collections.singletonList(StreamEntryDeletionResult.DELETED),
+                Collections.singletonList(StreamEntryDeletionResult.DELETED));
+    }
+
+    @Test
+    public void testXDelExAndXAckDelInTransaction() {
+        byte[] key = "xdelex-multi".getBytes();
+        readIntoGroup(key, "1-0", "2-0");
+
+        RedissonConnection transaction = new RedissonConnection(redisson);
+        transaction.multi();
+        transaction.streamCommands().xDelEx(key, XDelOptions.defaults(), RecordId.of("1-0"));
+        transaction.streamCommands().xAckDel(key, "group", XDelOptions.defaults(), RecordId.of("2-0"));
+        List<Object> results = transaction.exec();
+
+        assertThat(results).containsExactly(
+                Collections.singletonList(StreamEntryDeletionResult.DELETED),
+                Collections.singletonList(StreamEntryDeletionResult.DELETED));
+    }
+
+    @Test
+    public void testXClaimWithForce() {
+        byte[] key = "xclaim-force".getBytes();
+        connection.streamCommands().xGroupCreate(key, "group", ReadOffset.from("0-0"), true);
+        addRecords(key, XAddOptions.none(), "1-0", "2-0");
+
+        List<ByteRecord> claimed = connection.streamCommands().xClaim(key, "group", "consumer",
+                XClaimOptions.minIdle(Duration.ZERO).ids("1-0").force());
+        List<RecordId> claimedIds = connection.streamCommands().xClaimJustId(key, "group", "consumer",
+                XClaimOptions.minIdle(Duration.ZERO).ids("2-0").force());
+
+        assertThat(claimed).extracting(record -> record.getId().getValue()).containsExactly("1-0");
+        assertThat(claimedIds).containsExactly(RecordId.of("2-0"));
+        assertThat(connection.streamCommands().xPending(key, "group").getTotalPendingMessages()).isEqualTo(2);
+    }
+
+    @Test
+    public void testXClaimWithIdleAndRetryCount() {
+        byte[] key = "xclaim-idle".getBytes();
+        readIntoGroup(key, "1-0");
+
+        connection.streamCommands().xClaim(key, "group", "other",
+                XClaimOptions.minIdle(Duration.ZERO).ids("1-0").idle(Duration.ofMinutes(10)).retryCount(7));
+
+        PendingMessage pending = connection.streamCommands().xPending(key, "group", Range.unbounded(), 10L).get(0);
+        assertThat(pending.getConsumerName()).isEqualTo("other");
+        assertThat(pending.getTotalDeliveryCount()).isEqualTo(7);
+        assertThat(pending.getElapsedTimeSinceLastDelivery()).isBetween(Duration.ofMinutes(10), Duration.ofMinutes(11));
+    }
+
+    @Test
+    public void testXClaimJustIdWithTime() {
+        byte[] key = "xclaim-time".getBytes();
+        readIntoGroup(key, "1-0");
+
+        List<RecordId> claimedIds = connection.streamCommands().xClaimJustId(key, "group", "other",
+                XClaimOptions.minIdle(Duration.ZERO).ids("1-0").time(Instant.now().minus(Duration.ofMinutes(10))));
+
+        assertThat(claimedIds).containsExactly(RecordId.of("1-0"));
+        PendingMessage pending = connection.streamCommands().xPending(key, "group", Range.unbounded(), 10L).get(0);
+        assertThat(pending.getElapsedTimeSinceLastDelivery()).isBetween(Duration.ofMinutes(9), Duration.ofMinutes(11));
+    }
+
+    @Test
+    public void testXPendingSummaryOverResp3() {
+        Config config = createConfig();
+        config.setProtocol(Protocol.RESP3);
+        RedissonClient client = Redisson.create(config);
+        try {
+            RedisConnection resp3 = new RedissonConnectionFactory(client).getConnection();
+            byte[] key = "xpending-resp3".getBytes();
+            resp3.streamCommands().xGroupCreate(key, "group", ReadOffset.from("0-0"), true);
+
+            PendingMessagesSummary empty = resp3.streamCommands().xPending(key, "group");
+            assertThat(empty.getTotalPendingMessages()).isZero();
+            assertThat(empty.getPendingMessagesPerConsumer()).isEmpty();
+
+            resp3.streamCommands().xAdd(StreamRecords.newRecord().in(key).withId("1-0")
+                    .ofBytes(Collections.singletonMap("field".getBytes(), "value".getBytes())));
+            resp3.streamCommands().xReadGroup(Consumer.from("group", "consumer"),
+                    StreamOffset.create(key, ReadOffset.lastConsumed()));
+
+            PendingMessagesSummary one = resp3.streamCommands().xPending(key, "group");
+            assertThat(one.getTotalPendingMessages()).isEqualTo(1);
+            assertThat(one.getPendingMessagesPerConsumer()).containsExactly(entry("consumer", 1L));
+        } finally {
+            client.shutdown();
+        }
+    }
+
+    private void readIntoGroup(byte[] key, String... ids) {
+        connection.streamCommands().xGroupCreate(key, "group", ReadOffset.from("0-0"), true);
+        addRecords(key, XAddOptions.none(), ids);
+        connection.streamCommands().xReadGroup(Consumer.from("group", "consumer"),
+                StreamOffset.create(key, ReadOffset.lastConsumed()));
+    }
+
+    private static String[] ids(int from, int to) {
+        String[] ids = new String[to - from + 1];
+        for (int i = from; i <= to; i++) {
+            ids[i - from] = i + "-0";
+        }
+        return ids;
+    }
+
+    private void addRecords(byte[] key, XAddOptions options, String... ids) {
+        for (String id : ids) {
+            ByteRecord record = StreamRecords.newRecord().in(key).withId(id)
+                    .ofBytes(Collections.singletonMap("field".getBytes(), id.getBytes()));
+            connection.streamCommands().xAdd(record, options);
+        }
     }
 
 }

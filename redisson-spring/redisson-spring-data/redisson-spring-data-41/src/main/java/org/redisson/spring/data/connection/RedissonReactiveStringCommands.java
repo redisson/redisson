@@ -386,7 +386,7 @@ public class RedissonReactiveStringCommands extends RedissonBaseReactive impleme
             }
 
 
-            Mono<List<Long>> m = read((byte[])params.get(0), StringCodec.INSTANCE, BITFIELD, params.toArray());
+            Mono<List<Long>> m = write((byte[])params.get(0), StringCodec.INSTANCE, BITFIELD, params.toArray());
             return m.map(v -> new MultiValueResponse<>(command, v));
         });
     }

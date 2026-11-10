@@ -41,6 +41,7 @@ import org.springframework.data.redis.connection.ReactiveRedisConnection.Numeric
 import org.springframework.data.redis.connection.ReactiveZSetCommands;
 import org.springframework.data.redis.connection.zset.DefaultTuple;
 import org.springframework.data.redis.connection.zset.Tuple;
+import org.springframework.data.redis.core.TimeoutUtils;
 import org.springframework.util.Assert;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -658,6 +659,7 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
 
             Assert.notNull(command.getKey(), "Key must not be null!");
             Assert.notNull(command.getTimeout(), "Timeout must not be null!");
+            Assert.isTrue(command.getTimeout() >= 0, "Timeout must not be negative!");
 
             byte[] keyBuf = toByteArray(command.getKey());
 
@@ -666,9 +668,9 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
                 cmd = BZPOPMIN;
             }
 
-            long timeout = command.getTimeUnit().toSeconds(command.getTimeout());
+            long timeout = TimeoutUtils.toSeconds(command.getTimeout(), command.getTimeUnit());
 
-            Mono<Set<Tuple>> m = write(keyBuf, ByteArrayCodec.INSTANCE, cmd, keyBuf, command.getCount(), timeout);
+            Mono<Set<Tuple>> m = write(keyBuf, ByteArrayCodec.INSTANCE, cmd, keyBuf, timeout);
             Flux<Tuple> flux = m.flatMapMany(e -> Flux.fromIterable(e));
             return Mono.just(new CommandResponse<>(command, flux));
         });

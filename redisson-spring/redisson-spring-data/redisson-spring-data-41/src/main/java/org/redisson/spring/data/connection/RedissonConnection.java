@@ -503,7 +503,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         params.add("STORE");
         params.add(storeKey);
         
-        return read(key, ByteArrayCodec.INSTANCE, SORT_TO, params.toArray());
+        return write(key, ByteArrayCodec.INSTANCE, SORT_TO, params.toArray());
     }
 
     @Override
@@ -538,54 +538,6 @@ public class RedissonConnection extends AbstractRedisConnection {
     @Override
     public Boolean set(byte[] key, byte[] value) {
         return write(key, StringCodec.INSTANCE, SET, key, value);
-    }
-
-    @Override
-    public Boolean set(byte[] key, byte[] value, Expiration expiration, SetOption option) {
-        if (expiration == null) {
-            return set(key, value);
-        } else if (expiration.isPersistent()) {
-            if (option == null || option == SetOption.UPSERT) {
-                return set(key, value);
-            }
-            if (option == SetOption.SET_IF_ABSENT) {
-                return write(key, StringCodec.INSTANCE, SET, key, value, "NX");
-            }
-            if (option == SetOption.SET_IF_PRESENT) {
-                return write(key, StringCodec.INSTANCE, SET, key, value, "XX");
-            }
-        } else if (expiration.isKeepTtl()) {
-            if (option == null || option == SetOption.UPSERT) {
-                return write(key, StringCodec.INSTANCE, SET, key, value, "KEEPTTL");
-            }
-            if (option == SetOption.SET_IF_ABSENT) {
-                return write(key, StringCodec.INSTANCE, SET, key, value, "KEEPTTL", "NX");
-            }
-            if (option == SetOption.SET_IF_PRESENT) {
-                return write(key, StringCodec.INSTANCE, SET, key, value, "KEEPTTL", "XX");
-            }
-        } else if (expiration.isUnixTimestamp()) {
-            if (option == null || option == SetOption.UPSERT) {
-                return write(key, StringCodec.INSTANCE, SET, key, value, "PXAT", expiration.getExpirationTimeInMilliseconds());
-            }
-            if (option == SetOption.SET_IF_ABSENT) {
-                return write(key, StringCodec.INSTANCE, SET, key, value, "PXAT", expiration.getExpirationTimeInMilliseconds(), "NX");
-            }
-            if (option == SetOption.SET_IF_PRESENT) {
-                return write(key, StringCodec.INSTANCE, SET, key, value, "PXAT", expiration.getExpirationTimeInMilliseconds(), "XX");
-            }
-        } else {
-            if (option == null || option == SetOption.UPSERT) {
-                return write(key, StringCodec.INSTANCE, SET, key, value, "PX", expiration.getExpirationTimeInMilliseconds());
-            }
-            if (option == SetOption.SET_IF_ABSENT) {
-                return write(key, StringCodec.INSTANCE, SET, key, value, "PX", expiration.getExpirationTimeInMilliseconds(), "NX");
-            }
-            if (option == SetOption.SET_IF_PRESENT) {
-                return write(key, StringCodec.INSTANCE, SET, key, value, "PX", expiration.getExpirationTimeInMilliseconds(), "XX");
-            }
-        }
-        throw new IllegalArgumentException();
     }
 
     @Override
@@ -2298,7 +2250,6 @@ public class RedissonConnection extends AbstractRedisConnection {
         List<Object> params = new ArrayList<>();
         params.add(key);
 
-        boolean writeOp = false;
         for (BitFieldSubCommands.BitFieldSubCommand subCommand : subCommands) {
             String size = "u";
             if (subCommand.getType().isSigned()) {
@@ -2317,30 +2268,26 @@ public class RedissonConnection extends AbstractRedisConnection {
 			    params.add(size);
 			    params.add(offset);
 			} else if (subCommand instanceof BitFieldSubCommands.BitFieldSet) {
-			    writeOp = true;
 			    params.add("SET");
 			    params.add(size);
 			    params.add(offset);
                 params.add(((BitFieldSubCommands.BitFieldSet) subCommand).getValue());
 			} else if (subCommand instanceof BitFieldSubCommands.BitFieldIncrBy) {
-			    writeOp = true;
-			    params.add("INCRBY");
-			    params.add(size);
-			    params.add(offset);
-                params.add(((BitFieldSubCommands.BitFieldIncrBy) subCommand).getValue());
-
+                // OVERFLOW changes the INCRBY and SET subcommands after it, so it goes first.
                 BitFieldSubCommands.BitFieldIncrBy.Overflow overflow = ((BitFieldSubCommands.BitFieldIncrBy) subCommand).getOverflow();
                 if (overflow != null) {
                     params.add("OVERFLOW");
                     params.add(overflow);
                 }
+
+			    params.add("INCRBY");
+			    params.add(size);
+			    params.add(offset);
+                params.add(((BitFieldSubCommands.BitFieldIncrBy) subCommand).getValue());
 			}
 		}
 
-        if (writeOp) {
-            return write(key, StringCodec.INSTANCE, BITFIELD, params.toArray());
-        }
-        return read(key, StringCodec.INSTANCE, BITFIELD, params.toArray());
+        return write(key, StringCodec.INSTANCE, BITFIELD, params.toArray());
     }
 
     @Override
@@ -2467,8 +2414,9 @@ public class RedissonConnection extends AbstractRedisConnection {
     @Override
     public Tuple bZPopMin(byte[] key, long timeout, TimeUnit unit) {
         Assert.notNull(key, "Key must not be null!");
+        Assert.isTrue(timeout >= 0, "Timeout must not be negative!");
 
-        long seconds = unit.toSeconds(timeout);
+        long seconds = TimeoutUtils.toSeconds(timeout, unit);
         return write(key, ByteArrayCodec.INSTANCE, BZPOPMIN , key, seconds);
     }
 
@@ -2495,8 +2443,9 @@ public class RedissonConnection extends AbstractRedisConnection {
     @Override
     public Tuple bZPopMax(byte[] key, long timeout, TimeUnit unit) {
         Assert.notNull(key, "Key must not be null!");
+        Assert.isTrue(timeout >= 0, "Timeout must not be negative!");
 
-        long seconds = unit.toSeconds(timeout);
+        long seconds = TimeoutUtils.toSeconds(timeout, unit);
         return write(key, ByteArrayCodec.INSTANCE, BZPOPMAX , key, seconds);
     }
 
@@ -2711,9 +2660,11 @@ public class RedissonConnection extends AbstractRedisConnection {
         Assert.notNull(from, "From must not be null!");
         Assert.notNull(to, "To must not be null!");
         Assert.notNull(timeout, "Timeout must not be null!");
+        Assert.isTrue(timeout >= 0, "Timeout must not be negative!");
 
+        long seconds = TimeoutUtils.toSeconds((long) Math.ceil(timeout * 1000), TimeUnit.MILLISECONDS);
         return write(sourceKey, ByteArrayCodec.INSTANCE, RedisCommands.BLMOVE,
-                sourceKey, destinationKey, from, to, destinationKey);
+                sourceKey, destinationKey, from, to, seconds);
     }
 
     @Override
@@ -2941,53 +2892,6 @@ public class RedissonConnection extends AbstractRedisConnection {
         write(null, StringCodec.INSTANCE, REPLICAOF, "NO", "ONE");
     }
 
-    private static final RedisCommand<Object> SET_VALUE = new RedisCommand<>("SET");
-
-    @Override
-    public byte[] setGet(byte[] key, byte[] value, Expiration expiration, SetOption option) {
-        Assert.notNull(key, "Key must not be null");
-        Assert.notNull(value, "Value must not be null");
-        Assert.notNull(expiration, "Expiration must not be null");
-        Assert.notNull(option, "Option must not be null");
-
-        List<Object> params = new ArrayList<>();
-        params.add(key);
-        params.add(value);
-
-        switch (option) {
-            case SET_IF_ABSENT:
-                params.add("NX");
-                break;
-            case SET_IF_PRESENT:
-                params.add("XX");
-                break;
-        }
-
-        params.add("GET");
-
-        if (expiration.isUnixTimestamp()) {
-            if (expiration.getTimeUnit() == TimeUnit.MILLISECONDS) {
-                params.add("PXAT");
-                params.add(expiration.getExpirationTimeInMilliseconds());
-            } else {
-                params.add("EXAT");
-                params.add(expiration.getExpirationTimeInSeconds());
-            }
-        } else if (!expiration.isPersistent()) {
-            if (expiration.isKeepTtl()) {
-                params.add("KEEPTTL");
-            } else if (expiration.getTimeUnit() == TimeUnit.MILLISECONDS) {
-                params.add("PX");
-                params.add(expiration.getExpirationTime());
-            } else {
-                params.add("EX");
-                params.add(expiration.getConverted(TimeUnit.SECONDS));
-            }
-        }
-
-        return read(key, ByteArrayCodec.INSTANCE, SET_VALUE, params.toArray());
-    }
-
     @Override
     public Boolean expire(byte[] key, long seconds, ExpirationOptions.Condition condition) {
         Assert.notNull(condition, "Condition must not be null");
@@ -3095,7 +2999,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         args.add(fields.length);
         args.addAll(Arrays.asList(fields));
 
-        return read(key, LongCodec.INSTANCE, HEXPIREAT, args.toArray());
+        return write(key, LongCodec.INSTANCE, HEXPIREAT, args.toArray());
     }
 
     private static final RedisStrictCommand<List<Long>> HPEXPIREAT = new RedisStrictCommand<List<Long>>("HPEXPIREAT", new ObjectListReplayDecoder<>());
@@ -3422,6 +3326,8 @@ public class RedissonConnection extends AbstractRedisConnection {
         return write(key, StringCodec.INSTANCE, SET, params.toArray());
     }
 
+    private static final RedisCommand<Object> SET_VALUE = new RedisCommand<>("SET");
+
     @Override
     public byte[] setGet(byte[] key, byte[] value, SetCondition condition, Expiration expiration) {
         Assert.notNull(key, "Key must not be null");
@@ -3436,7 +3342,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         params.add("GET");
         appendSetExpiration(params, expiration);
 
-        return read(key, ByteArrayCodec.INSTANCE, SET_VALUE, params.toArray());
+        return write(key, ByteArrayCodec.INSTANCE, SET_VALUE, params.toArray());
     }
 
     @Override

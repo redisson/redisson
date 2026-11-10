@@ -505,7 +505,7 @@ public class RedissonReactiveHashCommands extends RedissonBaseReactive implement
             args.add(command.getFields().size());
             args.addAll(command.getFields().stream().map(buf -> toByteArray(buf)).collect(Collectors.toList()));
 
-            Mono<List<byte[]>> m = read(keyBuf, ByteArrayCodec.INSTANCE, HGETEX, args.toArray());
+            Mono<List<byte[]>> m = write(keyBuf, ByteArrayCodec.INSTANCE, HGETEX, args.toArray());
             return m.map(v -> {
                 List<ByteBuffer> values = v.stream().map(array -> {
                     if (array != null) {

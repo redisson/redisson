@@ -69,6 +69,28 @@ public class RedissonReactiveStreamCommandsTest extends BaseConnectionTest {
                 .containsExactly("2-0", "3-0");
     }
 
+    @Test
+    public void testXTrimLeavesLimitOutOfExactTrim() {
+        byte[] key = bytes("reactive-xtrim-exact-limit");
+        add(key, "1-0", "1");
+        add(key, "2-0", "2");
+        add(key, "3-0", "3");
+
+        RedissonConnectionFactory factory = new RedissonConnectionFactory(redisson);
+        ReactiveRedisConnection reactiveConnection = factory.getReactiveConnection();
+        RedisStreamCommands.XTrimOptions options = RedisStreamCommands.XTrimOptions.trim(
+                RedisStreamCommands.TrimOptions.maxLen(1).limit(10));
+
+        Long trimmed = reactiveConnection.streamCommands()
+                .xTrim(ByteBuffer.wrap(key), options)
+                .block();
+
+        assertThat(trimmed).isEqualTo(2);
+        List<ByteRecord> remaining = connection.streamCommands().xRange(key, Range.unbounded());
+        assertThat(remaining).extracting(record -> record.getId().getValue())
+                .containsExactly("3-0");
+    }
+
     private static void add(byte[] key, String id, String value) {
         connection.streamCommands().xAdd(StreamRecords.newRecord()
                 .in(key)
