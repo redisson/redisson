@@ -30,6 +30,7 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.codec.CompositeCodec;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandBatchService;
+import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.misc.AsyncCountDownLatch;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.transaction.operation.*;
@@ -280,8 +281,11 @@ public class RedissonTransaction implements RTransaction {
     }
 
     private BatchOptions createOptions() {
-        int syncSlaves = 0;
-        if (options.getSyncSlaves() > 0) {
+        MasterSlaveEntry entry = commandExecutor.getConnectionManager().getEntrySet().iterator().next();
+        int syncSlaves = entry.getAvailableSlaves();
+        if (options.getSyncSlaves() == -1) {
+            syncSlaves = 0;
+        } else if (options.getSyncSlaves() > 0) {
             syncSlaves = options.getSyncSlaves();
         }
 
