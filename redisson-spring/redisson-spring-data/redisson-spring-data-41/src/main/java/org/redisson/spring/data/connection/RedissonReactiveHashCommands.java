@@ -39,6 +39,7 @@ import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
+import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.client.protocol.decoder.MultiDecoder;
 import org.redisson.client.protocol.decoder.ObjectListReplayDecoder;
@@ -518,7 +519,7 @@ public class RedissonReactiveHashCommands extends RedissonBaseReactive implement
         });
     }
 
-    private static final RedisCommand<String> HSETEX = new RedisCommand<>("HSETEX");
+    private static final RedisStrictCommand<Boolean> HSETEX = new RedisStrictCommand<>("HSETEX", new BooleanReplayConvertor());
 
     @Override
     public Flux<BooleanResponse<HSetExCommand>> hSetEx(Publisher<HSetExCommand> commands) {
@@ -569,8 +570,8 @@ public class RedissonReactiveHashCommands extends RedissonBaseReactive implement
                 params.add(toByteArray(entry.getValue()));
             }
 
-            Mono<String> m = write(keyBuf, StringCodec.INSTANCE, HSETEX, params.toArray());
-            return m.map(v -> new BooleanResponse<>(command, true));
+            Mono<Boolean> m = write(keyBuf, StringCodec.INSTANCE, HSETEX, params.toArray());
+            return m.map(v -> new BooleanResponse<>(command, v));
         });
     }
 }

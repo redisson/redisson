@@ -3,6 +3,7 @@ package org.redisson.spring.data.connection;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.redis.connection.ExpirationOptions;
 import org.springframework.data.redis.connection.ReactiveHashCommands;
+import org.springframework.data.redis.connection.RedisHashCommands;
 import org.springframework.data.redis.core.types.Expiration;
 import reactor.core.publisher.Mono;
 
@@ -11,6 +12,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -182,5 +184,44 @@ public class RedissonReactiveHashCommandsTest extends BaseConnectionTest {
 
         assertThat(result).containsExactly(-2L, 1L);
         assertThat(ttl(TimeUnit.MILLISECONDS)).isBetween(95_000L, 100_000L);
+    }
+
+    @Test
+    public void testHSetExConditionResult() {
+        ReactiveHashCommands hashCommands = new RedissonConnectionFactory(redisson).getReactiveConnection().hashCommands();
+
+        connection.hSet(key, field, value);
+
+        byte[] newValue = "newValue".getBytes(StandardCharsets.UTF_8);
+        Boolean setNoneExist = hashCommands.hSetEx(
+                ByteBuffer.wrap(key),
+                Map.of(ByteBuffer.wrap(field), ByteBuffer.wrap(newValue)),
+                RedisHashCommands.HashFieldSetOption.IF_NONE_EXIST,
+                Expiration.seconds(100)
+        ).block();
+
+        assertThat(setNoneExist).isFalse();
+        assertThat(connection.hGet(key, field)).isEqualTo(value);
+
+        byte[] newField = "newField".getBytes(StandardCharsets.UTF_8);
+        Boolean setAllExist = hashCommands.hSetEx(
+                ByteBuffer.wrap(key),
+                Map.of(ByteBuffer.wrap(newField), ByteBuffer.wrap(newValue)),
+                RedisHashCommands.HashFieldSetOption.IF_ALL_EXIST,
+                Expiration.seconds(100)
+        ).block();
+
+        assertThat(setAllExist).isFalse();
+        assertThat(connection.hExists(key, newField)).isFalse();
+
+        Boolean setUpsert = hashCommands.hSetEx(
+                ByteBuffer.wrap(key),
+                Map.of(ByteBuffer.wrap(newField), ByteBuffer.wrap(newValue)),
+                RedisHashCommands.HashFieldSetOption.UPSERT,
+                Expiration.seconds(100)
+        ).block();
+
+        assertThat(setUpsert).isTrue();
+        assertThat(connection.hGet(key, newField)).isEqualTo(newValue);
     }
 }
