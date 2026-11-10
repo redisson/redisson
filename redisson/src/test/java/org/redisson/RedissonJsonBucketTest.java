@@ -14,10 +14,13 @@ import org.redisson.codec.JacksonCodec;
 import org.redisson.codec.JsonCodec;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class RedissonJsonBucketTest extends RedisDockerTest {
 
@@ -565,6 +568,28 @@ public class RedissonJsonBucketTest extends RedisDockerTest {
         assertThat(al.setIfExists("$", Arrays.asList(4.5, 5.5), FPHAType.FP32)).isTrue();
         List<Double> result = al.get();
         assertThat(result).containsExactly(4.5, 5.5);
+    }
+
+    @Test
+    public void testTimeToLiveBelowOneMillisecond() {
+        RJsonBucket<String> b = redisson.getJsonBucket("test", StringCodec.INSTANCE);
+        b.set("\"old\"");
+
+        for (Duration ttl : Arrays.asList(Duration.ZERO, Duration.ofMillis(-100), Duration.ofNanos(500_000))) {
+            assertThatThrownBy(() -> b.set("\"new\"", ttl))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("timeToLive must be at least 1 ms");
+        }
+        assertThatThrownBy(() -> b.setIfAbsent("\"new\"", Duration.ZERO)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> b.setIfExists("\"new\"", Duration.ZERO)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> b.getAndSet("\"new\"", Duration.ZERO)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> b.getAndExpire(Duration.ZERO)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> b.set("\"new\"", 0, TimeUnit.MILLISECONDS)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> b.trySet("\"new\"", 0, TimeUnit.MILLISECONDS)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> b.setIfExists("\"new\"", 0, TimeUnit.MILLISECONDS)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> b.getAndSet("\"new\"", 0, TimeUnit.MILLISECONDS)).isInstanceOf(IllegalArgumentException.class);
+
+        assertThat(b.get()).isEqualTo("\"old\"");
     }
 
 
