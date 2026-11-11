@@ -80,12 +80,18 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
             
             List<Object> params = new ArrayList<Object>(command.getTuples().size()*2+1);
             params.add(keyBuf);
-            if (command.isIncr() || !command.isUpsert() || command.isReturnTotalChanged()) {
+            if (command.isIncr() || !command.isUpsert() || command.isReturnTotalChanged() || command.isGt() || command.isLt()) {
                 if (command.isIfExists()) {
                     params.add("XX");
                 }
                 if (command.isIfNotExists()) {
                     params.add("NX");
+                }
+                if (command.isGt()) {
+                    params.add("GT");
+                }
+                if (command.isLt()) {
+                    params.add("LT");
                 }
                 if (command.isReturnTotalChanged()) {
                     params.add("CH");
@@ -182,7 +188,7 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
             byte[] keyBuf = toByteArray(command.getKey());
 
             long start = command.getRange().getLowerBound().getValue().orElse(0L);
-            long end = command.getRange().getUpperBound().getValue().get();
+            long end = command.getRange().getUpperBound().getValue().orElse(-1L);
             
             Flux<Tuple> flux;
             if (command.getDirection() == Direction.ASC) {
@@ -292,8 +298,6 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
         });
     }
 
-    private static final RedisCommand<ListScanResult<Tuple>> ZSCAN = new RedisCommand<>("ZSCAN", new ListMultiDecoder2(new ScoredSortedSetScanDecoder<Object>(), new ScoredSortedSetScanReplayDecoder()));
-
     @Override
     public Flux<CommandResponse<KeyCommand, Flux<Tuple>>> zScan(Publisher<KeyScanCommand> commands) {
         return execute(commands, command -> {
@@ -305,13 +309,13 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
             Flux<Tuple> flux = Flux.create(new SetReactiveIterator<Tuple>() {
                 @Override
                 protected RFuture<ScanResult<Object>> scanIterator(RedisClient client, String nextIterPos) {
-                    if (command.getOptions().getPattern() == null) {
-                        return executorService.readAsync(client, keyBuf, ByteArrayCodec.INSTANCE, ZSCAN, 
+                    if (command.getOptions().getBytePattern() == null) {
+                        return executorService.readAsync(client, keyBuf, ByteArrayCodec.INSTANCE, RedissonConnection.ZSCAN, 
                                 keyBuf, nextIterPos, "COUNT", Optional.ofNullable(command.getOptions().getCount()).orElse(10L));
                     }
 
-                    return executorService.readAsync(client, keyBuf, ByteArrayCodec.INSTANCE, ZSCAN, 
-                                keyBuf, nextIterPos, "MATCH", command.getOptions().getPattern(), 
+                    return executorService.readAsync(client, keyBuf, ByteArrayCodec.INSTANCE, RedissonConnection.ZSCAN, 
+                                keyBuf, nextIterPos, "MATCH", command.getOptions().getBytePattern(), 
                                                     "COUNT", Optional.ofNullable(command.getOptions().getCount()).orElse(10L));
                 }
             });
@@ -348,32 +352,30 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
     }
     
     String toLexLowerBound(Range range, Object defaultValue) {
+        if (!range.getLowerBound().getValue().isPresent() || range.getLowerBound().getValue().get().toString().isEmpty()) {
+            return String.valueOf(defaultValue);
+        }
         StringBuilder s = new StringBuilder();
         if (range.getLowerBound().isInclusive()) {
             s.append("[");
         } else {
             s.append("(");
         }
-        if (!range.getLowerBound().getValue().isPresent() || range.getLowerBound().getValue().get().toString().isEmpty()) {
-            s.append(defaultValue);
-        } else {
-            s.append(range.getLowerBound().getValue().get());
-        }
+        s.append(range.getLowerBound().getValue().get());
         return s.toString();
     }
 
     String toLexUpperBound(Range range, Object defaultValue) {
+        if (!range.getUpperBound().getValue().isPresent() || range.getUpperBound().getValue().get().toString().isEmpty()) {
+            return String.valueOf(defaultValue);
+        }
         StringBuilder s = new StringBuilder();
         if (range.getUpperBound().isInclusive()) {
             s.append("[");
         } else {
             s.append("(");
         }
-        if (!range.getUpperBound().getValue().isPresent() || range.getUpperBound().getValue().get().toString().isEmpty()) {
-            s.append(defaultValue);
-        } else {
-            s.append(range.getUpperBound().getValue().get());
-        }
+        s.append(range.getUpperBound().getValue().get());
         return s.toString();
     }
 
@@ -431,7 +433,7 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
             byte[] keyBuf = toByteArray(command.getKey());
             Mono<Long> m = write(keyBuf, StringCodec.INSTANCE, ZREMRANGEBYRANK, 
                                 keyBuf, command.getRange().getLowerBound().getValue().orElse(0L),
-                                command.getRange().getUpperBound().getValue().get());
+                                command.getRange().getUpperBound().getValue().orElse(-1L));
             return m.map(v -> new NumericResponse<>(command, v));
         });
     }
@@ -531,8 +533,8 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
                 start = toLexLowerBound(command.getRange(), "-");
                 end = toLexUpperBound(command.getRange(), "+");
             } else {
-                start = toLexUpperBound(command.getRange(), "-");
-                end = toLexLowerBound(command.getRange(), "+");
+                start = toLexUpperBound(command.getRange(), "+");
+                end = toLexLowerBound(command.getRange(), "-");
             }
             
             Mono<Set<byte[]>> m;
@@ -582,6 +584,8 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
         });
     }
 
+    private static final RedisStrictCommand<Long> ZLEXCOUNT = new RedisStrictCommand<>("ZLEXCOUNT");
+
     @Override
     public Flux<ReactiveRedisConnection.NumericResponse<ZLexCountCommand, Long>> zLexCount(Publisher<ZLexCountCommand> commands) {
         return execute(commands, command -> {
@@ -593,7 +597,7 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
             String start = toLexLowerBound(command.getRange(), "-");
             String end = toLexUpperBound(command.getRange(), "+");
 
-            Mono<Long> m = read(keyBuf, ByteArrayCodec.INSTANCE, RedisCommands.ZLEXCOUNT, keyBuf, start, end);
+            Mono<Long> m = read(keyBuf, ByteArrayCodec.INSTANCE, ZLEXCOUNT, keyBuf, start, end);
             return m.map(v -> new NumericResponse<>(command, v));
         });
     }
@@ -690,11 +694,6 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
         });
     }
 
-    private static final RedisCommand<Set<Tuple>> ZRANDMEMBER_SCORE = new RedisCommand<>("ZRANDMEMBER", new ScoredSortedSetReplayDecoder());
-
-    private static final RedisCommand<Set<Tuple>> ZRANDMEMBER_SCORE_V2 = new RedisCommand<>("ZRANDMEMBER",
-                            new ListMultiDecoder2(new ObjectSetReplayDecoder(), new ScoredSortedSetReplayDecoderV2()));
-
     @Override
     public Flux<CommandResponse<ZRandMemberCommand, Flux<Tuple>>> zRandMemberWithScore(Publisher<ZRandMemberCommand> commands) {
         return execute(commands, command -> {
@@ -703,12 +702,12 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
 
             byte[] keyBuf = toByteArray(command.getKey());
 
-            RedisCommand<Set<Tuple>> cmd = ZRANDMEMBER_SCORE;
+            RedisCommand<List<Tuple>> cmd = RedissonConnection.ZRANDMEMBER_SCORE_LIST;
             if (executorService.getServiceManager().isResp3()) {
-                cmd = ZRANDMEMBER_SCORE_V2;
+                cmd = RedissonConnection.ZRANDMEMBER_SCORE_LIST_V2;
             }
 
-            Mono<Set<Tuple>> m = write(keyBuf, ByteArrayCodec.INSTANCE, cmd, keyBuf, command.getCount(), "WITHSCORES");
+            Mono<List<Tuple>> m = write(keyBuf, ByteArrayCodec.INSTANCE, cmd, keyBuf, command.getCount(), "WITHSCORES");
             Flux<Tuple> flux = m.flatMapMany(e -> Flux.fromIterable(e));
             return Mono.just(new CommandResponse<>(command, flux));
         });
@@ -734,11 +733,14 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
 
     private static final RedisCommand<Set<Tuple>> ZDIFF_SCORE = new RedisCommand<>("ZDIFF", new ScoredSortedSetReplayDecoder());
 
+    private static final RedisCommand<Set<Tuple>> ZDIFF_SCORE_V2 = new RedisCommand<Set<Tuple>>("ZDIFF",
+            new ListMultiDecoder2(new ObjectSetReplayDecoder(), new ScoredSortedSetReplayDecoderV2()));
+
     @Override
     public Flux<CommandResponse<ZDiffCommand, Flux<Tuple>>> zDiffWithScores(Publisher<? extends ZDiffCommand> commands) {
         return execute(commands, command -> {
 
-            Assert.notNull(command.getKey(), "Key must not be null!");
+            Assert.notNull(command.getKeys(), "Key must not be null!");
 
             List<Object> args = new ArrayList<>(command.getKeys().size() + 2);
             args.add(command.getKeys().size());
@@ -747,7 +749,12 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
             }
             args.add("WITHSCORES");
 
-            Mono<Set<Tuple>> m = write(toByteArray(command.getKeys().get(0)), ByteArrayCodec.INSTANCE, ZDIFF_SCORE, args.toArray());
+            RedisCommand<Set<Tuple>> cmd = ZDIFF_SCORE;
+            if (executorService.getServiceManager().isResp3()) {
+                cmd = ZDIFF_SCORE_V2;
+            }
+
+            Mono<Set<Tuple>> m = write(toByteArray(command.getKeys().get(0)), ByteArrayCodec.INSTANCE, cmd, args.toArray());
             Flux<Tuple> flux = m.flatMapMany(e -> Flux.fromIterable(e));
             return Mono.just(new CommandResponse<>(command, flux));
         });
@@ -918,28 +925,26 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
             byte[] keyBuf = toByteArray(command.getKey());
             byte[] destKeyBuf = toByteArray(command.getDestKey());
 
-            Object start = command.getRange().getLowerBound().getValue().map(r -> {
-                if (r instanceof Double) {
-                    if (((Double) r).isInfinite()) {
-                        return "-";
-                    }
-                }
-                return r;
-            }).orElse("-");
-            Object end = command.getRange().getUpperBound().getValue().map(r -> {
-                if (r instanceof Double) {
-                    if (((Double) r).isInfinite()) {
-                        return "+";
-                    }
-                }
-                return r;
-            }).orElse("+");
+            String min;
+            String max;
+            if (command.getRangeMode() == ZRangeStoreCommand.RangeMode.ByScore) {
+                min = toLowerBound(command.getRange());
+                max = toUpperBound(command.getRange());
+            } else {
+                min = toLexLowerBound(command.getRange(), "-");
+                max = toLexUpperBound(command.getRange(), "+");
+            }
 
             List<Object> args = new ArrayList<>(9);
             args.add(destKeyBuf);
             args.add(keyBuf);
-            args.add(start);
-            args.add(end);
+            if (command.getDirection() == Direction.DESC) {
+                args.add(max);
+                args.add(min);
+            } else {
+                args.add(min);
+                args.add(max);
+            }
 
             if (command.getRangeMode() == ZRangeStoreCommand.RangeMode.ByScore) {
                 args.add("BYSCORE");

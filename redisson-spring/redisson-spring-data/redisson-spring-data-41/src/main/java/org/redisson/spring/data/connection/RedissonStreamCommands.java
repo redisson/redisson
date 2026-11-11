@@ -22,6 +22,7 @@ import org.redisson.client.handler.State;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
+import org.redisson.client.protocol.convertor.BooleanNotNullReplayConvertor;
 import org.redisson.client.protocol.convertor.EmptyMapConvertor;
 import org.redisson.client.protocol.convertor.StreamIdConvertor;
 import org.redisson.client.protocol.decoder.*;
@@ -162,14 +163,14 @@ public class RedissonStreamCommands implements RedisStreamCommands {
             if (firstEntry != null) {
                 StreamMessageId firstId = StreamIdConvertor.INSTANCE.convert(firstEntry.get(0));
                 Map<Object, Object> firstData = (Map<Object, Object>) firstEntry.get(1);
-                map.put("first-entry", firstData);
+                map.put("first-entry", Collections.singletonMap(firstId.toString(), firstData));
             }
 
             List<?> lastEntry = (List<?>) map.get("last-entry");
             if (lastEntry != null) {
                 StreamMessageId lastId = StreamIdConvertor.INSTANCE.convert(lastEntry.get(0));
                 Map<Object, Object> lastData = (Map<Object, Object>) lastEntry.get(1);
-                map.put("last-entry", lastData);
+                map.put("last-entry", Collections.singletonMap(lastId.toString(), lastData));
             }
 
             List<Object> list = map.entrySet().stream()
@@ -179,7 +180,7 @@ public class RedissonStreamCommands implements RedisStreamCommands {
         }
     }
 
-    private static final RedisCommand<org.redisson.api.stream.StreamInfo<Object, Object>> XINFO_STREAM = new RedisCommand<>("XINFO", "STREAM",
+    static final RedisCommand<StreamInfo.XInfoStream> XINFO_STREAM = new RedisCommand<>("XINFO", "STREAM",
             new ListMultiDecoder2(
                     new XInfoStreamReplayDecoder(),
                     new CodecDecoder(),
@@ -337,13 +338,18 @@ public class RedissonStreamCommands implements RedisStreamCommands {
         params.add(key);
         params.add(groupName);
 
+        if (options.getMinIdleTime() != null) {
+            params.add("IDLE");
+            params.add(options.getMinIdleTime().toMillis());
+        }
+
         params.add(((Range.Bound<String>)options.getRange().getLowerBound()).getValue().orElse("-"));
         params.add(((Range.Bound<String>)options.getRange().getUpperBound()).getValue().orElse("+"));
 
         if (options.getCount() != null) {
             params.add(options.getCount());
         } else {
-            params.add(10);
+            params.add(Long.MAX_VALUE);
         }
         if (options.getConsumerName() != null) {
             params.add(options.getConsumerName());
@@ -432,6 +438,8 @@ public class RedissonStreamCommands implements RedisStreamCommands {
 
     private static final RedisStrictCommand<Boolean> XGROUP_BOOLEAN = new RedisStrictCommand<Boolean>("XGROUP", obj -> ((Long)obj) > 0);
 
+    private static final RedisStrictCommand<Boolean> XGROUP_DELCONSUMER = new RedisStrictCommand<Boolean>("XGROUP", new BooleanNotNullReplayConvertor());
+
     @Override
     public Boolean xGroupDelConsumer(byte[] key, Consumer consumer) {
         Assert.notNull(key, "Key must not be null!");
@@ -439,7 +447,7 @@ public class RedissonStreamCommands implements RedisStreamCommands {
         Assert.notNull(consumer.getName(), "Consumer name must not be null!");
         Assert.notNull(consumer.getGroup(), "Consumer group must not be null!");
 
-        return connection.write(key, StringCodec.INSTANCE, XGROUP_BOOLEAN, "DELCONSUMER", key, consumer.getGroup(), consumer.getName());
+        return connection.write(key, StringCodec.INSTANCE, XGROUP_DELCONSUMER, "DELCONSUMER", key, consumer.getGroup(), consumer.getName());
     }
 
     @Override

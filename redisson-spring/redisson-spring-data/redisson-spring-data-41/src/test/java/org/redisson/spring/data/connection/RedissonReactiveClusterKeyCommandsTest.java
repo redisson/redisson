@@ -1,5 +1,7 @@
 package org.redisson.spring.data.connection;
 
+import org.awaitility.Awaitility;
+import org.awaitility.Durations;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -9,6 +11,7 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.springframework.data.redis.RedisSystemException;
 import org.springframework.data.redis.connection.ReactiveRedisClusterConnection;
+import org.springframework.data.redis.connection.RedisClusterNode;
 
 
 import java.nio.ByteBuffer;
@@ -16,6 +19,7 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -80,6 +84,37 @@ public class RedissonReactiveClusterKeyCommandsTest extends RedisDockerTest {
             List<ByteBuffer> keys = connection.keyCommands().keys(ByteBuffer.wrap("key*".getBytes())).block();
             Long res = connection.keyCommands().mUnlink(keys).block();
             assertThat(res).isEqualTo(2);
+        });
+    }
+
+    @Test
+    public void testKeysKeepsBinaryKeys() {
+        testInClusterReactive(connection -> {
+            ByteBuffer key = ByteBuffer.wrap(new byte[] {'b', (byte) 0xFF, (byte) 0xFE, 'k'});
+            connection.stringCommands().set(key, value).block();
+            RedisClusterNode node = connection.clusterGetNodeForKey(key).block();
+
+            Awaitility.await().atMost(Durations.TEN_SECONDS).untilAsserted(() -> {
+                assertThat(connection.keyCommands().keys(ByteBuffer.wrap("b*".getBytes())).block()).containsExactly(key);
+                assertThat(connection.keyCommands().keys(node, ByteBuffer.wrap("b*".getBytes())).block()).containsExactly(key);
+            });
+        });
+    }
+
+    @Test
+    public void testKeysOnNodeReturnsOnlyKeysOfThatNode() {
+        testInClusterReactive(connection -> {
+            List<ByteBuffer> keys = Arrays.asList(ByteBuffer.wrap("a".getBytes()), ByteBuffer.wrap("b".getBytes()),
+                    ByteBuffer.wrap("c".getBytes()));
+            keys.forEach(key -> connection.stringCommands().set(key, value).block());
+            RedisClusterNode node = connection.clusterGetNodeForKey(keys.get(0)).block();
+            List<ByteBuffer> nodeKeys = keys.stream()
+                    .filter(key -> node.getSlotRange().contains(connection.clusterGetSlotForKey(key).block()))
+                    .collect(Collectors.toList());
+            assertThat(nodeKeys).hasSizeLessThan(keys.size());
+
+            assertThat(connection.keyCommands().keys(node, ByteBuffer.wrap("*".getBytes())).block())
+                    .containsExactlyInAnyOrderElementsOf(nodeKeys);
         });
     }
 

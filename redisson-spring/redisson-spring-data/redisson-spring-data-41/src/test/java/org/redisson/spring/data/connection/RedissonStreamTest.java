@@ -19,6 +19,7 @@ import org.springframework.data.redis.connection.RedisStreamCommands.StreamEntry
 import org.springframework.data.redis.connection.RedisStreamCommands.TrimOptions;
 import org.springframework.data.redis.connection.RedisStreamCommands.XAddOptions;
 import org.springframework.data.redis.connection.RedisStreamCommands.XClaimOptions;
+import org.springframework.data.redis.connection.RedisStreamCommands.XPendingOptions;
 import org.springframework.data.redis.connection.RedisStreamCommands.XDelOptions;
 import org.springframework.data.redis.connection.RedisStreamCommands.XTrimOptions;
 import org.springframework.data.redis.connection.stream.*;
@@ -31,6 +32,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -410,6 +412,57 @@ public class RedissonStreamTest extends BaseConnectionTest {
         assertThat(claimedIds).containsExactly(RecordId.of("1-0"));
         PendingMessage pending = connection.streamCommands().xPending(key, "group", Range.unbounded(), 10L).get(0);
         assertThat(pending.getElapsedTimeSinceLastDelivery()).isBetween(Duration.ofMinutes(9), Duration.ofMinutes(11));
+    }
+
+    @Test
+    public void testXPendingWithMinIdleTime() {
+        byte[] key = "xpending-idle".getBytes();
+        readIntoGroup(key, "1-0");
+
+        assertThat(connection.streamCommands().xPending(key, "group", Range.unbounded(), 10L, Duration.ofMinutes(1))).isEmpty();
+
+        connection.streamCommands().xClaim(key, "group", "consumer",
+                XClaimOptions.minIdle(Duration.ZERO).ids("1-0").idle(Duration.ofMinutes(10)));
+
+        assertThat(connection.streamCommands().xPending(key, "group", Range.unbounded(), 10L, Duration.ofMinutes(1)))
+                .extracting(PendingMessage::getIdAsString).containsExactly("1-0");
+    }
+
+    @Test
+    public void testXPendingWithoutCount() {
+        byte[] key = "xpending-no-count".getBytes();
+        String[] ids = new String[12];
+        for (int i = 0; i < ids.length; i++) {
+            ids[i] = (i + 1) + "-0";
+        }
+        readIntoGroup(key, ids);
+
+        assertThat(connection.streamCommands().xPending(key, "group", XPendingOptions.unbounded())).hasSize(12);
+        assertThat(connection.streamCommands().xPending(key, "group", "consumer")).hasSize(12);
+    }
+
+    @Test
+    public void testXGroupDelConsumer() {
+        byte[] key = "xgroup-delconsumer".getBytes();
+        readIntoGroup(key, "1-0");
+        assertThat(connection.streamCommands().xGroupDelConsumer(key, Consumer.from("group", "consumer"))).isTrue();
+
+        connection.streamCommands().xReadGroup(Consumer.from("group", "idle"), StreamOffset.create(key, ReadOffset.from("0-0")));
+        assertThat(connection.streamCommands().xGroupDelConsumer(key, Consumer.from("group", "idle"))).isTrue();
+        assertThat(connection.streamCommands().xInfoConsumers(key, "group").size()).isZero();
+    }
+
+    @Test
+    public void testXInfoEntries() {
+        byte[] key = "xinfo-entries".getBytes();
+        addRecords(key, XAddOptions.none(), "1-0", "2-0");
+
+        StreamInfo.XInfoStream info = connection.streamCommands().xInfo(key);
+        assertThat(info.streamLength()).isEqualTo(2);
+        assertThat(info.firstEntryId()).isEqualTo("1-0");
+        assertThat(info.lastEntryId()).isEqualTo("2-0");
+        assertThat(info.getFirstEntry()).containsOnlyKeys("1-0");
+        assertThat((Map<Object, Object>) info.getLastEntry().get("2-0")).containsEntry("field", "2-0");
     }
 
     @Test

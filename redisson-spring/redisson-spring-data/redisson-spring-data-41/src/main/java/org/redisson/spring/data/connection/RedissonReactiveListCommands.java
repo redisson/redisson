@@ -367,13 +367,7 @@ public class RedissonReactiveListCommands extends RedissonBaseReactive implement
                 cmd = RedisCommands.LPOP_LIST;
             }
 
-            List<Object> params = new ArrayList<>(2);
-            params.add(keyBuf);
-            if (command.getCount() > 0) {
-                params.add(command.getCount());
-            }
-
-            Mono<List<byte[]>> m = write(keyBuf, ByteArrayCodec.INSTANCE, cmd, params.toArray());
+            Mono<List<byte[]>> m = write(keyBuf, ByteArrayCodec.INSTANCE, cmd, keyBuf, command.getCount());
             return m.map(v -> new CommandResponse<>(command, Flux.fromIterable(v).map(e -> ByteBuffer.wrap(e))));
         });
     }

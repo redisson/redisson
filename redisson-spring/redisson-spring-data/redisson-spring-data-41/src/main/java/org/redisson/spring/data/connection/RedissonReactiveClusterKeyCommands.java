@@ -15,7 +15,6 @@
  */
 package org.redisson.spring.data.connection;
 
-import io.netty.util.CharsetUtil;
 import org.reactivestreams.Publisher;
 import org.redisson.api.BatchResult;
 import org.redisson.client.RedisClient;
@@ -56,30 +55,26 @@ public class RedissonReactiveClusterKeyCommands extends RedissonReactiveKeyComma
 
     @Override
     public Mono<List<ByteBuffer>> keys(RedisClusterNode node, ByteBuffer pattern) {
-        Mono<List<String>> m = executorService.reactive(() -> {
-            List<CompletableFuture<List<String>>> futures = executorService.readAllAsync(StringCodec.INSTANCE, RedisCommands.KEYS, toByteArray(pattern));
-            CompletableFuture<Void> ff = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
-            CompletableFuture<List<String>> future = ff.thenApply(r -> {
-                return futures.stream().flatMap(f -> f.getNow(new ArrayList<>()).stream()).collect(Collectors.toList());
-            }).toCompletableFuture();
-            return new CompletableFutureWrapper<>(future);
+        RedisClient entry = getEntry(node);
+        Mono<List<byte[]>> m = executorService.reactive(() -> {
+            return executorService.readAsync(entry, ByteArrayCodec.INSTANCE, KEYS, toByteArray(pattern));
         });
-        return m.map(v -> v.stream().map(t -> ByteBuffer.wrap(t.getBytes(CharsetUtil.UTF_8))).collect(Collectors.toList()));
+        return m.map(v -> v.stream().map(t -> ByteBuffer.wrap(t)).collect(Collectors.toList()));
     }
 
     @Override
     public Flux<MultiValueResponse<ByteBuffer, ByteBuffer>> keys(Publisher<ByteBuffer> patterns) {
         return execute(patterns, pattern -> {
-            Mono<List<String>> m = executorService.reactive(() -> {
-                List<CompletableFuture<List<String>>> futures = executorService.readAllAsync(StringCodec.INSTANCE, RedisCommands.KEYS, toByteArray(pattern));
+            Mono<List<byte[]>> m = executorService.reactive(() -> {
+                List<CompletableFuture<List<byte[]>>> futures = executorService.readAllAsync(ByteArrayCodec.INSTANCE, KEYS, toByteArray(pattern));
                 CompletableFuture<Void> ff = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
-                CompletableFuture<List<String>> future = ff.thenApply(r -> {
+                CompletableFuture<List<byte[]>> future = ff.thenApply(r -> {
                     return futures.stream().flatMap(f -> f.getNow(new ArrayList<>()).stream()).collect(Collectors.toList());
                 }).toCompletableFuture();
                 return new CompletableFutureWrapper<>(future);
             });
             return m.map(v -> {
-                List<ByteBuffer> values = v.stream().map(t -> ByteBuffer.wrap(t.getBytes())).collect(Collectors.toList());
+                List<ByteBuffer> values = v.stream().map(t -> ByteBuffer.wrap(t)).collect(Collectors.toList());
                 return new MultiValueResponse<>(pattern, values);
             });
         });

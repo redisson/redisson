@@ -13,6 +13,7 @@ import java.time.Duration;
 import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Reproduction/regression coverage for RedissonReactiveStringCommands.getEx() ignoring the
@@ -31,6 +32,31 @@ public class RedissonReactiveStringCommandsTest extends BaseConnectionTest {
         RedissonConnectionFactory factory = new RedissonConnectionFactory(redisson);
         ReactiveRedisConnection conn = factory.getReactiveConnection();
         return conn.stringCommands();
+    }
+
+    @Test
+    public void testGetSetAndSetNX() {
+        redisson.getBucket("getset", org.redisson.client.codec.StringCodec.INSTANCE).set("v1");
+
+        assertThat(StandardCharsets.UTF_8.decode(stringCommands().getSet(buf("getset"), buf("v2")).block()).toString()).isEqualTo("v1");
+        assertThat(redisson.getBucket("getset", org.redisson.client.codec.StringCodec.INSTANCE).get()).isEqualTo("v2");
+
+        assertThat(stringCommands().setNX(buf("getset"), buf("v3")).block()).isFalse();
+        assertThat(stringCommands().setNX(buf("setnx-new"), buf("v1")).block()).isTrue();
+        assertThat(redisson.getBucket("setnx-new", org.redisson.client.codec.StringCodec.INSTANCE).get()).isEqualTo("v1");
+    }
+
+    @Test
+    public void testGetSetRejectsExpirationAndCondition() {
+        ReactiveStringCommands.SetCommand expiring = ReactiveStringCommands.SetCommand.set(buf("getset-rejected"))
+                .value(buf("v1")).expiring(Expiration.seconds(10));
+        ReactiveStringCommands.SetCommand conditional = ReactiveStringCommands.SetCommand.set(buf("getset-rejected"))
+                .value(buf("v1")).withCondition(SetCondition.ifAbsent());
+
+        assertThatThrownBy(() -> stringCommands().getSet(reactor.core.publisher.Mono.just(expiring)).blockFirst())
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> stringCommands().setNX(reactor.core.publisher.Mono.just(conditional)).blockFirst())
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     private Long ttlMillis(String key) {

@@ -108,7 +108,7 @@ public class RedissonReactiveStringCommands extends RedissonBaseReactive impleme
             Assert.notNull(command.getKey(), "Key must not be null!");
             Assert.notNull(command.getValue(), "Value must not be null!");
 
-            if (command.getExpiration().isPresent() || command.getOption().isPresent()) {
+            if (definesExpirationOrOption(command)) {
                 throw new IllegalArgumentException("Command must not define expiration nor option for GETSET.");
             }
 
@@ -148,7 +148,7 @@ public class RedissonReactiveStringCommands extends RedissonBaseReactive impleme
             Assert.notNull(command.getKey(), "Key must not be null!");
             Assert.notNull(command.getValue(), "Value must not be null!");
 
-            if (command.getExpiration().isPresent() || command.getOption().isPresent()) {
+            if (definesExpirationOrOption(command)) {
                 throw new IllegalArgumentException("Command must not define expiration nor option for GETSET.");
             }
 
@@ -495,6 +495,13 @@ public class RedissonReactiveStringCommands extends RedissonBaseReactive impleme
             return m.map(v -> new ByteBufferResponse<>(command, ByteBuffer.wrap(v)))
                     .defaultIfEmpty(new AbsentByteBufferResponse<>(command));
         });
+    }
+
+    private static boolean definesExpirationOrOption(SetCommand command) {
+        boolean expiring = command.getExpiration().filter(expiration -> !expiration.isPersistent()).isPresent();
+        boolean conditional = command.getCondition().filter(condition -> condition.getCompareCondition() != null
+                || condition.getKeyCondition() != SetCondition.KeyCondition.UPSERT).isPresent();
+        return expiring || conditional || command.getOption().isPresent();
     }
 
     private static void appendSetCondition(List<Object> args, SetCondition condition) {

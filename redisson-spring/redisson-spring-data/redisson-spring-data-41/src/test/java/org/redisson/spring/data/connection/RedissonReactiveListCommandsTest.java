@@ -10,6 +10,7 @@ import java.time.Duration;
 import java.util.Collections;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class RedissonReactiveListCommandsTest extends BaseConnectionTest {
 
@@ -23,6 +24,18 @@ public class RedissonReactiveListCommandsTest extends BaseConnectionTest {
     private final ByteBuffer source = ByteBuffer.wrap("empty-list".getBytes());
 
     private final ByteBuffer destination = ByteBuffer.wrap("destination-list".getBytes());
+
+    @Test
+    public void testPopWithCount() {
+        connection.listCommands().rPush("pop-count".getBytes(), "a".getBytes(), "b".getBytes(), "c".getBytes());
+        ByteBuffer key = ByteBuffer.wrap("pop-count".getBytes());
+
+        assertThat(listCommands.lPop(key, 2).collectList().block())
+                .containsExactly(ByteBuffer.wrap("a".getBytes()), ByteBuffer.wrap("b".getBytes()));
+        assertThatThrownBy(() -> listCommands.lPop(key, -1).collectList().block()).hasMessageContaining("must be positive");
+        assertThatThrownBy(() -> listCommands.rPop(key, -1).collectList().block()).hasMessageContaining("must be positive");
+        assertThat(connection.listCommands().lLen("pop-count".getBytes())).isEqualTo(1);
+    }
 
     @Test
     public void testBLPopAndBRPopWithTimeoutUnderOneSecond() {
