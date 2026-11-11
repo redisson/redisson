@@ -60,6 +60,22 @@ public class RedissonTransactionalMapCache<K, V> extends RedissonMapCache<K, V> 
         this.transactionalMap = new BaseTransactionalMapCache<K, V>(commandExecutor, timeout, operations, innerMap, transactionId);
     }
 
+    public RedissonTransactionalMapCache(CommandAsyncExecutor commandExecutor, String name,
+            List<TransactionalOperation> operations, long timeout, AtomicBoolean executed, String transactionId, MapCacheOptions<K, V> options) {
+        super(null, commandExecutor, name, null, options, null);
+        this.executed = executed;
+        RedissonMapCache<K, V> innerMap = new RedissonMapCache<K, V>(null, commandExecutor, name, null, options, null);
+        this.transactionalMap = new BaseTransactionalMapCache<K, V>(commandExecutor, timeout, operations, innerMap, transactionId);
+    }
+
+    public RedissonTransactionalMapCache(Codec codec, CommandAsyncExecutor commandExecutor, String name,
+            List<TransactionalOperation> operations, long timeout, AtomicBoolean executed, String transactionId, MapCacheOptions<K, V> options) {
+        super(codec, null, commandExecutor, name, null, options, null);
+        this.executed = executed;
+        RedissonMapCache<K, V> innerMap = new RedissonMapCache<K, V>(codec, null, commandExecutor, name, null, options, null);
+        this.transactionalMap = new BaseTransactionalMapCache<K, V>(commandExecutor, timeout, operations, innerMap, transactionId);
+    }
+
     @Override
     public LeaseGetResult<V> getWithLease(K key, Duration leaseTimeToLive) {
         throw new UnsupportedOperationException("getWithLease method is not supported in transaction");

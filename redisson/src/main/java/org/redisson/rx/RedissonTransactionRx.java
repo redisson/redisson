@@ -15,6 +15,8 @@
  */
 package org.redisson.rx;
 
+import org.redisson.api.MapOptions;
+import org.redisson.api.MapCacheOptions;
 import org.redisson.api.RBucketRx;
 import org.redisson.api.RMap;
 import org.redisson.api.RMapCache;
@@ -73,6 +75,20 @@ public class RedissonTransactionRx implements RTransactionRx {
     }
 
     @Override
+    public <K, V> RMapRx<K, V> getMap(String name, MapOptions<K, V> options) {
+        RMap<K, V> map = transaction.<K, V>getMap(name, options);
+        return RxProxyBuilder.create(executorService, map,
+                new RedissonMapRx<K, V>(map, null), RMapRx.class);
+    }
+
+    @Override
+    public <K, V> RMapRx<K, V> getMap(String name, Codec codec, MapOptions<K, V> options) {
+        RMap<K, V> map = transaction.<K, V>getMap(name, codec, options);
+        return RxProxyBuilder.create(executorService, map,
+                new RedissonMapRx<K, V>(map, null), RMapRx.class);
+    }
+
+    @Override
     public <K, V> RMapCacheRx<K, V> getMapCache(String name, Codec codec) {
         RMapCache<K, V> map = transaction.<K, V>getMapCache(name, codec);
         return RxProxyBuilder.create(executorService, map, 
@@ -83,6 +99,20 @@ public class RedissonTransactionRx implements RTransactionRx {
     public <K, V> RMapCacheRx<K, V> getMapCache(String name) {
         RMapCache<K, V> map = transaction.<K, V>getMapCache(name);
         return RxProxyBuilder.create(executorService, map, 
+                new RedissonMapCacheRx<K, V>(map, executorService), RMapCacheRx.class);
+    }
+
+    @Override
+    public <K, V> RMapCacheRx<K, V> getMapCache(String name, MapCacheOptions<K, V> options) {
+        RMapCache<K, V> map = transaction.<K, V>getMapCache(name, options);
+        return RxProxyBuilder.create(executorService, map,
+                new RedissonMapCacheRx<K, V>(map, executorService), RMapCacheRx.class);
+    }
+
+    @Override
+    public <K, V> RMapCacheRx<K, V> getMapCache(String name, Codec codec, MapCacheOptions<K, V> options) {
+        RMapCache<K, V> map = transaction.<K, V>getMapCache(name, codec, options);
+        return RxProxyBuilder.create(executorService, map,
                 new RedissonMapCacheRx<K, V>(map, executorService), RMapCacheRx.class);
     }
 

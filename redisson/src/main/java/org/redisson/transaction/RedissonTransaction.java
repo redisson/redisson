@@ -205,6 +205,25 @@ public class RedissonTransaction implements RTransaction {
     }
 
     @Override
+    public <K, V> RMap<K, V> getMap(String name, MapOptions<K, V> options) {
+        checkState();
+
+        return (RMap<K, V>) instances.computeIfAbsent(name, k -> {
+            return new RedissonTransactionalMap<K, V>(commandExecutor, name, operations, this.options.getTimeout(), executed, id, options);
+        });
+    }
+
+    @Override
+    public <K, V> RMap<K, V> getMap(String name, Codec codec, MapOptions<K, V> options) {
+        checkState();
+        checkCodecMismatch(name, codec);
+
+        return (RMap<K, V>) instances.computeIfAbsent(name, k -> {
+            return new RedissonTransactionalMap<K, V>(codec, commandExecutor, name, operations, this.options.getTimeout(), executed, id, options);
+        });
+    }
+
+    @Override
     public <K, V> RMapCache<K, V> getMapCache(String name) {
         checkState();
 
@@ -220,6 +239,25 @@ public class RedissonTransaction implements RTransaction {
 
         return (RMapCache<K, V>) instances.computeIfAbsent(name, k -> {
             return new RedissonTransactionalMapCache<K, V>(codec, commandExecutor, name, operations, options.getTimeout(), executed, id);
+        });
+    }
+
+    @Override
+    public <K, V> RMapCache<K, V> getMapCache(String name, MapCacheOptions<K, V> options) {
+        checkState();
+
+        return (RMapCache<K, V>) instances.computeIfAbsent(name, k -> {
+            return new RedissonTransactionalMapCache<K, V>(commandExecutor, name, operations, this.options.getTimeout(), executed, id, options);
+        });
+    }
+
+    @Override
+    public <K, V> RMapCache<K, V> getMapCache(String name, Codec codec, MapCacheOptions<K, V> options) {
+        checkState();
+        checkCodecMismatch(name, codec);
+
+        return (RMapCache<K, V>) instances.computeIfAbsent(name, k -> {
+            return new RedissonTransactionalMapCache<K, V>(codec, commandExecutor, name, operations, this.options.getTimeout(), executed, id, options);
         });
     }
     
