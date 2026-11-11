@@ -22,6 +22,7 @@ import org.redisson.api.RLockAsync;
 import org.redisson.client.RedisResponseTimeoutException;
 import org.redisson.misc.CompletableFutureWrapper;
 
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -532,6 +533,26 @@ public class RedissonMultiLock implements RLock {
 
     @Override
     public RFuture<Void> removeListenerAsync(int listenerId) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean updateLeaseTime(Duration leaseTime) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public RFuture<Boolean> updateLeaseTimeAsync(Duration leaseTime) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean setLeaseTimeIfNotSet(Duration leaseTime) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public RFuture<Boolean> setLeaseTimeIfNotSetAsync(Duration leaseTime) {
         throw new UnsupportedOperationException();
     }
 }

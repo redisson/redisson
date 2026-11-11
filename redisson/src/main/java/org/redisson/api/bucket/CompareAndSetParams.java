@@ -64,6 +64,9 @@ public final class CompareAndSetParams<V> implements CompareAndSetStep<V>, Compa
 
     @Override
     public CompareAndSetArgs<V> timeToLive(Duration duration) {
+        if (duration != null && duration.toMillis() <= 0) {
+            throw new IllegalArgumentException("timeToLive must be at least 1 ms, was " + duration);
+        }
         this.timeToLive = duration;
         return this;
     }

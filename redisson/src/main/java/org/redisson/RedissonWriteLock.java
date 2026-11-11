@@ -24,6 +24,7 @@ import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.pubsub.LockPubSub;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
@@ -140,6 +141,26 @@ public class RedissonWriteLock extends RedissonLock implements RLock {
         RFuture<String> future = commandExecutor.writeAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.HGET, getRawName(), "mode");
         String res = get(future);
         return "write".equals(res);
+    }
+
+    @Override
+    public boolean updateLeaseTime(Duration leaseTime) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public RFuture<Boolean> updateLeaseTimeAsync(Duration leaseTime) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean setLeaseTimeIfNotSet(Duration leaseTime) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public RFuture<Boolean> setLeaseTimeIfNotSetAsync(Duration leaseTime) {
+        throw new UnsupportedOperationException();
     }
 
 }
