@@ -16,6 +16,9 @@
 package org.redisson.spring.data.connection;
 
 import org.reactivestreams.Publisher;
+import org.redisson.ScanResult;
+import org.redisson.api.RFuture;
+import org.redisson.client.RedisClient;
 import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
@@ -23,13 +26,15 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.client.protocol.convertor.Convertor;
+import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.reactive.CommandReactiveExecutor;
-import org.redisson.reactive.RedissonKeysReactive;
+import org.redisson.reactive.IteratorConsumer;
 import org.springframework.data.redis.connection.DataType;
 import org.springframework.data.redis.connection.ExpirationOptions;
 import org.springframework.data.redis.connection.ReactiveKeyCommands;
 import org.springframework.data.redis.connection.ReactiveRedisConnection.*;
 import org.springframework.data.redis.connection.ValueEncoding;
+import org.springframework.data.redis.core.KeyScanOptions;
 import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.util.Assert;
 import reactor.core.publisher.Flux;
@@ -93,15 +98,17 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
         });
     }
 
+    static final RedisStrictCommand<List<byte[]>> KEYS = new RedisStrictCommand<>("KEYS");
+
     @Override
     public Flux<MultiValueResponse<ByteBuffer, ByteBuffer>> keys(Publisher<ByteBuffer> patterns) {
         return execute(patterns, pattern -> {
 
             Assert.notNull(pattern, "Pattern must not be null!");
 
-            Mono<List<String>> m = read(null, StringCodec.INSTANCE, RedisCommands.KEYS, toByteArray(pattern));
+            Mono<List<byte[]>> m = read(null, ByteArrayCodec.INSTANCE, KEYS, toByteArray(pattern));
             return m.map(v -> {
-                List<ByteBuffer> values = v.stream().map(t -> ByteBuffer.wrap(t.getBytes())).collect(Collectors.toList());
+                List<ByteBuffer> values = v.stream().map(t -> ByteBuffer.wrap(t)).collect(Collectors.toList());
                 return new MultiValueResponse<>(pattern, values);   
             });
         });
@@ -109,18 +116,44 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
 
     @Override
     public Flux<ByteBuffer> scan(ScanOptions options) {
-        RedissonKeysReactive reactive = new RedissonKeysReactive(executorService);
-        if (options.getCount() != null) {
-            return reactive.getKeysByPattern(options.getPattern(), options.getCount().intValue()).map(t -> ByteBuffer.wrap(t.getBytes()));
+        List<Publisher<byte[]>> publishers = new ArrayList<>();
+        for (MasterSlaveEntry entry : executorService.getConnectionManager().getEntrySet()) {
+            publishers.add(Flux.<byte[]>create(emitter -> emitter.onRequest(new IteratorConsumer<byte[]>(emitter) {
+
+                @Override
+                protected boolean tryAgain() {
+                    return false;
+                }
+
+                @Override
+                protected RFuture<ScanResult<Object>> scanIterator(RedisClient client, String nextIterPos) {
+                    List<Object> args = new ArrayList<>();
+                    args.add(nextIterPos);
+                    if (options.getBytePattern() != null) {
+                        args.add("MATCH");
+                        args.add(options.getBytePattern());
+                    }
+                    if (options.getCount() != null) {
+                        args.add("COUNT");
+                        args.add(options.getCount());
+                    }
+                    if (options instanceof KeyScanOptions && ((KeyScanOptions) options).getType() != null) {
+                        args.add("TYPE");
+                        args.add(((KeyScanOptions) options).getType());
+                    }
+                    return executorService.readAsync(client, entry, ByteArrayCodec.INSTANCE, RedisCommands.SCAN, args.toArray());
+                }
+            })));
         }
-        return reactive.getKeysByPattern(options.getPattern()).map(t -> ByteBuffer.wrap(t.getBytes()));
+        return Flux.merge(publishers).map(v -> ByteBuffer.wrap(v));
     }
 
     @Override
     public Mono<ByteBuffer> randomKey() {
-        return executorService.reactive(() -> {
+        Mono<byte[]> m = executorService.reactive(() -> {
             return executorService.readRandomAsync(ByteArrayCodec.INSTANCE, RedisCommands.RANDOM_KEY);
         });
+        return m.map(v -> ByteBuffer.wrap(v));
     }
 
     static final RedisStrictCommand<String> RENAME = new RedisStrictCommand<String>("RENAME");
@@ -206,31 +239,6 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
 
     private static final RedisStrictCommand<Boolean> EXPIRE = new RedisStrictCommand<Boolean>("EXPIRE", new BooleanReplayConvertor());
     
-    @Override
-    public Flux<BooleanResponse<ExpireCommand>> expire(Publisher<ExpireCommand> commands) {
-        return execute(commands, command -> {
-
-            Assert.notNull(command.getKey(), "Key must not be null!");
-
-            byte[] keyBuf = toByteArray(command.getKey());
-            Mono<Boolean> m = write(keyBuf, StringCodec.INSTANCE, EXPIRE, keyBuf, command.getTimeout().getSeconds());
-            return m.map(v -> new BooleanResponse<>(command, v));
-        });
-    }
-
-    @Override
-    public Flux<BooleanResponse<ExpireCommand>> pExpire(Publisher<ExpireCommand> commands) {
-        return execute(commands, command -> {
-
-            Assert.notNull(command.getKey(), "Key must not be null!");
-            Assert.notNull(command.getTimeout(), "Timeout must not be null!");
-
-            byte[] keyBuf = toByteArray(command.getKey());
-            Mono<Boolean> m = write(keyBuf, StringCodec.INSTANCE, RedisCommands.PEXPIRE, keyBuf, command.getTimeout().toMillis());
-            return m.map(v -> new BooleanResponse<>(command, v));
-        });
-    }
-
     private static final RedisStrictCommand<Boolean> EXPIREAT = new RedisStrictCommand<>("EXPIREAT", new BooleanReplayConvertor());
     
     @Override
@@ -240,7 +248,12 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
             Assert.notNull(command.getKey(), "Key must not be null!");
 
             byte[] keyBuf = toByteArray(command.getKey());
-            Mono<Boolean> m = write(keyBuf, StringCodec.INSTANCE, EXPIREAT, keyBuf, command.getExpireAt().getEpochSecond());
+            List<Object> args = new ArrayList<>();
+            args.add(keyBuf);
+            args.add(command.getExpireAt().getEpochSecond());
+            appendCondition(args, command.getOptions());
+
+            Mono<Boolean> m = write(keyBuf, StringCodec.INSTANCE, EXPIREAT, args.toArray());
             return m.map(v -> new BooleanResponse<>(command, v));
         });
     }
@@ -252,7 +265,12 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
             Assert.notNull(command.getKey(), "Key must not be null!");
 
             byte[] keyBuf = toByteArray(command.getKey());
-            Mono<Boolean> m = write(keyBuf, StringCodec.INSTANCE, RedisCommands.PEXPIREAT, keyBuf, command.getExpireAt().toEpochMilli());
+            List<Object> args = new ArrayList<>();
+            args.add(keyBuf);
+            args.add(command.getExpireAt().toEpochMilli());
+            appendCondition(args, command.getOptions());
+
+            Mono<Boolean> m = write(keyBuf, StringCodec.INSTANCE, RedisCommands.PEXPIREAT, args.toArray());
             return m.map(v -> new BooleanResponse<>(command, v));
         });
     }
@@ -355,6 +373,9 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
                 params.add("DB");
                 params.add(command.getDatabase());
             }
+            if (command.isReplace()) {
+                params.add("REPLACE");
+            }
 
             Mono<Boolean> m = write(keyBuf, StringCodec.INSTANCE, RedisCommands.COPY, params.toArray());
             return m.map(v -> new BooleanResponse<>(command, v));
@@ -371,6 +392,12 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
         }
 
         return read((byte[]) args.get(0), LongCodec.INSTANCE, RedisCommands.EXISTS_LONG, args.toArray());
+    }
+
+    private static void appendCondition(List<Object> args, ExpirationOptions options) {
+        if (options != null && options.getCondition() != ExpirationOptions.Condition.ALWAYS) {
+            args.add(options.getCondition().name());
+        }
     }
 
     @Override
@@ -390,11 +417,7 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
             } else {
                 long timestamp = command.getExpiration().getExpirationTime();
                 args.add(timestamp);
-
-                if (command.getOptions() != null
-                        && command.getOptions().getCondition() != ExpirationOptions.Condition.ALWAYS) {
-                    args.add(command.getOptions().getCondition().name());
-                }
+                appendCondition(args, command.getOptions());
 
                 if (command.getExpiration().isUnixTimestamp()) {
 

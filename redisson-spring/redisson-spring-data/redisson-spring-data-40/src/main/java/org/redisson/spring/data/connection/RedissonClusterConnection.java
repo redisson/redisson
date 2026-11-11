@@ -29,6 +29,7 @@ import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.client.protocol.decoder.ObjectDecoder;
 import org.redisson.client.protocol.decoder.ObjectListReplayDecoder;
 import org.redisson.client.protocol.decoder.StringMapDataDecoder;
+import org.redisson.client.protocol.decoder.TimeLongObjectDecoder;
 import org.redisson.command.CommandBatchService;
 import org.redisson.connection.ClientConnectionsEntry;
 import org.redisson.connection.MasterSlaveEntry;
@@ -38,6 +39,7 @@ import org.springframework.data.redis.connection.RedisClusterNode.SlotRange;
 import org.springframework.data.redis.connection.convert.Converters;
 import org.springframework.data.redis.connection.convert.StringToRedisClientInfoConverter;
 import org.springframework.data.redis.core.Cursor;
+import org.springframework.data.redis.core.KeyScanOptions;
 import org.springframework.data.redis.core.ScanCursor;
 import org.springframework.data.redis.core.ScanIteration;
 import org.springframework.data.redis.core.ScanOptions;
@@ -47,6 +49,7 @@ import org.springframework.util.Assert;
 import java.net.InetSocketAddress;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -275,9 +278,9 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
         return execute(node, RedisCommands.DBSIZE);
     }
 
-    private <T> T execute(RedisClusterNode node, RedisCommand<T> command) {
+    private <T> T execute(RedisClusterNode node, RedisCommand<T> command, Object... params) {
         RedisClient entry = getEntry(node);
-        RFuture<T> f = executorService.writeAsync(entry, StringCodec.INSTANCE, command);
+        RFuture<T> f = executorService.writeAsync(entry, StringCodec.INSTANCE, command, params);
         return syncFuture(f);
     }
 
@@ -296,6 +299,16 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
     @Override
     public void flushAll(RedisClusterNode node) {
         execute(node, RedisCommands.FLUSHALL);
+    }
+
+    @Override
+    public void flushDb(RedisClusterNode node, FlushOption option) {
+        execute(node, RedisCommands.FLUSHDB, option.toString());
+    }
+
+    @Override
+    public void flushAll(RedisClusterNode node, FlushOption option) {
+        execute(node, RedisCommands.FLUSHALL, option.toString());
     }
 
     @Override
@@ -370,9 +383,22 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
     }
 
     @Override
+    public void rewriteConfig(RedisClusterNode node) {
+        execute(node, RedisCommands.CONFIG_REWRITE);
+    }
+
+    @Override
     public Long time(RedisClusterNode node) {
         RedisClient entry = getEntry(node);
         RFuture<Long> f = executorService.readAsync(entry, LongCodec.INSTANCE, RedisCommands.TIME_LONG);
+        return syncFuture(f);
+    }
+
+    @Override
+    public Long time(RedisClusterNode node, TimeUnit timeUnit) {
+        RedisClient entry = getEntry(node);
+        RFuture<Long> f = executorService.readAsync(entry, LongCodec.INSTANCE,
+                new RedisStrictCommand<>("TIME", new TimeLongObjectDecoder(timeUnit)));
         return syncFuture(f);
     }
 
@@ -404,13 +430,17 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
                 
                 List<Object> args = new ArrayList<Object>();
                 args.add(cursorId);
-                if (options.getPattern() != null) {
+                if (options.getBytePattern() != null) {
                     args.add("MATCH");
-                    args.add(options.getPattern());
+                    args.add(options.getBytePattern());
                 }
                 if (options.getCount() != null) {
                     args.add("COUNT");
                     args.add(options.getCount());
+                }
+                if (options instanceof KeyScanOptions && ((KeyScanOptions) options).getType() != null) {
+                    args.add("TYPE");
+                    args.add(((KeyScanOptions) options).getType());
                 }
                 
                 RFuture<ListScanResult<byte[]>> f = executorService.readAsync(client, ByteArrayCodec.INSTANCE, RedisCommands.SCAN, args.toArray());

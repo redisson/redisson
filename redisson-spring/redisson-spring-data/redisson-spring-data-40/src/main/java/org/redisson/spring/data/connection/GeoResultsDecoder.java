@@ -48,13 +48,24 @@ public class GeoResultsDecoder implements MultiDecoder<GeoResults<GeoLocation<by
             if (object instanceof List) {
                 List<Object> vals = ((List<Object>) object);
                 
-                if (metric != null) {
-                    GeoLocation<byte[]> location = new GeoLocation<byte[]>((byte[])vals.get(0), null);
-                    result.add(new GeoResult<GeoLocation<byte[]>>(location, new Distance((Double)vals.get(1), metric)));
-                } else {
-                    GeoLocation<byte[]> location = new GeoLocation<byte[]>((byte[])vals.get(0), (Point)vals.get(1));
-                    result.add(new GeoResult<GeoLocation<byte[]>>(location, new Distance(0)));
+                double distance = 0;
+                Point point = null;
+                for (Object val : vals.subList(1, vals.size())) {
+                    if (val instanceof Point) {
+                        point = (Point) val;
+                    } else {
+                        distance = (Double) val;
+                    }
                 }
+
+                Distance resultDistance;
+                if (metric != null) {
+                    resultDistance = new Distance(distance, metric);
+                } else {
+                    resultDistance = new Distance(distance);
+                }
+                GeoLocation<byte[]> location = new GeoLocation<byte[]>((byte[]) vals.get(0), point);
+                result.add(new GeoResult<GeoLocation<byte[]>>(location, resultDistance));
             } else {
                 GeoLocation<byte[]> location = new GeoLocation<byte[]>((byte[])object, null);
                 result.add(new GeoResult<GeoLocation<byte[]>>(location, new Distance(0)));

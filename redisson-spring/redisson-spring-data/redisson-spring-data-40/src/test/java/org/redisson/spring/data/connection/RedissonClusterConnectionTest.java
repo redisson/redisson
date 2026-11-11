@@ -6,18 +6,24 @@ import org.redisson.RedisDockerTest;
 import org.redisson.api.RedissonClient;
 import org.redisson.connection.MasterSlaveConnectionManager;
 import org.springframework.data.redis.connection.ClusterInfo;
+import org.springframework.data.redis.connection.DataType;
 import org.springframework.data.redis.connection.RedisClusterNode;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisNode.NodeType;
+import org.springframework.data.redis.connection.RedisServerCommands.FlushOption;
 import org.springframework.data.redis.core.Cursor;
+import org.springframework.data.redis.core.KeyScanOptions;
 import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.types.RedisClientInfo;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.within;
 
 public class RedissonClusterConnectionTest extends RedisDockerTest {
 
@@ -289,6 +295,67 @@ public class RedissonClusterConnectionTest extends RedisDockerTest {
             RedisClusterNode master = getFirstMaster(connection);
             Long time = connection.time(master);
             assertThat(time).isGreaterThan(1000);
+        });
+    }
+
+    @Test
+    public void testTimeWithUnit() {
+        testInCluster(connection -> {
+            RedisClusterNode master = getFirstMaster(connection);
+            Long millis = connection.time(master, TimeUnit.MILLISECONDS);
+            Long seconds = connection.time(master, TimeUnit.SECONDS);
+            assertThat(millis).isCloseTo(System.currentTimeMillis(), within(60_000L));
+            assertThat(seconds).isBetween(millis / 1000, millis / 1000 + 2);
+        });
+    }
+
+    @Test
+    public void testFlushDbAndFlushAllWithOption() {
+        testInCluster(connection -> {
+            byte[] key = "flush-with-option".getBytes();
+            RedisClusterNode node = connection.clusterGetNodeForKey(key);
+
+            connection.set(key, "value".getBytes());
+            assertThat(connection.dbSize(node)).isEqualTo(1);
+            connection.flushDb(node, FlushOption.SYNC);
+            assertThat(connection.dbSize(node)).isZero();
+
+            connection.set(key, "value".getBytes());
+            assertThat(connection.dbSize(node)).isEqualTo(1);
+            connection.flushAll(node, FlushOption.ASYNC);
+            assertThat(connection.dbSize(node)).isZero();
+        });
+    }
+
+    @Test
+    public void testScanOnNodeWithTypeAndBinaryPattern() {
+        testInCluster(connection -> {
+            byte[] binaryKey = {'{', 's', '}', (byte) 0xFF, 'k'};
+            connection.set(binaryKey, "value".getBytes());
+            connection.set("{s}string".getBytes(), "value".getBytes());
+            connection.zAdd("{s}zset".getBytes(), 1, "a".getBytes());
+            RedisClusterNode node = connection.clusterGetNodeForKey(binaryKey);
+
+            List<byte[]> zsets = new ArrayList<>();
+            try (Cursor<byte[]> cursor = connection.scan(node, KeyScanOptions.scanOptions(DataType.ZSET).build())) {
+                cursor.forEachRemaining(zsets::add);
+            }
+            assertThat(zsets).containsExactly("{s}zset".getBytes());
+
+            List<byte[]> keys = new ArrayList<>();
+            try (Cursor<byte[]> cursor = connection.scan(node, ScanOptions.scanOptions().match(new byte[] {'{', 's', '}', (byte) 0xFF, '*'}).build())) {
+                cursor.forEachRemaining(keys::add);
+            }
+            assertThat(keys).containsExactly(binaryKey);
+        });
+    }
+
+    @Test
+    public void testRewriteConfig() {
+        testInCluster(connection -> {
+            RedisClusterNode master = getFirstMaster(connection);
+            assertThatThrownBy(() -> connection.rewriteConfig(master))
+                    .hasMessageContaining("without a config file");
         });
     }
 

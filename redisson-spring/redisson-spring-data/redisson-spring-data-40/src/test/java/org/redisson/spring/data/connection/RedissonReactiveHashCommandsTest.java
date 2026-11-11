@@ -1,8 +1,14 @@
 package org.redisson.spring.data.connection;
 
 import org.junit.jupiter.api.Test;
+import org.redisson.Redisson;
+import org.redisson.api.RedissonClient;
+import org.redisson.config.Config;
+import org.redisson.config.Protocol;
 import org.springframework.data.redis.connection.ExpirationOptions;
 import org.springframework.data.redis.connection.ReactiveHashCommands;
+import org.springframework.data.redis.connection.RedisHashCommands.HashFieldSetOption;
+import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.types.Expiration;
 import reactor.core.publisher.Mono;
 
@@ -10,7 +16,9 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -20,6 +28,52 @@ public class RedissonReactiveHashCommandsTest extends BaseConnectionTest {
     private final byte[] key = "hash".getBytes(StandardCharsets.UTF_8);
     private final byte[] field = "field".getBytes(StandardCharsets.UTF_8);
     private final byte[] value = "value".getBytes(StandardCharsets.UTF_8);
+
+    @Test
+    public void testHScanWithBinaryPattern() {
+        byte[] binaryField = {(byte) 0xFF, 'f'};
+        connection.hashCommands().hSet(key, binaryField, value);
+        connection.hashCommands().hSet(key, field, value);
+        ReactiveHashCommands hashCommands = new RedissonConnectionFactory(redisson).getReactiveConnection().hashCommands();
+
+        assertThat(hashCommands.hScan(ByteBuffer.wrap(key), ScanOptions.scanOptions().match(new byte[] {(byte) 0xFF, '*'}).build())
+                .map(Map.Entry::getKey).collectList().block()).containsExactly(ByteBuffer.wrap(binaryField));
+    }
+
+    @Test
+    public void testHRandField() {
+        connection.hashCommands().hSet(key, field, value);
+        ReactiveHashCommands hashCommands = new RedissonConnectionFactory(redisson).getReactiveConnection().hashCommands();
+
+        assertThat(hashCommands.hRandField(ByteBuffer.wrap(key)).block()).isEqualTo(ByteBuffer.wrap(field));
+        assertThat(hashCommands.hRandField(ByteBuffer.wrap(key), 2).collectList().block()).containsExactly(ByteBuffer.wrap(field));
+        assertThat(hashCommands.hRandField(ByteBuffer.wrap(key), -2).collectList().block())
+                .containsExactly(ByteBuffer.wrap(field), ByteBuffer.wrap(field));
+    }
+
+    @Test
+    public void testHRandFieldWithValues() {
+        connection.hashCommands().hSet(key, field, value);
+        ReactiveHashCommands hashCommands = new RedissonConnectionFactory(redisson).getReactiveConnection().hashCommands();
+
+        Map.Entry<ByteBuffer, ByteBuffer> entry = hashCommands.hRandFieldWithValues(ByteBuffer.wrap(key)).block();
+        assertThat(entry.getKey()).isEqualTo(ByteBuffer.wrap(field));
+        assertThat(entry.getValue()).isEqualTo(ByteBuffer.wrap(value));
+        assertThat(hashCommands.hRandFieldWithValues(ByteBuffer.wrap(key), 2).collectList().block())
+                .extracting(Map.Entry::getValue).containsExactly(ByteBuffer.wrap(value));
+        assertThat(hashCommands.hRandFieldWithValues(ByteBuffer.wrap(key), -2).collectList().block()).hasSize(2);
+
+        Config config = createConfig();
+        config.setProtocol(Protocol.RESP3);
+        RedissonClient client = Redisson.create(config);
+        try {
+            ReactiveHashCommands resp3 = new RedissonConnectionFactory(client).getReactiveConnection().hashCommands();
+            assertThat(resp3.hRandFieldWithValues(ByteBuffer.wrap(key), 2).collectList().block())
+                    .extracting(Map.Entry::getValue).containsExactly(ByteBuffer.wrap(value));
+        } finally {
+            client.shutdown();
+        }
+    }
 
     private List<Long> applyExpiration(Expiration expiration, ExpirationOptions options) {
         ReactiveHashCommands.HashExpireCommand command = ReactiveHashCommands.HashExpireCommand
@@ -182,5 +236,26 @@ public class RedissonReactiveHashCommandsTest extends BaseConnectionTest {
 
         assertThat(result).containsExactly(-2L, 1L);
         assertThat(ttl(TimeUnit.MILLISECONDS)).isBetween(95_000L, 100_000L);
+    }
+
+    @Test
+    public void testHSetEx() {
+        ReactiveHashCommands hashCommands = new RedissonConnectionFactory(redisson).getReactiveConnection().hashCommands();
+        ByteBuffer keyBuffer = ByteBuffer.wrap(key);
+        byte[] other = "other".getBytes(StandardCharsets.UTF_8);
+        byte[] missing = "missing".getBytes(StandardCharsets.UTF_8);
+
+        assertThat(hashCommands.hSetEx(keyBuffer, Collections.singletonMap(ByteBuffer.wrap(field), ByteBuffer.wrap(value)),
+                HashFieldSetOption.IF_NONE_EXIST, Expiration.seconds(100)).block()).isTrue();
+        assertThat(connection.hGet(key, field)).isEqualTo(value);
+        assertThat(ttl(TimeUnit.SECONDS)).isBetween(95L, 100L);
+
+        assertThat(hashCommands.hSetEx(keyBuffer, Collections.singletonMap(ByteBuffer.wrap(field), ByteBuffer.wrap(other)),
+                HashFieldSetOption.IF_NONE_EXIST, null).block()).isFalse();
+        assertThat(connection.hGet(key, field)).isEqualTo(value);
+
+        assertThat(hashCommands.hSetEx(keyBuffer, Collections.singletonMap(ByteBuffer.wrap(missing), ByteBuffer.wrap(value)),
+                HashFieldSetOption.IF_ALL_EXIST, null).block()).isFalse();
+        assertThat(connection.hExists(key, missing)).isFalse();
     }
 }

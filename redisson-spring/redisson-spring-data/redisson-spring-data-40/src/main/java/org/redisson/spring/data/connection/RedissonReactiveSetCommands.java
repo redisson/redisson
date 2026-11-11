@@ -272,13 +272,13 @@ public class RedissonReactiveSetCommands extends RedissonBaseReactive implements
             Flux<byte[]> flux = Flux.create(new SetReactiveIterator<byte[]>() {
                 @Override
                 protected RFuture<ScanResult<Object>> scanIterator(RedisClient client, String nextIterPos) {
-                    if (command.getOptions().getPattern() == null) {
+                    if (command.getOptions().getBytePattern() == null) {
                         return executorService.readAsync(client, keyBuf, ByteArrayCodec.INSTANCE, RedisCommands.SSCAN, 
                                 keyBuf, nextIterPos, "COUNT", Optional.ofNullable(command.getOptions().getCount()).orElse(10L));
                     }
 
                     return executorService.readAsync(client, keyBuf, ByteArrayCodec.INSTANCE, RedisCommands.SSCAN, 
-                                keyBuf, nextIterPos, "MATCH", command.getOptions().getPattern(), 
+                                keyBuf, nextIterPos, "MATCH", command.getOptions().getBytePattern(), 
                                                     "COUNT", Optional.ofNullable(command.getOptions().getCount()).orElse(10L));
                 }
             });
@@ -311,7 +311,7 @@ public class RedissonReactiveSetCommands extends RedissonBaseReactive implements
             List<Object> args = new ArrayList<>();
             byte[] keyBuf = toByteArray(command.getKey());
             args.add(keyBuf);
-            args.addAll(command.getValues());
+            args.addAll(command.getValues().stream().map(v -> toByteArray(v)).collect(Collectors.toList()));
 
             Mono<List<Boolean>> m = read(keyBuf, StringCodec.INSTANCE, SMISMEMBER, args.toArray());
             return m.map(v -> new ReactiveRedisConnection.MultiValueResponse<>(command, v));
@@ -325,14 +325,13 @@ public class RedissonReactiveSetCommands extends RedissonBaseReactive implements
         return execute(commands, command -> {
 
             Assert.notNull(command.getKeys(), "Keys must not be null!");
-            Assert.notNull(command.getKey(), "Destination key must not be null!");
 
-            List<Object> args = new ArrayList<Object>(command.getKeys().size() + 1);
-            args.add(command.getKeys().size());
-            args.add(toByteArray(command.getKey()));
-            args.addAll(command.getKeys().stream().map(v -> toByteArray(v)).collect(Collectors.toList()));
+            List<byte[]> keys = command.getKeys().stream().map(v -> toByteArray(v)).collect(Collectors.toList());
+            List<Object> args = new ArrayList<Object>(keys.size() + 1);
+            args.add(keys.size());
+            args.addAll(keys);
 
-            Mono<Long> m = write((byte[])args.get(0), StringCodec.INSTANCE, SINTERCARD, args.toArray());
+            Mono<Long> m = write(keys.get(0), StringCodec.INSTANCE, SINTERCARD, args.toArray());
             return m.map(v -> new NumericResponse<>(command, v));
         });
     }
