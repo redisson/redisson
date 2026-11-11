@@ -104,6 +104,8 @@ public class RedissonBitSetTest extends RedisDockerTest {
         bitSet.setLong(0, -1L);
         assertThat(bitSet.getLong(0)).isEqualTo(-1L);
         assertThat(bitSet.get(0L, 63L, 64L)).containsExactly(true, true, false);
+        assertThat(bitSet.bitField(BitFieldArgs.create().getUnsigned(8, BitOffset.bit(0))))
+                .containsExactly(255L);
 
         assertThat(node.info(RedisNode.InfoSection.COMMANDSTATS).get("cmdstat_bitfield_ro"))
                 .isEqualTo(before);
@@ -128,6 +130,31 @@ public class RedissonBitSetTest extends RedisDockerTest {
             assertThat(client.getBitSet("readPathWrites").getUnsigned(8, 8)).isEqualTo(200L);
         } finally {
             client.shutdown();
+        }
+    }
+
+    @Test
+    public void testBitFieldWithMasterSlaveReadMode() throws Exception {
+        try (GenericContainer<?> node = createContainer()) {
+            node.start();
+
+            // master slave read mode enables BITFIELD_RO for reads, without replicas they are served by the master
+            Config config = new Config();
+            config.useReplicatedServers()
+                    .addNodeAddress("redis://" + node.getHost() + ":" + node.getFirstMappedPort())
+                    .setReadMode(ReadMode.MASTER_SLAVE);
+            RedissonClient client = Redisson.create(config);
+            try {
+                RBitSet bitSet = client.getBitSet("masterSlaveReads");
+                bitSet.setLong(0, -1L);
+
+                assertThat(bitSet.bitField(BitFieldArgs.create().getUnsigned(8, BitOffset.bit(0))))
+                        .containsExactly(255L);
+                assertThat(node.execInContainer("redis-cli", "INFO", "commandstats").getStdout())
+                        .contains("cmdstat_bitfield_ro:calls=1,");
+            } finally {
+                client.shutdown();
+            }
         }
     }
 
