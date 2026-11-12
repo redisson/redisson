@@ -62,6 +62,7 @@
                             <goal>unpack</goal>
                         </goals>
                         <configuration>
+                            <overWriteReleases>true</overWriteReleases>
                             <artifactItems>
                                 <artifactItem>
                                     <groupId>org.springframework.boot</groupId>
