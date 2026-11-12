@@ -293,7 +293,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                     }
                 }
 
-                decode(in, commandData, null, channel, skipConvertor, commandsData, 0, state);
+                decode(in, commandData, null, channel, skipConvertor, commandsData, 0, new State());
                 
                 if (commandData != null
                         && RedisCommands.EXEC.getName().equals(commandData.getCommand().getName())
@@ -523,7 +523,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                     suffix = 1;
                 }
                 CommandData<Object, Object> commandData = (CommandData<Object, Object>) commandsData.get((int) (i+suffix));
-                decode(in, commandData, respParts, channel, skipConvertor, commandsData, size, state);
+                decode(in, commandData, respParts, channel, skipConvertor, commandsData, size, new State());
                 if (commandData.getPromise().isDone() && commandData.getPromise().isCompletedExceptionally()) {
                     data.tryFailure(commandData.cause());
                 }

@@ -11,8 +11,21 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.redisson.api.*;
 import org.redisson.api.BatchOptions.ExecutionMode;
+import org.redisson.api.geo.GeoPosition;
+import org.redisson.api.geo.GeoSearchArgs;
+import org.redisson.api.geo.GeoUnit;
 import org.redisson.api.map.MapWriter;
 import org.redisson.api.redisnode.RedisNodes;
+import org.redisson.api.search.index.FieldIndex;
+import org.redisson.api.search.index.IndexInfo;
+import org.redisson.api.search.index.IndexOptions;
+import org.redisson.api.search.index.IndexType;
+import org.redisson.api.stream.AutoClaimResult;
+import org.redisson.api.stream.PendingResult;
+import org.redisson.api.stream.StreamAddArgs;
+import org.redisson.api.stream.StreamCreateGroupArgs;
+import org.redisson.api.stream.StreamMessageId;
+import org.redisson.api.stream.StreamReadGroupArgs;
 import org.redisson.client.*;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
@@ -34,6 +47,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 import static org.awaitility.Awaitility.await;
 
 public class RedissonBatchTest extends RedisDockerTest {
@@ -84,6 +98,65 @@ public class RedissonBatchTest extends RedisDockerTest {
             assertThat(secondTime.getMicroseconds()).isBetween(0, 999999);
             assertThat(result.getResponses().toArray()).containsExactly(firstTime, secondTime);
         });
+    }
+
+    @ParameterizedTest
+    @EnumSource(ExecutionMode.class)
+    public void testNestedReplies(ExecutionMode executionMode) {
+        RStream<String, String> stream = redisson.getStream("stream", StringCodec.INSTANCE);
+        stream.add(StreamAddArgs.entry("field", "value1"));
+        stream.add(StreamAddArgs.entry("field", "value2"));
+        stream.createGroup(StreamCreateGroupArgs.name("group").id(StreamMessageId.ALL));
+        RGeo<String> geo = redisson.getGeo("geo", StringCodec.INSTANCE);
+        geo.add(13.361389, 38.115556, "Palermo");
+        GeoSearchArgs search = GeoSearchArgs.from(13.36, 38.11).radius(10, GeoUnit.KILOMETERS);
+        redisson.getSearch().createIndex("index", IndexOptions.defaults().on(IndexType.HASH).prefix("doc:"),
+                FieldIndex.text("title"));
+
+        RBatch batch = redisson.createBatch(BatchOptions.defaults().executionMode(executionMode));
+        RStreamAsync<String, String> batchStream = batch.getStream("stream", StringCodec.INSTANCE);
+        RGeoAsync<String> batchGeo = batch.getGeo("geo", StringCodec.INSTANCE);
+        RFuture<Map<StreamMessageId, Map<String, String>>> range = batchStream.rangeAsync(StreamMessageId.MIN, StreamMessageId.MAX);
+        RFuture<Map<StreamMessageId, Map<String, String>>> read = batchStream.readGroupAsync("group", "consumer",
+                StreamReadGroupArgs.neverDelivered());
+        RFuture<AutoClaimResult<String, String>> claim = batchStream.autoClaimAsync("group", "other", 0,
+                TimeUnit.MILLISECONDS, StreamMessageId.MIN, 10);
+        RFuture<PendingResult> pending = batchStream.getPendingInfoAsync("group");
+        RFuture<Map<String, GeoPosition>> position = batchGeo.posAsync("Palermo");
+        RFuture<Map<String, GeoPosition>> found = batchGeo.searchWithPositionAsync(search);
+        RFuture<IndexInfo> info = batch.getSearch().infoAsync("index");
+        batch.execute();
+
+        Map<StreamMessageId, Map<String, String>> entries = stream.range(StreamMessageId.MIN, StreamMessageId.MAX);
+        assertThat(entries).hasSize(2);
+        assertThat(range.toCompletableFuture().join()).isEqualTo(entries);
+        assertThat(read.toCompletableFuture().join()).isEqualTo(entries);
+        assertThat(claim.toCompletableFuture().join().getMessages()).isEqualTo(entries);
+        assertThat(pending.toCompletableFuture().join().getConsumerNames()).containsExactly(entry("other", 2L));
+        assertThat(position.toCompletableFuture().join()).isEqualTo(geo.pos("Palermo"));
+        assertThat(found.toCompletableFuture().join()).isEqualTo(geo.searchWithPosition(search));
+        assertThat(info.toCompletableFuture().join().getName()).isEqualTo("index");
+    }
+
+    @ParameterizedTest
+    @EnumSource(ExecutionMode.class)
+    public void testAutoClaimTwice(ExecutionMode executionMode) {
+        RStream<String, String> stream = redisson.getStream("stream", StringCodec.INSTANCE);
+        StreamMessageId id = stream.add(StreamAddArgs.entry("field", "value"));
+        stream.createGroup(StreamCreateGroupArgs.name("group").id(StreamMessageId.ALL));
+        stream.readGroup("group", "consumer", StreamReadGroupArgs.neverDelivered());
+
+        RBatch batch = redisson.createBatch(BatchOptions.defaults().executionMode(executionMode));
+        RStreamAsync<String, String> batchStream = batch.getStream("stream", StringCodec.INSTANCE);
+        RFuture<AutoClaimResult<String, String>> first = batchStream.autoClaimAsync("group", "first", 0,
+                TimeUnit.MILLISECONDS, StreamMessageId.MIN, 10);
+        RFuture<AutoClaimResult<String, String>> second = batchStream.autoClaimAsync("group", "second", 0,
+                TimeUnit.MILLISECONDS, StreamMessageId.MIN, 10);
+        batch.execute();
+
+        assertThat(first.toCompletableFuture().join().getMessages()).containsOnlyKeys(id);
+        assertThat(second.toCompletableFuture().join().getMessages()).containsOnlyKeys(id);
+        assertThat(stream.getPendingInfo("group").getConsumerNames()).containsExactly(entry("second", 1L));
     }
 
     public static Iterable<Object[]> data() {
