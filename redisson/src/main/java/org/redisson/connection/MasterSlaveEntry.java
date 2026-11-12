@@ -576,6 +576,13 @@ public class MasterSlaveEntry {
         return masterConnectionPool.get(command, false);
     }
 
+    public CompletableFuture<RedisConnection> connectionWriteOp(RedisCommand<?> command, RedisClient client) {
+        if (getClient().equals(client)) {
+            return connectionWriteOp(command);
+        }
+        return connectionReadOp(command, client, false);
+    }
+
     public CompletableFuture<RedisConnection> trackedConnectionWriteOp(RedisCommand<?> command) {
         return masterConnectionPool.get(command, true);
     }
@@ -622,7 +629,7 @@ public class MasterSlaveEntry {
         if (override == null) {
             mode = config.getReadMode();
         }
-        if (mode == ReadMode.MASTER) {
+        if (mode == ReadMode.MASTER && getClient().equals(client)) {
             if (trackChanges) {
                 return trackedConnectionWriteOp(command);
             }
@@ -674,7 +681,14 @@ public class MasterSlaveEntry {
     }
 
     public void releaseWrite(RedisConnection connection) {
-        masterEntry.returnConnection(connection);
+        ClientConnectionsEntry entry = masterEntry;
+        if (!masterEntry.getClient().equals(connection.getRedisClient())) {
+            ClientConnectionsEntry slaveEntry = client2Entry.get(connection.getRedisClient());
+            if (slaveEntry != null) {
+                entry = slaveEntry;
+            }
+        }
+        entry.returnConnection(connection);
     }
 
     public void releaseRead(RedisConnection connection) {

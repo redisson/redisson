@@ -8,6 +8,9 @@ import org.redisson.api.redisnode.RedisNodes;
 import org.redisson.api.redisnode.*;
 import org.redisson.client.protocol.Time;
 import org.redisson.cluster.ClusterSlotRange;
+import org.redisson.config.Config;
+import org.redisson.config.ReadMode;
+import org.redisson.config.SubscriptionMode;
 import org.redisson.misc.RedisURI;
 
 import java.util.List;
@@ -186,6 +189,44 @@ public class RedissonRedisNodesTest extends RedisDockerTest {
 
             redisson.shutdown();
         }, 2);
+    }
+
+    @Test
+    public void testClusterCommandsRunOnTheGivenNode() {
+        testInCluster(redisson -> {
+            Config config = new Config(redisson.getConfig());
+            config.useClusterServers()
+                    .setReadMode(ReadMode.MASTER)
+                    .setSubscriptionMode(SubscriptionMode.SLAVE)
+                    .setSlaveConnectionMinimumIdleSize(1)
+                    .setSlaveConnectionPoolSize(1);
+            RedissonClient client = Redisson.create(config);
+            try {
+                for (RedissonClient r : List.of(redisson, client)) {
+                    RedisCluster nodes = r.getRedisNodes(RedisNodes.CLUSTER);
+                    for (RedisClusterMaster master : nodes.getMasters()) {
+                        master.setConfig("slowlog-max-len", "1000");
+                    }
+                    for (int i = 0; i < 10; i++) {
+                        for (RedisClusterSlave slave : nodes.getSlaves()) {
+                            slave.setConfig("slowlog-max-len", "1001");
+                            assertThat(slave.getConfig("slowlog-max-len")).containsEntry("slowlog-max-len", "1001");
+                            assertThat(slave.info(RedisNode.InfoSection.REPLICATION)).containsEntry("role", "slave");
+                        }
+                    }
+                    for (RedisClusterMaster master : nodes.getMasters()) {
+                        assertThat(master.getConfig("slowlog-max-len")).containsEntry("slowlog-max-len", "1000");
+                        assertThat(master.info(RedisNode.InfoSection.REPLICATION)).containsEntry("role", "master");
+                        master.setConfig("slowlog-max-len", "128");
+                    }
+                    for (RedisClusterSlave slave : nodes.getSlaves()) {
+                        slave.setConfig("slowlog-max-len", "128");
+                    }
+                }
+            } finally {
+                client.shutdown();
+            }
+        });
     }
 
     @Test

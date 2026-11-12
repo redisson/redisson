@@ -909,6 +909,9 @@ public class RedisExecutor<V, R> {
                 && entry.hasSlave(source.getAddr())) {
             return entry.redirectedConnectionWriteOp(command, source.getAddr());
         }
+        if (source.getRedisClient() != null) {
+            return entry.connectionWriteOp(command, source.getRedisClient());
+        }
         return entry.connectionWriteOp(command);
     }
 
