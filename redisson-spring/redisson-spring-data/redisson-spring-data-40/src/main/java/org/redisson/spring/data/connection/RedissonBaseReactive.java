@@ -64,9 +64,10 @@ abstract class RedissonBaseReactive {
     
     <T> Mono<T> execute(RedisClusterNode node, RedisCommand<T> command, Object... params) {
         RedisClient entry = getEntry(node);
-        return executorService.reactive(() -> {
+        Mono<T> f = executorService.reactive(() -> {
             return executorService.writeAsync(entry, StringCodec.INSTANCE, command, params);
         });
+        return f.onErrorMap(e -> new RedisSystemException(e.getMessage(), e));
     }
 
     RedisClient getEntry(RedisClusterNode node) {

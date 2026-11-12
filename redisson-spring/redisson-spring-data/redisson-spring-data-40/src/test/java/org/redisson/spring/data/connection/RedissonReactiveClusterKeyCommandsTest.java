@@ -76,6 +76,19 @@ public class RedissonReactiveClusterKeyCommandsTest extends RedisDockerTest {
     }
 
     @Test
+    public void testClusterGetKeysInSlotOfEveryMaster() {
+        testInClusterReactive(connection -> {
+            for (int i = 0; i < 20; i++) {
+                ByteBuffer key = ByteBuffer.wrap(("key" + i).getBytes());
+                connection.stringCommands().set(key, value).block();
+                Integer slot = connection.clusterGetSlotForKey(key).block();
+
+                assertThat(connection.clusterGetKeysInSlot(slot, 10).collectList().block()).containsExactly(key);
+            }
+        });
+    }
+
+    @Test
     public void testMUnlink() {
         testInClusterReactive(connection -> {
             connection.stringCommands().set(ByteBuffer.wrap("key{1}".getBytes()), value).block();

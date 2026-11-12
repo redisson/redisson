@@ -1,5 +1,8 @@
 package org.redisson.spring.data.connection;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import org.junit.jupiter.api.Test;
 import org.redisson.Redisson;
 import org.redisson.api.RGeo;
@@ -10,6 +13,9 @@ import org.redisson.api.geo.GeoUnit;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.config.Config;
 import org.redisson.config.Protocol;
+import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataAccessException;
+import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.data.domain.Range;
 import org.springframework.data.geo.Circle;
 import org.springframework.data.geo.Distance;
@@ -581,6 +587,57 @@ public class RedissonConnectionTest extends BaseConnectionTest {
         Long s = (Long) connection.execute("ttl", "key".getBytes());
         assertThat(s).isEqualTo(-2);
         connection.execute("flushDb");
+
+        assertThat(connection.execute("PING")).isEqualTo("PONG".getBytes());
+        assertThat(connection.execute("set", "key".getBytes(), "value".getBytes())).isEqualTo("OK".getBytes());
+        assertThat(connection.execute("TYPE", "key".getBytes())).isEqualTo("string".getBytes());
+        assertThat(connection.execute("INCRBY", "counter".getBytes(), "5".getBytes())).isEqualTo(5L);
+        assertThat(connection.execute("OBJECT", "ENCODING".getBytes(), "counter".getBytes())).isEqualTo("int".getBytes());
+        assertThat(connection.execute("RPUSH", "list".getBytes(), "a".getBytes(), "b".getBytes())).isEqualTo(2L);
+        assertThat((List<Object>) connection.execute("LRANGE", "list".getBytes(), "0".getBytes(), "-1".getBytes()))
+                .containsExactly("a".getBytes(), "b".getBytes());
+        assertThat(connection.execute("DEL", "key".getBytes(), "counter".getBytes())).isEqualTo(2L);
+        assertThat(connection.execute("GET", "key".getBytes())).isNull();
+        assertThatThrownBy(() -> connection.execute("NOSUCHCOMMAND")).isInstanceOf(DataAccessException.class);
+    }
+
+    @Test
+    public void testExecuteBinaryArguments() {
+        byte[] key = {(byte) 0xFF, (byte) 0xFE, 'k'};
+        byte[] value = {(byte) 0xFF, 0, (byte) 0x80};
+
+        assertThat(connection.execute("SET", key, value)).isEqualTo("OK".getBytes());
+        assertThat(connection.get(key)).isEqualTo(value);
+        assertThat(connection.execute("GET", key)).isEqualTo(value);
+    }
+
+    @Test
+    public void testExecuteRejectsConnectionStateCommands() {
+        assertThatThrownBy(() -> connection.execute("SELECT", "1".getBytes()))
+                .isInstanceOf(InvalidDataAccessApiUsageException.class);
+        assertThatThrownBy(() -> connection.execute("client", "reply".getBytes(), "off".getBytes()))
+                .isInstanceOf(InvalidDataAccessApiUsageException.class);
+        assertThat(connection.execute("CLIENT", "ID".getBytes())).isInstanceOf(Long.class);
+        assertThat(connection.execute("PING")).isEqualTo("PONG".getBytes());
+    }
+
+    @Test
+    public void testExecuteBlockingCommand() {
+        Logger promiseLogger = (Logger) LoggerFactory.getLogger("io.netty.util.concurrent.DefaultPromise");
+        ListAppender<ILoggingEvent> warnings = new ListAppender<>();
+        warnings.start();
+        promiseLogger.addAppender(warnings);
+        try {
+            assertTimeoutPreemptively(Duration.ofSeconds(15), () -> {
+                long start = System.nanoTime();
+                assertThat((List<Object>) connection.execute("BLPOP", "list".getBytes(), "4".getBytes())).isEmpty();
+                assertThat(System.nanoTime() - start).isGreaterThanOrEqualTo(TimeUnit.SECONDS.toNanos(4));
+                assertThat((List<Object>) connection.execute("BZMPOP", "1".getBytes(), "1".getBytes(), "zset".getBytes(), "MIN".getBytes())).isEmpty();
+            });
+        } finally {
+            promiseLogger.detachAppender(warnings);
+        }
+        assertThat(warnings.list).isEmpty();
     }
 
     @Test
@@ -693,9 +750,23 @@ public class RedissonConnectionTest extends BaseConnectionTest {
     }
 
     @Test
+    public void testIdletime() {
+        connection.set("idle".getBytes(), "value".getBytes());
+        assertThat(connection.keyCommands().idletime("idle".getBytes())).isNotNull();
+        assertThat(connection.keyCommands().idletime("missing".getBytes())).isNull();
+    }
+
+    @Test
     public void testGetClientList() {
         List<RedisClientInfo> info = connection.getClientList();
         assertThat(info.size()).isGreaterThan(10);
+        assertThat(info.get(0).getAddressPort()).isNotEmpty();
+        assertThat(redisTemplate.getClientList().get(0).getDatabaseId()).isZero();
+
+        connection.openPipeline();
+        connection.getClientList();
+        List<Object> results = connection.closePipeline();
+        assertThat(((List<RedisClientInfo>) results.get(0)).get(0).getAddressPort()).isNotEmpty();
     }
 
     @Test

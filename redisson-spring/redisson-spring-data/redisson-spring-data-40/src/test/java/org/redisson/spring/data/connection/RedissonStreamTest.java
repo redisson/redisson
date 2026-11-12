@@ -18,6 +18,7 @@ import org.springframework.data.redis.connection.RedisStreamCommands.XAddOptions
 import org.springframework.data.redis.connection.RedisStreamCommands.XClaimOptions;
 import org.springframework.data.redis.connection.RedisStreamCommands.XPendingOptions;
 import org.springframework.data.redis.connection.stream.*;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.stream.StreamListener;
 import org.springframework.data.redis.stream.StreamMessageListenerContainer;
@@ -33,6 +34,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
+import static org.assertj.core.api.Assertions.tuple;
 
 /**
  * @author Nikita Koksharov
@@ -353,6 +355,79 @@ public class RedissonStreamTest extends BaseConnectionTest {
         } finally {
             client.shutdown();
         }
+    }
+
+    @Test
+    public void testXReadSeveralStreamsOverResp3() {
+        Config config = createConfig();
+        config.setProtocol(Protocol.RESP3);
+        RedissonClient client = Redisson.create(config);
+        try {
+            RedisConnection resp3 = new RedissonConnectionFactory(client).getConnection();
+            byte[] first = "xread-resp3-a".getBytes();
+            byte[] second = "xread-resp3-b".getBytes();
+            addRecords(first, XAddOptions.none(), "1-0");
+            addRecords(second, XAddOptions.none(), "2-0");
+
+            List<ByteRecord> records = resp3.streamCommands().xRead(StreamOffset.create(first, ReadOffset.from("0-0")),
+                                                                    StreamOffset.create(second, ReadOffset.from("0-0")));
+            assertThat(records).extracting(r -> new String(r.getStream()), r -> r.getId().getValue())
+                    .containsExactly(tuple("xread-resp3-a", "1-0"), tuple("xread-resp3-b", "2-0"));
+
+            resp3.streamCommands().xGroupCreate(first, "group", ReadOffset.from("0-0"));
+            resp3.streamCommands().xGroupCreate(second, "group", ReadOffset.from("0-0"));
+            List<ByteRecord> groupRecords = resp3.streamCommands().xReadGroup(Consumer.from("group", "consumer"),
+                    StreamOffset.create(first, ReadOffset.lastConsumed()), StreamOffset.create(second, ReadOffset.lastConsumed()));
+            assertThat(groupRecords).extracting(r -> new String(r.getStream()), r -> r.getId().getValue())
+                    .containsExactly(tuple("xread-resp3-a", "1-0"), tuple("xread-resp3-b", "2-0"));
+        } finally {
+            client.shutdown();
+        }
+    }
+
+    @Test
+    public void testXReadBinaryStreamKey() {
+        byte[] key = {(byte) 0xAC, (byte) 0xED, 0, 5, 's'};
+        addRecords(key, XAddOptions.none(), "1-0");
+
+        List<ByteRecord> records = connection.streamCommands().xRead(StreamOffset.create(key, ReadOffset.from("0-0")));
+        assertThat(records).extracting(ByteRecord::getStream).containsExactly(key);
+
+        connection.streamCommands().xGroupCreate(key, "group", ReadOffset.from("0-0"));
+        List<ByteRecord> groupRecords = connection.streamCommands().xReadGroup(Consumer.from("group", "consumer"),
+                                                                    StreamOffset.create(key, ReadOffset.lastConsumed()));
+        assertThat(groupRecords).extracting(ByteRecord::getStream).containsExactly(key);
+    }
+
+    @Test
+    public void testReadWithJdkSerializedKey() {
+        RedisTemplate<Object, Object> template = new RedisTemplate<>();
+        template.setConnectionFactory(new RedissonConnectionFactory(redisson));
+        template.afterPropertiesSet();
+        template.opsForStream().add("jdk-stream", Collections.singletonMap("field", "value"));
+
+        List<MapRecord<Object, Object, Object>> records = template.opsForStream().read(StreamOffset.fromStart("jdk-stream"));
+
+        assertThat(records).extracting(MapRecord::getStream).containsExactly("jdk-stream");
+        assertThat(records.get(0).getValue()).containsEntry("field", "value");
+    }
+
+    @Test
+    public void testXInfoGroupsAndConsumersKeepAllFields() {
+        byte[] key = "xinfo-fields".getBytes();
+        readIntoGroup(key, "1-0", "2-0");
+
+        StreamInfo.XInfoGroup group = connection.streamCommands().xInfoGroups(key).get(0);
+        assertThat(group.getRaw()).containsKeys("name", "consumers", "pending", "last-delivered-id", "entries-read", "lag");
+        assertThat(group.groupName()).isEqualTo("group");
+        assertThat(group.consumerCount()).isEqualTo(1);
+        assertThat(group.pendingCount()).isEqualTo(2);
+        assertThat(group.lastDeliveredId()).isEqualTo("2-0");
+
+        StreamInfo.XInfoConsumer consumer = connection.streamCommands().xInfoConsumers(key, "group").get(0);
+        assertThat(consumer.getRaw()).containsKeys("name", "pending", "idle", "inactive");
+        assertThat(consumer.consumerName()).isEqualTo("consumer");
+        assertThat(consumer.pendingCount()).isEqualTo(2);
     }
 
     private void readIntoGroup(byte[] key, String... ids) {

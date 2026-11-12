@@ -197,24 +197,11 @@ public class RedissonStreamCommands implements RedisStreamCommands {
 
         @Override
         public StreamInfo.XInfoGroups decode(List<Object> parts, State state) {
-            List<Object> result = new ArrayList<>();
-            for (List<Object> part: (List<List<Object>>) (Object)parts) {
-                Map<String, Object> res = new HashMap<>();
-                res.put("name", part.get(1));
-                res.put("consumers", part.get(3));
-                res.put("pending", part.get(5));
-                res.put("last-delivered-id", part.get(7));
-                List<Object> list = res.entrySet().stream()
-                        .flatMap(e -> Stream.of(e.getKey(), e.getValue()))
-                        .collect(Collectors.toList());
-                result.add(list);
-            }
-
-            return StreamInfo.XInfoGroups.fromList(result);
+            return StreamInfo.XInfoGroups.fromList(parts);
         }
     }
 
-    RedisCommand<StreamInfo.XInfoGroups> XINFO_GROUPS = new RedisCommand<>("XINFO", "GROUPS",
+    static final RedisCommand<StreamInfo.XInfoGroups> XINFO_GROUPS = new RedisCommand<>("XINFO", "GROUPS",
             new ListMultiDecoder2(new XInfoGroupsReplayDecoder(),
                             new ObjectListReplayDecoder(), new ObjectListReplayDecoder())
     );
@@ -234,27 +221,19 @@ public class RedissonStreamCommands implements RedisStreamCommands {
 
         @Override
         public StreamInfo.XInfoConsumers decode(List<Object> parts, State state) {
-            List<Object> result = new ArrayList<>();
-            for (List<Object> part: (List<List<Object>>) (Object)parts) {
-                Map<String, Object> res = new HashMap<>();
-                res.put("name", part.get(1));
-                res.put("pending", part.get(3));
-                res.put("idle", part.get(5));
-                List<Object> list = res.entrySet().stream()
-                        .flatMap(e -> Stream.of(e.getKey(), e.getValue()))
-                        .collect(Collectors.toList());
-                result.add(list);
-            }
-
-            return StreamInfo.XInfoConsumers.fromList(groupName, result);
+            return StreamInfo.XInfoConsumers.fromList(groupName, parts);
         }
+    }
+
+    static RedisCommand<StreamInfo.XInfoConsumers> xInfoConsumersCommand(String groupName) {
+        return new RedisCommand<>("XINFO", "CONSUMERS",
+                        new ListMultiDecoder2(new XInfoConsumersReplayDecoder(groupName),
+                            new ObjectListReplayDecoder(), new ObjectListReplayDecoder()));
     }
 
     @Override
     public StreamInfo.XInfoConsumers xInfoConsumers(byte[] key, String groupName) {
-        return connection.write(key, StringCodec.INSTANCE, new RedisCommand<StreamInfo.XInfoConsumers>("XINFO", "CONSUMERS",
-                        new ListMultiDecoder2(new XInfoConsumersReplayDecoder(groupName),
-                            new ObjectListReplayDecoder(), new ObjectListReplayDecoder())), key, groupName);
+        return connection.write(key, StringCodec.INSTANCE, xInfoConsumersCommand(groupName), key, groupName);
     }
 
     private static class PendingMessagesSummaryReplayDecoder implements MultiDecoder<PendingMessagesSummary> {
@@ -574,10 +553,10 @@ public class RedissonStreamCommands implements RedisStreamCommands {
                     continue;
                 }
 
-                String name = (String) entries.get(0);
+                byte[] name = (byte[]) entries.get(0);
                 for (List<Object> se : streamEntries) {
                     ByteRecord record = StreamRecords.newRecord()
-                                            .in(name.getBytes())
+                                            .in(name)
                                             .withId(RecordId.of(se.get(0).toString()))
                                             .ofBytes((Map<byte[], byte[]>) se.get(1));
                     result.add(record);
@@ -600,7 +579,7 @@ public class RedissonStreamCommands implements RedisStreamCommands {
                     continue;
                 }
 
-                byte[] name = (byte[]) list.get(0);
+                byte[] name = (byte[]) list.get(i);
                 for (List<Object> se : streamEntries) {
                     ByteRecord record = StreamRecords.newRecord()
                             .in(name)
@@ -613,37 +592,37 @@ public class RedissonStreamCommands implements RedisStreamCommands {
         }
     }
 
-    private static final RedisCommand<List<ByteRecord>> XREAD = new RedisCommand<>("XREAD",
+    static final RedisCommand<List<ByteRecord>> XREAD = new RedisCommand<>("XREAD",
             new ListMultiDecoder2(
                     new ByteRecordReplayDecoder2(),
-                    new ObjectDecoder(StringCodec.INSTANCE.getValueDecoder()),
+                    new CodecDecoder(),
                     new ObjectDecoder(new StreamIdDecoder()),
                     new ObjectDecoder(new StreamIdDecoder()),
                     new MapEntriesDecoder(new StreamObjectMapReplayDecoder())));
 
-    private static final RedisCommand<List<ByteRecord>> XREAD_BLOCKING =
+    static final RedisCommand<List<ByteRecord>> XREAD_BLOCKING =
             new RedisCommand<>("XREAD", XREAD.getReplayMultiDecoder());
 
-    private static final RedisCommand<List<ByteRecord>> XREADGROUP =
+    static final RedisCommand<List<ByteRecord>> XREADGROUP =
             new RedisCommand<>("XREADGROUP", XREAD.getReplayMultiDecoder());
 
-    private static final RedisCommand<List<ByteRecord>> XREADGROUP_BLOCKING =
+    static final RedisCommand<List<ByteRecord>> XREADGROUP_BLOCKING =
             new RedisCommand<>("XREADGROUP", XREADGROUP.getReplayMultiDecoder());
 
-    private static final RedisCommand<List<ByteRecord>> XREAD_V2 = new RedisCommand<>("XREAD",
+    static final RedisCommand<List<ByteRecord>> XREAD_V2 = new RedisCommand<>("XREAD",
             new ListMultiDecoder2(
                     new ByteRecordReplayDecoder2_V2(),
                     new CodecDecoder(),
                     new ObjectDecoder(new StreamIdDecoder()),
                     new StreamObjectMapReplayDecoder()), new EmptyMapConvertor());
 
-    private static final RedisCommand<List<ByteRecord>> XREAD_BLOCKING_V2 =
+    static final RedisCommand<List<ByteRecord>> XREAD_BLOCKING_V2 =
             new RedisCommand<>("XREAD", XREAD_V2.getReplayMultiDecoder());
 
-    private static final RedisCommand<List<ByteRecord>> XREADGROUP_V2 =
+    static final RedisCommand<List<ByteRecord>> XREADGROUP_V2 =
             new RedisCommand<>("XREADGROUP", XREAD_V2.getReplayMultiDecoder());
 
-    private static final RedisCommand<List<ByteRecord>> XREADGROUP_BLOCKING_V2 =
+    static final RedisCommand<List<ByteRecord>> XREADGROUP_BLOCKING_V2 =
             new RedisCommand<>("XREADGROUP", XREADGROUP_V2.getReplayMultiDecoder());
 
 
