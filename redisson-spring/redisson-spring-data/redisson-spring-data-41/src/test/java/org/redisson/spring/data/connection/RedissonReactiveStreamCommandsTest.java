@@ -54,6 +54,51 @@ public class RedissonReactiveStreamCommandsTest extends BaseConnectionTest {
     }
 
     @Test
+    public void testXReadKeepsStreamKeysAndOrder() {
+        byte[] binary = {(byte) 0xAC, (byte) 0xED, 0, 5, 'r'};
+        byte[] first = bytes("reactive-xread-a");
+        byte[] second = bytes("reactive-xread-b");
+        add(binary, "1-0", "1");
+        add(first, "1-0", "2");
+        add(second, "1-0", "3");
+        ReactiveRedisConnection reactive = new RedissonConnectionFactory(redisson).getReactiveConnection();
+
+        List<ByteBuffer> streams = reactive.streamCommands().xRead(
+                        StreamOffset.create(ByteBuffer.wrap(binary), ReadOffset.from("0-0")),
+                        StreamOffset.create(ByteBuffer.wrap(first), ReadOffset.from("0-0")),
+                        StreamOffset.create(ByteBuffer.wrap(second), ReadOffset.from("0-0")))
+                .map(record -> record.getStream())
+                .collectList().block();
+        assertThat(streams).containsExactly(ByteBuffer.wrap(binary), ByteBuffer.wrap(first), ByteBuffer.wrap(second));
+
+        connection.streamCommands().xGroupCreate(binary, "group", ReadOffset.from("0-0"));
+        List<ByteBuffer> groupStreams = reactive.streamCommands().xReadGroup(Consumer.from("group", "consumer"),
+                        StreamOffset.create(ByteBuffer.wrap(binary), ReadOffset.lastConsumed()))
+                .map(record -> record.getStream())
+                .collectList().block();
+        assertThat(groupStreams).containsExactly(ByteBuffer.wrap(binary));
+    }
+
+    @Test
+    public void testXInfoGroupsAndConsumersKeepAllFields() {
+        byte[] key = bytes("reactive-xinfo-fields");
+        add(key, "1-0", "1");
+        connection.streamCommands().xGroupCreate(key, "group", ReadOffset.from("0-0"));
+        connection.streamCommands().xReadGroup(Consumer.from("group", "consumer"), StreamOffset.create(key, ReadOffset.lastConsumed()));
+        ReactiveRedisConnection reactive = new RedissonConnectionFactory(redisson).getReactiveConnection();
+
+        StreamInfo.XInfoGroup group = reactive.streamCommands().xInfoGroups(ByteBuffer.wrap(key)).blockFirst();
+        assertThat(group.getRaw()).containsKeys("name", "consumers", "pending", "last-delivered-id", "entries-read", "lag");
+        assertThat(group.consumerCount()).isEqualTo(1);
+        assertThat(group.lastDeliveredId()).isEqualTo("1-0");
+
+        StreamInfo.XInfoConsumer consumer = reactive.streamCommands().xInfoConsumers(ByteBuffer.wrap(key), "group").blockFirst();
+        assertThat(consumer.getRaw()).containsKeys("name", "pending", "idle", "inactive");
+        assertThat(consumer.consumerName()).isEqualTo("consumer");
+        assertThat(consumer.pendingCount()).isEqualTo(1);
+    }
+
+    @Test
     public void testXTrimWithMinId() {
         byte[] key = bytes("reactive-xtrim");
         add(key, "1-0", "1");

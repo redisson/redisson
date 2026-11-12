@@ -1,12 +1,17 @@
 package org.redisson.spring.data.connection;
 
 import net.bytebuddy.utility.RandomString;
+import org.awaitility.Awaitility;
+import org.awaitility.Durations;
 import org.junit.jupiter.api.Test;
 import org.redisson.RedisDockerTest;
 import org.redisson.api.RedissonClient;
 import org.redisson.connection.MasterSlaveConnectionManager;
+import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.connection.ClusterInfo;
+import org.springframework.data.redis.connection.ClusterSlotHashUtil;
 import org.springframework.data.redis.connection.DataType;
+import org.springframework.data.redis.connection.DefaultSortParameters;
 import org.springframework.data.redis.connection.RedisClusterNode;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisNode.NodeType;
@@ -19,6 +24,9 @@ import org.springframework.data.redis.core.types.RedisClientInfo;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -62,6 +70,20 @@ public class RedissonClusterConnectionTest extends RedisDockerTest {
                 connection.set(key, ("test" + i).getBytes());
             }
             assertThat(connection.del(keys.toArray(new byte[0][]))).isEqualTo(10);
+        });
+    }
+
+    @Test
+    public void testExecute() {
+        testInCluster(connection -> {
+            for (int i = 0; i < 10; i++) {
+                byte[] key = ("execute" + i).getBytes();
+                assertThat(connection.execute("SET", key, ("value" + i).getBytes())).isEqualTo("OK".getBytes());
+                assertThat(connection.execute("GET", key)).isEqualTo(("value" + i).getBytes());
+                Long length = connection.execute("STRLEN", key, Collections.emptyList());
+                assertThat(length).isEqualTo(6L);
+            }
+            assertThat(connection.execute("PING")).isEqualTo("PONG".getBytes());
         });
     }
 
@@ -236,6 +258,37 @@ public class RedissonClusterConnectionTest extends RedisDockerTest {
     }
 
     @Test
+    public void testClusterGetKeysInSlotOfEveryMaster() {
+        testInCluster(connection -> {
+            Set<RedisClusterNode> masters = new HashSet<>();
+            for (int i = 0; i < 20; i++) {
+                byte[] key = ("key" + i).getBytes();
+                connection.set(key, "value".getBytes());
+                masters.add(connection.clusterGetNodeForKey(key));
+
+                assertThat(connection.clusterGetKeysInSlot(connection.clusterGetSlotForKey(key), 10)).containsExactly(key);
+            }
+            assertThat(masters).hasSizeGreaterThan(1);
+        });
+    }
+
+    @Test
+    public void testClusterForgetIsSentToEveryNode() {
+        testInCluster(connection -> {
+            Iterable<RedisClusterNode> nodes = connection.clusterGetNodes();
+            for (RedisClusterNode node : nodes) {
+                connection.resetConfigStats(node);
+            }
+
+            assertThatThrownBy(() -> connection.clusterForget(new RedisClusterNode("0123456789abcdef0123456789abcdef01234567")))
+                    .hasMessageContaining("Unknown node");
+            for (RedisClusterNode node : nodes) {
+                assertThat(connection.info(node, "commandstats").getProperty("cmdstat_cluster|forget")).startsWith("calls=1,");
+            }
+        });
+    }
+
+    @Test
     public void testClusterPing() {
         testInCluster(connection -> {
             RedisClusterNode master = getFirstMaster(connection);
@@ -260,6 +313,200 @@ public class RedissonClusterConnectionTest extends RedisDockerTest {
             RedisClusterNode master = getFirstMaster(connection);
             Properties info = connection.info(master);
             assertThat(info.size()).isGreaterThan(10);
+        });
+    }
+
+    @Test
+    public void testNodeCommandsOnReplica() {
+        testInCluster(connection -> {
+            for (int i = 0; i < 30; i++) {
+                connection.set(("key" + i).getBytes(), "value".getBytes());
+            }
+            RedisClusterNode master = getFirstMaster(connection);
+            RedisClusterNode replica = connection.clusterGetReplicas(master).iterator().next();
+            Long keys = connection.dbSize(master);
+            assertThat(keys).isPositive();
+
+            assertThat(connection.info(replica, "replication").getProperty("role")).isEqualTo("slave");
+            assertThat(connection.info(master, "replication").getProperty("role")).isEqualTo("master");
+            assertThatThrownBy(() -> connection.flushDb(replica))
+                    .isInstanceOf(DataAccessException.class)
+                    .hasMessageContaining("READONLY");
+            assertThat(connection.dbSize(master)).isEqualTo(keys);
+
+            connection.setConfig(replica, "replica-priority", "42");
+            try {
+                assertThat(connection.getConfig(replica, "replica-priority").getProperty("replica-priority")).isEqualTo("42");
+                assertThat(connection.getConfig(master, "replica-priority").getProperty("replica-priority")).isEqualTo("100");
+            } finally {
+                connection.setConfig(replica, "replica-priority", "100");
+            }
+        });
+    }
+
+    @Test
+    public void testClusterReplicate() {
+        testInCluster(connection -> {
+            Map<RedisClusterNode, Collection<RedisClusterNode>> map = connection.clusterGetMasterReplicaMap();
+            Iterator<RedisClusterNode> masters = map.keySet().iterator();
+            RedisClusterNode master = masters.next();
+            RedisClusterNode otherMaster = masters.next();
+            RedisClusterNode replica = map.get(master).iterator().next();
+
+            connection.clusterReplicate(otherMaster, replica);
+            try {
+                Awaitility.await().atMost(Durations.TEN_SECONDS).untilAsserted(() -> {
+                    assertThat(connection.clusterGetReplicas(otherMaster)).extracting(RedisClusterNode::getId).contains(replica.getId());
+                });
+            } finally {
+                connection.clusterReplicate(master, replica);
+                Awaitility.await().atMost(Durations.ONE_MINUTE).untilAsserted(() -> {
+                    assertThat(connection.clusterGetReplicas(master)).extracting(RedisClusterNode::getId).contains(replica.getId());
+                    Properties replication = connection.info(replica, "replication");
+                    assertThat(replication.getProperty("master_link_status")).isEqualTo("up");
+                    assertThat(replication.getProperty("master_sync_in_progress")).isEqualTo("0");
+                });
+            }
+        });
+    }
+
+    @Test
+    public void testKeyCommandsAcrossSlots() {
+        testInCluster(connection -> {
+            byte[] key1 = "key1".getBytes();
+            byte[] key2 = "key2".getBytes();
+            byte[] key3 = "key3".getBytes();
+            assertThat(ClusterSlotHashUtil.isSameSlotForAllKeys(key1, key2, key3)).isFalse();
+
+            Map<byte[], byte[]> first = new LinkedHashMap<>();
+            first.put(key1, "value".getBytes());
+            first.put(key2, "value".getBytes());
+            assertThat(connection.mSetNX(first)).isTrue();
+            assertThat(connection.exists(key1, key2, key3)).isEqualTo(2);
+
+            Map<byte[], byte[]> second = new LinkedHashMap<>();
+            second.put(key2, "other".getBytes());
+            second.put(key3, "other".getBytes());
+            assertThat(connection.mSetNX(second)).isFalse();
+            Awaitility.await().atMost(Durations.FIVE_SECONDS).untilAsserted(() -> {
+                assertThat(connection.get(key2)).isEqualTo("value".getBytes());
+            });
+            assertThat(connection.exists(key1, key2, key3)).isEqualTo(2);
+
+            assertThat(connection.touch(key1, key2, key3)).isEqualTo(2);
+            assertThat(connection.unlink(key1, key2, key3)).isEqualTo(2);
+            assertThat(connection.exists(key1, key2, key3)).isZero();
+        });
+    }
+
+    @Test
+    public void testSetCommandsAcrossSlots() {
+        testInCluster(connection -> {
+            byte[] set1 = "set1".getBytes();
+            byte[] set2 = "set2".getBytes();
+            byte[] set3 = "set3".getBytes();
+            byte[] dest = "dest".getBytes();
+            assertThat(ClusterSlotHashUtil.isSameSlotForAllKeys(set1, set2, set3, dest)).isFalse();
+
+            connection.sAdd(set1, "a".getBytes(), "b".getBytes(), "c".getBytes());
+            connection.sAdd(set2, "b".getBytes(), "c".getBytes(), "d".getBytes());
+            connection.sAdd(set3, "c".getBytes(), "e".getBytes());
+
+            assertThat(connection.sInter(set1, set2)).containsExactlyInAnyOrder("b".getBytes(), "c".getBytes());
+            assertThat(connection.sInter(set1, set2, set3)).containsExactly("c".getBytes());
+            assertThat(connection.sInterCard(set1, set2)).isEqualTo(2);
+            assertThat(connection.sUnion(set1, set3)).containsExactlyInAnyOrder("a".getBytes(), "b".getBytes(), "c".getBytes(), "e".getBytes());
+            assertThat(connection.sDiff(set1, set2)).containsExactly("a".getBytes());
+
+            connection.sAdd(dest, "stale".getBytes());
+            assertThat(connection.sInterStore(dest, set1, set2)).isEqualTo(2);
+            assertThat(connection.sUnion(dest, set3)).containsExactlyInAnyOrder("b".getBytes(), "c".getBytes(), "e".getBytes());
+            assertThat(connection.sUnionStore(dest, set1, set3)).isEqualTo(4);
+            assertThat(connection.sUnion(dest, set3)).containsExactlyInAnyOrder("a".getBytes(), "b".getBytes(), "c".getBytes(), "e".getBytes());
+            assertThat(connection.sDiffStore(dest, set1, set2)).isEqualTo(1);
+            assertThat(connection.sUnion(dest, set3)).containsExactlyInAnyOrder("a".getBytes(), "c".getBytes(), "e".getBytes());
+            assertThat(connection.sDiffStore(dest, set2, set2)).isZero();
+            assertThat(connection.exists(dest, set1)).isEqualTo(1);
+
+            assertThat(connection.sMove(set1, set2, "a".getBytes())).isTrue();
+            assertThat(connection.sMove(set1, set2, "b".getBytes())).isTrue();
+            assertThat(connection.sMove(set1, set2, "x".getBytes())).isFalse();
+            assertThat(connection.sUnion(set1, set3)).containsExactlyInAnyOrder("c".getBytes(), "e".getBytes());
+            assertThat(connection.sUnion(set2, set3)).containsExactlyInAnyOrder("a".getBytes(), "b".getBytes(), "c".getBytes(), "d".getBytes(), "e".getBytes());
+        });
+    }
+
+    @Test
+    public void testListCommandsAcrossSlots() {
+        testInCluster(connection -> {
+            byte[] src = "src".getBytes();
+            byte[] dst = "dst".getBytes();
+            assertThat(ClusterSlotHashUtil.isSameSlotForAllKeys(src, dst)).isFalse();
+
+            connection.rPush(src, "a".getBytes(), "b".getBytes());
+            assertThat(connection.rPopLPush(src, dst)).isEqualTo("b".getBytes());
+            assertThat(connection.bRPopLPush(1, src, dst)).isEqualTo("a".getBytes());
+            assertThat(connection.rPopLPush(src, dst)).isNull();
+            assertThat(connection.bRPopLPush(1, src, dst)).isNull();
+            assertThat(connection.lPop(dst, 3)).containsExactly("a".getBytes(), "b".getBytes());
+        });
+    }
+
+    @Test
+    public void testBlockingPopsAcrossSlots() {
+        testInCluster(connection -> {
+            byte[] list1 = "list1".getBytes();
+            byte[] list2 = "list2".getBytes();
+            assertThat(ClusterSlotHashUtil.isSameSlotForAllKeys(list1, list2)).isFalse();
+
+            connection.rPush(list2, "a".getBytes(), "b".getBytes());
+            assertThat(connection.bLPop(1, list1, list2)).containsExactly(list2, "a".getBytes());
+            assertThat(connection.bRPop(1, list1, list2)).containsExactly(list2, "b".getBytes());
+
+            long start = System.nanoTime();
+            assertThat(connection.bLPop(2, list1, list2)).isNullOrEmpty();
+            assertThat(System.nanoTime() - start).isGreaterThanOrEqualTo(TimeUnit.SECONDS.toNanos(2));
+            assertThatThrownBy(() -> connection.bRPop(-1, list1, list2)).isInstanceOf(IllegalArgumentException.class);
+
+            ExecutorService executor = Executors.newSingleThreadExecutor();
+            try {
+                Future<List<byte[]>> popped = executor.submit(() -> connection.bLPop(0, list1, list2));
+                Thread.sleep(1500);
+                connection.rPush(list1, "x".getBytes(), "y".getBytes());
+
+                assertThat(popped.get(10, TimeUnit.SECONDS)).containsExactly(list1, "x".getBytes());
+                Awaitility.await().atMost(Durations.FIVE_SECONDS).untilAsserted(() -> {
+                    assertThat(connection.lRange(list1, 0, -1)).containsExactly("y".getBytes());
+                });
+                assertThat(connection.exists(list1, list2)).isEqualTo(1);
+            } catch (Exception e) {
+                throw new IllegalStateException(e);
+            } finally {
+                executor.shutdownNow();
+            }
+        });
+    }
+
+    @Test
+    public void testSortWithStoreKeyAcrossSlots() {
+        testInCluster(connection -> {
+            byte[] list = "list".getBytes();
+            byte[] sorted = "sorted".getBytes();
+            byte[] missing = "missing".getBytes();
+            assertThat(ClusterSlotHashUtil.isSameSlotForAllKeys(list, sorted, missing)).isFalse();
+
+            connection.rPush(list, "3".getBytes(), "1".getBytes(), "2".getBytes());
+            connection.rPush(sorted, "old".getBytes());
+            RedisClusterNode master = connection.clusterGetNodeForKey(list);
+            connection.resetConfigStats(master);
+            assertThat(connection.sort(list, new DefaultSortParameters(), sorted)).isEqualTo(3);
+            assertThat(connection.info(master, "commandstats").getProperty("cmdstat_sort")).startsWith("calls=1,");
+            Awaitility.await().atMost(Durations.FIVE_SECONDS).untilAsserted(() -> {
+                assertThat(connection.lRange(sorted, 0, -1)).containsExactly("1".getBytes(), "2".getBytes(), "3".getBytes());
+            });
+
+            assertThat(connection.sort(missing, new DefaultSortParameters(), sorted)).isZero();
+            assertThat(connection.exists(sorted, missing)).isZero();
         });
     }
 

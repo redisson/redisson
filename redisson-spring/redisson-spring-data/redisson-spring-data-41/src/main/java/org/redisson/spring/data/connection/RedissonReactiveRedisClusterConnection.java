@@ -15,6 +15,8 @@
  */
 package org.redisson.spring.data.connection;
 
+import org.redisson.api.RFuture;
+import org.redisson.client.RedisClient;
 import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
@@ -22,6 +24,7 @@ import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.client.protocol.decoder.ObjectDecoder;
 import org.redisson.client.protocol.decoder.ObjectListReplayDecoder;
 import org.redisson.reactive.CommandReactiveExecutor;
+import org.springframework.data.redis.RedisSystemException;
 import org.springframework.data.redis.connection.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -29,6 +32,7 @@ import reactor.util.function.Tuple2;
 
 import java.nio.ByteBuffer;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 /**
@@ -197,12 +201,23 @@ public class RedissonReactiveRedisClusterConnection extends RedissonReactiveRedi
 
     @Override
     public Mono<Void> clusterForget(RedisClusterNode redisClusterNode) {
-        return execute(redisClusterNode, RedisCommands.CLUSTER_FORGET, redisClusterNode.getId());
+        Mono<Void> f = clusterGetNodes()
+                .filter(node -> node.isConnected() && !node.getId().equals(redisClusterNode.getId()))
+                .collectList()
+                .flatMap(nodes -> executorService.reactive(() -> {
+                    List<CompletableFuture<Void>> futures = new ArrayList<>();
+                    for (RedisClusterNode node : nodes) {
+                        RFuture<Void> forget = executorService.writeAsync(getEntry(node), StringCodec.INSTANCE, RedisCommands.CLUSTER_FORGET, redisClusterNode.getId());
+                        futures.add(forget.toCompletableFuture());
+                    }
+                    return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+                }));
+        return f.onErrorMap(e -> new RedisSystemException(e.getMessage(), e));
     }
 
     @Override
     public Mono<Void> clusterMeet(RedisClusterNode redisClusterNode) {
-        return execute(redisClusterNode, RedisCommands.CLUSTER_MEET, redisClusterNode.getHost(), redisClusterNode.getPort());
+        return write(null, StringCodec.INSTANCE, RedisCommands.CLUSTER_MEET, redisClusterNode.getHost(), redisClusterNode.getPort());
     }
 
     @Override
@@ -214,14 +229,17 @@ public class RedissonReactiveRedisClusterConnection extends RedissonReactiveRedi
 
     @Override
     public Flux<ByteBuffer> clusterGetKeysInSlot(int slot, int count) {
-        Mono<List<byte[]>> f = executorService.reactive(() -> {
-            return executorService.readAsync((String) null, ByteArrayCodec.INSTANCE, CLUSTER_GETKEYSINSLOT, slot, count);
+        Mono<List<byte[]>> f = clusterGetNodeForSlot(slot).flatMap(node -> {
+            RedisClient entry = getEntry(node);
+            return executorService.reactive(() -> {
+                return executorService.writeAsync(entry, ByteArrayCodec.INSTANCE, CLUSTER_GETKEYSINSLOT, slot, count);
+            });
         });
         return f.flatMapMany(e -> Flux.fromIterable(e)).map(e -> ByteBuffer.wrap(e));
     }
 
     @Override
     public Mono<Void> clusterReplicate(RedisClusterNode redisClusterNode, RedisClusterNode slave) {
-        return execute(redisClusterNode, RedisCommands.CLUSTER_REPLICATE, slave.getId());
+        return execute(slave, RedisCommands.CLUSTER_REPLICATE, redisClusterNode.getId());
     }
 }

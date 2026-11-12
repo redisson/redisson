@@ -15,8 +15,19 @@
  */
 package org.redisson.spring.data.connection;
 
+import org.reactivestreams.Publisher;
+import org.redisson.client.codec.ByteArrayCodec;
+import org.redisson.client.codec.StringCodec;
+import org.redisson.client.protocol.RedisCommands;
 import org.redisson.reactive.CommandReactiveExecutor;
+import org.springframework.data.redis.connection.ClusterSlotHashUtil;
 import org.springframework.data.redis.connection.ReactiveClusterListCommands;
+import org.springframework.data.redis.connection.ReactiveRedisConnection.ByteBufferResponse;
+import org.springframework.util.Assert;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+import java.nio.ByteBuffer;
 
 /**
  * 
@@ -27,6 +38,27 @@ public class RedissonReactiveClusterListCommands extends RedissonReactiveListCom
 
     RedissonReactiveClusterListCommands(CommandReactiveExecutor executorService) {
         super(executorService);
+    }
+
+    @Override
+    public Flux<ByteBufferResponse<RPopLPushCommand>> rPopLPush(Publisher<RPopLPushCommand> commands) {
+        return execute(commands, command -> {
+
+            Assert.notNull(command.getKey(), "Key must not be null!");
+            Assert.notNull(command.getDestination(), "Destination key must not be null!");
+
+            if (ClusterSlotHashUtil.isSameSlotForAllKeys(command.getKey(), command.getDestination())) {
+                return super.rPopLPush(Mono.just(command));
+            }
+
+            byte[] keyBuf = toByteArray(command.getKey());
+            byte[] destinationBuf = toByteArray(command.getDestination());
+            Mono<byte[]> popped = write(keyBuf, ByteArrayCodec.INSTANCE, RedisCommands.RPOP, keyBuf);
+            return popped.flatMap(value -> {
+                Mono<Object> pushed = write(destinationBuf, StringCodec.INSTANCE, RedisCommands.LPUSH, destinationBuf, value);
+                return pushed.thenReturn(new ByteBufferResponse<>(command, ByteBuffer.wrap(value)));
+            });
+        });
     }
 
 }

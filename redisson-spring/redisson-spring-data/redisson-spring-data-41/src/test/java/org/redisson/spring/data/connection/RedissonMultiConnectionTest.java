@@ -1,7 +1,9 @@
 package org.redisson.spring.data.connection;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -10,12 +12,91 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataAccessException;
+import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.SessionCallback;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 
 public class RedissonMultiConnectionTest extends BaseConnectionTest {
+
+    @Test
+    public void testPingAndDigestKeepStringReplies() {
+        RedissonConnection connection = new RedissonConnection(redisson);
+        connection.set("key".getBytes(), "value".getBytes());
+        String digest = connection.keyCommands().digest("key".getBytes());
+
+        connection.multi();
+        connection.ping();
+        connection.keyCommands().digest("key".getBytes());
+        connection.get("key".getBytes());
+        assertThat(connection.exec()).containsExactly("PONG", digest, "value".getBytes());
+    }
+
+    @Test
+    public void testFlushAll() {
+        RedissonConnection connection = new RedissonConnection(redisson);
+        connection.set("key".getBytes(), "value".getBytes());
+
+        connection.multi();
+        connection.set("key2".getBytes(), "value".getBytes());
+        connection.serverCommands().flushAll();
+        List<Object> results = connection.exec();
+
+        assertThat(results).hasSize(2);
+        assertThat(results.get(0)).isEqualTo(true);
+        assertThat(connection.isQueueing()).isFalse();
+        assertThat(connection.keyCommands().exists("key".getBytes(), "key2".getBytes())).isZero();
+    }
+
+    @Test
+    public void testCommandRejectedWhileQueueing() {
+        RedissonConnection connection = new RedissonConnection(redisson);
+        connection.multi();
+        connection.set("key".getBytes(), "value".getBytes());
+
+        assertThatThrownBy(() -> connection.serverCommands().save())
+                .isInstanceOf(DataAccessException.class)
+                .hasMessageContaining("not allowed inside a transaction");
+        assertThatThrownBy(connection::exec)
+                .isInstanceOf(DataAccessException.class)
+                .hasMessageContaining("Transaction discarded")
+                .rootCause().hasMessageStartingWith("ERR Command not allowed inside a transaction");
+
+        assertThat(connection.isQueueing()).isFalse();
+        assertThat(connection.get("key".getBytes())).isNull();
+
+        connection.multi();
+        connection.set("key".getBytes(), "value".getBytes());
+        assertThatThrownBy(() -> connection.serverCommands().save()).isInstanceOf(DataAccessException.class);
+        connection.discard();
+        assertThat(connection.isQueueing()).isFalse();
+        assertThat(connection.get("key".getBytes())).isNull();
+    }
+
+    @Test
+    public void testExecute() {
+        RedissonConnection connection = new RedissonConnection(redisson);
+        connection.execute("MULTI");
+        assertThat(connection.isQueueing()).isTrue();
+        assertThat(connection.execute("SET", "key".getBytes(), "1".getBytes())).isNull();
+        assertThat(connection.execute("INCR", "key".getBytes())).isNull();
+
+        assertThat((List<Object>) connection.execute("EXEC")).containsExactly("OK".getBytes(), 2L);
+        assertThat(connection.isQueueing()).isFalse();
+    }
+
+    @Test
+    public void testWatchAndUnwatchInMulti() {
+        RedissonConnection connection = new RedissonConnection(redisson);
+        connection.multi();
+        connection.set("key".getBytes(), "value".getBytes());
+
+        assertThatThrownBy(() -> connection.watch("key".getBytes()))
+                .isInstanceOf(InvalidDataAccessApiUsageException.class);
+        assertTimeoutPreemptively(Duration.ofSeconds(10), connection::unwatch);
+        assertThat(connection.exec()).containsExactly(true);
+    }
 
     @Test
     public void testBroken() throws InterruptedException {

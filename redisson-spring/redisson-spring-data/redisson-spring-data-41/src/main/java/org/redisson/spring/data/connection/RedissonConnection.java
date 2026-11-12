@@ -39,6 +39,7 @@ import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.data.geo.*;
 import org.springframework.data.redis.RedisSystemException;
 import org.springframework.data.redis.connection.*;
+import org.springframework.data.redis.connection.convert.StringToRedisClientInfoConverter;
 import org.springframework.data.redis.connection.zset.Aggregate;
 import org.springframework.data.redis.connection.zset.Tuple;
 import org.springframework.data.redis.connection.zset.Weights;
@@ -51,16 +52,15 @@ import org.springframework.data.redis.domain.geo.GeoShape;
 import org.springframework.data.redis.domain.geo.RadiusShape;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
-import org.springframework.util.ReflectionUtils;
 
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -80,6 +80,7 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     CommandAsyncExecutor executorService;
     private RedissonSubscription subscription;
+    private RedisSentinelConnection sentinelConnection;
     
     public RedissonConnection(RedissonClient redisson) {
         super();
@@ -105,7 +106,12 @@ public class RedissonConnection extends AbstractRedisConnection {
     @Override
     public void close() throws DataAccessException {
         super.close();
-        
+
+        if (subscription != null) {
+            subscription.close();
+            subscription = null;
+        }
+
         if (isQueueing()) {
             CommandBatchService es = (CommandBatchService) executorService;
             if (!es.isExecuted()) {
@@ -113,6 +119,24 @@ public class RedissonConnection extends AbstractRedisConnection {
             }
         }
         closed = true;
+
+        if (sentinelConnection != null) {
+            RedisSentinelConnection connection = sentinelConnection;
+            sentinelConnection = null;
+            try {
+                connection.close();
+            } catch (IOException e) {
+                throw new RedisSystemException(e.getMessage(), e);
+            }
+        }
+    }
+
+    @Override
+    public RedisSentinelConnection getSentinelConnection() {
+        if (sentinelConnection == null || !sentinelConnection.isOpen()) {
+            sentinelConnection = RedissonConnectionFactory.connectToSentinel(redisson);
+        }
+        return sentinelConnection;
     }
     
     @Override
@@ -153,65 +177,112 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     @Override
     public void openPipeline() {
+        if (isPipelined()) {
+            return;
+        }
+
+        startBatch(ExecutionMode.IN_MEMORY);
+    }
+
+    private void startBatch(ExecutionMode mode) {
         BatchOptions options = BatchOptions.defaults()
-                .executionMode(ExecutionMode.IN_MEMORY);
-        this.executorService = executorService.createCommandBatchService(options);
+                .executionMode(mode);
+        this.executorService = redisson.getCommandExecutor().createCommandBatchService(options);
+    }
+
+    private void executePipelineSegment() {
+        boolean atomic = isPipelinedAtomic();
+        try {
+            BatchResult<?> result = ((CommandBatchService) executorService).execute();
+            filterResults(result);
+            if (atomic) {
+                pipelineResults.add(result.getResponses());
+            } else {
+                pipelineResults.addAll(result.getResponses());
+            }
+        } catch (Exception ex) {
+            if (pipelineError == null) {
+                pipelineError = ex;
+            }
+        }
+        resetIndexes();
     }
 
     @Override
     public List<Object> closePipeline() throws RedisPipelineException {
         if (isPipelined()) {
-            CommandBatchService es = (CommandBatchService) executorService;
-            try {
-                BatchResult<?> result = es.execute();
-                filterResults(result);
-                if (isPipelinedAtomic()) {
-                    return Arrays.<Object>asList((List<Object>) result.getResponses());
-                }
-                return (List<Object>) result.getResponses();
-            } catch (Exception ex) {
-                throw new RedisPipelineException(ex);
-            } finally {
-                resetConnection();
+            executePipelineSegment();
+            List<Object> results = new ArrayList<>(pipelineResults);
+            Exception error = pipelineError;
+            resetConnection();
+            if (error != null) {
+                throw new RedisPipelineException(error, results);
             }
+            return results;
         }
         return Collections.emptyList();
     }
 
+    private static final Set<String> CONNECTION_STATE_COMMANDS = new HashSet<>(Arrays.asList(
+            "AUTH", "HELLO", "MONITOR", "PSUBSCRIBE", "PUNSUBSCRIBE", "QUIT", "RESET", "SELECT",
+            "SSUBSCRIBE", "SUBSCRIBE", "SUNSUBSCRIBE", "UNSUBSCRIBE"));
+
+    private static final Set<String> CONNECTION_STATE_CLIENT_SUBCOMMANDS = new HashSet<>(Arrays.asList("REPLY", "TRACKING"));
+
+    private static final Convertor<Object> RAW_REPLY_CONVERTOR = obj -> {
+        if (obj instanceof String) {
+            return ((String) obj).getBytes(StandardCharsets.UTF_8);
+        }
+        return obj;
+    };
+
     @Override
     public Object execute(String command, byte[]... args) {
-        for (Method method : this.getClass().getDeclaredMethods()) {
-            if (method.getName().equalsIgnoreCase(command)
-                    && Modifier.isPublic(method.getModifiers())
-                        && (method.getParameterTypes().length == args.length)) {
-                try {
-                    Object t = execute(method, args);
-                    if (t instanceof String) {
-                        return ((String) t).getBytes();
-                    }
-                    return t;
-                } catch (IllegalArgumentException e) {
-                    if (isPipelined()) {
-                        throw new RedisPipelineException(e);
-                    }
+        Assert.hasText(command, "A valid command needs to be specified");
+        Assert.notNull(args, "Arguments must not be null");
 
-                    throw new InvalidDataAccessApiUsageException(e.getMessage(), e);
-                }
+        String name = command.trim().toUpperCase(Locale.ROOT);
+        switch (name) {
+            case "MULTI":
+                multi();
+                return null;
+            case "EXEC":
+                return exec();
+            case "DISCARD":
+                discard();
+                return null;
+            case "WATCH":
+                watch(args);
+                return null;
+            case "UNWATCH":
+                unwatch();
+                return null;
+            default:
+                break;
+        }
+
+        boolean clientStateCommand = "CLIENT".equals(name) && args.length > 0
+                && CONNECTION_STATE_CLIENT_SUBCOMMANDS.contains(new String(args[0], StandardCharsets.UTF_8).toUpperCase(Locale.ROOT));
+        if (CONNECTION_STATE_COMMANDS.contains(name) || clientStateCommand) {
+            throw new InvalidDataAccessApiUsageException(command + " changes the state of a pooled connection and isn't supported by execute()");
+        }
+
+        Object[] params = Arrays.copyOf(args, args.length, Object[].class);
+        if (RedisCommands.BLOCKING_COMMAND_NAMES.contains(name) && args.length > 0) {
+            int timeoutIndex = args.length - 1;
+            if ("BZMPOP".equals(name) || "BLMPOP".equals(name)) {
+                timeoutIndex = 0;
             }
+            params[timeoutIndex] = new String(args[timeoutIndex], StandardCharsets.UTF_8);
         }
-        throw new UnsupportedOperationException();
+
+        byte[] key = null;
+        if (args.length > 0) {
+            key = args[0];
+        }
+        return write(key, ByteArrayCodec.INSTANCE, new RedisCommand<Object>(name, RAW_REPLY_CONVERTOR), params);
     }
 
-    private Object execute(Method method, byte[]... args) {
-        if (method.getParameterTypes().length > 0 && method.getParameterTypes()[0] == byte[][].class) {
-            return ReflectionUtils.invokeMethod(method, this, args);
-        }
-        if (args == null) {
-            return ReflectionUtils.invokeMethod(method, this);
-        }
-        return ReflectionUtils.invokeMethod(method, this, Arrays.asList(args).toArray());
-    }
-    
     <V> V syncFuture(RFuture<V> future) {
         try {
             return executorService.get(future);
@@ -259,6 +330,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         }
 
         List<CompletableFuture<Set<byte[]>>> futures = executorService.readAllAsync(ByteArrayCodec.INSTANCE, KEYS, pattern);
+        futures.forEach(f -> indexCommand(KEYS));
         CompletableFuture<Void> ff = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
         CompletableFuture<Set<byte[]>> future = ff.thenApply(r -> {
             return futures.stream().flatMap(f -> f.getNow(new HashSet<>()).stream()).collect(Collectors.toSet());
@@ -328,6 +400,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         }
         
         RFuture<byte[]> f = executorService.readRandomAsync(ByteArrayCodec.INSTANCE, RedisCommands.RANDOM_KEY);
+        indexCommand(RedisCommands.RANDOM_KEY);
         return sync(f);
     }
 
@@ -387,7 +460,15 @@ public class RedissonConnection extends AbstractRedisConnection {
             return null;
         }
         if (isQueueing()) {
-            ((BatchPromise)f.toCompletableFuture()).getSentPromise().join();
+            try {
+                ((BatchPromise) f.toCompletableFuture()).getSentPromise().join();
+            } catch (CompletionException e) {
+                if (!(e.getCause() instanceof Exception)) {
+                    throw e;
+                }
+                queueingError = transform((Exception) e.getCause());
+                throw queueingError;
+            }
             return null;
         }
 
@@ -427,6 +508,10 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     @Override
     public List<byte[]> sort(byte[] key, SortParameters sortParams) {
+        return read(key, ByteArrayCodec.INSTANCE, RedisCommands.SORT_LIST, sortArgs(key, sortParams).toArray());
+    }
+
+    List<Object> sortArgs(byte[] key, SortParameters sortParams) {
         List<Object> params = new ArrayList<Object>();
         params.add(key);
         if (sortParams != null) {
@@ -462,48 +547,14 @@ public class RedissonConnection extends AbstractRedisConnection {
             }
         }
         
-        return read(key, ByteArrayCodec.INSTANCE, RedisCommands.SORT_LIST, params.toArray());
+        return params;
     }
     
     private static final RedisCommand<Long> SORT_TO = new RedisCommand<Long>("SORT");
 
     @Override
     public Long sort(byte[] key, SortParameters sortParams, byte[] storeKey) {
-        List<Object> params = new ArrayList<Object>();
-        params.add(key);
-        if (sortParams != null) {
-            if (sortParams.getByPattern() != null) {
-                params.add("BY");
-                params.add(sortParams.getByPattern());
-            }
-            
-            if (sortParams.getLimit() != null) {
-                params.add("LIMIT");
-                if (sortParams.getLimit().getStart() != -1) {
-                    params.add(sortParams.getLimit().getStart());
-                }
-                if (sortParams.getLimit().getCount() != -1) {
-                    params.add(sortParams.getLimit().getCount());
-                }
-            }
-            
-            if (sortParams.getGetPattern() != null) {
-                for (byte[] pattern : sortParams.getGetPattern()) {
-                    params.add("GET");
-                    params.add(pattern);
-                }
-            }
-            
-            if (sortParams.getOrder() != null) {
-                params.add(sortParams.getOrder());
-            }
-            
-            Boolean isAlpha = sortParams.isAlphabetic();
-            if (isAlpha != null && isAlpha) {
-                params.add("ALPHA");
-            }
-        }
-        
+        List<Object> params = sortArgs(key, sortParams);
         params.add("STORE");
         params.add(storeKey);
         
@@ -740,7 +791,12 @@ public class RedissonConnection extends AbstractRedisConnection {
     private final List<String> commandsToRemove = Arrays.asList("SET", 
             "RESTORE", "LTRIM", "SETEX", "SETRANGE", "FLUSHDB", "LSET", "MSET", "HMSET", "RENAME");
     private final List<Integer> indexToRemove = new ArrayList<Integer>();
+    private final List<String> commandsWithStringReply = Arrays.asList("PING", "DIGEST");
+    private final Set<Integer> stringReplyIndexes = new HashSet<Integer>();
     private int index = -1;
+    private RuntimeException queueingError;
+    private final List<Object> pipelineResults = new ArrayList<>();
+    private Exception pipelineError;
     
     <T> T write(byte[] key, Codec codec, RedisCommand<?> command, Object... params) {
         RFuture<T> f = executorService.writeAsync(key, codec, command, params);
@@ -753,6 +809,9 @@ public class RedissonConnection extends AbstractRedisConnection {
             index++;
             if (filterOkResponses && commandsToRemove.contains(command.getName())) {
                 indexToRemove.add(index);
+            }
+            if (commandsWithStringReply.contains(command.getName())) {
+                stringReplyIndexes.add(index);
             }
         }
     }
@@ -1528,28 +1587,33 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     @Override
     public void multi() {
-        if (isQueueing()) {
+        if (isQueueing() || isPipelinedAtomic()) {
             return;
         }
 
         if (isPipelined()) {
-            BatchOptions options = BatchOptions.defaults()
-                    .executionMode(ExecutionMode.IN_MEMORY_ATOMIC);
-            this.executorService = executorService.createCommandBatchService(options);
+            executePipelineSegment();
+            startBatch(ExecutionMode.IN_MEMORY_ATOMIC);
             return;
         }
-        
-        BatchOptions options = BatchOptions.defaults()
-            .executionMode(ExecutionMode.REDIS_WRITE_ATOMIC);
-        this.executorService = executorService.createCommandBatchService(options);
+
+        startBatch(ExecutionMode.REDIS_WRITE_ATOMIC);
     }
 
     @Override
     public List<Object> exec() {
         if (isPipelinedAtomic()) {
+            executePipelineSegment();
+            startBatch(ExecutionMode.IN_MEMORY);
             return null;
         }
         if (isQueueing()) {
+            RuntimeException error = queueingError;
+            if (error != null) {
+                resetConnection();
+                throw new RedisSystemException("Transaction discarded because of a previous error", error);
+            }
+
             try {
                 BatchResult<?> result = ((CommandBatchService)executorService).execute();
                 filterResults(result);
@@ -1569,30 +1633,47 @@ public class RedissonConnection extends AbstractRedisConnection {
             return;
         }
 
+        for (ListIterator<Object> iterator = (ListIterator<Object>) result.getResponses().listIterator(); iterator.hasNext();) {
+            int position = iterator.nextIndex();
+            Object object = iterator.next();
+            if (object instanceof String && !stringReplyIndexes.contains(position)) {
+                iterator.set(((String) object).getBytes());
+            }
+        }
         int t = 0;
         for (Integer index : indexToRemove) {
             index -= t;
             result.getResponses().remove((int)index);
             t++;
         }
-        for (ListIterator<Object> iterator = (ListIterator<Object>) result.getResponses().listIterator(); iterator.hasNext();) {
-            Object object = iterator.next();
-            if (object instanceof String) {
-                iterator.set(((String) object).getBytes());
-            }
-        }
+    }
+
+    private void resetIndexes() {
+        index = -1;
+        indexToRemove.clear();
+        stringReplyIndexes.clear();
     }
 
     protected void resetConnection() {
         executorService = this.redisson.getCommandExecutor();
-        index = -1;
-        indexToRemove.clear();
+        resetIndexes();
+        queueingError = null;
+        pipelineResults.clear();
+        pipelineError = null;
     }
 
     @Override
     public void discard() {
+        if (isPipelinedAtomic()) {
+            ((CommandBatchService) executorService).discard();
+            resetIndexes();
+            startBatch(ExecutionMode.IN_MEMORY);
+            return;
+        }
         if (isQueueing()) {
-            syncFuture(executorService.writeAsync(null, RedisCommands.DISCARD));
+            if (queueingError == null) {
+                syncFuture(executorService.writeAsync(null, RedisCommands.DISCARD));
+            }
             resetConnection();
         } else {
             throw new InvalidDataAccessApiUsageException("Not in transaction mode. Please invoke multi method");
@@ -1602,7 +1683,10 @@ public class RedissonConnection extends AbstractRedisConnection {
     @Override
     public void watch(byte[]... keys) {
         if (isQueueing()) {
-            throw new UnsupportedOperationException();
+            throw new InvalidDataAccessApiUsageException("WATCH is not supported when a transaction is active");
+        }
+        if (isPipelined()) {
+            throw new InvalidDataAccessApiUsageException("WATCH is not supported in a pipeline");
         }
 
         syncFuture(executorService.writeAsync(null, RedisCommands.WATCH, keys));
@@ -1610,6 +1694,10 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     @Override
     public void unwatch() {
+        if (isQueueing() || isPipelined()) {
+            return;
+        }
+
         syncFuture(executorService.writeAsync(null, RedisCommands.UNWATCH));
     }
 
@@ -1708,6 +1796,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         }
 
         List<CompletableFuture<Long>> futures = executorService.readAllAsync(RedisCommands.DBSIZE);
+        futures.forEach(future -> indexCommand(RedisCommands.DBSIZE));
         CompletableFuture<Void> f = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
         CompletableFuture<Long> s = f.thenApply(r -> futures.stream().mapToLong(v -> v.getNow(0L)).sum());
         CompletableFutureWrapper<Long> ff = new CompletableFutureWrapper<>(s);
@@ -1727,8 +1816,15 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     @Override
     public void flushAll() {
-        RFuture<Void> f = executorService.writeAllVoidAsync(RedisCommands.FLUSHALL);
-        sync(f);
+        if (isQueueing()) {
+            write(null, StringCodec.INSTANCE, RedisCommands.FLUSHALL);
+            return;
+        }
+
+        List<CompletableFuture<Void>> futures = executorService.writeAllAsync(StringCodec.INSTANCE, RedisCommands.FLUSHALL);
+        futures.forEach(future -> indexCommand(RedisCommands.FLUSHALL));
+        CompletableFuture<Void> f = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+        sync(new CompletableFutureWrapper<>(f));
     }
 
     private static final RedisStrictCommand<Properties> INFO_DEFAULT = new RedisStrictCommand<Properties>("INFO", "DEFAULT", new ObjectDecoder(new PropertiesDecoder()));
@@ -1786,9 +1882,14 @@ public class RedissonConnection extends AbstractRedisConnection {
         throw new UnsupportedOperationException();
     }
 
+    private static final StringToRedisClientInfoConverter CLIENT_INFO_CONVERTER = new StringToRedisClientInfoConverter();
+
+    private static final RedisStrictCommand<List<RedisClientInfo>> CLIENT_LIST = new RedisStrictCommand<>("CLIENT", "LIST",
+            obj -> CLIENT_INFO_CONVERTER.convert(((String) obj).split("\r\n|\n")));
+
     @Override
     public List<RedisClientInfo> getClientList() {
-        return read(null, StringCodec.INSTANCE, RedisCommands.CLIENT_LIST);
+        return read(null, StringCodec.INSTANCE, CLIENT_LIST);
     }
 
 //    @Override
@@ -2333,7 +2434,12 @@ public class RedissonConnection extends AbstractRedisConnection {
         return read(key, StringCodec.INSTANCE, OBJECT_ENCODING, key);
     }
 
-    private static final RedisStrictCommand<Duration> OBJECT_IDLETIME = new RedisStrictCommand<>("OBJECT", "IDLETIME", obj -> Duration.ofSeconds((Long)obj));
+    private static final RedisStrictCommand<Duration> OBJECT_IDLETIME = new RedisStrictCommand<>("OBJECT", "IDLETIME", obj -> {
+        if (obj == null) {
+            return null;
+        }
+        return Duration.ofSeconds((Long) obj);
+    });
 
     @Override
     public Duration idletime(byte[] key) {

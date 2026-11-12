@@ -20,10 +20,12 @@ import org.redisson.api.BatchResult;
 import org.redisson.client.RedisClient;
 import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.codec.StringCodec;
+import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandBatchService;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.reactive.CommandReactiveExecutor;
+import org.springframework.data.redis.connection.ClusterSlotHashUtil;
 import org.springframework.data.redis.connection.ReactiveClusterKeyCommands;
 import org.springframework.data.redis.connection.ReactiveRedisConnection;
 import org.springframework.data.redis.connection.ReactiveRedisConnection.BooleanResponse;
@@ -37,6 +39,7 @@ import reactor.util.function.Tuple2;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -51,6 +54,37 @@ public class RedissonReactiveClusterKeyCommands extends RedissonReactiveKeyComma
 
     public RedissonReactiveClusterKeyCommands(CommandReactiveExecutor executorService) {
         super(executorService);
+    }
+
+    private Mono<Long> sumPerKey(RedisCommand<Long> command, Collection<ByteBuffer> keys) {
+        return Flux.fromIterable(keys).concatMap(key -> {
+            byte[] keyBuf = toByteArray(key);
+            Mono<Long> count = write(keyBuf, StringCodec.INSTANCE, command, keyBuf);
+            return count;
+        }).reduce(0L, Long::sum);
+    }
+
+    @Override
+    public Mono<Long> exists(List<ByteBuffer> keys) {
+        Assert.notEmpty(keys, "Keys must not be empty!");
+
+        if (ClusterSlotHashUtil.isSameSlotForAllKeys(keys)) {
+            return super.exists(keys);
+        }
+        return sumPerKey(RedisCommands.EXISTS_LONG, keys);
+    }
+
+    @Override
+    public Flux<NumericResponse<Collection<ByteBuffer>, Long>> touch(Publisher<Collection<ByteBuffer>> keys) {
+        return execute(keys, coll -> {
+
+            Assert.notNull(coll, "Collection must not be null!");
+
+            if (ClusterSlotHashUtil.isSameSlotForAllKeys(coll)) {
+                return super.touch(Mono.just(coll));
+            }
+            return sumPerKey(RedisCommands.TOUCH_LONG, coll).map(v -> new NumericResponse<>(coll, v));
+        });
     }
 
     @Override
