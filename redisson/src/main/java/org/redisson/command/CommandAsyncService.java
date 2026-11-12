@@ -39,6 +39,7 @@ import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.NodeSource;
 import org.redisson.connection.ServiceManager;
+import org.redisson.connection.ServiceManager.BitFieldROState;
 import org.redisson.liveobject.core.RedissonObjectBuilder;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.slf4j.Logger;
@@ -726,7 +727,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     // BITFIELD read is sent as BITFIELD_RO only if it may be routed to a replica
     // and all its subcommands are GET
-    private boolean isBitFieldROApplicable(RedisCommand<?> command, Object[] params) {
+    boolean isBitFieldROApplicable(RedisCommand<?> command, Object[] params) {
         if (command.getName().equals("BITFIELD_RO")) {
             return true;
         }
@@ -765,7 +766,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                                                  Object[] params, boolean ignoreRedirect, boolean noRetry) {
         // Redis classifies BITFIELD as a write command even when it only contains GET operations.
         RedisCommand<V> writeCommand = new RedisCommand<>(command, "BITFIELD");
-        if (getServiceManager().isBitFieldRODisabled()) {
+        if (getServiceManager().getBitFieldROState() == BitFieldROState.UNAVAILABLE) {
             return async(false, source, codec, writeCommand, params, ignoreRedirect, noRetry);
         }
 
@@ -778,9 +779,10 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         });
         readPromise.whenComplete((value, error) -> {
             if (error == null) {
+                getServiceManager().markBitFieldROAvailable();
                 result.complete(value);
             } else if (isBitFieldROUnavailable(error)) {
-                getServiceManager().disableBitFieldRO();
+                getServiceManager().markBitFieldROUnavailable();
                 executeCommand(false, source, codec, writeCommand, params, ignoreRedirect, noRetry, result);
             } else {
                 result.completeExceptionally(error);
