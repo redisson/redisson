@@ -101,10 +101,16 @@ public interface RBitSetReactive extends RExpirableReactive {
     /**
      * Executes BITFIELD command with multiple subcommands
      * and returns result list in the same order.
-     * if ReadMode is Slave or one of the availability zone modes
-     * (AZ_AFFINITY, AZ_AFFINITY_SLAVES_AND_MASTER, AZ_AFFINITY_MASTER_SLAVE)
-     * And Args is only get commands,
-     * then BITFIELD_RO command will be executed
+     * <p>
+     * If {@code args} only reads (no SET or INCRBY) and ReadMode
+     * is anything but MASTER, {@code BITFIELD_RO} is executed instead,
+     * so a replica can serve the call. If the server lacks
+     * {@code BITFIELD_RO} (Redis before 6.0) or ACL rules deny it,
+     * the call is retried as {@code BITFIELD} on the master, and
+     * this Redisson instance uses {@code BITFIELD} for such reads
+     * from then on.
+     * <p>
+     * In a batch, {@code BITFIELD_RO} is executed without this fallback.
      *
      * @param args - bitfield arguments
      * @return result values
