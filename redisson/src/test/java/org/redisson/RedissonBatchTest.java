@@ -824,6 +824,34 @@ public class RedissonBatchTest extends RedisDockerTest {
 
 
     @ParameterizedTest
+    @EnumSource(value = ExecutionMode.class, names = {"REDIS_READ_ATOMIC", "REDIS_WRITE_ATOMIC"})
+    public void testAtomicBatchDiscard(ExecutionMode executionMode) {
+        Config config = createConfig();
+        config.useSingleServer()
+                .setConnectionMinimumIdleSize(1)
+                .setConnectionPoolSize(1);
+        RedissonClient client = Redisson.create(config);
+        try {
+            client.getBucket("key", StringCodec.INSTANCE).set("value");
+
+            RBatch batch = client.createBatch(BatchOptions.defaults().executionMode(executionMode));
+            batch.getBucket("key", StringCodec.INSTANCE).getAsync();
+            if (executionMode == ExecutionMode.REDIS_WRITE_ATOMIC) {
+                batch.getBucket("key", StringCodec.INSTANCE).setAsync("changed");
+            }
+            batch.discard();
+
+            assertThat(client.getBucket("key", StringCodec.INSTANCE).get()).isEqualTo("value");
+
+            RBatch next = client.createBatch(BatchOptions.defaults().executionMode(executionMode));
+            next.getBucket("key", StringCodec.INSTANCE).getAsync();
+            assertThat((List<Object>) next.execute().getResponses()).containsExactly("value");
+        } finally {
+            client.shutdown();
+        }
+    }
+
+    @ParameterizedTest
     @MethodSource("data")
     public void testDifferentCodecs(BatchOptions batchOptions) {
         RBatch b = redisson.createBatch(batchOptions);

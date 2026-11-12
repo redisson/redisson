@@ -11,6 +11,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.redisson.Redisson;
+import org.redisson.api.RedissonClient;
+import org.redisson.config.Config;
+import org.redisson.config.Protocol;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.data.redis.core.RedisOperations;
@@ -84,6 +90,138 @@ public class RedissonMultiConnectionTest extends BaseConnectionTest {
 
         assertThat((List<Object>) connection.execute("EXEC")).containsExactly("OK".getBytes(), 2L);
         assertThat(connection.isQueueing()).isFalse();
+    }
+
+    @Test
+    public void testWatchUsesTheConnectionOfTheTransaction() throws InterruptedException {
+        ExecutorService load = Executors.newFixedThreadPool(6);
+        AtomicBoolean stop = new AtomicBoolean();
+        for (int i = 0; i < 6; i++) {
+            load.submit(() -> {
+                while (!stop.get()) {
+                    redisTemplate.opsForValue().get("load");
+                }
+            });
+        }
+        RedissonConnection connection = new RedissonConnection(redisson);
+        RedissonConnection other = new RedissonConnection(redisson);
+        byte[] key = "watched".getBytes();
+        try {
+            for (int i = 0; i < 40; i++) {
+                connection.set(key, "0".getBytes());
+                connection.watch(key);
+                other.set(key, "changed".getBytes());
+                connection.multi();
+                connection.set(key, "mine".getBytes());
+                connection.exec();
+
+                assertThat(other.get(key)).isEqualTo("changed".getBytes());
+            }
+        } finally {
+            stop.set(true);
+            load.shutdown();
+            load.awaitTermination(10, TimeUnit.SECONDS);
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(Protocol.class)
+    public void testExecOfAbortedTransactionReturnsNull(Protocol protocol) {
+        Config config = createConfig();
+        config.setProtocol(protocol);
+        RedissonClient client = Redisson.create(config);
+        try {
+            RedissonConnection connection = new RedissonConnection(client);
+            RedissonConnection other = new RedissonConnection(client);
+            byte[] key = "watched".getBytes();
+
+            connection.watch(key);
+            other.set(key, "changed".getBytes());
+            connection.multi();
+            connection.set(key, "mine".getBytes());
+            assertThat(connection.exec()).isNull();
+            assertThat(other.get(key)).isEqualTo("changed".getBytes());
+
+            connection.watch(key);
+            other.set(key, "again".getBytes());
+            connection.multi();
+            assertThat(connection.exec()).isNull();
+
+            connection.watch(key);
+            connection.multi();
+            assertThat(connection.exec()).isEmpty();
+
+            connection.watch(key);
+            connection.multi();
+            connection.set(key, "mine".getBytes());
+            assertThat(connection.exec()).containsExactly(true);
+        } finally {
+            client.shutdown();
+        }
+    }
+
+    @Test
+    public void testSessionCallbackSeesAbortedTransaction() {
+        StringRedisTemplate template = new StringRedisTemplate(new RedissonConnectionFactory(redisson));
+        List<Object> results = template.execute(new SessionCallback<List<Object>>() {
+            @Override
+            public List<Object> execute(RedisOperations operations) throws DataAccessException {
+                operations.watch("watched");
+                redisTemplate.opsForValue().set("watched", "changed");
+                operations.multi();
+                operations.opsForValue().set("watched", "mine");
+                return operations.exec();
+            }
+        });
+
+        assertThat(results).isEmpty();
+        assertThat(redisTemplate.opsForValue().get("watched")).isEqualTo("changed");
+    }
+
+    @Test
+    public void testWatchedTransactionReturnsItsConnection() {
+        RedissonConnection connection = new RedissonConnection(redisson);
+        byte[] key = "watched".getBytes();
+        for (int i = 0; i < 100; i++) {
+            connection.watch(key);
+            connection.multi();
+            assertThat(connection.exec()).isEmpty();
+
+            connection.watch(key);
+            connection.multi();
+            connection.set(key, "value".getBytes());
+            connection.discard();
+
+            connection.watch(key);
+            connection.multi();
+            connection.discard();
+        }
+        assertThat(connection.get(key)).isNull();
+    }
+
+    @Test
+    public void testUnwatchAndCloseLeaveNoWatchBehind() {
+        RedissonConnection connection = new RedissonConnection(redisson);
+        RedissonConnection other = new RedissonConnection(redisson);
+        byte[] key = "watched".getBytes();
+
+        connection.watch(key);
+        connection.unwatch();
+        other.set(key, "changed".getBytes());
+        connection.multi();
+        connection.set(key, "mine".getBytes());
+        assertThat(connection.exec()).containsExactly(true);
+        assertThat(other.get(key)).isEqualTo("mine".getBytes());
+
+        connection.watch(key);
+        connection.close();
+        other.set(key, "again".getBytes());
+        for (int i = 0; i < 20; i++) {
+            RedissonConnection next = new RedissonConnection(redisson);
+            next.multi();
+            next.set(key, ("next" + i).getBytes());
+            assertThat(next.exec()).containsExactly(true);
+        }
     }
 
     @Test

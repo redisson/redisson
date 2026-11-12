@@ -273,6 +273,33 @@ public class RedissonClusterConnectionTest extends RedisDockerTest {
     }
 
     @Test
+    public void testDiscardEndsTheTransactionOnEveryMaster() {
+        testInCluster(connection -> {
+            Map<String, byte[]> keys = new HashMap<>();
+            for (int i = 0; i < 20; i++) {
+                byte[] key = ("key" + i).getBytes();
+                keys.putIfAbsent(connection.clusterGetNodeForKey(key).getId(), key);
+            }
+            assertThat(keys).hasSizeGreaterThan(1);
+
+            connection.multi();
+            for (byte[] key : keys.values()) {
+                connection.set(key, "value".getBytes());
+            }
+            connection.discard();
+
+            for (RedisClusterNode node : connection.clusterGetNodes()) {
+                if (node.isMaster()) {
+                    assertThat(connection.getClientList(node)).noneMatch(info -> info.getFlags().contains("x"));
+                }
+            }
+            for (byte[] key : keys.values()) {
+                assertThat(connection.get(key)).isNull();
+            }
+        });
+    }
+
+    @Test
     public void testClusterForgetIsSentToEveryNode() {
         testInCluster(connection -> {
             Iterable<RedisClusterNode> nodes = connection.clusterGetNodes();

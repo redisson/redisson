@@ -115,6 +115,18 @@ public class RedissonPipelineConnectionTest extends BaseConnectionTest {
     }
 
     @Test
+    public void testWatchedTransactionInPipeline() {
+        RedissonConnection connection = new RedissonConnection(redisson);
+        connection.watch("key".getBytes());
+        connection.openPipeline();
+
+        assertThatThrownBy(connection::multi).isInstanceOf(InvalidDataAccessApiUsageException.class);
+        connection.set("key".getBytes(), "value".getBytes());
+        assertThat(connection.closePipeline()).containsExactly(true);
+        connection.unwatch();
+    }
+
+    @Test
     public void testOpenPipelineTwice() {
         RedissonConnection connection = new RedissonConnection(redisson);
         connection.openPipeline();

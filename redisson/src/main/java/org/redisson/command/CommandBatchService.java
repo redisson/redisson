@@ -155,6 +155,7 @@ public class CommandBatchService extends CommandAsyncService implements BatchSer
     private final ConcurrentMap<NodeSource, Entry> commands = new ConcurrentHashMap<>();
     private Map<MasterSlaveEntry, Entry> aggregatedCommands = Collections.emptyMap();
     private final ConcurrentMap<MasterSlaveEntry, ConnectionEntry> connections = new ConcurrentHashMap<>();
+    private final AtomicBoolean aborted = new AtomicBoolean();
     
     private final BatchOptions options;
     
@@ -238,6 +239,22 @@ public class CommandBatchService extends CommandAsyncService implements BatchSer
         get(discardAsync());
     }
 
+    public void bindConnection(MasterSlaveEntry entry, RedisConnection connection) {
+        if (options.getExecutionMode() != ExecutionMode.REDIS_WRITE_ATOMIC) {
+            throw new IllegalStateException("Only a batch in REDIS_WRITE_ATOMIC mode can run on a given connection");
+        }
+
+        ConnectionEntry connectionEntry = new ConnectionEntry(new OrderedCompletableFuture<>(CompletableFuture.completedFuture(connection)));
+        connectionEntry.setCancelCallback(() -> {
+            connection.forceFastReconnectAsync().whenComplete((r, e) -> {
+                entry.releaseWrite(connection);
+            });
+        });
+        if (connections.putIfAbsent(entry, connectionEntry) != null) {
+            throw new IllegalStateException("The batch already has a connection to " + entry.getClient().getAddr());
+        }
+    }
+
     public RFuture<Void> discardAsync() {
         if (executed.get()) {
             throw new IllegalStateException("Batch already executed!");
@@ -245,7 +262,14 @@ public class CommandBatchService extends CommandAsyncService implements BatchSer
 
         executed.set(true);
         if (isRedisBasedQueue()) {
-            return writeAllVoidAsync(RedisCommands.DISCARD);
+            aggregatedCommands = new ConcurrentHashMap<>();
+            List<CompletableFuture<Void>> futures = new ArrayList<>(connections.size());
+            for (MasterSlaveEntry entry : connections.keySet()) {
+                RFuture<Void> future = async(false, new NodeSource(entry), codec, RedisCommands.DISCARD, new Object[] {}, false, false);
+                futures.add(future.toCompletableFuture());
+            }
+            CompletableFuture<Void> future = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+            return new CompletableFutureWrapper<>(future);
         }
 
         commands.values().stream()
@@ -270,6 +294,10 @@ public class CommandBatchService extends CommandAsyncService implements BatchSer
         return executed.get();
     }
 
+    public boolean isAborted() {
+        return aborted.get();
+    }
+
     public RFuture<BatchResult<?>> executeAsync() {
         if (executed.get()) {
             throw new IllegalStateException("Batch already executed!");
@@ -277,6 +305,7 @@ public class CommandBatchService extends CommandAsyncService implements BatchSer
         
         if (commands.isEmpty() && nestedServices.isEmpty()) {
             executed.set(true);
+            connections.values().forEach(c -> c.getCancelCallback().run());
             BatchResult<Object> result = new BatchResult<>(Collections.emptyList(), 0);
             return new CompletableFutureWrapper<>(result);
         }
@@ -725,7 +754,12 @@ public class CommandBatchService extends CommandAsyncService implements BatchSer
 
                             CompletionStage<Void> f = execPromise.thenCompose(r -> {
                                 BatchCommandData<?, ?> lastCommand = entry.getValue().getCommands().peekLast();
-                                result.put(entry.getKey(), r);
+                                if (!options.isSkipResult() && (r == null || r.isEmpty())) {
+                                    aborted.set(true);
+                                    result.put(entry.getKey(), Collections.emptyList());
+                                } else {
+                                    result.put(entry.getKey(), r);
+                                }
 
                                 if (RedisCommands.WAIT.getName().equals(lastCommand.getCommand().getName())) {
                                     return lastCommand.getPromise().thenApply(i -> null);

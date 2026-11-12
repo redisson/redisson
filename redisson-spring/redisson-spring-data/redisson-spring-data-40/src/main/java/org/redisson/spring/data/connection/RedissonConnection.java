@@ -16,6 +16,7 @@
 package org.redisson.spring.data.connection;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.util.Timeout;
 import org.redisson.Redisson;
 import org.redisson.api.BatchOptions;
 import org.redisson.api.BatchOptions.ExecutionMode;
@@ -23,6 +24,7 @@ import org.redisson.api.BatchResult;
 import org.redisson.api.RFuture;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.RedisClient;
+import org.redisson.client.RedisTimeoutException;
 import org.redisson.client.codec.*;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
@@ -33,6 +35,7 @@ import org.redisson.command.BatchPromise;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandBatchService;
 import org.redisson.connection.MasterSlaveEntry;
+import org.redisson.connection.NodeSource;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
@@ -81,6 +84,9 @@ public class RedissonConnection extends AbstractRedisConnection {
     CommandAsyncExecutor executorService;
     private RedissonSubscription subscription;
     private RedisSentinelConnection sentinelConnection;
+    private org.redisson.client.RedisConnection watchConnection;
+    private MasterSlaveEntry watchEntry;
+    private byte[] watchedKey;
     
     public RedissonConnection(RedissonClient redisson) {
         super();
@@ -117,6 +123,9 @@ public class RedissonConnection extends AbstractRedisConnection {
             if (!es.isExecuted()) {
                 discard();
             }
+        }
+        if (watchConnection != null) {
+            unwatch();
         }
         closed = true;
 
@@ -1640,12 +1649,20 @@ public class RedissonConnection extends AbstractRedisConnection {
         }
 
         if (isPipelined()) {
+            if (watchConnection != null) {
+                throw new InvalidDataAccessApiUsageException("A transaction in a pipeline can't run on the connection WATCH was sent on");
+            }
             executePipelineSegment();
             startBatch(ExecutionMode.IN_MEMORY_ATOMIC);
             return;
         }
 
         startBatch(ExecutionMode.REDIS_WRITE_ATOMIC);
+        if (watchConnection != null) {
+            ((CommandBatchService) executorService).bindConnection(watchEntry, watchConnection);
+            watchConnection = null;
+            watchEntry = null;
+        }
     }
 
     @Override
@@ -1662,8 +1679,19 @@ public class RedissonConnection extends AbstractRedisConnection {
                 throw new RedisSystemException("Transaction discarded because of a previous error", error);
             }
 
+            CommandBatchService es = (CommandBatchService) executorService;
+            boolean watched = watchedKey != null;
             try {
-                BatchResult<?> result = ((CommandBatchService)executorService).execute();
+                if (watched) {
+                    es.writeAsync(watchedKey, StringCodec.INSTANCE, RedisCommands.PING);
+                }
+                BatchResult<?> result = es.execute();
+                if (es.isAborted()) {
+                    return null;
+                }
+                if (watched) {
+                    result.getResponses().remove(result.getResponses().size() - 1);
+                }
                 filterResults(result);
                 return (List<Object>) result.getResponses();
             } catch (Exception ex) {
@@ -1708,6 +1736,9 @@ public class RedissonConnection extends AbstractRedisConnection {
         queueingError = null;
         pipelineResults.clear();
         pipelineError = null;
+        if (watchConnection == null) {
+            watchedKey = null;
+        }
     }
 
     @Override
@@ -1719,10 +1750,13 @@ public class RedissonConnection extends AbstractRedisConnection {
             return;
         }
         if (isQueueing()) {
-            if (queueingError == null) {
-                syncFuture(executorService.writeAsync(null, RedisCommands.DISCARD));
+            try {
+                if (queueingError == null) {
+                    syncFuture(((CommandBatchService) executorService).discardAsync());
+                }
+            } finally {
+                resetConnection();
             }
-            resetConnection();
         } else {
             throw new InvalidDataAccessApiUsageException("Not in transaction mode. Please invoke multi method");
         }
@@ -1736,17 +1770,46 @@ public class RedissonConnection extends AbstractRedisConnection {
         if (isPipelined()) {
             throw new InvalidDataAccessApiUsageException("WATCH is not supported in a pipeline");
         }
+        Assert.notEmpty(keys, "Keys must not be empty!");
 
-        syncFuture(executorService.writeAsync(null, RedisCommands.WATCH, keys));
+        int slot = executorService.getConnectionManager().calcSlot(keys[0]);
+        MasterSlaveEntry entry = executorService.getConnectionManager().getWriteEntry(slot);
+        if (entry == null) {
+            throw transform(executorService.getServiceManager().createNodeNotFoundException(new NodeSource(slot)));
+        }
+        if (watchConnection == null) {
+            CompletableFuture<org.redisson.client.RedisConnection> connectionFuture = entry.connectionWriteOp(RedisCommands.WATCH);
+            Timeout timeout = executorService.getServiceManager().newTimeout(t -> {
+                connectionFuture.completeExceptionally(new RedisTimeoutException("Unable to acquire a connection for WATCH from " + entry.getClient().getAddr()));
+            }, executorService.getServiceManager().getConfig().getTimeout(), TimeUnit.MILLISECONDS);
+            try {
+                watchConnection = syncFuture(new CompletableFutureWrapper<>(connectionFuture));
+            } finally {
+                timeout.cancel();
+            }
+            watchEntry = entry;
+            watchedKey = keys[0];
+        } else if (watchEntry != entry) {
+            throw new InvalidDataAccessApiUsageException("WATCH is supported only for keys of one master");
+        }
+
+        syncFuture(watchConnection.async(RedisCommands.WATCH, (Object[]) keys));
     }
 
     @Override
     public void unwatch() {
-        if (isQueueing() || isPipelined()) {
+        if (isQueueing() || watchConnection == null) {
             return;
         }
 
-        syncFuture(executorService.writeAsync(null, RedisCommands.UNWATCH));
+        try {
+            syncFuture(watchConnection.async(RedisCommands.UNWATCH));
+        } finally {
+            watchEntry.releaseWrite(watchConnection);
+            watchConnection = null;
+            watchEntry = null;
+            watchedKey = null;
+        }
     }
 
     @Override
