@@ -6,6 +6,8 @@ import com.github.dockerjava.api.model.ExposedPort;
 import com.github.dockerjava.api.model.Ports;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.resolver.AddressResolverGroup;
@@ -58,6 +60,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
 public class RedissonTest extends RedisDockerTest {
@@ -172,6 +175,74 @@ public class RedissonTest extends RedisDockerTest {
         b.set("1");
         assertThat(b.get()).isEqualTo("1");
         r.shutdown();
+    }
+
+    @Test
+    public void testSyncMethodInListener() throws Exception {
+        testSyncMethodInListener(createConfig());
+    }
+
+    @Test
+    public void testSyncMethodInListenerNettyExecutor() throws Exception {
+        ExecutorService executor = Executors.newCachedThreadPool();
+        try {
+            Config c = createConfig();
+            c.setNettyExecutor(executor);
+            testSyncMethodInListener(c);
+        } finally {
+            executor.shutdown();
+        }
+    }
+
+    @Test
+    public void testSyncMethodInListenerVirtualNettyExecutor() throws Exception {
+        ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
+        try {
+            Config c = createConfig();
+            c.setNettyExecutor(executor);
+            testSyncMethodInListener(c);
+        } finally {
+            executor.shutdown();
+        }
+    }
+
+    @Test
+    public void testSyncMethodInListenerEventLoopGroup() throws Exception {
+        EventLoopGroup group = new NioEventLoopGroup();
+        try {
+            Config c = createConfig();
+            c.setEventLoopGroup(group);
+            testSyncMethodInListener(c);
+        } finally {
+            group.shutdownGracefully();
+        }
+    }
+
+    private void testSyncMethodInListener(Config config) throws Exception {
+        RedissonClient r = Redisson.create(config);
+        try {
+            RBlockingQueue<String> queue = r.getBlockingQueue("queue");
+            RBucket<String> bucket = r.getBucket("bucket");
+
+            CompletableFuture<String> result = new CompletableFuture<>();
+            // The test adds the listener before the element.
+            // Thus a Netty thread always invokes the listener, and the test thread never does.
+            queue.takeAsync().whenComplete((v, e) -> {
+                try {
+                    result.complete(bucket.get());
+                } catch (Exception ex) {
+                    result.completeExceptionally(ex);
+                }
+            });
+            queue.add("1");
+
+            assertThatThrownBy(() -> result.get(5, TimeUnit.SECONDS))
+                    .isInstanceOf(ExecutionException.class)
+                    .hasCauseInstanceOf(IllegalStateException.class)
+                    .hasRootCauseMessage("Sync methods can't be invoked from async/rx/reactive listeners");
+        } finally {
+            r.shutdown();
+        }
     }
 
     @Test

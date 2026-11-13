@@ -15,8 +15,11 @@
  */
 package org.redisson.connection;
 
+import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
+import io.netty.channel.Channel;
+import io.netty.channel.EventLoop;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.MultiThreadIoEventLoopGroup;
 import io.netty.channel.epoll.EpollDatagramChannel;
@@ -52,6 +55,7 @@ import org.redisson.RedissonClientSideCaching;
 import org.redisson.RedissonShutdownException;
 import org.redisson.api.*;
 import org.redisson.cache.LRUCacheMap;
+import org.redisson.client.NettyHook;
 import org.redisson.client.RedisNodeNotFoundException;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
@@ -151,6 +155,10 @@ public final class ServiceManager {
     private volatile boolean hashImportDisabled;
 
     private volatile boolean bitFieldRODisabled;
+
+    private final Map<Thread, EventLoop> nettyThreads = new ConcurrentHashMap<>();
+
+    private final NettyHook nettyHook;
 
     private static final Map<InetSocketAddress, Set<String>> SCRIPT_SHA_CACHE = new ConcurrentHashMap<>();
 
@@ -259,6 +267,28 @@ public final class ServiceManager {
 
         this.cfg = cfg;
         this.config = config;
+
+        if (cfg.getNettyExecutor() == null && cfg.getEventLoopGroup() == null) {
+            this.nettyHook = cfg.getNettyHook();
+        } else {
+            this.nettyHook = new NettyHook() {
+                @Override
+                public void afterBoostrapInitialization(Bootstrap bootstrap) {
+                    cfg.getNettyHook().afterBoostrapInitialization(bootstrap);
+                }
+
+                @Override
+                public void afterChannelInitialization(Channel channel) {
+                    if (nettyThreads.put(Thread.currentThread(), channel.eventLoop()) == null) {
+                        // An event loop can stop its thread and use a new thread later.
+                        // Each new thread removes the threads that no longer run their event loop.
+                        // Thus the map cannot grow without limit.
+                        nettyThreads.entrySet().removeIf(entry -> !entry.getValue().inEventLoop(entry.getKey()));
+                    }
+                    cfg.getNettyHook().afterChannelInitialization(channel);
+                }
+            };
+        }
 
         if (cfg.getConnectionListener() != null) {
             this.connectionEventsHub.addListener(cfg.getConnectionListener());
@@ -383,6 +413,20 @@ public final class ServiceManager {
 
     public EventLoopGroup getGroup() {
         return group;
+    }
+
+    public NettyHook getNettyHook() {
+        return nettyHook;
+    }
+
+    public boolean isNettyThread() {
+        Thread thread = Thread.currentThread();
+        if (thread.getName().startsWith("redisson-netty")) {
+            return true;
+        }
+
+        EventLoop eventLoop = nettyThreads.get(thread);
+        return eventLoop != null && eventLoop.inEventLoop(thread);
     }
 
     public CompletableFuture<List<RedisURI>> resolveAll(RedisURI uri) {

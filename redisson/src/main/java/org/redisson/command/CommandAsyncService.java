@@ -181,7 +181,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     @Override
     public <V> V get(RFuture<V> future) {
-        if (Thread.currentThread().getName().startsWith("redisson-netty")) {
+        if (connectionManager.getServiceManager().isNettyThread()) {
             throw new IllegalStateException("Sync methods can't be invoked from async/rx/reactive listeners");
         }
 
@@ -198,7 +198,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     @Override
     public <V> V get(CompletableFuture<V> future) {
-        if (Thread.currentThread().getName().startsWith("redisson-netty")) {
+        if (connectionManager.getServiceManager().isNettyThread()) {
             throw new IllegalStateException("Sync methods can't be invoked from async/rx/reactive listeners");
         }
 

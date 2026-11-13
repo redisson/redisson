@@ -520,7 +520,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 .setPingConnectionInterval(config.getPingConnectionInterval())
                 .setUsername(Objects.toString(serviceCfg.getUsername(), config.getUsername()))
                 .setPassword(Objects.toString(serviceCfg.getPassword(), config.getPassword()))
-                .setNettyHook(serviceCfg.getNettyHook())
+                .setNettyHook(serviceManager.getNettyHook())
                 .setFailedNodeDetector(failedNodeDetector)
                 .setProtocol(serviceCfg.getProtocol())
                 .setCapabilities(serviceCfg.getValkeyCapabilities())
