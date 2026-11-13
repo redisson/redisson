@@ -19,6 +19,17 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class ConfigSupportTest {
 
     @Test
+    public void testMapCacheListenerOptimization() throws IOException {
+        Config config = Config.fromYAML("singleServerConfig:\n  address: redis://127.0.0.1:6379");
+        assertThat(config.isUseMapCacheListenerOptimization()).isTrue();
+
+        config.setUseMapCacheListenerOptimization(false);
+
+        assertThat(new Config(config).isUseMapCacheListenerOptimization()).isFalse();
+        assertThat(Config.fromYAML(config.toYAML()).isUseMapCacheListenerOptimization()).isFalse();
+    }
+
+    @Test
     public void testParsingLiteral() throws IOException {
         mockHostEnv("1.1.1.1", null);
         SingleServerConfig config = mkConfig("127.0.0.1");
