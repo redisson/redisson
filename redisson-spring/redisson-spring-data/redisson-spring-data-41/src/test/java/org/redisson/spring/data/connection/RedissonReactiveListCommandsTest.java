@@ -3,6 +3,7 @@ package org.redisson.spring.data.connection;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.redis.connection.ReactiveListCommands;
 import org.springframework.data.redis.connection.ReactiveListCommands.Direction;
+import org.springframework.data.redis.connection.ReactiveListCommands.LPosCommand;
 import org.springframework.data.redis.connection.ReactiveListCommands.PopResult;
 
 import java.nio.ByteBuffer;
@@ -35,6 +36,19 @@ public class RedissonReactiveListCommandsTest extends BaseConnectionTest {
         assertThatThrownBy(() -> listCommands.lPop(key, -1).collectList().block()).hasMessageContaining("must be positive");
         assertThatThrownBy(() -> listCommands.rPop(key, -1).collectList().block()).hasMessageContaining("must be positive");
         assertThat(connection.listCommands().lLen("pop-count".getBytes())).isEqualTo(1);
+    }
+
+    @Test
+    public void testLPosWithCount() {
+        connection.listCommands().rPush("lpos".getBytes(), "a".getBytes(), "b".getBytes(), "c".getBytes(), "b".getBytes(), "b".getBytes());
+        ByteBuffer key = ByteBuffer.wrap("lpos".getBytes());
+        ByteBuffer element = ByteBuffer.wrap("b".getBytes());
+
+        assertThat(listCommands.lPos(key, element).block()).isEqualTo(1);
+        assertThat(listCommands.lPos(LPosCommand.lPosOf(element).from(key).count(2)).collectList().block()).containsExactly(1L, 3L);
+        assertThat(listCommands.lPos(LPosCommand.lPosOf(element).from(key).rank(-1).count(0)).collectList().block()).containsExactly(4L, 3L, 1L);
+        assertThat(listCommands.lPos(LPosCommand.lPosOf(ByteBuffer.wrap("x".getBytes())).from(key).count(2)).collectList().block()).isEmpty();
+        assertThat(listCommands.lPos(key, ByteBuffer.wrap("x".getBytes())).blockOptional()).isEmpty();
     }
 
     @Test

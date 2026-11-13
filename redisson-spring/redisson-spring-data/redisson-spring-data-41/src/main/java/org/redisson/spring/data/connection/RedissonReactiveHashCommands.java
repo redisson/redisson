@@ -107,13 +107,7 @@ public class RedissonReactiveHashCommands extends RedissonBaseReactive implement
         });
     }
     
-    private static final RedisCommand<List<Object>> HMGET = new RedisCommand<List<Object>>("HMGET", (parts, state) -> {
-        List<Object> list = parts.stream().filter(e -> e != null).collect(Collectors.toList());
-        if (list.isEmpty()) {
-            return null;
-        }
-        return parts;
-    });
+    private static final RedisCommand<List<Object>> HMGET = new RedisCommand<List<Object>>("HMGET", new ObjectListReplayDecoder<>());
 
     @Override
     public Flux<MultiValueResponse<HGetCommand, ByteBuffer>> hMGet(Publisher<HGetCommand> commands) {
@@ -419,13 +413,7 @@ public class RedissonReactiveHashCommands extends RedissonBaseReactive implement
         });
     }
 
-    private static final RedisCommand<List<Object>> HGETDEL = new RedisCommand<>("HGETDEL", (parts, state) -> {
-        List<Object> list = parts.stream().filter(e -> e != null).collect(Collectors.toList());
-        if (list.isEmpty()) {
-            return null;
-        }
-        return parts;
-    });
+    private static final RedisCommand<List<Object>> HGETDEL = new RedisCommand<>("HGETDEL", new ObjectListReplayDecoder<>());
 
     @Override
     public Flux<MultiValueResponse<HGetDelCommand, ByteBuffer>> hGetDel(Publisher<HGetDelCommand> commands) {
@@ -455,13 +443,7 @@ public class RedissonReactiveHashCommands extends RedissonBaseReactive implement
         });
     }
 
-    private static final RedisCommand<List<Object>> HGETEX = new RedisCommand<>("HGETEX", (parts, state) -> {
-        List<Object> list = parts.stream().filter(e -> e != null).collect(Collectors.toList());
-        if (list.isEmpty()) {
-            return null;
-        }
-        return parts;
-    });
+    private static final RedisCommand<List<Object>> HGETEX = new RedisCommand<>("HGETEX", new ObjectListReplayDecoder<>());
 
     @Override
     public Flux<MultiValueResponse<HGetExCommand, ByteBuffer>> hGetEx(Publisher<HGetExCommand> commands) {

@@ -196,6 +196,42 @@ public class RedissonClusterConnectionTest extends RedisDockerTest {
     }
 
     @Test
+    public void testClusterGetMasterReplicaMapListsMastersWithoutReplicas() {
+        testInCluster(connection -> {
+            Map<RedisClusterNode, Collection<RedisClusterNode>> map = connection.clusterGetMasterReplicaMap();
+            Iterator<RedisClusterNode> masters = map.keySet().iterator();
+            RedisClusterNode master = masters.next();
+            RedisClusterNode otherMaster = masters.next();
+            RedisClusterNode replica = map.get(master).iterator().next();
+
+            connection.clusterReplicate(otherMaster, replica);
+            try {
+                Awaitility.await().atMost(Durations.TEN_SECONDS).untilAsserted(() -> {
+                    Map<RedisClusterNode, Collection<RedisClusterNode>> moved = connection.clusterGetMasterReplicaMap();
+                    assertThat(moved).hasSize(3);
+                    for (Map.Entry<RedisClusterNode, Collection<RedisClusterNode>> entry : moved.entrySet()) {
+                        if (entry.getKey().getId().equals(master.getId())) {
+                            assertThat(entry.getValue()).isEmpty();
+                        } else if (entry.getKey().getId().equals(otherMaster.getId())) {
+                            assertThat(entry.getValue()).hasSize(2);
+                        } else {
+                            assertThat(entry.getValue()).hasSize(1);
+                        }
+                    }
+                });
+            } finally {
+                connection.clusterReplicate(master, replica);
+                Awaitility.await().atMost(Durations.ONE_MINUTE).untilAsserted(() -> {
+                    assertThat(connection.clusterGetReplicas(master)).extracting(RedisClusterNode::getId).contains(replica.getId());
+                    Properties replication = connection.info(replica, "replication");
+                    assertThat(replication.getProperty("master_link_status")).isEqualTo("up");
+                    assertThat(replication.getProperty("master_sync_in_progress")).isEqualTo("0");
+                });
+            }
+        });
+    }
+
+    @Test
     public void testClusterGetSlotForKey() {
         testInCluster(connection -> {
             Integer slot = connection.clusterGetSlotForKey("123".getBytes());
@@ -321,6 +357,20 @@ public class RedissonClusterConnectionTest extends RedisDockerTest {
             RedisClusterNode master = getFirstMaster(connection);
             String res = connection.ping(master);
             assertThat(res).isEqualTo("PONG");
+        });
+    }
+
+    @Test
+    public void testNodeUnknownToCluster() {
+        testInCluster(connection -> {
+            RedisClusterNode unknown = new RedisClusterNode("127.0.0.1", 1234);
+            assertThatThrownBy(() -> connection.ping(unknown))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Node 127.0.0.1:1234 is unknown to cluster");
+            assertThatThrownBy(() -> connection.dbSize(unknown))
+                    .isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> connection.keys(unknown, "*".getBytes()))
+                    .isInstanceOf(IllegalArgumentException.class);
         });
     }
 
@@ -556,6 +606,47 @@ public class RedissonClusterConnectionTest extends RedisDockerTest {
     }
 
     @Test
+    public void testServerCommandsOnEveryMaster() {
+        testInCluster(connection -> {
+            List<RedisClusterNode> masters = new ArrayList<>(connection.clusterGetMasterReplicaMap().keySet());
+            assertThat(masters).hasSize(3);
+
+            Properties info = connection.info();
+            Properties server = connection.info("server");
+            Properties config = connection.getConfig("slowlog-max-len");
+            for (RedisClusterNode master : masters) {
+                assertThat(info.getProperty(master.asString() + ".redis_version")).isNotNull();
+                assertThat(info.getProperty(master.asString() + ".role")).isEqualTo("master");
+                assertThat(server.getProperty(master.asString() + ".tcp_port")).isNotNull();
+                assertThat(server.getProperty(master.asString() + ".role")).isNull();
+                assertThat(config.getProperty(master.asString() + ".slowlog-max-len")).isNotNull();
+            }
+            assertThat(config).hasSize(3);
+
+            String slowlogMaxLen = connection.getConfig(masters.get(0), "slowlog-max-len").getProperty("slowlog-max-len");
+            try {
+                connection.setConfig("slowlog-max-len", "127");
+                for (RedisClusterNode master : masters) {
+                    assertThat(connection.getConfig(master, "slowlog-max-len").getProperty("slowlog-max-len")).isEqualTo("127");
+                }
+            } finally {
+                connection.setConfig("slowlog-max-len", slowlogMaxLen);
+            }
+
+            for (RedisClusterNode master : masters) {
+                connection.dbSize(master);
+                assertThat(connection.info(master, "commandstats").getProperty("cmdstat_dbsize")).isNotNull();
+            }
+            connection.resetConfigStats();
+            for (RedisClusterNode master : masters) {
+                assertThat(connection.info(master, "commandstats").getProperty("cmdstat_dbsize")).isNull();
+            }
+
+            assertThatThrownBy(connection::rewriteConfig).hasMessageContaining("without a config file");
+        });
+    }
+
+    @Test
     public void testResetConfigStats() {
         testInCluster(connection -> {
             RedisClusterNode master = getFirstMaster(connection);
@@ -598,6 +689,31 @@ public class RedissonClusterConnectionTest extends RedisDockerTest {
             assertThat(connection.dbSize(node)).isEqualTo(1);
             connection.flushAll(node, FlushOption.ASYNC);
             assertThat(connection.dbSize(node)).isZero();
+        });
+    }
+
+    @Test
+    public void testFlushDbAndFlushAllWithOptionFlushEveryMaster() {
+        testInCluster(connection -> {
+            List<byte[]> keys = new ArrayList<>();
+            for (int i = 0; i < 30; i++) {
+                keys.add(("flush-key" + i).getBytes());
+            }
+            Set<String> masters = new HashSet<>();
+            for (byte[] key : keys) {
+                masters.add(connection.clusterGetNodeForKey(key).getId());
+            }
+            assertThat(masters).hasSize(3);
+
+            for (FlushOption option : FlushOption.values()) {
+                keys.forEach(key -> connection.set(key, "value".getBytes()));
+                connection.flushDb(option);
+                assertThat(connection.exists(keys.toArray(new byte[0][]))).isZero();
+
+                keys.forEach(key -> connection.set(key, "value".getBytes()));
+                connection.flushAll(option);
+                assertThat(connection.exists(keys.toArray(new byte[0][]))).isZero();
+            }
         });
     }
 

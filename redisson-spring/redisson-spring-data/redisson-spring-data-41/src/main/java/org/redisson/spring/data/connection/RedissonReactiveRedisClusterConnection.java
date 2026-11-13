@@ -120,7 +120,7 @@ public class RedissonReactiveRedisClusterConnection extends RedissonReactiveRedi
     public Flux<RedisClusterNode> clusterGetReplicas(RedisClusterNode redisClusterNode) {
         Flux<RedisClusterNode> nodes = clusterGetNodes();
         Flux<RedisClusterNode> master = nodes.filter(e -> e.getHost().equals(redisClusterNode.getHost()) && e.getPort().equals(redisClusterNode.getPort()));
-        return master.flatMap(node -> clusterGetNodes().filter(e -> Objects.equals(e.getMasterId(), node.getMasterId())));
+        return master.flatMap(node -> clusterGetNodes().filter(e -> Objects.equals(e.getMasterId(), node.getId())));
     }
 
     @Override
@@ -128,7 +128,7 @@ public class RedissonReactiveRedisClusterConnection extends RedissonReactiveRedi
         Flux<RedisClusterNode> nodes = clusterGetNodes();
         Flux<RedisClusterNode> masters = nodes.filter(e -> e.isMaster());
         return masters.flatMap(master -> Mono.just(master).zipWith(clusterGetNodes()
-                                        .filter(e -> Objects.equals(e.getMasterId(), master.getMasterId()))
+                                        .filter(e -> Objects.equals(e.getMasterId(), master.getId()))
                                         .collect(Collectors.toSet())))
                       .collect(Collectors.toMap(Tuple2::getT1, Tuple2::getT2));
     }

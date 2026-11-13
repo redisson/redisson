@@ -16,6 +16,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +39,25 @@ public class RedissonReactiveHashCommandsTest extends BaseConnectionTest {
 
         assertThat(hashCommands.hScan(ByteBuffer.wrap(key), ScanOptions.scanOptions().match(new byte[] {(byte) 0xFF, '*'}).build())
                 .map(Map.Entry::getKey).collectList().block()).containsExactly(ByteBuffer.wrap(binaryField));
+    }
+
+    @Test
+    public void testFieldsWithoutValues() {
+        ReactiveHashCommands hashCommands = new RedissonConnectionFactory(redisson).getReactiveConnection().hashCommands();
+        ByteBuffer hash = ByteBuffer.wrap(key);
+        ByteBuffer missing = ByteBuffer.wrap("missing".getBytes(StandardCharsets.UTF_8));
+
+        assertThat(hashCommands.hMGet(hash, Collections.singletonList(missing)).block()).containsExactly((ByteBuffer) null);
+        assertThat(hashCommands.hGetDel(hash, Collections.singletonList(missing)).block()).containsExactly((ByteBuffer) null);
+        assertThat(hashCommands.hGetEx(hash, Expiration.seconds(100), Collections.singletonList(missing)).block()).containsExactly((ByteBuffer) null);
+
+        connection.hashCommands().hSet(key, field, value);
+        List<ByteBuffer> fields = Arrays.asList(ByteBuffer.wrap(field), missing);
+        assertThat(hashCommands.hMGet(hash, fields).block()).containsExactly(ByteBuffer.wrap(value), null);
+        assertThat(hashCommands.hGetEx(hash, Expiration.seconds(100), Arrays.asList(missing, ByteBuffer.wrap(field))).block())
+                .containsExactly(null, ByteBuffer.wrap(value));
+        assertThat(hashCommands.hGetDel(hash, fields).block()).containsExactly(ByteBuffer.wrap(value), null);
+        assertThat(hashCommands.hMGet(hash, fields).block()).containsExactly(null, null);
     }
 
     @Test

@@ -4,10 +4,15 @@ import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
+import org.springframework.data.redis.connection.ReturnType;
+import org.springframework.data.redis.connection.DefaultStringRedisConnection;
+import org.springframework.data.redis.connection.DefaultStringTuple;
 
 public class RedissonPipelineConnectionTest extends BaseConnectionTest {
 
@@ -58,6 +63,86 @@ public class RedissonPipelineConnectionTest extends BaseConnectionTest {
     }
 
     @Test
+    public void testLPos() {
+        RedissonConnection connection = new RedissonConnection(redisson);
+        byte[] key = "lpos".getBytes();
+        connection.rPush(key, "a".getBytes(), "b".getBytes(), "c".getBytes(), "b".getBytes());
+
+        assertThat(connection.lPos(key, "b".getBytes(), null, null)).containsExactly(1L);
+        assertThat(connection.lPos(key, "x".getBytes(), null, null)).isEmpty();
+
+        connection.openPipeline();
+        assertThat(connection.lPos(key, "b".getBytes(), null, null)).isNull();
+        connection.lPos(key, "b".getBytes(), -1, null);
+        connection.lPos(key, "x".getBytes(), null, null);
+        connection.lPos(key, "b".getBytes(), null, 0);
+        connection.lPos(key, "x".getBytes(), null, 2);
+        assertThat(connection.closePipeline()).containsExactly(Collections.singletonList(1L), Collections.singletonList(3L),
+                Collections.emptyList(), Arrays.asList(1L, 3L), Collections.emptyList());
+    }
+
+    @Test
+    public void testEval() {
+        RedissonConnection connection = new RedissonConnection(redisson);
+        String sha = connection.scriptingCommands().scriptLoad("return {KEYS[1],ARGV[1]}".getBytes());
+
+        connection.openPipeline();
+        assertThat((Object) connection.scriptingCommands().eval("return 1".getBytes(), ReturnType.INTEGER, 0)).isNull();
+        connection.closePipeline();
+
+        connection.openPipeline();
+        evalEveryReturnType(connection, sha);
+        assertEveryReturnType(connection.closePipeline());
+
+        connection.openPipeline();
+        connection.multi();
+        evalEveryReturnType(connection, sha);
+        connection.exec();
+        List<Object> pipelined = connection.closePipeline();
+
+        assertThat(pipelined).hasSize(1);
+        assertEveryReturnType((List<Object>) pipelined.get(0));
+
+        connection.scriptingCommands().scriptFlush();
+        connection.openPipeline();
+        connection.scriptingCommands().eval("return KEYS[1]".getBytes(), ReturnType.VALUE, 1, "foo".getBytes());
+        connection.multi();
+        connection.scriptingCommands().eval("return ARGV[1]".getBytes(), ReturnType.VALUE, 0, "bar".getBytes());
+        connection.exec();
+        pipelined = connection.closePipeline();
+
+        assertThat(pipelined).hasSize(2);
+        assertThat(pipelined.get(0)).isEqualTo("foo".getBytes());
+        assertThat((List<Object>) pipelined.get(1)).containsExactly("bar".getBytes());
+
+        new RedissonConnectionFactory(redisson).getReactiveConnection().scriptingCommands().scriptFlush().block();
+        connection.openPipeline();
+        connection.scriptingCommands().eval("return KEYS[1]".getBytes(), ReturnType.VALUE, 1, "foo".getBytes());
+        assertThat(connection.closePipeline()).containsExactly("foo".getBytes());
+    }
+
+    private static void evalEveryReturnType(RedissonConnection connection, String sha) {
+        connection.scriptingCommands().eval("return KEYS[1]".getBytes(), ReturnType.VALUE, 1, "foo".getBytes());
+        connection.scriptingCommands().eval("return redis.call('set','abc','ghk')".getBytes(), ReturnType.STATUS, 0);
+        connection.scriptingCommands().eval("return 10".getBytes(), ReturnType.INTEGER, 0);
+        connection.scriptingCommands().eval("return false".getBytes(), ReturnType.BOOLEAN, 0);
+        connection.scriptingCommands().eval("return {1,2}".getBytes(), ReturnType.MULTI, 0);
+        connection.scriptingCommands().evalSha(sha, ReturnType.MULTI, 1, "key1".getBytes(), "arg1".getBytes());
+        connection.scriptingCommands().evalSha(sha.getBytes(), ReturnType.MULTI, 1, "key2".getBytes(), "arg2".getBytes());
+    }
+
+    private static void assertEveryReturnType(List<Object> results) {
+        assertThat(results).hasSize(7);
+        assertThat(results.get(0)).isEqualTo("foo".getBytes());
+        assertThat(results.get(1)).isEqualTo("OK");
+        assertThat(results.get(2)).isEqualTo(10L);
+        assertThat(results.get(3)).isEqualTo(false);
+        assertThat((List<Object>) results.get(4)).containsExactly(1L, 2L);
+        assertThat((List<Object>) results.get(5)).containsExactly("key1".getBytes(), "arg1".getBytes());
+        assertThat((List<Object>) results.get(6)).containsExactly("key2".getBytes(), "arg2".getBytes());
+    }
+
+    @Test
     public void testTransactionInPipeline() {
         RedissonConnection connection = new RedissonConnection(redisson);
         connection.openPipeline();
@@ -74,6 +159,35 @@ public class RedissonPipelineConnectionTest extends BaseConnectionTest {
         assertThat(results.get(0)).isEqualTo(true);
         assertThat((List<Object>) results.get(1)).containsExactly(true, "2".getBytes());
         assertThat(results.get(2)).isEqualTo("1".getBytes());
+    }
+
+    @Test
+    public void testTransactionInPipelineIsQueueing() {
+        RedissonConnection connection = new RedissonConnection(redisson);
+        DefaultStringRedisConnection stringConnection = new DefaultStringRedisConnection(connection);
+        stringConnection.setDeserializePipelineAndTxResults(true);
+        stringConnection.openPipeline();
+        stringConnection.set("a", "1");
+        assertThat(connection.isQueueing()).isFalse();
+
+        stringConnection.multi();
+        assertThat(connection.isQueueing()).isTrue();
+        assertThat(connection.isPipelined()).isTrue();
+        stringConnection.set("b", "2");
+        stringConnection.get("b");
+        stringConnection.zAdd("z", 1, "m");
+        stringConnection.zRangeWithScores("z", 0, -1);
+        assertThat(stringConnection.exec()).isNull();
+        assertThat(connection.isQueueing()).isFalse();
+
+        stringConnection.get("a");
+        List<Object> results = stringConnection.closePipeline();
+
+        assertThat(results).hasSize(3);
+        assertThat(results.get(0)).isEqualTo(true);
+        assertThat((List<Object>) results.get(1)).containsExactly(true, "2", true,
+                Collections.singleton(new DefaultStringTuple("m".getBytes(), "m", 1.0)));
+        assertThat(results.get(2)).isEqualTo("1");
     }
 
     @Test

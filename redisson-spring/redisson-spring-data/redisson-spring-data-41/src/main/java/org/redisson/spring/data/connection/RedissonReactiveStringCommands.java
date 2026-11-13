@@ -132,7 +132,7 @@ public class RedissonReactiveStringCommands extends RedissonBaseReactive impleme
             return m.map(v -> {
                 List<ByteBuffer> values = v.stream().map(array -> {
                     if (array == null) {
-                        return ByteBuffer.allocate(0);
+                        return null;
                     }
                     return ByteBuffer.wrap(array);
                 }).collect(Collectors.toList());

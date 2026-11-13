@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 import java.time.Duration;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -19,6 +20,7 @@ import org.redisson.config.Config;
 import org.redisson.config.Protocol;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
+import org.springframework.data.redis.connection.ReturnType;
 import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.SessionCallback;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -37,6 +39,46 @@ public class RedissonMultiConnectionTest extends BaseConnectionTest {
         connection.keyCommands().digest("key".getBytes());
         connection.get("key".getBytes());
         assertThat(connection.exec()).containsExactly("PONG", digest, "value".getBytes());
+    }
+
+    @Test
+    public void testLPos() {
+        RedissonConnection connection = new RedissonConnection(redisson);
+        byte[] key = "lpos".getBytes();
+        connection.rPush(key, "a".getBytes(), "b".getBytes(), "c".getBytes(), "b".getBytes());
+
+        connection.multi();
+        assertThat(connection.lPos(key, "b".getBytes(), null, null)).isNull();
+        connection.lPos(key, "x".getBytes(), null, null);
+        connection.lPos(key, "b".getBytes(), 2, 1);
+        connection.lPos(key, "x".getBytes(), null, 0);
+        assertThat(connection.exec()).containsExactly(Collections.singletonList(1L), Collections.emptyList(),
+                Collections.singletonList(3L), Collections.emptyList());
+    }
+
+    @Test
+    public void testEval() {
+        RedissonConnection connection = new RedissonConnection(redisson);
+        String sha = connection.scriptingCommands().scriptLoad("return {KEYS[1],ARGV[1]}".getBytes());
+
+        connection.multi();
+        connection.scriptingCommands().eval("return KEYS[1]".getBytes(), ReturnType.VALUE, 1, "foo".getBytes());
+        connection.scriptingCommands().eval("return redis.call('set','abc','ghk')".getBytes(), ReturnType.STATUS, 0);
+        connection.scriptingCommands().eval("return 10".getBytes(), ReturnType.INTEGER, 0);
+        connection.scriptingCommands().eval("return false".getBytes(), ReturnType.BOOLEAN, 0);
+        connection.scriptingCommands().eval("return {1,2}".getBytes(), ReturnType.MULTI, 0);
+        connection.scriptingCommands().evalSha(sha, ReturnType.MULTI, 1, "key1".getBytes(), "arg1".getBytes());
+        connection.scriptingCommands().evalSha(sha.getBytes(), ReturnType.MULTI, 1, "key2".getBytes(), "arg2".getBytes());
+        List<Object> results = connection.exec();
+
+        assertThat(results).hasSize(7);
+        assertThat(results.get(0)).isEqualTo("foo".getBytes());
+        assertThat(results.get(1)).isEqualTo("OK");
+        assertThat(results.get(2)).isEqualTo(10L);
+        assertThat(results.get(3)).isEqualTo(false);
+        assertThat((List<Object>) results.get(4)).containsExactly(1L, 2L);
+        assertThat((List<Object>) results.get(5)).containsExactly("key1".getBytes(), "arg1".getBytes());
+        assertThat((List<Object>) results.get(6)).containsExactly("key2".getBytes(), "arg2".getBytes());
     }
 
     @Test

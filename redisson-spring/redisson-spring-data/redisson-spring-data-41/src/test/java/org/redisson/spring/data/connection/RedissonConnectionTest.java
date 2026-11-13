@@ -1051,6 +1051,21 @@ public class RedissonConnectionTest extends BaseConnectionTest {
     }
 
     @Test
+    public void testGeoDistOfMissingMember() {
+        byte[] key = "geo-dist-missing".getBytes();
+        connection.geoCommands().geoAdd(key, new Point(13.361389, 38.115556), "Palermo".getBytes());
+
+        assertThat(connection.geoCommands().geoDist(key, "Palermo".getBytes(), "Catania".getBytes())).isNull();
+        assertThat(connection.geoCommands().geoDist("geo-dist-none".getBytes(), "Palermo".getBytes(), "Catania".getBytes(), Metrics.KILOMETERS)).isNull();
+
+        RedissonConnection pipelined = new RedissonConnection(redisson);
+        pipelined.openPipeline();
+        pipelined.geoCommands().geoDist(key, "Palermo".getBytes(), "Catania".getBytes());
+        pipelined.geoCommands().geoDist(key, "Palermo".getBytes(), "Palermo".getBytes(), Metrics.KILOMETERS);
+        assertThat(pipelined.closePipeline()).containsExactly(null, new Distance(0, Metrics.KILOMETERS));
+    }
+
+    @Test
     public void testGeoRadiusWithAny() {
         byte[] key = "geo-any".getBytes();
         connection.geoCommands().geoAdd(key, new Point(13.361389, 38.115556), "Palermo".getBytes());

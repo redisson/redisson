@@ -54,6 +54,7 @@ import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -110,27 +111,21 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
     public Map<RedisClusterNode, Collection<RedisClusterNode>> clusterGetMasterReplicaMap() {
         Iterable<RedisClusterNode> res = clusterGetNodes();
         
-        Set<RedisClusterNode> masters = new HashSet<>();
-        for (Iterator<RedisClusterNode> iterator = res.iterator(); iterator.hasNext();) {
-            RedisClusterNode redisClusterNode = iterator.next();
-            if (redisClusterNode.isMaster()) {
-                masters.add(redisClusterNode);
-            }
-        }
-        
         Map<RedisClusterNode, Collection<RedisClusterNode>> result = new HashMap<RedisClusterNode, Collection<RedisClusterNode>>();
         for (Iterator<RedisClusterNode> iterator = res.iterator(); iterator.hasNext();) {
             RedisClusterNode redisClusterNode = iterator.next();
+            if (redisClusterNode.isMaster()) {
+                result.put(redisClusterNode, new ArrayList<RedisClusterNode>());
+            }
+        }
+        
+        for (Iterator<RedisClusterNode> iterator = res.iterator(); iterator.hasNext();) {
+            RedisClusterNode redisClusterNode = iterator.next();
             
-            for (RedisClusterNode masterNode : masters) {
+            for (Entry<RedisClusterNode, Collection<RedisClusterNode>> master : result.entrySet()) {
                 if (redisClusterNode.getMasterId() != null 
-                        && redisClusterNode.getMasterId().equals(masterNode.getId())) {
-                    Collection<RedisClusterNode> list = result.get(masterNode);
-                    if (list == null) {
-                        list = new ArrayList<RedisClusterNode>();
-                        result.put(masterNode, list);
-                    }
-                    list.add(redisClusterNode);
+                        && redisClusterNode.getMasterId().equals(master.getKey().getId())) {
+                    master.getValue().add(redisClusterNode);
                 }
             }
         }
@@ -299,7 +294,13 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
     protected RedisClient getEntry(RedisClusterNode node) {
         InetSocketAddress addr = new InetSocketAddress(node.getHost(), node.getPort());
         MasterSlaveEntry entry = executorService.getConnectionManager().getEntry(addr);
-        ClientConnectionsEntry e = entry.getEntry(addr);
+        ClientConnectionsEntry e = null;
+        if (entry != null) {
+            e = entry.getEntry(addr);
+        }
+        if (e == null) {
+            throw new IllegalArgumentException("Node " + node + " is unknown to cluster");
+        }
         return e.getClient();
     }
 
@@ -341,6 +342,41 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
         Properties result = new Properties();
         for (Entry<String, String> entry : info.entrySet()) {
             result.setProperty(entry.getKey(), entry.getValue());
+        }
+        return result;
+    }
+
+    @Override
+    public Properties info() {
+        if (isQueueing() || isPipelined()) {
+            return super.info();
+        }
+        return collectFromMasters(master -> info(master, "default"));
+    }
+
+    @Override
+    public Properties info(String section) {
+        if (isQueueing() || isPipelined()) {
+            return super.info(section);
+        }
+        return collectFromMasters(master -> info(master, section));
+    }
+
+    private List<RedisClusterNode> getMasters() {
+        List<RedisClusterNode> masters = new ArrayList<>();
+        for (MasterSlaveEntry entry : executorService.getConnectionManager().getEntrySet()) {
+            InetSocketAddress addr = entry.getClient().getAddr();
+            masters.add(new RedisClusterNode(addr.getHostString(), addr.getPort()));
+        }
+        return masters;
+    }
+
+    private Properties collectFromMasters(Function<RedisClusterNode, Properties> command) {
+        Properties result = new Properties();
+        for (RedisClusterNode master : getMasters()) {
+            for (Entry<Object, Object> entry : command.apply(master).entrySet()) {
+                result.put(master.asString() + "." + entry.getKey(), entry.getValue());
+            }
         }
         return result;
     }
@@ -397,6 +433,47 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
     @Override
     public void rewriteConfig(RedisClusterNode node) {
         execute(node, RedisCommands.CONFIG_REWRITE);
+    }
+
+    @Override
+    public Properties getConfig(String pattern) {
+        if (isQueueing() || isPipelined()) {
+            return super.getConfig(pattern);
+        }
+        return collectFromMasters(master -> getConfig(master, pattern));
+    }
+
+    @Override
+    public void setConfig(String param, String value) {
+        if (isQueueing() || isPipelined()) {
+            super.setConfig(param, value);
+            return;
+        }
+        for (RedisClusterNode master : getMasters()) {
+            setConfig(master, param, value);
+        }
+    }
+
+    @Override
+    public void resetConfigStats() {
+        if (isQueueing() || isPipelined()) {
+            super.resetConfigStats();
+            return;
+        }
+        for (RedisClusterNode master : getMasters()) {
+            resetConfigStats(master);
+        }
+    }
+
+    @Override
+    public void rewriteConfig() {
+        if (isQueueing() || isPipelined()) {
+            super.rewriteConfig();
+            return;
+        }
+        for (RedisClusterNode master : getMasters()) {
+            rewriteConfig(master);
+        }
     }
 
     @Override
@@ -493,7 +570,7 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
                 ttlInMilliseconds = 0;
             }
 
-            restore(newName, ttlInMilliseconds, value);
+            restore(newName, ttlInMilliseconds, value, true);
             del(oldName);
         }
     }
