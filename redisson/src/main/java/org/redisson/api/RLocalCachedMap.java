@@ -40,6 +40,13 @@ public interface RLocalCachedMap<K, V> extends RMap<K, V> {
     void preloadCache();
 
     /**
+     * Reload the cached entries. Not guaranteed to load ALL values, but statistically
+     * will reload approximately all (all if no concurrent mutating activity).
+     * Entries are loaded in a batch with size of 10 elements.
+     */
+    void reloadCache();
+
+    /**
      * Pre-warm the cached entries. Not guaranteed to load ALL values, but statistically
      * will preload approximately all (all if no concurrent mutating activity)
      * Entries are loaded in a batch. Batch size is defined by <code>count</code> param.
