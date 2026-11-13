@@ -432,6 +432,22 @@ public class RedissonBatchTest extends RedisDockerTest {
         assertThat(randomKeyInBatch).isEqualTo(randomKey);
     }
 
+    @ParameterizedTest
+    @EnumSource(value = ExecutionMode.class, names = {"IN_MEMORY", "IN_MEMORY_ATOMIC"})
+    public void testBatchReadRandomAfterWrite(ExecutionMode executionMode) {
+        String value = RandomString.make(512 * 1024);
+        for (int i = 0; i < 20; i++) {
+            redisson.getKeys().flushall();
+
+            RBatch batch = redisson.createBatch(BatchOptions.defaults().executionMode(executionMode));
+            batch.getBucket("key").setAsync(value);
+            RFuture<String> randomKey = batch.getKeys().randomKeyAsync();
+            batch.execute();
+
+            assertThat(randomKey.toCompletableFuture().join()).isEqualTo("key");
+        }
+    }
+
 	public RFuture<BatchResult<?>> executeBatch(RedissonClient client, BatchOptions batchOptions) {
 		RBatch batch = client.createBatch(batchOptions);
 		for (int i = 0; i < 100000; i++) {

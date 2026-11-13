@@ -613,15 +613,19 @@ public class CommandBatchService extends CommandAsyncService implements BatchSer
             }
 
             RedisClient client = e.getKey().getRedisClient();
+            boolean readOnlyMode = e.getValue().isReadOnlyMode();
             if (client != null) {
                 ClientConnectionsEntry ce = entry.getEntry(client);
                 if (ce == null || ce.isFreezed()) {
                     client = null;
+                } else if (client.equals(entry.getClient())) {
+                    client = null;
+                    readOnlyMode = false;
                 }
             }
 
             Entry ee = result.computeIfAbsent(new NodeSource(entry, client), k -> new Entry());
-            if (!e.getValue().isReadOnlyMode()) {
+            if (!readOnlyMode) {
                 ee.setReadOnlyMode(false);
             }
             ee.getCommands().addAll(e.getValue().getCommands());

@@ -22,10 +22,12 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.misc.CompletableFutureWrapper;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -181,11 +183,24 @@ public class RedissonScript implements RScript {
 
     @Override
     public RFuture<Void> scriptFlushAsync() {
-        return commandExecutor.writeAllVoidAsync(RedisCommands.SCRIPT_FLUSH);
+        RFuture<Void> f = commandExecutor.writeAllVoidAsync(RedisCommands.SCRIPT_FLUSH);
+        CompletionStage<Void> s = f.whenComplete((r, e) -> {
+            for (MasterSlaveEntry entry : commandExecutor.getConnectionManager().getEntrySet()) {
+                commandExecutor.getServiceManager().clearScriptCache(entry.getClient().getAddr());
+            }
+        });
+        return new CompletableFutureWrapper<>(s);
     }
 
     public RFuture<Void> scriptFlushAsync(String key) {
-        return commandExecutor.writeAsync(key, RedisCommands.SCRIPT_FLUSH);
+        RFuture<Void> f = commandExecutor.writeAsync(key, RedisCommands.SCRIPT_FLUSH);
+        CompletionStage<Void> s = f.whenComplete((r, e) -> {
+            MasterSlaveEntry entry = commandExecutor.getConnectionManager().getEntry(key);
+            if (entry != null) {
+                commandExecutor.getServiceManager().clearScriptCache(entry.getClient().getAddr());
+            }
+        });
+        return new CompletableFutureWrapper<>(s);
     }
 
     @Override

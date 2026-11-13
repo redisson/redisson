@@ -2,6 +2,8 @@ package org.redisson;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.redisson.api.*;
 import org.redisson.api.RScript.Mode;
 import org.redisson.client.RedisNoScriptException;
@@ -162,6 +164,19 @@ public class RedissonScriptTest extends RedisDockerTest {
         Assertions.assertThrows(RedisNoScriptException.class, () -> {
             redisson.getScript().evalSha(Mode.READ_ONLY, "282297a0228f48cd3fc6a55de6316f31422f5d17", RScript.ReturnType.VALUE, Collections.emptyList());
         });
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = BatchOptions.ExecutionMode.class, names = {"IN_MEMORY", "IN_MEMORY_ATOMIC"})
+    public void testBatchEvalAfterScriptFlush(BatchOptions.ExecutionMode executionMode) {
+        for (int i = 0; i < 2; i++) {
+            RBatch batch = redisson.createBatch(BatchOptions.defaults().executionMode(executionMode));
+            RFuture<String> result = batch.getScript(StringCodec.INSTANCE).evalAsync(Mode.READ_WRITE, "return 'flushed'", RScript.ReturnType.VALUE);
+            batch.execute();
+            assertThat(result.toCompletableFuture().join()).isEqualTo("flushed");
+
+            redisson.getScript().scriptFlush();
+        }
     }
 
     @Test

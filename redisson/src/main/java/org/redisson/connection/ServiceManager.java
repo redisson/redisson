@@ -656,6 +656,10 @@ public final class ServiceManager {
         }
     }
 
+    public void clearScriptCache(InetSocketAddress addr) {
+        SCRIPT_SHA_CACHE.remove(addr);
+    }
+
     public String calcSHA(String script) {
         return SHA_CACHE.computeIfAbsent(script, k -> {
             try {
