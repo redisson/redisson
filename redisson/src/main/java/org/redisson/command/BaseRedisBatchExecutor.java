@@ -99,6 +99,7 @@ public class BaseRedisBatchExecutor<V, R> extends RedisExecutor<V, R> {
 
         Codec codecToUse = getCodec(codec);
         BatchCommandData<V, R> commandData = new BatchCommandData<>(mainPromise, codecToUse, command, batchParams, index.incrementAndGet());
+        commandData.setNoRetry(noRetry);
         entry.addCommand(commandData);
     }
         
