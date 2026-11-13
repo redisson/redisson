@@ -49,6 +49,8 @@ public class RedissonExecutorRemoteService extends RedissonRemoteService {
     private String tasksCounterName;
     private String statusName;
     private String tasksRetryIntervalName;
+    private String tasksRetryAttemptsName;
+    private String tasksRetryCounterName;
     private String terminationTopicName;
     private String schedulerQueueName;
     private long taskTimeout;
@@ -66,13 +68,18 @@ public class RedissonExecutorRemoteService extends RedissonRemoteService {
     protected RFuture<RemoteServiceRequest> getTask(String requestId, RMap<String, RemoteServiceRequest> tasks) {
         return commandExecutor.evalWriteNoRetryAsync(((RedissonObject) tasks).getRawName(), codec, RedisCommands.EVAL_OBJECT,
                   "local value = redis.call('zscore', KEYS[2], ARGV[1]); " +
-                  "if (value ~= false and tonumber(value) < tonumber(ARGV[2])) then "
+                  "local retryAttempts = redis.call('get', KEYS[8]); " +
+                  "local retries = redis.call('hget', KEYS[9], ARGV[1]); " +
+                  // remove the task if it has expired or has used all retry attempts
+                  "if (value ~= false and tonumber(value) < tonumber(ARGV[2])) "
+                        + "or (retryAttempts ~= false and retries ~= false and tonumber(retries) > tonumber(retryAttempts)) then "
                     + "redis.call('zrem', KEYS[2], ARGV[1]); "
 
                     + "redis.call('zrem', KEYS[7], ARGV[1]); "
                     + "redis.call('zrem', KEYS[7], 'ff:' .. ARGV[1]);"
 
                     + "redis.call('hdel', KEYS[1], ARGV[1]); "
+                    + "redis.call('hdel', KEYS[9], ARGV[1]); "
                     + "if redis.call('decr', KEYS[3]) == 0 then "
                         + "redis.call('del', KEYS[3]);"
                         + "if redis.call('get', KEYS[4]) == ARGV[3] then "
@@ -86,7 +93,7 @@ public class RedissonExecutorRemoteService extends RedissonRemoteService {
                 + "end;"
                 + "return redis.call('hget', KEYS[1], ARGV[1]); ",
         Arrays.asList(((RedissonObject) tasks).getRawName(), tasksExpirationTimeName, tasksCounterName, statusName,
-                            tasksRetryIntervalName, terminationTopicName, schedulerQueueName),
+                            tasksRetryIntervalName, terminationTopicName, schedulerQueueName, tasksRetryAttemptsName, tasksRetryCounterName),
         requestId, System.currentTimeMillis(), RedissonExecutorService.SHUTDOWN_STATE, RedissonExecutorService.TERMINATED_STATE);
     }
 
@@ -182,6 +189,14 @@ public class RedissonExecutorRemoteService extends RedissonRemoteService {
 
     public void setTasksRetryIntervalName(String tasksRetryIntervalName) {
         this.tasksRetryIntervalName = tasksRetryIntervalName;
+    }
+
+    public void setTasksRetryAttemptsName(String tasksRetryAttemptsName) {
+        this.tasksRetryAttemptsName = tasksRetryAttemptsName;
+    }
+
+    public void setTasksRetryCounterName(String tasksRetryCounterName) {
+        this.tasksRetryCounterName = tasksRetryCounterName;
     }
 
     public void setTerminationTopicName(String terminationTopicName) {

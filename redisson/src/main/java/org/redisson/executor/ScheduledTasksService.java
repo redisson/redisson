@@ -80,6 +80,10 @@ public class ScheduledTasksService extends TasksService {
                         + "redis.call('zadd', KEYS[7], ARGV[5], ARGV[2]);"
                     + "end; "
 
+                    + "if tonumber(ARGV[6]) > 0 then "
+                        + "redis.call('set', KEYS[9], ARGV[6]);"
+                    + "end; "
+
                     + "redis.call('zadd', KEYS[3], ARGV[1], ARGV[2]);"
                     + "redis.call('hset', KEYS[5], ARGV[2], ARGV[3]);"
                     + "redis.call('del', KEYS[8]);"
@@ -96,8 +100,9 @@ public class ScheduledTasksService extends TasksService {
         
         RFuture<Boolean> f = commandExecutor.evalWriteNoRetryAsync(tasksCounterName, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN, script,
                 Arrays.asList(tasksCounterName, statusName, schedulerQueueName,
-                        schedulerChannelName, tasksName, tasksRetryIntervalName, tasksExpirationTimeName, taskName),
-                params.getStartTime(), request.getId(), encode(request), tasksRetryInterval, expireTime);
+                        schedulerChannelName, tasksName, tasksRetryIntervalName, tasksExpirationTimeName, taskName,
+                        tasksRetryAttemptsName),
+                params.getStartTime(), request.getId(), encode(request), tasksRetryInterval, expireTime, tasksRetryAttempts);
         return f.toCompletableFuture();
     }
     
@@ -106,6 +111,7 @@ public class ScheduledTasksService extends TasksService {
         RFuture<Boolean> f = commandExecutor.evalWriteNoRetryAsync(requestQueueName, StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "local task = redis.call('hget', KEYS[6], ARGV[1]); "
                   + "redis.call('hdel', KEYS[6], ARGV[1]); "
+                  + "redis.call('hdel', KEYS[9], ARGV[1]); "
                   
                   + "redis.call('zrem', KEYS[2], 'ff:' .. ARGV[1]); "
                   + "redis.call('zrem', KEYS[8], ARGV[1]); "
@@ -130,7 +136,8 @@ public class ScheduledTasksService extends TasksService {
                   + "end;"
                   + "return 0;",
               Arrays.asList(requestQueueName, schedulerQueueName, tasksCounterName, statusName,
-                                terminationTopicName, tasksName, tasksRetryIntervalName, tasksExpirationTimeName),
+                                terminationTopicName, tasksName, tasksRetryIntervalName, tasksExpirationTimeName,
+                                tasksRetryCounterName),
                 taskId, RedissonExecutorService.SHUTDOWN_STATE, RedissonExecutorService.TERMINATED_STATE);
         return f.toCompletableFuture();
     }
