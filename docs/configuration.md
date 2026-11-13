@@ -280,7 +280,7 @@ Default value: `true`
 
 Defines whether to supply ContextClassLoader of the current Thread to Codec. 
 
-Usage of `Thread.getContextClassLoader()` may resolve `ClassNotFoundException` errors arising during Valkey or Redis response decoding. This error might occurr if Redisson is used in both Tomcat and deployed application.
+Usage of `Thread.getContextClassLoader()` may resolve `ClassNotFoundException` errors arising during Valkey or Redis response decoding. This error might occur if Redisson is used in both Tomcat and deployed application.
 
 **registrationKey**
 

@@ -21,7 +21,7 @@ Redisson provides various Hibernate Cache factories including those with feature
 
 2. **Data partitioning**
 
-    Although all implementations are cluster compatible thier content isn't scaled/partitioned across multiple Redis or Valkey master nodes in cluster. Data partitioning allows to scale available memory, read/write operations and entry eviction process for individual Hibernate Cache instance in Redis or Valkey cluster.  
+    Although all implementations are cluster compatible their content isn't scaled/partitioned across multiple Redis or Valkey master nodes in cluster. Data partitioning allows to scale available memory, read/write operations and entry eviction process for individual Hibernate Cache instance in Redis or Valkey cluster.  
 
 3. **Scripted eviction**
 
@@ -1393,7 +1393,7 @@ Redisson provides various [Quarkus Cache](https://quarkus.io/guides/cache) imple
 
         * `implementation` 
 
-            Setting defines the type of cache used. Default value is `standard`. Availabile values:  
+            Setting defines the type of cache used. Default value is `standard`. Available values:  
            
             * `standard` - implementation with scripted eviction
             * `v2` - implementation with data partitioning and advanced eviction
