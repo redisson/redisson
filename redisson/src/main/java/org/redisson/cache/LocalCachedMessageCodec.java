@@ -118,6 +118,20 @@ public class LocalCachedMessageCodec extends BaseCodec {
             return new LocalCachedMapDisabledKey(requestId.toString(), timeout);
         }
 
+        if (type == 0x7) {
+            byte[] excludedId = new byte[16];
+            buf.readBytes(excludedId);
+            int entriesCount = buf.readInt();
+            List<LocalCachedScoreSortedSetInvalidate.Entry> entries = new ArrayList<>();
+            for (int i = 0; i < entriesCount; i++) {
+                int valueLen = buf.readInt();
+                byte[] value = new byte[valueLen];
+                buf.readBytes(value);
+                entries.add(new LocalCachedScoreSortedSetInvalidate.Entry(value));
+            }
+            return new LocalCachedScoreSortedSetInvalidate(excludedId, entries);
+        }
+
         throw new IllegalArgumentException("Can't parse packet");
     };
     
@@ -204,6 +218,21 @@ public class LocalCachedMessageCodec extends BaseCodec {
             result.writeByte(dk.getRequestId().length());
             result.writeCharSequence(dk.getRequestId(), CharsetUtil.UTF_8);
             result.writeLong(dk.getTimeout());
+            return result;
+        }
+
+        if (in instanceof LocalCachedScoreSortedSetInvalidate) {
+            LocalCachedScoreSortedSetInvalidate li = (LocalCachedScoreSortedSetInvalidate) in;
+            ByteBuf result = ByteBufAllocator.DEFAULT.buffer();
+            result.writeByte(0x7);
+            result.writeBytes(li.getExcludedId());
+            List<LocalCachedScoreSortedSetInvalidate.Entry> entries =
+                    new ArrayList<>(li.getEntries());
+            result.writeInt(entries.size());
+            for (LocalCachedScoreSortedSetInvalidate.Entry e : entries) {
+                result.writeInt(e.getValue().length);
+                result.writeBytes(e.getValue());
+            }
             return result;
         }
 
