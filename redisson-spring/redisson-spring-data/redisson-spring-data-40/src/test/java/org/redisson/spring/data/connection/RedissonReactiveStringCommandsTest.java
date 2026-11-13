@@ -3,12 +3,14 @@ package org.redisson.spring.data.connection;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.redis.connection.ReactiveRedisConnection;
 import org.springframework.data.redis.connection.ReactiveStringCommands;
+import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.data.redis.core.types.Expiration;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -29,6 +31,19 @@ public class RedissonReactiveStringCommandsTest extends BaseConnectionTest {
         RedissonConnectionFactory factory = new RedissonConnectionFactory(redisson);
         ReactiveRedisConnection conn = factory.getReactiveConnection();
         return conn.stringCommands();
+    }
+
+    @Test
+    public void testMGetOfMissingKeys() {
+        connection.set("mget1".getBytes(), "v1".getBytes());
+        connection.set("mget-empty".getBytes(), new byte[0]);
+
+        assertThat(stringCommands().mGet(Arrays.asList(buf("mget1"), buf("mget-missing"), buf("mget-empty"))).block())
+                .containsExactly(buf("v1"), null, ByteBuffer.allocate(0));
+
+        ReactiveStringRedisTemplate template = new ReactiveStringRedisTemplate(new RedissonConnectionFactory(redisson));
+        assertThat(template.opsForValue().multiGet(Arrays.asList("mget1", "mget-missing", "mget-empty")).block())
+                .containsExactly("v1", null, "");
     }
 
     private Long ttlMillis(String key) {

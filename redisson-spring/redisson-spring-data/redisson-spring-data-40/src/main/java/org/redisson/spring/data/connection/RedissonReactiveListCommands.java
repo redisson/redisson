@@ -27,6 +27,7 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
+import org.redisson.client.protocol.decoder.ObjectListReplayDecoder;
 import org.redisson.reactive.CommandReactiveExecutor;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.data.redis.connection.ReactiveListCommands;
@@ -291,6 +292,8 @@ public class RedissonReactiveListCommands extends RedissonBaseReactive implement
         });
     }
 
+    private static final RedisCommand<List<Long>> LPOS_COUNT = new RedisCommand<>("LPOS", new ObjectListReplayDecoder<>());
+
     @Override
     public Flux<NumericResponse<LPosCommand, Long>> lPos(Publisher<LPosCommand> commands) {
         return execute(commands, command -> {
@@ -309,6 +312,9 @@ public class RedissonReactiveListCommands extends RedissonBaseReactive implement
             if (command.getCount() != null) {
                 params.add("COUNT");
                 params.add(command.getCount());
+
+                Mono<List<Long>> m = read(keyBuf, ByteArrayCodec.INSTANCE, LPOS_COUNT, params.toArray());
+                return m.flatMapMany(Flux::fromIterable).map(v -> new NumericResponse<>(command, v));
             }
 
             Mono<Long> m = read(keyBuf, ByteArrayCodec.INSTANCE, RedisCommands.LPOS, params.toArray());

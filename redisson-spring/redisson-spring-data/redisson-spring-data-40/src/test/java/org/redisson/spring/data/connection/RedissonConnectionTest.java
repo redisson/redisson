@@ -62,6 +62,19 @@ import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 public class RedissonConnectionTest extends BaseConnectionTest {
 
     @Test
+    public void testSetRejectsNullExpirationAndOption() {
+        byte[] key = "set-null-arguments".getBytes();
+
+        assertThatThrownBy(() -> connection.stringCommands().set(key, "value".getBytes(), null, SetOption.upsert()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Expiration");
+        assertThatThrownBy(() -> connection.stringCommands().set(key, "value".getBytes(), Expiration.persistent(), null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Option");
+        assertThat(connection.keyCommands().exists(key)).isFalse();
+    }
+
+    @Test
     public void testSetWithExpirationOptionKeepTtl() {
         byte[] key = "set-keepttl-repro".getBytes();
         connection.set(key, "value1".getBytes());
@@ -986,6 +999,21 @@ public class RedissonConnectionTest extends BaseConnectionTest {
         assertThat(search).extracting(r -> new String(r.getContent().getName())).containsExactly("Catania", "Palermo");
         assertThat(search.get(1).getDistance().getValue()).isCloseTo(190.4424, within(0.01));
         assertThat(search.get(1).getContent().getPoint().getX()).isCloseTo(13.361389, within(0.0001));
+    }
+
+    @Test
+    public void testGeoDistOfMissingMember() {
+        byte[] key = "geo-dist-missing".getBytes();
+        connection.geoCommands().geoAdd(key, new Point(13.361389, 38.115556), "Palermo".getBytes());
+
+        assertThat(connection.geoCommands().geoDist(key, "Palermo".getBytes(), "Catania".getBytes())).isNull();
+        assertThat(connection.geoCommands().geoDist("geo-dist-none".getBytes(), "Palermo".getBytes(), "Catania".getBytes(), Metrics.KILOMETERS)).isNull();
+
+        RedissonConnection pipelined = new RedissonConnection(redisson);
+        pipelined.openPipeline();
+        pipelined.geoCommands().geoDist(key, "Palermo".getBytes(), "Catania".getBytes());
+        pipelined.geoCommands().geoDist(key, "Palermo".getBytes(), "Palermo".getBytes(), Metrics.KILOMETERS);
+        assertThat(pipelined.closePipeline()).containsExactly(null, new Distance(0, Metrics.KILOMETERS));
     }
 
     @Test

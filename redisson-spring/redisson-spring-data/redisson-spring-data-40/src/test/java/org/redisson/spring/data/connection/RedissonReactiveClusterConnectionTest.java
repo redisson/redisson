@@ -12,14 +12,19 @@ import org.springframework.data.redis.connection.ReactiveSetCommands;
 import org.springframework.data.redis.connection.RedisClusterNode;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.within;
 
 public class RedissonReactiveClusterConnectionTest extends RedisDockerTest {
 
@@ -85,6 +90,42 @@ public class RedissonReactiveClusterConnectionTest extends RedisDockerTest {
         });
     }
 
+    @Test
+    public void testMultiKeyStringCommandsAcrossSlots() {
+        testInCluster(c -> {
+            RedissonClient redisson = (RedissonClient) c.getNativeConnection();
+            RedissonReactiveRedisClusterConnection connection = new RedissonReactiveRedisClusterConnection(((RedissonReactive) redisson.reactive()).getCommandExecutor());
+            ByteBuffer key1 = buffer("key1");
+            ByteBuffer key2 = buffer("key2");
+            ByteBuffer key3 = buffer("key3");
+            assertThat(ClusterSlotHashUtil.isSameSlotForAllKeys(key1, key2, key3)).isFalse();
+
+            Map<ByteBuffer, ByteBuffer> values = new LinkedHashMap<>();
+            values.put(key1, buffer("value1"));
+            values.put(key2, buffer("value2"));
+            assertThat(connection.stringCommands().mSet(values).block()).isTrue();
+            Awaitility.await().atMost(Durations.TEN_SECONDS).untilAsserted(() -> {
+                assertThat(connection.stringCommands().mGet(Arrays.asList(key2, key3, key1)).block())
+                        .containsExactly(buffer("value2"), null, buffer("value1"));
+            });
+
+            Map<ByteBuffer, ByteBuffer> tagged = new LinkedHashMap<>();
+            tagged.put(buffer("{tag}1"), buffer("value1"));
+            tagged.put(buffer("{tag}2"), buffer("value2"));
+            assertThat(connection.stringCommands().mSet(tagged).block()).isTrue();
+            Awaitility.await().atMost(Durations.TEN_SECONDS).untilAsserted(() -> {
+                assertThat(connection.stringCommands().mGet(Arrays.asList(buffer("{tag}2"), buffer("{tag}3"), buffer("{tag}1"))).block())
+                        .containsExactly(buffer("value2"), null, buffer("value1"));
+            });
+
+            assertThat(connection.keyCommands().mDel(Arrays.asList(key1, key2, key3)).block()).isEqualTo(2);
+            assertThat(connection.keyCommands().mDel(Arrays.asList(buffer("{tag}1"), buffer("{tag}2"))).block()).isEqualTo(2);
+            Awaitility.await().atMost(Durations.TEN_SECONDS).untilAsserted(() -> {
+                assertThat(connection.keyCommands().exists(Arrays.asList(key1, key2, buffer("{tag}1"), buffer("{tag}2"))).block()).isZero();
+            });
+        });
+    }
+
     private static ByteBuffer buffer(String value) {
         return ByteBuffer.wrap(value.getBytes());
     }
@@ -143,6 +184,96 @@ public class RedissonReactiveClusterConnectionTest extends RedisDockerTest {
                     assertThat(replication.getProperty("master_link_status")).isEqualTo("up");
                     assertThat(replication.getProperty("master_sync_in_progress")).isEqualTo("0");
                 });
+            }
+        });
+    }
+
+    @Test
+    public void testClusterGetReplicas() {
+        testInCluster(c -> {
+            RedissonClient redisson = (RedissonClient) c.getNativeConnection();
+            RedissonReactiveRedisClusterConnection connection = new RedissonReactiveRedisClusterConnection(((RedissonReactive) redisson.reactive()).getCommandExecutor());
+            Awaitility.await().atMost(Durations.TEN_SECONDS).untilAsserted(() -> {
+                Map<RedisClusterNode, Collection<RedisClusterNode>> expected = c.clusterGetMasterReplicaMap();
+                assertThat(expected).hasSize(3);
+
+                Map<RedisClusterNode, Collection<RedisClusterNode>> map = connection.clusterGetMasterReplicaMap().block();
+                assertThat(map.keySet()).extracting(RedisClusterNode::getId)
+                        .containsExactlyInAnyOrderElementsOf(expected.keySet().stream().map(RedisClusterNode::getId).collect(Collectors.toList()));
+                for (Map.Entry<RedisClusterNode, Collection<RedisClusterNode>> entry : expected.entrySet()) {
+                    List<String> replicas = entry.getValue().stream().map(RedisClusterNode::getId).collect(Collectors.toList());
+                    assertThat(replicas).hasSize(1);
+                    assertThat(connection.clusterGetReplicas(entry.getKey()).collectList().block()).extracting(RedisClusterNode::getId)
+                            .containsExactlyInAnyOrderElementsOf(replicas);
+                    RedisClusterNode master = map.keySet().stream().filter(n -> n.getId().equals(entry.getKey().getId())).findFirst().get();
+                    assertThat(map.get(master)).extracting(RedisClusterNode::getId).containsExactlyInAnyOrderElementsOf(replicas);
+                }
+            });
+        });
+    }
+
+    @Test
+    public void testNodeUnknownToCluster() {
+        testInCluster(c -> {
+            RedissonClient redisson = (RedissonClient) c.getNativeConnection();
+            RedissonReactiveRedisClusterConnection connection = new RedissonReactiveRedisClusterConnection(((RedissonReactive) redisson.reactive()).getCommandExecutor());
+            RedisClusterNode unknown = new RedisClusterNode("127.0.0.1", 1234);
+            assertThatThrownBy(() -> connection.ping(unknown).block())
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Node 127.0.0.1:1234 is unknown to cluster");
+            assertThatThrownBy(() -> connection.serverCommands().getClientList(unknown).collectList().block())
+                    .isInstanceOf(IllegalArgumentException.class);
+        });
+    }
+
+    @Test
+    public void testTimeOfNode() {
+        testInCluster(c -> {
+            RedissonClient redisson = (RedissonClient) c.getNativeConnection();
+            RedissonReactiveRedisClusterConnection connection = new RedissonReactiveRedisClusterConnection(((RedissonReactive) redisson.reactive()).getCommandExecutor());
+            for (RedisClusterNode node : c.clusterGetNodes()) {
+                Long time = connection.serverCommands().time(node).block();
+                assertThat(time).isCloseTo(c.time(node), within(10000L));
+            }
+        });
+    }
+
+    @Test
+    public void testServerCommandsOnEveryMaster() {
+        testInCluster(c -> {
+            RedissonClient redisson = (RedissonClient) c.getNativeConnection();
+            RedissonReactiveRedisClusterConnection connection = new RedissonReactiveRedisClusterConnection(((RedissonReactive) redisson.reactive()).getCommandExecutor());
+            List<RedisClusterNode> masters = new ArrayList<>(c.clusterGetMasterReplicaMap().keySet());
+            assertThat(masters).hasSize(3);
+
+            Properties info = connection.serverCommands().info().block();
+            Properties server = connection.serverCommands().info("server").block();
+            Properties config = connection.serverCommands().getConfig("slowlog-max-len").block();
+            for (RedisClusterNode master : masters) {
+                assertThat(info.getProperty(master.asString() + ".role")).isEqualTo("master");
+                assertThat(server.getProperty(master.asString() + ".tcp_port")).isNotNull();
+                assertThat(server.getProperty(master.asString() + ".role")).isNull();
+                assertThat(config.getProperty(master.asString() + ".slowlog-max-len")).isNotNull();
+            }
+            assertThat(config).hasSize(3);
+
+            String slowlogMaxLen = c.getConfig(masters.get(0), "slowlog-max-len").getProperty("slowlog-max-len");
+            try {
+                assertThat(connection.serverCommands().setConfig("slowlog-max-len", "127").block()).isEqualTo("OK");
+                for (RedisClusterNode master : masters) {
+                    assertThat(c.getConfig(master, "slowlog-max-len").getProperty("slowlog-max-len")).isEqualTo("127");
+                }
+            } finally {
+                c.setConfig("slowlog-max-len", slowlogMaxLen);
+            }
+
+            for (RedisClusterNode master : masters) {
+                c.dbSize(master);
+                assertThat(c.info(master, "commandstats").getProperty("cmdstat_dbsize")).isNotNull();
+            }
+            assertThat(connection.serverCommands().resetConfigStats().block()).isEqualTo("OK");
+            for (RedisClusterNode master : masters) {
+                assertThat(c.info(master, "commandstats").getProperty("cmdstat_dbsize")).isNull();
             }
         });
     }

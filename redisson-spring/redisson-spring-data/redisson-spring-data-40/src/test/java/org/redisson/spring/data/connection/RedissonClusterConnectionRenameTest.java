@@ -1,5 +1,7 @@
 package org.redisson.spring.data.connection;
 
+import org.awaitility.Awaitility;
+import org.awaitility.Durations;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.redisson.RedisDockerTest;
@@ -38,6 +40,25 @@ public class RedissonClusterConnectionRenameTest extends RedisDockerTest {
 
             assertThat(connection.get(newKey)).isEqualTo(value);
             assertThat(connection.ttl(newKey)).isGreaterThan(0);
+        });
+    }
+
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testRenameOverwritesTarget(boolean sameSlot) {
+        testInCluster(connection -> {
+            connection.set(originalKey, value);
+
+            Integer originalSlot = connection.clusterGetSlotForKey(originalKey);
+            newKey = getNewKeyForSlot(originalKey, getTargetSlot(sameSlot, originalSlot), connection);
+            connection.set(newKey, "existing".getBytes());
+
+            connection.rename(originalKey, newKey);
+
+            Awaitility.await().atMost(Durations.TEN_SECONDS).untilAsserted(() -> {
+                assertThat(connection.get(newKey)).isEqualTo(value);
+                assertThat(connection.exists(originalKey)).isFalse();
+            });
         });
     }
 

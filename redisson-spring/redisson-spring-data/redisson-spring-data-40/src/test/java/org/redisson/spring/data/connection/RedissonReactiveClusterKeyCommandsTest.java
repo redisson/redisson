@@ -10,8 +10,11 @@ import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.springframework.data.redis.RedisSystemException;
+import org.springframework.data.redis.connection.ReactiveKeyCommands.RenameCommand;
 import org.springframework.data.redis.connection.ReactiveRedisClusterConnection;
+import org.springframework.data.redis.connection.ReactiveRedisConnection.BooleanResponse;
 import org.springframework.data.redis.connection.RedisClusterNode;
+import reactor.core.publisher.Flux;
 
 
 import java.nio.ByteBuffer;
@@ -67,6 +70,9 @@ public class RedissonReactiveClusterKeyCommandsTest extends RedisDockerTest {
 
             final ByteBuffer newKeyValue = connection.stringCommands().get(newKey).block();
             assertThat(newKeyValue).isEqualTo(value);
+            Awaitility.await().atMost(Durations.TEN_SECONDS).untilAsserted(() -> {
+                assertThat(connection.keyCommands().exists(originalKey).block()).isFalse();
+            });
             if (hasTtl) {
                 assertThat(connection.keyCommands().ttl(newKey).block()).isGreaterThan(0);
             } else {
@@ -138,20 +144,60 @@ public class RedissonReactiveClusterKeyCommandsTest extends RedisDockerTest {
             Integer originalSlot = getSlotForKey(originalKey, (RedissonReactiveRedisClusterConnection) connection);
             newKey = getNewKeyForSlot(new String(originalKey.array()), getTargetSlot(sameSlot, originalSlot), connection);
 
-            if (sameSlot) {
-                // This is a quirk of the implementation - since same-slot renames use the non-cluster version,
-                // the result is a Redis error. This behavior matches other spring-data-redis implementations
-                assertThatThrownBy(() -> connection.keyCommands().rename(originalKey, newKey).block())
-                        .isInstanceOf(RedisSystemException.class);
+            assertThatThrownBy(() -> connection.keyCommands().rename(originalKey, newKey).block())
+                    .isInstanceOf(RedisSystemException.class)
+                    .hasMessageContaining("no such key");
+            assertThatThrownBy(() -> connection.keyCommands().renameNX(originalKey, newKey).block())
+                    .isInstanceOf(RedisSystemException.class)
+                    .hasMessageContaining("no such key");
+            assertThat(connection.keyCommands().exists(newKey).block()).isFalse();
+        });
+    }
 
-            } else {
-                Boolean response = connection.keyCommands().rename(originalKey, newKey).block();
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testRenameOverwritesNewKey(boolean sameSlot, boolean hasTtl) {
+        testInClusterReactive(connection -> {
+            connection.stringCommands().set(originalKey, value).block();
+            Integer originalSlot = getSlotForKey(originalKey, (RedissonReactiveRedisClusterConnection) connection);
+            newKey = getNewKeyForSlot(new String(originalKey.array()), getTargetSlot(sameSlot, originalSlot), connection);
+            connection.stringCommands().set(newKey, ByteBuffer.wrap("existing".getBytes())).block();
+            Awaitility.await().atMost(Durations.TEN_SECONDS).untilAsserted(() -> {
+                assertThat(connection.keyCommands().exists(newKey).block()).isTrue();
+            });
 
-                assertThat(response).isTrue();
+            assertThat(connection.keyCommands().renameNX(originalKey, newKey).block()).isFalse();
+            assertThat(connection.keyCommands().rename(originalKey, newKey).block()).isTrue();
 
-                final ByteBuffer newKeyValue = connection.stringCommands().get(newKey).block();
-                assertThat(newKeyValue).isEqualTo(null);
-            }
+            Awaitility.await().atMost(Durations.TEN_SECONDS).untilAsserted(() -> {
+                assertThat(connection.stringCommands().get(newKey).block()).isEqualTo(value);
+                assertThat(connection.keyCommands().exists(originalKey).block()).isFalse();
+            });
+        });
+    }
+
+    @Test
+    public void testRenameOfSeveralCommands() {
+        testInClusterReactive(connection -> {
+            List<ByteBuffer> keys = Arrays.asList(ByteBuffer.wrap("{a}1".getBytes()), ByteBuffer.wrap("{a}2".getBytes()),
+                    ByteBuffer.wrap("{b}1".getBytes()), ByteBuffer.wrap("{b}2".getBytes()));
+            connection.stringCommands().set(keys.get(0), value).block();
+            connection.stringCommands().set(keys.get(2), value).block();
+
+            List<Boolean> responses = connection.keyCommands().rename(Flux.just(RenameCommand.key(keys.get(0)).to(keys.get(1)),
+                            RenameCommand.key(keys.get(2)).to(keys.get(3))))
+                    .map(BooleanResponse::getOutput).collectList().block();
+            assertThat(responses).containsExactly(true, true);
+
+            List<Boolean> nxResponses = connection.keyCommands().renameNX(Flux.just(RenameCommand.key(keys.get(1)).to(keys.get(0)),
+                            RenameCommand.key(keys.get(3)).to(keys.get(2))))
+                    .map(BooleanResponse::getOutput).collectList().block();
+            assertThat(nxResponses).containsExactly(true, true);
+            Awaitility.await().atMost(Durations.TEN_SECONDS).untilAsserted(() -> {
+                assertThat(connection.keyCommands().exists(keys).block()).isEqualTo(2);
+                assertThat(connection.stringCommands().get(keys.get(0)).block()).isEqualTo(value);
+                assertThat(connection.stringCommands().get(keys.get(2)).block()).isEqualTo(value);
+            });
         });
     }
 
@@ -187,6 +233,9 @@ public class RedissonReactiveClusterKeyCommandsTest extends RedisDockerTest {
 
             assertThat(result).isTrue();
             assertThat(connection.stringCommands().get(newKey).block()).isEqualTo(value);
+            Awaitility.await().atMost(Durations.TEN_SECONDS).untilAsserted(() -> {
+                assertThat(connection.keyCommands().exists(originalKey).block()).isFalse();
+            });
             if (hasTtl) {
                 assertThat(connection.keyCommands().ttl(newKey).block()).isGreaterThan(0);
             } else {

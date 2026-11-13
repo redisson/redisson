@@ -44,6 +44,15 @@ public class RedissonReactiveGeoCommandsTest extends BaseConnectionTest {
     }
 
     @Test
+    public void testGeoDistOfMissingMember() {
+        ByteBuffer key = addSicily("geo-dist-missing");
+
+        assertThat(geoCommands.geoDist(key, ByteBuffer.wrap("Palermo".getBytes()), ByteBuffer.wrap("Rome".getBytes())).blockOptional()).isEmpty();
+        assertThat(geoCommands.geoDist(key, ByteBuffer.wrap("Palermo".getBytes()), ByteBuffer.wrap("Catania".getBytes()), Metrics.KILOMETERS).block().getValue())
+                .isCloseTo(166.2742, within(0.01));
+    }
+
+    @Test
     public void testGeoRadiusWithAny() {
         ByteBuffer key = addSicily("geo-any");
         RGeo<String> geo = redisson.getGeo("geo-any", StringCodec.INSTANCE);

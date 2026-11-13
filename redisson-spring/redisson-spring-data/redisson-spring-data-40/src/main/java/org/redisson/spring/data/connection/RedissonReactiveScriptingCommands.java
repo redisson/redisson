@@ -15,6 +15,7 @@
  */
 package org.redisson.spring.data.connection;
 
+import org.redisson.RedissonScript;
 import org.redisson.api.RFuture;
 import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.protocol.RedisCommand;
@@ -47,7 +48,7 @@ public class RedissonReactiveScriptingCommands extends RedissonBaseReactive impl
     @Override
     public Mono<String> scriptFlush() {
         return executorService.reactive(() -> {
-            RFuture<Void> f = executorService.writeAllVoidAsync(RedisCommands.SCRIPT_FLUSH);
+            RFuture<Void> f = new RedissonScript(executorService).scriptFlushAsync();
             return toStringFuture(f);
         });
     }
