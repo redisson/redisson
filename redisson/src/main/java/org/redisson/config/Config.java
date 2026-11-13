@@ -596,7 +596,17 @@ public class Config {
     /**
      * Use external Executor for Netty.
      * <p>
-     * Virtual threads are not recommended
+     * Virtual threads are not recommended. A Netty thread runs an event loop,
+     * and an event loop keeps its thread until the client stops.
+     * <ul>
+     * <li>{@link TransportMode#EPOLL} and {@link TransportMode#KQUEUE}:
+     * each idle event loop pins a carrier thread and the client stops.
+     * Redisson refuses this configuration.</li>
+     * <li>{@link TransportMode#NIO}: the client works, but the event loops share
+     * the carrier threads with the virtual threads of the application.
+     * Virtual threads that do not block delay all commands.</li>
+     * </ul>
+     * Virtual threads can call Redisson without this setting.
      * <p>
      * The caller is responsible for closing the Executor.
      *

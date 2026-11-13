@@ -143,6 +143,13 @@ Default value: `null`
 
 Use the external `ExecutorService' which is used by Netty for Valkey or Redis response decoding and command sending.
 
+Virtual threads are not recommended for this setting. A Netty thread runs an event loop, and an event loop keeps its thread until the client stops.
+
+* `TransportMode.EPOLL` and `TransportMode.KQUEUE`: each idle event loop pins a carrier thread and the client stops. Redisson refuses this configuration.
+* `TransportMode.NIO`: the client works, but the event loops share the carrier threads with the virtual threads of the application. Virtual threads that do not block delay all commands.
+
+Virtual threads can call Redisson without this setting.
+
 **executor**
 
 Default value: `null`

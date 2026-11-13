@@ -17,7 +17,11 @@ import nl.altindag.log.LogCaptor;
 import org.awaitility.Awaitility;
 import org.joor.Reflect;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.redisson.api.*;
 import org.redisson.api.options.PlainOptions;
 import org.redisson.api.redisnode.*;
@@ -86,7 +90,80 @@ public class RedissonTest extends RedisDockerTest {
     }
 
     @Test
-    public void testVirtualThreads() {
+    public void testVirtualThreads() throws Exception {
+        RedissonClient r = createInstance();
+        ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
+        try {
+            List<Future<String>> futures = new ArrayList<>();
+            for (int i = 0; i < 100; i++) {
+                String name = "test" + i;
+                futures.add(executor.submit(() -> {
+                    RBucket<String> b = r.getBucket(name);
+                    b.set(name);
+                    return b.get();
+                }));
+            }
+
+            for (int i = 0; i < futures.size(); i++) {
+                assertThat(futures.get(i).get(10, TimeUnit.SECONDS)).isEqualTo("test" + i);
+            }
+        } finally {
+            executor.shutdown();
+            r.shutdown();
+        }
+    }
+
+    // Without the check, EPOLL does not return from Redisson.create(). The timeout stops the test in this case.
+    @ParameterizedTest
+    @EnumSource(value = TransportMode.class, names = {"EPOLL", "KQUEUE"})
+    @Timeout(30)
+    public void testVirtualNettyExecutorRefused(TransportMode transportMode) {
+        Set<Thread> threads = Thread.getAllStackTraces().keySet();
+
+        ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
+        try {
+            Config c = createConfig();
+            c.setTransportMode(transportMode);
+            c.setNettyExecutor(executor);
+
+            IllegalStateException e = Assertions.assertThrows(IllegalStateException.class, () -> {
+                Redisson.create(c);
+            });
+            assertThat(e).hasMessageContaining("nettyExecutor with virtual threads is not supported");
+        } finally {
+            executor.shutdown();
+        }
+
+        Set<Thread> newThreads = Thread.getAllStackTraces().keySet();
+        newThreads.removeAll(threads);
+        newThreads.removeIf(t -> !t.getName().startsWith("redisson"));
+        assertThat(newThreads).isEmpty();
+    }
+
+    @Test
+    public void testNettyExecutorEpoll() {
+        Assumptions.assumeTrue(io.netty.channel.epoll.Epoll.isAvailable());
+
+        // The EPOLL transport accepts platform threads in nettyExecutor.
+        ExecutorService executor = Executors.newCachedThreadPool();
+        try {
+            Config c = createConfig();
+            c.setTransportMode(TransportMode.EPOLL);
+            c.setNettyExecutor(executor);
+
+            RedissonClient r = Redisson.create(c);
+            RBucket<String> b = r.getBucket("test");
+            b.set("1");
+            assertThat(b.get()).isEqualTo("1");
+            r.shutdown();
+        } finally {
+            executor.shutdown();
+        }
+    }
+
+    @Test
+    public void testVirtualNettyExecutor() {
+        // The NIO transport accepts virtual threads in nettyExecutor.
         Config c = redisson.getConfig();
         c.setNettyExecutor(Executors.newVirtualThreadPerTaskExecutor());
 

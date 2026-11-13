@@ -68,6 +68,7 @@ import org.redisson.renewal.LockRenewalScheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -179,6 +180,7 @@ public final class ServiceManager {
         if (cfg.getTransportMode() == TransportMode.EPOLL) {
             if (cfg.getEventLoopGroup() == null) {
                 if (cfg.getNettyExecutor() != null) {
+                    checkPlatformThreads(cfg.getNettyExecutor());
                     this.group = new EpollEventLoopGroup(cfg.getNettyThreads(), cfg.getNettyExecutor());
                 } else {
                     this.group = new EpollEventLoopGroup(cfg.getNettyThreads(), new DefaultThreadFactory("redisson-netty"));
@@ -201,6 +203,7 @@ public final class ServiceManager {
         } else if (cfg.getTransportMode() == TransportMode.KQUEUE) {
             if (cfg.getEventLoopGroup() == null) {
                 if (cfg.getNettyExecutor() != null) {
+                    checkPlatformThreads(cfg.getNettyExecutor());
                     this.group = new KQueueEventLoopGroup(cfg.getNettyThreads(), cfg.getNettyExecutor());
                 } else {
                     this.group = new KQueueEventLoopGroup(cfg.getNettyThreads(), new DefaultThreadFactory("redisson-netty"));
@@ -274,6 +277,38 @@ public final class ServiceManager {
         });
 
         initTimer();
+    }
+
+    /*
+     * An idle event loop of the EPOLL or KQUEUE transport waits in a native method.
+     * A virtual thread cannot release its carrier thread during a native method.
+     * Thus the idle event loops keep all carrier threads and the client stops.
+     */
+    private static void checkPlatformThreads(Executor nettyExecutor) {
+        Method isVirtual;
+        try {
+            isVirtual = Thread.class.getMethod("isVirtual");
+        } catch (NoSuchMethodException e) {
+            // This Java version has no virtual threads.
+            return;
+        }
+
+        CompletableFuture<Thread> thread = new CompletableFuture<>();
+        boolean virtual;
+        try {
+            nettyExecutor.execute(() -> thread.complete(Thread.currentThread()));
+            virtual = (Boolean) isVirtual.invoke(thread.get(1, TimeUnit.SECONDS));
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return;
+        } catch (ExecutionException | TimeoutException | RejectedExecutionException | ReflectiveOperationException e) {
+            return;
+        }
+
+        if (virtual) {
+            throw new IllegalStateException("nettyExecutor with virtual threads is not supported if transportMode = EPOLL or KQUEUE. "
+                    + "Each idle Netty thread pins a carrier thread and the client stops. Use platform threads for nettyExecutor.");
+        }
     }
 
     // for Quarkus substitution
