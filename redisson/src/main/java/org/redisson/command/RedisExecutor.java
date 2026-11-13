@@ -454,6 +454,8 @@ public class RedisExecutor<V, R> {
             } else {
                 if (RedisCommands.BZMPOP.getName().equals(command.getName())) {
                     popTimeout = Long.parseLong(params[0].toString()) * 1000;
+                } else if (RedisCommands.BZMOVE.getName().equals(command.getName())) {
+                    popTimeout = Long.parseLong(params[3].toString()) * 1000;
                 } else {
                     popTimeout = Long.parseLong(params[params.length - 1].toString()) * 1000;
                 }

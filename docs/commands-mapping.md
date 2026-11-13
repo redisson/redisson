@@ -157,6 +157,7 @@ This table lists the commands that map directly to Redisson methods. Redisson al
 
 | Valkey or Redis command | Sync / Async API<br/><sub>Redisson.create(config)</sub> | Reactive API<br/><sub>redisson.reactive()</sub> | RxJava3 API<br/><sub>redisson.rxJava()</sub> |
 | --- | --- | --- | --- |
+| BZMOVE | RScoredSortedSet.<br/>move()<br/>moveAsync() | RScoredSortedSetReactive.<br/>move() | RScoredSortedSetRx.<br/>move() |
 | BZMPOP | RScoredSortedSet.<br/>pollLast()<br/>pollLastAsync()<br/>pollLastFromAny()<br/>pollLastEntriesFromAny() | RScoredSortedSetReactive.<br/>pollLast()<br/>pollLastFromAny()<br/>pollLastEntriesFromAny() | RScoredSortedSetRx.<br/>pollLast()<br/>pollLastFromAny()<br/>pollLastEntriesFromAny() |
 | BZPOPMAX | RScoredSortedSet.<br/>pollLast()<br/>pollLastAsync() | RScoredSortedSetReactive.<br/>pollLast() | RScoredSortedSetRx.<br/>pollLast() |
 | BZPOPMIN | RScoredSortedSet.<br/>pollFirst()<br/>pollFirstAsync() | RScoredSortedSetReactive.<br/>pollFirst() | RScoredSortedSetRx.<br/>pollFirst() |
@@ -170,6 +171,8 @@ This table lists the commands that map directly to Redisson methods. Redisson al
 | ZINTERCARD | RScoredSortedSet.<br/>countIntersection()<br/>countIntersectionAsync() | RScoredSortedSetReactive.<br/>countIntersection() | RScoredSortedSetRx.<br/>countIntersection() |
 | ZINTERSTORE | RScoredSortedSet.<br/>intersection()<br/>intersectionAsync() | RScoredSortedSetReactive.<br/>intersection() | RScoredSortedSetRx.<br/>intersection() |
 | ZLEXCOUNT | RLexSortedSet.<br/>lexCount()<br/>lexCountHead()<br/>lexCountTail()<br/>lexCountAsync()<br/>lexCountHeadAsync()<br/>lexCountTailAsync() | RLexSortedSetReactive.<br/>lexCount()<br/>lexCountHead()<br/>lexCountTail() | RLexSortedSetRx.<br/>lexCount()<br/>lexCountHead()<br/>lexCountTail() |
+| ZMOVE | RScoredSortedSet.<br/>move()<br/>moveAsync() | RScoredSortedSetReactive.<br/>move() | RScoredSortedSetRx.<br/>move() |
+| ZMOVEMEMBER | RScoredSortedSet.<br/>move()<br/>moveAsync() | RScoredSortedSetReactive.<br/>move() | RScoredSortedSetRx.<br/>move() |
 | ZMPOP | RScoredSortedSet.<br/>pollFirstEntriesFromAny()<br/>pollFirstEntriesFromAnyAsync()<br/>pollLastFromAny()<br/>pollLastFromAnyAsync()<br/>pollFirstFromAny()<br/>pollFirstFromAnyAsync() | RScoredSortedSetReactive.<br/>pollFirstEntriesFromAny()<br/>pollLastFromAny()<br/>pollFirstFromAny() | RScoredSortedSetRx.<br/>pollFirstEntriesFromAny()<br/>pollLastFromAny()<br/>pollFirstFromAny() |
 | ZMSCORE | RScoredSortedSet.<br/>getScore()<br/>getScoreAsync() | RScoredSortedSetReactive.<br/>getScore() | RScoredSortedSetRx.<br/>getScore() |
 | ZPOPMAX | RScoredSortedSet.<br/>pollLast()<br/>pollLastAsync() | RScoredSortedSetReactive.<br/>pollLast() | RScoredSortedSetRx.<br/>pollLast() |

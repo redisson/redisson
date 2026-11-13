@@ -5,7 +5,7 @@
 # port is reachable by trusted hosts only, which holds on this private network.
 services:
   redis-node-1:
-    image: redislabs/client-libs-test:8.12-rc2
+    image: redislabs/client-libs-test:8.12-rc3
     entrypoint: ["redis-server"]
     command: --cluster-enabled yes --cluster-config-file nodes-6379.conf --cluster-node-timeout 5000 --appendonly yes --port 6379 --protected-mode no --cluster-bus-port-protected-mode no
     ports:
@@ -17,7 +17,7 @@ services:
       - rediscluster
 
   redis-node-2:
-    image: redislabs/client-libs-test:8.12-rc2
+    image: redislabs/client-libs-test:8.12-rc3
     entrypoint: ["redis-server"]
     command: --cluster-enabled yes --cluster-config-file nodes-6379.conf --cluster-node-timeout 5000 --appendonly yes --port 6379 --protected-mode no --cluster-bus-port-protected-mode no
     ports:
@@ -29,7 +29,7 @@ services:
       - rediscluster
 
   redis-node-3:
-    image: redislabs/client-libs-test:8.12-rc2
+    image: redislabs/client-libs-test:8.12-rc3
     entrypoint: ["redis-server"]
     command: --cluster-enabled yes --cluster-config-file nodes-6379.conf --cluster-node-timeout 5000 --appendonly yes --port 6379 --protected-mode no --cluster-bus-port-protected-mode no
     ports:
@@ -41,7 +41,7 @@ services:
       - rediscluster
 
   redis-node-4:
-    image: redislabs/client-libs-test:8.12-rc2
+    image: redislabs/client-libs-test:8.12-rc3
     entrypoint: ["redis-server"]
     command: --cluster-enabled yes --cluster-config-file nodes-6379.conf --cluster-node-timeout 5000 --appendonly yes --port 6379 --protected-mode no --cluster-bus-port-protected-mode no
     ports:
@@ -53,7 +53,7 @@ services:
       - rediscluster
 
   redis-node-5:
-    image: redislabs/client-libs-test:8.12-rc2
+    image: redislabs/client-libs-test:8.12-rc3
     entrypoint: ["redis-server"]
     command: --cluster-enabled yes --cluster-config-file nodes-6379.conf --cluster-node-timeout 5000 --appendonly yes --port 6379 --protected-mode no --cluster-bus-port-protected-mode no
     ports:
@@ -65,7 +65,7 @@ services:
       - rediscluster
 
   redis-node-6:
-    image: redislabs/client-libs-test:8.12-rc2
+    image: redislabs/client-libs-test:8.12-rc3
     entrypoint: ["redis-server"]
     command: --cluster-enabled yes --cluster-config-file nodes-6379.conf --cluster-node-timeout 5000 --appendonly yes --port 6379 --protected-mode no --cluster-bus-port-protected-mode no
     ports:
@@ -77,7 +77,7 @@ services:
       - rediscluster
 
   cluster-init:
-    image: redislabs/client-libs-test:8.12-rc2
+    image: redislabs/client-libs-test:8.12-rc3
     entrypoint: ["sh", "-c"]
     depends_on:
       - redis-node-1

@@ -2,6 +2,7 @@ package org.redisson;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -9,11 +10,16 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RScoredSortedSetReactive;
+import org.redisson.api.RedissonClient;
+import org.redisson.api.scoredsortedset.ScoredSortedSetMoveArgs;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.ScoredEntry;
+import org.testcontainers.containers.GenericContainer;
 import reactor.test.StepVerifier;
 
 public class RedissonScoredSortedSetReactiveTest extends BaseReactiveTest {
@@ -348,6 +354,40 @@ public class RedissonScoredSortedSetReactiveTest extends BaseReactiveTest {
         Assertions.assertTrue(new Double(112.3).compareTo(res2) == 0);
         res2 = sync(set2.getScore(1));
         Assertions.assertTrue(new Double(112.3).compareTo(res2) == 0);
+    }
+
+    // ZMOVE, BZMOVE and ZMOVEMEMBER ship in Redis 8.12, see createRedis812.
+    private static GenericContainer<?> redis812;
+    private static RedissonClient redisson812;
+
+    @BeforeAll
+    static void startRedis812() {
+        redis812 = createRedis812();
+        redis812.start();
+        redisson812 = Redisson.create(createConfig(redis812));
+    }
+
+    @AfterAll
+    static void stopRedis812() {
+        redisson812.shutdown();
+        redis812.stop();
+    }
+
+    @Test
+    public void testMove() {
+        RScoredSortedSetReactive<String> set = redisson812.reactive().getScoredSortedSet("testMoveReactive");
+        sync(set.add(1, "a"));
+        sync(set.add(2, "b"));
+        sync(set.add(3, "c"));
+
+        assertThat(sync(set.move(ScoredSortedSetMoveArgs.to("testMoveReactiveDest").last())))
+                .containsExactly(new ScoredEntry<>(3D, "c"));
+        assertThat(sync(set.move(ScoredSortedSetMoveArgs.to("testMoveReactiveDest").values("a").ifAbsent())))
+                .containsExactly(new ScoredEntry<>(1D, "a"));
+        assertThat(sync(set.move(Duration.ofSeconds(1), ScoredSortedSetMoveArgs.to("testMoveReactiveDest").first().count(5))))
+                .containsExactly(new ScoredEntry<>(2D, "b"));
+        assertThat(sync(set.move(Duration.ofSeconds(1), ScoredSortedSetMoveArgs.to("testMoveReactiveDest").first())))
+                .isEmpty();
     }
 
 }

@@ -120,7 +120,7 @@ public class RedissonObjectBlessTest extends RedisDockerTest {
             queue.offer("v", 1, TimeUnit.HOURS);
             return new Sample(queue, 2, queue::destroy);
         });
-        // RGcra is left out: the 8.12-rc2 image has no GCRA command, so its keys can't be created.
+        // RGcra is left out: the 8.12-rc3 image has no GCRA command, so its keys can't be created.
         samples.put("RIdGenerator", r -> {
             RIdGenerator generator = r.getIdGenerator("idGenerator");
             generator.tryInit(1, 10);

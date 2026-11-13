@@ -2405,6 +2405,81 @@ Elements can be read by rank or by score. Rank ranges use 0-based indices, where
     Single<Integer> byScore = set.removeRangeByScore(0.0, true, 1.0, false);
     ```
 
+### Moving entries between sets
+
+`move` removes entries from this set and adds them, with their scores, to another sorted set in one atomic operation, and returns the moved entries as `ScoredEntry` objects - an empty list if nothing moved. `ScoredSortedSetMoveArgs.to(name)` names the destination, then selects the entries: `first()` or `last()` takes the lowest or highest scored ones, a single entry unless `count` says more; `scoreRange` takes the entries within a score range, all of them unless `count` caps the batch; and `values` takes the given values, optionally only those the destination lacks (`ifAbsent`) or already holds (`ifExists`). Requires Redis 8.12.0 or higher.
+
+A value the destination already holds gets the score it had in this set. The destination is created when needed, and this set is deleted once its last entry moves. Because selection, insertion and removal happen together, `scoreRange` with a `count` claims a bounded batch for processing without another client changing it in between; claiming the next batch is the same call again.
+
+The blocking form takes a `Duration` and works with `first()` and `last()`: on an empty set it waits for an entry to arrive, then moves up to `count` entries without waiting for a full batch, and returns an empty list once the timeout elapses.
+
+!!! note
+    In Redis Cluster both sets must map to the same hash slot, for example through a shared hash tag such as `{jobs}:pending` and `{jobs}:processing`.
+
+=== "Sync"
+    ```java
+    RScoredSortedSet<SomeObject> set = redisson.getScoredSortedSet("{jobs}:pending");
+
+    // the 10 lowest scored entries
+    List<ScoredEntry<SomeObject>> lowest = set.move(ScoredSortedSetMoveArgs.to("{jobs}:processing")
+                                                                          .first()
+                                                                          .count(10));
+
+    // at most 500 entries scored below the cutoff
+    List<ScoredEntry<SomeObject>> batch = set.move(ScoredSortedSetMoveArgs.to("{jobs}:batch:1")
+                                                                         .scoreRange(Double.NEGATIVE_INFINITY, true, cutoff, false)
+                                                                         .count(500));
+
+    // the given values, unless the destination holds them already
+    List<ScoredEntry<SomeObject>> named = set.move(ScoredSortedSetMoveArgs.to("{jobs}:processing")
+                                                                         .values(value1, value2)
+                                                                         .ifAbsent());
+
+    // waits up to 10 seconds for an entry
+    List<ScoredEntry<SomeObject>> claimed = set.move(Duration.ofSeconds(10),
+                                                     ScoredSortedSetMoveArgs.to("{jobs}:processing")
+                                                                            .first()
+                                                                            .count(10));
+    ```
+=== "Async"
+    ```java
+    RScoredSortedSetAsync<SomeObject> set = redisson.getScoredSortedSet("{jobs}:pending");
+
+    RFuture<List<ScoredEntry<SomeObject>>> lowest = set.moveAsync(ScoredSortedSetMoveArgs.to("{jobs}:processing")
+                                                                                        .first()
+                                                                                        .count(10));
+    RFuture<List<ScoredEntry<SomeObject>>> claimed = set.moveAsync(Duration.ofSeconds(10),
+                                                                   ScoredSortedSetMoveArgs.to("{jobs}:processing")
+                                                                                          .first()
+                                                                                          .count(10));
+    ```
+=== "Reactive"
+    ```java
+    RedissonReactiveClient redisson = redissonClient.reactive();
+    RScoredSortedSetReactive<SomeObject> set = redisson.getScoredSortedSet("{jobs}:pending");
+
+    Mono<List<ScoredEntry<SomeObject>>> lowest = set.move(ScoredSortedSetMoveArgs.to("{jobs}:processing")
+                                                                                .first()
+                                                                                .count(10));
+    Mono<List<ScoredEntry<SomeObject>>> claimed = set.move(Duration.ofSeconds(10),
+                                                           ScoredSortedSetMoveArgs.to("{jobs}:processing")
+                                                                                  .first()
+                                                                                  .count(10));
+    ```
+=== "RxJava3"
+    ```java
+    RedissonRxClient redisson = redissonClient.rxJava();
+    RScoredSortedSetRx<SomeObject> set = redisson.getScoredSortedSet("{jobs}:pending");
+
+    Single<List<ScoredEntry<SomeObject>>> lowest = set.move(ScoredSortedSetMoveArgs.to("{jobs}:processing")
+                                                                                  .first()
+                                                                                  .count(10));
+    Single<List<ScoredEntry<SomeObject>>> claimed = set.move(Duration.ofSeconds(10),
+                                                             ScoredSortedSetMoveArgs.to("{jobs}:processing")
+                                                                                    .first()
+                                                                                    .count(10));
+    ```
+
 ### Set algebra
 
 A scored sorted set can be combined with other named sets. The `read*` methods return the result and leave this set unchanged, while `union`, `diff`, and `intersection` overwrite this set with the result and return its size. `countIntersection` returns the size of an intersection without materializing it.

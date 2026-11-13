@@ -1,25 +1,37 @@
 package org.redisson;
 
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.redisson.api.*;
 import org.redisson.api.listener.ScoredSortedSetAddListener;
+import org.redisson.api.scoredsortedset.ScoredSortedSetMoveArgs;
+import org.redisson.client.RedisException;
+import org.redisson.client.RedisResponseTimeoutException;
 import org.redisson.client.codec.IntegerCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RankedEntry;
 import org.redisson.client.protocol.ScoredEntry;
+import org.redisson.config.Config;
+import org.redisson.config.ConstantDelay;
+import org.redisson.config.Protocol;
+import org.testcontainers.containers.GenericContainer;
 
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -2191,4 +2203,466 @@ public class RedissonScoredSortedSetTest extends RedisDockerTest {
         assertThat(r3).isEmpty();
 
     }
+
+    // ZMOVE, BZMOVE and ZMOVEMEMBER ship in Redis 8.12, see createRedis812.
+    private static GenericContainer<?> redis812;
+    private static RedissonClient redisson812;
+
+    @BeforeAll
+    static void startRedis812() {
+        redis812 = createRedis812();
+        redis812.start();
+        redisson812 = Redisson.create(createConfig(redis812));
+    }
+
+    @AfterAll
+    static void stopRedis812() {
+        redisson812.shutdown();
+        redis812.stop();
+    }
+
+    @Test
+    public void testMoveFirst() {
+        RScoredSortedSet<String> set = redisson812.getScoredSortedSet("testMoveFirst");
+        RScoredSortedSet<String> dest = redisson812.getScoredSortedSet("testMoveFirstDest");
+        set.add(1, "a");
+        set.add(2, "b");
+        set.add(3, "c");
+        set.add(4, "d");
+
+        assertThat(set.move(ScoredSortedSetMoveArgs.to(dest.getName()).first()))
+                .containsExactly(new ScoredEntry<>(1D, "a"));
+        assertThat(set.move(ScoredSortedSetMoveArgs.to(dest.getName()).first().count(2)))
+                .containsExactly(new ScoredEntry<>(2D, "b"), new ScoredEntry<>(3D, "c"));
+
+        assertThat(set.entryRange(0, -1)).containsExactly(new ScoredEntry<>(4D, "d"));
+        assertThat(dest.entryRange(0, -1)).containsExactly(
+                new ScoredEntry<>(1D, "a"), new ScoredEntry<>(2D, "b"), new ScoredEntry<>(3D, "c"));
+    }
+
+    @Test
+    public void testMoveLast() {
+        RScoredSortedSet<String> set = redisson812.getScoredSortedSet("testMoveLast", StringCodec.INSTANCE);
+        RScoredSortedSet<String> dest = redisson812.getScoredSortedSet("testMoveLastDest", StringCodec.INSTANCE);
+        set.add(1, "a");
+        set.add(2, "b");
+        set.add(2, "c");
+        set.add(3, "d");
+
+        assertThat(set.move(ScoredSortedSetMoveArgs.to(dest.getName()).last()))
+                .containsExactly(new ScoredEntry<>(3D, "d"));
+        // descending, and entries sharing a score in descending order of their encoded value
+        assertThat(set.move(ScoredSortedSetMoveArgs.to(dest.getName()).last().count(10)))
+                .containsExactly(new ScoredEntry<>(2D, "c"), new ScoredEntry<>(2D, "b"), new ScoredEntry<>(1D, "a"));
+
+        assertThat(set.isExists()).isFalse();
+        assertThat(dest.size()).isEqualTo(4);
+    }
+
+    @Test
+    public void testMoveReplacesScoreInDestination() {
+        RScoredSortedSet<String> set = redisson812.getScoredSortedSet("testMoveReplacesScore");
+        RScoredSortedSet<String> dest = redisson812.getScoredSortedSet("testMoveReplacesScoreDest");
+        set.add(1, "a");
+        set.add(2, "b");
+        dest.add(99, "a");
+        dest.add(100, "kept");
+
+        assertThat(set.move(ScoredSortedSetMoveArgs.to(dest.getName()).first()))
+                .containsExactly(new ScoredEntry<>(1D, "a"));
+        assertThat(set.move(ScoredSortedSetMoveArgs.to(dest.getName()).values("b")))
+                .containsExactly(new ScoredEntry<>(2D, "b"));
+
+        assertThat(dest.entryRange(0, -1)).containsExactly(
+                new ScoredEntry<>(1D, "a"), new ScoredEntry<>(2D, "b"), new ScoredEntry<>(100D, "kept"));
+    }
+
+    @Test
+    public void testMoveScoreRange() {
+        RScoredSortedSet<String> set = redisson812.getScoredSortedSet("testMoveScoreRange");
+        for (int i = 1; i <= 10; i++) {
+            set.add(i, "v" + i);
+        }
+
+        assertThat(set.move(ScoredSortedSetMoveArgs.to("testMoveScoreRangeDest").scoreRange(2, false, 4, true)))
+                .containsExactly(new ScoredEntry<>(3D, "v3"), new ScoredEntry<>(4D, "v4"));
+        assertThat(set.move(ScoredSortedSetMoveArgs.to("testMoveScoreRangeDest").scoreRange(3, true, 4, true)))
+                .isEmpty();
+        assertThat(set.move(ScoredSortedSetMoveArgs.to("testMoveScoreRangeDest").scoreRange(6, true, 5, true)))
+                .isEmpty();
+
+        // claims batches scored below 9 into a destination per batch, until none is left
+        List<List<ScoredEntry<String>>> batches = new ArrayList<>();
+        while (true) {
+            List<ScoredEntry<String>> batch = set.move(ScoredSortedSetMoveArgs.to("testMoveScoreRangeBatch" + batches.size())
+                                                                               .scoreRange(Double.NEGATIVE_INFINITY, true, 9, false)
+                                                                               .count(2));
+            if (batch.isEmpty()) {
+                break;
+            }
+            batches.add(batch);
+        }
+        assertThat(batches).containsExactly(
+                Arrays.asList(new ScoredEntry<>(1D, "v1"), new ScoredEntry<>(2D, "v2")),
+                Arrays.asList(new ScoredEntry<>(5D, "v5"), new ScoredEntry<>(6D, "v6")),
+                Arrays.asList(new ScoredEntry<>(7D, "v7"), new ScoredEntry<>(8D, "v8")));
+        assertThat(redisson812.getScoredSortedSet("testMoveScoreRangeBatch2").readAll()).containsExactly("v7", "v8");
+
+        assertThat(set.move(ScoredSortedSetMoveArgs.to("testMoveScoreRangeDest")
+                                                   .scoreRange(Double.NEGATIVE_INFINITY, true, Double.POSITIVE_INFINITY, true)))
+                .containsExactly(new ScoredEntry<>(9D, "v9"), new ScoredEntry<>(10D, "v10"));
+        assertThat(set.isExists()).isFalse();
+    }
+
+    @Test
+    public void testMoveValues() {
+        RScoredSortedSet<String> set = redisson812.getScoredSortedSet("testMoveValues");
+        RScoredSortedSet<String> dest = redisson812.getScoredSortedSet("testMoveValuesDest");
+        set.add(1, "a");
+        set.add(2, "b");
+        set.add(3, "c");
+
+        // in the given order, a missing value skipped and a repeated one moved once
+        assertThat(set.move(ScoredSortedSetMoveArgs.to(dest.getName()).values("c", "missing", "a", "c")))
+                .containsExactly(new ScoredEntry<>(3D, "c"), new ScoredEntry<>(1D, "a"));
+        assertThat(set.move(ScoredSortedSetMoveArgs.to(dest.getName()).values(Collections.singletonList("missing"))))
+                .isEmpty();
+
+        assertThat(set.entryRange(0, -1)).containsExactly(new ScoredEntry<>(2D, "b"));
+        assertThat(dest.entryRange(0, -1)).containsExactly(new ScoredEntry<>(1D, "a"), new ScoredEntry<>(3D, "c"));
+    }
+
+    @Test
+    public void testMoveValuesIfAbsent() {
+        RScoredSortedSet<String> set = redisson812.getScoredSortedSet("testMoveValuesIfAbsent");
+        RScoredSortedSet<String> dest = redisson812.getScoredSortedSet("testMoveValuesIfAbsentDest");
+        set.add(1, "a");
+        set.add(2, "b");
+        dest.add(99, "b");
+
+        assertThat(set.move(ScoredSortedSetMoveArgs.to(dest.getName()).values("a", "b").ifAbsent()))
+                .containsExactly(new ScoredEntry<>(1D, "a"));
+
+        assertThat(set.entryRange(0, -1)).containsExactly(new ScoredEntry<>(2D, "b"));
+        assertThat(dest.entryRange(0, -1)).containsExactly(new ScoredEntry<>(1D, "a"), new ScoredEntry<>(99D, "b"));
+    }
+
+    @Test
+    public void testMoveValuesIfExists() {
+        RScoredSortedSet<String> set = redisson812.getScoredSortedSet("testMoveValuesIfExists");
+        RScoredSortedSet<String> dest = redisson812.getScoredSortedSet("testMoveValuesIfExistsDest");
+        set.add(1, "a");
+        set.add(2, "b");
+        dest.add(99, "b");
+
+        assertThat(set.move(ScoredSortedSetMoveArgs.to(dest.getName()).values("a", "b").ifExists()))
+                .containsExactly(new ScoredEntry<>(2D, "b"));
+        assertThat(set.entryRange(0, -1)).containsExactly(new ScoredEntry<>(1D, "a"));
+        assertThat(dest.entryRange(0, -1)).containsExactly(new ScoredEntry<>(2D, "b"));
+
+        // nothing can exist in a destination which doesn't, and it isn't created
+        assertThat(set.move(ScoredSortedSetMoveArgs.to("testMoveValuesIfExistsMissing").values("a").ifExists()))
+                .isEmpty();
+        assertThat(redisson812.getKeys().countExists("testMoveValuesIfExistsMissing")).isZero();
+        assertThat(set.entryRange(0, -1)).containsExactly(new ScoredEntry<>(1D, "a"));
+    }
+
+    @Test
+    public void testMoveValuesNamedAsOptions() {
+        RScoredSortedSet<String> set = redisson812.getScoredSortedSet("testMoveValuesNamedAsOptions", StringCodec.INSTANCE);
+        set.add(1, "NX");
+        set.add(2, "XX");
+        set.add(3, "MEMBERS");
+        set.add(4, "1");
+
+        // the values are counted, so none of them is taken for an option
+        assertThat(set.move(ScoredSortedSetMoveArgs.to("testMoveValuesNamedAsOptionsDest")
+                                                   .values("NX", "XX", "MEMBERS", "1")
+                                                   .ifAbsent()))
+                .containsExactly(new ScoredEntry<>(1D, "NX"), new ScoredEntry<>(2D, "XX"),
+                                 new ScoredEntry<>(3D, "MEMBERS"), new ScoredEntry<>(4D, "1"));
+    }
+
+    @Test
+    public void testMoveKeepsTimeToLiveAndDeletesEmptiedSet() {
+        RScoredSortedSet<String> set = redisson812.getScoredSortedSet("testMoveTTL");
+        RScoredSortedSet<String> dest = redisson812.getScoredSortedSet("testMoveTTLDest");
+        RScoredSortedSet<String> created = redisson812.getScoredSortedSet("testMoveTTLCreated");
+        set.add(1, "a");
+        set.add(2, "b");
+        set.add(3, "c");
+        set.expire(Duration.ofMinutes(10));
+        dest.add(10, "x");
+        dest.expire(Duration.ofMinutes(20));
+
+        set.move(ScoredSortedSetMoveArgs.to(dest.getName()).first());
+        assertThat(set.remainTimeToLive()).isGreaterThan(Duration.ofMinutes(9).toMillis());
+        assertThat(dest.remainTimeToLive()).isGreaterThan(Duration.ofMinutes(19).toMillis());
+
+        set.move(ScoredSortedSetMoveArgs.to(created.getName()).first());
+        assertThat(created.remainTimeToLive()).isEqualTo(-1);
+
+        set.move(ScoredSortedSetMoveArgs.to(dest.getName()).last());
+        assertThat(set.isExists()).isFalse();
+        assertThat(dest.readAll()).containsExactly("a", "c", "x");
+    }
+
+    @Test
+    public void testMoveNothing() {
+        RScoredSortedSet<String> set = redisson812.getScoredSortedSet("testMoveNothing");
+
+        assertThat(set.move(ScoredSortedSetMoveArgs.to("testMoveNothingDest").first())).isEmpty();
+        assertThat(set.move(ScoredSortedSetMoveArgs.to("testMoveNothingDest").scoreRange(0, true, 10, true))).isEmpty();
+        assertThat(set.move(ScoredSortedSetMoveArgs.to("testMoveNothingDest").values("a"))).isEmpty();
+        assertThat(redisson812.getKeys().countExists("testMoveNothingDest")).isZero();
+
+        set.add(1, "a");
+        assertThat(set.move(ScoredSortedSetMoveArgs.to(set.getName()).first())).isEmpty();
+        assertThat(set.move(ScoredSortedSetMoveArgs.to(set.getName()).values("a"))).isEmpty();
+        assertThat(set.move(ScoredSortedSetMoveArgs.to("testMoveNothingDest").values())).isEmpty();
+        assertThat(set.move(ScoredSortedSetMoveArgs.to("testMoveNothingDest").values(Collections.emptyList()))).isEmpty();
+
+        assertThat(set.entryRange(0, -1)).containsExactly(new ScoredEntry<>(1D, "a"));
+        assertThat(redisson812.getKeys().countExists("testMoveNothingDest")).isZero();
+    }
+
+    @Test
+    public void testMoveWrongType() {
+        RScoredSortedSet<String> set = redisson812.getScoredSortedSet("testMoveWrongType");
+        set.add(1, "a");
+        redisson812.getBucket("testMoveWrongTypeDest").set("value");
+
+        assertThatThrownBy(() -> set.move(ScoredSortedSetMoveArgs.to("testMoveWrongTypeDest").first()))
+                .isInstanceOf(RedisException.class)
+                .hasMessageContaining("WRONGTYPE");
+        assertThatThrownBy(() -> set.move(ScoredSortedSetMoveArgs.to("testMoveWrongTypeDest").values("a")))
+                .isInstanceOf(RedisException.class)
+                .hasMessageContaining("WRONGTYPE");
+        assertThatThrownBy(() -> set.move(Duration.ofSeconds(1), ScoredSortedSetMoveArgs.to("testMoveWrongTypeDest").first()))
+                .isInstanceOf(RedisException.class)
+                .hasMessageContaining("WRONGTYPE");
+
+        assertThat(set.entryRange(0, -1)).containsExactly(new ScoredEntry<>(1D, "a"));
+    }
+
+    @Test
+    public void testMoveArgsValidation() {
+        assertThatThrownBy(() -> ScoredSortedSetMoveArgs.to("dest").first().count(0))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> ScoredSortedSetMoveArgs.to("dest").scoreRange(0, true, 1, true).count(-1))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> ScoredSortedSetMoveArgs.to(null))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> ScoredSortedSetMoveArgs.to("dest").values((Collection<?>) null))
+                .isInstanceOf(NullPointerException.class);
+
+        RScoredSortedSet<String> set = redisson812.getScoredSortedSet("testMoveArgsValidation");
+        assertThatThrownBy(() -> set.move(Duration.ofSeconds(-1), ScoredSortedSetMoveArgs.to("dest").first()))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    public void testMoveInCluster() {
+        withNewCluster("src/test/resources/docker-compose-redis-8.12-cluster.yml", data -> {
+            RScoredSortedSet<String> set = data.redisson().getScoredSortedSet("{jobs}:pending");
+            RScoredSortedSet<String> dest = data.redisson().getScoredSortedSet("{jobs}:processing");
+            set.add(1, "a");
+            set.add(2, "b");
+            set.add(3, "c");
+            set.add(4, "d");
+
+            assertThat(set.move(ScoredSortedSetMoveArgs.to(dest.getName()).first().count(2)))
+                    .containsExactly(new ScoredEntry<>(1D, "a"), new ScoredEntry<>(2D, "b"));
+            assertThat(set.move(ScoredSortedSetMoveArgs.to(dest.getName()).values("c")))
+                    .containsExactly(new ScoredEntry<>(3D, "c"));
+            assertThat(set.move(Duration.ofSeconds(1), ScoredSortedSetMoveArgs.to(dest.getName()).last()))
+                    .containsExactly(new ScoredEntry<>(4D, "d"));
+            assertThat(dest.readAll()).containsExactly("a", "b", "c", "d");
+
+            // a destination in another hash slot is refused, not moved to
+            RKeys keys = data.redisson().getKeys();
+            assertThat(keys.getSlot("testMoveInClusterElsewhere")).isNotEqualTo(keys.getSlot(dest.getName()));
+            assertThatThrownBy(() -> dest.move(ScoredSortedSetMoveArgs.to("testMoveInClusterElsewhere").first()))
+                    .isInstanceOf(RedisException.class)
+                    .hasMessageContaining("CROSSSLOT");
+            assertThat(dest.size()).isEqualTo(4);
+        });
+    }
+
+    @Test
+    public void testMoveIsNotResentAfterResponseTimeout() throws Exception {
+        Config config = createConfig(redis812);
+        config.useSingleServer()
+              .setTimeout(300)
+              .setRetryAttempts(3)
+              .setRetryDelay(new ConstantDelay(Duration.ofMillis(10)));
+        RedissonClient client = Redisson.create(config);
+        try {
+            RScoredSortedSet<String> set = client.getScoredSortedSet("testMoveIsNotResent");
+            for (int i = 1; i <= 5; i++) {
+                set.add(i, "v" + i);
+            }
+
+            // Writes wait out the pause, so the reply comes too late. A move resent meanwhile
+            // would queue up behind the first one, and move one more entry once the pause ends.
+            redis812.execInContainer("redis-cli", "CLIENT", "PAUSE", "1500", "WRITE");
+            assertThatThrownBy(() -> set.move(ScoredSortedSetMoveArgs.to("testMoveIsNotResentDest").first()))
+                    .isInstanceOf(RedisResponseTimeoutException.class);
+
+            Awaitility.await().atMost(Duration.ofSeconds(5)).until(() -> set.size() < 5);
+            Thread.sleep(500);
+            assertThat(set.size()).isEqualTo(4);
+        } finally {
+            client.shutdown();
+        }
+    }
+
+    @Test
+    public void testMoveResp3() {
+        Config config = createConfig(redis812);
+        config.setProtocol(Protocol.RESP3);
+        RedissonClient resp3 = Redisson.create(config);
+        try {
+            RScoredSortedSet<String> set = resp3.getScoredSortedSet("testMoveResp3");
+            set.add(1.5, "a");
+            set.add(2.5, "b");
+            set.add(3.5, "c");
+
+            // each command replies null when nothing moves, which RESP3 sends as a null of its own
+            assertThat(set.move(ScoredSortedSetMoveArgs.to("testMoveResp3Dest").last()))
+                    .containsExactly(new ScoredEntry<>(3.5, "c"));
+            assertThat(set.move(ScoredSortedSetMoveArgs.to("testMoveResp3Dest").scoreRange(100, true, 200, true)))
+                    .isEmpty();
+            assertThat(set.move(ScoredSortedSetMoveArgs.to("testMoveResp3Dest").values("a", "missing")))
+                    .containsExactly(new ScoredEntry<>(1.5, "a"));
+            assertThat(set.move(ScoredSortedSetMoveArgs.to("testMoveResp3Dest").values("missing")))
+                    .isEmpty();
+            assertThat(set.move(Duration.ofSeconds(1), ScoredSortedSetMoveArgs.to("testMoveResp3Dest").first().count(5)))
+                    .containsExactly(new ScoredEntry<>(2.5, "b"));
+            assertThat(set.move(Duration.ofSeconds(1), ScoredSortedSetMoveArgs.to("testMoveResp3Dest").first()))
+                    .isEmpty();
+        } finally {
+            resp3.shutdown();
+        }
+    }
+
+    @Test
+    public void testMoveInBatch() {
+        RScoredSortedSet<String> set = redisson812.getScoredSortedSet("testMoveInBatch");
+        set.add(1, "a");
+        set.add(2, "b");
+
+        RBatch batch = redisson812.createBatch(BatchOptions.defaults()
+                                                           .executionMode(BatchOptions.ExecutionMode.REDIS_WRITE_ATOMIC));
+        RScoredSortedSetAsync<String> batchSet = batch.getScoredSortedSet(set.getName());
+        RFuture<List<ScoredEntry<String>>> moved = batchSet.moveAsync(
+                ScoredSortedSetMoveArgs.to("testMoveInBatchDest").first().count(5));
+        // the set is empty by now, and a transaction doesn't wait
+        RFuture<List<ScoredEntry<String>>> waited = batchSet.moveAsync(Duration.ofSeconds(10),
+                ScoredSortedSetMoveArgs.to("testMoveInBatchDest").first());
+
+        long start = System.currentTimeMillis();
+        batch.execute();
+        assertThat(System.currentTimeMillis() - start).isLessThan(5000);
+
+        assertThat(moved.toCompletableFuture().join())
+                .containsExactly(new ScoredEntry<>(1D, "a"), new ScoredEntry<>(2D, "b"));
+        assertThat(waited.toCompletableFuture().join()).isEmpty();
+    }
+
+    @Test
+    public void testMoveBlockingMovesWhatIsThere() {
+        RScoredSortedSet<String> set = redisson812.getScoredSortedSet("testMoveBlockingMovesWhatIsThere");
+        set.add(1, "a");
+        set.add(2, "b");
+
+        long start = System.currentTimeMillis();
+        assertThat(set.move(Duration.ofSeconds(10), ScoredSortedSetMoveArgs.to("testMoveBlockingMovesWhatIsThereDest")
+                                                                          .last()
+                                                                          .count(5)))
+                .containsExactly(new ScoredEntry<>(2D, "b"), new ScoredEntry<>(1D, "a"));
+        assertThat(System.currentTimeMillis() - start).isLessThan(5000);
+    }
+
+    @Test
+    public void testMoveBlockingTimeout() {
+        RScoredSortedSet<String> set = redisson812.getScoredSortedSet("testMoveBlockingTimeout");
+
+        long start = System.currentTimeMillis();
+        List<ScoredEntry<String>> moved = set.move(Duration.ofSeconds(1),
+                                                   ScoredSortedSetMoveArgs.to("testMoveBlockingTimeoutDest").first().count(5));
+        long elapsed = System.currentTimeMillis() - start;
+
+        assertThat(moved).isEmpty();
+        assertThat(elapsed).isGreaterThanOrEqualTo(900);
+        assertThat(redisson812.getKeys().countExists("testMoveBlockingTimeoutDest")).isZero();
+    }
+
+    @Test
+    @Timeout(30)
+    public void testMoveBlockingSubSecondTimeout() {
+        RScoredSortedSet<String> set = redisson812.getScoredSortedSet("testMoveBlockingSubSecondTimeout");
+
+        // rounds up to one second, rather than down to 0, which would wait indefinitely
+        assertThat(set.move(Duration.ofMillis(500),
+                            ScoredSortedSetMoveArgs.to("testMoveBlockingSubSecondTimeoutDest").first()))
+                .isEmpty();
+    }
+
+    @Test
+    public void testMoveBlockingToItself() {
+        RScoredSortedSet<String> set = redisson812.getScoredSortedSet("testMoveBlockingToItself");
+
+        // nothing can ever move from a sorted set to itself, so the server doesn't wait
+        long start = System.currentTimeMillis();
+        assertThat(set.move(Duration.ofSeconds(10), ScoredSortedSetMoveArgs.to(set.getName()).first())).isEmpty();
+        assertThat(System.currentTimeMillis() - start).isLessThan(5000);
+    }
+
+    @Test
+    @Timeout(30)
+    public void testMoveBlockingWaitsForEntries() {
+        RScoredSortedSet<String> set = redisson812.getScoredSortedSet("testMoveBlockingWaitsForEntries");
+        RScoredSortedSet<String> dest = redisson812.getScoredSortedSet("testMoveBlockingWaitsForEntriesDest");
+
+        ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+        try {
+            Map<String, Double> entries = new HashMap<>();
+            entries.put("a", 1D);
+            entries.put("b", 2D);
+            entries.put("c", 3D);
+            executor.schedule(() -> set.addAll(entries), 1, TimeUnit.SECONDS);
+
+            // moves up to the count of what arrived, without waiting for more
+            assertThat(set.move(Duration.ofSeconds(10), ScoredSortedSetMoveArgs.to(dest.getName()).first().count(2)))
+                    .containsExactly(new ScoredEntry<>(1D, "a"), new ScoredEntry<>(2D, "b"));
+            assertThat(set.readAll()).containsExactly("c");
+            assertThat(dest.readAll()).containsExactly("a", "b");
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    public void testMoveBlockingOutlastsResponseTimeout() {
+        RScoredSortedSet<String> set = redisson812.getScoredSortedSet("testMoveBlockingOutlastsResponseTimeout");
+
+        // The entry arrives after 6 seconds, past the 3 second response timeout. The client allows
+        // for the wait by reading the timeout out of the command, which a count of 1 follows here:
+        // read as the timeout, it would give up after 1 + 3 seconds and report nothing moved.
+        ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+        try {
+            executor.schedule(() -> set.add(1, "a"), 6, TimeUnit.SECONDS);
+
+            assertThat(set.move(Duration.ofSeconds(15),
+                                ScoredSortedSetMoveArgs.to("testMoveBlockingOutlastsResponseTimeoutDest")
+                                                       .first()
+                                                       .count(1)))
+                    .containsExactly(new ScoredEntry<>(1D, "a"));
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
 }

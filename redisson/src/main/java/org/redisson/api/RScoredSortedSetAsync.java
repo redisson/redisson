@@ -16,6 +16,8 @@
 package org.redisson.api;
 
 import org.redisson.api.RScoredSortedSet.Aggregate;
+import org.redisson.api.scoredsortedset.ScoredSortedSetMoveArgs;
+import org.redisson.api.scoredsortedset.ScoredSortedSetMoveEndArgs;
 import org.redisson.client.protocol.RankedEntry;
 import org.redisson.client.protocol.ScoredEntry;
 
@@ -341,6 +343,51 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      * @return the tail entries
      */
     RFuture<List<ScoredEntry<V>>> pollLastEntriesAsync(Duration duration, int count);
+
+    /**
+     * Removes the selected entries from this sorted set and adds them,
+     * with their scores, to the destination sorted set as a single atomic operation.
+     * Entries are selected from the lowest or the highest scored end, by score range or by value.
+     * <p>
+     * A value the destination already holds gets the score it had in this sorted set.
+     * The destination is created if needed, and this sorted set is deleted once its last entry is moved.
+     * In Redis Cluster both names must map to the same hash slot.
+     * <p>
+     * Uses {@code ZMOVE} command, or {@code ZMOVEMEMBER} command for values.
+     * <p>
+     * Requires <b>Redis 8.12.0 or higher.</b>
+     *
+     * @param args arguments object
+     * @return moved entries in selection order,
+     *         or an empty list if nothing was moved
+     */
+    RFuture<List<ScoredEntry<V>>> moveAsync(ScoredSortedSetMoveArgs args);
+
+    /**
+     * Removes the lowest or the highest scored entries from this sorted set and adds them,
+     * with their scores, to the destination sorted set as a single atomic operation.
+     * If this sorted set is empty, waits up to the defined <code>timeout</code>
+     * for an entry to become available.
+     * <p>
+     * Once an entry is available, up to the defined count of entries is moved
+     * without waiting for a full batch. Only this sorted set is waited on:
+     * a change of the destination doesn't end the wait.
+     * <p>
+     * The timeout is rounded down to whole seconds, a timeout under one second waits
+     * one second, and a zero timeout waits indefinitely. Inside a transaction,
+     * such as an atomic {@link RBatch}, it doesn't wait.
+     * <p>
+     * Uses {@code BZMOVE} command.
+     * <p>
+     * Requires <b>Redis 8.12.0 or higher.</b>
+     *
+     * @param timeout how long to wait before giving up
+     * @param args arguments object, defined by {@code first()} or {@code last()}
+     * @return moved entries in selection order,
+     *         or an empty list if the timeout elapsed
+     * @throws IllegalArgumentException if timeout is negative
+     */
+    RFuture<List<ScoredEntry<V>>> moveAsync(Duration timeout, ScoredSortedSetMoveEndArgs args);
 
     /**
      * Returns the head element or {@code null} if this sorted set is empty.

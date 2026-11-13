@@ -24,6 +24,9 @@ import org.redisson.api.listener.ScoredSortedSetRemoveListener;
 import org.redisson.api.listener.ScoredSortedSetUnionStoreListener;
 import org.redisson.api.listener.TrackingListener;
 import org.redisson.api.mapreduce.RCollectionMapReduce;
+import org.redisson.api.scoredsortedset.ScoredSortedSetMoveArgs;
+import org.redisson.api.scoredsortedset.ScoredSortedSetMoveEndArgs;
+import org.redisson.api.scoredsortedset.ScoredSortedSetMoveParams;
 import org.redisson.client.RedisClient;
 import org.redisson.client.codec.*;
 import org.redisson.client.protocol.RankedEntry;
@@ -228,6 +231,73 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     public RFuture<List<ScoredEntry<V>>> pollLastEntriesAsync(Duration duration, int count) {
         return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.BZMPOP_ENTRIES,
                 duration.getSeconds(), 1, getRawName(), "MAX", "COUNT", count);
+    }
+
+    @Override
+    public List<ScoredEntry<V>> move(ScoredSortedSetMoveArgs args) {
+        return get(moveAsync(args));
+    }
+
+    @Override
+    public RFuture<List<ScoredEntry<V>>> moveAsync(ScoredSortedSetMoveArgs args) {
+        ScoredSortedSetMoveParams params = (ScoredSortedSetMoveParams) args;
+        if (params.getSelector() == ScoredSortedSetMoveParams.Selector.MEMBERS) {
+            Collection<?> values = params.getValues();
+
+            if (values.isEmpty()) {
+                return new CompletableFutureWrapper<>(Collections.<ScoredEntry<V>>emptyList());
+            }
+
+            List<Object> commandArgs = new ArrayList<>(values.size() + 5);
+            commandArgs.add(getRawName());
+            commandArgs.add(mapName(params.getDestName()));
+            if (params.getCondition() != null) {
+                commandArgs.add(params.getCondition());
+            }
+            commandArgs.add(params.getSelector());
+            commandArgs.add(values.size());
+            encode(commandArgs, values);
+            return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.ZMOVEMEMBER, commandArgs.toArray());
+        }
+
+        List<Object> commandArgs = new ArrayList<>(7);
+        commandArgs.add(getRawName());
+        commandArgs.add(mapName(params.getDestName()));
+        commandArgs.add(params.getSelector());
+        if (params.getSelector() == ScoredSortedSetMoveParams.Selector.BYSCORE) {
+            commandArgs.add(value(params.getStartScore(), params.isStartScoreInclusive()));
+            commandArgs.add(value(params.getEndScore(), params.isEndScoreInclusive()));
+        }
+        if (params.getCount() != null) {
+            commandArgs.add("COUNT");
+            commandArgs.add(params.getCount());
+        }
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.ZMOVE, commandArgs.toArray());
+    }
+
+    @Override
+    public List<ScoredEntry<V>> move(Duration timeout, ScoredSortedSetMoveEndArgs args) {
+        return get(moveAsync(timeout, args));
+    }
+
+    @Override
+    public RFuture<List<ScoredEntry<V>>> moveAsync(Duration timeout, ScoredSortedSetMoveEndArgs args) {
+        if (timeout.isNegative()) {
+            throw new IllegalArgumentException("timeout can't be negative");
+        }
+
+        ScoredSortedSetMoveParams params = (ScoredSortedSetMoveParams) args;
+        List<Object> commandArgs = new ArrayList<>(6);
+        commandArgs.add(getRawName());
+        commandArgs.add(mapName(params.getDestName()));
+        commandArgs.add(params.getSelector());
+        commandArgs.add(toSeconds(timeout.toMillis(), TimeUnit.MILLISECONDS));
+
+        if (params.getCount() != null) {
+            commandArgs.add("COUNT");
+            commandArgs.add(params.getCount());
+        }
+        return commandExecutor.writeAsync(getRawName(), codec, RedisCommands.BZMOVE, commandArgs.toArray());
     }
 
     @Override

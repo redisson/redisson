@@ -67,7 +67,7 @@ public class RedisDockerTest {
     // in two ways that createContainerByImage does not allow for: it listens on port 3000
     // unless PORT says otherwise, and it appends the container command to its own
     // redis-server invocation, so the command carries only the options.
-    private static final String IMAGE_8_12 = "redislabs/client-libs-test:8.12-rc2";
+    private static final String IMAGE_8_12 = "redislabs/client-libs-test:8.12-rc3";
 
     protected static GenericContainer<?> createRedis812(String... options) {
         return new GenericContainer<>(IMAGE_8_12)

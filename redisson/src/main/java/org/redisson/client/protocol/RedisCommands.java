@@ -323,6 +323,11 @@ public interface RedisCommands {
                 }
             }));
 
+    RedisCommand<List<ScoredEntry<Object>>> ZMOVE = new RedisCommand("ZMOVE",
+            new ListMultiDecoder2(new CodecDecoder(), new ScoredSortedSetReplayDecoderV2<>()), new EmptyListConvertor());
+    RedisCommand<List<ScoredEntry<Object>>> ZMOVEMEMBER = new RedisCommand("ZMOVEMEMBER",
+            ZMOVE.getReplayMultiDecoder(), new EmptyListConvertor());
+
     RedisStrictCommand<Integer> ZREMRANGEBYRANK = new RedisStrictCommand<Integer>("ZREMRANGEBYRANK", new IntegerReplayConvertor());
     RedisStrictCommand<Integer> ZREMRANGEBYSCORE = new RedisStrictCommand<Integer>("ZREMRANGEBYSCORE", new IntegerReplayConvertor());
     RedisStrictCommand<Integer> ZREMRANGEBYLEX = new RedisStrictCommand<Integer>("ZREMRANGEBYLEX", new IntegerReplayConvertor());
@@ -455,6 +460,7 @@ public interface RedisCommands {
     RedisCommand<List<Object>> BRPOP = new RedisCommand<List<Object>>("BRPOP", new ObjectListReplayDecoder<Object>());
     RedisCommand<Map<String, Map<Object, Double>>> BZMPOP = new RedisCommand<>("BZMPOP", ZMPOP.getReplayMultiDecoder());
     RedisCommand<List<Object>> BZMPOP_SINGLE_LIST = new RedisCommand("BZMPOP", ZMPOP_VALUES.getReplayMultiDecoder(), new EmptyListConvertor());
+    RedisCommand<List<ScoredEntry<Object>>> BZMOVE = new RedisCommand("BZMOVE", ZMOVE.getReplayMultiDecoder(), new EmptyListConvertor());
     RedisCommand<Object> BLPOP_VALUE = new RedisCommand<Object>("BLPOP", new ListObjectDecoder<Object>(1));
     RedisCommand<Object> BLMOVE = new RedisCommand<Object>("BLMOVE", new ListFirstObjectDecoder());
     RedisCommand<List<Object>> BLMOVEM = new RedisCommand<>("BLMOVEM", new ObjectListReplayDecoder(), new EmptyListConvertor());
@@ -509,7 +515,7 @@ public interface RedisCommands {
     Set<String> BLOCKING_COMMAND_NAMES = new HashSet<String>(
             Arrays.asList(BRPOPLPUSH.getName(), BZPOPMIN_VALUE.getName(), BZPOPMAX_VALUE.getName(),
                     BLPOP.getName(), BRPOP.getName(), BLMOVE.getName(), BLMOVEM.getName(),
-                    BZMPOP_SINGLE_LIST.getName(), BLMPOP.getName()));
+                    BZMPOP_SINGLE_LIST.getName(), BLMPOP.getName(), BZMOVE.getName()));
 
     RedisCommand<Boolean> PFADD = new RedisCommand<Boolean>("PFADD", new BooleanReplayConvertor());
     RedisStrictCommand<Long> PFCOUNT = new RedisStrictCommand<Long>("PFCOUNT");
@@ -1007,7 +1013,7 @@ public interface RedisCommands {
                     LPUSHX.getName(), RPUSHX.getName(), GEOADD.getName(), XADD.getName(), APPEND.getName(),
                     DECR.getName(), "DECRBY", INCR.getName(), INCRBY.getName(), ZINCRBY.getName(),
                     "HINCRBYFLOAT", "HINCRBY", "INCRBYFLOAT", "INCREX", SETNX.getName(), MSETNX.getName(),
-                    HSETNX.getName(), GCRA.getName()));
+                    HSETNX.getName(), GCRA.getName(), ZMOVE.getName(), ZMOVEMEMBER.getName()));
 
     RedisStrictCommand<Long> JSON_STRLEN = new RedisStrictCommand<>("JSON.STRLEN");
     RedisCommand<List<Long>> JSON_STRLEN_LIST = new RedisCommand("JSON.STRLEN", new ObjectListReplayDecoder<Long>(), new LongReplayConvertor());
@@ -1240,8 +1246,6 @@ public interface RedisCommands {
     RedisCommand<List<TSSample>> TS_REVRANGE = new RedisCommand<>("TS.REVRANGE",
                         new ListMultiDecoder2(new TimeSeriesSampleListDecoder(), new CodecDecoder()));
 
-    // first() asks for one sample and wants that sample, not a list holding it. Trimming in the
-    // decoder keeps it a single command whose batch response matches its declared type.
     RedisCommand<TSSample> TS_RANGE_FIRST = new RedisCommand<>("TS.RANGE",
                         new ListMultiDecoder2(new TimeSeriesFirstSampleDecoder(), new CodecDecoder()));
 
@@ -1280,11 +1284,6 @@ public interface RedisCommands {
                         new ListMultiDecoder2(new TimeSeriesInfoDecoder(),
                                 new CodecDecoder(), new CodecDecoder()));
 
-    // TS.INFO is also the only source for a series' sample count, its two boundary timestamps and
-    // its labels. Each gets its own command projecting that one field rather than a TS_INFO call
-    // mapped afterwards: a batch collects what the queued command decoded, so a mapping applied
-    // after the fact would leave BatchResult#getResponses() holding a TSInfo where the caller's
-    // method promised a count, a timestamp or a label map.
     RedisCommand<Long> TS_INFO_TOTAL_SAMPLES = new RedisCommand<>("TS.INFO",
                         new ListMultiDecoder2(new TimeSeriesInfoFieldDecoder<>(TSInfo::getTotalSamples),
                                 new CodecDecoder(), new CodecDecoder()));
@@ -1303,8 +1302,6 @@ public interface RedisCommands {
                         new ListMultiDecoder2(new TimeSeriesInfoFieldDecoder<>(TSInfo::getLabels),
                                 new CodecDecoder(), new CodecDecoder()));
 
-    // Declared last on purpose: an interface field initializer may not refer to a field declared
-    // below it by simple name, and this set names commands from across the whole file.
     Set<RedisCommand> BLOCKING_COMMANDS = new HashSet<>(Arrays.asList(
             XREAD_BLOCKING_SINGLE, XREAD_BLOCKING, XREADGROUP_BLOCKING_SINGLE, XREADGROUP_BLOCKING,
             XREAD_BLOCKING_SINGLE_V2, XREAD_BLOCKING_V2, XREADGROUP_BLOCKING_SINGLE_V2,
