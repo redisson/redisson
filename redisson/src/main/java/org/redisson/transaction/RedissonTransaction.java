@@ -264,10 +264,20 @@ public class RedissonTransaction implements RTransaction {
 
                     enableLocalCacheAsync(id, (Map<HashKey, HashValue>) hashes);
                     executed.set(true);
+
+                    checkSyncSlaves(r);
+
                     return null;
                 });
             });
         return new CompletableFutureWrapper<>(ff);
+    }
+
+    private void checkSyncSlaves(BatchResult<?> result) {
+        if (options.getSyncSlaves() > 0 && result.getMinSyncedSlaves() < options.getSyncSlaves()) {
+            throw new TransactionSyncException("Transaction committed, but only " + result.getMinSyncedSlaves()
+                    + " of " + options.getSyncSlaves() + " replicas acknowledged within " + options.getSyncTimeout() + " ms");
+        }
     }
 
     private BatchOptions createOptions() {
@@ -315,16 +325,18 @@ public class RedissonTransaction implements RTransaction {
             throw e;
         }
 
+        BatchResult<?> result;
         try {
-            
-            transactionExecutor.execute();
+            result = transactionExecutor.execute();
         } catch (Exception e) {
             throw new TransactionException("Unable to execute transaction", e);
         }
-        
+
         enableLocalCache(id, hashes);
-        
+
         executed.set(true);
+
+        checkSyncSlaves(result);
     }
 
     private void checkTimeout() {

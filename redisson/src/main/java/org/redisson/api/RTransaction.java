@@ -171,6 +171,9 @@ public interface RTransaction {
     
     /**
      * Commits all changes made on this transaction.
+     *
+     * @throws org.redisson.transaction.TransactionSyncException if specified amount of replicas
+     *         failed to acknowledge the synchronization within defined timeout
      */
     void commit();
 
@@ -178,6 +181,8 @@ public interface RTransaction {
      * Commits all changes made on this transaction in async mode.
      * 
      * @return void
+     * @throws org.redisson.transaction.TransactionSyncException if specified amount of replicas
+     *         failed to acknowledge the synchronization within defined timeout
      */
     RFuture<Void> commitAsync();
     
