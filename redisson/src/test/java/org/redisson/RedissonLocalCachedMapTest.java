@@ -851,11 +851,17 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
             assertThat(map2.get("key1")).isNull();
             Awaitility.await().atMost(Durations.ONE_SECOND)
                     .untilAsserted(() -> assertThat(map2.getCachedMap().size()).isEqualTo(1));
+            Awaitility.await().atMost(Durations.ONE_SECOND)
+                    .untilAsserted(() -> assertThat(((RedissonLocalCachedMap<String, Integer>) map2)
+                            .getLocalCacheView().getCacheKeyMap().size()).isEqualTo(1));
 
             map1.put("key1", 100);
 
             Awaitility.await().atMost(Durations.TWO_SECONDS)
                     .untilAsserted(() -> assertThat(map2.getCachedMap()).isEmpty());
+            Awaitility.await().atMost(Durations.TWO_SECONDS)
+                    .untilAsserted(() -> assertThat(((RedissonLocalCachedMap<String, Integer>) map2)
+                            .getLocalCacheView().getCacheKeyMap()).isEmpty());
 
             assertThat(map2.get("key1")).isEqualTo(100);
             Awaitility.await().atMost(Durations.ONE_SECOND)
@@ -869,6 +875,9 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
             map1.remove("key2");
             Awaitility.await().atMost(Durations.TWO_SECONDS)
                     .untilAsserted(() -> assertThat(map2.getCachedMap().containsKey("key2")).isFalse());
+            Awaitility.await().atMost(Durations.TWO_SECONDS)
+                    .untilAsserted(() -> assertThat(((RedissonLocalCachedMap<String, Integer>) map2)
+                            .getLocalCacheView().getCacheKeyMap().containsKey("key2")).isFalse());
         } finally {
             map1.destroy();
             map2.destroy();
