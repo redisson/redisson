@@ -838,6 +838,53 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
     }
 
     @Test
+    public void testUseObjectAsCacheKeyAndStoreCacheMiss() {
+        LocalCachedMapOptions<String, Integer> options = LocalCachedMapOptions.<String, Integer>name("testMiss")
+                .useObjectAsCacheKey(true)
+                .storeCacheMiss(true)
+                .syncStrategy(SyncStrategy.INVALIDATE);
+
+        RLocalCachedMap<String, Integer> map1 = redisson.getLocalCachedMap(options);
+        RLocalCachedMap<String, Integer> map2 = redisson.getLocalCachedMap(options);
+
+        try {
+            assertThat(map2.get("key1")).isNull();
+            Awaitility.await().atMost(Durations.ONE_SECOND)
+                    .untilAsserted(() -> assertThat(map2.getCachedMap().size()).isEqualTo(1));
+            Awaitility.await().atMost(Durations.ONE_SECOND)
+                    .untilAsserted(() -> assertThat(((RedissonLocalCachedMap<String, Integer>) map2)
+                            .getLocalCacheView().getCacheKeyMap().size()).isEqualTo(1));
+
+            map1.put("key1", 100);
+
+            Awaitility.await().atMost(Durations.TWO_SECONDS)
+                    .untilAsserted(() -> assertThat(map2.getCachedMap()).isEmpty());
+            Awaitility.await().atMost(Durations.TWO_SECONDS)
+                    .untilAsserted(() -> assertThat(((RedissonLocalCachedMap<String, Integer>) map2)
+                            .getLocalCacheView().getCacheKeyMap()).isEmpty());
+
+            assertThat(map2.get("key1")).isEqualTo(100);
+            Awaitility.await().atMost(Durations.ONE_SECOND)
+                    .untilAsserted(() -> assertThat(map2.getCachedMap().get("key1")).isEqualTo(100));
+
+            map1.put("key2", 200);
+            assertThat(map2.get("key2")).isEqualTo(200);
+            Awaitility.await().atMost(Durations.ONE_SECOND)
+                    .untilAsserted(() -> assertThat(map2.getCachedMap().get("key2")).isEqualTo(200));
+
+            map1.remove("key2");
+            Awaitility.await().atMost(Durations.TWO_SECONDS)
+                    .untilAsserted(() -> assertThat(map2.getCachedMap().containsKey("key2")).isFalse());
+            Awaitility.await().atMost(Durations.TWO_SECONDS)
+                    .untilAsserted(() -> assertThat(((RedissonLocalCachedMap<String, Integer>) map2)
+                            .getLocalCacheView().getCacheKeyMap().containsKey("key2")).isFalse());
+        } finally {
+            map1.destroy();
+            map2.destroy();
+        }
+    }
+
+    @Test
     public void testGetAllCache() {
         RLocalCachedMap<String, Integer> map = redisson.getLocalCachedMap(LocalCachedMapOptions.name("test"));
         Map<String, Integer> cache = map.getCachedMap();
