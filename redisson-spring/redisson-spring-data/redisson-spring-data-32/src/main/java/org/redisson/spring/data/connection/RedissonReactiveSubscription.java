@@ -188,7 +188,7 @@ public class RedissonReactiveSubscription implements ReactiveSubscription {
 
     @Override
     public Mono<Void> pUnsubscribe() {
-        return unsubscribe(patterns.keySet().stream().map(b -> ByteBuffer.wrap(b.getName())).distinct().toArray(ByteBuffer[]::new));
+        return pUnsubscribe(patterns.keySet().stream().map(b -> ByteBuffer.wrap(b.getName())).distinct().toArray(ByteBuffer[]::new));
     }
 
     @Override
