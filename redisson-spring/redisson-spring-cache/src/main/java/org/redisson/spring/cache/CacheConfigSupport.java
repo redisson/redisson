@@ -18,6 +18,7 @@ package org.redisson.spring.cache;
 import jodd.bean.BeanUtil;
 import jodd.bean.BeanUtilBean;
 import jodd.bean.BeanVisitor;
+import org.redisson.config.ConfigSupport;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
@@ -41,7 +42,7 @@ public class CacheConfigSupport {
 
     public CacheConfigSupport() {
         LoaderOptions yamlLoaderOptions = new LoaderOptions();
-        yamlLoaderOptions.setTagInspector(tag -> true); // Allow all tags
+        yamlLoaderOptions.setTagInspector(ConfigSupport.createTagInspector(null));
 
         DumperOptions yamlDumperOptions = new DumperOptions();
         yamlDumperOptions.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
