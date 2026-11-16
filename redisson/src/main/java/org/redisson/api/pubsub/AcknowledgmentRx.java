@@ -16,6 +16,10 @@
 package org.redisson.api.pubsub;
 
 import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.core.Single;
+import reactor.core.publisher.Mono;
+
+import java.util.List;
 
 /**
  * Provides message acknowledgment operations for message processing.
@@ -29,15 +33,26 @@ public interface AcknowledgmentRx {
      * Acknowledges the successful processing of a message.
      *
      * @param args acknowledgment arguments
+     * @return list of acknowledged message IDs
      */
-    Completable acknowledge(MessageAckArgs args);
+    Single<List<String>> acknowledge(MessageAckArgs args);
 
 
     /**
      * Explicitly marks a message as failed or rejected.
      *
      * @param args arguments specifying the message to negatively acknowledge
+     * @return list of negatively acknowledged message IDs
      */
-    Completable negativeAcknowledge(MessageNegativeAckArgs args);
+    Single<List<String>> negativeAcknowledge(MessageNegativeAckArgs args);
+
+    /**
+     * Updates visibility by message ID.
+     *
+     * @param args visibility arguments
+     * @return <code>true</code> if visibility has been updated.
+     *         <code>false</code> if message id doesn't belong to the owner or doesn't exist.
+     */
+    Mono<Boolean> updateVisibility(VisibilityArgs args);
 
 }

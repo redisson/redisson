@@ -17,6 +17,8 @@ package org.redisson.api.pubsub;
 
 import reactor.core.publisher.Mono;
 
+import java.util.List;
+
 /**
  * Provides message acknowledgment operations for message processing.
  *
@@ -29,15 +31,26 @@ public interface AcknowledgmentReactive {
      * Acknowledges the successful processing of a message.
      *
      * @param args acknowledgment arguments
+     * @return list of acknowledged message IDs
      */
-    Mono<Void> acknowledge(MessageAckArgs args);
+    Mono<List<String>> acknowledge(MessageAckArgs args);
 
 
     /**
      * Explicitly marks a message as failed or rejected.
      *
      * @param args arguments specifying the message to negatively acknowledge
+     * @return list of negatively acknowledged message IDs
      */
-    Mono<Void> negativeAcknowledge(MessageNegativeAckArgs args);
+    Mono<List<String>> negativeAcknowledge(MessageNegativeAckArgs args);
+
+    /**
+     * Updates visibility by message ID.
+     *
+     * @param args visibility arguments
+     * @return <code>true</code> if visibility has been updated.
+     *         <code>false</code> if message id doesn't belong to the owner or doesn't exist.
+     */
+    Mono<Boolean> updateVisibility(VisibilityArgs args);
 
 }
