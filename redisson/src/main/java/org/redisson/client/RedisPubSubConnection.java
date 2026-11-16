@@ -28,6 +28,7 @@ import org.redisson.misc.FastRemovalQueue;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -45,6 +46,7 @@ public class RedisPubSubConnection extends RedisConnection {
     final Map<ChannelName, Codec> shardedChannels = new ConcurrentHashMap<>();
     final Map<ChannelName, Codec> patternChannels = new ConcurrentHashMap<>();
     final Map<ChannelName, PubSubType> unsubscribedChannels = new ConcurrentHashMap<>();
+    final Map<ChannelName, Set<RedisPubSubListener<?>>> statusMuted = new ConcurrentHashMap<>();
 
     public RedisPubSubConnection(RedisClient redisClient, Channel channel, CompletableFuture<RedisPubSubConnection> connectionPromise) {
         super(redisClient, channel, connectionPromise);
@@ -67,12 +69,26 @@ public class RedisPubSubConnection extends RedisConnection {
             }
             return queue;
         });
+        statusMuted.computeIfPresent(channelName, (k, muted) -> {
+            muted.remove(listener);
+            if (muted.isEmpty()) {
+                return null;
+            }
+            return muted;
+        });
+    }
+
+    public void muteStatus(ChannelName channelName, RedisPubSubListener<?> listener) {
+        statusMuted.computeIfAbsent(channelName, k -> ConcurrentHashMap.newKeySet()).add(listener);
     }
 
     public void onMessage(PubSubStatusMessage message) {
         FastRemovalQueue<RedisPubSubListener<Object>> queue = listeners.getOrDefault(message.getChannel(), EMPTY_QUEUE);
+        Set<RedisPubSubListener<?>> muted = statusMuted.getOrDefault(message.getChannel(), Collections.emptySet());
         for (RedisPubSubListener<Object> redisPubSubListener : queue) {
-            redisPubSubListener.onStatus(message.getType(), message.getChannel());
+            if (!muted.contains(redisPubSubListener)) {
+                redisPubSubListener.onStatus(message.getType(), message.getChannel());
+            }
         }
     }
 

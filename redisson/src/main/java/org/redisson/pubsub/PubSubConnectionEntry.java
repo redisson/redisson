@@ -105,46 +105,41 @@ public class PubSubConnectionEntry {
     }
 
     // TODO optimize
-    public boolean removeListener(ChannelName channelName, EventListener msgListener) {
-        Queue<RedisPubSubListener<?>> listeners = channelListeners.get(channelName);
+    public RedisPubSubListener<?> findListener(ChannelName channelName, EventListener msgListener) {
+        Queue<RedisPubSubListener<?>> listeners = channelListeners.getOrDefault(channelName, EMPTY_QUEUE);
         for (RedisPubSubListener<?> listener : listeners) {
             if (listener instanceof PubSubMessageListener) {
                 if (((PubSubMessageListener<?>) listener).getListener() == msgListener) {
-                    removeListener(channelName, listener);
-                    return true;
+                    return listener;
                 }
             }
             if (listener instanceof PubSubPatternMessageListener) {
                 if (((PubSubPatternMessageListener<?>) listener).getListener() == msgListener) {
-                    removeListener(channelName, listener);
-                    return true;
+                    return listener;
                 }
             }
         }
-        return false;
+        return null;
     }
 
-    public boolean removeListener(ChannelName channelName, int listenerId) {
+    public RedisPubSubListener<?> findListener(ChannelName channelName, int listenerId) {
         Queue<RedisPubSubListener<?>> listeners = channelListeners.getOrDefault(channelName, EMPTY_QUEUE);
         for (RedisPubSubListener<?> listener : listeners) {
             if (listener instanceof PubSubMessageListener) {
                 if (hasId(((PubSubMessageListener<?>) listener).getListener(), listenerId)) {
-                    removeListener(channelName, listener);
-                    return true;
+                    return listener;
                 }
             }
             if (listener instanceof PubSubPatternMessageListener) {
                 if (hasId(((PubSubPatternMessageListener<?>) listener).getListener(), listenerId)) {
-                    removeListener(channelName, listener);
-                    return true;
+                    return listener;
                 }
             }
             if (hasId(listener, listenerId)) {
-                removeListener(channelName, listener);
-                return true;
+                return listener;
             }
         }
-        return false;
+        return null;
     }
 
     private boolean hasId(EventListener listener, int listenerId) {

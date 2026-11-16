@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.LockSupport;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
@@ -208,6 +209,46 @@ public class RedissonTopicPatternTest extends RedisDockerTest {
 
         Assertions.assertTrue(messageRecieved.await(5, TimeUnit.SECONDS));
         topic1.removeAllListeners();
+    }
+
+    @Test
+    public void testRemoveLastListenerAfterPublish() throws InterruptedException {
+        checkRemoveLastListenerAfterPublish("drain.*", "drain.t1", false);
+    }
+
+    @Test
+    public void testRemoveLastListenerInstanceAfterPublish() throws InterruptedException {
+        checkRemoveLastListenerAfterPublish("drain-instance.*", "drain-instance.t1", true);
+    }
+
+    private void checkRemoveLastListenerAfterPublish(String pattern, String channelName, boolean byInstance) throws InterruptedException {
+        RPatternTopic topic = redisson.getPatternTopic(pattern);
+        List<String> messages = new CopyOnWriteArrayList<>();
+        CountDownLatch first = new CountDownLatch(1);
+        PatternMessageListener<String> listener = (pat, ch, msg) -> {
+            if (messages.isEmpty()) {
+                first.countDown();
+                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(300));
+            }
+            messages.add(msg);
+        };
+        int id = topic.addListener(String.class, listener);
+        RTopic channel = redisson.getTopic(channelName);
+        List<String> published = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            published.add("m" + i);
+            channel.publish("m" + i);
+        }
+        assertThat(first.await(5, TimeUnit.SECONDS)).isTrue();
+
+        if (byInstance) {
+            topic.removeListener(listener);
+        } else {
+            topic.removeListener(id);
+        }
+
+        assertThat(messages).containsExactlyElementsOf(published);
+        assertThat(channel.publish("after")).isZero();
     }
 
     @Test
@@ -430,7 +471,7 @@ public class RedissonTopicPatternTest extends RedisDockerTest {
 
         restart(redis);
 
-        Thread.sleep(1000);
+        Thread.sleep(2000);
 
         redisson.getTopic("topic1").publish(1);
         

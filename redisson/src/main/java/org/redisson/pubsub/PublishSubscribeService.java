@@ -43,7 +43,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 /**
@@ -1027,19 +1027,30 @@ public class PublishSubscribeService {
 
     public CompletableFuture<Void> removeListenerAsync(PubSubType type, List<ChannelName> channelNames, EventListener listener) {
         return removeListenerAsync(type, channelNames, (channelName, entry) -> {
-            entry.removeListener(channelName, listener);
+            List<RedisPubSubListener<?>> found = new ArrayList<>(1);
+            RedisPubSubListener<?> l = entry.findListener(channelName, listener);
+            if (l != null) {
+                found.add(l);
+            }
+            return found;
         });
     }
 
     public CompletableFuture<Void> removeListenerAsync(PubSubType type, List<ChannelName> channelNames, Integer... listenerIds) {
         return removeListenerAsync(type, channelNames, (channelName, entry) -> {
+            List<RedisPubSubListener<?>> found = new ArrayList<>(listenerIds.length);
             for (int id : listenerIds) {
-                entry.removeListener(channelName, id);
+                RedisPubSubListener<?> l = entry.findListener(channelName, id);
+                if (l != null) {
+                    found.add(l);
+                }
             }
+            return found;
         });
     }
 
-    private CompletableFuture<Void> removeListenerAsync(PubSubType type, List<ChannelName> names, BiConsumer<ChannelName, PubSubConnectionEntry> consumer) {
+    private CompletableFuture<Void> removeListenerAsync(PubSubType type, List<ChannelName> names,
+                                                        BiFunction<ChannelName, PubSubConnectionEntry, List<RedisPubSubListener<?>>> finder) {
         if (connectionManager.getServiceManager().isShuttingDown()) {
             return CompletableFuture.completedFuture(null);
         }
@@ -1083,13 +1094,19 @@ public class PublishSubscribeService {
             name2entries.forEach((channelName, entries) -> {
 
                 for (PubSubConnectionEntry entry : entries) {
-                    consumer.accept(channelName, entry);
+                    List<RedisPubSubListener<?>> leaving = finder.apply(channelName, entry);
 
                     CompletableFuture<Void> f;
-                    if (!entry.hasListeners(channelName)) {
+                    if (leaving.containsAll(entry.getListeners(channelName))) {
+                        for (RedisPubSubListener<?> listener : leaving) {
+                            entry.getConnection().muteStatus(channelName, listener);
+                        }
                         f = unsubscribeLocked(type, channelName, entry)
                                 .exceptionally(ex -> null);
                     } else {
+                        for (RedisPubSubListener<?> listener : leaving) {
+                            entry.removeListener(channelName, listener);
+                        }
                         f = CompletableFuture.completedFuture(null);
                     }
                     futures.add(f);

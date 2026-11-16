@@ -44,6 +44,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.LockSupport;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -559,6 +560,62 @@ public class RedissonTopicTest extends RedisDockerTest {
         assertThat(messageRecieved.await(5, TimeUnit.SECONDS)).isTrue();
 
         topic1.removeAllListeners();
+    }
+
+    @Test
+    public void testRemoveLastListenerAfterPublish() throws InterruptedException {
+        checkRemoveLastListenerAfterPublish("topic-drain", false);
+    }
+
+    @Test
+    public void testRemoveLastListenerInstanceAfterPublish() throws InterruptedException {
+        checkRemoveLastListenerAfterPublish("topic-drain-instance", true);
+    }
+
+    private void checkRemoveLastListenerAfterPublish(String name, boolean byInstance) throws InterruptedException {
+        RTopic topic = redisson.getTopic(name);
+        List<String> messages = new CopyOnWriteArrayList<>();
+        CountDownLatch first = new CountDownLatch(1);
+        MessageListener<String> listener = (channel, msg) -> {
+            if (messages.isEmpty()) {
+                first.countDown();
+                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(300));
+            }
+            messages.add(msg);
+        };
+        int id = topic.addListener(String.class, listener);
+        List<String> published = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            published.add("m" + i);
+            topic.publish("m" + i);
+        }
+        assertThat(first.await(5, TimeUnit.SECONDS)).isTrue();
+
+        if (byInstance) {
+            topic.removeListener(listener);
+        } else {
+            topic.removeListener(id);
+        }
+
+        assertThat(messages).containsExactlyElementsOf(published);
+        assertThat(topic.publish("after")).isZero();
+    }
+
+    @Test
+    public void testRemoveLastStatusListener() {
+        RTopic topic = redisson.getTopic("topic-status");
+        AtomicInteger unsubscribed = new AtomicInteger();
+        int id = topic.addListener(new BaseStatusListener() {
+            @Override
+            public void onUnsubscribe(String channel) {
+                unsubscribed.incrementAndGet();
+            }
+        });
+
+        topic.removeListener(id);
+
+        await().during(Duration.ofMillis(500)).atMost(Duration.ofSeconds(1))
+                .untilAsserted(() -> assertThat(unsubscribed).hasValue(0));
     }
 
     @Test
