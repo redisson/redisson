@@ -15,7 +15,6 @@
  */
 package org.redisson.api.pubsub;
 
-import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Single;
 import reactor.core.publisher.Mono;
 
