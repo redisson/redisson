@@ -17,6 +17,8 @@ package org.redisson.api.pubsub;
 
 import org.redisson.api.RFuture;
 
+import java.util.List;
+
 /**
  * Provides message acknowledgment operations for message processing.
  *
@@ -29,15 +31,26 @@ public interface AcknowledgmentAsync {
      * Acknowledges the successful processing of a message.
      *
      * @param args acknowledgment arguments
+     * @return list of acknowledged message IDs
      */
-    RFuture<Void> acknowledgeAsync(MessageAckArgs args);
+    RFuture<List<String>> acknowledgeAsync(MessageAckArgs args);
 
 
     /**
      * Explicitly marks a message as failed or rejected.
      *
      * @param args arguments specifying the message to negatively acknowledge
+     * @return list of negatively acknowledged message IDs
      */
-    RFuture<Void> negativeAcknowledgeAsync(MessageNegativeAckArgs args);
+    RFuture<List<String>> negativeAcknowledgeAsync(MessageNegativeAckArgs args);
+
+    /**
+     * Updates visibility by message ID.
+     *
+     * @param args visibility arguments
+     * @return <code>true</code> if visibility has been updated.
+     *         <code>false</code> if message id doesn't belong to the owner or doesn't exist.
+     */
+    RFuture<Boolean> updateVisibilityAsync(VisibilityArgs args);
 
 }
