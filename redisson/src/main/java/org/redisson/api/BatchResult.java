@@ -26,11 +26,17 @@ public final class BatchResult<E> {
 
     private final List<E> responses;
     private final int syncedSlaves;
-    
+    private final int minSyncedSlaves;
+
     public BatchResult(List<E> responses, int syncedSlaves) {
+        this(responses, syncedSlaves, syncedSlaves);
+    }
+
+    public BatchResult(List<E> responses, int syncedSlaves, int minSyncedSlaves) {
         super();
         this.responses = responses;
         this.syncedSlaves = syncedSlaves;
+        this.minSyncedSlaves = minSyncedSlaves;
     }
     
     /**
@@ -49,6 +55,15 @@ public final class BatchResult<E> {
      */
     public int getSyncedSlaves() {
         return syncedSlaves;
+    }
+
+    /**
+     * Returns minimum amount of successfully synchronized slaves across all master nodes during batch execution
+     *
+     * @return minimum slaves amount
+     */
+    public int getMinSyncedSlaves() {
+        return minSyncedSlaves;
     }
 
 }
