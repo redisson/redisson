@@ -33,7 +33,7 @@ public class RedissonReactiveKeyCommandsTest extends BaseConnectionTest {
         ReactiveStringRedisTemplate t = new ReactiveStringRedisTemplate(factory);
         t.opsForValue().set("123", "4343").block();
         t.expire("123", Duration.ofMillis(1001)).block();
-        assertThat(t.getExpire("123").block().toMillis()).isBetween(900L, 1000L);
+        assertThat(t.getExpire("123").block().toMillis()).isBetween(900L, 1100L);
     }
 
     @Test

@@ -11,16 +11,22 @@ import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.connection.SubscriptionListener;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.data.redis.listener.ChannelTopic;
+import org.springframework.data.redis.listener.PatternTopic;
+import org.springframework.data.redis.listener.ReactiveRedisMessageListenerContainer;
 import reactor.core.Disposable;
 import reactor.core.publisher.Mono;
 
 import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.LockSupport;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -151,6 +157,74 @@ public class RedissonSubscribeReactiveTest extends BaseConnectionTest {
             assertThat(second).contains("after");
         });
         b.dispose();
+    }
+
+    @Test
+    public void testListenLaterToTopicsAnotherListenerHolds() {
+        RedissonConnectionFactory factory = new RedissonConnectionFactory(redisson);
+        ReactiveRedisMessageListenerContainer holder = new ReactiveRedisMessageListenerContainer(factory);
+        ReactiveRedisMessageListenerContainer container = new ReactiveRedisMessageListenerContainer(factory);
+        Disposable channel = holder.receiveLater(ChannelTopic.of("held")).block(Duration.ofSeconds(5)).subscribe();
+        Disposable pattern = holder.receiveLater(PatternTopic.of("hel*")).block(Duration.ofSeconds(5)).subscribe();
+
+        String channelMessage = container.receiveLater(ChannelTopic.of("held"))
+                .doOnNext(messages -> {
+                    connection.publish("held".getBytes(), "channel message".getBytes());
+                    LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(200));
+                })
+                .flatMapMany(Function.identity())
+                .map(ReactiveSubscription.Message::getMessage)
+                .blockFirst(Duration.ofSeconds(5));
+        String patternMessage = container.receiveLater(PatternTopic.of("hel*"))
+                .doOnNext(messages -> {
+                    connection.publish("held".getBytes(), "pattern message".getBytes());
+                    LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(200));
+                })
+                .flatMapMany(Function.identity())
+                .map(ReactiveSubscription.Message::getMessage)
+                .blockFirst(Duration.ofSeconds(5));
+
+        assertThat(channelMessage).isEqualTo("channel message");
+        assertThat(patternMessage).isEqualTo("pattern message");
+        container.destroy();
+        pattern.dispose();
+        channel.dispose();
+        holder.destroy();
+    }
+
+    @Test
+    public void testSubscriptionListenerHearsEachSubscribeOnce() {
+        RedissonConnectionFactory factory = new RedissonConnectionFactory(redisson);
+        AtomicLong first = new AtomicLong();
+        AtomicLong second = new AtomicLong();
+        ReactiveSubscription a = factory.getReactiveConnection().pubSubCommands().createSubscription(counting(first)).block();
+        ReactiveSubscription b = factory.getReactiveConnection().pubSubCommands().createSubscription(counting(second)).block();
+
+        a.subscribe(ByteBuffer.wrap("once".getBytes())).block();
+        a.pSubscribe(ByteBuffer.wrap("on*".getBytes())).block();
+        b.subscribe(ByteBuffer.wrap("once".getBytes())).block();
+        b.pSubscribe(ByteBuffer.wrap("on*".getBytes())).block();
+
+        Awaitility.await().during(Durations.FIVE_HUNDRED_MILLISECONDS).atMost(Durations.TWO_SECONDS).untilAsserted(() -> {
+            assertThat(first).hasValue(2);
+            assertThat(second).hasValue(2);
+        });
+        b.cancel().block();
+        a.cancel().block();
+    }
+
+    private static SubscriptionListener counting(AtomicLong subscriptions) {
+        return new SubscriptionListener() {
+            @Override
+            public void onChannelSubscribed(byte[] channel, long count) {
+                subscriptions.incrementAndGet();
+            }
+
+            @Override
+            public void onPatternSubscribed(byte[] pattern, long count) {
+                subscriptions.incrementAndGet();
+            }
+        };
     }
 
     @Test

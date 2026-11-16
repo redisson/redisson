@@ -48,19 +48,17 @@ public class RedissonReactiveSubscription implements ReactiveSubscription {
     private final Set<FluxSink<Message<ByteBuffer, ByteBuffer>>> emitters = ConcurrentHashMap.newKeySet();
 
     private final RedisPubSubListener subscriptionListener;
+    private final SubscriptionListener listener;
     private final PublishSubscribeService subscribeService;
     
     public RedissonReactiveSubscription(ConnectionManager connectionManager, SubscriptionListener subscriptionListener) {
         this.subscribeService = connectionManager.getSubscribeService();
+        this.listener = subscriptionListener;
         this.subscriptionListener = new RedisPubSubListener() {
 
             @Override
             public void onStatus(PubSubType type, CharSequence channel) {
-                if (type == PubSubType.SUBSCRIBE) {
-                    subscriptionListener.onChannelSubscribed(((ChannelName) channel).getName(), 1L);
-                } else if (type == PubSubType.PSUBSCRIBE) {
-                    subscriptionListener.onPatternSubscribed(((ChannelName) channel).getName(), 1L);
-                } else if (type == PubSubType.UNSUBSCRIBE) {
+                if (type == PubSubType.UNSUBSCRIBE) {
                     subscriptionListener.onChannelUnsubscribed(((ChannelName) channel).getName(), 1L);
                 } else if (type == PubSubType.PUNSUBSCRIBE) {
                     subscriptionListener.onPatternUnsubscribed(((ChannelName) channel).getName(), 1L);
@@ -74,7 +72,7 @@ public class RedissonReactiveSubscription implements ReactiveSubscription {
                     return;
                 }
 
-                for (FluxSink<Message<ByteBuffer, ByteBuffer>> emitter : emitters) {
+                for (FluxSink<Message<ByteBuffer, ByteBuffer>> emitter : currentEmitters()) {
                     emitter.next(new ChannelMessage<>(ByteBuffer.wrap(name.getName()), ByteBuffer.wrap((byte[]) msg)));
                 }
             }
@@ -86,7 +84,7 @@ public class RedissonReactiveSubscription implements ReactiveSubscription {
                     return;
                 }
 
-                for (FluxSink<Message<ByteBuffer, ByteBuffer>> emitter : emitters) {
+                for (FluxSink<Message<ByteBuffer, ByteBuffer>> emitter : currentEmitters()) {
                     emitter.next(new PatternMessage<>(ByteBuffer.wrap(name.getName()),
                                                         ByteBuffer.wrap(((ChannelName) channel).getName()),
                                                         ByteBuffer.wrap((byte[]) message)));
@@ -102,13 +100,36 @@ public class RedissonReactiveSubscription implements ReactiveSubscription {
             for (ByteBuffer channel : channels) {
                 ChannelName cn = toChannelName(channel);
                 CompletableFuture<List<PubSubConnectionEntry>> f = subscribeService.subscribe(ByteArrayCodec.INSTANCE, cn, subscriptionListener);
-                f = f.whenComplete((res, e) -> RedissonReactiveSubscription.this.channels.put(cn, res));
+                f = f.whenComplete((res, e) -> {
+                    if (e == null) {
+                        RedissonReactiveSubscription.this.channels.put(cn, res);
+                        listener.onChannelSubscribed(cn.getName(), 1L);
+                    }
+                });
                 futures.add(f);
             }
 
             CompletableFuture<Void> future = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
-            return Mono.fromFuture(future);
+            return whenSubscribed(future);
         });
+    }
+
+    private Mono<Void> whenSubscribed(CompletableFuture<Void> future) {
+        return Mono.create(sink -> future.whenComplete((res, e) -> {
+            synchronized (emitters) {
+                if (e != null) {
+                    sink.error(e.getCause());
+                } else {
+                    sink.success();
+                }
+            }
+        }));
+    }
+
+    private List<FluxSink<Message<ByteBuffer, ByteBuffer>>> currentEmitters() {
+        synchronized (emitters) {
+            return new ArrayList<>(emitters);
+        }
     }
 
     protected ChannelName toChannelName(ByteBuffer channel) {
@@ -122,12 +143,17 @@ public class RedissonReactiveSubscription implements ReactiveSubscription {
             for (ByteBuffer channel : patterns) {
                 ChannelName cn = toChannelName(channel);
                 CompletableFuture<Collection<PubSubConnectionEntry>> f = subscribeService.psubscribe(cn, ByteArrayCodec.INSTANCE, subscriptionListener);
-                f = f.whenComplete((res, e) -> RedissonReactiveSubscription.this.patterns.put(cn, res));
+                f = f.whenComplete((res, e) -> {
+                    if (e == null) {
+                        RedissonReactiveSubscription.this.patterns.put(cn, res);
+                        listener.onPatternSubscribed(cn.getName(), 1L);
+                    }
+                });
                 futures.add(f);
             }
 
             CompletableFuture<Void> future = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
-            return Mono.fromFuture(future);
+            return whenSubscribed(future);
         });
     }
 

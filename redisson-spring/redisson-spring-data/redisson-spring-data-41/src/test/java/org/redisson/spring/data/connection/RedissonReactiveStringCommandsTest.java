@@ -2,6 +2,7 @@ package org.redisson.spring.data.connection;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.data.redis.connection.ReactiveRedisConnection;
+import org.springframework.data.redis.connection.ReactiveNumberCommands;
 import org.springframework.data.redis.connection.ReactiveStringCommands;
 import org.springframework.data.redis.connection.SetCondition;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
@@ -45,6 +46,19 @@ public class RedissonReactiveStringCommandsTest extends BaseConnectionTest {
         assertThat(stringCommands().setNX(buf("getset"), buf("v3")).block()).isFalse();
         assertThat(stringCommands().setNX(buf("setnx-new"), buf("v1")).block()).isTrue();
         assertThat(redisson.getBucket("setnx-new", org.redisson.client.codec.StringCodec.INSTANCE).get()).isEqualTo("v1");
+    }
+
+    @Test
+    public void testDecrByNegativeDelta() {
+        ReactiveNumberCommands numberCommands = new RedissonConnectionFactory(redisson).getReactiveConnection().numberCommands();
+        assertThat(numberCommands.decrBy(buf("decr"), -3L).block()).isEqualTo(3L);
+        assertThat(numberCommands.decrBy(buf("decr"), 1L).block()).isEqualTo(2L);
+        assertThat(numberCommands.decrBy(buf("decr-double"), -1.5).block()).isEqualTo(1.5);
+        assertThat(numberCommands.decrBy(buf("decr-double"), 0.25).block()).isEqualTo(1.25);
+
+        ReactiveStringRedisTemplate template = new ReactiveStringRedisTemplate(new RedissonConnectionFactory(redisson));
+        assertThat(template.opsForValue().decrement("decr-template", -2L).block()).isEqualTo(2L);
+        assertThat(template.opsForValue().get("decr-template").block()).isEqualTo("2");
     }
 
     @Test

@@ -610,6 +610,13 @@ public class RedissonConnectionTest extends BaseConnectionTest {
     }
 
     @Test
+    public void testClusterConnectionsOutsideClusterMode() {
+        RedissonConnectionFactory factory = new RedissonConnectionFactory(redisson);
+        assertThatThrownBy(factory::getClusterConnection).isInstanceOf(InvalidDataAccessApiUsageException.class);
+        assertThatThrownBy(factory::getReactiveClusterConnection).isInstanceOf(InvalidDataAccessApiUsageException.class);
+    }
+
+    @Test
     public void testExecuteBlockingCommand() {
         Logger promiseLogger = (Logger) LoggerFactory.getLogger("io.netty.util.concurrent.DefaultPromise");
         ListAppender<ILoggingEvent> warnings = new ListAppender<>();

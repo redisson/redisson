@@ -97,7 +97,7 @@ public class RedissonReactiveGeoCommands extends RedissonBaseReactive implements
             }
             
             Mono<Distance> m = write(keyBuf, DoubleCodec.INSTANCE, new RedisCommand<Distance>("GEODIST", new DistanceConvertor(metric)), 
-                                    keyBuf, fromBuf, toBuf, metric.getAbbreviation());
+                                    keyBuf, fromBuf, toBuf, convert(metric).getAbbreviation());
             return m.map(v -> new CommandResponse<>(command, v));
         });
     }
@@ -159,7 +159,7 @@ public class RedissonReactiveGeoCommands extends RedissonBaseReactive implements
             params.add(BigDecimal.valueOf(command.getPoint().getX()).toPlainString());
             params.add(BigDecimal.valueOf(command.getPoint().getY()).toPlainString());
             params.add(command.getDistance().getValue());
-            params.add(command.getDistance().getMetric().getAbbreviation());
+            params.add(convert(command.getDistance().getMetric()).getAbbreviation());
             
             MultiDecoder<GeoResults<GeoLocation<ByteBuffer>>> decoder = new ListMultiDecoder2(new ByteBufferGeoResultsDecoder(command.getDistance().getMetric()), new GeoDistanceDecoder(), new PointDecoder());
             RedisCommand<GeoResults<GeoLocation<ByteBuffer>>> cmd = new RedisCommand<>("GEORADIUS_RO", decoder);
@@ -204,7 +204,7 @@ public class RedissonReactiveGeoCommands extends RedissonBaseReactive implements
             params.add(keyBuf);
             params.add(memberBuf);
             params.add(command.getDistance().getValue());
-            params.add(command.getDistance().getMetric().getAbbreviation());
+            params.add(convert(command.getDistance().getMetric()).getAbbreviation());
             
             MultiDecoder<GeoResults<GeoLocation<ByteBuffer>>> decoder = new ListMultiDecoder2(new ByteBufferGeoResultsDecoder(command.getDistance().getMetric()), new GeoDistanceDecoder(), new PointDecoder());
             RedisCommand<GeoResults<GeoLocation<ByteBuffer>>> cmd = new RedisCommand<>("GEORADIUSBYMEMBER_RO", decoder);
