@@ -16,6 +16,7 @@ import org.springframework.data.redis.connection.RedisGeoCommands.GeoLocation;
 import org.springframework.data.redis.connection.RedisGeoCommands.GeoRadiusCommandArgs;
 import org.springframework.data.redis.connection.RedisGeoCommands.GeoSearchCommandArgs;
 import org.springframework.data.redis.connection.RedisGeoCommands.GeoSearchStoreCommandArgs;
+import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.data.redis.domain.geo.GeoReference;
 import org.springframework.data.redis.domain.geo.GeoShape;
 
@@ -50,6 +51,23 @@ public class RedissonReactiveGeoCommandsTest extends BaseConnectionTest {
         assertThat(geoCommands.geoDist(key, ByteBuffer.wrap("Palermo".getBytes()), ByteBuffer.wrap("Rome".getBytes())).blockOptional()).isEmpty();
         assertThat(geoCommands.geoDist(key, ByteBuffer.wrap("Palermo".getBytes()), ByteBuffer.wrap("Catania".getBytes()), Metrics.KILOMETERS).block().getValue())
                 .isCloseTo(166.2742, within(0.01));
+    }
+
+    @Test
+    public void testDistancesWithoutUnit() {
+        ByteBuffer key = addSicily("geo-neutral");
+        ByteBuffer palermo = ByteBuffer.wrap("Palermo".getBytes());
+
+        assertThat(geoCommands.geoRadius(key, new Circle(new Point(15, 37), new Distance(200_000))).collectList().block())
+                .extracting(RedissonReactiveGeoCommandsTest::name).containsExactlyInAnyOrder("Palermo", "Catania");
+        assertThat(geoCommands.geoRadiusByMember(key, palermo, new Distance(200_000)).collectList().block())
+                .extracting(RedissonReactiveGeoCommandsTest::name).containsExactlyInAnyOrder("Palermo", "Catania");
+        Distance distance = geoCommands.geoDist(key, palermo, ByteBuffer.wrap("Catania".getBytes()), Metrics.NEUTRAL).block();
+        assertThat(distance.getValue()).isCloseTo(166274.15, within(0.1));
+        assertThat(distance.getMetric()).isEqualTo(Metrics.NEUTRAL);
+
+        ReactiveStringRedisTemplate template = new ReactiveStringRedisTemplate(new RedissonConnectionFactory(redisson));
+        assertThat(template.opsForGeo().radius("geo-neutral", "Palermo", 200_000).collectList().block()).hasSize(2);
     }
 
     @Test

@@ -118,23 +118,17 @@ public class RedissonReactiveScriptingCommands extends RedissonBaseReactive impl
     }
 
     protected <T> Flux<T> convert(Mono<T> m) {
-        return (Flux<T>) m.map(e -> {
-            if (e.getClass().isArray()) {
-                return ByteBuffer.wrap((byte[])e);
-            }
-            if (e instanceof List) {
-                List l = (List) e;
-                if (!l.isEmpty()) {
-                    for (int i = 0; i < l.size(); i++) {
-                        if (l.get(i).getClass().isArray()) {
-                            l.set(i, ByteBuffer.wrap((byte[])l.get(i)));
-                        }
-                    }
-                    return l;
-                }
-            }
-            return e;
-        }).flux();
+        return (Flux<T>) m.map(e -> toByteBuffers(e)).flux();
+    }
+
+    private static Object toByteBuffers(Object value) {
+        if (value instanceof byte[]) {
+            return ByteBuffer.wrap((byte[]) value);
+        }
+        if (value instanceof List) {
+            ((List<Object>) value).replaceAll(v -> toByteBuffers(v));
+        }
+        return value;
     }
 
     @Override
