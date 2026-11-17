@@ -77,7 +77,7 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
         RedisStrictCommand<List<RedisClusterNode>> cluster
                 = new RedisStrictCommand<List<RedisClusterNode>>("CLUSTER", "NODES",
                             new ObjectDecoder(new RedisClusterNodeDecoder(executorService.getServiceManager())));
-        return read(null, StringCodec.INSTANCE, cluster);
+        return syncFuture(redisson.getCommandExecutor().readAsync((String) null, StringCodec.INSTANCE, cluster));
     }
 
     @Override
@@ -134,7 +134,7 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
 
     @Override
     public Integer clusterGetSlotForKey(byte[] key) {
-        RFuture<Integer> f = executorService.readAsync((String)null, StringCodec.INSTANCE, RedisCommands.KEYSLOT, key);
+        RFuture<Integer> f = redisson.getCommandExecutor().readAsync((String)null, StringCodec.INSTANCE, RedisCommands.KEYSLOT, key);
         return syncFuture(f);
     }
 
@@ -157,7 +157,7 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
 
     @Override
     public ClusterInfo clusterGetClusterInfo() {
-        RFuture<Map<String, String>> f = executorService.readAsync((String)null, StringCodec.INSTANCE, RedisCommands.CLUSTER_INFO);
+        RFuture<Map<String, String>> f = redisson.getCommandExecutor().readAsync((String)null, StringCodec.INSTANCE, RedisCommands.CLUSTER_INFO);
         Map<String, String> entries = syncFuture(f);
 
         Properties props = new Properties();
@@ -171,7 +171,7 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
     public void clusterAddSlots(RedisClusterNode node, int... slots) {
         RedisClient entry = getEntry(node);
         List<Integer> params = convert(slots);
-        RFuture<Map<String, String>> f = executorService.writeAsync(entry, StringCodec.INSTANCE, RedisCommands.CLUSTER_ADDSLOTS, params.toArray());
+        RFuture<Map<String, String>> f = redisson.getCommandExecutor().writeAsync(entry, StringCodec.INSTANCE, RedisCommands.CLUSTER_ADDSLOTS, params.toArray());
         syncFuture(f);
     }
 
@@ -192,7 +192,7 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
     public Long clusterCountKeysInSlot(int slot) {
         RedisClusterNode node = clusterGetNodeForSlot(slot);
         MasterSlaveEntry entry = executorService.getConnectionManager().getEntry(new InetSocketAddress(node.getHost(), node.getPort()));
-        RFuture<Long> f = executorService.readAsync(entry, StringCodec.INSTANCE, RedisCommands.CLUSTER_COUNTKEYSINSLOT, slot);
+        RFuture<Long> f = redisson.getCommandExecutor().readAsync(entry, StringCodec.INSTANCE, RedisCommands.CLUSTER_COUNTKEYSINSLOT, slot);
         return syncFuture(f);
     }
 
@@ -200,7 +200,7 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
     public void clusterDeleteSlots(RedisClusterNode node, int... slots) {
         RedisClient entry = getEntry(node);
         List<Integer> params = convert(slots);
-        RFuture<Long> f = executorService.writeAsync(entry, StringCodec.INSTANCE, RedisCommands.CLUSTER_DELSLOTS, params.toArray());
+        RFuture<Long> f = redisson.getCommandExecutor().writeAsync(entry, StringCodec.INSTANCE, RedisCommands.CLUSTER_DELSLOTS, params.toArray());
         syncFuture(f);
     }
 
@@ -214,7 +214,7 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
         List<CompletableFuture<Void>> futures = new ArrayList<>();
         for (RedisClusterNode clusterNode : clusterGetNodes()) {
             if (clusterNode.isConnected() && !clusterNode.getId().equals(node.getId())) {
-                RFuture<Void> f = executorService.writeAsync(getEntry(clusterNode), StringCodec.INSTANCE, RedisCommands.CLUSTER_FORGET, node.getId());
+                RFuture<Void> f = redisson.getCommandExecutor().writeAsync(getEntry(clusterNode), StringCodec.INSTANCE, RedisCommands.CLUSTER_FORGET, node.getId());
                 futures.add(f.toCompletableFuture());
             }
         }
@@ -228,14 +228,14 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
         Assert.hasText(node.getHost(), "Node to meet cluster must have a host!");
         Assert.isTrue(node.getPort() > 0, "Node to meet cluster must have a port greater 0!");
         
-        RFuture<Void> f = executorService.writeAsync((String)null, StringCodec.INSTANCE, RedisCommands.CLUSTER_MEET, node.getHost(), node.getPort());
+        RFuture<Void> f = redisson.getCommandExecutor().writeAsync((String)null, StringCodec.INSTANCE, RedisCommands.CLUSTER_MEET, node.getHost(), node.getPort());
         syncFuture(f);
     }
 
     @Override
     public void clusterSetSlot(RedisClusterNode node, int slot, AddSlots mode) {
         RedisClient entry = getEntry(node);
-        RFuture<Map<String, String>> f = executorService.writeAsync(entry, StringCodec.INSTANCE, RedisCommands.CLUSTER_SETSLOT, slot, mode);
+        RFuture<Map<String, String>> f = redisson.getCommandExecutor().writeAsync(entry, StringCodec.INSTANCE, RedisCommands.CLUSTER_SETSLOT, slot, mode);
         syncFuture(f);
     }
     
@@ -244,14 +244,14 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
     @Override
     public List<byte[]> clusterGetKeysInSlot(int slot, Integer count) {
         RedisClient entry = getEntry(clusterGetNodeForSlot(slot));
-        RFuture<List<byte[]>> f = executorService.writeAsync(entry, ByteArrayCodec.INSTANCE, CLUSTER_GETKEYSINSLOT, slot, count);
+        RFuture<List<byte[]>> f = redisson.getCommandExecutor().writeAsync(entry, ByteArrayCodec.INSTANCE, CLUSTER_GETKEYSINSLOT, slot, count);
         return syncFuture(f);
     }
 
     @Override
     public void clusterReplicate(RedisClusterNode master, RedisClusterNode slave) {
         RedisClient entry = getEntry(slave);
-        RFuture<Long> f = executorService.writeAsync(entry, StringCodec.INSTANCE, RedisCommands.CLUSTER_REPLICATE, master.getId());
+        RFuture<Long> f = redisson.getCommandExecutor().writeAsync(entry, StringCodec.INSTANCE, RedisCommands.CLUSTER_REPLICATE, master.getId());
         syncFuture(f);
     }
 
@@ -287,7 +287,7 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
 
     private <T> T execute(RedisClusterNode node, RedisCommand<T> command, Object... params) {
         RedisClient entry = getEntry(node);
-        RFuture<T> f = executorService.writeAsync(entry, StringCodec.INSTANCE, command, params);
+        RFuture<T> f = redisson.getCommandExecutor().writeAsync(entry, StringCodec.INSTANCE, command, params);
         return syncFuture(f);
     }
 
@@ -386,7 +386,7 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
     @Override
     public Set<byte[]> keys(RedisClusterNode node, byte[] pattern) {
         RedisClient entry = getEntry(node);
-        RFuture<Collection<byte[]>> f = executorService.readAsync(entry, ByteArrayCodec.INSTANCE, KEYS, pattern);
+        RFuture<Collection<byte[]>> f = redisson.getCommandExecutor().readAsync(entry, ByteArrayCodec.INSTANCE, KEYS, pattern);
         Collection<byte[]> keys = syncFuture(f);
         return new HashSet<>(keys);
     }
@@ -394,21 +394,21 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
     @Override
     public byte[] randomKey(RedisClusterNode node) {
         RedisClient entry = getEntry(node);
-        RFuture<byte[]> f = executorService.readRandomAsync(entry, ByteArrayCodec.INSTANCE, RedisCommands.RANDOM_KEY);
+        RFuture<byte[]> f = redisson.getCommandExecutor().readRandomAsync(entry, ByteArrayCodec.INSTANCE, RedisCommands.RANDOM_KEY);
         return syncFuture(f);
     }
 
     @Override
     public void shutdown(RedisClusterNode node) {
         RedisClient entry = getEntry(node);
-        RFuture<Void> f = executorService.readAsync(entry, ByteArrayCodec.INSTANCE, RedisCommands.SHUTDOWN);
+        RFuture<Void> f = redisson.getCommandExecutor().readAsync(entry, ByteArrayCodec.INSTANCE, RedisCommands.SHUTDOWN);
         syncFuture(f);
     }
 
     @Override
     public Properties getConfig(RedisClusterNode node, String pattern) {
         RedisClient entry = getEntry(node);
-        RFuture<List<String>> f = executorService.writeAsync(entry, StringCodec.INSTANCE, RedisCommands.CONFIG_GET, pattern);
+        RFuture<List<String>> f = redisson.getCommandExecutor().writeAsync(entry, StringCodec.INSTANCE, RedisCommands.CONFIG_GET, pattern);
         List<String> r = syncFuture(f);
         if (r != null) {
             return Converters.toProperties(r);
@@ -419,14 +419,14 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
     @Override
     public void setConfig(RedisClusterNode node, String param, String value) {
         RedisClient entry = getEntry(node);
-        RFuture<Void> f = executorService.writeAsync(entry, StringCodec.INSTANCE, RedisCommands.CONFIG_SET, param, value);
+        RFuture<Void> f = redisson.getCommandExecutor().writeAsync(entry, StringCodec.INSTANCE, RedisCommands.CONFIG_SET, param, value);
         syncFuture(f);
     }
 
     @Override
     public void resetConfigStats(RedisClusterNode node) {
         RedisClient entry = getEntry(node);
-        RFuture<Void> f = executorService.writeAsync(entry, StringCodec.INSTANCE, RedisCommands.CONFIG_RESETSTAT);
+        RFuture<Void> f = redisson.getCommandExecutor().writeAsync(entry, StringCodec.INSTANCE, RedisCommands.CONFIG_RESETSTAT);
         syncFuture(f);
     }
 
@@ -479,14 +479,14 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
     @Override
     public Long time(RedisClusterNode node) {
         RedisClient entry = getEntry(node);
-        RFuture<Long> f = executorService.readAsync(entry, LongCodec.INSTANCE, RedisCommands.TIME_LONG);
+        RFuture<Long> f = redisson.getCommandExecutor().readAsync(entry, LongCodec.INSTANCE, RedisCommands.TIME_LONG);
         return syncFuture(f);
     }
 
     @Override
     public Long time(RedisClusterNode node, TimeUnit timeUnit) {
         RedisClient entry = getEntry(node);
-        RFuture<Long> f = executorService.readAsync(entry, LongCodec.INSTANCE,
+        RFuture<Long> f = redisson.getCommandExecutor().readAsync(entry, LongCodec.INSTANCE,
                 new RedisStrictCommand<>("TIME", new TimeLongObjectDecoder(timeUnit)));
         return syncFuture(f);
     }
@@ -496,7 +496,7 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
     @Override
     public List<RedisClientInfo> getClientList(RedisClusterNode node) {
         RedisClient entry = getEntry(node);
-        RFuture<List<String>> f = executorService.readAsync(entry, StringCodec.INSTANCE, RedisCommands.CLIENT_LIST);
+        RFuture<List<String>> f = redisson.getCommandExecutor().readAsync(entry, StringCodec.INSTANCE, RedisCommands.CLIENT_LIST);
         List<String> list = syncFuture(f);
         return CONVERTER.convert(list.toArray(new String[list.size()]));
     }
@@ -923,7 +923,7 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
     @Override
     public String ping(RedisClusterNode node) {
         RedisClient entry = getEntry(node);
-        RFuture<String> f = executorService.readAsync(entry, LongCodec.INSTANCE, RedisCommands.PING);
+        RFuture<String> f = redisson.getCommandExecutor().readAsync(entry, LongCodec.INSTANCE, RedisCommands.PING);
         return syncFuture(f);
     }
 

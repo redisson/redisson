@@ -922,6 +922,25 @@ public class RedissonConnectionTest extends BaseConnectionTest {
     }
 
     @Test
+    public void testFilterOkResponsesKeepsSetGet() {
+        RedissonConnection connection = new RedissonConnection(redisson, true);
+        connection.set("setget".getBytes(), "v1".getBytes());
+
+        connection.openPipeline();
+        connection.set("setget-other".getBytes(), "1".getBytes());
+        connection.stringCommands().setGet("setget".getBytes(), "v2".getBytes(), SetCondition.upsert(), Expiration.persistent());
+        connection.get("setget".getBytes());
+        assertThat(connection.closePipeline()).containsExactly("v1".getBytes(), "v2".getBytes());
+
+        connection.multi();
+        connection.set("setget-other".getBytes(), "2".getBytes());
+        connection.stringCommands().setGet("setget".getBytes(), "v3".getBytes(), SetCondition.upsert(), Expiration.persistent());
+        connection.get("setget".getBytes());
+        assertThat(connection.exec()).containsExactly("v2".getBytes(), "v3".getBytes());
+        connection.close();
+    }
+
+    @Test
     public void testGetDel() {
         connection.set("key1".getBytes(), "value1".getBytes());
         connection.set("key2".getBytes(), "value2".getBytes());

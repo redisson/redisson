@@ -18,10 +18,13 @@ import reactor.core.publisher.Mono;
 
 import java.nio.ByteBuffer;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -243,6 +246,53 @@ public class RedissonSubscribeReactiveTest extends BaseConnectionTest {
         Awaitility.await().atMost(Durations.FIVE_SECONDS).untilAsserted(() -> {
             assertThat(subscribedPatterns.get()).isZero();
         });
+        subscription.cancel().block();
+    }
+
+    @Test
+    public void testUnsubscribeAfterPublish() throws InterruptedException {
+        checkUnsubscribeAfterPublish("drain-channel", "drain-channel", false);
+    }
+
+    @Test
+    public void testPUnsubscribeAfterPublish() throws InterruptedException {
+        checkUnsubscribeAfterPublish("drain-pattern*", "drain-pattern1", true);
+    }
+
+    private void checkUnsubscribeAfterPublish(String name, String channel, boolean pattern) throws InterruptedException {
+        RedissonConnectionFactory factory = new RedissonConnectionFactory(redisson);
+        ReactiveSubscription subscription = factory.getReactiveConnection().pubSubCommands().createSubscription().block();
+        ByteBuffer topic = ByteBuffer.wrap(name.getBytes());
+        if (pattern) {
+            subscription.pSubscribe(topic).block();
+        } else {
+            subscription.subscribe(topic).block();
+        }
+        List<String> received = new CopyOnWriteArrayList<>();
+        CountDownLatch first = new CountDownLatch(1);
+        subscription.receive().subscribe(message -> {
+            if (received.isEmpty()) {
+                first.countDown();
+                LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(300));
+            }
+            received.add(new String(message.getMessage().array()));
+        });
+        List<String> published = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            published.add("m" + i);
+            connection.publish(channel.getBytes(), ("m" + i).getBytes());
+        }
+        assertThat(first.await(5, TimeUnit.SECONDS)).isTrue();
+
+        if (pattern) {
+            subscription.pUnsubscribe(topic).block();
+            assertThat(subscription.getPatterns()).isEmpty();
+        } else {
+            subscription.unsubscribe(topic).block();
+            assertThat(subscription.getChannels()).isEmpty();
+        }
+
+        assertThat(received).containsExactlyElementsOf(published);
         subscription.cancel().block();
     }
 
