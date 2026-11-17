@@ -452,6 +452,24 @@ public class RedissonBatchTest extends RedisDockerTest {
 
     @ParameterizedTest
     @EnumSource(ExecutionMode.class)
+    public void testBatchRandomKeyInCluster(ExecutionMode executionMode) {
+        testInCluster(client -> {
+            client.getKeys().flushall();
+            client.getBucket("key").set("value");
+            for (int i = 0; i < 10; i++) {
+                RBatch batch = client.createBatch(BatchOptions.defaults().executionMode(executionMode));
+                RFuture<String> randomKey = batch.getKeys().randomKeyAsync();
+                BatchResult<?> result = batch.execute();
+
+                String key = randomKey.toCompletableFuture().orTimeout(5, TimeUnit.SECONDS).join();
+                assertThat(key).isIn("key", null);
+                assertThat((List<Object>) result.getResponses()).containsExactly(key);
+            }
+        });
+    }
+
+    @ParameterizedTest
+    @EnumSource(ExecutionMode.class)
     public void testBatchReadEntries(ExecutionMode executionMode) {
         redisson.getKeys().flushall();
         redisson.getBucket("key").set("value");

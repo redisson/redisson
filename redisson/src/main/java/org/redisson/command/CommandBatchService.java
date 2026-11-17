@@ -227,6 +227,13 @@ public class CommandBatchService extends CommandAsyncService implements BatchSer
     }
         
     @Override
+    public <T, R> RFuture<R> readRandomAsync(Codec codec, RedisCommand<T> command, Object... params) {
+        List<MasterSlaveEntry> entries = new ArrayList<>(connectionManager.getEntrySet());
+        MasterSlaveEntry entry = entries.get(ThreadLocalRandom.current().nextInt(entries.size()));
+        return async(true, new NodeSource(entry, entry.getClient()), codec, command, params, false, false);
+    }
+
+    @Override
     public <R> CompletableFuture<R> createPromise() {
         if (isRedisBasedQueue()) {
             return new BatchPromise<>();
