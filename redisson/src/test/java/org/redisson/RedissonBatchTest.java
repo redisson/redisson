@@ -29,6 +29,7 @@ import org.redisson.api.stream.StreamReadGroupArgs;
 import org.redisson.client.*;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.client.protocol.Time;
 import org.redisson.cluster.ClusterNodeInfo;
 import org.redisson.codec.JsonJacksonCodec;
@@ -47,6 +48,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
 import static org.awaitility.Awaitility.await;
 
@@ -446,6 +448,35 @@ public class RedissonBatchTest extends RedisDockerTest {
 
             assertThat(randomKey.toCompletableFuture().join()).isEqualTo("key");
         }
+    }
+
+    @ParameterizedTest
+    @EnumSource(ExecutionMode.class)
+    public void testBatchReadEntries(ExecutionMode executionMode) {
+        redisson.getKeys().flushall();
+        redisson.getBucket("key").set("value");
+
+        RBatch batch = redisson.createBatch(BatchOptions.defaults().executionMode(executionMode));
+        batch.getBucket("key").getAsync();
+        batch.getKeys().randomKeyAsync();
+        batch.getKeys().countAsync();
+        BatchResult<?> result = batch.execute();
+
+        assertThat((List<Object>) result.getResponses()).containsExactly("value", "key", 1L);
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = ExecutionMode.class, names = {"IN_MEMORY", "IN_MEMORY_ATOMIC", "REDIS_WRITE_ATOMIC"})
+    public void testBatchWriteEntries(ExecutionMode executionMode) {
+        redisson.getKeys().flushall();
+        redisson.getBucket("before").set("1");
+
+        RBatch batch = redisson.createBatch(BatchOptions.defaults().executionMode(executionMode));
+        batch.getKeys().flushdbAsync();
+        batch.getBucket("after").setAsync("2");
+        batch.execute();
+
+        assertThat(redisson.getKeys().getKeys()).containsExactly("after");
     }
 
 	public RFuture<BatchResult<?>> executeBatch(RedissonClient client, BatchOptions batchOptions) {
@@ -998,6 +1029,64 @@ public class RedissonBatchTest extends RedisDockerTest {
         BatchResult<?> r = batch.execute();
         assertThat((List<Object>)r.getResponses()).containsExactly(true);
 
+        redisson.shutdown();
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = ExecutionMode.class, names = {"REDIS_READ_ATOMIC", "REDIS_WRITE_ATOMIC"})
+    public void testBatchPingWhileQueued(ExecutionMode executionMode) throws InterruptedException {
+        Config config = createConfig();
+        config.useSingleServer()
+                .setPingConnectionInterval(100)
+                .setClientName("batch-ping");
+        RedissonClient redisson = Redisson.create(config);
+        redisson.getBucket("test").set("1232");
+
+        RBatch batch = redisson.createBatch(BatchOptions.defaults().executionMode(executionMode));
+        batch.getBucket("test").getAsync();
+        Thread.sleep(500);
+        BatchResult<?> r = batch.execute();
+        assertThat((List<Object>) r.getResponses()).containsExactly("1232");
+
+        RedisClientConfig clientConfig = new RedisClientConfig();
+        clientConfig.setAddress(config.useSingleServer().getAddress());
+        RedisClient client = RedisClient.create(clientConfig);
+        RedisConnection connection = client.connect();
+        await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> {
+            List<String> clients = connection.sync(StringCodec.INSTANCE, RedisCommands.CLIENT_LIST);
+            assertThat(clients).anyMatch(c -> c.contains("name=batch-ping"));
+            assertThat(clients).filteredOn(c -> c.contains("name=batch-ping")).noneMatch(c -> c.contains("cmd=exec"));
+        });
+        client.shutdown();
+        redisson.shutdown();
+    }
+
+    @Test
+    public void testBatchPingAfterFailedDiscard() throws InterruptedException {
+        Config config = createConfig();
+        config.useSingleServer()
+                .setPingConnectionInterval(100)
+                .setTimeout(200)
+                .setRetryAttempts(0)
+                .setClientName("discard-ping");
+        RedissonClient redisson = Redisson.create(config);
+
+        RedisClientConfig clientConfig = new RedisClientConfig();
+        clientConfig.setAddress(config.useSingleServer().getAddress());
+        RedisClient client = RedisClient.create(clientConfig);
+        RedisConnection connection = client.connect();
+
+        RBatch batch = redisson.createBatch(BatchOptions.defaults().executionMode(ExecutionMode.REDIS_WRITE_ATOMIC));
+        batch.getBucket("test").setAsync("1");
+        Thread.sleep(300);
+        connection.sync(new RedisStrictCommand<Void>("CLIENT", "PAUSE"), 1000);
+        assertThatThrownBy(batch::discard).isInstanceOf(RedisException.class);
+
+        await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> {
+            List<String> clients = connection.sync(StringCodec.INSTANCE, RedisCommands.CLIENT_LIST);
+            assertThat(clients).filteredOn(c -> c.contains("name=discard-ping")).noneMatch(c -> c.contains("cmd=discard"));
+        });
+        client.shutdown();
         redisson.shutdown();
     }
 

@@ -67,7 +67,8 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
     @Override
     public void execute() {
         try {
-            if (source.getEntry() != null) {
+            if (RedisCommands.EXEC.getName().equals(command.getName())
+                    || RedisCommands.DISCARD.getName().equals(command.getName())) {
                 Entry entry = aggregatedCommands.computeIfAbsent(source.getEntry(), k -> new Entry());
 
                 if (!readOnlyMode) {
@@ -103,6 +104,10 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
                 return;
             }
 
+            RedisConnection connection = getNow(connectionFuture);
+            if (connection != null) {
+                connection.setQueued(false);
+            }
             super.releaseConnection(attemptPromise, connectionFuture);
         }
     }
@@ -161,6 +166,7 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
             CompletableFuture<Void> promise = new CompletableFuture<>();
             list.add(new CommandData<>(promise, codec, RedisCommands.ASKING, new Object[]{}));
             if (connectionEntry.isFirstCommand()) {
+                connection.setQueued(true);
                 list.add(new CommandData<>(promise, codec, RedisCommands.MULTI, new Object[]{}));
                 connectionEntry.setFirstCommand(false);
             }
@@ -174,6 +180,7 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
             }
             
             if (connectionEntry.isFirstCommand()) {
+                connection.setQueued(true);
                 List<CommandData<?, ?>> list = new ArrayList<>(2);
                 list.add(new CommandData<>(new CompletableFuture<>(), codec, RedisCommands.MULTI, new Object[]{}));
                 list.add(new CommandData<>(attemptPromise, codec, command, params));

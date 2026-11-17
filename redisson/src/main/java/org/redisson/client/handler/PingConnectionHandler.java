@@ -68,11 +68,16 @@ public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
         if (isClosed(ctx, connection)) {
             return;
         }
+        if (!ctx.executor().inEventLoop()) {
+            ctx.executor().execute(() -> sendPing(ctx));
+            return;
+        }
 
         RFuture<String> future;
         QueueCommand currentCommand = connection.getCurrentCommandData();
         if ((currentCommand == null || !currentCommand.isBlockingCommand())
-                && !isBatchInProgress(connection)) {
+                && !isBatchInProgress(connection)
+                && !connection.isQueued()) {
             int timeout = Math.max(config.getCommandTimeout(), config.getPingConnectionInterval() / 2);
             future = connection.async(timeout, StringCodec.INSTANCE, RedisCommands.PING);
         } else {

@@ -49,6 +49,7 @@ public class RedisConnection implements RedisCommands {
 
     private static final Logger LOG = LoggerFactory.getLogger(RedisConnection.class);
     private static final AttributeKey<RedisConnection> CONNECTION = AttributeKey.valueOf("connection");
+    private static final AttributeKey<Boolean> QUEUED = AttributeKey.valueOf("queued");
 
     final RedisClient redisClient;
 
@@ -98,6 +99,14 @@ public class RedisConnection implements RedisCommands {
 
     public int decUsage() {
         return usage.decrementAndGet();
+    }
+
+    public boolean isQueued() {
+        return Boolean.TRUE.equals(channel.attr(QUEUED).get());
+    }
+
+    public void setQueued(boolean queued) {
+        channel.attr(QUEUED).set(queued);
     }
 
     @Deprecated
