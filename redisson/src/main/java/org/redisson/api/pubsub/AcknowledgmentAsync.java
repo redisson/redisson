@@ -29,6 +29,8 @@ public interface AcknowledgmentAsync {
 
     /**
      * Acknowledges the successful processing of a message.
+     * <p>
+     * Message owner isn't checked.
      *
      * @param args acknowledgment arguments
      * @return list of acknowledged message IDs
@@ -38,6 +40,8 @@ public interface AcknowledgmentAsync {
 
     /**
      * Explicitly marks a message as failed or rejected.
+     * <p>
+     * Message owner isn't checked.
      *
      * @param args arguments specifying the message to negatively acknowledge
      * @return list of negatively acknowledged message IDs
@@ -46,6 +50,8 @@ public interface AcknowledgmentAsync {
 
     /**
      * Updates visibility by message ID.
+     * <p>
+     * Message owner is checked.
      *
      * @param args visibility arguments
      * @return <code>true</code> if visibility has been updated.

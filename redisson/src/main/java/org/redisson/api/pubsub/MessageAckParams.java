@@ -17,6 +17,11 @@ package org.redisson.api.pubsub;
 
 import org.redisson.api.BaseSyncParams;
 
+import java.util.Arrays;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
 /**
  *
  * @author Nikita Koksharov
@@ -24,13 +29,17 @@ import org.redisson.api.BaseSyncParams;
  */
 public class MessageAckParams extends BaseSyncParams<MessageAckArgs> implements MessageAckArgs {
 
-    private final String[] ids;
+    private final Map<String, Integer> deliveriesById;
 
     public MessageAckParams(String[] ids) {
-        this.ids = ids;
+        this.deliveriesById = Arrays.stream(ids).collect(Collectors.toMap(Function.identity(), s -> 0));
     }
 
-    public String[] getIds() {
-        return ids;
+    public MessageAckParams(Map<String, Integer> value) {
+        this.deliveriesById = value;
+    }
+
+    public Map<String, Integer> getDeliveriesById() {
+        return deliveriesById;
     }
 }

@@ -15,8 +15,6 @@
  */
 package org.redisson.api;
 
-import org.redisson.api.queue.DeduplicationMode;
-
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
@@ -40,6 +38,8 @@ public final class MessageParams<V> implements MessageArgs<V> {
     private Duration deduplicationInterval;
     private Object deduplicationId;
     private Duration delayInterval = Duration.ZERO;
+    private Object orderingKey;
+    private String id;
 
     public MessageParams(V value) {
         this.payload = value;
@@ -115,6 +115,18 @@ public final class MessageParams<V> implements MessageArgs<V> {
         return this;
     }
 
+    @Override
+    public MessageArgs<V> groupId(Object orderingKey) {
+        this.orderingKey = orderingKey;
+        return this;
+    }
+
+    @Override
+    public MessageArgs<V> id(String id) {
+        this.id = id;
+        return this;
+    }
+
     public long getRetentionDuration() {
         return retentionDuration;
     }
@@ -129,6 +141,10 @@ public final class MessageParams<V> implements MessageArgs<V> {
 
     public V getPayload() {
         return payload;
+    }
+
+    public String getId() {
+        return id;
     }
 
     public DeduplicationMode getDeduplicationMode() {
@@ -149,5 +165,9 @@ public final class MessageParams<V> implements MessageArgs<V> {
 
     public int getPriority() {
         return priority;
+    }
+
+    public Object getOrderingKey() {
+        return orderingKey;
     }
 }

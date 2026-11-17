@@ -34,6 +34,8 @@ public final class QueuePollParams extends BaseSyncParams<QueuePollArgs> impleme
 
     private Codec headersCodec;
 
+    private String id = "";
+
     @Override
     public QueuePollArgs acknowledgeMode(AcknowledgeMode mode) {
         this.acknowledgeMode = mode;
@@ -82,5 +84,13 @@ public final class QueuePollParams extends BaseSyncParams<QueuePollArgs> impleme
 
     public AcknowledgeMode getAcknowledgeMode() {
         return acknowledgeMode;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 }

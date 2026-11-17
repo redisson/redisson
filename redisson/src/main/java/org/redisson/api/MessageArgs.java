@@ -19,7 +19,7 @@ import java.time.Duration;
 import java.util.Map;
 
 /**
- * Fluent API interface defining parameters for a message in a queue.
+ * Fluent API interface defining parameters for a message added in a queue or pubsub.
  *
  * @author Nikita Koksharov
  * @param <V> type
@@ -56,6 +56,7 @@ public interface MessageArgs<V> {
 
     /**
      * Enables deduplication based on the payload hash for the specified interval.
+     * 128-bit HighwayHash is used for hashing.
      * <p>
      * During the specified interval, messages with the same hash will be considered duplicates
      * and won't be added to the queue.
@@ -133,5 +134,29 @@ public interface MessageArgs<V> {
     static <V> MessageArgs<V> payload(V value) {
         return new MessageParams<V>(value);
     }
+
+    /**
+     * Sets an identifier for the message.
+     * <p>
+     * If a message with the same identifier already exists then the new message will not be added.
+     * <p>
+     * If identifier isn't set then a unique 128-bits hex value is generated.
+     *
+     * @param id message identifier
+     * @return arguments object
+     */
+    MessageArgs<V> id(String id);
+
+    /**
+     * Sets a group identifier for the message.
+     * <p>
+     * Messages with the same group ID are guaranteed to be processed
+     * by the same consumer.
+     * </p>
+     *
+     * @param id the group identifier
+     * @return arguments object
+     */
+    MessageArgs<V> groupId(Object id);
 
 }

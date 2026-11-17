@@ -28,6 +28,7 @@ import java.util.Objects;
 public class VisibilityParams extends BaseSyncParams<VisibilityArgs> implements VisibilityArgs, VisibilityStepArgs {
 
     private final String id;
+    private int delivery;
     private Duration visibility;
 
     public VisibilityParams(String id) {
@@ -47,5 +48,15 @@ public class VisibilityParams extends BaseSyncParams<VisibilityArgs> implements 
     public VisibilityArgs visibility(Duration value) {
         visibility = value;
         return this;
+    }
+
+    @Override
+    public VisibilityArgs deliveries(int value) {
+        delivery = value;
+        return this;
+    }
+
+    public int getDelivery() {
+        return delivery;
     }
 }

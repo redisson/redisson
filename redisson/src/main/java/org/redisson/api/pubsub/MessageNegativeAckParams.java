@@ -18,7 +18,11 @@ package org.redisson.api.pubsub;
 import org.redisson.api.BaseSyncParams;
 
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -27,12 +31,17 @@ import java.util.Objects;
  */
 public class MessageNegativeAckParams extends BaseSyncParams<MessageNegativeAckArgs> implements MessageNegativeAckArgs, FailedAckArgs {
 
-    private final String[] ids;
+    private final Map<String, Integer> deliveriesById;
     private Duration delay = Duration.ZERO;
     private boolean failed;
 
     public MessageNegativeAckParams(String[] ids, boolean failed) {
-        this.ids = ids;
+        this.deliveriesById = Arrays.stream(ids).collect(Collectors.toMap(Function.identity(), s -> 0));
+        this.failed = failed;
+    }
+
+    public MessageNegativeAckParams(Map<String, Integer> value, boolean failed) {
+        this.deliveriesById = value;
         this.failed = failed;
     }
 
@@ -47,8 +56,8 @@ public class MessageNegativeAckParams extends BaseSyncParams<MessageNegativeAckA
         return delay;
     }
 
-    public String[] getIds() {
-        return ids;
+    public Map<String, Integer> getDeliveriesById() {
+        return deliveriesById;
     }
 
     public boolean isFailed() {

@@ -35,5 +35,13 @@ public interface VisibilityArgs extends SyncArgs<VisibilityArgs> {
         return new VisibilityParams(id);
     }
 
+    /**
+     * Sets the message deliveries number which should match the current one.
+     * If they don't match then visibility will not be updated.
+     *
+     * @param value message deliveries number
+     * @return arguments object
+     */
+    VisibilityArgs deliveries(int value);
 
 }

@@ -17,6 +17,8 @@ package org.redisson.api.pubsub;
 
 import org.redisson.api.SyncArgs;
 
+import java.util.Map;
+
 /**
  * Interface defining parameters for message acknowledgment operations.
  *
@@ -33,6 +35,17 @@ public interface MessageAckArgs extends SyncArgs<MessageAckArgs> {
      */
     static MessageAckArgs ids(String... ids) {
         return new MessageAckParams(ids);
+    }
+
+    /**
+     * Defines delivery number by message IDs for acknowledgment process.
+     * If the specified delivery number doesn't match the current one, then the message isn't acknowledged.
+     *
+     * @param value delivery number by message identifiers to be acknowledged
+     * @return arguments object
+     */
+    static MessageAckArgs deliveriesById(Map<String, Integer> value) {
+        return new MessageAckParams(value);
     }
 
 }

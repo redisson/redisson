@@ -15,6 +15,7 @@
  */
 package org.redisson.api;
 
+import java.time.Instant;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
@@ -31,11 +32,21 @@ public final class Message<V> {
     String id;
     V payload;
     Map<String, Object> headers;
+    Instant creationTime;
+    Object groupId;
+    int deliveries;
 
-    public Message(String id, V payload, Map<String, Object> headers) {
+    public Message(String id, V payload, Map<String, Object> headers, Instant creationTime, Object groupId, int deliveries) {
         this.id = id;
         this.payload = payload;
         this.headers = Collections.unmodifiableMap(headers);
+        this.creationTime = creationTime;
+        this.groupId = groupId;
+        this.deliveries = deliveries;
+    }
+
+    public int getDeliveries() {
+        return deliveries;
     }
 
     public <T> Map<String, T> getHeaders() {
@@ -50,11 +61,21 @@ public final class Message<V> {
         return payload;
     }
 
+    public Instant getCreationTime() {
+        return creationTime;
+    }
+
+    public Object getGroupId() {
+        return groupId;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         Message<?> message = (Message<?>) o;
-        return Objects.equals(id, message.id) && Objects.equals(payload, message.payload) && Objects.equals(headers, message.headers);
+        return Objects.equals(id, message.id)
+                    && Objects.equals(payload, message.payload)
+                        && Objects.equals(headers, message.headers);
     }
 
     @Override

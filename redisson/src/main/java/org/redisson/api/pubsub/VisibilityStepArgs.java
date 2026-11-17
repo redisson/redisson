@@ -15,6 +15,8 @@
  */
 package org.redisson.api.pubsub;
 
+import org.redisson.api.SyncArgs;
+
 import java.time.Duration;
 
 /**
