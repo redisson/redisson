@@ -869,7 +869,7 @@ public class RedissonConnection extends AbstractRedisConnection {
     protected void indexCommand(RedisCommand<?> command) {
         if (isQueueing() || isPipelined()) {
             index++;
-            if (filterOkResponses && commandsToRemove.contains(command.getName())) {
+            if (filterOkResponses && commandsToRemove.contains(command.getName()) && command != SET_VALUE) {
                 indexToRemove.add(index);
             }
             if (commandsWithStringReply.contains(command.getName())) {

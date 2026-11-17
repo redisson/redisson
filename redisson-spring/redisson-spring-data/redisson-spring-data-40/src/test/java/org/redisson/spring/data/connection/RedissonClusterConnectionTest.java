@@ -23,6 +23,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.types.RedisClientInfo;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -32,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.within;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 public class RedissonClusterConnectionTest extends RedisDockerTest {
 
@@ -775,6 +777,57 @@ public class RedissonClusterConnectionTest extends RedisDockerTest {
         });
     }
     
+    @Test
+    public void testNodeCommandsInPipeline() {
+        testInCluster(connection -> {
+            RedisClusterNode master = getFirstMaster(connection);
+            byte[] key = "node-pipeline".getBytes();
+            connection.set(key, "value".getBytes());
+
+            connection.openPipeline();
+            connection.append(key, "1".getBytes());
+            assertTimeoutPreemptively(Duration.ofSeconds(10), () -> {
+                assertThat(connection.ping(master)).isEqualTo("PONG");
+                assertThat(connection.dbSize(master)).isNotNull();
+                assertThat(connection.info(master, "server").getProperty("redis_version")).isNotNull();
+                assertThat(connection.time(master)).isPositive();
+                assertThat(connection.clusterGetNodes()).isNotEmpty();
+                assertThat(connection.clusterGetClusterInfo().getSlotsOk()).isEqualTo(MasterSlaveConnectionManager.MAX_SLOT);
+                assertThat(connection.clusterGetSlotForKey(key)).isEqualTo(ClusterSlotHashUtil.calculateSlot(key));
+            });
+            connection.del(key);
+            List<Object> results = connection.closePipeline();
+
+            assertThat(results).containsExactly(6L, 1L);
+        });
+    }
+
+    @Test
+    public void testNodeCommandsInTransaction() {
+        testInCluster(connection -> {
+            RedisClusterNode master = getFirstMaster(connection);
+            byte[] key = "node-transaction".getBytes();
+
+            connection.multi();
+            connection.set(key, "value".getBytes());
+            assertTimeoutPreemptively(Duration.ofSeconds(10), () -> {
+                assertThat(connection.ping(master)).isEqualTo("PONG");
+                assertThat(connection.dbSize(master)).isNotNull();
+                assertThat(connection.info(master, "server").getProperty("redis_version")).isNotNull();
+                assertThat(connection.clusterGetNodes()).isNotEmpty();
+                assertThat(connection.clusterGetClusterInfo().getSlotsOk()).isEqualTo(MasterSlaveConnectionManager.MAX_SLOT);
+                assertThat(connection.clusterGetSlotForKey(key)).isEqualTo(ClusterSlotHashUtil.calculateSlot(key));
+            });
+            connection.get(key);
+            List<Object> results = connection.exec();
+
+            assertThat(results).hasSize(2);
+            assertThat(results.get(0)).isEqualTo(true);
+            assertThat((byte[]) results.get(1)).isEqualTo("value".getBytes());
+            connection.del(key);
+        });
+    }
+
     protected RedisClusterNode getFirstMaster(RedissonClusterConnection connection) {
         Map<RedisClusterNode, Collection<RedisClusterNode>> map = connection.clusterGetMasterReplicaMap();
         RedisClusterNode master = map.keySet().iterator().next();

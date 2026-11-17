@@ -42,8 +42,10 @@ import java.util.stream.Collectors;
  */
 public class RedissonReactiveSubscription implements ReactiveSubscription {
 
-    private final Map<ChannelName, Collection<PubSubConnectionEntry>> channels = new ConcurrentHashMap<>();
-    private final Map<ChannelName, Collection<PubSubConnectionEntry>> patterns = new ConcurrentHashMap<>();
+    private static final Object SUBSCRIBED = new Object();
+
+    private final Map<ChannelName, Object> channels = new ConcurrentHashMap<>();
+    private final Map<ChannelName, Object> patterns = new ConcurrentHashMap<>();
 
     private final Set<FluxSink<Message<ByteBuffer, ByteBuffer>>> emitters = ConcurrentHashMap.newKeySet();
 
@@ -102,7 +104,7 @@ public class RedissonReactiveSubscription implements ReactiveSubscription {
                 CompletableFuture<List<PubSubConnectionEntry>> f = subscribeService.subscribe(ByteArrayCodec.INSTANCE, cn, subscriptionListener);
                 f = f.whenComplete((res, e) -> {
                     if (e == null) {
-                        RedissonReactiveSubscription.this.channels.put(cn, res);
+                        RedissonReactiveSubscription.this.channels.put(cn, SUBSCRIBED);
                         listener.onChannelSubscribed(cn.getName(), 1L);
                     }
                 });
@@ -145,7 +147,7 @@ public class RedissonReactiveSubscription implements ReactiveSubscription {
                 CompletableFuture<Collection<PubSubConnectionEntry>> f = subscribeService.psubscribe(cn, ByteArrayCodec.INSTANCE, subscriptionListener);
                 f = f.whenComplete((res, e) -> {
                     if (e == null) {
-                        RedissonReactiveSubscription.this.patterns.put(cn, res);
+                        RedissonReactiveSubscription.this.patterns.put(cn, SUBSCRIBED);
                         listener.onPatternSubscribed(cn.getName(), 1L);
                     }
                 });
@@ -168,7 +170,8 @@ public class RedissonReactiveSubscription implements ReactiveSubscription {
             List<CompletableFuture<?>> futures = new ArrayList<>(channels.length);
             for (ByteBuffer channel : channels) {
                 ChannelName cn = toChannelName(channel);
-                if (RedissonReactiveSubscription.this.channels.remove(cn) == null) {
+                Object leaving = new Object();
+                if (!RedissonReactiveSubscription.this.channels.replace(cn, SUBSCRIBED, leaving)) {
                     continue;
                 }
 
@@ -176,7 +179,10 @@ public class RedissonReactiveSubscription implements ReactiveSubscription {
                                     ChannelName.newList(cn), System.identityHashCode(subscriptionListener));
                 f = f.whenComplete((res, e) -> {
                     if (e == null) {
+                        RedissonReactiveSubscription.this.channels.remove(cn, leaving);
                         subscriptionListener.onStatus(PubSubType.UNSUBSCRIBE, cn);
+                    } else {
+                        RedissonReactiveSubscription.this.channels.replace(cn, leaving, SUBSCRIBED);
                     }
                 });
                 futures.add(f);
@@ -198,7 +204,8 @@ public class RedissonReactiveSubscription implements ReactiveSubscription {
             List<CompletableFuture<?>> futures = new ArrayList<>(patterns.length);
             for (ByteBuffer channel : patterns) {
                 ChannelName cn = toChannelName(channel);
-                if (RedissonReactiveSubscription.this.patterns.remove(cn) == null) {
+                Object leaving = new Object();
+                if (!RedissonReactiveSubscription.this.patterns.replace(cn, SUBSCRIBED, leaving)) {
                     continue;
                 }
 
@@ -206,7 +213,10 @@ public class RedissonReactiveSubscription implements ReactiveSubscription {
                                     ChannelName.newList(cn), System.identityHashCode(subscriptionListener));
                 f = f.whenComplete((res, e) -> {
                     if (e == null) {
+                        RedissonReactiveSubscription.this.patterns.remove(cn, leaving);
                         subscriptionListener.onStatus(PubSubType.PUNSUBSCRIBE, cn);
+                    } else {
+                        RedissonReactiveSubscription.this.patterns.replace(cn, leaving, SUBSCRIBED);
                     }
                 });
                 futures.add(f);
