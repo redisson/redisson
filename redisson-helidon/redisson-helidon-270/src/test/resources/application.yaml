@@ -1,0 +1,8 @@
+org.redisson.Redisson:
+  backup:
+    singleServerConfig:
+      address: "redis://127.0.0.1:1"
+  default:
+    singleServerConfig:
+      address: "redis://127.0.0.1:6379"
+      database: 1

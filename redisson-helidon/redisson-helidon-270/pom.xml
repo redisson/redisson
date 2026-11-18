@@ -1,0 +1,84 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.redisson</groupId>
+        <artifactId>redisson-helidon</artifactId>
+        <version>4.8.1-SNAPSHOT</version>
+        <relativePath>../</relativePath>
+    </parent>
+
+    <artifactId>redisson-helidon-270</artifactId>
+    <packaging>jar</packaging>
+
+    <name>Redisson/Helidon integration</name>
+
+    <properties>
+        <maven.compiler.release>27</maven.compiler.release>
+        <maven.compiler.testRelease>27</maven.compiler.testRelease>
+        <main.basedir>${project.parent.parent.basedir}</main.basedir>
+        <helidon.version>27.0.2</helidon.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.redisson</groupId>
+            <artifactId>redisson</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.helidon.service</groupId>
+            <artifactId>helidon-service-registry</artifactId>
+            <version>${helidon.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.helidon.config</groupId>
+            <artifactId>helidon-config</artifactId>
+            <version>${helidon.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.helidon.config</groupId>
+            <artifactId>helidon-config-yaml</artifactId>
+            <version>${helidon.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+                <configuration>
+                    <!-- generates the Helidon service descriptor and META-INF/helidon metadata -->
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>io.helidon.codegen</groupId>
+                            <artifactId>helidon-codegen-apt</artifactId>
+                            <version>${helidon.version}</version>
+                        </path>
+                        <path>
+                            <groupId>io.helidon.service</groupId>
+                            <artifactId>helidon-service-codegen</artifactId>
+                            <version>${helidon.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <configuration>
+                    <excludeGeneratedSources>true</excludeGeneratedSources>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

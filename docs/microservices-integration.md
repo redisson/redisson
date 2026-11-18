@@ -285,9 +285,9 @@ For Quarkus Cache usage please refer to [Quarkus Cache](cache-api-implementation
 
 ## Helidon
 
-Redisson implements [Helidon](https://helidon.io/) CDI extension for Redis.  
+Redisson implements [Helidon](https://helidon.io/) CDI extension for Redis. For Helidon 27 it provides Redisson instances through Helidon service registry.  
 
-Supports Helidon 1.4.x - 4.x.x  
+Supports Helidon 1.4.x - 4.x.x and 27.x.x  
 
 ### Usage  
 
@@ -302,12 +302,14 @@ Supports Helidon 1.4.x - 4.x.x
         ```xml  
         <dependency>
             <groupId>org.redisson</groupId>
-            <!-- for Quarkus v1.6.x - v1.13.x -->
-            <artifactId>redisson-quarkus-16</artifactId>
-            <!-- for Quarkus v2.x.x -->
-            <artifactId>redisson-quarkus-20</artifactId>
-            <!-- for Quarkus v3.x.x -->
-            <artifactId>redisson-quarkus-30</artifactId>
+            <!-- for Helidon v1.4.x - v2.5.x -->
+            <artifactId>redisson-helidon-20</artifactId>
+            <!-- for Helidon v3.x.x -->
+            <artifactId>redisson-helidon-30</artifactId>
+            <!-- for Helidon v4.x.x -->
+            <artifactId>redisson-helidon-40</artifactId>
+            <!-- for Helidon v27.x.x -->
+            <artifactId>redisson-helidon-270</artifactId>
             <version>xVERSIONx</version>
         </dependency>
         ```
@@ -321,6 +323,8 @@ Supports Helidon 1.4.x - 4.x.x
         compile 'org.redisson:redisson-helidon-30:xVERSIONx'
         // for Helidon v4.x.x
         compile 'org.redisson:redisson-helidon-40:xVERSIONx'
+        // for Helidon v27.x.x
+        compile 'org.redisson:redisson-helidon-270:xVERSIONx'
         ```
 
 
@@ -337,6 +341,8 @@ Supports Helidon 1.4.x - 4.x.x
             <artifactId>redisson-helidon-30</artifactId>
             <!-- for Helidon v4.x.x -->
             <artifactId>redisson-helidon-40</artifactId>
+            <!-- for Helidon v27.x.x -->
+            <artifactId>redisson-helidon-270</artifactId>
             <version>xVERSIONx</version>
         </dependency>
         ```
@@ -350,6 +356,8 @@ Supports Helidon 1.4.x - 4.x.x
         compile 'pro.redisson:redisson-helidon-30:xVERSIONx'
         // for Helidon v4.x.x
         compile 'pro.redisson:redisson-helidon-40:xVERSIONx'
+        // for Helidon v27.x.x
+        compile 'pro.redisson:redisson-helidon-270:xVERSIONx'
         ```
 
         [License key configuration](configuration.md/#license-key-configuration)
@@ -360,6 +368,8 @@ Supports Helidon 1.4.x - 4.x.x
     <br>
 
 2. **Add settings into `META-INF/microprofile-config.properties` file**  
+
+    For Helidon v27.x.x add them into `application.yaml` file instead.
 
     Config structure is a flat Redisson YAML configuration - 
     [single mode](configuration.md/#single-yaml-config-format),
@@ -378,12 +388,41 @@ Supports Helidon 1.4.x - 4.x.x
     org.redisson.Redisson.simple.nettyThreads=32
     ```
 
+    The same configuration in `application.yaml` file for Helidon v27.x.x:
+    ```yaml
+    org.redisson.Redisson:
+      simple:
+        singleServerConfig:
+          address: "redis://127.0.0.1:6379"
+          connectionPoolSize: 64
+        threads: 16
+        nettyThreads: 32
+    ```
+
 3. **Use Redisson**  
 
+    Helidon v1.4.x - v4.x.x
     ```java
     @Inject
     @Named("simple")
     private RedissonClient redisson;
     ```
 
-	For injection without @Named annotation use instance name - `default`. 
+    Helidon v27.x.x
+    ```java
+    @Service.Singleton
+    class MyService {
+
+        private final RedissonClient redisson;
+
+        @Service.Inject
+        MyService(@Service.Named("simple") RedissonClient redisson) {
+            this.redisson = redisson;
+        }
+
+    }
+    ```
+
+    Applications without dependency injection can get the instance through `Services.getNamed(RedissonClient.class, "simple")`.
+
+	For injection without @Named or @Service.Named annotation use instance name - `default`. 
