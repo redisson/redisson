@@ -557,15 +557,15 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
             return;
         }
 
-        final byte[] value = dump(oldName);
+        final byte[] value = write(oldName, ByteArrayCodec.INSTANCE, RedisCommands.DUMP, oldName);
 
         if (null != value) {
 
-            final Long sourceTtlInSeconds = ttl(oldName);
+            final Long sourceTtlInMilliseconds = write(oldName, StringCodec.INSTANCE, RedisCommands.PTTL, oldName);
 
             final long ttlInMilliseconds;
-            if (null != sourceTtlInSeconds && sourceTtlInSeconds > 0) {
-                ttlInMilliseconds = sourceTtlInSeconds * 1000;
+            if (null != sourceTtlInMilliseconds && sourceTtlInMilliseconds > 0) {
+                ttlInMilliseconds = sourceTtlInMilliseconds;
             } else {
                 ttlInMilliseconds = 0;
             }
@@ -585,15 +585,15 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
             return super.renameNX(oldName, newName);
         }
 
-        final byte[] value = dump(oldName);
+        final byte[] value = write(oldName, ByteArrayCodec.INSTANCE, RedisCommands.DUMP, oldName);
 
-        if (null != value && !exists(newName)) {
+        if (null != value && !this.<Boolean>write(newName, StringCodec.INSTANCE, RedisCommands.EXISTS, newName)) {
 
-            final Long sourceTtlInSeconds = ttl(oldName);
+            final Long sourceTtlInMilliseconds = write(oldName, StringCodec.INSTANCE, RedisCommands.PTTL, oldName);
 
             final long ttlInMilliseconds;
-            if (null != sourceTtlInSeconds && sourceTtlInSeconds > 0) {
-                ttlInMilliseconds = sourceTtlInSeconds * 1000;
+            if (null != sourceTtlInMilliseconds && sourceTtlInMilliseconds > 0) {
+                ttlInMilliseconds = sourceTtlInMilliseconds;
             } else {
                 ttlInMilliseconds = 0;
             }

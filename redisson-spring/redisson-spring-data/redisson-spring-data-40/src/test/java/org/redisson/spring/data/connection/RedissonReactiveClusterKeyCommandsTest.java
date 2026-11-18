@@ -7,6 +7,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.redisson.*;
 import org.redisson.api.RedissonClient;
+import org.redisson.api.redisnode.RedisClusterSlave;
+import org.redisson.api.redisnode.RedisNode;
+import org.redisson.api.redisnode.RedisNodes;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.springframework.data.redis.RedisSystemException;
@@ -21,7 +24,10 @@ import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -29,6 +35,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.redisson.connection.MasterSlaveConnectionManager.MAX_SLOT;
 
 public class RedissonReactiveClusterKeyCommandsTest extends RedisDockerTest {
+
+    private static final Pattern CALLS = Pattern.compile("calls=(\\d+)");
 
     public static Iterable<Object[]> data() {
         return Arrays.asList(new Object[][] {
@@ -199,6 +207,42 @@ public class RedissonReactiveClusterKeyCommandsTest extends RedisDockerTest {
                 assertThat(connection.stringCommands().get(keys.get(2)).block()).isEqualTo(value);
             });
         });
+    }
+
+    @Test
+    public void testRenameReadsTheSourceFromTheMaster() {
+        testInCluster(c -> {
+            RedissonClient redisson = (RedissonClient) c.getNativeConnection();
+            RedissonReactiveRedisClusterConnection connection = new RedissonReactiveRedisClusterConnection(((RedissonReactive) redisson.reactive()).getCommandExecutor());
+            ByteBuffer key = ByteBuffer.wrap("{a}renamed".getBytes());
+            ByteBuffer otherKey = ByteBuffer.wrap("{b}renamed".getBytes());
+            connection.stringCommands().set(key, value).block();
+            long replicaReads = replicaReads(redisson);
+
+            connection.keyCommands().pExpire(key, Duration.ofMillis(499)).block();
+            assertThat(connection.keyCommands().rename(key, otherKey).block()).isTrue();
+            assertThat((Long) c.execute("PTTL", "{b}renamed".getBytes())).isBetween(1L, 499L);
+            assertThat(connection.keyCommands().renameNX(otherKey, key).block()).isTrue();
+            assertThat((Long) c.execute("PTTL", "{a}renamed".getBytes())).isBetween(1L, 499L);
+
+            assertThat(replicaReads(redisson)).isEqualTo(replicaReads);
+        });
+    }
+
+    private long replicaReads(RedissonClient redisson) {
+        long calls = 0;
+        for (RedisClusterSlave replica : redisson.getRedisNodes(RedisNodes.CLUSTER).getSlaves()) {
+            Map<String, String> stats = replica.info(RedisNode.InfoSection.COMMANDSTATS);
+            for (String command : Arrays.asList("dump", "ttl", "pttl", "exists")) {
+                String stat = stats.get("cmdstat_" + command);
+                if (stat != null) {
+                    Matcher matcher = CALLS.matcher(stat);
+                    assertThat(matcher.find()).isTrue();
+                    calls += Long.parseLong(matcher.group(1));
+                }
+            }
+        }
+        return calls;
     }
 
     protected ByteBuffer getNewKeyForSlot(String originalKey, Integer targetSlot, ReactiveRedisClusterConnection connection) {

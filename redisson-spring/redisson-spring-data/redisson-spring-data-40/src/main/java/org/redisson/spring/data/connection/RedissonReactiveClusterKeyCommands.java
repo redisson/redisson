@@ -161,10 +161,10 @@ public class RedissonReactiveClusterKeyCommands extends RedissonReactiveKeyComma
                 return super.rename(Mono.just(command));
             }
 
-            return read(keyBuf, ByteArrayCodec.INSTANCE, RedisCommands.DUMP, keyBuf)
+            return write(keyBuf, ByteArrayCodec.INSTANCE, RedisCommands.DUMP, keyBuf)
                     .switchIfEmpty(Mono.error(() -> new RedisSystemException("ERR no such key", null)))
                     .zipWith(
-                            Mono.defer(() -> pTtl(command.getKey())
+                            Mono.defer(() -> this.<Long>write(keyBuf, StringCodec.INSTANCE, RedisCommands.PTTL, keyBuf)
                                     .filter(Objects::nonNull)
                                     .map(ttl -> Math.max(0, ttl))
                                     .switchIfEmpty(Mono.just(0L))
@@ -191,16 +191,16 @@ public class RedissonReactiveClusterKeyCommands extends RedissonReactiveKeyComma
                 return super.renameNX(Mono.just(command));
             }
 
-            return exists(command.getNewKey())
+            return this.<Boolean>write(newKeyBuf, StringCodec.INSTANCE, RedisCommands.EXISTS, newKeyBuf)
                     .flatMap(newKeyExists -> {
                         if (newKeyExists) {
                             return Mono.just(false);
                         }
 
-                        return read(keyBuf, ByteArrayCodec.INSTANCE, RedisCommands.DUMP, keyBuf)
+                        return write(keyBuf, ByteArrayCodec.INSTANCE, RedisCommands.DUMP, keyBuf)
                                 .switchIfEmpty(Mono.error(() -> new RedisSystemException("ERR no such key", null)))
                                 .zipWith(
-                                        Mono.defer(() -> pTtl(command.getKey())
+                                        Mono.defer(() -> this.<Long>write(keyBuf, StringCodec.INSTANCE, RedisCommands.PTTL, keyBuf)
                                                 .filter(Objects::nonNull)
                                                 .map(ttl -> Math.max(0, ttl))
                                                 .switchIfEmpty(Mono.just(0L))
