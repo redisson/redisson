@@ -98,7 +98,6 @@ public class RedissonReactiveStringCommands extends RedissonBaseReactive impleme
                     m = write(key, StringCodec.INSTANCE, SET, key, value, "PX", command.getExpiration().get().getExpirationTimeInMilliseconds(), "NX");
                 } else if (command.getOption().get() == SetOption.SET_IF_PRESENT) {
                     m = write(key, StringCodec.INSTANCE, SET, key, value, "PX", command.getExpiration().get().getExpirationTimeInMilliseconds(), "XX");
-                    return m.map(v -> new BooleanResponse<>(command, v));
                 }
             }
             return m.map(v -> new BooleanResponse<>(command, v))
@@ -150,7 +149,7 @@ public class RedissonReactiveStringCommands extends RedissonBaseReactive impleme
             return m.map(v -> {
                 List<ByteBuffer> values = v.stream().map(array -> {
                     if (array == null) {
-                        return ByteBuffer.allocate(0);
+                        return null;
                     }
                     return ByteBuffer.wrap(array);
                 }).collect(Collectors.toList());
@@ -404,7 +403,7 @@ public class RedissonReactiveStringCommands extends RedissonBaseReactive impleme
             }
 
 
-            Mono<List<Long>> m = read((byte[])params.get(0), StringCodec.INSTANCE, BITFIELD, params.toArray());
+            Mono<List<Long>> m = write((byte[])params.get(0), StringCodec.INSTANCE, BITFIELD, params.toArray());
             return m.map(v -> new MultiValueResponse<>(command, v));
         });
     }

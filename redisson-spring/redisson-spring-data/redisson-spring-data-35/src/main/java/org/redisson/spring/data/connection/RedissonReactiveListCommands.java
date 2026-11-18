@@ -16,6 +16,7 @@
 package org.redisson.spring.data.connection;
 
 import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -26,6 +27,7 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
+import org.redisson.client.protocol.decoder.ObjectListReplayDecoder;
 import org.redisson.reactive.CommandReactiveExecutor;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.data.redis.connection.ReactiveListCommands;
@@ -35,6 +37,7 @@ import org.springframework.data.redis.connection.ReactiveRedisConnection.Command
 import org.springframework.data.redis.connection.ReactiveRedisConnection.KeyCommand;
 import org.springframework.data.redis.connection.ReactiveRedisConnection.NumericResponse;
 import org.springframework.data.redis.connection.ReactiveRedisConnection.RangeCommand;
+import org.springframework.data.redis.core.TimeoutUtils;
 import org.springframework.util.Assert;
 import org.springframework.util.ObjectUtils;
 
@@ -226,6 +229,14 @@ public class RedissonReactiveListCommands extends RedissonBaseReactive implement
         });
     }
 
+    private static long toSeconds(Duration timeout) {
+        long seconds = TimeoutUtils.toSeconds(timeout);
+        if (seconds == 0 && !timeout.isZero()) {
+            return 1;
+        }
+        return seconds;
+    }
+
     @Override
     public Flux<PopResponse> bPop(Publisher<BPopCommand> commands) {
         return execute(commands, command -> {
@@ -241,7 +252,7 @@ public class RedissonReactiveListCommands extends RedissonBaseReactive implement
             
             List<Object> params = new ArrayList<Object>(command.getKeys().size() + 1);
             params.addAll(command.getKeys().stream().map(v -> toByteArray(v)).collect(Collectors.toList()));
-            params.add(command.getTimeout().getSeconds());
+            params.add(toSeconds(command.getTimeout()));
             
             Mono<List<byte[]>> m = write((byte[])params.get(0), ByteArrayCodec.INSTANCE, redisCommand, params.toArray());
             return m.map(v -> new PopResponse(command, 
@@ -276,10 +287,12 @@ public class RedissonReactiveListCommands extends RedissonBaseReactive implement
             byte[] destinationBuf = toByteArray(command.getDestination());
             
             Mono<byte[]> m = write(keyBuf, ByteArrayCodec.INSTANCE, RedisCommands.BRPOPLPUSH, 
-                                    keyBuf, destinationBuf, command.getTimeout().getSeconds());
+                                    keyBuf, destinationBuf, toSeconds(command.getTimeout()));
             return m.map(v -> new ByteBufferResponse<>(command, ByteBuffer.wrap(v)));
         });
     }
+
+    private static final RedisCommand<List<Long>> LPOS_COUNT = new RedisCommand<>("LPOS", new ObjectListReplayDecoder<>());
 
     @Override
     public Flux<NumericResponse<LPosCommand, Long>> lPos(Publisher<LPosCommand> commands) {
@@ -299,6 +312,9 @@ public class RedissonReactiveListCommands extends RedissonBaseReactive implement
             if (command.getCount() != null) {
                 params.add("COUNT");
                 params.add(command.getCount());
+
+                Mono<List<Long>> m = read(keyBuf, ByteArrayCodec.INSTANCE, LPOS_COUNT, params.toArray());
+                return m.flatMapMany(Flux::fromIterable).map(v -> new NumericResponse<>(command, v));
             }
 
             Mono<Long> m = read(keyBuf, ByteArrayCodec.INSTANCE, RedisCommands.LPOS, params.toArray());
@@ -338,7 +354,7 @@ public class RedissonReactiveListCommands extends RedissonBaseReactive implement
             byte[] destinationBuf = toByteArray(command.getDestinationKey());
 
             Mono<byte[]> m = write(keyBuf, ByteArrayCodec.INSTANCE, RedisCommands.BLMOVE,
-                    keyBuf, destinationBuf, command.getFrom(), command.getTo(), command.getTimeout().getSeconds());
+                    keyBuf, destinationBuf, command.getFrom(), command.getTo(), toSeconds(command.getTimeout()));
             return m.map(v -> new ByteBufferResponse<>(command, ByteBuffer.wrap(v)));
         });
     }
@@ -357,13 +373,7 @@ public class RedissonReactiveListCommands extends RedissonBaseReactive implement
                 cmd = RedisCommands.LPOP_LIST;
             }
 
-            List<Object> params = new ArrayList<>(2);
-            params.add(keyBuf);
-            if (command.getCount() > 0) {
-                params.add(command.getCount());
-            }
-
-            Mono<List<byte[]>> m = write(keyBuf, ByteArrayCodec.INSTANCE, cmd, params.toArray());
+            Mono<List<byte[]>> m = write(keyBuf, ByteArrayCodec.INSTANCE, cmd, keyBuf, command.getCount());
             return m.map(v -> new CommandResponse<>(command, Flux.fromIterable(v).map(e -> ByteBuffer.wrap(e))));
         });
     }

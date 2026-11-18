@@ -15,10 +15,15 @@
  */
 package org.redisson.spring.data.connection;
 
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
+import java.util.function.Function;
 
 import org.redisson.client.RedisClient;
+import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
@@ -101,12 +106,52 @@ public class RedissonReactiveClusterServerCommands extends RedissonReactiveServe
 
     @Override
     public Mono<Properties> info() {
-        return read(null, StringCodec.INSTANCE, INFO_DEFAULT);
+        return collectFromMasters(this::info);
     }
 
     @Override
     public Mono<Properties> info(String section) {
-        return read(null, StringCodec.INSTANCE, INFO, section);
+        return collectFromMasters(master -> info(master, section));
+    }
+
+    @Override
+    public Mono<Properties> getConfig(String pattern) {
+        return collectFromMasters(master -> getConfig(master, pattern));
+    }
+
+    @Override
+    public Mono<String> setConfig(String param, String value) {
+        return Flux.defer(() -> Flux.fromIterable(getMasters()))
+                .concatMap(master -> setConfig(master, param, value))
+                .last();
+    }
+
+    @Override
+    public Mono<String> resetConfigStats() {
+        return Flux.defer(() -> Flux.fromIterable(getMasters()))
+                .concatMap(this::resetConfigStats)
+                .last();
+    }
+
+    private List<RedisClusterNode> getMasters() {
+        List<RedisClusterNode> masters = new ArrayList<>();
+        for (MasterSlaveEntry entry : executorService.getConnectionManager().getEntrySet()) {
+            InetSocketAddress addr = entry.getClient().getAddr();
+            masters.add(new RedisClusterNode(addr.getHostString(), addr.getPort()));
+        }
+        return masters;
+    }
+
+    private Mono<Properties> collectFromMasters(Function<RedisClusterNode, Mono<Properties>> command) {
+        return Flux.defer(() -> Flux.fromIterable(getMasters()))
+                .concatMap(master -> command.apply(master).map(properties -> {
+                    Properties prefixed = new Properties();
+                    for (Map.Entry<Object, Object> entry : properties.entrySet()) {
+                        prefixed.put(master.asString() + "." + entry.getKey(), entry.getValue());
+                    }
+                    return prefixed;
+                }))
+                .collect(Properties::new, Properties::putAll);
     }
 
 
@@ -137,7 +182,7 @@ public class RedissonReactiveClusterServerCommands extends RedissonReactiveServe
 
     @Override
     public Mono<Long> time(RedisClusterNode node) {
-        return execute(node, TIME);
+        return execute(node, LongCodec.INSTANCE, TIME);
     }
 
     private static final StringToRedisClientInfoConverter CONVERTER = new StringToRedisClientInfoConverter();
