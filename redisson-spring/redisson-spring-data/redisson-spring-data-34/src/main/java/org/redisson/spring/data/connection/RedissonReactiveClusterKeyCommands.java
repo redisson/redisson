@@ -15,25 +15,31 @@
  */
 package org.redisson.spring.data.connection;
 
-import io.netty.util.CharsetUtil;
 import org.reactivestreams.Publisher;
+import org.redisson.api.BatchResult;
 import org.redisson.client.RedisClient;
 import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.codec.StringCodec;
+import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.command.CommandBatchService;
 import org.redisson.misc.CompletableFutureWrapper;
 import org.redisson.reactive.CommandReactiveExecutor;
+import org.springframework.data.redis.RedisSystemException;
+import org.springframework.data.redis.connection.ClusterSlotHashUtil;
 import org.springframework.data.redis.connection.ReactiveClusterKeyCommands;
 import org.springframework.data.redis.connection.ReactiveRedisConnection;
 import org.springframework.data.redis.connection.ReactiveRedisConnection.BooleanResponse;
+import org.springframework.data.redis.connection.ReactiveRedisConnection.MultiValueResponse;
+import org.springframework.data.redis.connection.ReactiveRedisConnection.NumericResponse;
 import org.springframework.data.redis.connection.RedisClusterNode;
 import org.springframework.util.Assert;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.util.function.Tuple2;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -50,17 +56,76 @@ public class RedissonReactiveClusterKeyCommands extends RedissonReactiveKeyComma
         super(executorService);
     }
 
+    private Mono<Long> sumPerKey(RedisCommand<Long> command, Collection<ByteBuffer> keys) {
+        return Flux.fromIterable(keys).concatMap(key -> {
+            byte[] keyBuf = toByteArray(key);
+            Mono<Long> count = write(keyBuf, StringCodec.INSTANCE, command, keyBuf);
+            return count;
+        }).reduce(0L, Long::sum);
+    }
+
+    @Override
+    public Flux<NumericResponse<Collection<ByteBuffer>, Long>> touch(Publisher<Collection<ByteBuffer>> keys) {
+        return execute(keys, coll -> {
+
+            Assert.notNull(coll, "Collection must not be null!");
+
+            if (ClusterSlotHashUtil.isSameSlotForAllKeys(coll)) {
+                return super.touch(Mono.just(coll));
+            }
+            return sumPerKey(RedisCommands.TOUCH_LONG, coll).map(v -> new NumericResponse<>(coll, v));
+        });
+    }
+
     @Override
     public Mono<List<ByteBuffer>> keys(RedisClusterNode node, ByteBuffer pattern) {
-        Mono<List<String>> m = executorService.reactive(() -> {
-            List<CompletableFuture<List<String>>> futures = executorService.readAllAsync(StringCodec.INSTANCE, RedisCommands.KEYS, toByteArray(pattern));
-            CompletableFuture<Void> ff = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
-            CompletableFuture<List<String>> future = ff.thenApply(r -> {
-                return futures.stream().flatMap(f -> f.getNow(new ArrayList<>()).stream()).collect(Collectors.toList());
-            }).toCompletableFuture();
-            return new CompletableFutureWrapper<>(future);
+        RedisClient entry = getEntry(node);
+        Mono<List<byte[]>> m = executorService.reactive(() -> {
+            return executorService.readAsync(entry, ByteArrayCodec.INSTANCE, KEYS, toByteArray(pattern));
         });
-        return m.map(v -> v.stream().map(t -> ByteBuffer.wrap(t.getBytes(CharsetUtil.UTF_8))).collect(Collectors.toList()));
+        return m.map(v -> v.stream().map(t -> ByteBuffer.wrap(t)).collect(Collectors.toList()));
+    }
+
+    @Override
+    public Flux<MultiValueResponse<ByteBuffer, ByteBuffer>> keys(Publisher<ByteBuffer> patterns) {
+        return execute(patterns, pattern -> {
+            Mono<List<byte[]>> m = executorService.reactive(() -> {
+                List<CompletableFuture<List<byte[]>>> futures = executorService.readAllAsync(ByteArrayCodec.INSTANCE, KEYS, toByteArray(pattern));
+                CompletableFuture<Void> ff = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+                CompletableFuture<List<byte[]>> future = ff.thenApply(r -> {
+                    return futures.stream().flatMap(f -> f.getNow(new ArrayList<>()).stream()).collect(Collectors.toList());
+                }).toCompletableFuture();
+                return new CompletableFutureWrapper<>(future);
+            });
+            return m.map(v -> {
+                List<ByteBuffer> values = v.stream().map(t -> ByteBuffer.wrap(t)).collect(Collectors.toList());
+                return new MultiValueResponse<>(pattern, values);
+            });
+        });
+    }
+
+    @Override
+    public Flux<NumericResponse<List<ByteBuffer>, Long>> mDel(Publisher<List<ByteBuffer>> keys) {
+        return execute(keys, coll -> {
+
+            Assert.notNull(coll, "List must not be null!");
+
+            if (ClusterSlotHashUtil.isSameSlotForAllKeys(coll)) {
+                return super.mDel(Mono.just(coll));
+            }
+            return sumPerKey(RedisCommands.DEL, coll).map(v -> new NumericResponse<>(coll, v));
+        });
+    }
+
+    @Override
+    public Flux<NumericResponse<List<ByteBuffer>, Long>> mUnlink(Publisher<List<ByteBuffer>> keys) {
+        return execute(keys, coll -> {
+            CommandBatchService es = new CommandBatchService(executorService);
+            coll.stream().map(buf -> toByteArray(buf)).forEach(buf -> es.writeAsync(buf, StringCodec.INSTANCE, RedisCommands.UNLINK, buf));
+
+            Mono<BatchResult<?>> m = executorService.reactive(es::executeAsync);
+            return m.map(r -> new NumericResponse<>(coll, r.getResponses().stream().collect(Collectors.summarizingLong(v -> (long) v)).getSum()));
+        });
     }
 
     @Override
@@ -83,11 +148,11 @@ public class RedissonReactiveClusterKeyCommands extends RedissonReactiveKeyComma
             byte[] newKeyBuf = toByteArray(command.getNewKey());
 
             if (executorService.getConnectionManager().calcSlot(keyBuf) == executorService.getConnectionManager().calcSlot(newKeyBuf)) {
-                return super.rename(commands);
+                return super.rename(Mono.just(command));
             }
 
             return read(keyBuf, ByteArrayCodec.INSTANCE, RedisCommands.DUMP, keyBuf)
-                    .filter(Objects::nonNull)
+                    .switchIfEmpty(Mono.error(() -> new RedisSystemException("ERR no such key", null)))
                     .zipWith(
                             Mono.defer(() -> pTtl(command.getKey())
                                     .filter(Objects::nonNull)
@@ -96,10 +161,10 @@ public class RedissonReactiveClusterKeyCommands extends RedissonReactiveKeyComma
                             )
                     )
                     .flatMap(valueAndTtl -> {
-                        return write(newKeyBuf, StringCodec.INSTANCE, RedisCommands.RESTORE, newKeyBuf, valueAndTtl.getT2(), valueAndTtl.getT1());
+                        return write(newKeyBuf, StringCodec.INSTANCE, RedisCommands.RESTORE, newKeyBuf, valueAndTtl.getT2(), valueAndTtl.getT1(), "REPLACE");
                     })
-                    .thenReturn(new BooleanResponse<>(command, true))
-                    .doOnSuccess((ignored) -> del(command.getKey()));
+                    .then(del(command.getKey()))
+                    .thenReturn(new BooleanResponse<>(command, true));
         });
     }
 
@@ -113,27 +178,29 @@ public class RedissonReactiveClusterKeyCommands extends RedissonReactiveKeyComma
             byte[] newKeyBuf = toByteArray(command.getNewKey());
 
             if (executorService.getConnectionManager().calcSlot(keyBuf) == executorService.getConnectionManager().calcSlot(newKeyBuf)) {
-                return super.renameNX(commands);
+                return super.renameNX(Mono.just(command));
             }
 
             return exists(command.getNewKey())
-                    .zipWith(read(keyBuf, ByteArrayCodec.INSTANCE, RedisCommands.DUMP, keyBuf))
-                    .filter(newKeyExistsAndDump -> !newKeyExistsAndDump.getT1() && Objects.nonNull(newKeyExistsAndDump.getT2()))
-                    .map(Tuple2::getT2)
-                    .zipWhen(value ->
-                            pTtl(command.getKey())
-                                    .filter(Objects::nonNull)
-                                    .map(ttl -> Math.max(0, ttl))
-                                    .switchIfEmpty(Mono.just(0L))
-
-                    )
-                    .flatMap(valueAndTtl -> write(newKeyBuf, StringCodec.INSTANCE, RedisCommands.RESTORE, newKeyBuf, valueAndTtl.getT2(), valueAndTtl.getT1())
-                            .then(Mono.just(true)))
-                    .switchIfEmpty(Mono.just(false))
-                    .doOnSuccess(didRename -> {
-                        if (didRename) {
-                            del(command.getKey());
+                    .flatMap(newKeyExists -> {
+                        if (newKeyExists) {
+                            return Mono.just(false);
                         }
+
+                        return read(keyBuf, ByteArrayCodec.INSTANCE, RedisCommands.DUMP, keyBuf)
+                                .switchIfEmpty(Mono.error(() -> new RedisSystemException("ERR no such key", null)))
+                                .zipWith(
+                                        Mono.defer(() -> pTtl(command.getKey())
+                                                .filter(Objects::nonNull)
+                                                .map(ttl -> Math.max(0, ttl))
+                                                .switchIfEmpty(Mono.just(0L))
+                                        )
+                                )
+                                .flatMap(valueAndTtl -> {
+                                    return write(newKeyBuf, StringCodec.INSTANCE, RedisCommands.RESTORE, newKeyBuf, valueAndTtl.getT2(), valueAndTtl.getT1());
+                                })
+                                .then(del(command.getKey()))
+                                .thenReturn(true);
                     })
                     .map(didRename -> new BooleanResponse<>(command, didRename));
         });
