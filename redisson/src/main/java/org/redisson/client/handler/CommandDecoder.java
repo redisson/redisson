@@ -126,9 +126,16 @@ public class CommandDecoder extends ReplayingDecoder<State> {
     }
 
     private int skipBatchCommand(ByteBuf in, CommandsData data) throws IOException {
-        int commandsAmount = 1;
-        if (!data.isSkipResult()) {
-            commandsAmount = data.getCommands().size();
+        int commandsAmount = data.getCommands().size();
+        if (data.isSkipResult()) {
+            // CLIENT REPLY ON, plus CLIENT REPLY OFF's QUEUED reply and replica sync if enabled.
+            commandsAmount = 1;
+            if (data.isQueued()) {
+                commandsAmount++;
+            }
+            if (data.isSyncSlaves()) {
+                commandsAmount++;
+            }
         }
 
         in.markReaderIndex();
@@ -323,13 +330,6 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 }
             }
 
-            if (i == 0 && commandBatch.isSkipResult() && commandBatch.isSyncSlaves()) {
-                checkpoint();
-                state.setBatchIndex(commandBatch.getCommands().size() - 1);
-                return;
-            }
-
-            i++;
             if (commandData != null && !commandData.isSuccess()) {
                 if (error == null) {
                     error = commandData.cause();
@@ -338,9 +338,22 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 }
 
             }
+            if (commandBatch.isSkipResult()) {
+                if (commandBatch.isQueued() && i == 0) {
+                    // CLIENT REPLY OFF is queued before EXEC and has its own QUEUED reply.
+                    i++;
+                } else if (commandBatch.isSyncSlaves() && i != commandBatch.getCommands().size() - 1) {
+                    i = commandBatch.getCommands().size() - 1;
+                } else {
+                    // No per-command replies remain after CLIENT REPLY ON or replica sync.
+                    i = commandBatch.getCommands().size();
+                }
+            } else {
+                i++;
+            }
         }
 
-        if (commandBatch.isSkipResult() || i == commandBatch.getCommands().size()) {
+        if (i == commandBatch.getCommands().size()) {
             CompletableFuture<Void> promise = commandBatch.getPromise();
             if (error != null) {
                 promise.completeExceptionally(error);
