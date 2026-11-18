@@ -67,8 +67,9 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
     @Override
     public void execute() {
         try {
-            if (RedisCommands.EXEC.getName().equals(command.getName())
-                    || RedisCommands.DISCARD.getName().equals(command.getName())) {
+            if (source.getEntry() != null
+                    && (RedisCommands.EXEC.getName().equals(command.getName())
+                            || RedisCommands.DISCARD.getName().equals(command.getName()))) {
                 Entry entry = aggregatedCommands.computeIfAbsent(source.getEntry(), k -> new Entry());
 
                 if (!readOnlyMode) {

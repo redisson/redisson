@@ -17,6 +17,7 @@ import org.redisson.connection.MasterSlaveEntry;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Queue;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -102,6 +103,27 @@ public class CommandBatchServiceTest extends RedisDockerTest {
         List<String> clients = connection.sync(RedisCommands.CLIENT_LIST, "ID", clientId);
         assertThat(clients).hasSize(1);
         assertThat(clients.get(0)).contains(" flags=N ", " watch=0 ");
+    }
+
+    @Test
+    public void testAtomicBatchDiscardThroughWriteAsync() {
+        CommandAsyncExecutor executor = ((Redisson) redisson).getCommandExecutor();
+        MasterSlaveEntry entry = executor.getConnectionManager().getEntrySet().iterator().next();
+        Queue<RedisConnection> free = entry.getEntry().getConnectionsHolder().getFreeConnections();
+        int freeBefore = free.size();
+
+        for (int i = 0; i < 3; i++) {
+            CommandBatchService batch = executor.createCommandBatchService(BatchOptions.defaults().executionMode(ExecutionMode.REDIS_WRITE_ATOMIC));
+            batch.writeAsync("key", StringCodec.INSTANCE, RedisCommands.SET, "key", "value");
+            Object reply = batch.get(batch.writeAsync((String) null, RedisCommands.DISCARD));
+            assertThat(reply).isNull();
+        }
+
+        assertThat(redisson.getBucket("key", StringCodec.INSTANCE).isExists()).isFalse();
+        await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> {
+            assertThat(free).hasSize(freeBefore);
+        });
+        assertThat(free).noneMatch(RedisConnection::isQueued);
     }
 
 }
