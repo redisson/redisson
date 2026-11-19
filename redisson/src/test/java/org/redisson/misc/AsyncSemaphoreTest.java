@@ -64,6 +64,52 @@ public class AsyncSemaphoreTest {
     }
 
     /**
+     * Reproducer for https://github.com/redisson/redisson/issues/5971: 1000 parallel requests
+     * over a pool of one connection, after which every command fails with "Unable to acquire
+     * connection!" for good, although the connection itself is healthy.
+     */
+    @Test
+    @Timeout(60)
+    void testReleaseCascadeDoesNotOverflowStack() throws Exception {
+        int waiters = 100_000;
+
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        AsyncSemaphore semaphore = new AsyncSemaphore(1, executor);
+        AtomicInteger nested = new AtomicInteger();
+        AtomicInteger deepest = new AtomicInteger();
+        CountDownLatch handedOn = new CountDownLatch(waiters);
+
+        try {
+            assertThat(semaphore.acquire()).isCompleted();
+
+            for (int i = 0; i < waiters; i++) {
+                semaphore.acquire().thenAccept(r -> {
+                    deepest.accumulateAndGet(nested.incrementAndGet(), Math::max);
+                    semaphore.release();
+                    nested.decrementAndGet();
+                    handedOn.countDown();
+                });
+            }
+
+            assertThat(semaphore.queueSize()).isEqualTo(waiters);
+
+            semaphore.release();
+
+            boolean drained = handedOn.await(10, TimeUnit.SECONDS);
+
+            assertThat(drained).isTrue();
+
+            assertThat(semaphore.acquire()).isCompleted();
+
+            assertThat(deepest.get())
+                    .as("hand-overs nested at once, which the fork is there to keep near 25")
+                    .isLessThan(100);
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+    /**
      * tryForkAndRun() raises tasksLatch by CAS and then calls executorService.submit().
      * ConnectionsHolder builds its pool semaphore over the shared event loop group, so once
      * that group starts shutting down submit() throws RejectedExecutionException, the forked
