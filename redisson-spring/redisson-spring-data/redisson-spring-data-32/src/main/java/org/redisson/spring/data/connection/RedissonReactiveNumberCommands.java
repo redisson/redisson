@@ -93,7 +93,7 @@ public class RedissonReactiveNumberCommands extends RedissonBaseReactive impleme
             
             Mono<T> m = write(keyBuf, StringCodec.INSTANCE,
                     new RedisCommand<Object>("INCRBYFLOAT", new NumberConvertor(key.getValue().getClass())),
-                    keyBuf, "-" + new BigDecimal(key.getValue().toString()).toPlainString());
+                    keyBuf, new BigDecimal(key.getValue().toString()).negate().toPlainString());
             return m.map(v -> new NumericResponse<>(key, v));
         });
     }
