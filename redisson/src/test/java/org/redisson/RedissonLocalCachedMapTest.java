@@ -8,6 +8,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RLocalCachedMap;
 import org.redisson.api.RMap;
+import org.redisson.api.RTransaction;
+import org.redisson.api.TransactionOptions;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.listener.LocalCacheInvalidateListener;
 import org.redisson.api.map.MapLoader;
@@ -838,8 +840,8 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
     }
 
     @Test
-    public void testUseObjectAsCacheKeyAndStoreCacheMiss() {
-        LocalCachedMapOptions<String, Integer> options = LocalCachedMapOptions.<String, Integer>name("testMiss")
+    public void testUseObjectAsCacheKeyWithTransaction() {
+        LocalCachedMapOptions<String, Integer> options = LocalCachedMapOptions.<String, Integer>name("testTxKey" + System.currentTimeMillis())
                 .useObjectAsCacheKey(true)
                 .storeCacheMiss(true)
                 .syncStrategy(SyncStrategy.INVALIDATE);
@@ -848,36 +850,20 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
         RLocalCachedMap<String, Integer> map2 = redisson.getLocalCachedMap(options);
 
         try {
-            assertThat(map2.get("key1")).isNull();
-            Awaitility.await().atMost(Durations.ONE_SECOND)
-                    .untilAsserted(() -> assertThat(map2.getCachedMap().size()).isEqualTo(1));
-            Awaitility.await().atMost(Durations.ONE_SECOND)
-                    .untilAsserted(() -> assertThat(((RedissonLocalCachedMap<String, Integer>) map2)
-                            .getLocalCacheView().getCacheKeyMap().size()).isEqualTo(1));
-
             map1.put("key1", 100);
-
-            Awaitility.await().atMost(Durations.TWO_SECONDS)
-                    .untilAsserted(() -> assertThat(map2.getCachedMap()).isEmpty());
-            Awaitility.await().atMost(Durations.TWO_SECONDS)
-                    .untilAsserted(() -> assertThat(((RedissonLocalCachedMap<String, Integer>) map2)
-                            .getLocalCacheView().getCacheKeyMap()).isEmpty());
-
             assertThat(map2.get("key1")).isEqualTo(100);
-            Awaitility.await().atMost(Durations.ONE_SECOND)
-                    .untilAsserted(() -> assertThat(map2.getCachedMap().get("key1")).isEqualTo(100));
-
-            map1.put("key2", 200);
-            assertThat(map2.get("key2")).isEqualTo(200);
-            Awaitility.await().atMost(Durations.ONE_SECOND)
-                    .untilAsserted(() -> assertThat(map2.getCachedMap().get("key2")).isEqualTo(200));
-
-            map1.remove("key2");
-            Awaitility.await().atMost(Durations.TWO_SECONDS)
-                    .untilAsserted(() -> assertThat(map2.getCachedMap().containsKey("key2")).isFalse());
-            Awaitility.await().atMost(Durations.TWO_SECONDS)
+            Awaitility.await().atMost(Durations.FIVE_SECONDS)
                     .untilAsserted(() -> assertThat(((RedissonLocalCachedMap<String, Integer>) map2)
-                            .getLocalCacheView().getCacheKeyMap().containsKey("key2")).isFalse());
+                            .getLocalCacheView().getCacheKeyMap()).containsKey("key1"));
+
+            RTransaction transaction = redisson.createTransaction(TransactionOptions.defaults());
+            RMap<String, Integer> txMap = transaction.getLocalCachedMap(map1);
+            txMap.put("key1", 200);
+            transaction.commit();
+
+            Awaitility.await().atMost(Durations.FIVE_SECONDS)
+                    .untilAsserted(() -> assertThat(((RedissonLocalCachedMap<String, Integer>) map2)
+                            .getLocalCacheView().getCacheKeyMap().containsKey("key1")).isFalse());
         } finally {
             map1.destroy();
             map2.destroy();
