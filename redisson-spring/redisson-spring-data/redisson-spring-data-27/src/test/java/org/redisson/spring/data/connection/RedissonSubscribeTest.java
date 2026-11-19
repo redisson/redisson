@@ -3,10 +3,13 @@ package org.redisson.spring.data.connection;
 import org.awaitility.Awaitility;
 import org.awaitility.Durations;
 import org.junit.jupiter.api.Test;
+import org.redisson.api.RPatternTopic;
+import org.redisson.api.RTopic;
 import org.redisson.api.redisnode.RedisCluster;
 import org.redisson.api.redisnode.RedisClusterMaster;
 import org.redisson.api.redisnode.RedisClusterSlave;
 import org.redisson.api.redisnode.RedisNodes;
+import org.redisson.client.codec.StringCodec;
 import org.springframework.data.redis.connection.Message;
 import org.springframework.data.redis.connection.MessageListener;
 import org.springframework.data.redis.connection.RedisConnection;
@@ -253,6 +256,35 @@ public class RedissonSubscribeTest extends BaseConnectionTest {
         connection.getSubscription().unsubscribe();
         
         
+    }
+
+    @Test
+    public void testSecondListenerOnAChannelAndPatternTheClientHolds() {
+        RTopic topic = redisson.getTopic("held", StringCodec.INSTANCE);
+        int topicListener = topic.addListener(String.class, (channel, msg) -> {});
+        RPatternTopic patternTopic = redisson.getPatternTopic("held*", StringCodec.INSTANCE);
+        int patternListener = patternTopic.addListener(String.class, (pattern, channel, msg) -> {});
+
+        Queue<String> received = new ConcurrentLinkedQueue<>();
+        RedisMessageListenerContainer container = new RedisMessageListenerContainer();
+        container.setConnectionFactory(new RedissonConnectionFactory(redisson));
+        container.afterPropertiesSet();
+        container.start();
+        assertTimeoutPreemptively(Duration.ofSeconds(10), () -> {
+            for (int i = 0; i < 2; i++) {
+                container.addMessageListener((message, pattern) -> received.add(new String(message.getBody())), new ChannelTopic("held"));
+                container.addMessageListener((message, pattern) -> received.add(new String(message.getBody())), new PatternTopic("held*"));
+            }
+        });
+
+        topic.publish("msg");
+        Awaitility.await().atMost(Durations.FIVE_SECONDS).untilAsserted(() -> {
+            assertThat(received).containsExactly("msg", "msg", "msg", "msg");
+        });
+
+        container.stop();
+        topic.removeListener(topicListener);
+        patternTopic.removeListener(patternListener);
     }
 
 }

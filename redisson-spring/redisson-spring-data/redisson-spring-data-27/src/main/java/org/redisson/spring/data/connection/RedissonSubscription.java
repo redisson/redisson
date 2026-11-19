@@ -108,6 +108,9 @@ public class RedissonSubscription extends AbstractSubscription {
         for (CompletableFuture<?> future : list) {
             commandExecutor.get(future);
         }
+        for (CompletableFuture<Void> future : tosubscribe.values()) {
+            future.complete(null);
+        }
         if (getListener() instanceof SubscriptionListener) {
             for (ChannelName channel : tosubscribe.keySet()) {
                 ((SubscriptionListener) getListener()).onChannelSubscribed(channel.getName(), 1);
@@ -219,6 +222,9 @@ public class RedissonSubscription extends AbstractSubscription {
         }
         for (CompletableFuture<?> future : list) {
             commandExecutor.get(future);
+        }
+        for (CompletableFuture<Void> future : tosubscribe.values()) {
+            future.complete(null);
         }
         if (getListener() instanceof SubscriptionListener) {
             for (ChannelName channel : tosubscribe.keySet()) {
