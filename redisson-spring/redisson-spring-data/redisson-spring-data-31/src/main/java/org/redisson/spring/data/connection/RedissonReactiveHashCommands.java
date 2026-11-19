@@ -16,6 +16,7 @@
 package org.redisson.spring.data.connection;
 
 import java.nio.ByteBuffer;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -38,6 +39,7 @@ import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.client.protocol.decoder.MultiDecoder;
+import org.redisson.client.protocol.decoder.ObjectListReplayDecoder;
 import org.redisson.reactive.CommandReactiveExecutor;
 import org.redisson.reactive.MapReactiveIterator;
 import org.springframework.data.redis.connection.ReactiveHashCommands;
@@ -97,13 +99,7 @@ public class RedissonReactiveHashCommands extends RedissonBaseReactive implement
         });
     }
     
-    private static final RedisCommand<List<Object>> HMGET = new RedisCommand<List<Object>>("HMGET", (parts, state) -> {
-        List<Object> list = parts.stream().filter(e -> e != null).collect(Collectors.toList());
-        if (list.isEmpty()) {
-            return null;
-        }
-        return parts;
-    });
+    private static final RedisCommand<List<Object>> HMGET = new RedisCommand<List<Object>>("HMGET", new ObjectListReplayDecoder<>());
 
     @Override
     public Flux<MultiValueResponse<HGetCommand, ByteBuffer>> hMGet(Publisher<HGetCommand> commands) {
@@ -225,13 +221,13 @@ public class RedissonReactiveHashCommands extends RedissonBaseReactive implement
             Flux<Entry<Object, Object>> flux = Flux.create(new MapReactiveIterator<Object, Object, Entry<Object, Object>>(null, null, 0) {
                 @Override
                 public RFuture<ScanResult<Object>> scanIterator(RedisClient client, String nextIterPos) {
-                    if (command.getOptions().getPattern() == null) {
+                    if (command.getOptions().getBytePattern() == null) {
                         return executorService.readAsync(client, keyBuf, ByteArrayCodec.INSTANCE, RedisCommands.HSCAN, 
                                 keyBuf, nextIterPos, "COUNT", Optional.ofNullable(command.getOptions().getCount()).orElse(10L));
                     }
 
                     return executorService.readAsync(client, keyBuf, ByteArrayCodec.INSTANCE, RedisCommands.HSCAN, 
-                                keyBuf, nextIterPos, "MATCH", command.getOptions().getPattern(), 
+                                keyBuf, nextIterPos, "MATCH", command.getOptions().getBytePattern(), 
                                                     "COUNT", Optional.ofNullable(command.getOptions().getCount()).orElse(10L));
                 }
             });
@@ -265,12 +261,7 @@ public class RedissonReactiveHashCommands extends RedissonBaseReactive implement
 
             byte[] keyBuf = toByteArray(command.getKey());
 
-            Mono<Set<byte[]>> m;
-            if (command.getCount() > 0) {
-                m = read(keyBuf, ByteArrayCodec.INSTANCE, RedisCommands.HRANDFIELD_KEYS, keyBuf, command.getCount());
-            } else {
-                m = read(keyBuf, ByteArrayCodec.INSTANCE, RedisCommands.HRANDFIELD_KEYS, keyBuf);
-            }
+            Mono<Set<byte[]>> m = read(keyBuf, ByteArrayCodec.INSTANCE, RedisCommands.HRANDFIELD_KEYS, keyBuf, command.getCount());
             return m.map(v -> new CommandResponse<>(command, Flux.fromIterable(v).map(e -> ByteBuffer.wrap(e))));
         });
     }
@@ -283,15 +274,14 @@ public class RedissonReactiveHashCommands extends RedissonBaseReactive implement
 
             byte[] keyBuf = toByteArray(command.getKey());
 
-            Mono<Map<byte[], byte[]>> m;
-            if (command.getCount() > 0) {
-                m = read(keyBuf, ByteArrayCodec.INSTANCE, RedisCommands.HRANDFIELD, keyBuf, command.getCount());
-            } else {
-                m = read(keyBuf, ByteArrayCodec.INSTANCE, RedisCommands.HRANDFIELD, keyBuf);
+            RedisCommand<List<Entry<Object, Object>>> cmd = RedissonConnection.HRANDFIELD_VALUES;
+            if (executorService.getServiceManager().isResp3()) {
+                cmd = RedissonConnection.HRANDFIELD_VALUES_V2;
             }
 
-            Mono<Map<ByteBuffer, ByteBuffer>> f = m.map(v -> v.entrySet().stream().collect(Collectors.toMap(e -> ByteBuffer.wrap(e.getKey()), e -> ByteBuffer.wrap(e.getValue()))));
-            return f.map(v -> new CommandResponse<>(command, Flux.fromIterable(v.entrySet())));
+            Mono<List<Entry<byte[], byte[]>>> m = read(keyBuf, ByteArrayCodec.INSTANCE, cmd, keyBuf, command.getCount(), "WITHVALUES");
+            return m.map(v -> new CommandResponse<>(command, Flux.fromIterable(v)
+                    .<Entry<ByteBuffer, ByteBuffer>>map(e -> new AbstractMap.SimpleImmutableEntry<>(ByteBuffer.wrap(e.getKey()), ByteBuffer.wrap(e.getValue())))));
         });
     }
 }
