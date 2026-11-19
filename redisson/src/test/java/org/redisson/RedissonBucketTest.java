@@ -11,6 +11,10 @@ import org.redisson.api.bucket.CompareAndDeleteArgs;
 import org.redisson.api.listener.SetObjectListener;
 import org.redisson.api.listener.TrackingListener;
 import org.redisson.api.options.PlainOptions;
+import org.redisson.api.redisnode.RedisClusterSlave;
+import org.redisson.api.redisnode.RedisNode;
+import org.redisson.api.redisnode.RedisNodes;
+import org.redisson.client.RedisException;
 import org.redisson.client.RedisResponseTimeoutException;
 import org.redisson.client.codec.IntegerCodec;
 import org.redisson.client.codec.LongCodec;
@@ -23,17 +27,23 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class RedissonBucketTest extends RedisDockerTest {
+
+    private static final Pattern CALLS = Pattern.compile("calls=(\\d+)");
 
     public static Iterable<Object[]> trackingData() {
         return Arrays.asList(new Object[][] {
@@ -139,10 +149,69 @@ public class RedissonBucketTest extends RedisDockerTest {
             b.rename("12324");
 
             RBucket<String> bs = rc.getBucket(b.getName());
-            assertThat(bs.get()).isEqualTo("123");
-
-            assertThat(rc.getKeys().count()).isEqualTo(1);
+            Awaitility.waitAtMost(Duration.ofSeconds(5)).untilAsserted(() -> {
+                assertThat(bs.get()).isEqualTo("123");
+                assertThat(rc.getKeys().count()).isEqualTo(1);
+            });
         });
+    }
+
+    @Test
+    public void testRenameInClusterKeepsTheTimeToLive() {
+        testInCluster(rc -> {
+            RBucket<String> b = rc.getBucket("{a}source", StringCodec.INSTANCE);
+            b.set("123", Duration.ofMillis(499));
+
+            b.rename("{b}target");
+
+            Long ttl = rc.getScript(StringCodec.INSTANCE).eval("{b}target", RScript.Mode.READ_WRITE,
+                    "return redis.call('pttl', KEYS[1])", RScript.ReturnType.LONG, Collections.singletonList("{b}target"));
+            assertThat(ttl).isBetween(1L, 499L);
+        });
+    }
+
+    @Test
+    public void testRenameInClusterReadsTheSourceFromTheMaster() {
+        testInCluster(rc -> {
+            RBucket<String> b = rc.getBucket("{a}source", StringCodec.INSTANCE);
+            b.set("123");
+            long replicaReads = replicaReads(rc);
+
+            b.rename("{b}target");
+
+            assertThat(replicaReads(rc)).isEqualTo(replicaReads);
+        });
+    }
+
+    @Test
+    public void testRenameInClusterOfAMissingObject() {
+        testInCluster(rc -> {
+            rc.getBucket("{b}target", StringCodec.INSTANCE).set("existing");
+
+            assertThatThrownBy(() -> rc.getBucket("{a}source").rename("{b}target"))
+                    .isInstanceOf(RedisException.class)
+                    .hasMessageContaining("ERR no such key");
+
+            String value = rc.getScript(StringCodec.INSTANCE).eval("{b}target", RScript.Mode.READ_WRITE,
+                    "return redis.call('get', KEYS[1])", RScript.ReturnType.STRING, Collections.singletonList("{b}target"));
+            assertThat(value).isEqualTo("existing");
+        });
+    }
+
+    private long replicaReads(RedissonClient redisson) {
+        long calls = 0;
+        for (RedisClusterSlave replica : redisson.getRedisNodes(RedisNodes.CLUSTER).getSlaves()) {
+            Map<String, String> stats = replica.info(RedisNode.InfoSection.COMMANDSTATS);
+            for (String command : Arrays.asList("dump", "pttl", "eval", "evalsha", "eval_ro", "evalsha_ro")) {
+                String stat = stats.get("cmdstat_" + command);
+                if (stat != null) {
+                    Matcher matcher = CALLS.matcher(stat);
+                    assertThat(matcher.find()).isTrue();
+                    calls += Long.parseLong(matcher.group(1));
+                }
+            }
+        }
+        return calls;
     }
 
     @ParameterizedTest

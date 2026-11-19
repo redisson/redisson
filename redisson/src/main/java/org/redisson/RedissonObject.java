@@ -20,6 +20,7 @@ import io.netty.util.ReferenceCountUtil;
 import org.redisson.api.*;
 import org.redisson.api.listener.TrackingListener;
 import org.redisson.client.ChannelName;
+import org.redisson.client.RedisException;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.codec.Codec;
@@ -478,9 +479,11 @@ public abstract class RedissonObject implements RObject {
             throw new IllegalStateException("New name slot doesn't match with the slot of the old name. This is required for a batch in clustered mode");
         }
 
-        CompletionStage<Void> f = dumpAsync()
-                .thenCompose(val -> commandExecutor.writeAsync(nn, StringCodec.INSTANCE, RedisCommands.RESTORE, nn, 0, val, "REPLACE"))
-                .thenCompose(val -> {
+        CompletionStage<Void> f = copyOnePairAcrossSlots(commandExecutor, oldName, nn, true)
+                .thenCompose(copied -> {
+                    if (!copied) {
+                        throw new RedisException("ERR no such key");
+                    }
                     setName(newName);
                     return deleteAsync(oldName).thenApply(r -> null);
                 });
