@@ -10,12 +10,19 @@ import org.redisson.api.map.event.*;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisClientConfig;
 import org.redisson.client.RedisConnection;
+import org.redisson.client.RedisException;
+import org.redisson.client.RedisReadonlyException;
 import org.redisson.client.codec.*;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.codec.CompositeCodec;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.config.Config;
 import org.redisson.config.NameMapper;
 import org.redisson.eviction.EvictionScheduler;
+import org.redisson.misc.CompletableFutureWrapper;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Proxy;
 
 import java.time.Duration;
 import java.util.*;
@@ -1892,6 +1899,146 @@ public class RedissonMapCacheTest extends BaseMapTest {
             map.destroy();
             mapCopy.destroy();
         });
+    }
+
+    @Test
+    public void testAddListenerOnReadonlyReplica() {
+        RMapCache<String, String> map = redisson.getMapCache("testReadOnlyMap");
+        CommandAsyncExecutor originalExecutor = Reflect.on(map).get("commandExecutor");
+        AtomicInteger writeCount = new AtomicInteger();
+        AtomicInteger existsCount = new AtomicInteger();
+
+        CommandAsyncExecutor mockExecutor = (CommandAsyncExecutor) Proxy.newProxyInstance(
+                CommandAsyncExecutor.class.getClassLoader(),
+                new Class<?>[]{CommandAsyncExecutor.class},
+                (proxy, method, args) -> {
+                    if ("writeAsync".equals(method.getName()) && args != null && args.length >= 4) {
+                        if (RedisCommands.HSET_VOID.equals(args[2])) {
+                            Object[] params = (Object[]) args[3];
+                            for (Object param : params) {
+                                if ("has-listeners".equals(param)) {
+                                    writeCount.incrementAndGet();
+                                    CompletableFuture<Void> f = new CompletableFuture<>();
+                                    f.completeExceptionally(new RedisReadonlyException("READONLY You can't write against a read only replica."));
+                                    return new CompletableFutureWrapper<>(f);
+                                }
+                            }
+                        }
+                    }
+                    if ("readAsync".equals(method.getName()) && args != null && args.length >= 4) {
+                        if (RedisCommands.HEXISTS.equals(args[2])) {
+                            existsCount.incrementAndGet();
+                        }
+                    }
+                    try {
+                        return method.invoke(originalExecutor, args);
+                    } catch (InvocationTargetException e) {
+                        throw e.getCause();
+                    }
+                }
+        );
+        Reflect.on(map).set("commandExecutor", mockExecutor);
+
+        // 1. First listener: write fails with RedisReadonlyException, but fallback handles it gracefully
+        int listenerId1 = map.addListener((EntryCreatedListener<String, String>) event -> {});
+        assertThat(listenerId1).isPositive();
+        assertThat(writeCount.get()).isEqualTo(1);
+        assertThat(existsCount.get()).isEqualTo(1);
+        boolean hasListenersSet = Reflect.on(map).get("hasListenersSet");
+        assertThat(hasListenersSet).isTrue();
+
+        // 2. Second listener: fast path via hasListenersSet = true, skips HEXISTS and writeAsync
+        int listenerId2 = map.addListener((EntryRemovedListener<String, String>) event -> {});
+        assertThat(listenerId2).isPositive();
+        assertThat(writeCount.get()).isEqualTo(1);
+        assertThat(existsCount.get()).isEqualTo(1);
+
+        map.destroy();
+    }
+
+    @Test
+    public void testAddListenerWhenFlagAlreadyExistsOnReplica() {
+        RMapCache<String, String> map = redisson.getMapCache("testReadOnlyMapWithFlag");
+        String optionsName = ((RedissonMapCache<?, ?>) map).getOptionsName(map.getName());
+        // Simulate Master having already set has-listeners: 1
+        redisson.getMap(optionsName, LongCodec.INSTANCE).put("has-listeners", 1L);
+
+        CommandAsyncExecutor originalExecutor = Reflect.on(map).get("commandExecutor");
+        AtomicInteger writeCount = new AtomicInteger();
+        AtomicInteger existsCount = new AtomicInteger();
+
+        CommandAsyncExecutor mockExecutor = (CommandAsyncExecutor) Proxy.newProxyInstance(
+                CommandAsyncExecutor.class.getClassLoader(),
+                new Class<?>[]{CommandAsyncExecutor.class},
+                (proxy, method, args) -> {
+                    if ("writeAsync".equals(method.getName()) && args != null && args.length >= 4) {
+                        if (RedisCommands.HSET_VOID.equals(args[2])) {
+                            Object[] params = (Object[]) args[3];
+                            for (Object param : params) {
+                                if ("has-listeners".equals(param)) {
+                                    writeCount.incrementAndGet();
+                                    CompletableFuture<Void> f = new CompletableFuture<>();
+                                    f.completeExceptionally(new RedisReadonlyException("READONLY You can't write against a read only replica."));
+                                    return new CompletableFutureWrapper<>(f);
+                                }
+                            }
+                        }
+                    }
+                    if ("readAsync".equals(method.getName()) && args != null && args.length >= 4) {
+                        if (RedisCommands.HEXISTS.equals(args[2])) {
+                            existsCount.incrementAndGet();
+                        }
+                    }
+                    try {
+                        return method.invoke(originalExecutor, args);
+                    } catch (InvocationTargetException e) {
+                        throw e.getCause();
+                    }
+                }
+        );
+        Reflect.on(map).set("commandExecutor", mockExecutor);
+
+        // HEXISTS finds "has-listeners" exists, writeAsync is skipped entirely
+        int listenerId = map.addListener((EntryCreatedListener<String, String>) event -> {});
+        assertThat(listenerId).isPositive();
+        assertThat(existsCount.get()).isEqualTo(1);
+        assertThat(writeCount.get()).isZero();
+        boolean hasListenersSet = Reflect.on(map).get("hasListenersSet");
+        assertThat(hasListenersSet).isTrue();
+
+        map.destroy();
+    }
+
+    @Test
+    public void testAddListenerWriteFailureNonReadonlyThrowsException() {
+        RMapCache<String, String> map = redisson.getMapCache("testNonReadonlyErrorMap");
+        CommandAsyncExecutor originalExecutor = Reflect.on(map).get("commandExecutor");
+
+        CommandAsyncExecutor mockExecutor = (CommandAsyncExecutor) Proxy.newProxyInstance(
+                CommandAsyncExecutor.class.getClassLoader(),
+                new Class<?>[]{CommandAsyncExecutor.class},
+                (proxy, method, args) -> {
+                    if ("writeAsync".equals(method.getName()) && args != null && args.length >= 4) {
+                        if (RedisCommands.HSET_VOID.equals(args[2])) {
+                            CompletableFuture<Void> f = new CompletableFuture<>();
+                            f.completeExceptionally(new RedisException("Fatal server error"));
+                            return new CompletableFutureWrapper<>(f);
+                        }
+                    }
+                    try {
+                        return method.invoke(originalExecutor, args);
+                    } catch (InvocationTargetException e) {
+                        throw e.getCause();
+                    }
+                }
+        );
+        Reflect.on(map).set("commandExecutor", mockExecutor);
+
+        Assertions.assertThrows(RedisException.class, () -> {
+            map.addListener((EntryCreatedListener<String, String>) event -> {});
+        });
+
+        map.destroy();
     }
 }
 
