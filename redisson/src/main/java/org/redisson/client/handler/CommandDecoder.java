@@ -127,7 +127,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
 
     private int skipBatchCommand(ByteBuf in, CommandsData data) throws IOException {
         int commandsAmount = data.getCommands().size();
-        if (data.isSkipResult()) {
+        if (isResultSkipped(in, data)) {
             // CLIENT REPLY ON, plus CLIENT REPLY OFF's QUEUED reply and replica sync if enabled.
             commandsAmount = 1;
             if (data.isQueued()) {
@@ -145,6 +145,32 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         int endIndex = in.readerIndex();
         in.resetReaderIndex();
         return endIndex;
+    }
+
+    private boolean isResultSkipped(ByteBuf in, CommandsData data) throws IOException {
+        if (!data.isSkipResult()) {
+            return false;
+        }
+
+        int startIndex = in.readerIndex();
+        try {
+            // A rejected CLIENT REPLY OFF leaves replies enabled for every command.
+            if (in.getByte(startIndex) == '-') {
+                return false;
+            }
+            if (!data.isQueued()) {
+                return true;
+            }
+
+            skipDecode(in); // CLIENT REPLY OFF's QUEUED reply
+            if (in.readByte() != '*') {
+                return false; // EXEC failed without executing CLIENT REPLY OFF.
+            }
+            // A null EXEC reply means the transaction was aborted without executing OFF.
+            return readLong(in) > 0;
+        } finally {
+            in.readerIndex(startIndex);
+        }
     }
 
     private void decode(ChannelHandlerContext ctx, ByteBuf in, QueueCommand data, int endIndex, State state) throws Exception {
@@ -267,6 +293,8 @@ public class CommandDecoder extends ReplayingDecoder<State> {
 
     private void decodeCommandBatch(Channel channel, ByteBuf in, CommandsData commandBatch, State state) throws Exception {
         int i = state.getBatchIndex();
+        boolean skipResult = isResultSkipped(in, commandBatch);
+        boolean replyOffRejected = commandBatch.isSkipResult() && !skipResult;
 
         Throwable error = null;
         while (in.writerIndex() > in.readerIndex()) {
@@ -280,12 +308,18 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             state.setBatchIndex(i);
             
             int endIndex = skipCommand(in);
+            if (replyOffRejected && error != null) {
+                // Drain the remaining replies before releasing this failed batch's connection.
+                in.readerIndex(endIndex);
+                i++;
+                continue;
+            }
             try {
                 
                 RedisCommand<?> cmd = commandBatch.getCommands().get(i).getCommand();
                 boolean skipConvertor = commandBatch.isQueued();
                 List<CommandData<?, ?>> commandsData = null;
-                if (!commandBatch.isAtomic()
+                if (replyOffRejected || !commandBatch.isAtomic()
                         || RedisCommands.EXEC.getName().equals(cmd.getName())
                         || RedisCommands.WAIT.getName().equals(cmd.getName())
                         || RedisCommands.WAITAOF.getName().equals(cmd.getName())) {
@@ -338,7 +372,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 }
 
             }
-            if (commandBatch.isSkipResult()) {
+            if (skipResult) {
                 if (commandBatch.isQueued() && i == 0) {
                     // CLIENT REPLY OFF is queued before EXEC and has its own QUEUED reply.
                     i++;
@@ -356,6 +390,11 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         if (i == commandBatch.getCommands().size()) {
             CompletableFuture<Void> promise = commandBatch.getPromise();
             if (error != null) {
+                if (replyOffRejected) {
+                    for (CommandData<?, ?> command : commandBatch.getCommands()) {
+                        command.tryFailure(error);
+                    }
+                }
                 promise.completeExceptionally(error);
             } else {
                 promise.complete(null);

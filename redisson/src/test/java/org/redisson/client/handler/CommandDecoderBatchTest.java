@@ -5,7 +5,6 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.CharsetUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -117,18 +116,38 @@ class CommandDecoderBatchTest {
         assertThat(channel.attr(CommandsQueue.COMMANDS_QUEUE).get()).isEmpty();
     }
 
-    @Test
-    void testFailedSkipResultBatchPreservesFollowingReply() {
-        CommandsData batch = skipResultBatch(false, SyncMode.NONE);
+    @ParameterizedTest
+    @CsvSource({"false, 0", "true, 0", "false, 1", "true, 1"})
+    void testRejectedReplyOffPreservesFollowingReplies(boolean atomic, int fragmentSize) {
+        CommandsData batch = skipResultBatch(atomic, SyncMode.NONE);
+        assertRejectedBatch(batch, "-NOPERM User limited has no permissions to run the 'client|reply' command\r\n"
+                + (atomic ? "+OK\r\n+QUEUED\r\n*1\r\n+OK\r\n" : "+OK\r\n")
+                + "-NOPERM User limited has no permissions to run the 'client|reply' command\r\n", fragmentSize);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"false, 0", "true, 0", "false, 1", "true, 1"})
+    void testRejectedQueuedReplyOffPreservesFollowingReplies(boolean replica, int fragmentSize) {
+        CommandsData batch = queuedSkipResultBatch(SyncMode.NONE);
+        String replies = replica
+                ? "+QUEUED\r\n-EXECABORT Transaction discarded because of: READONLY You can't write against a read only replica.\r\n+OK\r\n"
+                : "-NOPERM User limited has no permissions to run the 'client|reply' command\r\n"
+                    + "-EXECABORT Transaction discarded because of previous errors.\r\n"
+                    + "-NOPERM User limited has no permissions to run the 'client|reply' command\r\n";
+        assertRejectedBatch(batch, replies, fragmentSize);
+        assertThat(batch.getCommands().get(1).getPromise()).isCompletedExceptionally();
+    }
+
+    private void assertRejectedBatch(CommandsData batch, String replies, int fragmentSize) {
         CommandData<String, String> ping = command(RedisCommands.PING);
-        channel.writeOutbound(batch, ping);
+        CommandData<Integer, Integer> cardinality = command(RedisCommands.SCARD_INT, "set");
+        channel.writeOutbound(batch, ping, cardinality);
 
-        receive("-ERR rejected batch\r\n+PONG\r\n", 0);
+        receive(replies + "+PONG\r\n:5\r\n", fragmentSize);
 
-        assertThatThrownBy(batch.getPromise()::join)
-                .hasCauseInstanceOf(RedisException.class)
-                .hasMessageContaining("rejected batch");
+        assertThatThrownBy(batch.getPromise()::join).hasCauseInstanceOf(RedisException.class);
         assertThat(ping.getPromise()).isCompletedWithValue("PONG");
+        assertThat(cardinality.getPromise()).isCompletedWithValue(5);
         assertThat(channel.attr(CommandsQueue.COMMANDS_QUEUE).get()).isEmpty();
     }
 
