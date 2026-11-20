@@ -17,8 +17,8 @@ package org.redisson.spring.data.connection;
 
 import org.redisson.client.BaseRedisPubSubListener;
 import org.redisson.client.ChannelName;
+import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.ByteArrayCodec;
-import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.pubsub.PubSubConnectionEntry;
@@ -30,6 +30,7 @@ import org.springframework.data.redis.connection.util.AbstractSubscription;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
@@ -38,6 +39,9 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  *
  */
 public class RedissonSubscription extends AbstractSubscription {
+
+    private final Map<ChannelName, RedisPubSubListener<?>> channelListeners = new ConcurrentHashMap<>();
+    private final Map<ChannelName, RedisPubSubListener<?>> patternListeners = new ConcurrentHashMap<>();
 
     private final CommandAsyncExecutor commandExecutor;
     private final PublishSubscribeService subscribeService;
@@ -53,7 +57,8 @@ public class RedissonSubscription extends AbstractSubscription {
         List<CompletableFuture<?>> list = new ArrayList<>();
         Queue<byte[]> subscribed = new ConcurrentLinkedQueue<>();
         for (byte[] channel : channels) {
-            CompletableFuture<List<PubSubConnectionEntry>> f = subscribeService.subscribe(ByteArrayCodec.INSTANCE, new ChannelName(channel), new BaseRedisPubSubListener() {
+            ChannelName name = new ChannelName(channel);
+            RedisPubSubListener<?> listener = new BaseRedisPubSubListener() {
                 @Override
                 public void onMessage(CharSequence ch, Object message) {
                     if (!Arrays.equals(((ChannelName) ch).getName(), channel)) {
@@ -75,9 +80,17 @@ public class RedissonSubscription extends AbstractSubscription {
                         subscribed.add(channel);
                     }
                     super.onStatus(type, ch);
+
+                    if (type == PubSubType.UNSUBSCRIBE) {
+                        channelListeners.remove(name);
+                    }
                 }
 
-            });
+            };
+            if (channelListeners.putIfAbsent(name, listener) != null) {
+                continue;
+            }
+            CompletableFuture<List<PubSubConnectionEntry>> f = subscribeService.subscribe(ByteArrayCodec.INSTANCE, name, listener);
             list.add(f);
         }
         for (CompletableFuture<?> future : list) {
@@ -91,10 +104,17 @@ public class RedissonSubscription extends AbstractSubscription {
     @Override
     protected void doUnsubscribe(boolean all, byte[]... channels) {
         for (byte[] channel : channels) {
-            CompletableFuture<Codec> f = subscribeService.unsubscribe(new ChannelName(channel), PubSubType.UNSUBSCRIBE);
+            ChannelName name = new ChannelName(channel);
+            RedisPubSubListener<?> listener = channelListeners.remove(name);
+            if (listener == null) {
+                continue;
+            }
+
+            CompletableFuture<Void> f = subscribeService.removeListenerAsync(PubSubType.UNSUBSCRIBE,
+                                                    ChannelName.newList(name), System.identityHashCode(listener));
             if (getListener() instanceof SubscriptionListener) {
                 f.whenComplete((r, e) -> {
-                    if (r != null) {
+                    if (e == null) {
                         ((SubscriptionListener) getListener()).onChannelUnsubscribed(channel, 1);
                     }
                 });
@@ -107,7 +127,8 @@ public class RedissonSubscription extends AbstractSubscription {
         List<CompletableFuture<?>> list = new ArrayList<>();
         Queue<byte[]> subscribed = new ConcurrentLinkedQueue<>();
         for (byte[] channel : patterns) {
-            CompletableFuture<Collection<PubSubConnectionEntry>> f = subscribeService.psubscribe(new ChannelName(channel), ByteArrayCodec.INSTANCE, new BaseRedisPubSubListener() {
+            ChannelName name = new ChannelName(channel);
+            RedisPubSubListener<?> listener = new BaseRedisPubSubListener() {
                 @Override
                 public void onPatternMessage(CharSequence pattern, CharSequence ch, Object message) {
                     if (!Arrays.equals(((ChannelName) pattern).getName(), channel)) {
@@ -129,8 +150,16 @@ public class RedissonSubscription extends AbstractSubscription {
                         subscribed.add(channel);
                     }
                     super.onStatus(type, pattern);
+
+                    if (type == PubSubType.PUNSUBSCRIBE) {
+                        patternListeners.remove(name);
+                    }
                 }
-            });
+            };
+            if (patternListeners.putIfAbsent(name, listener) != null) {
+                continue;
+            }
+            CompletableFuture<Collection<PubSubConnectionEntry>> f = subscribeService.psubscribe(name, ByteArrayCodec.INSTANCE, listener);
             list.add(f);
         }
         for (CompletableFuture<?> future : list) {
@@ -151,10 +180,17 @@ public class RedissonSubscription extends AbstractSubscription {
     @Override
     protected void doPUnsubscribe(boolean all, byte[]... patterns) {
         for (byte[] pattern : patterns) {
-            CompletableFuture<Codec> f = subscribeService.unsubscribe(new ChannelName(pattern), PubSubType.PUNSUBSCRIBE);
+            ChannelName name = new ChannelName(pattern);
+            RedisPubSubListener<?> listener = patternListeners.remove(name);
+            if (listener == null) {
+                continue;
+            }
+
+            CompletableFuture<Void> f = subscribeService.removeListenerAsync(PubSubType.PUNSUBSCRIBE,
+                                                    ChannelName.newList(name), System.identityHashCode(listener));
             if (getListener() instanceof SubscriptionListener) {
                 f.whenComplete((r, e) -> {
-                    if (r != null) {
+                    if (e == null) {
                         ((SubscriptionListener) getListener()).onPatternUnsubscribed(pattern, 1);
                     }
                 });

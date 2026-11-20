@@ -29,6 +29,7 @@ import org.redisson.reactive.CommandReactiveService;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.dao.DataAccessException;
+import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.data.redis.ExceptionTranslationStrategy;
 import org.springframework.data.redis.PassThroughExceptionTranslationStrategy;
@@ -125,7 +126,7 @@ public class RedissonConnectionFactory implements RedisConnectionFactory,
     @Override
     public RedisClusterConnection getClusterConnection() {
         if (!redisson.getConfig().isClusterConfig()) {
-            throw new InvalidDataAccessResourceUsageException("Redisson is not in Cluster mode");
+            throw new InvalidDataAccessApiUsageException("Redisson is not in Cluster mode");
         }
         return new RedissonClusterConnection(redisson, filterOkResponses);
     }
@@ -137,6 +138,10 @@ public class RedissonConnectionFactory implements RedisConnectionFactory,
 
     @Override
     public RedisSentinelConnection getSentinelConnection() {
+        return connectToSentinel(redisson);
+    }
+
+    static RedisSentinelConnection connectToSentinel(RedissonClient redisson) {
         if (!redisson.getConfig().isSentinelConfig()) {
             throw new InvalidDataAccessResourceUsageException("Redisson is not in Sentinel mode");
         }
@@ -173,7 +178,7 @@ public class RedissonConnectionFactory implements RedisConnectionFactory,
     @Override
     public ReactiveRedisClusterConnection getReactiveClusterConnection() {
         if (!redisson.getConfig().isClusterConfig()) {
-            throw new InvalidDataAccessResourceUsageException("Redisson is not in Cluster mode");
+            throw new InvalidDataAccessApiUsageException("Redisson is not in Cluster mode");
         }
 
         return new RedissonReactiveRedisClusterConnection(((RedissonReactive)redisson.reactive()).getCommandExecutor());

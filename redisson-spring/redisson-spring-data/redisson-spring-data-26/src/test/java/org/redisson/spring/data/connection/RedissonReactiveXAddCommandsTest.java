@@ -1,0 +1,73 @@
+package org.redisson.spring.data.connection;
+
+import org.junit.jupiter.api.Test;
+import org.redisson.client.codec.Codec;
+import org.redisson.client.protocol.RedisCommand;
+import org.springframework.data.redis.connection.ReactiveRedisConnection;
+import org.springframework.data.redis.connection.ReactiveStreamCommands;
+import org.springframework.data.redis.connection.stream.ByteBufferRecord;
+import org.springframework.data.redis.connection.stream.RecordId;
+import org.springframework.data.redis.connection.stream.StreamRecords;
+import reactor.core.publisher.Mono;
+
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.concurrent.atomic.AtomicReference;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+public class RedissonReactiveXAddCommandsTest extends BaseConnectionTest {
+
+    @Test
+    public void testXAddSerializesAllOptions() {
+        AtomicReference<Object[]> params = new AtomicReference<>();
+        RedissonReactiveStreamCommands commands = new RedissonReactiveStreamCommands(null) {
+            @Override
+            @SuppressWarnings("unchecked")
+            <T> Mono<T> write(byte[] key, Codec codec, RedisCommand<?> command, Object... arguments) {
+                params.set(arguments);
+                return (Mono<T>) Mono.just(RecordId.of("1-0"));
+            }
+        };
+        byte[] key = bytes("reactive-xadd-options");
+        byte[] field = bytes("field");
+        byte[] value = bytes("value");
+        ByteBufferRecord record = StreamRecords.newRecord()
+                .in(ByteBuffer.wrap(key))
+                .ofBuffer(Collections.singletonMap(ByteBuffer.wrap(field), ByteBuffer.wrap(value)));
+
+        commands.xAdd(Mono.just(ReactiveStreamCommands.AddStreamRecord.of(record)
+                .maxlen(10)
+                .makeNoStream())).blockFirst();
+
+        Object[] arguments = params.get();
+        assertThat((byte[]) arguments[0]).containsExactly(key);
+        assertThat(Arrays.copyOfRange(arguments, 1, 5)).containsExactly("NOMKSTREAM", "MAXLEN", 10L, "*");
+        assertThat((byte[]) arguments[5]).containsExactly(field);
+        assertThat((byte[]) arguments[6]).containsExactly(value);
+    }
+
+    @Test
+    public void testXAddWithNoMkStreamDoesNotCreateStream() {
+        byte[] key = bytes("reactive-xadd-nomkstream");
+        ByteBufferRecord record = StreamRecords.newRecord()
+                .in(ByteBuffer.wrap(key))
+                .ofBuffer(Collections.singletonMap(
+                        ByteBuffer.wrap(bytes("field")), ByteBuffer.wrap(bytes("value"))));
+        ReactiveRedisConnection reactiveConnection = new RedissonConnectionFactory(redisson).getReactiveConnection();
+
+        RecordId result = reactiveConnection.streamCommands()
+                .xAdd(Mono.just(ReactiveStreamCommands.AddStreamRecord.of(record).makeNoStream()))
+                .next().map(ReactiveRedisConnection.CommandResponse::getOutput)
+                .block();
+
+        assertThat(result).isNull();
+        assertThat(redisson.getKeys().countExists("reactive-xadd-nomkstream")).isZero();
+    }
+
+    private static byte[] bytes(String value) {
+        return value.getBytes(StandardCharsets.UTF_8);
+    }
+}
