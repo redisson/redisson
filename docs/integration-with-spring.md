@@ -842,8 +842,10 @@ Redisson implements `RedisConnectionFactory` and `ReactiveRedisConnectionFactory
             <artifactId>redisson-spring-data-35</artifactId>
             <!-- for Spring Data Redis v.4.0.x -->
             <artifactId>redisson-spring-data-40</artifactId>
-            <!-- for Spring Data Redis v.4.0.x -->
+            <!-- for Spring Data Redis v.4.1.x -->
             <artifactId>redisson-spring-data-41</artifactId>
+            <!-- for Spring Data Redis v.4.2.x -->
+            <artifactId>redisson-spring-data-42</artifactId>
             <version>xVERSIONx</version>
         </dependency>
         ```
@@ -888,7 +890,9 @@ Redisson implements `RedisConnectionFactory` and `ReactiveRedisConnectionFactory
         // for Spring Data Redis v.4.0.x
         compile 'org.redisson:redisson-spring-data-40:xVERSIONx'
         // for Spring Data Redis v.4.1.x
-        compile 'org.redisson:redisson-spring-data-40:xVERSIONx'
+        compile 'org.redisson:redisson-spring-data-41:xVERSIONx'
+        // for Spring Data Redis v.4.2.x
+        compile 'org.redisson:redisson-spring-data-42:xVERSIONx'
         ```
 
 
@@ -937,6 +941,8 @@ Redisson implements `RedisConnectionFactory` and `ReactiveRedisConnectionFactory
             <artifactId>redisson-spring-data-40</artifactId>
             <!-- for Spring Data Redis v.4.1.x -->
             <artifactId>redisson-spring-data-41</artifactId>
+            <!-- for Spring Data Redis v.4.2.x -->
+            <artifactId>redisson-spring-data-42</artifactId>
             <version>xVERSIONx</version>
         </dependency>
         ```
@@ -982,6 +988,8 @@ Redisson implements `RedisConnectionFactory` and `ReactiveRedisConnectionFactory
         compile 'pro.redisson:redisson-spring-data-40:xVERSIONx'
         // for Spring Data Redis v.4.1.x
         compile 'pro.redisson:redisson-spring-data-41:xVERSIONx'
+        // for Spring Data Redis v.4.2.x
+        compile 'pro.redisson:redisson-spring-data-42:xVERSIONx'
         ```
 
         [License key configuration](configuration.md/#license-key-configuration)

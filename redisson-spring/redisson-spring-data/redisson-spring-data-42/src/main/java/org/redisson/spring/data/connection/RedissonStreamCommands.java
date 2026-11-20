@@ -1,0 +1,841 @@
+/**
+ * Copyright (c) 2013-2026 Nikita Koksharov
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.redisson.spring.data.connection;
+
+import org.redisson.api.stream.StreamMessageId;
+import org.redisson.client.codec.ByteArrayCodec;
+import org.redisson.client.codec.StringCodec;
+import org.redisson.client.handler.State;
+import org.redisson.client.protocol.RedisCommand;
+import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.RedisStrictCommand;
+import org.redisson.client.protocol.convertor.BooleanNotNullReplayConvertor;
+import org.redisson.client.protocol.convertor.EmptyMapConvertor;
+import org.redisson.client.protocol.convertor.StreamIdConvertor;
+import org.redisson.client.protocol.decoder.*;
+import org.redisson.command.CommandAsyncExecutor;
+import org.springframework.data.domain.Range;
+import org.springframework.data.redis.connection.Limit;
+import org.springframework.data.redis.connection.RedisStreamCommands;
+import org.springframework.data.redis.connection.stream.*;
+import org.springframework.util.Assert;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+/**
+ *
+ * @author Nikita Koksharov
+ *
+ */
+public class RedissonStreamCommands implements RedisStreamCommands {
+
+    private final RedissonConnection connection;
+
+    private final CommandAsyncExecutor executor;
+
+    public RedissonStreamCommands(RedissonConnection connection, CommandAsyncExecutor executor) {
+        this.connection = connection;
+        this.executor = executor;
+    }
+
+    private static List<String> toStringList(RecordId... recordIds) {
+        if (recordIds.length == 1) {
+            return Arrays.asList(recordIds[0].getValue());
+        }
+
+        return Arrays.stream(recordIds).map(RecordId::getValue).collect(Collectors.toList());
+    }
+
+    @Override
+    public RecordId xAdd(MapRecord<byte[], byte[], byte[]> record) {
+		return xAdd(record, XAddOptions.none());
+    }
+
+    private static final RedisStrictCommand<RecordId> XCLAIM_JUSTID = new RedisStrictCommand<RecordId>("XCLAIM", obj -> RecordId.of(obj.toString()));
+
+    @Override
+    public List<RecordId> xClaimJustId(byte[] key, String group, String newOwner, XClaimOptions options) {
+        Assert.notNull(key, "Key must not be null!");
+        Assert.notNull(group, "Group name must not be null!");
+        Assert.notNull(newOwner, "NewOwner must not be null!");
+        Assert.notEmpty(options.getIds(), "Ids collection must not be empty!");
+
+        List<Object> params = new ArrayList<>();
+        params.add(key);
+        params.add(group);
+        params.add(newOwner);
+        params.add(Objects.requireNonNull(options.getMinIdleTime()).toMillis());
+        appendXClaimOptions(params, options);
+        params.add("JUSTID");
+
+        return connection.write(key, StringCodec.INSTANCE, XCLAIM_JUSTID, params.toArray());
+    }
+
+    @Override
+    public List<ByteRecord> xClaim(byte[] key, String group, String newOwner, XClaimOptions options) {
+        Assert.notNull(key, "Key must not be null!");
+        Assert.notNull(group, "Group name must not be null!");
+        Assert.notNull(newOwner, "NewOwner must not be null!");
+        Assert.notEmpty(options.getIds(), "Ids collection must not be empty!");
+
+        List<Object> params = new ArrayList<>();
+        params.add(key);
+        params.add(group);
+        params.add(newOwner);
+        params.add(Objects.requireNonNull(options.getMinIdleTime()).toMillis());
+        appendXClaimOptions(params, options);
+
+        return connection.write(key, ByteArrayCodec.INSTANCE, new RedisCommand<List<ByteRecord>>("XCLAIM",
+                                        new ListMultiDecoder2(
+                                                new ByteRecordReplayDecoder(key),
+                                                new ObjectDecoder(new StreamIdDecoder()),
+                                                new MapEntriesDecoder(new StreamObjectMapReplayDecoder()))), params.toArray());
+    }
+
+    static void appendXClaimOptions(List<Object> params, XClaimOptions options) {
+        params.addAll(Arrays.asList(options.getIdsAsStringArray()));
+
+        Duration idleTime = options.getIdleTime();
+        if (idleTime != null) {
+            params.add("IDLE");
+            params.add(idleTime.toMillis());
+        }
+        Instant unixTime = options.getUnixTime();
+        if (unixTime != null) {
+            params.add("TIME");
+            params.add(unixTime.toEpochMilli());
+        }
+        Long retryCount = options.getRetryCount();
+        if (retryCount != null) {
+            params.add("RETRYCOUNT");
+            params.add(retryCount);
+        }
+        if (options.isForce()) {
+            params.add("FORCE");
+        }
+    }
+
+    @Override
+    public String xGroupCreate(byte[] key, String groupName, ReadOffset readOffset, boolean mkStream) {
+        Assert.notNull(key, "Key must not be null!");
+        Assert.notNull(groupName, "GroupName must not be null!");
+        Assert.notNull(readOffset, "ReadOffset must not be null!");
+
+        List<Object> params = new ArrayList<>();
+        params.add("CREATE");
+        params.add(key);
+        params.add(groupName);
+        params.add(readOffset.getOffset());
+        if (mkStream) {
+            params.add("MKSTREAM");
+        }
+
+        return connection.write(key, StringCodec.INSTANCE, XGROUP_STRING, params.toArray());
+    }
+
+    private static class XInfoStreamReplayDecoder implements MultiDecoder<StreamInfo.XInfoStream> {
+
+        private final ObjectMapReplayDecoder<Object, Object> decoder = new ObjectMapReplayDecoder<>();
+        
+        @Override
+        public StreamInfo.XInfoStream decode(List<Object> parts, State state) {
+            Map<Object, Object> map = decoder.decode(parts, state);
+            
+            List<?> firstEntry = (List<?>) map.get("first-entry");
+            if (firstEntry != null) {
+                StreamMessageId firstId = StreamIdConvertor.INSTANCE.convert(firstEntry.get(0));
+                Map<Object, Object> firstData = (Map<Object, Object>) firstEntry.get(1);
+                map.put("first-entry", Collections.singletonMap(firstId.toString(), firstData));
+            }
+
+            List<?> lastEntry = (List<?>) map.get("last-entry");
+            if (lastEntry != null) {
+                StreamMessageId lastId = StreamIdConvertor.INSTANCE.convert(lastEntry.get(0));
+                Map<Object, Object> lastData = (Map<Object, Object>) lastEntry.get(1);
+                map.put("last-entry", Collections.singletonMap(lastId.toString(), lastData));
+            }
+
+            List<Object> list = map.entrySet().stream()
+                                    .flatMap(e -> Stream.of(e.getKey(), e.getValue()))
+                                    .collect(Collectors.toList());
+            return StreamInfo.XInfoStream.fromList(list);
+        }
+    }
+
+    static final RedisCommand<StreamInfo.XInfoStream> XINFO_STREAM = new RedisCommand<>("XINFO", "STREAM",
+            new ListMultiDecoder2(
+                    new XInfoStreamReplayDecoder(),
+                    new CodecDecoder(),
+                    new ObjectMapDecoder(false)));
+
+    @Override
+    public StreamInfo.XInfoStream xInfo(byte[] key) {
+        Assert.notNull(key, "Key must not be null!");
+
+        return connection.write(key, StringCodec.INSTANCE, XINFO_STREAM, key);
+    }
+
+    private static class XInfoGroupsReplayDecoder implements MultiDecoder<StreamInfo.XInfoGroups> {
+
+        @Override
+        public StreamInfo.XInfoGroups decode(List<Object> parts, State state) {
+            return StreamInfo.XInfoGroups.fromList(parts);
+        }
+    }
+
+    static final RedisCommand<StreamInfo.XInfoGroups> XINFO_GROUPS = new RedisCommand<>("XINFO", "GROUPS",
+            new ListMultiDecoder2(new XInfoGroupsReplayDecoder(),
+                            new ObjectListReplayDecoder(), new ObjectListReplayDecoder())
+    );
+
+    @Override
+    public StreamInfo.XInfoGroups xInfoGroups(byte[] key) {
+        return connection.write(key, StringCodec.INSTANCE, XINFO_GROUPS, key);
+    }
+
+    private static class XInfoConsumersReplayDecoder implements MultiDecoder<StreamInfo.XInfoConsumers> {
+
+        private final String groupName;
+
+        public XInfoConsumersReplayDecoder(String groupName) {
+            this.groupName = groupName;
+        }
+
+        @Override
+        public StreamInfo.XInfoConsumers decode(List<Object> parts, State state) {
+            return StreamInfo.XInfoConsumers.fromList(groupName, parts);
+        }
+    }
+
+    static RedisCommand<StreamInfo.XInfoConsumers> xInfoConsumersCommand(String groupName) {
+        return new RedisCommand<>("XINFO", "CONSUMERS",
+                        new ListMultiDecoder2(new XInfoConsumersReplayDecoder(groupName),
+                            new ObjectListReplayDecoder(), new ObjectListReplayDecoder()));
+    }
+
+    @Override
+    public StreamInfo.XInfoConsumers xInfoConsumers(byte[] key, String groupName) {
+        return connection.write(key, StringCodec.INSTANCE, xInfoConsumersCommand(groupName), key, groupName);
+    }
+
+    private static class PendingMessagesSummaryReplayDecoder implements MultiDecoder<PendingMessagesSummary> {
+
+        private final String groupName;
+
+        public PendingMessagesSummaryReplayDecoder(String groupName) {
+            this.groupName = groupName;
+        }
+
+        @Override
+        public PendingMessagesSummary decode(List<Object> parts, State state) {
+            if (parts.isEmpty()) {
+                return null;
+            }
+
+            List<List<String>> customerParts = (List<List<String>>) parts.get(3);
+            if (customerParts == null || customerParts.isEmpty()) {
+                return new PendingMessagesSummary(groupName, 0, Range.unbounded(), Collections.emptyMap());
+            }
+
+            Map<String, Long> map = customerParts.stream().collect(Collectors.toMap(e -> e.get(0), e -> Long.valueOf(e.get(1)),
+                    (u, v) -> { throw new IllegalStateException("Duplicate key: " + u); },
+                    LinkedHashMap::new));
+            Range<String> range = Range.open(parts.get(1).toString(), parts.get(2).toString());
+            return new PendingMessagesSummary(groupName, (Long) parts.get(0), range, map);
+        }
+    }
+
+    @Override
+    public PendingMessagesSummary xPending(byte[] key, String groupName) {
+        Assert.notNull(key, "Key must not be null!");
+        Assert.notNull(groupName, "Group name must not be null!");
+
+        return connection.write(key, StringCodec.INSTANCE, new RedisCommand<PendingMessagesSummary>("XPENDING",
+                            new ListMultiDecoder2(new PendingMessagesSummaryReplayDecoder(groupName),
+                            new ObjectListReplayDecoder(), new ObjectListReplayDecoder())), key, groupName);
+    }
+
+    private static class PendingMessageReplayDecoder implements MultiDecoder<PendingMessage> {
+
+        private String groupName;
+
+        public PendingMessageReplayDecoder(String groupName) {
+            this.groupName = groupName;
+        }
+
+        @Override
+        public PendingMessage decode(List<Object> parts, State state) {
+            PendingMessage pm = new PendingMessage(RecordId.of(parts.get(0).toString()),
+                    Consumer.from(groupName, parts.get(1).toString()),
+                    Duration.of(Long.parseLong(parts.get(2).toString()), ChronoUnit.MILLIS),
+                    Long.parseLong(parts.get(3).toString()));
+            return pm;
+        }
+    }
+
+    private static class PendingMessagesReplayDecoder implements MultiDecoder<PendingMessages> {
+
+        private final String groupName;
+        private final Range<?> range;
+
+        public PendingMessagesReplayDecoder(String groupName, Range<?> range) {
+            this.groupName = groupName;
+            this.range = range;
+        }
+
+        @Override
+        public PendingMessages decode(List<Object> parts, State state) {
+            List<PendingMessage> pendingMessages = (List<PendingMessage>) (Object) parts;
+            return new PendingMessages(groupName, range, pendingMessages);
+        }
+    }
+
+    @Override
+    public PendingMessages xPending(byte[] key, String groupName, XPendingOptions options) {
+        Assert.notNull(key, "Key must not be null!");
+        Assert.notNull(groupName, "Group name must not be null!");
+
+        List<Object> params = new ArrayList<>();
+        params.add(key);
+        params.add(groupName);
+
+        if (options.getMinIdleTime() != null) {
+            params.add("IDLE");
+            params.add(options.getMinIdleTime().toMillis());
+        }
+
+        params.add(((Range.Bound<String>)options.getRange().getLowerBound()).getValue().orElse("-"));
+        params.add(((Range.Bound<String>)options.getRange().getUpperBound()).getValue().orElse("+"));
+
+        if (options.getCount() != null) {
+            params.add(options.getCount());
+        } else {
+            params.add(Long.MAX_VALUE);
+        }
+        if (options.getConsumerName() != null) {
+            params.add(options.getConsumerName());
+        }
+
+        return connection.write(key, StringCodec.INSTANCE, new RedisCommand<>("XPENDING",
+                            new ListMultiDecoder2<PendingMessages>(
+                            new PendingMessagesReplayDecoder(groupName, options.getRange()),
+                            new PendingMessageReplayDecoder(groupName))),
+        params.toArray());
+    }
+
+    @Override
+    public Long xAck(byte[] key, String group, RecordId... recordIds) {
+        Assert.notNull(key, "Key must not be null!");
+        Assert.notNull(group, "Group must not be null!");
+        Assert.notNull(recordIds, "recordIds must not be null!");
+
+        List<Object> params = new ArrayList<>();
+        params.add(key);
+        params.add(group);
+        params.addAll(toStringList(recordIds));
+
+		return connection.write(key, StringCodec.INSTANCE, RedisCommands.XACK, params.toArray());
+    }
+
+    private static final RedisStrictCommand<RecordId> XADD = new RedisStrictCommand<RecordId>("XADD", obj -> {
+        if (obj == null) {
+            return null;
+        }
+        return RecordId.of(obj.toString());
+    });
+
+    @Override
+    public RecordId xAdd(MapRecord<byte[], byte[], byte[]> record, XAddOptions options) {
+        Assert.notNull(record, "record must not be null!");
+        Assert.notNull(options, "options must not be null!");
+
+        List<Object> params = new LinkedList<>();
+        params.add(record.getStream());
+
+        if (options.isNoMkStream()) {
+            params.add("NOMKSTREAM");
+        }
+
+        RedisStreamCommands.TrimOptions trimOptions = options.getTrimOptions();
+        if (trimOptions != null) {
+            if (trimOptions.hasDeletionPolicy()) {
+                params.add(toDeletionPolicy(trimOptions.getDeletionPolicy()));
+            }
+            appendTrimClause(params, trimOptions);
+        }
+
+        if (!record.getId().shouldBeAutoGenerated()) {
+            params.add(record.getId().getValue());
+        } else {
+            params.add("*");
+        }
+
+        record.getValue().forEach((key, value) -> {
+            params.add(key);
+            params.add(value);
+        });
+
+        return connection.write(record.getStream(), StringCodec.INSTANCE, XADD, params.toArray());
+    }
+
+    @Override
+    public Long xDel(byte[] key, RecordId... recordIds) {
+        Assert.notNull(key, "Key must not be null!");
+        Assert.notNull(recordIds, "recordIds must not be null!");
+
+        List<Object> params = new ArrayList<>();
+        params.add(key);
+        params.addAll(toStringList(recordIds));
+
+        return connection.write(key, StringCodec.INSTANCE, RedisCommands.XDEL, params.toArray());
+    }
+
+    private static final RedisStrictCommand<String> XGROUP_STRING = new RedisStrictCommand<>("XGROUP");
+
+    @Override
+    public String xGroupCreate(byte[] key, String groupName, ReadOffset readOffset) {
+        return xGroupCreate(key, groupName, readOffset, false);
+    }
+
+    private static final RedisStrictCommand<Boolean> XGROUP_BOOLEAN = new RedisStrictCommand<Boolean>("XGROUP", obj -> ((Long)obj) > 0);
+
+    private static final RedisStrictCommand<Boolean> XGROUP_DELCONSUMER = new RedisStrictCommand<Boolean>("XGROUP", new BooleanNotNullReplayConvertor());
+
+    @Override
+    public Boolean xGroupDelConsumer(byte[] key, Consumer consumer) {
+        Assert.notNull(key, "Key must not be null!");
+        Assert.notNull(consumer, "Consumer must not be null!");
+        Assert.notNull(consumer.getName(), "Consumer name must not be null!");
+        Assert.notNull(consumer.getGroup(), "Consumer group must not be null!");
+
+        return connection.write(key, StringCodec.INSTANCE, XGROUP_DELCONSUMER, "DELCONSUMER", key, consumer.getGroup(), consumer.getName());
+    }
+
+    @Override
+    public Boolean xGroupDestroy(byte[] key, String groupName) {
+        Assert.notNull(key, "Key must not be null!");
+        Assert.notNull(groupName, "GroupName must not be null!");
+
+        return connection.write(key, StringCodec.INSTANCE, XGROUP_BOOLEAN, "DESTROY", key, groupName);
+    }
+
+    @Override
+    public Long xLen(byte[] key) {
+        Assert.notNull(key, "Key must not be null!");
+
+        return connection.write(key, StringCodec.INSTANCE, RedisCommands.XLEN, key);
+    }
+
+    private List<ByteRecord>  range(RedisCommand<?> rangeCommand, byte[] key, Range<String> range, Limit limit) {
+        Assert.notNull(key, "Key must not be null!");
+        Assert.notNull(range, "Range must not be null!");
+        Assert.notNull(limit, "Limit must not be null!");
+
+        List<Object> params = new LinkedList<>();
+        params.add(key);
+
+        if (rangeCommand.getName().equals(RedisCommands.XRANGE.getName())) {
+            params.add(toLowerBound(range));
+            params.add(toUpperBound(range));
+        } else {
+            params.add(toUpperBound(range));
+            params.add(toLowerBound(range));
+        }
+
+        if (limit.getCount() > 0) {
+            params.add("COUNT");
+            params.add(limit.getCount());
+        }
+
+        return connection.write(key, ByteArrayCodec.INSTANCE, rangeCommand, params.toArray());
+    }
+
+    String toLowerBound(Range range) {
+        StringBuilder s = new StringBuilder();
+        if (!range.getLowerBound().isInclusive()) {
+            s.append("(");
+        }
+        if (!range.getLowerBound().getValue().isPresent() || range.getLowerBound().getValue().get().toString()
+                .isEmpty()) {
+            s.append("-");
+        } else {
+            s.append(range.getLowerBound().getValue().get());
+        }
+        return s.toString();
+    }
+
+    String toUpperBound(Range range) {
+        StringBuilder s = new StringBuilder();
+        if (!range.getUpperBound().isInclusive()) {
+            s.append("(");
+        }
+        if (!range.getUpperBound().getValue().isPresent() || range.getUpperBound().getValue().get().toString()
+                .isEmpty()) {
+            s.append("+");
+        } else {
+            s.append(range.getUpperBound().getValue().get());
+        }
+        return s.toString();
+    }
+
+    private static class ByteRecordReplayDecoder implements MultiDecoder<List<ByteRecord>> {
+
+        private final byte[] key;
+
+        ByteRecordReplayDecoder(byte[] key) {
+            this.key = key;
+        }
+
+        @Override
+        public List<ByteRecord> decode(List<Object> parts, State state) {
+            List<List<Object>> list = (List<List<Object>>) (Object) parts;
+            List<ByteRecord> result = new ArrayList<>(parts.size()/2);
+            for (List<Object> entry : list) {
+                ByteRecord record = StreamRecords.newRecord()
+                        .in(key)
+                        .withId(RecordId.of(entry.get(0).toString()))
+                        .ofBytes((Map<byte[], byte[]>) entry.get(1));
+                result.add(record);
+            }
+            return result;
+        }
+    }
+
+    @Override
+    public List<ByteRecord> xRange(byte[] key, Range<String> range, Limit limit) {
+        return range(new RedisCommand<>("XRANGE",
+            new ListMultiDecoder2(
+                    new ByteRecordReplayDecoder(key),
+                    new ObjectDecoder(new StreamIdDecoder()),
+                    new MapEntriesDecoder(new StreamObjectMapReplayDecoder()))),
+                key, range, limit);
+    }
+
+    private static class ByteRecordReplayDecoder2 implements MultiDecoder<List<ByteRecord>> {
+
+        @Override
+        public List<ByteRecord> decode(List<Object> parts, State state) {
+            List<List<Object>> list = (List<List<Object>>) (Object) parts;
+            List<ByteRecord> result = new ArrayList<>(parts.size()/2);
+
+            for (List<Object> entries : list) {
+                List<List<Object>> streamEntries = (List<List<Object>>) entries.get(1);
+                if (streamEntries.isEmpty()) {
+                    continue;
+                }
+
+                byte[] name = (byte[]) entries.get(0);
+                for (List<Object> se : streamEntries) {
+                    ByteRecord record = StreamRecords.newRecord()
+                                            .in(name)
+                                            .withId(RecordId.of(se.get(0).toString()))
+                                            .ofBytes((Map<byte[], byte[]>) se.get(1));
+                    result.add(record);
+                }
+            }
+            return result;
+        }
+    }
+
+    private static class ByteRecordReplayDecoder2_V2 implements MultiDecoder<List<ByteRecord>> {
+
+        @Override
+        public List<ByteRecord> decode(List<Object> parts, State state) {
+            List<Object> list = parts;
+            List<ByteRecord> result = new ArrayList<>(parts.size()/2);
+
+            for (int i = 0; i < list.size(); i += 2) {
+                List<List<Object>> streamEntries = (List<List<Object>>) list.get(i+1);
+                if (streamEntries.isEmpty()) {
+                    continue;
+                }
+
+                byte[] name = (byte[]) list.get(i);
+                for (List<Object> se : streamEntries) {
+                    ByteRecord record = StreamRecords.newRecord()
+                            .in(name)
+                            .withId(RecordId.of(se.get(0).toString()))
+                            .ofBytes((Map<byte[], byte[]>) se.get(1));
+                    result.add(record);
+                }
+            }
+            return result;
+        }
+    }
+
+    static final RedisCommand<List<ByteRecord>> XREAD = new RedisCommand<>("XREAD",
+            new ListMultiDecoder2(
+                    new ByteRecordReplayDecoder2(),
+                    new CodecDecoder(),
+                    new ObjectDecoder(new StreamIdDecoder()),
+                    new ObjectDecoder(new StreamIdDecoder()),
+                    new MapEntriesDecoder(new StreamObjectMapReplayDecoder())));
+
+    static final RedisCommand<List<ByteRecord>> XREAD_BLOCKING =
+            new RedisCommand<>("XREAD", XREAD.getReplayMultiDecoder());
+
+    static final RedisCommand<List<ByteRecord>> XREADGROUP =
+            new RedisCommand<>("XREADGROUP", XREAD.getReplayMultiDecoder());
+
+    static final RedisCommand<List<ByteRecord>> XREADGROUP_BLOCKING =
+            new RedisCommand<>("XREADGROUP", XREADGROUP.getReplayMultiDecoder());
+
+    static final RedisCommand<List<ByteRecord>> XREAD_V2 = new RedisCommand<>("XREAD",
+            new ListMultiDecoder2(
+                    new ByteRecordReplayDecoder2_V2(),
+                    new CodecDecoder(),
+                    new ObjectDecoder(new StreamIdDecoder()),
+                    new StreamObjectMapReplayDecoder()), new EmptyMapConvertor());
+
+    static final RedisCommand<List<ByteRecord>> XREAD_BLOCKING_V2 =
+            new RedisCommand<>("XREAD", XREAD_V2.getReplayMultiDecoder());
+
+    static final RedisCommand<List<ByteRecord>> XREADGROUP_V2 =
+            new RedisCommand<>("XREADGROUP", XREAD_V2.getReplayMultiDecoder());
+
+    static final RedisCommand<List<ByteRecord>> XREADGROUP_BLOCKING_V2 =
+            new RedisCommand<>("XREADGROUP", XREADGROUP_V2.getReplayMultiDecoder());
+
+
+    static {
+        RedisCommands.BLOCKING_COMMANDS.add(XREAD_BLOCKING);
+        RedisCommands.BLOCKING_COMMANDS.add(XREADGROUP_BLOCKING);
+        RedisCommands.BLOCKING_COMMANDS.add(XREAD_BLOCKING_V2);
+        RedisCommands.BLOCKING_COMMANDS.add(XREADGROUP_BLOCKING_V2);
+    }
+
+    @Override
+    public List<ByteRecord> xRead(StreamReadOptions readOptions, StreamOffset<byte[]>... streams) {
+        Assert.notNull(readOptions, "ReadOptions must not be null!");
+        Assert.notNull(streams, "StreamOffsets must not be null!");
+
+        List<Object> params = new ArrayList<>();
+
+        if (readOptions.getCount() != null && readOptions.getCount() > 0) {
+            params.add("COUNT");
+            params.add(readOptions.getCount());
+        }
+
+        if (readOptions.getBlock() != null && readOptions.getBlock() > 0) {
+            params.add("BLOCK");
+            params.add(readOptions.getBlock());
+        }
+
+        params.add("STREAMS");
+        for (StreamOffset<byte[]> streamOffset : streams) {
+            params.add(streamOffset.getKey());
+        }
+
+        for (StreamOffset<byte[]> streamOffset : streams) {
+            params.add(streamOffset.getOffset().getOffset());
+        }
+
+        if (executor.getServiceManager().isResp3()) {
+            if (readOptions.getBlock() != null && readOptions.getBlock() > 0) {
+                return connection.read(streams[0].getKey(), ByteArrayCodec.INSTANCE, XREAD_BLOCKING_V2, params.toArray());
+            }
+            return connection.read(streams[0].getKey(), ByteArrayCodec.INSTANCE, XREAD_V2, params.toArray());
+        }
+
+        if (readOptions.getBlock() != null && readOptions.getBlock() > 0) {
+            return connection.read(streams[0].getKey(), ByteArrayCodec.INSTANCE, XREAD_BLOCKING, params.toArray());
+        }
+        return connection.read(streams[0].getKey(), ByteArrayCodec.INSTANCE, XREAD, params.toArray());
+    }
+
+    @Override
+    public List<ByteRecord> xReadGroup(Consumer consumer, StreamReadOptions readOptions, StreamOffset<byte[]>... streams) {
+        Assert.notNull(readOptions, "Consumer must not be null!");
+        Assert.notNull(readOptions, "ReadOptions must not be null!");
+        Assert.notNull(streams, "StreamOffsets must not be null!");
+
+        List<Object> params = new ArrayList<>();
+
+        params.add("GROUP");
+        params.add(consumer.getGroup());
+        params.add(consumer.getName());
+
+        if (readOptions.getCount() != null && readOptions.getCount() > 0) {
+            params.add("COUNT");
+            params.add(readOptions.getCount());
+        }
+
+        if (readOptions.getBlock() != null && readOptions.getBlock() > 0) {
+            params.add("BLOCK");
+            params.add(readOptions.getBlock());
+        }
+
+        if (readOptions.isNoack()) {
+            params.add("NOACK");
+        }
+
+        params.add("STREAMS");
+        for (StreamOffset<byte[]> streamOffset : streams) {
+            params.add(streamOffset.getKey());
+        }
+
+        for (StreamOffset<byte[]> streamOffset : streams) {
+            params.add(streamOffset.getOffset().getOffset());
+        }
+
+        if (executor.getServiceManager().isResp3()) {
+            if (readOptions.getBlock() != null && readOptions.getBlock() > 0) {
+                return connection.write(streams[0].getKey(), ByteArrayCodec.INSTANCE, XREADGROUP_BLOCKING_V2, params.toArray());
+            }
+            return connection.write(streams[0].getKey(), ByteArrayCodec.INSTANCE, XREADGROUP_V2, params.toArray());
+        }
+
+        if (readOptions.getBlock() != null && readOptions.getBlock() > 0) {
+            return connection.write(streams[0].getKey(), ByteArrayCodec.INSTANCE, XREADGROUP_BLOCKING, params.toArray());
+        }
+        return connection.write(streams[0].getKey(), ByteArrayCodec.INSTANCE, XREADGROUP, params.toArray());
+    }
+
+    @Override
+    public List<ByteRecord> xRevRange(byte[] key, Range<String> range, Limit limit) {
+        return range(new RedisCommand<>("XREVRANGE",
+            new ListMultiDecoder2(
+                    new ByteRecordReplayDecoder(key),
+                    new ObjectDecoder(new StreamIdDecoder()),
+                    new MapEntriesDecoder(new StreamObjectMapReplayDecoder()))),
+                key, range, limit);
+    }
+
+    @Override
+    public Long xTrim(byte[] key, long count) {
+        return xTrim(key, count, false);
+    }
+
+    @Override
+    public Long xTrim(byte[] key, long count, boolean approximateTrimming) {
+        Assert.notNull(key, "Key must not be null!");
+        Assert.notNull(count, "Count must not be null!");
+
+        List<Object> params = new ArrayList<>(4);
+        params.add(key);
+        params.add("MAXLEN");
+        if (approximateTrimming) {
+            params.add("~");
+        }
+        params.add(count);
+
+        return connection.write(key, StringCodec.INSTANCE, RedisCommands.XTRIM, params.toArray());
+    }
+
+    private static final MultiDecoder<List<RedisStreamCommands.StreamEntryDeletionResult>> DELETION_RESULTS_DECODER =
+            (parts, state) -> parts.stream()
+                    .map(code -> RedisStreamCommands.StreamEntryDeletionResult.fromCode((Long) code))
+                    .collect(Collectors.toList());
+
+    private static final RedisCommand<List<RedisStreamCommands.StreamEntryDeletionResult>> XACKDEL =
+            new RedisCommand<>("XACKDEL", DELETION_RESULTS_DECODER);
+
+    private static final RedisCommand<List<RedisStreamCommands.StreamEntryDeletionResult>> XDELEX =
+            new RedisCommand<>("XDELEX", DELETION_RESULTS_DECODER);
+
+    @Override
+    public Long xTrim(byte[] key, RedisStreamCommands.XTrimOptions options) {
+        Assert.notNull(key, "Key must not be null!");
+        Assert.notNull(options, "Options must not be null!");
+
+        RedisStreamCommands.TrimOptions trimOptions = options.getTrimOptions();
+
+        List<Object> params = new ArrayList<>();
+        params.add(key);
+        appendTrimClause(params, trimOptions);
+
+        if (trimOptions.hasDeletionPolicy()) {
+            params.add(toDeletionPolicy(trimOptions.getDeletionPolicy()));
+        }
+
+        return connection.write(key, StringCodec.INSTANCE, RedisCommands.XTRIM, params.toArray());
+    }
+
+    static void appendTrimClause(List<Object> params, RedisStreamCommands.TrimOptions trimOptions) {
+        RedisStreamCommands.TrimStrategy strategy = trimOptions.getTrimStrategy();
+        Object threshold;
+        if (strategy instanceof RedisStreamCommands.MinIdTrimStrategy) {
+            params.add("MINID");
+            threshold = ((RedisStreamCommands.MinIdTrimStrategy) strategy).threshold().getValue();
+        } else {
+            params.add("MAXLEN");
+            threshold = ((RedisStreamCommands.MaxLenTrimStrategy) strategy).threshold();
+        }
+
+        boolean approximate = trimOptions.getTrimOperator() == RedisStreamCommands.TrimOperator.APPROXIMATE;
+        if (approximate) {
+            params.add("~");
+        }
+        params.add(threshold);
+
+        if (approximate && trimOptions.hasLimit()) {
+            params.add("LIMIT");
+            params.add(trimOptions.getLimit());
+        }
+    }
+
+    @Override
+    public List<RedisStreamCommands.StreamEntryDeletionResult> xDelEx(byte[] key, RedisStreamCommands.XDelOptions options, RecordId... recordIds) {
+        Assert.notNull(key, "Key must not be null!");
+        Assert.notNull(options, "Options must not be null!");
+        Assert.notNull(recordIds, "recordIds must not be null!");
+
+        List<Object> params = new ArrayList<>();
+        params.add(key);
+        params.add(toDeletionPolicy(options.getDeletionPolicy()));
+        params.add("IDS");
+        params.add(recordIds.length);
+        params.addAll(toStringList(recordIds));
+
+        return connection.write(key, StringCodec.INSTANCE, XDELEX, params.toArray());
+    }
+
+    @Override
+    public List<RedisStreamCommands.StreamEntryDeletionResult> xAckDel(byte[] key, String group, RedisStreamCommands.XDelOptions options, RecordId... recordIds) {
+        Assert.notNull(key, "Key must not be null!");
+        Assert.notNull(group, "Group must not be null!");
+        Assert.notNull(options, "Options must not be null!");
+        Assert.notNull(recordIds, "recordIds must not be null!");
+
+        List<Object> params = new ArrayList<>();
+        params.add(key);
+        params.add(group);
+        params.add(toDeletionPolicy(options.getDeletionPolicy()));
+        params.add("IDS");
+        params.add(recordIds.length);
+        params.addAll(toStringList(recordIds));
+
+        return connection.write(key, StringCodec.INSTANCE, XACKDEL, params.toArray());
+    }
+
+    private static String toDeletionPolicy(RedisStreamCommands.StreamDeletionPolicy policy) {
+        switch (policy) {
+            case DELETE_REFERENCES:
+                return "DELREF";
+            case ACKNOWLEDGED:
+                return "ACKED";
+            case KEEP_REFERENCES:
+            default:
+                return "KEEPREF";
+        }
+    }
+
+}
