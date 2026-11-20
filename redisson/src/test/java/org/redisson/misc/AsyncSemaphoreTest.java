@@ -401,6 +401,296 @@ public class AsyncSemaphoreTest {
                 .isGreaterThanOrEqualTo(0);
     }
 
+    /**
+     * redisson#7447. Each waiter's callback ends with release(), as the pub/sub callers do on a
+     * channel that is already subscribed. One release() then passes the permit down the whole
+     * queue. If each hand-off starts inside the callback of the previous one, the releasing
+     * thread overflows. CompletableFuture catches the StackOverflowError in a stage that nobody
+     * reads, and the release() of that waiter never runs. The counter then stays at zero with
+     * waiters in the queue, for good.
+     */
+    @Test
+    @Timeout(60)
+    void testLongQueueDrainsOnSmallStack() throws Exception {
+        int waiters = 20_000;
+        AsyncSemaphore semaphore = new AsyncSemaphore(1);
+        semaphore.acquire().join();
+
+        AtomicInteger ran = new AtomicInteger();
+        for (int i = 0; i < waiters; i++) {
+            semaphore.acquire().thenRun(() -> {
+                ran.incrementAndGet();
+                semaphore.release();
+            });
+        }
+
+        // 256 KB, as in the reproducer of the issue. A cold JVM with a default 1 MB stack fails
+        // the same way at about 1,000 waiters.
+        Thread releaser = new Thread(null, semaphore::release, "releaser", 256 * 1024);
+        releaser.start();
+        releaser.join();
+
+        assertThat(ran.get()).as("waiters that got the permit, of %d", waiters).isEqualTo(waiters);
+        assertThat(semaphore.getCounter()).isEqualTo(1);
+        assertThat(semaphore.queueSize()).isZero();
+    }
+
+    /**
+     * The same queue in the shape that PublishSubscribeService gives it. Each subscribe waits
+     * for the stripe semaphore and then uses a semaphore of its own, which has two waiters: the
+     * subscribe work, and the release of the stripe. So the release() that continues the queue
+     * of the stripe comes from a callback of a different semaphore, which is itself inside a
+     * callback of the stripe.
+     */
+    @Test
+    @Timeout(60)
+    void testLongQueueOfTwoSemaphoresDrainsOnSmallStack() throws Exception {
+        int subscribes = 20_000;
+        AsyncSemaphore stripe = new AsyncSemaphore(1);
+        stripe.acquire().join();
+
+        AtomicInteger ran = new AtomicInteger();
+        for (int i = 0; i < subscribes; i++) {
+            AsyncSemaphore call = new AsyncSemaphore(0);
+            stripe.acquire().thenRun(call::release);
+            call.acquire().thenRun(() -> {
+                ran.incrementAndGet();
+                call.release();
+            });
+            call.acquire().thenRun(stripe::release);
+        }
+
+        Thread releaser = new Thread(null, stripe::release, "releaser", 256 * 1024);
+        releaser.start();
+        releaser.join();
+
+        assertThat(ran.get()).as("subscribes that ran, of %d", subscribes).isEqualTo(subscribes);
+        assertThat(stripe.getCounter()).isEqualTo(1);
+        assertThat(stripe.queueSize()).isZero();
+    }
+
+    /**
+     * redisson#7447, the second way to grow the stack. A callback can take the same semaphore
+     * again after its release(): RedissonLock.tryLockAsync() calls unsubscribe() when a
+     * subscribe completes after the wait time is over, and unsubscribe() starts with acquire().
+     * The permit is free at that moment, so this acquire() hands it to the next waiter of the
+     * queue. If that hand-off starts inside the callback, each waiter adds a level to the stack
+     * again, although no release() does.
+     */
+    @Test
+    @Timeout(60)
+    void testLongQueueOfCallbacksThatAcquireAgainDrainsOnSmallStack() throws Exception {
+        int waiters = 20_000;
+        AsyncSemaphore semaphore = new AsyncSemaphore(1);
+        semaphore.acquire().join();
+
+        AtomicInteger first = new AtomicInteger();
+        AtomicInteger second = new AtomicInteger();
+        for (int i = 0; i < waiters; i++) {
+            semaphore.acquire().thenRun(() -> {
+                first.incrementAndGet();
+                semaphore.release();
+                // the unsubscribe: the same semaphore again, given back in its own callback
+                semaphore.acquire().thenRun(() -> {
+                    second.incrementAndGet();
+                    semaphore.release();
+                });
+            });
+        }
+
+        Thread releaser = new Thread(null, semaphore::release, "releaser", 256 * 1024);
+        releaser.start();
+        releaser.join();
+
+        assertThat(first.get()).as("first callbacks that ran, of %d", waiters).isEqualTo(waiters);
+        assertThat(second.get()).as("second callbacks that ran, of %d", waiters).isEqualTo(waiters);
+        assertThat(semaphore.getCounter()).isEqualTo(1);
+        assertThat(semaphore.queueSize()).isZero();
+    }
+
+    /**
+     * A release() inside a callback must not run the next waiter inside that callback. The next
+     * waiter runs after the callback returns. This order keeps the stack flat.
+     */
+    @Test
+    void testHandOffWaitsForTheReleasingCallback() {
+        AsyncSemaphore semaphore = new AsyncSemaphore(0);
+        List<String> events = new ArrayList<>();
+        semaphore.acquire().thenRun(() -> {
+            events.add("first starts");
+            semaphore.release();
+            events.add("first ends");
+        });
+        semaphore.acquire().thenRun(() -> events.add("second"));
+
+        semaphore.release();
+
+        assertThat(events).containsExactly("first starts", "first ends", "second");
+    }
+
+    /**
+     * A callback can release more permits than it took. Each release() that waits for the
+     * callback to return is one hand-off, so none of these permits must stay in the counter
+     * while waiters are in the queue.
+     */
+    @Test
+    void testEveryPermitReleasedInsideACallbackIsHandedOut() {
+        AsyncSemaphore semaphore = new AsyncSemaphore(0);
+        AtomicInteger ran = new AtomicInteger();
+        semaphore.acquire().thenRun(() -> {
+            ran.incrementAndGet();
+            semaphore.release();
+            semaphore.release();
+            semaphore.release();
+        });
+        for (int i = 0; i < 3; i++) {
+            semaphore.acquire().thenRun(ran::incrementAndGet);
+        }
+
+        semaphore.release();
+
+        assertThat(ran.get()).isEqualTo(4);
+        assertThat(semaphore.getCounter()).isZero();
+        assertThat(semaphore.queueSize()).isZero();
+    }
+
+    /**
+     * An acquire() inside a callback, with no waiter in the queue before it, still gets a free
+     * permit before it returns. Nothing is left to the loop in this case: the permit can only go
+     * to the new request, which has no callbacks yet. A callback that takes a permit and waits
+     * for it would block for good otherwise.
+     */
+    @Test
+    void testAcquireInsideACallbackGetsAFreePermitAtOnce() {
+        AsyncSemaphore semaphore = new AsyncSemaphore(0);
+        AtomicBoolean doneOnReturn = new AtomicBoolean();
+        semaphore.acquire().thenRun(() -> {
+            semaphore.release();
+            doneOnReturn.set(semaphore.acquire().isDone());
+        });
+
+        semaphore.release();
+
+        assertThat(doneOnReturn).isTrue();
+        assertThat(semaphore.getCounter()).isZero();
+        assertThat(semaphore.queueSize()).isZero();
+    }
+
+    /**
+     * An acquire() inside a callback, with a waiter in the queue before it, must not run that
+     * waiter inside the callback. The waiter runs after the callback returns, and the new
+     * request gets its turn after the waiter.
+     */
+    @Test
+    void testAcquireBehindAWaiterInsideACallbackWaitsForTheCallback() {
+        AsyncSemaphore semaphore = new AsyncSemaphore(0);
+        List<String> events = new ArrayList<>();
+        semaphore.acquire().thenRun(() -> {
+            events.add("first starts");
+            semaphore.release();
+            semaphore.acquire().thenRun(() -> events.add("third"));
+            events.add("first ends");
+        });
+        semaphore.acquire().thenRun(() -> {
+            events.add("second");
+            semaphore.release();
+        });
+
+        semaphore.release();
+
+        assertThat(events).containsExactly("first starts", "first ends", "second", "third");
+        assertThat(semaphore.getCounter()).isZero();
+        assertThat(semaphore.queueSize()).isZero();
+    }
+
+    /**
+     * The semaphore records the waiter that a thread completes, and release() reads this record
+     * to know that it is inside a callback. The record must be gone when the callback returns.
+     * A release() that the same thread makes later would otherwise wait for a callback that has
+     * already returned, and its permit would stay in the counter.
+     */
+    @Test
+    void testReleaseAfterACallbackReturnedHandsThePermitOver() {
+        AsyncSemaphore semaphore = new AsyncSemaphore(0);
+        AtomicInteger ran = new AtomicInteger();
+        semaphore.acquire().thenRun(ran::incrementAndGet);
+        semaphore.release();
+        // guards the test itself: the first release() must have completed a waiter on this thread
+        assertThat(ran.get()).isEqualTo(1);
+
+        CompletableFuture<Void> second = semaphore.acquire();
+        semaphore.release();
+
+        assertThat(second).isCompleted();
+    }
+
+    /**
+     * Hand-offs of different threads do not wait for each other. With two permits, a callback
+     * that is slow on one thread must not keep the second permit from a waiter. Each callback
+     * here returns only after the other one has started.
+     */
+    @Test
+    @Timeout(60)
+    void testHandOffsOnTwoThreadsRunAtTheSameTime() throws Exception {
+        AsyncSemaphore semaphore = new AsyncSemaphore(0);
+        CyclicBarrier bothRun = new CyclicBarrier(2);
+        AtomicInteger met = new AtomicInteger();
+        for (int i = 0; i < 2; i++) {
+            semaphore.acquire().thenRun(() -> {
+                try {
+                    bothRun.await(10, TimeUnit.SECONDS);
+                    met.incrementAndGet();
+                } catch (Exception e) {
+                    // the other callback did not start while this one ran
+                }
+            });
+        }
+
+        Thread first = new Thread(semaphore::release);
+        Thread second = new Thread(semaphore::release);
+        first.start();
+        second.start();
+        first.join();
+        second.join();
+
+        assertThat(met.get()).as("callbacks that ran at the same time").isEqualTo(2);
+    }
+
+    /**
+     * With an executor the hand-offs do not nest either. Before, they nested until the fork
+     * threshold, which is about 25 levels, and each level is as deep as the callbacks of a
+     * waiter. With the pub/sub callbacks and an executor, a stack of 256 KB overflowed at 29
+     * levels.
+     */
+    @Test
+    @Timeout(60)
+    void testHandOffsDoNotNestWithExecutor() throws Exception {
+        int waiters = 1000;
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        AsyncSemaphore semaphore = new AsyncSemaphore(0, executor);
+        AtomicInteger nested = new AtomicInteger();
+        AtomicInteger deepest = new AtomicInteger();
+        CountDownLatch handedOn = new CountDownLatch(waiters);
+
+        try {
+            for (int i = 0; i < waiters; i++) {
+                semaphore.acquire().thenRun(() -> {
+                    deepest.accumulateAndGet(nested.incrementAndGet(), Math::max);
+                    semaphore.release();
+                    nested.decrementAndGet();
+                    handedOn.countDown();
+                });
+            }
+
+            semaphore.release();
+
+            assertThat(handedOn.await(10, TimeUnit.SECONDS)).isTrue();
+            assertThat(deepest.get()).as("hand-offs nested at once").isEqualTo(1);
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
     private static long completedCount(List<CompletableFuture<Void>> futures) {
         return futures.stream().filter(CompletableFuture::isDone).count();
     }
