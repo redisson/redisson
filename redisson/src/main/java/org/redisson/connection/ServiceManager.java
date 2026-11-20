@@ -84,6 +84,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -154,7 +155,20 @@ public final class ServiceManager {
 
     private volatile boolean hashImportDisabled;
 
-    private volatile boolean bitFieldRODisabled;
+    public enum BitFieldROState {
+
+        UNKNOWN,
+
+        AVAILABLE,
+
+        /**
+         * BITFIELD_RO is missing on the server or denied to the user
+         */
+        UNAVAILABLE
+
+    }
+
+    private final AtomicReference<BitFieldROState> bitFieldROState = new AtomicReference<>(BitFieldROState.UNKNOWN);
 
     private final Map<Thread, EventLoop> nettyThreads = new ConcurrentHashMap<>();
 
@@ -569,12 +583,17 @@ public final class ServiceManager {
         hashImportDisabled = true;
     }
 
-    public boolean isBitFieldRODisabled() {
-        return bitFieldRODisabled;
+    public BitFieldROState getBitFieldROState() {
+        return bitFieldROState.get();
     }
 
-    public void disableBitFieldRO() {
-        bitFieldRODisabled = true;
+    public void markBitFieldROAvailable() {
+        // a successful read doesn't make BITFIELD_RO available again after a node has rejected it
+        bitFieldROState.compareAndSet(BitFieldROState.UNKNOWN, BitFieldROState.AVAILABLE);
+    }
+
+    public void markBitFieldROUnavailable() {
+        bitFieldROState.set(BitFieldROState.UNAVAILABLE);
     }
 
     public NameMapper getNameMapper() {
