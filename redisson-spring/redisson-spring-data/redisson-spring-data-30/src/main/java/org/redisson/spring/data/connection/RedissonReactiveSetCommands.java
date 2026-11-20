@@ -272,13 +272,13 @@ public class RedissonReactiveSetCommands extends RedissonBaseReactive implements
             Flux<byte[]> flux = Flux.create(new SetReactiveIterator<byte[]>() {
                 @Override
                 protected RFuture<ScanResult<Object>> scanIterator(RedisClient client, String nextIterPos) {
-                    if (command.getOptions().getPattern() == null) {
+                    if (command.getOptions().getBytePattern() == null) {
                         return executorService.readAsync(client, keyBuf, ByteArrayCodec.INSTANCE, RedisCommands.SSCAN, 
                                 keyBuf, nextIterPos, "COUNT", Optional.ofNullable(command.getOptions().getCount()).orElse(10L));
                     }
 
                     return executorService.readAsync(client, keyBuf, ByteArrayCodec.INSTANCE, RedisCommands.SSCAN, 
-                                keyBuf, nextIterPos, "MATCH", command.getOptions().getPattern(), 
+                                keyBuf, nextIterPos, "MATCH", command.getOptions().getBytePattern(), 
                                                     "COUNT", Optional.ofNullable(command.getOptions().getCount()).orElse(10L));
                 }
             });
@@ -311,7 +311,7 @@ public class RedissonReactiveSetCommands extends RedissonBaseReactive implements
             List<Object> args = new ArrayList<>();
             byte[] keyBuf = toByteArray(command.getKey());
             args.add(keyBuf);
-            args.addAll(command.getValues());
+            args.addAll(command.getValues().stream().map(v -> toByteArray(v)).collect(Collectors.toList()));
 
             Mono<List<Boolean>> m = read(keyBuf, StringCodec.INSTANCE, SMISMEMBER, args.toArray());
             return m.map(v -> new ReactiveRedisConnection.MultiValueResponse<>(command, v));
