@@ -577,13 +577,8 @@ public class CommandBatchService extends CommandAsyncService implements BatchSer
             for (Map.Entry<NodeSource, Entry> e : entries.entrySet()) {
                 for (BatchCommandData<?, ?> data : e.getValue().getCommands()) {
                     if (isBitFieldROApplicable(data.getCommand(), data.getParams())) {
-                        CommandAsyncService executor = new CommandAsyncService(connectionManager, objectBuilder, referenceType);
-                        RFuture<Object> check = executor.async(true, e.getKey(), StringCodec.INSTANCE,
-                                RedisCommands.BITFIELD_RO_LONG_LIST, new Object[] {data.getParams()[0]}, false, false);
-                        return check.handle((r, ex) -> {
-                            updateBitFieldCommands(entries);
-                            return null;
-                        });
+                        return checkBitFieldRO(e.getKey(), data.getParams()[0])
+                                .thenRun(() -> updateBitFieldCommands(entries));
                     }
                 }
             }

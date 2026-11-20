@@ -794,6 +794,21 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         return new CompletableFutureWrapper<>(result);
     }
 
+    // sends BITFIELD_RO without subcommands and marks it as available or unavailable for the client
+    CompletionStage<Void> checkBitFieldRO(NodeSource source, Object key) {
+        CompletableFuture<Object> promise = new CompletableFuture<>();
+        executeCommand(true, source, StringCodec.INSTANCE, RedisCommands.BITFIELD_RO_LONG_LIST,
+                new Object[] {key}, false, false, promise);
+        return promise.handle((value, error) -> {
+            if (error == null) {
+                getServiceManager().markBitFieldROAvailable();
+            } else if (isBitFieldROUnavailable(error)) {
+                getServiceManager().markBitFieldROUnavailable();
+            }
+            return null;
+        });
+    }
+
     private <V, R> void executeCommand(boolean readOnlyMode, NodeSource source, Codec codec, RedisCommand<V> cmnd,
                                        Object[] params, boolean ignoreRedirect, boolean noRetry, CompletableFuture<R> mainPromise) {
         if (!readOnlyMode && getServiceManager().hasCachingInstances()) {

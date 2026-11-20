@@ -280,8 +280,8 @@ public class RedissonBitSetTest extends RedisDockerTest {
                     batch.execute();
                     assertThat(number.toCompletableFuture().join()).isEqualTo(-1L);
                 } else {
-                    // the write, the fallback of the BITFIELD_RO check, then each of two batches sends three reads
-                    assertThat(masterStats).contains("cmdstat_bitfield:calls=8,");
+                    // the write, then each of two batches sends three reads
+                    assertThat(masterStats).contains("cmdstat_bitfield:calls=7,");
                 }
             } finally {
                 client.shutdown();
@@ -500,7 +500,7 @@ public class RedissonBitSetTest extends RedisDockerTest {
                 // From now on a batch sends BITFIELD reads as BITFIELD_RO
                 assertThat(bitSet.getLong(0)).isEqualTo(-1L);
 
-                // Spring Data 4.x modules send BITFIELD with GET subcommands as a write command.
+                // newer Spring Data modules send BITFIELD with GET subcommands as a write command.
                 // A batch has to send it unchanged
                 CommandAsyncExecutor executor = ((Redisson) client).getCommandExecutor();
                 BatchOptions.ExecutionMode[] modes = {
