@@ -28,9 +28,9 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * Non-blocking queue with O(1) removal whose read path allocates nothing.
  * <p>
- * Null elements aren't permitted. The queue holds an element one time only. It compares
- * elements with equals() and hashCode(), and these must not change while the element is
- * queued. The iterator is weakly consistent.
+ * Null elements aren't permitted. The queue does not hold two equal elements at the same time.
+ * It compares elements with equals() and hashCode(), and these must not change
+ * while the element is queued. The iterator is weakly consistent.
  *
  * @author Nikita Koksharov
  *
