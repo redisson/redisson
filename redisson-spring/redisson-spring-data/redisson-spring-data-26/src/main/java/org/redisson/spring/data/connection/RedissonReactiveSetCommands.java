@@ -278,7 +278,7 @@ public class RedissonReactiveSetCommands extends RedissonBaseReactive implements
                     }
 
                     return executorService.readAsync(client, keyBuf, ByteArrayCodec.INSTANCE, RedisCommands.SSCAN, 
-                                keyBuf, nextIterPos, "MATCH", command.getOptions().getBytePattern(), 
+                                keyBuf, nextIterPos, "MATCH", command.getOptions().getBytePattern(),
                                                     "COUNT", Optional.ofNullable(command.getOptions().getCount()).orElse(10L));
                 }
             });

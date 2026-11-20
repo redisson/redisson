@@ -309,12 +309,12 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
                 @Override
                 protected RFuture<ScanResult<Object>> scanIterator(RedisClient client, String nextIterPos) {
                     if (command.getOptions().getBytePattern() == null) {
-                        return executorService.readAsync(client, keyBuf, ByteArrayCodec.INSTANCE, RedissonConnection.ZSCAN, 
+                        return executorService.readAsync(client, keyBuf, ByteArrayCodec.INSTANCE, RedissonConnection.ZSCAN,
                                 keyBuf, nextIterPos, "COUNT", Optional.ofNullable(command.getOptions().getCount()).orElse(10L));
                     }
 
-                    return executorService.readAsync(client, keyBuf, ByteArrayCodec.INSTANCE, RedissonConnection.ZSCAN, 
-                                keyBuf, nextIterPos, "MATCH", command.getOptions().getBytePattern(), 
+                    return executorService.readAsync(client, keyBuf, ByteArrayCodec.INSTANCE, RedissonConnection.ZSCAN,
+                                keyBuf, nextIterPos, "MATCH", command.getOptions().getBytePattern(),
                                                     "COUNT", Optional.ofNullable(command.getOptions().getCount()).orElse(10L));
                 }
             });
