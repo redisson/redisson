@@ -13,103 +13,70 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- *    Copyright 2009 - 2017, Red Hat Inc. and/or its affiliates.
- *
- *    All files in this repository or distribution are licensed under the
- *    Apache License, Version 2.0 (the "License");
- *    you may not use any files in this repository or distribution except
- *    in compliance with the License.
- *
- *    You may obtain a copy of the License at
- *
- *        http://www.apache.org/licenses/LICENSE-2.0
- *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
- */
 package org.redisson.misc;
 
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.AbstractQueuedSynchronizer;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * A thread gate, that uses an {@link java.util.concurrent.locks.AbstractQueuedSynchronizer}.
- * <p>
- * This implementation allows you to create a latch with a default state (open or closed), and repeatedly open or close
- * the latch.
+ * A gate that threads wait at until it is opened, and that can be closed again.
+ * A new latch is closed.
  *
- * @author Manik Surtani (<a href="mailto:manik@jboss.org">manik@jboss.org</a>)
- * @since 4.0
+ * @author Nikita Koksharov
+ *
  */
-@SuppressWarnings({"MultipleVariableDeclarations", "AvoidInlineConditionals", "UpperEll"})
-public class ReclosableLatch extends AbstractQueuedSynchronizer {
+public final class ReclosableLatch {
 
-   private static final long serialVersionUID = 1744280161777661090l;
+    private final AtomicReference<CountDownLatch> gate = new AtomicReference<>(new CountDownLatch(1));
 
-   // the following states are used in the AQS.
-   private static final int OPEN_STATE = 0, CLOSED_STATE = 1;
+    /**
+     * Opens the latch and releases the threads waiting at it.
+     * The latch stays open until {@link #close()} is called:
+     * a thread that waits in the meantime returns at once.
+     * Does nothing if the latch is open already.
+     */
+    public void open() {
+        gate.get().countDown();
+    }
 
-   public ReclosableLatch() {
-      setState(CLOSED_STATE);
-   }
-
-   public ReclosableLatch(boolean defaultOpen) {
-      setState(defaultOpen ? OPEN_STATE : CLOSED_STATE);
-   }
-
-   @Override
-   public final int tryAcquireShared(int ignored) {
-      // return 1 if we allow the requestor to proceed, -1 if we want the requestor to block.
-      return getState() == OPEN_STATE ? 1 : -1;
-   }
-
-   @Override
-   public final boolean tryReleaseShared(int state) {
-      // used as a mechanism to set the state of the Sync.
-      setState(state);
-      return true;
-   }
-
-   public final void open() {
-      // do not use setState() directly since this won't notify parked threads.
-      releaseShared(OPEN_STATE);
-   }
-
-   public final void close() {
-      // do not use setState() directly since this won't notify parked threads.
-      releaseShared(CLOSED_STATE);
-   }
-
-   public boolean isOpened() {
-      return getState() == OPEN_STATE;
-   }
-
-   // waiting for an open state
-   public final void await() throws InterruptedException {
-      acquireSharedInterruptibly(1); // the 1 is a dummy value that is not used.
-   }
-
-   public final void awaitUninterruptibly() {
-        try {
-            await();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+    /**
+     * Closes the latch: a thread that waits from now on is held until the next {@link #open()}.
+     * Does nothing if the latch is closed already, and nothing to the threads waiting at it.
+     * <p>
+     * Called straight after {@link #open()}, it may come before the released threads have run.
+     * How many of them still get through is not specified.
+     */
+    public void close() {
+        CountDownLatch current = gate.get();
+        if (current.getCount() == 0) {
+            gate.compareAndSet(current, new CountDownLatch(1));
         }
     }
 
+    /**
+     * Waits until the latch is open. Returns at once if it is open already.
+     *
+     * @throws InterruptedException if the current thread is interrupted while it waits, or was
+     *         interrupted before the call; the latter is reported at an open latch too
+     */
+    public void await() throws InterruptedException {
+        gate.get().await();
+    }
 
-   public final boolean await(long time, TimeUnit unit) throws InterruptedException {
-      return tryAcquireSharedNanos(1, unit.toNanos(time)); // the 1 is a dummy value that is not used.
-   }
+    /**
+     * Waits until the latch is open, but no longer than the given time.
+     * Returns at once if the latch is open already.
+     *
+     * @param time the longest time to wait; with zero or less the latch is only tested
+     * @param unit the unit of <code>time</code>
+     * @return <code>true</code> if the latch was open or was opened within the time and
+     *         <code>false</code> if the time passed first
+     * @throws InterruptedException if the current thread is interrupted while it waits, or was
+     *         interrupted before the call; the latter is reported at an open latch too
+     */
+    public boolean await(long time, TimeUnit unit) throws InterruptedException {
+        return gate.get().await(time, unit);
+    }
 
-   @Override
-   public String toString() {
-      int s = getState();
-      String q = hasQueuedThreads() ? "non" : "";
-      return "ReclosableLatch [State = " + s + ", " + q + "empty queue]";
-   }
 }
