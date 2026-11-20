@@ -4,17 +4,34 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicIntegerArray;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class FastRemovalQueueTest {
+
+    @Test
+    public void testDuplication() {
+        FastRemovalQueue<Integer> queue = new FastRemovalQueue<>();
+        queue.add(1);
+        queue.add(2);
+        queue.add(2);
+        queue.add(3);
+        queue.add(1);
+
+        assertThat(queue).containsExactly(1, 2, 3);
+    }
 
     @Test
     public void testIterator() {
@@ -23,12 +40,38 @@ public class FastRemovalQueueTest {
         queue.add(2);
         queue.add(3);
 
-        List<Integer> list = new ArrayList<>();
-        for (Integer i : queue) {
-            list.add(i);
-        }
+        assertThat(queue).containsExactly(1, 2, 3);
 
-        assertThat(queue).containsExactly(list.toArray(new Integer[0]));
+        // iteration skips an element that was removed from the middle
+        queue.remove(2);
+        assertThat(queue).containsExactly(1, 3);
+    }
+
+    /**
+     * The queue holds an element one time only. add() of an element that is equal to a queued
+     * one changes nothing, and one remove() takes the element out.
+     */
+    @Test
+    public void testAddOfQueuedElementIsIgnored() {
+        FastRemovalQueue<String> queue = new FastRemovalQueue<>();
+        queue.add("a");
+        queue.add("b");
+        // equal to the first element, but another object
+        queue.add(new String("a"));
+
+        assertThat(queue.size()).isEqualTo(2);
+        assertThat(queue).containsExactly("a", "b");
+
+        assertThat(queue.remove("a")).isTrue();
+        assertThat(queue.remove("a")).isFalse();
+        assertThat(queue).containsExactly("b");
+
+        // a removed element can be added again and goes to the tail
+        queue.add("a");
+        assertThat(queue.size()).isEqualTo(2);
+        assertThat(queue.poll()).isEqualTo("b");
+        assertThat(queue.poll()).isEqualTo("a");
+        assertThat(queue.poll()).isNull();
     }
 
     @Test
@@ -77,7 +120,7 @@ public class FastRemovalQueueTest {
     }
 
     @Test
-    public void testConcurrentAddAndRemove() throws InterruptedException {
+    public void testConcurrentAddAndRemove() throws Exception {
         FastRemovalQueue<Integer> queue = new FastRemovalQueue<>();
         int numThreads = 16;
         int numElements = 60000;
@@ -87,35 +130,36 @@ public class FastRemovalQueueTest {
         AtomicInteger pooled = new AtomicInteger();
 
         // Submit tasks to add and remove elements concurrently
+        List<Future<?>> workers = new ArrayList<>();
         for (int i = 0; i < numThreads; i++) {
             final int threadId = i;
 
-            executor.submit(() -> {
-                try {
-                    for (int j = 0; j < numElements; j++) {
-                        queue.add(threadId * numElements + j);
-                        if (Math.random() > 0.5) {
-                            Integer elementToRemove = threadId * numElements + j - 1;
-                            if (elementToRemove >= 0) {
-                                if (queue.remove(elementToRemove)) {
-                                    removed.incrementAndGet();
-                                }
-                            }
-                        }
-                        if (Math.random() > 0.5) {
-                            if (queue.poll() != null) {
-                                pooled.incrementAndGet();
+            workers.add(executor.submit(() -> {
+                for (int j = 0; j < numElements; j++) {
+                    queue.add(threadId * numElements + j);
+                    if (Math.random() > 0.5) {
+                        Integer elementToRemove = threadId * numElements + j - 1;
+                        if (elementToRemove >= 0) {
+                            if (queue.remove(elementToRemove)) {
+                                removed.incrementAndGet();
                             }
                         }
                     }
-                } catch (Exception e) {
-                    e.printStackTrace();
+                    if (Math.random() > 0.5) {
+                        if (queue.poll() != null) {
+                            pooled.incrementAndGet();
+                        }
+                    }
                 }
-            });
+            }));
         }
 
         executor.shutdown();
-        executor.awaitTermination(10000, TimeUnit.SECONDS);
+        // get() throws what the worker threw. The totals below fail too when a worker stops
+        // early, but they do not tell which call failed
+        for (Future<?> worker : workers) {
+            worker.get(10000, TimeUnit.SECONDS);
+        }
 
         int totalPolled = 0;
         while (queue.poll() != null) {
@@ -125,52 +169,6 @@ public class FastRemovalQueueTest {
         assertThat(totalPolled).isGreaterThan(1);
         assertThat(removed.get()).isGreaterThan(1);
         assertThat(pooled.get()).isGreaterThan(1);
-
-        assertThat(totalPolled + removed.get() + pooled.get()).isEqualTo(numThreads * numElements);
-    }
-
-//    @Test
-    public void testConcurrentAddAndRemoveOld() throws InterruptedException {
-        ConcurrentLinkedQueue<Integer> queue = new ConcurrentLinkedQueue<>();
-        int numThreads = 16;
-        int numElements = 60000;
-
-        ExecutorService executor = Executors.newFixedThreadPool(numThreads);
-        AtomicInteger removed = new AtomicInteger();
-        AtomicInteger pooled = new AtomicInteger();
-
-        // Submit tasks to add and remove elements concurrently
-        for (int i = 0; i < numThreads; i++) {
-            final int threadId = i;
-            executor.submit(() -> {
-                for (int j = 0; j < numElements; j++) {
-                    queue.add(threadId * numElements + j);  // Add elements
-                    if (Math.random() > 0.5) {  // Randomly remove an element
-                        Integer elementToRemove = threadId * numElements + j - 1;
-                        if (elementToRemove >= 0) {
-                            if (queue.remove(elementToRemove)) {
-                                removed.incrementAndGet();
-                            }
-                        }
-                    }
-//                    if (Math.random() > 0.5) {
-//                        if (queue.poll() != null) {
-//                            pooled.incrementAndGet();
-//                        }
-//                    }
-                }
-            });
-        }
-
-        executor.shutdown();
-        executor.awaitTermination(10000, TimeUnit.SECONDS);
-
-        int totalPolled = 0;
-        while (queue.poll() != null) {
-            totalPolled++;
-        }
-        System.out.println("totalPolled " + totalPolled);
-        System.out.println("removed " + removed.get());
 
         assertThat(totalPolled + removed.get() + pooled.get()).isEqualTo(numThreads * numElements);
     }
@@ -308,5 +306,308 @@ public class FastRemovalQueueTest {
                                 + "clear() is indexed but not listed",
                         stranded, rounds, worstRound)
                 .isZero();
+    }
+
+    /**
+     * Elements are removed while an older element stays queued, not in the order of add(). Then
+     * all elements are polled. The elements that were not removed must come out in the order
+     * of add(), each one time. All rounds use the same queue.
+     */
+    @Test
+    public void testRemoveBehindElementThatStays() {
+        FastRemovalQueue<Integer> queue = new FastRemovalQueue<>();
+        Random random = new Random(1);
+        int next = 0;
+        for (int round = 0; round < 100; round++) {
+            List<Integer> added = new ArrayList<>();
+            for (int i = 0; i < 201; i++) {
+                queue.add(next);
+                added.add(next++);
+            }
+            // the oldest element stays
+            List<Integer> removed = new ArrayList<>(added.subList(1, added.size()));
+            Collections.shuffle(removed, random);
+            removed = removed.subList(0, 150);
+            for (Integer element : removed) {
+                assertThat(queue.remove(element)).isTrue();
+            }
+            List<Integer> expected = new ArrayList<>(added);
+            expected.removeAll(removed);
+
+            assertThat(queue.size()).isEqualTo(expected.size());
+            assertThat(queue).containsExactlyElementsOf(expected);
+            for (Integer element : expected) {
+                assertThat(queue.poll()).isEqualTo(element);
+            }
+            assertThat(queue.poll()).isNull();
+            assertThat(queue.isEmpty()).isTrue();
+            assertThat(queue.size()).isZero();
+        }
+    }
+
+    /**
+     * Many threads add elements and remove most of them a little later, not in the order of
+     * add(). Some elements stay, so removed elements are in front of, between and behind
+     * queued ones. At the end the elements that stayed are polled. Each element must leave the
+     * queue one time, and the elements of one thread must come out in the order of add().
+     */
+    @Test
+    @Timeout(120)
+    public void testConcurrentRemoveBetweenElementsThatStay() throws Exception {
+        FastRemovalQueue<Integer> queue = new FastRemovalQueue<>();
+        int threads = 8;
+        int inFlight = 8;
+        int iterations = 100_000;
+        int stayEvery = 1000;
+        AtomicIntegerArray left = new AtomicIntegerArray(threads * iterations);
+
+        ExecutorService executor = Executors.newFixedThreadPool(threads);
+        List<Future<?>> workers = new ArrayList<>();
+        try {
+            for (int t = 0; t < threads; t++) {
+                int firstElement = t * iterations;
+                workers.add(executor.submit(() -> {
+                    ThreadLocalRandom random = ThreadLocalRandom.current();
+                    Integer[] pending = new Integer[inFlight];
+                    for (int i = 0; i < iterations; i++) {
+                        Integer element = firstElement + i;
+                        queue.add(element);
+                        if (i % stayEvery == 0) {
+                            continue;
+                        }
+                        int slot = random.nextInt(inFlight);
+                        if (pending[slot] != null && queue.remove(pending[slot])) {
+                            left.incrementAndGet(pending[slot]);
+                        }
+                        pending[slot] = element;
+                    }
+                    for (Integer element : pending) {
+                        if (element != null && queue.remove(element)) {
+                            left.incrementAndGet(element);
+                        }
+                    }
+                }));
+            }
+            for (Future<?> worker : workers) {
+                worker.get();
+            }
+        } finally {
+            executor.shutdownNow();
+        }
+
+        assertThat(queue.size()).isEqualTo(threads * iterations / stayEvery);
+        int[] lastOfThread = new int[threads];
+        Arrays.fill(lastOfThread, -1);
+        int outOfOrder = 0;
+        Integer polled;
+        while ((polled = queue.poll()) != null) {
+            left.incrementAndGet(polled);
+            int thread = polled / iterations;
+            if (polled < lastOfThread[thread]) {
+                outOfOrder++;
+            }
+            lastOfThread[thread] = polled;
+        }
+        assertThat(outOfOrder).as("elements that were polled after a newer element of the same thread").isZero();
+        assertEachElementLeftOnce(queue, left, threads * iterations);
+    }
+
+    /**
+     * One thread adds an element and removes it at once, another thread polls all the time, so
+     * remove() and poll() often want the same element. Each element must leave the queue one
+     * time: its remove() returns true, or one poll() returns it, and not both.
+     */
+    @Test
+    @Timeout(120)
+    public void testPollAndRemoveOfSameElement() throws Exception {
+        FastRemovalQueue<Integer> queue = new FastRemovalQueue<>();
+        int elements = 500_000;
+        AtomicIntegerArray left = new AtomicIntegerArray(elements);
+        AtomicBoolean running = new AtomicBoolean(true);
+
+        Thread poller = new Thread(() -> {
+            while (running.get()) {
+                Integer polled = queue.poll();
+                if (polled != null) {
+                    left.incrementAndGet(polled);
+                }
+            }
+        });
+        poller.start();
+        try {
+            for (int i = 0; i < elements; i++) {
+                Integer element = i;
+                queue.add(element);
+                if (queue.remove(element)) {
+                    left.incrementAndGet(element);
+                }
+            }
+        } finally {
+            running.set(false);
+            poller.join();
+        }
+
+        assertEachElementLeftOnce(queue, left, elements);
+    }
+
+    @Test
+    public void testIsEmptyLooksBehindRemovedHead() {
+        FastRemovalQueue<Integer> queue = new FastRemovalQueue<>();
+        assertThat(queue.isEmpty()).isTrue();
+
+        queue.add(1);
+        queue.add(2);
+        queue.add(3);
+        assertThat(queue.isEmpty()).isFalse();
+
+        // 2 is removed while 1 is in front of it, then 1 is polled: 3 is the only element left
+        assertThat(queue.remove(2)).isTrue();
+        assertThat(queue.poll()).isEqualTo(1);
+        assertThat(queue.isEmpty()).isFalse();
+
+        assertThat(queue.remove(3)).isTrue();
+        assertThat(queue.isEmpty()).isTrue();
+        assertThat(queue.poll()).isNull();
+    }
+
+    /**
+     * A queue that holds one element must be as cheap to iterate after long use as a new one.
+     * The use: one element stays in front while more and more elements are added and removed
+     * behind it, then all elements are polled, 3000 times. After that, in the used queue and
+     * in a new one, one element stays while 20,000 others are added and removed behind it.
+     * <p>
+     * An element that was removed and that the queue still holds can be seen from outside only
+     * by what it costs, so this test compares times. It takes the best of 20 measurements for
+     * each queue, in turn. Before the fix the used queue held one node more for each time it
+     * was used, and an iteration cost 55 times that of the new queue. Now the factor is 1 to 2.
+     */
+    @Test
+    public void testIterationCostDoesNotGrowWithEarlierUse() {
+        FastRemovalQueue<Integer> used = new FastRemovalQueue<>();
+        int next = 0;
+        for (int use = 0; use < 3000; use++) {
+            used.add(next++);
+            int first = next;
+            int others = 200 + use;
+            for (int i = 0; i < others; i++) {
+                used.add(next++);
+            }
+            for (int i = 0; i < others; i++) {
+                used.remove(first + i);
+            }
+            while (used.poll() != null) {
+                // empty the queue
+            }
+        }
+
+        List<FastRemovalQueue<Integer>> queues = Arrays.asList(used, new FastRemovalQueue<>());
+        for (FastRemovalQueue<Integer> queue : queues) {
+            queue.add(-1);
+            for (int i = 0; i < 20_000; i++) {
+                queue.add(-2 - i);
+                queue.remove(-2 - i);
+            }
+            assertThat(queue).containsExactly(-1);
+        }
+
+        long[] best = {Long.MAX_VALUE, Long.MAX_VALUE};
+        for (int round = 0; round < 20; round++) {
+            for (int q = 0; q < best.length; q++) {
+                int seen = 0;
+                long start = System.nanoTime();
+                for (int i = 0; i < 200; i++) {
+                    for (Integer element : queues.get(q)) {
+                        seen += element;
+                    }
+                }
+                best[q] = Math.min(best[q], System.nanoTime() - start);
+                // guards the measurement: each iteration returned the one element
+                assertThat(seen).isEqualTo(-200);
+            }
+        }
+
+        assertThat(best[0])
+                .as("time to iterate the used queue 200 times; the new queue took %d ns", best[1])
+                .isLessThan(10 * best[1]);
+    }
+
+    /**
+     * One element is queued. A second thread takes it out while this thread polls, and no
+     * add() runs in that time. If the poll() of this thread returns null, the element is gone
+     * and no other can come, so isEmpty() must be true.
+     * <p>
+     * AsyncSemaphore.tryRun() tries again without a pause while poll() returns null and
+     * isEmpty() is false. Before the fix that was so in one round of three on 2 CPUs. With
+     * 1 CPU the two threads do not overlap, and this test cannot fail.
+     */
+    @Test
+    @Timeout(120)
+    public void testIsEmptyAfterPollReturnedNull() throws Exception {
+        FastRemovalQueue<Integer> queue = new FastRemovalQueue<>();
+        int rounds = 100_000;
+        AtomicInteger go = new AtomicInteger();
+        AtomicInteger started = new AtomicInteger();
+        AtomicInteger done = new AtomicInteger();
+
+        Thread taker = new Thread(() -> {
+            for (int round = 1; round <= rounds; round++) {
+                while (go.get() != round) {
+                    Thread.yield();
+                }
+                started.set(round);
+                queue.poll();
+                done.set(round);
+            }
+        });
+        taker.start();
+
+        int polledNull = 0;
+        int disagreed = 0;
+        for (int round = 1; round <= rounds; round++) {
+            queue.add(round);
+            go.set(round);
+            while (started.get() != round) {
+                Thread.yield();
+            }
+            if (queue.poll() == null) {
+                polledNull++;
+                if (!queue.isEmpty()) {
+                    disagreed++;
+                }
+            }
+            while (done.get() != round) {
+                Thread.yield();
+            }
+        }
+        taker.join();
+
+        // guards the test itself: the other thread must have taken the element in many rounds
+        assertThat(polledNull).isGreaterThan(rounds / 100);
+        assertThat(disagreed)
+                .as("rounds of %d in which poll() returned null and isEmpty() was false after it", polledNull)
+                .isZero();
+    }
+
+    /** Polls what is left, then checks that each of the first {@code added} elements left one time. */
+    private static void assertEachElementLeftOnce(FastRemovalQueue<Integer> queue, AtomicIntegerArray left, int added) {
+        Integer remaining;
+        while ((remaining = queue.poll()) != null) {
+            left.incrementAndGet(remaining);
+        }
+        assertThat(queue.isEmpty()).isTrue();
+        assertThat(queue.size()).isZero();
+
+        int lost = 0;
+        int twice = 0;
+        for (int element = 0; element < added; element++) {
+            int count = left.get(element);
+            if (count == 0) {
+                lost++;
+            } else if (count > 1) {
+                twice++;
+            }
+        }
+        assertThat(lost).as("elements that did not leave the queue").isZero();
+        assertThat(twice).as("elements that left the queue more than one time").isZero();
     }
 }

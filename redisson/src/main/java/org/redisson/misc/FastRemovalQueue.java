@@ -27,8 +27,10 @@ import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Non-blocking queue with O(1) removal whose read path allocates nothing.
- *
- * Null elements aren't permitted.
+ * <p>
+ * Null elements aren't permitted. The queue holds an element one time only. It compares
+ * elements with equals() and hashCode(), and these must not change while the element is
+ * queued. The iterator is weakly consistent.
  *
  * @author Nikita Koksharov
  *
@@ -47,6 +49,11 @@ public final class FastRemovalQueue<E> implements Iterable<E> {
 
     private volatile State<E> state = new State<>();
 
+    /**
+     * Adds the element at the tail. Does nothing if an equal element is queued.
+     *
+     * @param element element to add
+     */
     public void add(E element) {
         State<E> current = state;
         Node<E> newNode = new Node<>(element);
@@ -78,26 +85,28 @@ public final class FastRemovalQueue<E> implements Iterable<E> {
             return false;
         }
         current.live.decrementAndGet();
-        current.claimed.incrementAndGet();
+
+        // poll() can take the node out of the queue between its liveness check and its claim.
+        // Then the node is settled before this line and must not be counted.
+        if (node.backlog.compareAndSet(Node.UNCOUNTED, Node.COUNTED)) {
+            current.claimed.incrementAndGet();
+        }
         dropDeadPrefix(current);
         sweepIfBacklogged(current);
         return true;
     }
 
-    private boolean dropDeadPrefix(State<E> current) {
-        int dropped = 0;
-        while (dropped < DROP_BUDGET) {
+    private void dropDeadPrefix(State<E> current) {
+        for (int dropped = 0; dropped < DROP_BUDGET; dropped++) {
             Node<E> head = current.queue.peek();
-            if (head == null) {
-                return true;
+
+            // remove(head) is false when another thread took the head first, and then it has
+            // walked the whole queue for nothing.
+            if (head == null || head.get() != null || !current.queue.remove(head)) {
+                return;
             }
-            if (head.get() != null || !current.queue.remove(head)) {
-                break;
-            }
-            current.claimed.decrementAndGet();
-            dropped++;
+            settle(current, head);
         }
-        return dropped > 0;
     }
 
     /**
@@ -119,15 +128,12 @@ public final class FastRemovalQueue<E> implements Iterable<E> {
             if (cursor == null) {
                 cursor = current.queue.iterator();
             }
-            int swept = 0;
             for (int examined = 0; examined < SWEEP_BUDGET && cursor.hasNext(); examined++) {
-                if (cursor.next().get() == null) {
+                Node<E> node = cursor.next();
+                if (node.get() == null) {
                     cursor.remove();
-                    swept++;
+                    settle(current, node);
                 }
-            }
-            if (swept > 0) {
-                current.claimed.addAndGet(-swept);
             }
             if (cursor.hasNext()) {
                 current.sweeper = cursor;
@@ -136,6 +142,15 @@ public final class FastRemovalQueue<E> implements Iterable<E> {
             }
         } finally {
             current.sweeping.set(false);
+        }
+    }
+
+    /**
+     * Takes a node out of the backlog count, one time only.
+     */
+    private void settle(State<E> current, Node<E> node) {
+        if (node.backlog.getAndSet(Node.SETTLED) == Node.COUNTED) {
+            current.claimed.decrementAndGet();
         }
     }
 
@@ -157,7 +172,7 @@ public final class FastRemovalQueue<E> implements Iterable<E> {
         Node<E> node;
         while ((node = current.queue.poll()) != null) {
             if (node.get() == null) {
-                current.claimed.decrementAndGet();
+                settle(current, node);
                 continue;
             }
             if (node.referenced && reprieves-- > 0) {
@@ -171,12 +186,30 @@ public final class FastRemovalQueue<E> implements Iterable<E> {
                 current.index.remove(value, node);
                 return value;
             }
+
+            // remove() claimed the node after the check above. The node is out of the queue,
+            // so nothing else can discard it and take it out of the count
+            settle(current, node);
         }
         return null;
     }
 
     public boolean isEmpty() {
-        return state.live.get() <= 0;
+        Queue<Node<E>> queue = state.queue;
+        Node<E> head = queue.peek();
+        if (head == null) {
+            return true;
+        }
+        if (head.get() != null) {
+            return false;
+        }
+        // removed nodes at the head: look for a live one behind them
+        for (Node<E> node : queue) {
+            if (node.get() != null) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public int size() {
@@ -218,7 +251,7 @@ public final class FastRemovalQueue<E> implements Iterable<E> {
         private final Queue<Node<E>> queue = new ConcurrentLinkedQueue<>();
         /** Nodes published to {@link #queue} and not yet claimed. */
         private final AtomicInteger live = new AtomicInteger();
-        /** Approximate count of claimed nodes still physically queued. */
+        /** Nodes that remove() claimed and that nothing has discarded yet. */
         private final AtomicInteger claimed = new AtomicInteger();
         private final AtomicBoolean sweeping = new AtomicBoolean();
         /** Sweep position carried between calls; guarded by {@link #sweeping}. */
@@ -229,7 +262,18 @@ public final class FastRemovalQueue<E> implements Iterable<E> {
 
         private static final long serialVersionUID = 1L;
 
+        private static final int UNCOUNTED = 0;
+        private static final int COUNTED = 1;
+        private static final int SETTLED = 2;
+
         private volatile boolean referenced;
+
+        /**
+         * Tells if the node is in {@link State#claimed}: UNCOUNTED, then COUNTED when remove()
+         * claims it, then SETTLED when the first caller discards it. A node that poll() claims
+         * is never counted.
+         */
+        private final AtomicInteger backlog = new AtomicInteger(UNCOUNTED);
 
         Node(E value) {
             super(value);
