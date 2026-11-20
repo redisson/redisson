@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" aria-labelledby="fmMTitle fmMDesc" font-family="Inter, &apos;Helvetica Neue&apos;, Arial, sans-serif" height="4132" role="img" viewBox="0 0 560 4132" width="560">
 <title id="fmMTitle">Redisson Feature Map</title>
-<desc id="fmMDesc">Redisson Feature Map. A catalogue of Redisson features grouped into 6 sections: Data Structures, Concurrency &amp; Messaging, Distributed Services, AI, Integrations &amp; APIs, Deployment &amp; Operations. 21 features are marked PRO, meaning they are available only in Redisson PRO. 11 features are marked with a red lightning bolt, meaning they offer a PRO local cache for up to 45 times faster reads. 1 features are marked with a slate lightning bolt, meaning a local cache is available in the free version. 12 features are marked with a red 3-by-3 grid icon, meaning a single structure can be partitioned across cluster nodes (a PRO feature). The Redisson PRO engine also accelerates all features by up to 4 times through faster command request and response handling.</desc>
+<desc id="fmMDesc">Redisson Feature Map. A catalogue of Redisson features grouped into 6 sections: Data Structures, Concurrency &amp; Messaging, Distributed Services, AI, Integrations &amp; APIs, Deployment &amp; Operations. 21 features are marked PRO, meaning they are available only in Redisson PRO. 11 features are marked with a red lightning bolt, meaning they offer a PRO local cache for up to 45 times faster reads. 1 features are marked with a slate lightning bolt, meaning a local cache is available in the free version. 13 features are marked with a red 3-by-3 grid icon, meaning a single structure can be partitioned across cluster nodes (a PRO feature). The Redisson PRO engine also accelerates all features by up to 4 times through faster command request and response handling.</desc>
 <defs>
     <filter height="130%" id="sh" width="120%" x="-10%" y="-10%">
       <feDropShadow dx="0" dy="2" flood-color="#0F172A" flood-opacity="0.06" stdDeviation="4"/>
@@ -40,7 +40,7 @@
 <text aria-hidden="true" fill="#475569" font-size="15" font-weight="700" letter-spacing="0.04em" x="14" y="2423">INTEGRATIONS &amp; APIS</text>
 <rect aria-hidden="true" fill="#C2161D" height="18" rx="2" width="4" x="0" y="3530"/>
 <text aria-hidden="true" fill="#475569" font-size="15" font-weight="700" letter-spacing="0.04em" x="14" y="3545">DEPLOYMENT &amp; OPERATIONS</text>
-<g aria-label="Data Structures. Collections: Map (local cache in free version, PRO data partitioning), Multimap, Set (PRO data partitioning), SortedSet, ScoredSortedSet, LexSortedSet, List, Array, Time Series, Vector Set, JSON Store (PRO only, PRO local cache, PRO data partitioning), BitVector Store (PRO only)." role="group">
+<g aria-label="Data Structures. Collections: Map (local cache in free version, PRO data partitioning), Multimap, Set (PRO data partitioning), SortedSet, ScoredSortedSet (PRO data partitioning), LexSortedSet, List, Array, Time Series, Vector Set, JSON Store (PRO only, PRO local cache, PRO data partitioning), BitVector Store (PRO only)." role="group">
 <rect aria-hidden="true" fill="#F8FAFC" filter="url(#sh)" height="254" rx="16" stroke="#475569" stroke-opacity="0.25" stroke-width="1.5" width="560" x="0" y="226"/>
 <text aria-hidden="true" fill="#0F172A" font-size="20" font-weight="700" x="20" y="264">Collections</text>
 <rect aria-hidden="true" fill="#EEF2F6" height="38" rx="9" stroke="#94A3B8" stroke-width="1" width="103" x="20" y="278"/>
@@ -70,14 +70,23 @@
 <text aria-hidden="true" fill="#334155" font-size="15" font-weight="500" text-anchor="start" x="280" y="302.0">Set</text>
 <rect aria-hidden="true" fill="#EEF2F6" height="38" rx="9" stroke="#94A3B8" stroke-width="1" width="106" x="340" y="278"/>
 <text aria-hidden="true" fill="#334155" font-size="15" font-weight="500" text-anchor="middle" x="393.0" y="302.0">SortedSet</text>
-<rect aria-hidden="true" fill="#EEF2F6" height="38" rx="9" stroke="#94A3B8" stroke-width="1" width="161" x="20" y="326"/>
-<text aria-hidden="true" fill="#334155" font-size="15" font-weight="500" text-anchor="middle" x="100.5" y="350.0">ScoredSortedSet</text>
-<rect aria-hidden="true" fill="#EEF2F6" height="38" rx="9" stroke="#94A3B8" stroke-width="1" width="134" x="191" y="326"/>
-<text aria-hidden="true" fill="#334155" font-size="15" font-weight="500" text-anchor="middle" x="258.0" y="350.0">LexSortedSet</text>
-<rect aria-hidden="true" fill="#EEF2F6" height="38" rx="9" stroke="#94A3B8" stroke-width="1" width="64" x="335" y="326"/>
-<text aria-hidden="true" fill="#334155" font-size="15" font-weight="500" text-anchor="middle" x="367.0" y="350.0">List</text>
-<rect aria-hidden="true" fill="#EEF2F6" height="38" rx="9" stroke="#94A3B8" stroke-width="1" width="71" x="409" y="326"/>
-<text aria-hidden="true" fill="#334155" font-size="15" font-weight="500" text-anchor="middle" x="444.5" y="350.0">Array</text>
+<rect aria-hidden="true" fill="#EEF2F6" height="38" rx="9" stroke="#94A3B8" stroke-width="1" width="182" x="20" y="326"/>
+<rect aria-hidden="true" fill="#C2161D" height="4.97" rx="0.84" width="3.64" x="34.00" y="336.00"/>
+    <rect aria-hidden="true" fill="#C2161D" height="4.97" rx="0.84" width="3.64" x="39.18" y="336.00"/>
+    <rect aria-hidden="true" fill="#C2161D" height="4.97" rx="0.84" width="3.64" x="44.36" y="336.00"/>
+    <rect aria-hidden="true" fill="#C2161D" height="4.97" rx="0.84" width="3.64" x="34.00" y="342.51"/>
+    <rect aria-hidden="true" fill="#C2161D" height="4.97" rx="0.84" width="3.64" x="39.18" y="342.51"/>
+    <rect aria-hidden="true" fill="#C2161D" height="4.97" rx="0.84" width="3.64" x="44.36" y="342.51"/>
+    <rect aria-hidden="true" fill="#C2161D" height="4.97" rx="0.84" width="3.64" x="34.00" y="349.03"/>
+    <rect aria-hidden="true" fill="#C2161D" height="4.97" rx="0.84" width="3.64" x="39.18" y="349.03"/>
+    <rect aria-hidden="true" fill="#C2161D" height="4.97" rx="0.84" width="3.64" x="44.36" y="349.03"/>
+<text aria-hidden="true" fill="#334155" font-size="15" font-weight="500" text-anchor="start" x="55" y="350.0">ScoredSortedSet</text>
+<rect aria-hidden="true" fill="#EEF2F6" height="38" rx="9" stroke="#94A3B8" stroke-width="1" width="134" x="212" y="326"/>
+<text aria-hidden="true" fill="#334155" font-size="15" font-weight="500" text-anchor="middle" x="279.0" y="350.0">LexSortedSet</text>
+<rect aria-hidden="true" fill="#EEF2F6" height="38" rx="9" stroke="#94A3B8" stroke-width="1" width="64" x="356" y="326"/>
+<text aria-hidden="true" fill="#334155" font-size="15" font-weight="500" text-anchor="middle" x="388.0" y="350.0">List</text>
+<rect aria-hidden="true" fill="#EEF2F6" height="38" rx="9" stroke="#94A3B8" stroke-width="1" width="71" x="430" y="326"/>
+<text aria-hidden="true" fill="#334155" font-size="15" font-weight="500" text-anchor="middle" x="465.5" y="350.0">Array</text>
 <rect aria-hidden="true" fill="#EEF2F6" height="38" rx="9" stroke="#94A3B8" stroke-width="1" width="122" x="20" y="374"/>
 <text aria-hidden="true" fill="#334155" font-size="15" font-weight="500" text-anchor="middle" x="81.0" y="398.0">Time Series</text>
 <rect aria-hidden="true" fill="#EEF2F6" height="38" rx="9" stroke="#94A3B8" stroke-width="1" width="109" x="152" y="374"/>

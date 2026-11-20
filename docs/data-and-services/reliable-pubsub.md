@@ -214,11 +214,14 @@ flowchart LR
     * **Message Delay**: Schedule messages for future delivery with configurable delay periods
     * **Message Delivery Limit**: Maximum number of delivery attempts before moving to Dead Letter Topic
     * **Message Headers**: Attach key-value metadata to messages
+    * **Custom Message ID**: Assign the message ID at publish time. A message whose ID already exists in the topic isn't published
 
 * Acknowledgment & Delivery
 
     * **Message Acknowledgment**: Confirm successful processing with explicit acknowledgments
     * **Negative Acknowledgment**: Redeliver failed messages or move rejected messages to Dead Letter Topic
+    * **Visibility Update**: Change the visibility timeout of a message while it's being processed
+    * **Delivery Number Check**: Apply an acknowledgment, negative acknowledgment or visibility update only to the delivery a consumer received, not to a later redelivery of the same message
     * **Automatic Redelivery**: Unacknowledged messages are automatically redelivered after visibility timeout
     * **Dead Letter Topic (DLT)**: If a message reached delivery limit or rejected it's transferred to a Dead Letter Topic (DLT). It's a separate instance of Reliable PubSub topic which stores messages for later analysis or reprocessing.
 
@@ -398,6 +401,7 @@ Messages are published to the topic via `publish()` (single message) and `publis
 **Message-Level Settings**
 
 * `payload` - The data to include in the message. **Required setting.**
+* `id` - Custom message ID. If a message with the same ID already exists in the topic, the message isn't published. Default is a generated unique 128-bit hex value.
 * `deliveryLimit` - Maximum delivery attempts. Minimum value is `1`. Default uses topic's setting or `10`.
 * `timeToLive` - Message expiration timeout. `0` means no expiration. Default uses topic's setting.
 * `header` / `headers` - Attach key-value metadata to messages.
@@ -453,6 +457,37 @@ Code example of messages publishing:
 
     RFuture<List<Message<MyObject>>> batchFuture = topic.publishManyAsync(
         PublishArgs.messages(MessageArgs.payload(data1), MessageArgs.payload(data2)));
+    ```
+
+**Publishing with a Custom ID**
+
+A custom ID makes publishing idempotent: publishing a message again with the same ID doesn't create a second copy while the first one is stored. With retention mode `SUBSCRIPTION_REQUIRED_DELETE_PROCESSED`, the ID becomes free again once the message is deleted. In other retention modes, it stays taken.
+
+`publish()` returns `null`, and `publishMany()` leaves the message out of the returned list, if the message wasn't published for one of these reasons:
+
+* a message with the same ID already exists in the topic
+* the message is a duplicate by `deduplicationById` or `deduplicationByHash` within the specified interval
+* the topic is full (`maxSize` reached)
+
+=== "Sync"
+    ```java
+    RReliablePubSubTopic<MyObject> topic = redisson.getReliablePubSubTopic("mytopic");
+
+    Message<MyObject> msg = topic.publish(PublishArgs.messages(MessageArgs.payload(data)
+                                                       .id("order-456")));
+    if (msg == null) {
+        // not published: a message with ID "order-456" already exists,
+        // or the topic is full
+    }
+    ```
+
+=== "Async"
+    ```java
+    RReliablePubSubTopicAsync<MyObject> topic = redisson.getReliablePubSubTopic("mytopic");
+
+    RFuture<Message<MyObject>> msgFuture = topic.publishAsync(
+        PublishArgs.messages(MessageArgs.payload(data)
+            .id("order-456")));
     ```
 
 **Publishing to a Bounded Topic**
@@ -559,7 +594,7 @@ Subscription<MyObject> sub = topic.getSubscription("my-subscription");
 PushConsumer<MyObject> consumer = sub.createPushConsumer();
 
 // register listener with manual acknowledgment
-consumer.registerListener(MessageListenerArgs.listener((message, acknowledgment) -> {
+consumer.registerListener(MessageListenerArgs.<MyObject>listener((message, acknowledgment) -> {
     try {
         // process message
         MyObject data = message.getPayload();
@@ -582,7 +617,7 @@ consumer.registerListener(MessageListenerArgs.listener((message, acknowledgment)
 .visibility(Duration.ofMinutes(1)));
 
 // register listener with auto acknowledgment
-consumer.registerListener(MessageListenerArgs.listener((message, acknowledgment) -> {
+consumer.registerListener(MessageListenerArgs.<MyObject>listener((message, acknowledgment) -> {
     // process message - automatically acknowledged after method returns
     processMessage(message.getPayload());
 })
@@ -631,6 +666,10 @@ Message group ownership is reassigned to a new consumer when __both__ conditions
 
 Message acknowledgment is required for messages retrieved with `AcknowledgeMode.MANUAL`.
 
+Acknowledgment doesn't check the message owner: any consumer of the subscription can acknowledge or negatively acknowledge a message. To apply an operation only to the delivery a consumer received, pass its delivery number. See [Delivery Number Check](#delivery-number-check).
+
+`acknowledge()` and `negativeAcknowledge()` return the IDs of the messages the operation was applied to. An ID is missing from the list if the operation wasn't applied to that message, for example because the specified delivery number didn't match the current one.
+
 **Positive Acknowledgment**
 
 Confirms successful processing. The message is deleted from the subscription:
@@ -643,12 +682,12 @@ Message<MyObject> msg = consumer.pull(PullArgs.defaults()
 // process message...
 
 // acknowledge single message
-consumer.acknowledge(MessageAckArgs.ids(msg.getId()));
+List<String> acked = consumer.acknowledge(MessageAckArgs.ids(msg.getId()));
 
 // acknowledge multiple messages
 List<Message<MyObject>> msgs = consumer.pullMany(PullArgs.defaults().count(10));
 String[] ids = msgs.stream().map(Message::getId).toArray(String[]::new);
-consumer.acknowledge(MessageAckArgs.ids(ids));
+List<String> ackedIds = consumer.acknowledge(MessageAckArgs.ids(ids));
 ```
 
 **Negative Acknowledgment**
@@ -682,8 +721,103 @@ consumer.negativeAcknowledge(
         .delay(Duration.ofMinutes(1)));
 
 String[] rejectedIds = getRejectedIds();
-consumer.negativeAcknowledge(
+List<String> nackedIds = consumer.negativeAcknowledge(
     MessageNegativeAckArgs.rejected(rejectedIds));
+```
+
+**Delivery Number Check**
+
+Each delivery of a message has a delivery number, returned by `Message.getDeliveries()`. If processing takes longer than the visibility timeout, the message is redelivered to another consumer with a higher delivery number. A late acknowledgment from the first consumer would then remove the message that the second consumer is still processing.
+
+Pass the delivery number to apply an operation only while that delivery is the current one. Delivery number `0` disables the check for that message.
+
+* `MessageAckArgs.deliveriesById()` - for acknowledgment
+* `MessageNegativeAckArgs.failed()` and `MessageNegativeAckArgs.rejected()` with a map of delivery numbers by message ID - for negative acknowledgment
+* `VisibilityArgs.deliveries()` - for [visibility update](#updating-visibility)
+
+```java
+PullConsumer<MyObject> consumer = subscription.createPullConsumer();
+Message<MyObject> msg = consumer.pull();
+// process message...
+
+Map<String, Integer> delivery = Collections.singletonMap(msg.getId(), msg.getDeliveries());
+
+// acknowledge only if the message wasn't redelivered meanwhile
+List<String> acked = consumer.acknowledge(MessageAckArgs.deliveriesById(delivery));
+if (acked.isEmpty()) {
+    // not applied: the message was redelivered after its visibility timeout expired,
+    // or it no longer exists
+}
+
+// or mark as failed, with the same check
+List<String> failed = consumer.negativeAcknowledge(
+    MessageNegativeAckArgs.failed(delivery)
+        .delay(Duration.ofSeconds(30)));
+
+// or mark as rejected, with the same check
+List<String> rejected = consumer.negativeAcknowledge(
+    MessageNegativeAckArgs.rejected(delivery));
+
+// multiple messages
+List<Message<MyObject>> msgs = consumer.pullMany(PullArgs.defaults().count(10));
+Map<String, Integer> deliveries = msgs.stream()
+    .collect(Collectors.toMap(Message::getId, Message::getDeliveries));
+List<String> ackedIds = consumer.acknowledge(MessageAckArgs.deliveriesById(deliveries));
+```
+
+### Updating Visibility
+
+A consumer can change the visibility timeout of a message it holds with `updateVisibility()`. The message then stays invisible to other consumers for the specified duration, counted from the call. Use it when processing takes longer than expected: extend the timeout before it expires, and repeat as often as needed.
+
+Unlike acknowledgment, a visibility update checks the message owner. `updateVisibility()` returns `true` if the visibility was updated, and `false` if the message doesn't belong to the consumer or doesn't exist, for example because it was redelivered to another consumer. With `deliveries()`, the update also requires the specified delivery number to be the current one.
+
+The maximum visibility is `9007199254740992` milliseconds.
+
+=== "Sync"
+    ```java
+    PullConsumer<MyObject> consumer = subscription.createPullConsumer();
+
+    Message<MyObject> msg = consumer.pull(PullArgs.defaults()
+                                            .visibility(Duration.ofSeconds(30)));
+
+    // processing takes longer than expected: keep the message hidden for 2 more minutes
+    boolean updated = consumer.updateVisibility(VisibilityArgs.id(msg.getId())
+                                                    .visibility(Duration.ofMinutes(2)));
+    if (!updated) {
+        // the consumer no longer holds the message
+    }
+
+    // update only if the message wasn't redelivered meanwhile
+    boolean updatedForDelivery = consumer.updateVisibility(VisibilityArgs.id(msg.getId())
+                                                               .visibility(Duration.ofMinutes(2))
+                                                               .deliveries(msg.getDeliveries()));
+    ```
+
+=== "Async"
+    ```java
+    PullConsumer<MyObject> consumer = subscription.createPullConsumer();
+
+    RFuture<Boolean> updateFuture = consumer.updateVisibilityAsync(VisibilityArgs.id(msg.getId())
+                                                                       .visibility(Duration.ofMinutes(2))
+                                                                       .deliveries(msg.getDeliveries()));
+    ```
+
+A push listener updates visibility through its `Acknowledgment` object:
+
+```java
+PushConsumer<MyObject> consumer = subscription.createPushConsumer();
+
+consumer.registerListener(MessageListenerArgs.<MyObject>listener((message, acknowledgment) -> {
+    // keep the message hidden for 5 minutes before a long processing step
+    acknowledgment.updateVisibility(VisibilityArgs.id(message.getId())
+                                       .visibility(Duration.ofMinutes(5))
+                                       .deliveries(message.getDeliveries()));
+
+    // ... business logic ...
+
+    acknowledgment.acknowledge(MessageAckArgs.ids(message.getId()));
+})
+.acknowledgeMode(AcknowledgeMode.MANUAL));
 ```
 
 ### Seek and Replay
@@ -1043,110 +1177,90 @@ Code examples of synchronization parameters usage:
     // Negative acknowledge
     consumer.negativeAcknowledge(MessageNegativeAckArgs.rejected(msg.getId())
                                                        .syncMode(SyncMode.ACK)
-                                                       .syncTimeout(Duration.ofSeconds(15)));    
+                                                       .syncTimeout(Duration.ofSeconds(15)));
+
+    // Visibility update
+    consumer.updateVisibility(VisibilityArgs.id(msg.getId())
+                                            .visibility(Duration.ofMinutes(2))
+                                            .syncMode(SyncMode.ACK)
+                                            .syncTimeout(Duration.ofSeconds(15)));
     ```
 === "Async"
     ```java
-    RReliablePubSubTopicAsync<MyObject> topic = redisson.getReliablePubSubTopic("test");
+    RReliablePubSubTopic<MyObject> topic = redisson.getReliablePubSubTopic("test");
 
-    // Publishing
-    RFuture<Message<MyObject>> publishFuture = topic.publishAsync(
-            PublishArgs.messages(MessageArgs.payload(data))
-                       .syncMode(SyncMode.ACK_AOF)
-                       .syncTimeout(Duration.ofSeconds(15))
-                       .syncFailureMode(SyncFailureMode.LOG_WARNING));
+    RFuture<Message<MyObject>> prf = topic.publishAsync(PublishArgs.messages(MessageArgs.payload(data))
+                                                        .syncMode(SyncMode.ACK_AOF)
+                                                        .syncTimeout(Duration.ofSeconds(15))
+                                                        .syncFailureMode(SyncFailureMode.LOG_WARNING));
 
-    // Get subscription and pull consumer for pull/acknowledge operations
-    Subscription<MyObject> sub = topic.getSubscriptionAsync("my-subscription").toCompletableFuture().join();
-    PullConsumer<MyObject> consumer = sub.createPullConsumer();
+    PullConsumer<MyObject> consumer = topic.getSubscription("my-subscription").createPullConsumer();
 
-    // Pulling
-    RFuture<Message<MyObject>> pullFuture = consumer.pullAsync(
-            PullArgs.defaults()
-                    .syncMode(SyncMode.ACK)
-                    .syncTimeout(Duration.ofSeconds(10))
-                    .syncFailureMode(SyncFailureMode.THROW_EXCEPTION));
+    RFuture<Message<MyObject>> pf = consumer.pullAsync(PullArgs.defaults()
+                                                        .syncMode(SyncMode.ACK)
+                                                        .syncTimeout(Duration.ofSeconds(10))
+                                                        .syncFailureMode(SyncFailureMode.THROW_EXCEPTION));
 
-    // Acknowledge
-    RFuture<Void> ackFuture = consumer.acknowledgeAsync(
-            MessageAckArgs.ids(msg.getId())
-                          .syncMode(SyncMode.AUTO)
-                          .syncTimeout(Duration.ofSeconds(20)));
+    RFuture<List<String>> ack = consumer.acknowledgeAsync(MessageAckArgs.ids(msg.getId())
+                                                        .syncMode(SyncMode.AUTO)
+                                                        .syncTimeout(Duration.ofSeconds(20)));
 
-    // Negative acknowledge
-    RFuture<Void> nackFuture = consumer.negativeAcknowledgeAsync(
-            MessageNegativeAckArgs.rejected(msg.getId())
-                                  .syncMode(SyncMode.ACK)
-                                  .syncTimeout(Duration.ofSeconds(15)));
+    RFuture<List<String>> nack = consumer.negativeAcknowledgeAsync(MessageNegativeAckArgs.rejected(msg.getId())
+                                                        .syncMode(SyncMode.ACK)
+                                                        .syncTimeout(Duration.ofSeconds(15)));
+
+    RFuture<Boolean> vis = consumer.updateVisibilityAsync(VisibilityArgs.id(msg.getId())
+                                                        .visibility(Duration.ofMinutes(2))
+                                                        .syncMode(SyncMode.ACK)
+                                                        .syncTimeout(Duration.ofSeconds(15)));
     ```
 === "Reactive"
     ```java
     RedissonReactiveClient redisson = redissonClient.reactive();
-    RReliablePubSubTopicReactive<MyObject> topic = redisson.getReliablePubSubTopic("test");
+    RReliableQueueReactive<MyObject> rq = redisson.getReliableQueue("test");
+    ```
 
-    // Publishing
-    Mono<Message<MyObject>> publishResult = topic.publish(
-            PublishArgs.messages(MessageArgs.payload(data))
-                       .syncMode(SyncMode.ACK_AOF)
-                       .syncTimeout(Duration.ofSeconds(15))
-                       .syncFailureMode(SyncFailureMode.LOG_WARNING));
-
-    // Get subscription and pull consumer for pull/acknowledge operations
-    SubscriptionReactive<MyObject> sub = topic.getSubscription("my-subscription").block();
-    PullConsumerReactive<MyObject> consumer = sub.createPullConsumer().block();
-
-    // Pulling
-    Mono<Message<MyObject>> pullResult = consumer.pull(
-            PullArgs.defaults()
-                    .syncMode(SyncMode.ACK)
-                    .syncTimeout(Duration.ofSeconds(10))
-                    .syncFailureMode(SyncFailureMode.THROW_EXCEPTION));
-
-    // Acknowledge
-    Mono<Void> ackResult = consumer.acknowledge(
-            MessageAckArgs.ids(msg.getId())
-                          .syncMode(SyncMode.AUTO)
-                          .syncTimeout(Duration.ofSeconds(20)));
-
-    // Negative acknowledge
-    Mono<Void> nackResult = consumer.negativeAcknowledge(
-            MessageNegativeAckArgs.rejected(msg.getId())
-                                  .syncMode(SyncMode.ACK)
-                                  .syncTimeout(Duration.ofSeconds(15)));
+    Mono<Message<MyObject>> arf = rq.add(QueueAddArgs.messages(MessageArgs.payload(data))
+                                                .syncMode(SyncMode.ACK_AOF)
+                                                .syncTimeout(Duration.ofSeconds(15))
+                                                .syncFailureMode(SyncFailureMode.LOG_WARNING));
+    
+    Mono<Message<MyObject>> prf = rq.poll(QueuePollArgs.defaults()
+                                            .syncMode(SyncMode.ACK)
+                                            .syncTimeout(Duration.ofSeconds(10))
+                                            .syncFailureMode(SyncFailureMode.THROW_EXCEPTION));
+    
+    Mono<Void> ack = rq.acknowledge(QueueAckArgs.ids(msg.getId())
+                                        .syncMode(SyncMode.AUTO)
+                                        .syncTimeout(Duration.ofSeconds(20)));
+    
+    Mono<Void> nack =     rq.negativeAcknowledge(QueueNegativeAckArgs.rejected(msg.getId())
+                                                        .syncMode(SyncMode.ACK)
+                                                        .syncTimeout(Duration.ofSeconds(15)));
+    
     ```
 === "RxJava3"
     ```java
     RedissonRxClient redisson = redissonClient.rxJava();
-    RReliablePubSubTopicRx<MyObject> topic = redisson.getReliablePubSubTopic("test");
+    RReliableQueueRx<MyObject> rq = redisson.getReliableQueue("test");
 
-    // Publishing
-    Maybe<Message<MyObject>> publishResult = topic.publish(
-            PublishArgs.messages(MessageArgs.payload(data))
-                       .syncMode(SyncMode.ACK_AOF)
-                       .syncTimeout(Duration.ofSeconds(15))
-                       .syncFailureMode(SyncFailureMode.LOG_WARNING));
-
-    // Get subscription and pull consumer for pull/acknowledge operations
-    SubscriptionRx<MyObject> sub = topic.getSubscription("my-subscription").blockingGet();
-    PullConsumerRx<MyObject> consumer = sub.createPullConsumer().blockingGet();
-
-    // Pulling
-    Maybe<Message<MyObject>> pullResult = consumer.pull(
-            PullArgs.defaults()
-                    .syncMode(SyncMode.ACK)
-                    .syncTimeout(Duration.ofSeconds(10))
-                    .syncFailureMode(SyncFailureMode.THROW_EXCEPTION));
-
-    // Acknowledge
-    Completable ackResult = consumer.acknowledge(
-            MessageAckArgs.ids(msg.getId())
-                          .syncMode(SyncMode.AUTO)
-                          .syncTimeout(Duration.ofSeconds(20)));
-
-    // Negative acknowledge
-    Completable nackResult = consumer.negativeAcknowledge(
-            MessageNegativeAckArgs.rejected(msg.getId())
-                                  .syncMode(SyncMode.ACK)
-                                  .syncTimeout(Duration.ofSeconds(15)));
+    Maybe<Message<MyObject>> arf =     rq.add(QueueAddArgs.messages(MessageArgs.payload(data))
+                                                .syncMode(SyncMode.ACK_AOF)
+                                                .syncTimeout(Duration.ofSeconds(15))
+                                                .syncFailureMode(SyncFailureMode.LOG_WARNING));
+    
+    Maybe<Message<MyObject>> prf = rq.poll(QueuePollArgs.defaults()
+                                            .syncMode(SyncMode.ACK)
+                                            .syncTimeout(Duration.ofSeconds(10))
+                                            .syncFailureMode(SyncFailureMode.THROW_EXCEPTION));
+    
+    Completable ack = rq.acknowledge(QueueAckArgs.ids(msg.getId())
+                                        .syncMode(SyncMode.AUTO)
+                                        .syncTimeout(Duration.ofSeconds(20)));
+    
+    Completable nack =     rq.negativeAcknowledge(QueueNegativeAckArgs.rejected(msg.getId())
+                                                    .syncMode(SyncMode.ACK)
+                                                    .syncTimeout(Duration.ofSeconds(15)));
+    
     ```
 

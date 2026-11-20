@@ -97,11 +97,122 @@ cf.setSubscriptionConfig("mySub", mySubConfig);
 cf.setSyncConfig(myDefaultSyncConfig);
 cf.setQueueSyncConfig("orders", strictSync);
 cf.setTopicSyncConfig("events", strictSync);
+
+// Delay before a failed message is redelivered (rollback, recover, listener exception)
+cf.setRedeliveryDelay(Duration.ofSeconds(5));
+
+// Visibility renewal for topic consumers (enabled by default)
+cf.setVisibilityRenewal(true);
 ```
 
 Per-destination configuration takes precedence over the default. If neither is set for a given destination, the factory returns `null` and Redisson uses its own built-in defaults.
 
-The available properties for each configuration type are listed in the [Destination Configuration Properties](#destination-configuration-properties) section.
+The available properties for each configuration type are listed in the [Destination Configuration Properties](#destination-configuration-properties) section. Synchronization semantics specific to JMS — async sends, transacted sessions, `CLIENT_ACKNOWLEDGE` — are covered in [Synchronization Configuration](#synchronization-configuration). Transactions, visibility renewal and the redelivery delay are covered in [Transactions and Redelivery](#transactions-and-redelivery).
+
+
+#### Synchronization Configuration
+
+Synchronization (replication) controls whether JMS write operations block until data has been replicated to Valkey or Redis secondary nodes. It applies uniformly to every JMS operation that causes a state change: sends, acknowledgements, negative acknowledgements, polls (which remove or mark-invisible), topic pulls, and topic visibility renewals.
+
+Three parameters:
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `syncMode` | `SyncMode` | `AUTO` | `AUTO` — prefer AOF fsync on primary + replicas if AOF persistence is enabled, otherwise fall back to replica-ack. `ACK` — block until replicas acknowledge the write in memory. `ACK_AOF` — block until AOF has fsynced on primary and replicas (Redis 7.2+ / any Valkey). |
+| `syncFailureMode` | `SyncFailureMode` | `LOG_WARNING` | `LOG_WARNING` — if the sync target is not met within `syncTimeout`, log and continue; the operation still succeeded on the primary. `THROW_EXCEPTION` — raise the failure to the caller as a `JMSException`. |
+| `syncTimeout` | `Duration` | `1 second` | How long to wait for replica acknowledgement before invoking `syncFailureMode`. |
+
+Resolution is **replace, not merge**: per-destination config fully replaces the factory default rather than layering on top. If a factory sets `syncMode(ACK)` as the default and a queue sets `syncTimeout(500ms)` as its override, the queue operations use `(AUTO, LOG_WARNING, 500ms)` — all unset fields on the per-destination config fall back to `JmsSyncConfig.defaults()`, not to the factory default. To keep one field and change another, construct the per-destination config explicitly with every value you want.
+
+```java
+JmsSyncConfig strict = JmsSyncConfig.defaults()
+    .syncMode(SyncMode.ACK)
+    .syncFailureMode(SyncFailureMode.THROW_EXCEPTION)
+    .syncTimeout(Duration.ofMillis(500));
+
+cf.setSyncConfig(strict);                 // global default
+cf.setQueueSyncConfig("audit", strict);   // per-queue override
+cf.setTopicSyncConfig("events", strict);  // per-topic override
+```
+
+##### JMS-specific surfacing
+
+When `syncFailureMode` is `THROW_EXCEPTION`, replication failures reach the application differently depending on the operation:
+
+- **Synchronous `send`** → `JMSException` thrown from `producer.send(...)` / `context.createProducer().send(...)`.
+- **Asynchronous `send`** (JMS 2.0+ `setAsync` with a `CompletionListener`) → `CompletionListener.onException(message, exception)` fires. Applications that do not register a `CompletionListener` will not observe the failure. Register one if you use strict sync with async send.
+- **`Session.commit()`** (transacted session) → a replication failure on a send rolls the transaction back and throws `TransactionRolledBackException`; the failing send itself may already be published on the primary. A replication failure on an acknowledgement throws `JMSException`, and the messages whose acknowledgement failed stay in the transaction. See [Transactions and Redelivery](#transactions-and-redelivery).
+- **`Message.acknowledge()`** under `CLIENT_ACKNOWLEDGE` / `DUPS_OK_ACKNOWLEDGE` → `JMSException` thrown. A single `acknowledge()` call acks all previously delivered messages on the session; under `THROW_EXCEPTION` a mid-batch replication failure aborts the remaining acks.
+
+The pragmatic default for ack paths in batching ack modes is `LOG_WARNING`. Use `THROW_EXCEPTION` on ack only when the application can handle partial completion.
+
+##### Topic subscriptions
+
+Sync config is resolved by **topic name**. Acknowledgements and negative acknowledgements from any subscription on a topic inherit the topic's sync config. There is no per-subscription sync config — if an application needs one durable subscriber to use strict sync while others use defaults, split it onto a separate topic.
+
+##### Non-durable / temporary destinations
+
+Temporary queues and topics generate UUID-based physical names that are unlikely to match any configured `setQueueSyncConfig` / `setTopicSyncConfig` entry. They fall through to the factory default (if any) and then to Redisson defaults.
+
+
+#### Transactions and Redelivery
+
+In a transacted session, sends are held in the client until `commit()`, and consumed messages stay unacknowledged until then. A send still sets `JMSMessageID` when `send()` returns (see [Message IDs](#message-ids)), so it can be used, for example as a correlation ID, before the message is published.
+
+Closing a consumer does not take its messages out of the transaction: commit acknowledges them, and rollback, or closing the session, returns them. Until then a topic consumer keeps renewing their visibility, and its subscription stays in place. Spring relies on this: it closes consumers before it commits, both under a JTA transaction manager and in `JmsTemplate.receive()` called from a listener.
+
+`commit()` runs three steps in this order:
+
+1. **Check.** If the transaction has sends, each topic consumer confirms that it still holds every message it consumed and extends their visibility for the rest of the commit. This needs [visibility renewal](#visibility-renewal), which is enabled by default.
+2. **Send.** The held sends are published in order, stopping at the first failure.
+3. **Acknowledge.** The consumed messages are acknowledged.
+
+What a failure does:
+
+| Failure during `commit()` | Effect | `commit()` throws |
+|---------------------------|--------|-------------------|
+| A consumed topic message is no longer held: its visibility expired and it may have been redelivered. Checked only when the transaction has sends | The transaction is rolled back before anything is published | `TransactionRolledBackException` |
+| A send fails | Sends before it stay published, and so does the failing send if only its replication failed. The remaining sends are dropped, and the consumed messages are redelivered, after the [redelivery delay](#redelivery-delay) if one is set | `TransactionRolledBackException` |
+| An acknowledgement fails | The sends are published. Messages whose acknowledgement failed stay in the transaction | `JMSException`. Call `commit()` again to finish, or `rollback()` to redeliver them |
+| A topic acknowledgement is not applied, because the message was delivered again after its visibility expired | A warning is logged | Nothing |
+
+A commit is not atomic as it is in a JMS broker. If it fails after some sends are published, or the process stops during the commit, those sends stay published and the consumed messages are redelivered, so the processing that produced the sends runs again. Delivery is at-least-once: consumers of messages sent inside transactions should tolerate duplicates.
+
+##### Visibility renewal
+
+A consumed message is hidden from other consumers only for its visibility timeout (30 seconds unless configured). If processing takes longer, the message is delivered to another consumer while the first one still works on it.
+
+Topic consumers prevent this by renewing visibility. A topic consumer pulls each message with a known visibility, the lease, and renews it each time a third of the lease has passed since the last extension, for as long as it holds the message: while `onMessage` runs, until `Message.acknowledge()` in `CLIENT_ACKNOWLEDGE` mode, and until commit or rollback in a transacted session. The timeout then takes effect only when the consumer stops renewing, for example after a crash.
+
+Renewal starts when the message is handed to the application: when `receive()` returns it, or when its `onMessage` call starts. If several consumers with listeners share one session, a message pulled for one of them can wait for the session's single listener thread while another consumer's `onMessage` runs, and it is not renewed during that wait.
+
+The lease is the visibility set on the factory for the subscription (`setSubscriptionConfig`), else for the topic (`setTopicConfig`), else 30 seconds. Pulls set it explicitly, so it replaces any visibility configured on the subscription or topic outside the factory.
+
+Renewal is enabled by default. To turn it off, together with the check at commit:
+
+```java
+cf.setVisibilityRenewal(false);
+```
+
+The trade-off is the same as with a JMS broker: a message held by a consumer that is alive but stuck is not redelivered.
+
+Topic acknowledgements, rollbacks, renewals and the commit check carry the delivery number of the message they refer to. If the message has been delivered again since, the server ignores them. A consumer that lost a message therefore cannot acknowledge it, or return it, while another consumer processes it.
+
+Queue consumers do not renew, because `RReliableQueue` cannot extend the visibility of a polled message. Queue acknowledgements also carry no delivery number: if a queue message's visibility expires and another consumer receives it, a late acknowledgement from the first consumer removes it. Set the queue's visibility above the longest processing time, including the time a transaction stays open:
+
+```java
+cf.setQueueConfig("orders", QueueConfig.defaults().visibility(Duration.ofMinutes(5)));
+```
+
+##### Redelivery delay
+
+By default, a message that fails is redelivered immediately, so a message that always fails is retried in a tight loop until it reaches its delivery limit. A redelivery delay holds it back first:
+
+```java
+cf.setRedeliveryDelay(Duration.ofSeconds(5));
+```
+
+The delay applies after `Session.rollback()`, closing a transacted session (which rolls its transaction back), `Session.recover()`, a commit that is rolled back, and a `MessageListener` that throws in `AUTO_ACKNOWLEDGE` or `DUPS_OK_ACKNOWLEDGE` mode. Messages returned because a consumer or a non-transacted session closes are not delayed, so other consumers can take them at once. Configure a `deliveryLimit` and a dead letter queue or topic as well, so a message that always fails ends up there.
 
 
 #### Sending and Receiving Messages
@@ -119,6 +230,16 @@ try (JMSContext ctx = cf.createContext()) {
                      .receiveBody(String.class, 5000);
 }
 ```
+
+##### Message IDs
+
+The provider chooses each message's ID before sending it: a random 128-bit value written as 32 hex digits, the same form Redisson generates. `JMSMessageID` is therefore set when `send()` returns, also in a transacted session, where the message is published only at commit, and for an asynchronous send, before the `CompletionListener` is called. The consumer receives the same `JMSMessageID`, and a message selector on `JMSMessageID` matches it.
+
+Redisson resends a command whose reply does not arrive in time. The resend carries the same ID, so it is not added a second time while the first copy is still in the queue or topic.
+
+A send to a queue or topic that is full (its `maxSize` is reached) throws `ResourceAllocationException`, or `ResourceAllocationRuntimeException` from a `JMSContext`. An asynchronous send reports it to the `CompletionListener`, and in a transacted session `commit()` rolls back. Redisson reports a full destination and an ID that is already taken the same way, so the provider tells them apart by checking whether a message with that ID exists. One case is misreported: a resend whose first attempt went through and whose message was consumed and removed before the check. The send then fails although the message was delivered, and retrying it delivers the message twice.
+
+With `setDisableMessageID(true)`, `JMSMessageID` stays `null`, but the message is still sent with an ID.
 
 #### Pub/Sub with Durable Subscriptions
 
@@ -140,7 +261,7 @@ Durable subscriptions persist across client restarts. Non-durable subscriptions 
 
 When you create a `RedissonConnectionFactory` with a Redis URL (the convenience constructor), the factory owns the Redisson client and you are responsible for shutting it down when done. When you supply your own `RedissonClient`, you manage its lifecycle independently.
 
-The factory maintains a ref-counted internal scheduler for async delivery retry. The scheduler starts when the first connection opens and shuts down when the last connection closes. No explicit cleanup of the factory itself is required.
+The factory maintains a ref-counted internal scheduler for async delivery retry and visibility renewal. The scheduler starts when the first connection opens and shuts down when the last connection closes. No explicit cleanup of the factory itself is required.
 
 
 ### Spring JMS Configuration
@@ -245,6 +366,34 @@ spring.jms.listener.concurrency=3
 spring.jms.listener.max-concurrency=10
 ```
 
+#### Transactions
+
+Spring Boot's auto-configured listener container uses transacted sessions, so each `@JmsListener` invocation runs in a local transaction. Messages the listener sends through `JmsTemplate`, or returns with `@SendTo`, are published at commit, followed by the acknowledgement of the received message. A listener that throws rolls the transaction back, and the received message is redelivered after the [redelivery delay](#redelivery-delay). What happens when a commit fails is described in [Transactions and Redelivery](#transactions-and-redelivery).
+
+A listener on a queue, Spring's default destination type, is not covered by [visibility renewal](#visibility-renewal). Set the queue's visibility above the longest listener run, or the message is delivered to a second listener while the first still works on it.
+
+When a JTA transaction manager is configured, Spring Boot uses it instead of transacted sessions. `RedissonConnectionFactory` does not support XA, so the listener's session then acknowledges each message on receipt, before the listener runs, and a message whose listener throws is lost. Keep a local JMS transaction in that case. With Spring Boot 3.2 or later, set a property:
+
+```properties
+spring.jms.listener.session.transacted=true
+```
+
+Or configure the container factory:
+
+```java
+@Bean
+public DefaultJmsListenerContainerFactory jmsListenerContainerFactory(
+        ConnectionFactory connectionFactory,
+        DefaultJmsListenerContainerFactoryConfigurer configurer) {
+    DefaultJmsListenerContainerFactory factory = new DefaultJmsListenerContainerFactory();
+    configurer.configure(factory, connectionFactory);
+    factory.setSessionTransacted(true);
+    return factory;
+}
+```
+
+Spring then runs a local JMS transaction synchronized with the JTA transaction and commits it after the JTA commit. It creates a consumer for each message and closes it before that commit; the message stays in the transaction (see [Transactions and Redelivery](#transactions-and-redelivery)). If the listener throws, Spring rolls the JTA transaction back and closes the session, which rolls back the JMS transaction, and the message is redelivered after the [redelivery delay](#redelivery-delay). The two commits are not atomic: if the process stops between them, the message is redelivered and processed again.
+
 #### JNDI Lookup in Application Servers
 
 When running inside an application server that exposes `RedissonConnectionFactory` through JNDI, Spring Boot can look it up directly. Configure the JNDI name in `application.properties`:
@@ -328,6 +477,8 @@ The `<n>` segment is the JNDI lookup name for the factory. Any key matching `con
 | `connectionfactory.<n>.clientId` | JMS client identifier assigned to all connections from this factory. Required for durable subscriptions. Supports variable expansion. |
 | `connectionfactory.<n>.<redissonProperty>` | Any Redisson configuration property in camelCase, matching YAML field names exactly. Passed through Redisson's `PropertiesConvertor` and parsed as YAML. |
 | `connectionfactory.<n>.sync.<property>` | Factory-wide sync configuration. See [Sync Configuration Properties](#sync-configuration-properties). |
+| `connectionfactory.<n>.redeliveryDelay` | Delay before a failed message is redelivered, in milliseconds or as an ISO-8601 duration (`PT5S`). See [Redelivery delay](#redelivery-delay). Supports variable expansion. |
+| `connectionfactory.<n>.visibilityRenewal` | `false` turns off visibility renewal for topic consumers and the check at commit. Default `true`. See [Visibility renewal](#visibility-renewal). |
 
 Redisson properties use camelCase names that correspond directly to the field names in Redisson's YAML configuration format. Nested objects are expressed with dot notation.
 
@@ -610,7 +761,7 @@ Sync configuration controls replication behaviour for JMS operations. It is appl
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `syncMode` | `SyncMode` | `AUTO` | Replication mode: `AUTO`, `ACK`, or `ACK_AOF`. |
+| `syncMode` | `SyncMode` | `AUTO` | Replication mode: `AUTO`, `ACK`, or `ACK_AOF`. See [Synchronization Configuration](#synchronization-configuration) for semantics. |
 | `syncFailureMode` | `SyncFailureMode` | `LOG_WARNING` | Behaviour when the sync target is not met within `syncTimeout`: `LOG_WARNING` or `THROW_EXCEPTION`. |
 | `syncTimeout` | `Duration` | `1s` | How long to wait for replica acknowledgement before invoking `syncFailureMode`. |
 
@@ -668,6 +819,9 @@ connectionfactory.primary.clientId=app-primary
 # Secondary factory — YAML file
 connectionfactory.secondary.configFile=${REDISSON_CONFIG_PATH}
 connectionfactory.secondary.clientId=app-secondary
+
+# Redelivery delay for failed messages
+connectionfactory.primary.redeliveryDelay=PT5S
 
 # Factory-wide default sync config
 connectionfactory.primary.sync.syncMode=AUTO
