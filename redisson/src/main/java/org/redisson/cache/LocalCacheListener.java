@@ -412,7 +412,7 @@ public abstract class LocalCacheListener {
             });
             CacheValue cacheValue = cache.remove(key);
             if (options.isUseObjectAsCacheKey() && cacheValue != null) {
-                cacheKeyMap.remove(cacheValue.getValue());
+                cacheKeyMap.remove(cacheValue.getKey());
             }
         }
 
@@ -509,7 +509,7 @@ public abstract class LocalCacheListener {
                             CacheKey key = new CacheKey(keyHash);
                             CacheValue cacheValue = cache.remove(key);
                             if (options.isUseObjectAsCacheKey() && cacheValue != null) {
-                                cacheKeyMap.remove(cacheValue.getValue());
+                                cacheKeyMap.remove(cacheValue.getKey());
                             }
                         }
                     });
