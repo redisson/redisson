@@ -47,8 +47,11 @@ public class TasksService extends BaseRemoteService {
     protected String schedulerQueueName;
     protected String schedulerChannelName;
     protected String tasksRetryIntervalName;
+    protected String tasksRetryAttemptsName;
+    protected String tasksRetryCounterName;
     protected String tasksExpirationTimeName;
     protected long tasksRetryInterval;
+    protected int tasksRetryAttempts;
     
     public TasksService(Codec codec, String name, CommandAsyncExecutor commandExecutor, String executorId) {
         super(codec, name, commandExecutor, executorId);
@@ -68,6 +71,18 @@ public class TasksService extends BaseRemoteService {
     
     public void setTasksRetryInterval(long tasksRetryInterval) {
         this.tasksRetryInterval = tasksRetryInterval;
+    }
+
+    public void setTasksRetryAttemptsName(String tasksRetryAttemptsName) {
+        this.tasksRetryAttemptsName = tasksRetryAttemptsName;
+    }
+
+    public void setTasksRetryCounterName(String tasksRetryCounterName) {
+        this.tasksRetryCounterName = tasksRetryCounterName;
+    }
+
+    public void setTasksRetryAttempts(int tasksRetryAttempts) {
+        this.tasksRetryAttempts = tasksRetryAttempts;
     }
     
     public void setTerminationTopicName(String terminationTopicName) {
@@ -139,6 +154,10 @@ public class TasksService extends BaseRemoteService {
                                 + "redis.call('zadd', KEYS[8], ARGV[5], ARGV[2]);"
                             + "end; "
 
+                            + "if tonumber(ARGV[6]) > 0 then "
+                                + "redis.call('set', KEYS[10], ARGV[6]);"
+                            + "end; "
+
                             + "if tonumber(ARGV[1]) > 0 then "
                                 + "local scheduledName = 'ff:' .. ARGV[2];"
                                 + "redis.call('set', KEYS[7], ARGV[4]);"
@@ -154,8 +173,9 @@ public class TasksService extends BaseRemoteService {
                         + "end;"
                         + "return 0;",
                         Arrays.asList(tasksCounterName, statusName, schedulerQueueName, schedulerChannelName,
-                                            tasksName, requestQueueName, tasksRetryIntervalName, tasksExpirationTimeName, taskName),
-                        retryStartTime, request.getId(), encode(request), tasksRetryInterval, expireTime);
+                                            tasksName, requestQueueName, tasksRetryIntervalName, tasksExpirationTimeName, taskName,
+                                            tasksRetryAttemptsName),
+                        retryStartTime, request.getId(), encode(request), tasksRetryInterval, expireTime, tasksRetryAttempts);
         return f.toCompletableFuture();
     }
     
@@ -170,6 +190,7 @@ public class TasksService extends BaseRemoteService {
               + "redis.call('zrem', KEYS[8], ARGV[1]); "
               + "local task = redis.call('hget', KEYS[6], ARGV[1]); "
               + "redis.call('hdel', KEYS[6], ARGV[1]); "
+              + "redis.call('hdel', KEYS[9], ARGV[1]); "
 
               + "local removed = redis.call('lrem', KEYS[1], 1, ARGV[1]); "
 
@@ -190,7 +211,7 @@ public class TasksService extends BaseRemoteService {
               + "end;"
               + "return 0;",
           Arrays.asList(requestQueueName, schedulerQueueName, tasksCounterName, statusName, terminationTopicName,
-                                tasksName, tasksRetryIntervalName, tasksExpirationTimeName),
+                                tasksName, tasksRetryIntervalName, tasksExpirationTimeName, tasksRetryCounterName),
           taskId, RedissonExecutorService.SHUTDOWN_STATE, RedissonExecutorService.TERMINATED_STATE);
         return f.toCompletableFuture();
     }

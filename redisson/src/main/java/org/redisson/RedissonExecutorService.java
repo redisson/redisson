@@ -69,6 +69,8 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     private final String schedulerQueueName;
     private final String schedulerChannelName;
     private final String tasksRetryIntervalName;
+    private final String tasksRetryAttemptsName;
+    private final String tasksRetryCounterName;
     private final String tasksExpirationTimeName;
     
     private final String workersChannelName;
@@ -131,6 +133,8 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         terminationTopic = RedissonTopic.createRaw(LongCodec.INSTANCE, commandExecutor, objectName + ":termination-topic");
 
         tasksRetryIntervalName = objectName + ":retry-interval";
+        tasksRetryAttemptsName = objectName + ":retry-attempts";
+        tasksRetryCounterName = objectName + ":retry-counter";
         tasksExpirationTimeName = objectName + ":expiration";
         schedulerChannelName = objectName + ":scheduler-channel";
         schedulerQueueName = objectName + ":scheduler";
@@ -146,6 +150,8 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         remoteService.setTasksCounterName(tasksCounterName);
         remoteService.setTasksExpirationTimeName(tasksExpirationTimeName);
         remoteService.setTasksRetryIntervalName(tasksRetryIntervalName);
+        remoteService.setTasksRetryAttemptsName(tasksRetryAttemptsName);
+        remoteService.setTasksRetryCounterName(tasksRetryCounterName);
         remoteService.setTerminationTopicName(terminationTopic.getChannelNames().get(0));
 
         executorRemoteService = new TasksService(codec, name, commandExecutor, executorId);
@@ -157,8 +163,11 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         executorRemoteService.setSchedulerChannelName(schedulerChannelName);
         executorRemoteService.setSchedulerQueueName(schedulerQueueName);
         executorRemoteService.setTasksRetryIntervalName(tasksRetryIntervalName);
+        executorRemoteService.setTasksRetryAttemptsName(tasksRetryAttemptsName);
+        executorRemoteService.setTasksRetryCounterName(tasksRetryCounterName);
         executorRemoteService.setTasksExpirationTimeName(tasksExpirationTimeName);
         executorRemoteService.setTasksRetryInterval(options.getTaskRetryInterval());
+        executorRemoteService.setTasksRetryAttempts(options.getTaskRetryAttempts());
         asyncService = executorRemoteService.get(RemoteExecutorServiceAsync.class, RESULT_OPTIONS);
         asyncServiceWithoutResult = executorRemoteService.get(RemoteExecutorServiceAsync.class, RemoteInvocationOptions.defaults().noAck().noResult());
         
@@ -171,8 +180,11 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         scheduledRemoteService.setTasksName(tasksName);
         scheduledRemoteService.setTasksLatchName(tasksLatchName);
         scheduledRemoteService.setTasksRetryIntervalName(tasksRetryIntervalName);
+        scheduledRemoteService.setTasksRetryAttemptsName(tasksRetryAttemptsName);
+        scheduledRemoteService.setTasksRetryCounterName(tasksRetryCounterName);
         scheduledRemoteService.setTasksExpirationTimeName(tasksExpirationTimeName);
         scheduledRemoteService.setTasksRetryInterval(options.getTaskRetryInterval());
+        scheduledRemoteService.setTasksRetryAttempts(options.getTaskRetryAttempts());
         asyncScheduledService = scheduledRemoteService.get(RemoteExecutorServiceAsync.class, RESULT_OPTIONS);
         asyncScheduledServiceAtFixed = scheduledRemoteService.get(RemoteExecutorServiceAsync.class, RemoteInvocationOptions.defaults().noAck().noResult());
 
@@ -275,6 +287,11 @@ public class RedissonExecutorService implements RScheduledExecutorService {
                                     
                                 + "if redis.call('linsert', KEYS[1], 'before', name, name) < 1 then "
                                     + "redis.call('rpush', KEYS[1], name); "
+                                    // task has been re-queued by its retry entry,
+                                    // count the attempt if retry attempts are limited
+                                    + "if name ~= expiredTaskIds[i] and redis.call('exists', KEYS[5]) == 1 then "
+                                        + "redis.call('hincrby', KEYS[6], name, 1); "
+                                    + "end; "
                                 + "else "
                                     + "redis.call('lrem', KEYS[1], -1, name); "
                                 + "end; "
@@ -289,7 +306,8 @@ public class RedissonExecutorService implements RScheduledExecutorService {
                          + "return v[2]; "
                       + "end "
                       + "return nil;",
-                      Arrays.<Object>asList(requestQueueName, schedulerQueueName, schedulerChannelName, tasksRetryIntervalName), 
+                      Arrays.<Object>asList(requestQueueName, schedulerQueueName, schedulerChannelName, tasksRetryIntervalName,
+                                            tasksRetryAttemptsName, tasksRetryCounterName),
                       System.currentTimeMillis(), 50);
             }
         };
@@ -306,6 +324,8 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         service.setSchedulerQueueName(schedulerQueueName);
         service.setTasksExpirationTimeName(tasksExpirationTimeName);
         service.setTasksRetryIntervalName(tasksRetryIntervalName);
+        service.setTasksRetryAttemptsName(tasksRetryAttemptsName);
+        service.setTasksRetryCounterName(tasksRetryCounterName);
         service.setTaskLateThreshold(options.getTaskLateThreshold());
         if (options.getTasksInjector() != null) {
             service.setTasksInjector(options.getTasksInjector());
@@ -367,6 +387,8 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         executorRemoteService.setSchedulerChannelName(schedulerChannelName);
         executorRemoteService.setSchedulerQueueName(schedulerQueueName);
         executorRemoteService.setTasksRetryIntervalName(tasksRetryIntervalName);
+        executorRemoteService.setTasksRetryAttemptsName(tasksRetryAttemptsName);
+        executorRemoteService.setTasksRetryCounterName(tasksRetryCounterName);
         return executorRemoteService;
     }
     
@@ -501,7 +523,8 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     @Override
     public RFuture<Boolean> deleteAsync() {
         RFuture<Long> deleteFuture = commandExecutor.writeBatchedAsync(null, RedisCommands.DEL, new LongSlotCallback(),
-                requestQueueName, statusName, tasksCounterName, schedulerQueueName, tasksName, tasksRetryIntervalName);
+                requestQueueName, statusName, tasksCounterName, schedulerQueueName, tasksName, tasksRetryIntervalName,
+                tasksRetryAttemptsName, tasksRetryCounterName);
         CompletionStage<Boolean> f = deleteFuture.thenApply(res -> res > 0);
         return new CompletableFutureWrapper<>(f);
     }
