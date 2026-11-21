@@ -15,26 +15,22 @@
  */
 package org.redisson.spring.data.connection;
 
-import org.redisson.client.BaseRedisPubSubListener;
 import org.redisson.client.ChannelName;
+import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.ByteArrayCodec;
-import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.pubsub.PubSubConnectionEntry;
 import org.redisson.pubsub.PublishSubscribeService;
 import org.springframework.data.redis.connection.ReactiveSubscription;
-import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 
 import java.nio.ByteBuffer;
 import java.util.*;
-import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 /**
@@ -44,64 +40,64 @@ import java.util.stream.Collectors;
  */
 public class RedissonReactiveSubscription implements ReactiveSubscription {
 
-    public static class ListenableCounter {
+    private static final Object SUBSCRIBED = new Object();
 
-        private final AtomicInteger state = new AtomicInteger();
-        private Runnable r;
+    private final Map<ChannelName, Object> channels = new ConcurrentHashMap<>();
+    private final Map<ChannelName, Object> patterns = new ConcurrentHashMap<>();
 
-        public void acquire() {
-            state.incrementAndGet();
-        }
+    private final Set<FluxSink<Message<ByteBuffer, ByteBuffer>>> emitters = ConcurrentHashMap.newKeySet();
 
-        public void release() {
-            if (state.decrementAndGet() != 0) {
-                return;
-            }
-
-            if (r != null) {
-                r.run();
-                r = null;
-            }
-        }
-
-        public void addListener(Runnable r) {
-            if (state.get() != 0) {
-                this.r = r;
-                return;
-            }
-
-            r.run();
-        }
-
-    }
-
-    private final Map<ChannelName, Collection<PubSubConnectionEntry>> channels = new ConcurrentHashMap<>();
-    private final Map<ChannelName, Collection<PubSubConnectionEntry>> patterns = new ConcurrentHashMap<>();
-
-    private final ListenableCounter monosListener = new ListenableCounter();
-
+    private final RedisPubSubListener subscriptionListener;
     private final PublishSubscribeService subscribeService;
 
     public RedissonReactiveSubscription(ConnectionManager connectionManager) {
         this.subscribeService = connectionManager.getSubscribeService();
+        this.subscriptionListener = new RedisPubSubListener() {
+
+            @Override
+            public void onMessage(CharSequence channel, Object msg) {
+                ChannelName name = (ChannelName) channel;
+                if (!channels.containsKey(name)) {
+                    return;
+                }
+
+                for (FluxSink<Message<ByteBuffer, ByteBuffer>> emitter : emitters) {
+                    emitter.next(new ChannelMessage<>(ByteBuffer.wrap(name.getName()), ByteBuffer.wrap((byte[]) msg)));
+                }
+            }
+
+            @Override
+            public void onPatternMessage(CharSequence pattern, CharSequence channel, Object message) {
+                ChannelName name = (ChannelName) pattern;
+                if (!patterns.containsKey(name)) {
+                    return;
+                }
+
+                for (FluxSink<Message<ByteBuffer, ByteBuffer>> emitter : emitters) {
+                    emitter.next(new PatternMessage<>(ByteBuffer.wrap(name.getName()),
+                                                        ByteBuffer.wrap(((ChannelName) channel).getName()),
+                                                        ByteBuffer.wrap((byte[]) message)));
+                }
+            }
+        };
     }
 
     @Override
     public Mono<Void> subscribe(ByteBuffer... channels) {
-        monosListener.acquire();
         return Mono.defer(() -> {
             List<CompletableFuture<?>> futures = new ArrayList<>();
             for (ByteBuffer channel : channels) {
                 ChannelName cn = toChannelName(channel);
-                CompletableFuture<List<PubSubConnectionEntry>> f = subscribeService.subscribe(ByteArrayCodec.INSTANCE, cn);
-                f = f.whenComplete((res, e) -> RedissonReactiveSubscription.this.channels.put(cn, res));
+                CompletableFuture<List<PubSubConnectionEntry>> f = subscribeService.subscribe(ByteArrayCodec.INSTANCE, cn, subscriptionListener);
+                f = f.whenComplete((res, e) -> {
+                    if (e == null) {
+                        RedissonReactiveSubscription.this.channels.put(cn, SUBSCRIBED);
+                    }
+                });
                 futures.add(f);
             }
 
             CompletableFuture<Void> future = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
-            future = future.whenComplete((r, e) -> {
-                monosListener.release();
-            });
             return Mono.fromFuture(future);
         });
     }
@@ -112,20 +108,20 @@ public class RedissonReactiveSubscription implements ReactiveSubscription {
 
     @Override
     public Mono<Void> pSubscribe(ByteBuffer... patterns) {
-        monosListener.acquire();
         return Mono.defer(() -> {
             List<CompletableFuture<?>> futures = new ArrayList<>();
             for (ByteBuffer channel : patterns) {
                 ChannelName cn = toChannelName(channel);
-                CompletableFuture<Collection<PubSubConnectionEntry>> f = subscribeService.psubscribe(cn, ByteArrayCodec.INSTANCE);
-                f = f.whenComplete((res, e) -> RedissonReactiveSubscription.this.patterns.put(cn, res));
+                CompletableFuture<Collection<PubSubConnectionEntry>> f = subscribeService.psubscribe(cn, ByteArrayCodec.INSTANCE, subscriptionListener);
+                f = f.whenComplete((res, e) -> {
+                    if (e == null) {
+                        RedissonReactiveSubscription.this.patterns.put(cn, SUBSCRIBED);
+                    }
+                });
                 futures.add(f);
             }
 
             CompletableFuture<Void> future = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
-            future = future.whenComplete((r, e) -> {
-                monosListener.release();
-            });
             return Mono.fromFuture(future);
         });
     }
@@ -137,61 +133,61 @@ public class RedissonReactiveSubscription implements ReactiveSubscription {
 
     @Override
     public Mono<Void> unsubscribe(ByteBuffer... channels) {
-        monosListener.acquire();
         return Mono.defer(() -> {
             List<CompletableFuture<?>> futures = new ArrayList<>(channels.length);
             for (ByteBuffer channel : channels) {
                 ChannelName cn = toChannelName(channel);
-                CompletableFuture<Codec> f = subscribeService.unsubscribe(cn, PubSubType.UNSUBSCRIBE);
+                Object leaving = new Object();
+                if (!RedissonReactiveSubscription.this.channels.replace(cn, SUBSCRIBED, leaving)) {
+                    continue;
+                }
+
+                CompletableFuture<Void> f = subscribeService.removeListenerAsync(PubSubType.UNSUBSCRIBE,
+                                    ChannelName.newList(cn), System.identityHashCode(subscriptionListener));
                 f = f.whenComplete((res, e) -> {
-                    RedissonReactiveSubscription.this.channels.computeIfPresent(cn, (key, entries) -> {
-                        entries.removeIf(entry -> !entry.hasListeners(cn));
-                        if (entries.isEmpty()) {
-                            return null;
-                        }
-                        return entries;
-                    });
+                    if (e == null) {
+                        RedissonReactiveSubscription.this.channels.remove(cn, leaving);
+                    } else {
+                        RedissonReactiveSubscription.this.channels.replace(cn, leaving, SUBSCRIBED);
+                    }
                 });
                 futures.add(f);
             }
 
             CompletableFuture<Void> future = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
-            future = future.whenComplete((r, e) -> {
-                monosListener.release();
-            });
             return Mono.fromFuture(future);
         });
     }
 
     @Override
     public Mono<Void> pUnsubscribe() {
-        return unsubscribe(patterns.keySet().stream().map(b -> ByteBuffer.wrap(b.getName())).distinct().toArray(ByteBuffer[]::new));
+        return pUnsubscribe(patterns.keySet().stream().map(b -> ByteBuffer.wrap(b.getName())).distinct().toArray(ByteBuffer[]::new));
     }
 
     @Override
     public Mono<Void> pUnsubscribe(ByteBuffer... patterns) {
-        monosListener.acquire();
         return Mono.defer(() -> {
             List<CompletableFuture<?>> futures = new ArrayList<>(patterns.length);
             for (ByteBuffer channel : patterns) {
                 ChannelName cn = toChannelName(channel);
-                CompletableFuture<Codec> f = subscribeService.unsubscribe(cn, PubSubType.PUNSUBSCRIBE);
+                Object leaving = new Object();
+                if (!RedissonReactiveSubscription.this.patterns.replace(cn, SUBSCRIBED, leaving)) {
+                    continue;
+                }
+
+                CompletableFuture<Void> f = subscribeService.removeListenerAsync(PubSubType.PUNSUBSCRIBE,
+                                    ChannelName.newList(cn), System.identityHashCode(subscriptionListener));
                 f = f.whenComplete((res, e) -> {
-                    RedissonReactiveSubscription.this.patterns.computeIfPresent(cn, (key, entries) -> {
-                        entries.removeIf(entry -> !entry.hasListeners(cn));
-                        if (entries.isEmpty()) {
-                            return null;
-                        }
-                        return entries;
-                    });
+                    if (e == null) {
+                        RedissonReactiveSubscription.this.patterns.remove(cn, leaving);
+                    } else {
+                        RedissonReactiveSubscription.this.patterns.replace(cn, leaving, SUBSCRIBED);
+                    }
                 });
                 futures.add(f);
             }
 
             CompletableFuture<Void> future = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
-            future = future.whenComplete((r, e) -> {
-                monosListener.release();
-            });
             return Mono.fromFuture(future);
         });
     }
@@ -206,82 +202,16 @@ public class RedissonReactiveSubscription implements ReactiveSubscription {
         return patterns.keySet().stream().map(b -> ByteBuffer.wrap(b.getName())).collect(Collectors.toSet());
     }
     
-    private final AtomicReference<Flux<Message<ByteBuffer, ByteBuffer>>> flux = new AtomicReference<>();
-    private volatile Disposable disposable;
-
     @Override
     public Flux<Message<ByteBuffer, ByteBuffer>> receive() {
-        if (flux.get() != null) {
-            return flux.get();
-        }
-
-        Flux<Message<ByteBuffer, ByteBuffer>> f = Flux.create(emitter -> {
-            emitter.onRequest(n -> {
-
-                monosListener.addListener(() -> {
-                    BaseRedisPubSubListener listener = new BaseRedisPubSubListener() {
-                        @Override
-                        public void onPatternMessage(CharSequence pattern, CharSequence channel, Object message) {
-                            if (!patterns.containsKey(new ChannelName(pattern.toString()))) {
-                                return;
-                            }
-
-                            emitter.next(new PatternMessage<>(ByteBuffer.wrap(pattern.toString().getBytes()),
-                                                                ByteBuffer.wrap(channel.toString().getBytes()),
-                                                                ByteBuffer.wrap((byte[])message)));
-                        }
-
-                        @Override
-                        public void onMessage(CharSequence channel, Object msg) {
-                            if (!channels.containsKey(new ChannelName(channel.toString()))) {
-                                return;
-                            }
-
-                            emitter.next(new ChannelMessage<>(ByteBuffer.wrap(channel.toString().getBytes()), ByteBuffer.wrap((byte[])msg)));
-                        }
-                    };
-
-                    disposable = () -> {
-                        for (Entry<ChannelName, Collection<PubSubConnectionEntry>> entry : channels.entrySet()) {
-                            for (PubSubConnectionEntry pubSubConnectionEntry : entry.getValue()) {
-                                pubSubConnectionEntry.removeListener(entry.getKey(), listener);
-                            }
-                        }
-                        for (Entry<ChannelName, Collection<PubSubConnectionEntry>> entry : patterns.entrySet()) {
-                            for (PubSubConnectionEntry pubSubConnectionEntry : entry.getValue()) {
-                                pubSubConnectionEntry.removeListener(entry.getKey(), listener);
-                            }
-                        }
-                    };
-
-                    for (Entry<ChannelName, Collection<PubSubConnectionEntry>> entry : channels.entrySet()) {
-                        for (PubSubConnectionEntry pubSubConnectionEntry : entry.getValue()) {
-                            pubSubConnectionEntry.addListener(entry.getKey(), listener);
-                        }
-                    }
-                    for (Entry<ChannelName, Collection<PubSubConnectionEntry>> entry : patterns.entrySet()) {
-                            for (PubSubConnectionEntry pubSubConnectionEntry : entry.getValue()) {
-                                pubSubConnectionEntry.addListener(entry.getKey(), listener);
-                            }
-                    }
-
-                    emitter.onDispose(disposable);
-                });
-            });
+        return Flux.create(emitter -> {
+            emitters.add(emitter);
+            emitter.onDispose(() -> emitters.remove(emitter));
         });
-        
-        if (flux.compareAndSet(null, f)) {
-            return f;
-        }
-        return flux.get();
     }
 
     @Override
     public Mono<Void> cancel() {
-        return unsubscribe().then(pUnsubscribe()).then(Mono.fromRunnable(() -> {
-            if (disposable != null) {
-                disposable.dispose();
-            }
-        }));
+        return unsubscribe().then(pUnsubscribe()).then(Mono.fromRunnable(emitters::clear));
     }
 }
