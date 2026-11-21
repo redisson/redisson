@@ -1,11 +1,16 @@
 package org.redisson;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import net.bytebuddy.utility.RandomString;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -28,6 +33,8 @@ import org.redisson.api.stream.StreamMessageId;
 import org.redisson.api.stream.StreamReadGroupArgs;
 import org.redisson.client.*;
 import org.redisson.client.codec.StringCodec;
+import org.redisson.client.handler.CommandDecoder;
+import org.redisson.client.handler.CommandsQueue;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.client.protocol.Time;
@@ -37,6 +44,7 @@ import org.redisson.command.BatchPromise;
 import org.redisson.config.Config;
 import org.redisson.config.SubscriptionMode;
 import org.testcontainers.containers.ContainerState;
+import org.testcontainers.containers.GenericContainer;
 
 import java.time.Duration;
 import java.util.*;
@@ -789,6 +797,128 @@ public class RedissonBatchTest extends RedisDockerTest {
 
         assertThat(redisson.getBucket("A1").isExists()).isFalse();
         assertThat(redisson.getBucket("A3").isExists()).isTrue();
+    }
+
+    @ParameterizedTest
+    @CsvSource({"IN_MEMORY, false", "IN_MEMORY_ATOMIC, false", "REDIS_WRITE_ATOMIC, false",
+            "IN_MEMORY, true", "IN_MEMORY_ATOMIC, true", "REDIS_WRITE_ATOMIC, true"})
+    @Timeout(20)
+    public void testSkipResultWhenClientReplyIsRejected(ExecutionMode executionMode, boolean renamed) throws Exception {
+        String[] params = renamed ? new String[]{"--rename-command", "CLIENT", "HIDDENCLIENT"} : new String[0];
+        try (GenericContainer<?> container = createContainer(params)) {
+            container.start();
+            Config config = createConfig(container);
+            config.useSingleServer().setConnectionMinimumIdleSize(1).setConnectionPoolSize(1)
+                    .setPingConnectionInterval(0).setTimeout(2000).setRetryAttempts(0);
+            if (!renamed) {
+                assertThat(container.execInContainer("redis-cli", "ACL", "SETUSER", "limited", "on", ">password",
+                        "~*", "+@all", "-client|reply").getStdout()).contains("OK");
+                config.useSingleServer().setUsername("limited").setPassword("password");
+            }
+            RedissonClient client = Redisson.create(config);
+            try {
+                client.getAtomicLong("rejected:counter").set(42);
+                RBatch batch = client.createBatch(BatchOptions.defaults().executionMode(executionMode)
+                        .skipResult().retryAttempts(0).responseTimeout(2, TimeUnit.SECONDS));
+                batch.getBucket("rejected:key", StringCodec.INSTANCE).setAsync("value");
+                assertThatThrownBy(() -> batch.executeAsync().toCompletableFuture().get(5, TimeUnit.SECONDS))
+                        .hasRootCauseInstanceOf(RedisException.class)
+                        .hasStackTraceContaining(renamed ? "unknown command" : "NOPERM");
+
+                // The single pooled connection must remain aligned for typed replies after the failure.
+                assertThat(client.getAtomicLong("rejected:counter").get()).isEqualTo(42);
+                assertThat(client.getBucket("rejected:key", StringCodec.INSTANCE).get())
+                        .isEqualTo(executionMode == ExecutionMode.REDIS_WRITE_ATOMIC ? null : "value");
+            } finally {
+                client.shutdown();
+            }
+        }
+    }
+
+    @Test
+    @Timeout(20)
+    public void testSkipResultWhenNodeBecomesReplicaBeforeExec() throws Exception {
+        try (GenericContainer<?> container = createContainer()) {
+            container.start();
+            Config config = createConfig(container);
+            config.useSingleServer().setConnectionMinimumIdleSize(1).setConnectionPoolSize(1)
+                    .setPingConnectionInterval(0).setTimeout(2000).setRetryAttempts(0);
+            RedissonClient client = Redisson.create(config);
+            try {
+                client.getAtomicLong("replica:counter").set(42);
+                RBatch batch = client.createBatch(BatchOptions.defaults().executionMode(ExecutionMode.REDIS_WRITE_ATOMIC)
+                        .skipResult().retryAttempts(0).responseTimeout(2, TimeUnit.SECONDS));
+                RFuture<Void> write = batch.getBucket("replica:key", StringCodec.INSTANCE).setAsync("value");
+                ((BatchPromise<?>) write.toCompletableFuture()).getSentPromise().get(5, TimeUnit.SECONDS);
+                // Only this isolated test node changes role; the queued SET has not executed yet.
+                assertThat(container.execInContainer("redis-cli", "REPLICAOF", "127.0.0.1", "1")
+                        .getStdout()).contains("OK");
+                assertThatThrownBy(() -> batch.executeAsync().toCompletableFuture().get(5, TimeUnit.SECONDS))
+                        .hasRootCauseInstanceOf(RedisException.class).hasStackTraceContaining("READONLY");
+                assertThat(client.getAtomicLong("replica:counter").get()).isEqualTo(42);
+                assertThat(client.getBucket("replica:key", StringCodec.INSTANCE).get()).isNull();
+            } finally {
+                client.shutdown();
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = ExecutionMode.class, names = {"IN_MEMORY", "IN_MEMORY_ATOMIC", "REDIS_WRITE_ATOMIC"})
+    @Timeout(15)
+    public void testSkipResultWithFragmentedReplies(ExecutionMode executionMode) throws Exception {
+        AtomicBoolean fragmentReplies = new AtomicBoolean();
+        AtomicInteger fragmentedBytes = new AtomicInteger();
+        Config config = createConfig();
+        config.useSingleServer()
+                .setConnectionMinimumIdleSize(1)
+                .setConnectionPoolSize(1)
+                .setPingConnectionInterval(50)
+                .setTimeout(2000)
+                .setRetryAttempts(0);
+        config.setNettyHook(new DefaultNettyHook() {
+            @Override
+            public void afterChannelInitialization(Channel channel) {
+                if (channel.pipeline().get(CommandsQueue.class) == null) {
+                    return;
+                }
+                channel.pipeline().addBefore(channel.pipeline().context(CommandDecoder.class).name(),
+                        "fragment-batch-replies", new ChannelInboundHandlerAdapter() {
+                            @Override
+                            public void channelRead(ChannelHandlerContext ctx, Object msg) {
+                                if (!fragmentReplies.get() || !(msg instanceof ByteBuf)) {
+                                    ctx.fireChannelRead(msg);
+                                    return;
+                                }
+                                ByteBuf replies = (ByteBuf) msg;
+                                try {
+                                    // Preserve Redis's actual bytes and order; TCP can split at any byte.
+                                    while (replies.isReadable()) {
+                                        fragmentedBytes.incrementAndGet();
+                                        ctx.fireChannelRead(replies.readRetainedSlice(1));
+                                    }
+                                } finally {
+                                    replies.release();
+                                }
+                            }
+                        });
+            }
+        });
+        RedissonClient client = Redisson.create(config);
+        try {
+            client.getAtomicLong("fragmented:counter").set(42);
+            fragmentReplies.set(true);
+            RBatch batch = client.createBatch(BatchOptions.defaults().executionMode(executionMode)
+                    .skipResult().retryAttempts(0).responseTimeout(2, TimeUnit.SECONDS));
+            batch.getBucket("fragmented:key", StringCodec.INSTANCE).setAsync("value");
+            batch.executeAsync().toCompletableFuture().get(5, TimeUnit.SECONDS);
+
+            assertThat(fragmentedBytes.get()).isPositive();
+            assertThat(client.getBucket("fragmented:key", StringCodec.INSTANCE).get()).isEqualTo("value");
+            assertThat(client.getAtomicLong("fragmented:counter").get()).isEqualTo(42);
+        } finally {
+            client.shutdown();
+        }
     }
 
     @ParameterizedTest
