@@ -753,7 +753,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
 
     // BITFIELD_RO is missing in Redis versions prior to 6.0 and may be denied to the user by ACL rules
-    private static boolean isBitFieldROUnavailable(Throwable error) {
+    static boolean isBitFieldROUnavailable(Throwable error) {
         if (!(error instanceof RedisException) || error.getMessage() == null) {
             return false;
         }

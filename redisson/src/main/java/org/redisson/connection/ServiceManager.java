@@ -170,6 +170,9 @@ public final class ServiceManager {
 
     private final AtomicReference<BitFieldROState> bitFieldROState = new AtomicReference<>(BitFieldROState.UNKNOWN);
 
+    // BITFIELD_RO check sent over a connection of its own. Queued batches share it while it's running
+    private final AtomicReference<CompletableFuture<Void>> bitFieldROCheck = new AtomicReference<>();
+
     private final Map<Thread, EventLoop> nettyThreads = new ConcurrentHashMap<>();
 
     private final NettyHook nettyHook;
@@ -594,6 +597,10 @@ public final class ServiceManager {
 
     public void markBitFieldROUnavailable() {
         bitFieldROState.set(BitFieldROState.UNAVAILABLE);
+    }
+
+    public AtomicReference<CompletableFuture<Void>> getBitFieldROCheck() {
+        return bitFieldROCheck;
     }
 
     public NameMapper getNameMapper() {
