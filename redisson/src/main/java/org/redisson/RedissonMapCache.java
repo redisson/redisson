@@ -20,8 +20,6 @@ import org.redisson.api.*;
 import org.redisson.api.listener.MessageListener;
 import org.redisson.api.map.event.*;
 import org.redisson.client.RedisClient;
-import org.redisson.client.RedisException;
-import org.redisson.client.RedisReadonlyException;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.IntegerCodec;
 import org.redisson.client.codec.LongCodec;
@@ -36,16 +34,12 @@ import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.decoder.MapGetAllDecoder;
 import org.redisson.eviction.EvictionScheduler;
 import org.redisson.misc.CompletableFutureWrapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -71,15 +65,12 @@ import java.util.function.Function;
  */
 public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCache<K, V> {
 
-    private static final Logger log = LoggerFactory.getLogger(RedissonMapCache.class);
-
     private final EvictionScheduler evictionScheduler;
     protected String publishCommand;
     private String timeoutSetName;
     private String idleSetName;
     private String lastAccessTimeSetName;
     private String optionsName;
-    private volatile boolean hasListenersSet;
     
     public RedissonMapCache(EvictionScheduler evictionScheduler, CommandAsyncExecutor commandExecutor,
                             String name, RedissonClient redisson, MapCacheOptions<K, V> options, WriteBehindService writeBehindService) {
@@ -3406,38 +3397,12 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         }
 
         CompletionStage<Void> hasListenersFuture = osTypeFuture.thenCompose(v -> {
-            if (hasListenersSet) {
-                return CompletableFuture.completedFuture(null);
-            }
-            RFuture<Boolean> existsFuture = commandExecutor.readAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.HEXISTS, optionsName, "has-listeners");
+            RFuture<Boolean> existsFuture = commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.HEXISTS, optionsName, "has-listeners");
             return existsFuture.thenCompose(exists -> {
                 if (Boolean.TRUE.equals(exists)) {
-                    hasListenersSet = true;
                     return CompletableFuture.completedFuture(null);
                 }
-                return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.HSET_VOID, optionsName, "has-listeners", 1)
-                        .thenAccept(r -> {
-                            hasListenersSet = true;
-                        })
-                        .exceptionally(ex -> {
-                            Throwable cause = ex;
-                            while (cause instanceof CompletionException || cause instanceof ExecutionException) {
-                                if (cause.getCause() == null) {
-                                    break;
-                                }
-                                cause = cause.getCause();
-                            }
-                            if (cause instanceof RedisReadonlyException
-                                    || (cause instanceof RedisException && cause.getMessage() != null && cause.getMessage().contains("READONLY"))) {
-                                hasListenersSet = true;
-                                log.warn("Can't set 'has-listeners' flag for '{}' on read-only replica. Entry listener will still be registered, but event publishing requires 'has-listeners' on master.", optionsName);
-                                return null;
-                            }
-                            if (ex instanceof RuntimeException) {
-                                throw (RuntimeException) ex;
-                            }
-                            throw new CompletionException(ex);
-                        });
+                return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.HSET_VOID, optionsName, "has-listeners", 1);
             });
         });
 

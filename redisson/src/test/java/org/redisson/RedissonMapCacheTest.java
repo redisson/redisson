@@ -10,20 +10,15 @@ import org.redisson.api.map.event.*;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisClientConfig;
 import org.redisson.client.RedisConnection;
-import org.redisson.client.RedisException;
 import org.redisson.client.RedisReadonlyException;
 import org.redisson.client.codec.*;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.codec.CompositeCodec;
-import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.config.Config;
 import org.redisson.config.NameMapper;
 import org.redisson.eviction.EvictionScheduler;
-import org.redisson.misc.CompletableFutureWrapper;
-
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Proxy;
-
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.Network;
 import java.time.Duration;
 import java.util.*;
 import java.util.Map.Entry;
@@ -1903,140 +1898,73 @@ public class RedissonMapCacheTest extends BaseMapTest {
 
     @Test
     public void testAddListenerOnReadonlyReplica() {
-        RMapCache<String, String> map = redisson.getMapCache("testReadOnlyMap");
-        CommandAsyncExecutor originalExecutor = Reflect.on(map).get("commandExecutor");
-        AtomicInteger writeCount = new AtomicInteger();
-        AtomicInteger existsCount = new AtomicInteger();
+        try (Network network = Network.newNetwork();
+             GenericContainer<?> master = createContainer()
+                     .withNetwork(network).withNetworkAliases("master");
+             GenericContainer<?> replica = createContainer("--replicaof", "master", "6379")
+                     .withNetwork(network)) {
+            master.start();
+            replica.start();
 
-        CommandAsyncExecutor mockExecutor = (CommandAsyncExecutor) Proxy.newProxyInstance(
-                CommandAsyncExecutor.class.getClassLoader(),
-                new Class<?>[]{CommandAsyncExecutor.class},
-                (proxy, method, args) -> {
-                    if ("writeAsync".equals(method.getName()) && args != null && args.length >= 4) {
-                        if (RedisCommands.HSET_VOID.equals(args[2])) {
-                            Object[] params = (Object[]) args[3];
-                            for (Object param : params) {
-                                if ("has-listeners".equals(param)) {
-                                    writeCount.incrementAndGet();
-                                    CompletableFuture<Void> f = new CompletableFuture<>();
-                                    f.completeExceptionally(new RedisReadonlyException("READONLY You can't write against a read only replica."));
-                                    return new CompletableFutureWrapper<>(f);
-                                }
-                            }
-                        }
+            RedissonClient masterClient = Redisson.create(createConfig(master));
+            RedissonClient replicaClient = Redisson.create(createConfig(replica));
+            try {
+                String mapName = "testReadOnlyMap";
+                RMapCache<String, String> masterMap = masterClient.getMapCache(mapName);
+                RMapCache<String, String> replicaMap = replicaClient.getMapCache(mapName);
+
+                // 1. Before master sets 'has-listeners', replica write fails with RedisReadonlyException
+                Assertions.assertThrows(RedisReadonlyException.class, () -> {
+                    replicaMap.addListener((EntryCreatedListener<String, String>) event -> {});
+                });
+
+                // 2. Master registers a listener, setting 'has-listeners' and replicating it to replica
+                int masterListenerId = masterMap.addListener((EntryCreatedListener<String, String>) event -> {});
+                assertThat(masterListenerId).isPositive();
+
+                String optionsName = ((RedissonMapCache<?, ?>) masterMap).getOptionsName(((RedissonObject) masterMap).getRawName());
+                await().atMost(Duration.ofSeconds(10)).until(() ->
+                        replicaClient.getMap(optionsName, LongCodec.INSTANCE).containsKey("has-listeners"));
+
+                // 3. Replica registers a listener without writing and receives events published by master
+                AtomicBoolean received = new AtomicBoolean();
+                int replicaListenerId = replicaMap.addListener((EntryCreatedListener<String, String>) event -> {
+                    if ("k1".equals(event.getKey()) && "v1".equals(event.getValue())) {
+                        received.set(true);
                     }
-                    if ("readAsync".equals(method.getName()) && args != null && args.length >= 4) {
-                        if (RedisCommands.HEXISTS.equals(args[2])) {
-                            existsCount.incrementAndGet();
-                        }
-                    }
-                    try {
-                        return method.invoke(originalExecutor, args);
-                    } catch (InvocationTargetException e) {
-                        throw e.getCause();
-                    }
-                }
-        );
-        Reflect.on(map).set("commandExecutor", mockExecutor);
+                });
+                assertThat(replicaListenerId).isPositive();
 
-        // 1. First listener: write fails with RedisReadonlyException, but fallback handles it gracefully
-        int listenerId1 = map.addListener((EntryCreatedListener<String, String>) event -> {});
-        assertThat(listenerId1).isPositive();
-        assertThat(writeCount.get()).isEqualTo(1);
-        assertThat(existsCount.get()).isEqualTo(1);
-        boolean hasListenersSet = Reflect.on(map).get("hasListenersSet");
-        assertThat(hasListenersSet).isTrue();
+                masterMap.put("k1", "v1");
+                await().atMost(Duration.ofSeconds(5)).untilTrue(received);
 
-        // 2. Second listener: fast path via hasListenersSet = true, skips HEXISTS and writeAsync
-        int listenerId2 = map.addListener((EntryRemovedListener<String, String>) event -> {});
-        assertThat(listenerId2).isPositive();
-        assertThat(writeCount.get()).isEqualTo(1);
-        assertThat(existsCount.get()).isEqualTo(1);
-
-        map.destroy();
+                masterMap.destroy();
+                replicaMap.destroy();
+            } finally {
+                replicaClient.shutdown();
+                masterClient.shutdown();
+            }
+        }
     }
 
     @Test
-    public void testAddListenerWhenFlagAlreadyExistsOnReplica() {
-        RMapCache<String, String> map = redisson.getMapCache("testReadOnlyMapWithFlag");
-        String optionsName = ((RedissonMapCache<?, ?>) map).getOptionsName(map.getName());
-        // Simulate Master having already set has-listeners: 1
-        redisson.getMap(optionsName, LongCodec.INSTANCE).put("has-listeners", 1L);
+    public void testAddListenerAfterDelete() {
+        RMapCache<String, String> map = redisson.getMapCache("testAddListenerAfterDelete");
+        int id1 = map.addListener((EntryCreatedListener<String, String>) event -> {});
+        map.removeListener(id1);
 
-        CommandAsyncExecutor originalExecutor = Reflect.on(map).get("commandExecutor");
-        AtomicInteger writeCount = new AtomicInteger();
-        AtomicInteger existsCount = new AtomicInteger();
+        map.delete();
 
-        CommandAsyncExecutor mockExecutor = (CommandAsyncExecutor) Proxy.newProxyInstance(
-                CommandAsyncExecutor.class.getClassLoader(),
-                new Class<?>[]{CommandAsyncExecutor.class},
-                (proxy, method, args) -> {
-                    if ("writeAsync".equals(method.getName()) && args != null && args.length >= 4) {
-                        if (RedisCommands.HSET_VOID.equals(args[2])) {
-                            Object[] params = (Object[]) args[3];
-                            for (Object param : params) {
-                                if ("has-listeners".equals(param)) {
-                                    writeCount.incrementAndGet();
-                                    CompletableFuture<Void> f = new CompletableFuture<>();
-                                    f.completeExceptionally(new RedisReadonlyException("READONLY You can't write against a read only replica."));
-                                    return new CompletableFutureWrapper<>(f);
-                                }
-                            }
-                        }
-                    }
-                    if ("readAsync".equals(method.getName()) && args != null && args.length >= 4) {
-                        if (RedisCommands.HEXISTS.equals(args[2])) {
-                            existsCount.incrementAndGet();
-                        }
-                    }
-                    try {
-                        return method.invoke(originalExecutor, args);
-                    } catch (InvocationTargetException e) {
-                        throw e.getCause();
-                    }
-                }
-        );
-        Reflect.on(map).set("commandExecutor", mockExecutor);
-
-        // HEXISTS finds "has-listeners" exists, writeAsync is skipped entirely
-        int listenerId = map.addListener((EntryCreatedListener<String, String>) event -> {});
-        assertThat(listenerId).isPositive();
-        assertThat(existsCount.get()).isEqualTo(1);
-        assertThat(writeCount.get()).isZero();
-        boolean hasListenersSet = Reflect.on(map).get("hasListenersSet");
-        assertThat(hasListenersSet).isTrue();
-
-        map.destroy();
-    }
-
-    @Test
-    public void testAddListenerWriteFailureNonReadonlyThrowsException() {
-        RMapCache<String, String> map = redisson.getMapCache("testNonReadonlyErrorMap");
-        CommandAsyncExecutor originalExecutor = Reflect.on(map).get("commandExecutor");
-
-        CommandAsyncExecutor mockExecutor = (CommandAsyncExecutor) Proxy.newProxyInstance(
-                CommandAsyncExecutor.class.getClassLoader(),
-                new Class<?>[]{CommandAsyncExecutor.class},
-                (proxy, method, args) -> {
-                    if ("writeAsync".equals(method.getName()) && args != null && args.length >= 4) {
-                        if (RedisCommands.HSET_VOID.equals(args[2])) {
-                            CompletableFuture<Void> f = new CompletableFuture<>();
-                            f.completeExceptionally(new RedisException("Fatal server error"));
-                            return new CompletableFutureWrapper<>(f);
-                        }
-                    }
-                    try {
-                        return method.invoke(originalExecutor, args);
-                    } catch (InvocationTargetException e) {
-                        throw e.getCause();
-                    }
-                }
-        );
-        Reflect.on(map).set("commandExecutor", mockExecutor);
-
-        Assertions.assertThrows(RedisException.class, () -> {
-            map.addListener((EntryCreatedListener<String, String>) event -> {});
+        AtomicBoolean received = new AtomicBoolean();
+        int id2 = map.addListener((EntryCreatedListener<String, String>) event -> {
+            if ("k1".equals(event.getKey()) && "v1".equals(event.getValue())) {
+                received.set(true);
+            }
         });
+        assertThat(id2).isPositive();
+
+        map.put("k1", "v1");
+        await().atMost(Duration.ofSeconds(5)).untilTrue(received);
 
         map.destroy();
     }
