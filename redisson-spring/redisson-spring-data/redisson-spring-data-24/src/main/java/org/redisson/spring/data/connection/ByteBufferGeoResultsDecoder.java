@@ -49,13 +49,24 @@ public class ByteBufferGeoResultsDecoder implements MultiDecoder<GeoResults<GeoL
             if (object instanceof List) {
                 List<Object> vals = ((List<Object>) object);
                 
-                if (metric != null) {
-                    GeoLocation<ByteBuffer> location = new GeoLocation<ByteBuffer>(ByteBuffer.wrap((byte[])vals.get(0)), null);
-                    result.add(new GeoResult<GeoLocation<ByteBuffer>>(location, new Distance((Double)vals.get(1), metric)));
-                } else {
-                    GeoLocation<ByteBuffer> location = new GeoLocation<ByteBuffer>(ByteBuffer.wrap((byte[])vals.get(0)), (Point)vals.get(1));
-                    result.add(new GeoResult<GeoLocation<ByteBuffer>>(location, null));
+                double distance = 0;
+                Point point = null;
+                for (Object val : vals.subList(1, vals.size())) {
+                    if (val instanceof Point) {
+                        point = (Point) val;
+                    } else {
+                        distance = (Double) val;
+                    }
                 }
+
+                Distance resultDistance;
+                if (metric != null) {
+                    resultDistance = new Distance(distance, metric);
+                } else {
+                    resultDistance = new Distance(distance);
+                }
+                GeoLocation<ByteBuffer> location = new GeoLocation<ByteBuffer>(ByteBuffer.wrap((byte[]) vals.get(0)), point);
+                result.add(new GeoResult<GeoLocation<ByteBuffer>>(location, resultDistance));
             } else {
                 GeoLocation<ByteBuffer> location = new GeoLocation<ByteBuffer>(ByteBuffer.wrap((byte[])object), null);
                 result.add(new GeoResult<GeoLocation<ByteBuffer>>(location, new Distance(0)));
