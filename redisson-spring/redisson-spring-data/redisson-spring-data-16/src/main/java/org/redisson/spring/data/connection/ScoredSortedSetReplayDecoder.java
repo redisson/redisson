@@ -39,7 +39,7 @@ public class ScoredSortedSetReplayDecoder implements MultiDecoder<Set<Tuple>> {
         if (paramNum % 2 != 0) {
             return DoubleCodec.INSTANCE.getValueDecoder();
         }
-        return null;
+        return MultiDecoder.super.getDecoder(codec, paramNum, state, size);
     }
     
     @Override

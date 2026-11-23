@@ -23,6 +23,7 @@
 
     <properties>
         <main.basedir>${project.parent.parent.parent.basedir}</main.basedir>
+        <spring.version>4.1.9.RELEASE</spring.version>
     </properties>
 
     <build>

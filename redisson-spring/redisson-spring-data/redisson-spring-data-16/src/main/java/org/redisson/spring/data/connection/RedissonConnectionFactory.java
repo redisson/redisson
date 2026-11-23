@@ -104,6 +104,10 @@ public class RedissonConnectionFactory implements RedisConnectionFactory, Initia
 
     @Override
     public RedisSentinelConnection getSentinelConnection() {
+        return connectToSentinel(redisson);
+    }
+
+    static RedisSentinelConnection connectToSentinel(RedissonClient redisson) {
         if (!redisson.getConfig().isSentinelConfig()) {
             throw new InvalidDataAccessResourceUsageException("Redisson is not in Sentinel mode");
         }
