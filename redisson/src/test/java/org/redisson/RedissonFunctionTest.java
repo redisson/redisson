@@ -3,13 +3,16 @@ package org.redisson;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.*;
+import org.redisson.api.options.OptionalOptions;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.CompletionException;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class RedissonFunctionTest extends RedisDockerTest {
 
@@ -23,24 +26,34 @@ public class RedissonFunctionTest extends RedisDockerTest {
     }
 
     @Test
-    public void testStats() throws InterruptedException {
-        RFunction f = redisson.getFunction();
+    public void testStats() {
+        RFunction f = redisson.getFunction(OptionalOptions.defaults()
+                                                .timeout(Duration.ofSeconds(30))
+                                                .retryAttempts(0));
         f.flush();
         f.load("lib", "redis.register_function('myfun', function(keys, args) for i = 1, 3329381988, 1 do end return args[1] end)" +
                 "redis.register_function('myfun2', function(keys, args) return 'test' end)" +
                 "redis.register_function('myfun3', function(keys, args) return 123 end)");
-        f.callAsync(FunctionMode.WRITE, "myfun", FunctionResult.VALUE, Collections.emptyList(), "test");
+        RFuture<Object> call = f.callAsync(FunctionMode.WRITE, "myfun", FunctionResult.VALUE, Collections.emptyList(), "test");
 
-        FunctionStats stats = f.stats();
+        try {
+            FunctionStats stats = Awaitility.await()
+                                    .atMost(Duration.ofSeconds(20))
+                                    .until(f::stats, s -> s.getRunningFunction() != null);
 
-        FunctionStats.RunningFunction func = stats.getRunningFunction();
-        assertThat(func.getName()).isEqualTo("myfun");
+            FunctionStats.RunningFunction func = stats.getRunningFunction();
+            assertThat(func.getName()).isEqualTo("myfun");
 
-        FunctionStats.Engine engine = stats.getEngines().get("LUA");
-        assertThat(engine.getLibraries()).isEqualTo(1);
-        assertThat(engine.getFunctions()).isEqualTo(3);
+            FunctionStats.Engine engine = stats.getEngines().get("LUA");
+            assertThat(engine.getLibraries()).isEqualTo(1);
+            assertThat(engine.getFunctions()).isEqualTo(3);
+        } finally {
+            f.kill();
+        }
 
-        Thread.sleep(4000);
+        assertThatThrownBy(call.toCompletableFuture()::join)
+                .isInstanceOf(CompletionException.class)
+                .hasMessageContaining("Script killed");
     }
 
     @Test
