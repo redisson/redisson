@@ -5,6 +5,7 @@ import org.redisson.api.RMap;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.StringCodec;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.boot.data.redis.autoconfigure.DataRedisConnectionDetails;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -50,7 +51,16 @@ public class RedissonAutoConfiguration2Test {
     
     @Autowired
     private RedisTemplate<String, String> template;
-    
+
+    @Autowired
+    private ConfigurableListableBeanFactory beanFactory;
+
+    @Test
+    public void testRedissonClientFromAutoConfigurationV4() {
+        assertThat(beanFactory.getBeanDefinition("redisson").getFactoryBeanName())
+                .isEqualTo(RedissonAutoConfigurationV4.class.getName());
+    }
+
     @Test
     public void testApp() {
         redisson.getKeys().flushall();

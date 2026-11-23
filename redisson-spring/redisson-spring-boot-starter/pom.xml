@@ -10,6 +10,8 @@
 
     <properties>
         <spring-boot.version>4.1.0</spring-boot.version>
+        <!-- Spring Boot version RedissonAutoConfiguration and RedissonAutoConfigurationV2 are compiled against -->
+        <spring-boot-3.version>3.5.8</spring-boot-3.version>
         <main.basedir>${project.parent.parent.basedir}</main.basedir>
     </properties>
 
@@ -29,7 +31,7 @@
                         <additionalDependency>
                             <groupId>org.springframework.boot</groupId>
                             <artifactId>spring-boot-autoconfigure</artifactId>
-                            <version>3.5.8</version>
+                            <version>${spring-boot-3.version}</version>
                         </additionalDependency>
                     </additionalDependencies>
                 </configuration>
@@ -57,25 +59,47 @@
                 <artifactId>maven-dependency-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>unpack-specific-classes</id>
-                        <phase>generate-sources</phase>
+                        <id>copy-spring-boot-3-autoconfigure</id>
+                        <phase>initialize</phase>
                         <goals>
-                            <goal>unpack</goal>
+                            <goal>copy</goal>
                         </goals>
                         <configuration>
                             <artifactItems>
                                 <artifactItem>
                                     <groupId>org.springframework.boot</groupId>
                                     <artifactId>spring-boot-autoconfigure</artifactId>
-                                    <version>3.5.8</version>
-                                    <includes>
-                                        org/springframework/boot/autoconfigure/data/redis/RedisAutoConfiguration.class,
-                                        org/springframework/boot/autoconfigure/data/redis/RedisConnectionDetails*.class,
-                                        org/springframework/boot/autoconfigure/data/redis/RedisProperties*.class
-                                    </includes>
-                                    <outputDirectory>${project.build.outputDirectory}</outputDirectory>
+                                    <version>${spring-boot-3.version}</version>
+                                    <outputDirectory>${project.build.directory}/spring-boot-3</outputDirectory>
                                 </artifactItem>
                             </artifactItems>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.2.0</version>
+                <executions>
+                    <execution>
+                        <id>unpack-specific-classes</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <unzip src="${project.build.directory}/spring-boot-3/spring-boot-autoconfigure-${spring-boot-3.version}.jar"
+                                       dest="${project.build.outputDirectory}" allowFilesToEscapeDest="true">
+                                    <patternset>
+                                        <include name="org/springframework/boot/autoconfigure/data/redis/RedisAutoConfiguration.class"/>
+                                        <include name="org/springframework/boot/autoconfigure/data/redis/RedisConnectionDetails*.class"/>
+                                        <include name="org/springframework/boot/autoconfigure/data/redis/RedisProperties*.class"/>
+                                    </patternset>
+                                </unzip>
+                            </target>
                         </configuration>
                     </execution>
                 </executions>
@@ -87,7 +111,7 @@
                 <executions>
                     <execution>
                         <id>remove-spring-classes</id>
-                        <phase>prepare-package</phase>
+                        <phase>process-classes</phase>
                         <goals>
                             <goal>clean</goal>
                         </goals>
