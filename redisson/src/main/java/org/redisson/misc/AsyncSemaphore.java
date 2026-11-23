@@ -17,8 +17,6 @@ package org.redisson.misc;
 
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -49,20 +47,11 @@ public final class AsyncSemaphore {
 
     private static final ThreadLocal<HandOff> HAND_OFF = new ThreadLocal<>();
 
-    private final ExecutorService executorService;
-    private final AtomicInteger tasksLatch = new AtomicInteger(1);
-    private final AtomicInteger stackSize = new AtomicInteger();
-
     private final AtomicInteger counter;
     private final FastRemovalQueue<CompletableFuture<Void>> listeners = new FastRemovalQueue<>();
 
     public AsyncSemaphore(int permits) {
-        this(permits, null);
-    }
-
-    public AsyncSemaphore(int permits, ExecutorService executorService) {
         counter = new AtomicInteger(permits);
-        this.executorService = executorService;
     }
 
     public int queueSize() {
@@ -90,7 +79,7 @@ public final class AsyncSemaphore {
             handOff.runs++;
             return future;
         }
-        tryForkAndRun();
+        tryRun();
         return future;
     }
 
@@ -103,41 +92,7 @@ public final class AsyncSemaphore {
         return null;
     }
 
-    private void tryForkAndRun() {
-        if (!tryFork(0)) {
-            tryRun();
-        }
-    }
-
-    /**
-     * Moves one tryRun() call to the executor, if hand-offs are deep enough.
-     *
-     * @param chain hand-offs that the caller made one after another before this one.
-     *              Nested hand-offs were in stackSize. A chain is a loop now, so its length
-     *              comes from the loop, and a chain goes to the executor at the same length.
-     * @return true if the executor took the call
-     */
-    private boolean tryFork(int chain) {
-        if (executorService != null) {
-            int val = tasksLatch.get();
-            if (stackSize.get() + chain > 25 * val
-                    && tasksLatch.compareAndSet(val, val+1)) {
-                try {
-                    executorService.submit(() -> {
-                        tasksLatch.decrementAndGet();
-                        tryRun();
-                    });
-                    return true;
-                } catch (RejectedExecutionException e) {
-                    tasksLatch.decrementAndGet();
-                }
-            }
-        }
-        return false;
-    }
-
     private void tryRun() {
-        int chain = 0;
         int runs = 0;
         while (true) {
             if (counter.decrementAndGet() >= 0) {
@@ -154,13 +109,7 @@ public final class AsyncSemaphore {
                 HAND_OFF.set(handOff);
                 boolean complete;
                 try {
-                    if (executorService != null) {
-                        stackSize.incrementAndGet();
-                        complete = future.complete(null);
-                        stackSize.decrementAndGet();
-                    } else {
-                        complete = future.complete(null);
-                    }
+                    complete = future.complete(null);
                 } finally {
                     HAND_OFF.set(handOff.outer);
                 }
@@ -173,13 +122,10 @@ public final class AsyncSemaphore {
                     continue;
                 }
 
-                chain++;
-                do {
-                    if (runs == 0) {
-                        return;
-                    }
-                    runs--;
-                } while (tryFork(chain));
+                if (runs == 0) {
+                    return;
+                }
+                runs--;
                 continue;
             }
 
@@ -197,7 +143,7 @@ public final class AsyncSemaphore {
         counter.incrementAndGet();
         HandOff handOff = handOffOfCurrentThread();
         if (handOff == null) {
-            tryForkAndRun();
+            tryRun();
             return;
         }
 

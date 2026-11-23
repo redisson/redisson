@@ -73,130 +73,35 @@ public class AsyncSemaphoreTest {
     void testReleaseCascadeDoesNotOverflowStack() throws Exception {
         int waiters = 100_000;
 
-        ExecutorService executor = Executors.newFixedThreadPool(2);
-        AsyncSemaphore semaphore = new AsyncSemaphore(1, executor);
+        AsyncSemaphore semaphore = new AsyncSemaphore(1);
         AtomicInteger nested = new AtomicInteger();
         AtomicInteger deepest = new AtomicInteger();
         CountDownLatch handedOn = new CountDownLatch(waiters);
 
-        try {
-            assertThat(semaphore.acquire()).isCompleted();
+        assertThat(semaphore.acquire()).isCompleted();
 
-            for (int i = 0; i < waiters; i++) {
-                semaphore.acquire().thenAccept(r -> {
-                    deepest.accumulateAndGet(nested.incrementAndGet(), Math::max);
-                    semaphore.release();
-                    nested.decrementAndGet();
-                    handedOn.countDown();
-                });
-            }
-
-            assertThat(semaphore.queueSize()).isEqualTo(waiters);
-
-            semaphore.release();
-
-            boolean drained = handedOn.await(10, TimeUnit.SECONDS);
-
-            assertThat(drained).isTrue();
-
-            assertThat(semaphore.acquire()).isCompleted();
-
-            assertThat(deepest.get())
-                    .as("hand-overs nested at once, which the fork is there to keep near 25")
-                    .isLessThan(100);
-        } finally {
-            executor.shutdownNow();
-        }
-    }
-
-    /**
-     * tryForkAndRun() raises tasksLatch by CAS and then calls executorService.submit().
-     * ConnectionsHolder builds its pool semaphore over the shared event loop group, so once
-     * that group starts shutting down submit() throws RejectedExecutionException, the forked
-     * tryRun() never happens, and the release-cascade stops dead. Because release() is reached
-     * from inside a completion callback, CompletableFuture captures the throw into a discarded
-     * dependent future and the failure is silent.
-     */
-    @Test
-    @Timeout(60)
-    void testRejectedForkDoesNotStrandWaiters() throws Exception {
-        int waiters = 300;
-        AtomicInteger rejections = new AtomicInteger();
-        ThreadPoolExecutor executor = rejectingExecutor(rejections);
-        AsyncSemaphore semaphore = new AsyncSemaphore(0, executor);
-
-        List<CompletableFuture<Void>> queued = new ArrayList<>();
         for (int i = 0; i < waiters; i++) {
-            CompletableFuture<Void> f = semaphore.acquire();
-            queued.add(f);
-            // each waiter hands its permit straight back, as the pubsub and connection
-            // pool callers do; this is what drives stackSize past the fork threshold
-            f.thenRun(semaphore::release);
+            semaphore.acquire().thenAccept(r -> {
+                deepest.accumulateAndGet(nested.incrementAndGet(), Math::max);
+                semaphore.release();
+                nested.decrementAndGet();
+                handedOn.countDown();
+            });
         }
 
-        // the fork target dies while waiters are still queued
-        executor.shutdown();
-        assertThat(executor.awaitTermination(10, TimeUnit.SECONDS)).isTrue();
+        assertThat(semaphore.queueSize()).isEqualTo(waiters);
 
         semaphore.release();
 
-        long deadline = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(10);
-        while (System.currentTimeMillis() < deadline && completedCount(queued) < waiters) {
-            Thread.sleep(10);
-        }
+        boolean drained = handedOn.await(10, TimeUnit.SECONDS);
 
-        try {
-            // guards the test itself: without a rejected fork this proves nothing
-            assertThat(rejections.get())
-                    .as("the fork threshold was never crossed, so no rejection was exercised")
-                    .isPositive();
-            assertThat(semaphore.getCounter() > 0 && semaphore.queueSize() > 0)
-                    .as("semaphore is wedged: %d free permit(s) with %d waiters still queued",
-                            semaphore.getCounter(), semaphore.queueSize())
-                    .isFalse();
-            assertThat(completedCount(queued))
-                    .as("waiters stranded after the fork was rejected")
-                    .isEqualTo(waiters);
-        } finally {
-            executor.shutdownNow();
-        }
-    }
+        assertThat(drained).isTrue();
 
-    /**
-     * The same rejection also leaks tasksLatch: it is raised before submit() and only lowered
-     * inside the submitted task, so a rejected fork inflates it permanently. Since the fork
-     * threshold is {@code 25 * tasksLatch}, every occurrence further weakens the stack overflow
-     * guard the mechanism exists to provide.
-     */
-    @Test
-    @Timeout(60)
-    void testRejectedForkDoesNotLeakTasksLatch() throws Exception {
-        AtomicInteger rejections = new AtomicInteger();
-        ThreadPoolExecutor executor = rejectingExecutor(rejections);
-        AsyncSemaphore semaphore = new AsyncSemaphore(0, executor);
+        assertThat(semaphore.acquire()).isCompleted();
 
-        for (int i = 0; i < 300; i++) {
-            semaphore.acquire().thenRun(semaphore::release);
-        }
-
-        executor.shutdown();
-        assertThat(executor.awaitTermination(10, TimeUnit.SECONDS)).isTrue();
-
-        int before = tasksLatchOf(semaphore);
-        semaphore.release();
-        Thread.sleep(500);
-        int after = tasksLatchOf(semaphore);
-
-        try {
-            assertThat(rejections.get())
-                    .as("the fork threshold was never crossed, so no rejection was exercised")
-                    .isPositive();
-            assertThat(after)
-                    .as("tasksLatch was raised for a fork that never ran and is never lowered again")
-                    .isEqualTo(before);
-        } finally {
-            executor.shutdownNow();
-        }
+        assertThat(deepest.get())
+                .as("hand-overs nested at once")
+                .isEqualTo(1);
     }
 
     /**
@@ -657,54 +562,6 @@ public class AsyncSemaphoreTest {
     }
 
     /**
-     * With an executor the hand-offs do not nest either. Before, they nested until the fork
-     * threshold, which is about 25 levels, and each level is as deep as the callbacks of a
-     * waiter. With the pub/sub callbacks and an executor, a stack of 256 KB overflowed at 29
-     * levels.
-     */
-    @Test
-    @Timeout(60)
-    void testHandOffsDoNotNestWithExecutor() throws Exception {
-        int waiters = 1000;
-        ExecutorService executor = Executors.newFixedThreadPool(2);
-        AsyncSemaphore semaphore = new AsyncSemaphore(0, executor);
-        AtomicInteger nested = new AtomicInteger();
-        AtomicInteger deepest = new AtomicInteger();
-        CountDownLatch handedOn = new CountDownLatch(waiters);
-
-        try {
-            for (int i = 0; i < waiters; i++) {
-                semaphore.acquire().thenRun(() -> {
-                    deepest.accumulateAndGet(nested.incrementAndGet(), Math::max);
-                    semaphore.release();
-                    nested.decrementAndGet();
-                    handedOn.countDown();
-                });
-            }
-
-            semaphore.release();
-
-            assertThat(handedOn.await(10, TimeUnit.SECONDS)).isTrue();
-            assertThat(deepest.get()).as("hand-offs nested at once").isEqualTo(1);
-        } finally {
-            executor.shutdownNow();
-        }
-    }
-
-    private static long completedCount(List<CompletableFuture<Void>> futures) {
-        return futures.stream().filter(CompletableFuture::isDone).count();
-    }
-
-    /** Behaves like a shutting-down event loop group, but counts what it turned away. */
-    private static ThreadPoolExecutor rejectingExecutor(AtomicInteger rejections) {
-        return new ThreadPoolExecutor(1, 1, 0, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(),
-                (task, executor) -> {
-                    rejections.incrementAndGet();
-                    throw new RejectedExecutionException("executor is shut down");
-                });
-    }
-
-    /**
      * Element whose hashCode() can be made to block once, on demand. FastRemovalQueue.poll()
      * hashes the value inside index.remove(value, node), i.e. after the node has already been
      * taken out of the queue and claimed, which is precisely the window under test.
@@ -745,15 +602,6 @@ public class AsyncSemaphoreTest {
         public boolean equals(Object other) {
             return this == other;
         }
-    }
-
-    // The two helpers below reach into private state because AsyncSemaphore exposes no other
-    // way to observe the fork bookkeeping or the retained nodes behind queueSize().
-
-    private static int tasksLatchOf(AsyncSemaphore semaphore) throws Exception {
-        Field field = AsyncSemaphore.class.getDeclaredField("tasksLatch");
-        field.setAccessible(true);
-        return ((AtomicInteger) field.get(semaphore)).get();
     }
 
     private static int backingNodeCountOf(AsyncSemaphore semaphore) throws Exception {
