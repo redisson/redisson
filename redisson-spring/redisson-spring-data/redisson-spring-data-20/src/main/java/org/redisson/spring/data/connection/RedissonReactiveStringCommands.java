@@ -90,7 +90,6 @@ public class RedissonReactiveStringCommands extends RedissonBaseReactive impleme
                     m = write(key, StringCodec.INSTANCE, SET, key, value, "PX", command.getExpiration().get().getExpirationTimeInMilliseconds(), "NX");
                 } else if (command.getOption().get() == SetOption.SET_IF_PRESENT) {
                     m = write(key, StringCodec.INSTANCE, SET, key, value, "PX", command.getExpiration().get().getExpirationTimeInMilliseconds(), "XX");
-                    return m.map(v -> new BooleanResponse<>(command, v));
                 }
             }
             return m.map(v -> new BooleanResponse<>(command, v))

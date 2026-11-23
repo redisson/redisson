@@ -171,7 +171,7 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
             byte[] keyBuf = toByteArray(command.getKey());
 
             long start = command.getRange().getLowerBound().getValue().orElse(0L);
-            long end = command.getRange().getUpperBound().getValue().get();
+            long end = command.getRange().getUpperBound().getValue().orElse(-1L);
 
             Flux<Tuple> flux;
             if (command.getDirection() == Direction.ASC) {
@@ -310,32 +310,30 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
     }
     
     String toLexLowerBound(Range range, Object defaultValue) {
+        if (!range.getLowerBound().getValue().isPresent() || range.getLowerBound().getValue().get().toString().isEmpty()) {
+            return String.valueOf(defaultValue);
+        }
         StringBuilder s = new StringBuilder();
         if (range.getLowerBound().isInclusive()) {
             s.append("[");
         } else {
             s.append("(");
         }
-        if (!range.getLowerBound().getValue().isPresent() || range.getLowerBound().getValue().get().toString().isEmpty()) {
-            s.append(defaultValue);
-        } else {
-            s.append(range.getLowerBound().getValue().get());
-        }
+        s.append(range.getLowerBound().getValue().get());
         return s.toString();
     }
 
     String toLexUpperBound(Range range, Object defaultValue) {
+        if (!range.getUpperBound().getValue().isPresent() || range.getUpperBound().getValue().get().toString().isEmpty()) {
+            return String.valueOf(defaultValue);
+        }
         StringBuilder s = new StringBuilder();
         if (range.getUpperBound().isInclusive()) {
             s.append("[");
         } else {
             s.append("(");
         }
-        if (!range.getUpperBound().getValue().isPresent() || range.getUpperBound().getValue().get().toString().isEmpty()) {
-            s.append(defaultValue);
-        } else {
-            s.append(range.getUpperBound().getValue().get());
-        }
+        s.append(range.getUpperBound().getValue().get());
         return s.toString();
     }
 
@@ -393,7 +391,7 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
             byte[] keyBuf = toByteArray(command.getKey());
             Mono<Long> m = write(keyBuf, StringCodec.INSTANCE, ZREMRANGEBYRANK, 
                                 keyBuf, command.getRange().getLowerBound().getValue().orElse(0L),
-                                command.getRange().getUpperBound().getValue().get());
+                                command.getRange().getUpperBound().getValue().orElse(-1L));
             return m.map(v -> new NumericResponse<>(command, v));
         });
     }
@@ -493,8 +491,8 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
                 start = toLexLowerBound(command.getRange(), "-");
                 end = toLexUpperBound(command.getRange(), "+");
             } else {
-                start = toLexUpperBound(command.getRange(), "-");
-                end = toLexLowerBound(command.getRange(), "+");
+                start = toLexUpperBound(command.getRange(), "+");
+                end = toLexLowerBound(command.getRange(), "-");
             }
             
             Mono<Set<byte[]>> m;

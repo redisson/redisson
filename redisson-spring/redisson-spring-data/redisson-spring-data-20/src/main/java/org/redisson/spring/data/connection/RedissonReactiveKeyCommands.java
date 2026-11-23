@@ -71,15 +71,17 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
         });
     }
     
+    static final RedisStrictCommand<List<byte[]>> KEYS = new RedisStrictCommand<>("KEYS");
+
     @Override
     public Flux<MultiValueResponse<ByteBuffer, ByteBuffer>> keys(Publisher<ByteBuffer> patterns) {
         return execute(patterns, pattern -> {
 
             Assert.notNull(pattern, "Pattern must not be null!");
 
-            Mono<List<String>> m = read(null, StringCodec.INSTANCE, RedisCommands.KEYS, toByteArray(pattern));
+            Mono<List<byte[]>> m = read(null, ByteArrayCodec.INSTANCE, KEYS, toByteArray(pattern));
             return m.map(v -> {
-                List<ByteBuffer> values = v.stream().map(t -> ByteBuffer.wrap(t.getBytes())).collect(Collectors.toList());
+                List<ByteBuffer> values = v.stream().map(t -> ByteBuffer.wrap(t)).collect(Collectors.toList());
                 return new MultiValueResponse<>(pattern, values);   
             });
         });
@@ -87,9 +89,10 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
 
     @Override
     public Mono<ByteBuffer> randomKey() {
-        return executorService.reactive(() -> {
+        Mono<byte[]> m = executorService.reactive(() -> {
             return executorService.readRandomAsync(ByteArrayCodec.INSTANCE, RedisCommands.RANDOM_KEY);
         });
+        return m.map(v -> ByteBuffer.wrap(v));
     }
 
     static final RedisStrictCommand<String> RENAME = new RedisStrictCommand<String>("RENAME");
