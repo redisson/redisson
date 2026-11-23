@@ -16,14 +16,18 @@
 package org.redisson.spring.data.connection;
 
 import org.reactivestreams.Publisher;
+import org.redisson.ScanResult;
+import org.redisson.api.RFuture;
+import org.redisson.client.RedisClient;
 import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.client.protocol.convertor.Convertor;
+import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.reactive.CommandReactiveExecutor;
-import org.redisson.reactive.RedissonKeysReactive;
+import org.redisson.reactive.IteratorConsumer;
 import org.springframework.data.redis.connection.DataType;
 import org.springframework.data.redis.connection.ReactiveKeyCommands;
 import org.springframework.data.redis.connection.ReactiveRedisConnection.*;
@@ -35,6 +39,7 @@ import reactor.core.publisher.Mono;
 
 import java.nio.ByteBuffer;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -89,15 +94,17 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
         });
     }
 
+    static final RedisStrictCommand<List<byte[]>> KEYS = new RedisStrictCommand<>("KEYS");
+
     @Override
     public Flux<MultiValueResponse<ByteBuffer, ByteBuffer>> keys(Publisher<ByteBuffer> patterns) {
         return execute(patterns, pattern -> {
 
             Assert.notNull(pattern, "Pattern must not be null!");
 
-            Mono<List<String>> m = read(null, StringCodec.INSTANCE, RedisCommands.KEYS, toByteArray(pattern));
+            Mono<List<byte[]>> m = read(null, ByteArrayCodec.INSTANCE, KEYS, toByteArray(pattern));
             return m.map(v -> {
-                List<ByteBuffer> values = v.stream().map(t -> ByteBuffer.wrap(t.getBytes())).collect(Collectors.toList());
+                List<ByteBuffer> values = v.stream().map(t -> ByteBuffer.wrap(t)).collect(Collectors.toList());
                 return new MultiValueResponse<>(pattern, values);   
             });
         });
@@ -105,18 +112,40 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
 
     @Override
     public Flux<ByteBuffer> scan(ScanOptions options) {
-        RedissonKeysReactive reactive = new RedissonKeysReactive(executorService);
-        if (options.getCount() != null) {
-            return reactive.getKeysByPattern(options.getPattern(), options.getCount().intValue()).map(t -> ByteBuffer.wrap(t.getBytes()));
+        List<Publisher<byte[]>> publishers = new ArrayList<>();
+        for (MasterSlaveEntry entry : executorService.getConnectionManager().getEntrySet()) {
+            publishers.add(Flux.<byte[]>create(emitter -> emitter.onRequest(new IteratorConsumer<byte[]>(emitter) {
+
+                @Override
+                protected boolean tryAgain() {
+                    return false;
+                }
+
+                @Override
+                protected RFuture<ScanResult<Object>> scanIterator(RedisClient client, String nextIterPos) {
+                    List<Object> args = new ArrayList<>();
+                    args.add(nextIterPos);
+                    if (options.getPattern() != null) {
+                        args.add("MATCH");
+                        args.add(options.getPattern());
+                    }
+                    if (options.getCount() != null) {
+                        args.add("COUNT");
+                        args.add(options.getCount());
+                    }
+                    return executorService.readAsync(client, entry, ByteArrayCodec.INSTANCE, RedisCommands.SCAN, args.toArray());
+                }
+            })));
         }
-        return reactive.getKeysByPattern(options.getPattern()).map(t -> ByteBuffer.wrap(t.getBytes()));
+        return Flux.merge(publishers).map(v -> ByteBuffer.wrap(v));
     }
 
     @Override
     public Mono<ByteBuffer> randomKey() {
-        return executorService.reactive(() -> {
+        Mono<byte[]> m = executorService.reactive(() -> {
             return executorService.readRandomAsync(ByteArrayCodec.INSTANCE, RedisCommands.RANDOM_KEY);
         });
+        return m.map(v -> ByteBuffer.wrap(v));
     }
 
     static final RedisStrictCommand<String> RENAME = new RedisStrictCommand<String>("RENAME");
