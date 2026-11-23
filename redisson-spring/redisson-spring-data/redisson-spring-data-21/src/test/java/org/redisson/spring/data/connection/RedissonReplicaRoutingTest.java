@@ -1,0 +1,60 @@
+package org.redisson.spring.data.connection;
+
+import org.junit.jupiter.api.Test;
+import org.redisson.RedisDockerTest;
+import org.redisson.Redisson;
+import org.redisson.api.RedissonClient;
+import org.springframework.data.redis.connection.BitFieldSubCommands;
+import org.springframework.data.redis.connection.BitFieldSubCommands.BitFieldType;
+import org.springframework.data.redis.connection.ReactiveRedisConnection;
+import org.springframework.data.redis.connection.RedisConnection;
+import org.testcontainers.containers.ContainerState;
+
+import java.nio.ByteBuffer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+public class RedissonReplicaRoutingTest extends RedisDockerTest {
+
+    private static final Pattern CALLS = Pattern.compile("calls=(\\d+)");
+
+    @Test
+    public void testWriteCommandsRunOnMaster() throws InterruptedException {
+        withSentinel((nodes, config) -> {
+            RedissonClient client = Redisson.create(config);
+            try {
+                RedissonConnectionFactory factory = new RedissonConnectionFactory(client);
+                RedisConnection connection = factory.getConnection();
+                ReactiveRedisConnection reactive = factory.getReactiveConnection();
+
+                connection.stringCommands().get("routing-precondition".getBytes());
+                assertThat(calls(nodes.get(0), "get")).isZero();
+                assertThat(calls(nodes.get(1), "get")).isPositive();
+
+                byte[] bits = "bitfield-routing".getBytes();
+                BitFieldSubCommands get = BitFieldSubCommands.create().get(BitFieldType.unsigned(8)).valueAt(0);
+                BitFieldSubCommands set = BitFieldSubCommands.create().set(BitFieldType.unsigned(8)).valueAt(0).to(7);
+                assertThat(connection.stringCommands().bitField(bits, get)).containsExactly(0L);
+                assertThat(reactive.stringCommands().bitField(ByteBuffer.wrap(bits), set).block()).containsExactly(0L);
+                assertThat(reactive.stringCommands().bitField(ByteBuffer.wrap(bits), get).block()).containsExactly(7L);
+            } finally {
+                client.shutdown();
+            }
+        }, 1);
+    }
+
+    private long calls(ContainerState node, String command) {
+        String stats = execute(node, "redis-cli", "info", "commandstats");
+        for (String line : stats.split("\n")) {
+            if (line.startsWith("cmdstat_" + command + ":")) {
+                Matcher matcher = CALLS.matcher(line);
+                assertThat(matcher.find()).isTrue();
+                return Long.parseLong(matcher.group(1));
+            }
+        }
+        return 0;
+    }
+
+}

@@ -63,16 +63,27 @@ abstract class RedissonBaseReactive {
     }
     
     <T> Mono<T> execute(RedisClusterNode node, RedisCommand<T> command, Object... params) {
+        return execute(node, StringCodec.INSTANCE, command, params);
+    }
+
+    <T> Mono<T> execute(RedisClusterNode node, Codec codec, RedisCommand<T> command, Object... params) {
         RedisClient entry = getEntry(node);
-        return executorService.reactive(() -> {
-            return executorService.writeAsync(entry, StringCodec.INSTANCE, command, params);
+        Mono<T> f = executorService.reactive(() -> {
+            return executorService.writeAsync(entry, codec, command, params);
         });
+        return f.onErrorMap(e -> new RedisSystemException(e.getMessage(), e));
     }
 
     protected RedisClient getEntry(RedisClusterNode node) {
         InetSocketAddress addr = new InetSocketAddress(node.getHost(), node.getPort());
         MasterSlaveEntry entry = executorService.getConnectionManager().getEntry(addr);
-        ClientConnectionsEntry e = entry.getEntry(addr);
+        ClientConnectionsEntry e = null;
+        if (entry != null) {
+            e = entry.getEntry(addr);
+        }
+        if (e == null) {
+            throw new IllegalArgumentException("Node " + node + " is unknown to cluster");
+        }
         return e.getClient();
     }
     

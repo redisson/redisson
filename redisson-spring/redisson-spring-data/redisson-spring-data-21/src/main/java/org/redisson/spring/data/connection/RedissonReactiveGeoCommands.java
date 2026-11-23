@@ -93,7 +93,7 @@ public class RedissonReactiveGeoCommands extends RedissonBaseReactive implements
             }
             
             Mono<Distance> m = write(keyBuf, DoubleCodec.INSTANCE, new RedisCommand<Distance>("GEODIST", new DistanceConvertor(metric)), 
-                                    keyBuf, fromBuf, toBuf, metric.getAbbreviation());
+                                    keyBuf, fromBuf, toBuf, convert(metric).getAbbreviation());
             return m.map(v -> new CommandResponse<>(command, v));
         });
     }
@@ -138,8 +138,6 @@ public class RedissonReactiveGeoCommands extends RedissonBaseReactive implements
         });
     }
 
-    private final MultiDecoder<GeoResults<GeoLocation<byte[]>>> postitionDecoder = new ListMultiDecoder2(new GeoResultsDecoder(), new CodecDecoder(), new PointDecoder(), new ObjectListReplayDecoder());
-    
     @Override
     public Flux<CommandResponse<GeoRadiusCommand, Flux<GeoResult<GeoLocation<ByteBuffer>>>>> geoRadius(
             Publisher<GeoRadiusCommand> commands) {
@@ -157,15 +155,15 @@ public class RedissonReactiveGeoCommands extends RedissonBaseReactive implements
             params.add(BigDecimal.valueOf(command.getPoint().getX()).toPlainString());
             params.add(BigDecimal.valueOf(command.getPoint().getY()).toPlainString());
             params.add(command.getDistance().getValue());
-            params.add(command.getDistance().getMetric().getAbbreviation());
+            params.add(convert(command.getDistance().getMetric()).getAbbreviation());
             
-            RedisCommand<GeoResults<GeoLocation<byte[]>>> cmd;
+            MultiDecoder<GeoResults<GeoLocation<ByteBuffer>>> decoder = new ListMultiDecoder2(new ByteBufferGeoResultsDecoder(command.getDistance().getMetric()), new GeoDistanceDecoder(), new PointDecoder());
+            RedisCommand<GeoResults<GeoLocation<ByteBuffer>>> cmd = new RedisCommand<>("GEORADIUS_RO", decoder);
             if (args.getFlags().contains(GeoRadiusCommandArgs.Flag.WITHCOORD)) {
-                cmd = new RedisCommand<GeoResults<GeoLocation<byte[]>>>("GEORADIUS_RO", postitionDecoder);
                 params.add("WITHCOORD");
-            } else {
-                MultiDecoder<GeoResults<GeoLocation<byte[]>>> distanceDecoder = new ListMultiDecoder2(new ByteBufferGeoResultsDecoder(command.getDistance().getMetric()), new GeoDistanceDecoder());
-                cmd = new RedisCommand<GeoResults<GeoLocation<byte[]>>>("GEORADIUS_RO", distanceDecoder);
+            }
+            if (args.getFlags().contains(GeoRadiusCommandArgs.Flag.WITHDIST)
+                    || !args.getFlags().contains(GeoRadiusCommandArgs.Flag.WITHCOORD)) {
                 params.add("WITHDIST");
             }
             
@@ -199,15 +197,15 @@ public class RedissonReactiveGeoCommands extends RedissonBaseReactive implements
             params.add(keyBuf);
             params.add(memberBuf);
             params.add(command.getDistance().getValue());
-            params.add(command.getDistance().getMetric().getAbbreviation());
+            params.add(convert(command.getDistance().getMetric()).getAbbreviation());
             
-            RedisCommand<GeoResults<GeoLocation<byte[]>>> cmd;
+            MultiDecoder<GeoResults<GeoLocation<ByteBuffer>>> decoder = new ListMultiDecoder2(new ByteBufferGeoResultsDecoder(command.getDistance().getMetric()), new GeoDistanceDecoder(), new PointDecoder());
+            RedisCommand<GeoResults<GeoLocation<ByteBuffer>>> cmd = new RedisCommand<>("GEORADIUSBYMEMBER_RO", decoder);
             if (args.getFlags().contains(GeoRadiusCommandArgs.Flag.WITHCOORD)) {
-                cmd = new RedisCommand<GeoResults<GeoLocation<byte[]>>>("GEORADIUSBYMEMBER_RO", postitionDecoder);
                 params.add("WITHCOORD");
-            } else {
-                MultiDecoder<GeoResults<GeoLocation<byte[]>>> distanceDecoder = new ListMultiDecoder2(new ByteBufferGeoResultsDecoder(command.getDistance().getMetric()), new GeoDistanceDecoder());
-                cmd = new RedisCommand<GeoResults<GeoLocation<byte[]>>>("GEORADIUSBYMEMBER_RO", distanceDecoder);
+            }
+            if (args.getFlags().contains(GeoRadiusCommandArgs.Flag.WITHDIST)
+                    || !args.getFlags().contains(GeoRadiusCommandArgs.Flag.WITHCOORD)) {
                 params.add("WITHDIST");
             }
             
@@ -222,6 +220,13 @@ public class RedissonReactiveGeoCommands extends RedissonBaseReactive implements
             Mono<GeoResults<GeoLocation<ByteBuffer>>> m = read(keyBuf, ByteArrayCodec.INSTANCE, cmd, params.toArray());
             return m.map(v -> new CommandResponse<>(command, Flux.fromIterable(v.getContent())));
         });
+    }
+
+    private Metric convert(Metric metric) {
+        if (metric == Metrics.NEUTRAL) {
+            return RedisGeoCommands.DistanceUnit.METERS;
+        }
+        return metric;
     }
 
 }
