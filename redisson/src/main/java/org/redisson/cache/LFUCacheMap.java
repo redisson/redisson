@@ -191,21 +191,21 @@ public class LFUCacheMap<K, V> extends AbstractCacheMap<K, V> {
 
     @Override
     protected void onMapFull() {
+        Map.Entry<MapKey, LFUCachedValue<K, V>> entry = accessMap.pollFirstEntry();
+        if (entry == null) {
+            return;
+        }
+
+        LFUCachedValue<K, V> evicted = entry.getValue();
+        evicted.getLock().execute(() -> evicted.mapKey = null);
+
+        if (map.remove(evicted.getKey(), evicted)) {
+            super.onValueRemove(evicted);
+        }
+
+        // raise the floor instead of decrementing every surviving entry
+        long floor = entry.getKey().accessCount;
         lock.execute(() -> {
-            Map.Entry<MapKey, LFUCachedValue<K, V>> entry = accessMap.pollFirstEntry();
-            if (entry == null) {
-                return;
-            }
-
-            LFUCachedValue<K, V> evicted = entry.getValue();
-            evicted.getLock().execute(() -> evicted.mapKey = null);
-
-            if (map.remove(evicted.getKey(), evicted)) {
-                super.onValueRemove(evicted);
-            }
-
-            // raise the floor instead of decrementing every surviving entry
-            long floor = entry.getKey().accessCount;
             if (floor - baseline > 0) {
                 baseline = floor;
             }

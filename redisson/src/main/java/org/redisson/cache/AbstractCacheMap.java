@@ -190,13 +190,15 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
 
     private V put(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit) {
         CachedValue<K, V> entry = create(key, value, ttlUnit.toMillis(ttl), maxIdleUnit.toMillis(maxIdleTime));
-        if (isFull(key)) {
-            if (!removeExpiredEntries()) {
-                onMapFull();
-            }
-        }
-        onValueCreate(entry);
-        CachedValue<K, V> prevCachedValue = map.put(key, entry);
+        makeRoom(key);
+
+        AtomicReference<CachedValue<K, V>> replaced = new AtomicReference<>();
+        map.compute(key, (k, current) -> {
+            replaced.set(current);
+            onValueCreate(entry);
+            return entry;
+        });
+        CachedValue<K, V> prevCachedValue = replaced.get();
         if (prevCachedValue != null) {
             onValueRemove(prevCachedValue);
             if (!isValueExpired(prevCachedValue)) {
@@ -250,6 +252,21 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
     }
 
     protected abstract void onMapFull();
+
+    private void makeRoom(K key) {
+        if (!isFull(key)) {
+            return;
+        }
+        if (removeExpiredEntries()) {
+            return;
+        }
+
+        int sizeBefore;
+        do {
+            sizeBefore = map.size();
+            onMapFull();
+        } while (map.size() < sizeBefore && map.size() >= size);
+    }
 
     protected boolean isFull(K key) {
         if (size == 0) {
@@ -487,17 +504,15 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
     @Override
     public V putIfAbsent(K key, V value) {
         CachedValue<K, V> entry = create(key, value, timeToLiveInMillis, maxIdleInMillis);
-        CachedValue<K, V> prevCachedValue = map.putIfAbsent(key, entry);
-        if (prevCachedValue != null) {
-            return prevCachedValue.getValue();
-        }
+        makeRoom(key);
 
-        if (isFull(key)) {
-            if (!removeExpiredEntries()) {
-                onMapFull();
-            }
+        CachedValue<K, V> mapped = map.computeIfAbsent(key, k -> {
+            onValueCreate(entry);
+            return entry;
+        });
+        if (mapped != entry) {
+            return mapped.getValue();
         }
-        onValueCreate(entry);
         return null;
     }
 
@@ -551,11 +566,7 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
 
     @Override
     public V computeIfAbsent(K key, Function<? super K, ? extends V> mappingFunction) {
-        if (isFull(key)) {
-            if (!removeExpiredEntries()) {
-                onMapFull();
-            }
-        }
+        makeRoom(key);
 
         CachedValue<K, V> v = map.computeIfAbsent(key, k -> {
             V value = mappingFunction.apply(k);

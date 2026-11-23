@@ -579,6 +579,59 @@ public class LFUCacheMapTest {
     // concurrency
     // ==================================================================
 
+    private static final class KeyOfBin15 {
+
+        @Override
+        public int hashCode() {
+            return 15;
+        }
+    }
+
+    @Test
+    public void evictionThatWaitsForAMappingFunctionDoesNotStopOtherEvictions() throws Exception {
+        Object loaded = new KeyOfBin15();
+        Object oldest = new KeyOfBin15();
+        Cache<Object, Integer> map = new LFUCacheMap<>(4, 0, 0);
+        map.put(oldest, 0);
+        map.put(1, 0);
+        map.put(2, 0);
+
+        CountDownLatch functionRuns = new CountDownLatch(1);
+        CountDownLatch functionMayReturn = new CountDownLatch(1);
+        ExecutorService pool = Executors.newFixedThreadPool(3);
+        try {
+            Future<?> load = pool.submit(() -> map.computeIfAbsent(loaded, k -> {
+                functionRuns.countDown();
+                try {
+                    functionMayReturn.await();
+                } catch (InterruptedException e) {
+                    throw new IllegalStateException(e);
+                }
+                return 0;
+            }));
+            assertThat(functionRuns.await(10, TimeUnit.SECONDS)).isTrue();
+            map.put(3, 0);
+
+            Future<?> first = pool.submit(() -> map.put(4, 0));
+            Future<?> second = pool.submit(() -> map.put(5, 0));
+            long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+            while (!first.isDone() && !second.isDone() && System.nanoTime() < deadline) {
+                Thread.sleep(10);
+            }
+            assertThat(first.isDone() || second.isDone())
+                    .as("a put that evicts an entry of another bin ends while the mapping function runs")
+                    .isTrue();
+
+            functionMayReturn.countDown();
+            load.get(10, TimeUnit.SECONDS);
+            first.get(10, TimeUnit.SECONDS);
+            second.get(10, TimeUnit.SECONDS);
+        } finally {
+            functionMayReturn.countDown();
+            pool.shutdownNow();
+        }
+    }
+
     @Test
     public void concurrentTrafficRespectsMaxSizeAndDoesNotThrow() throws Exception {
         int maxSize = 500;
