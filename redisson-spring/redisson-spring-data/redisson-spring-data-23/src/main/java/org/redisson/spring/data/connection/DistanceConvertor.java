@@ -35,6 +35,9 @@ public class DistanceConvertor implements Convertor<Distance> {
 
     @Override
     public Distance convert(Object obj) {
+        if (obj == null) {
+            return null;
+        }
         return new Distance((Double)obj, metric);
     }
 

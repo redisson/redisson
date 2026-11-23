@@ -38,6 +38,7 @@ import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.client.protocol.decoder.MultiDecoder;
+import org.redisson.client.protocol.decoder.ObjectListReplayDecoder;
 import org.redisson.reactive.CommandReactiveExecutor;
 import org.redisson.reactive.MapReactiveIterator;
 import org.springframework.data.redis.connection.ReactiveHashCommands;
@@ -97,13 +98,7 @@ public class RedissonReactiveHashCommands extends RedissonBaseReactive implement
         });
     }
     
-    private static final RedisCommand<List<Object>> HMGET = new RedisCommand<List<Object>>("HMGET", (parts, state) -> {
-        List<Object> list = parts.stream().filter(e -> e != null).collect(Collectors.toList());
-        if (list.isEmpty()) {
-            return null;
-        }
-        return parts;
-    });
+    private static final RedisCommand<List<Object>> HMGET = new RedisCommand<List<Object>>("HMGET", new ObjectListReplayDecoder<>());
 
     @Override
     public Flux<MultiValueResponse<HGetCommand, ByteBuffer>> hMGet(Publisher<HGetCommand> commands) {
@@ -117,6 +112,9 @@ public class RedissonReactiveHashCommands extends RedissonBaseReactive implement
             args.add(keyBuf);
             args.addAll(command.getFields().stream().map(buf -> toByteArray(buf)).collect(Collectors.toList()));
             Mono<List<byte[]>> m = read(keyBuf, ByteArrayCodec.INSTANCE, HMGET, args.toArray());
+            if (command.getFields().size() == 1) {
+                m = m.filter(v -> v.get(0) != null);
+            }
             return m.map(v -> {
                 List<ByteBuffer> values = v.stream().map(array -> {
                     if (array != null) {
