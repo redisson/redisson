@@ -1,5 +1,7 @@
 package org.redisson.spring.data.connection;
 
+import org.awaitility.Awaitility;
+import org.awaitility.Durations;
 import org.junit.jupiter.api.Test;
 import org.redisson.RedisDockerTest;
 import org.redisson.Redisson;
@@ -84,14 +86,10 @@ public class RedissonSentinelConnectionTest extends RedisDockerTest {
             Collection<RedisServer> masters = connection.masters();
             connection.failover(masters.iterator().next());
 
-            try {
-                Thread.sleep(10000);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-
-            RedisServer newMaster = connection.masters().iterator().next();
-            assertThat(masters.iterator().next().getPort()).isNotEqualTo(newMaster.getPort());
+            Awaitility.await().atMost(Durations.ONE_MINUTE).untilAsserted(() -> {
+                RedisServer newMaster = connection.masters().iterator().next();
+                assertThat(newMaster.asString()).isNotEqualTo(masters.iterator().next().asString());
+            });
         });
     }
 }
