@@ -57,7 +57,7 @@ Redisson greatly extends the capabilities of Valkey and Redis by providing addit
 * [Services](https://redisson.pro/docs/data-and-services/services)  
     Remote service, Live Object service, Executor service, Scheduler service, MapReduce service
 * [Microservices integration](https://redisson.pro/docs/microservices-integration)  
-    Helidon, Micronaut, Quarkus
+    Helidon, Micronaut, Quarkus, Eclipse JNoSQL
 * [Integration with Spring framework](https://redisson.pro/docs/integration-with-spring)  
     Spring Boot Starter, Spring Cache, Spring Session, Spring Transaction Manager, Spring Cloud Stream, Spring Data Redis
 * [Web Session Management](https://redisson.pro/docs/web-session-management)  

@@ -75,7 +75,7 @@ High-performance async and lock-free Java client for Redis and Valkey based on [
 * [Distributed services](data-and-services/services.md)  
     Remote service, Live Object service, Executor service, Scheduler service, MapReduce service
 * [Microservices integration](microservices-integration.md)  
-    Helidon, Micronaut, Quarkus
+    Helidon, Micronaut, Quarkus, Eclipse JNoSQL
 * [Integration with Spring framework](integration-with-spring.md)  
     Spring Boot Starter, Spring Cache, Spring Session, Spring Transaction Manager, Spring Cloud Stream, Spring Data Redis
 * [Web Session Management](web-session-management.md)  

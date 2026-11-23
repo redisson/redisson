@@ -426,3 +426,128 @@ Supports Helidon 1.4.x - 4.x.x and 27.x.x
     Applications without dependency injection can get the instance through `Services.getNamed(RedissonClient.class, "simple")`.
 
 	For injection without @Named or @Service.Named annotation use instance name - `default`. 
+
+## Eclipse JNoSQL
+
+Redisson implements [Eclipse JNoSQL](https://www.jnosql.org/) key-value driver. Eclipse JNoSQL implements [Jakarta NoSQL](https://jakarta.ee/specifications/nosql/) and [Jakarta Data](https://jakarta.ee/specifications/data/) specifications.
+
+Supports Eclipse JNoSQL 1.1.x - 1.2.x  
+
+### Usage  
+
+1. **Add `redisson-jnosql` dependency into your project:**  
+
+    <div class="grid cards" markdown>
+
+    -   **Community Edition**
+
+        Maven
+
+        ```xml  
+        <dependency>
+            <groupId>org.redisson</groupId>
+            <!-- for Eclipse JNoSQL v1.1.x - v1.2.x -->
+            <artifactId>redisson-jnosql-11</artifactId>
+            <version>xVERSIONx</version>
+        </dependency>
+        ```
+
+        Gradle
+
+        ```groovy
+        // for Eclipse JNoSQL v1.1.x - v1.2.x
+        compile 'org.redisson:redisson-jnosql-11:xVERSIONx'
+        ```
+
+
+    -   **Redisson PRO**
+
+        Maven
+
+        ```xml  
+        <dependency>
+            <groupId>pro.redisson</groupId>
+            <!-- for Eclipse JNoSQL v1.1.x - v1.2.x -->
+            <artifactId>redisson-jnosql-11</artifactId>
+            <version>xVERSIONx</version>
+        </dependency>
+        ```
+
+        Gradle
+
+        ```groovy
+        // for Eclipse JNoSQL v1.1.x - v1.2.x
+        compile 'pro.redisson:redisson-jnosql-11:xVERSIONx'
+        ```
+
+        [License key configuration](configuration.md/#license-key-configuration)
+
+    </div>
+    [Redisson PRO vs. Community Edition ➜](https://redisson.pro/feature-comparison.html)
+    <br>
+    <br>
+
+    Eclipse JNoSQL dependencies aren't added transitively, so the application defines Eclipse JNoSQL version. Add `org.eclipse.jnosql.mapping:jnosql-mapping-key-value` and `org.eclipse.jnosql.databases:jnosql-database-commons` of the same version and a Jakarta JSON Binding implementation, unless the runtime provides it.
+
+2. **Add settings into `META-INF/microprofile-config.properties` file**  
+
+    Config structure is a flat Redisson YAML configuration with `jnosql.redisson.` prefix - 
+    [single mode](configuration.md/#single-yaml-config-format),
+    [replicated mode](configuration.md/#replicated-yaml-config-format),
+    [cluster mode](configuration.md/#cluster-yaml-config-format),
+    [sentinel mode](configuration.md/#sentinel-yaml-config-format),
+    [proxy mode](configuration.md/#proxy-mode-yaml-config-format),
+    [multi cluster mode](configuration.md/#multi-cluster-yaml-config-format), 
+    [multi sentinel mode](configuration.md/#multi-sentinel-yaml-config-format)
+
+    Below is the configuration example for `books` bucket.
+    ```
+    jnosql.keyvalue.database=books
+    jnosql.redisson.singleServerConfig.address=redis://127.0.0.1:6379
+    jnosql.redisson.singleServerConfig.connectionPoolSize=64
+    jnosql.redisson.threads=16
+    jnosql.redisson.nettyThreads=32
+    ```
+
+    Redisson YAML configuration can be defined in a file instead. File path or classpath resource with `classpath:` prefix are supported.
+    ```
+    jnosql.keyvalue.database=books
+    jnosql.redisson.file=classpath:redisson.yaml
+    ```
+
+    `jnosql.keyvalue.provider=org.redisson.jnosql.RedissonKeyValueConfiguration` setting is required only if other Eclipse JNoSQL key-value drivers are present in classpath.
+
+3. **Use Eclipse JNoSQL**  
+
+    ```java
+    @Inject
+    private KeyValueTemplate template;
+
+    template.put(book);
+    Optional<Book> result = template.get("978-0441013593", Book.class);
+    ```
+
+    Jakarta Data repository of key-value database extends `CrudRepository`:
+    ```java
+    @Repository
+    public interface BookRepository extends CrudRepository<Book, String> {
+    }
+
+    @Inject
+    private BookRepository repository;
+
+    repository.save(book);
+    Optional<Book> result = repository.findById("978-0441013593");
+    ```
+
+    Each value is stored as JSON under `bucketName:key` name with millisecond precision of time to live. Collections returned by `BucketManagerFactory` are stored under the bucket name. String elements are stored as is, other elements as JSON. This is the same data layout as Eclipse JNoSQL Redis driver uses.
+
+    Without dependency injection `RedissonKeyValueConfiguration` creates `BucketManagerFactory` from Eclipse JNoSQL `Settings`, Redisson `Config` or existing `RedissonClient` instance.
+    ```java
+    RedissonBucketManagerFactory factory = new RedissonKeyValueConfiguration().apply(redisson);
+    BucketManager manager = factory.apply("books");
+    ```
+
+    Redisson instance created by the factory is shut down when the factory is closed or when the last `BucketManager` created by the factory is closed. Redisson instance passed to the factory isn't shut down.
+
+    With dependency injection Eclipse JNoSQL creates one factory for `KeyValueTemplate` and repositories and another one for injected `BucketManagerFactory` and collections. Each of them has its own Redisson instance.

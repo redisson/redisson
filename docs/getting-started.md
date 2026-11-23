@@ -134,6 +134,7 @@ More code examples can be found [here](https://github.com/redisson/redisson-exam
 - [Quarkus Integration](microservices-integration.md/#quarkus) — including Quarkus cache
 - [Micronaut Integration](microservices-integration.md/#micronaut) — including Micronaut session and cache
 - [Helidon Integration](microservices-integration.md/#helidon) — Helidon support
+- [Eclipse JNoSQL Integration](microservices-integration.md/#eclipse-jnosql) — key-value driver for Eclipse JNoSQL
 - [JCache API (JSR-107)](cache-api-implementations.md/#jcache-api-jsr-107) — JCache provider
 - [MyBatis Cache](cache-api-implementations.md/#mybatis-cache) — second-level cache for MyBatis
 - [Hibernate Cache](cache-api-implementations.md/#hibernate-cache) — second-level cache for Hibernate

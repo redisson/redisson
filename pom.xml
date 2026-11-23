@@ -64,6 +64,7 @@
         <module>redisson-mybatis</module>
         <module>redisson-hibernate</module>
         <module>redisson-helidon</module>
+        <module>redisson-jnosql</module>
         <module>redisson-quarkus</module>
         <module>redisson-micronaut</module>
         <module>redisson-spring</module>
