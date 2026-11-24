@@ -110,7 +110,7 @@ public interface RBitSetReactive extends RExpirableReactive {
      * this Redisson instance uses {@code BITFIELD} for such reads
      * from then on.
      * <p>
-     * In a batch, {@code BITFIELD_RO} is executed without this fallback.
+     * In a batch, the availability of {@code BITFIELD_RO} is checked before the call is sent.
      *
      * @param args - bitfield arguments
      * @return result values

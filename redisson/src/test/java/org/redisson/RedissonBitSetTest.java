@@ -1,7 +1,9 @@
 package org.redisson;
 
+import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
@@ -11,6 +13,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.redisson.api.BatchOptions;
+import org.redisson.api.BatchResult;
 import org.redisson.api.RBatch;
 import org.redisson.api.RBitSetAsync;
 import org.redisson.api.RBitSetReactive;
@@ -35,6 +38,7 @@ import org.testcontainers.containers.Network;
 import org.redisson.api.RBitSet;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -44,6 +48,7 @@ import org.redisson.config.Config;
 import org.redisson.config.Protocol;
 import org.redisson.config.ReadMode;
 import org.redisson.config.SubscriptionMode;
+import org.redisson.connection.ConnectionListener;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -352,6 +357,309 @@ public class RedissonBitSetTest extends RedisDockerTest {
     }
 
     @Test
+    public void testQueuedBatchReadsWithSlaveReadMode() throws Exception {
+        try (Network network = Network.newNetwork();
+             GenericContainer<?> master = createContainer().withNetwork(network).withNetworkAliases("master");
+             GenericContainer<?> slave = createContainer("--replicaof", "master", "6379").withNetwork(network)) {
+            master.start();
+            slave.start();
+
+            Config config = new Config();
+            config.useMasterSlaveServers()
+                    .setMasterAddress("redis://" + master.getHost() + ":" + master.getFirstMappedPort())
+                    .addSlaveAddress("redis://" + slave.getHost() + ":" + slave.getFirstMappedPort())
+                    .setReadMode(ReadMode.SLAVE)
+                    .setRetryAttempts(0);
+            RedissonClient client = Redisson.create(config);
+            try {
+                RBitSet bitSet = client.getBitSet("queuedReads");
+                bitSet.setLong(0, -1L);
+                Awaitility.await().atMost(Duration.ofSeconds(30)).untilAsserted(() ->
+                        assertThat(bitSet.get(0L)).isTrue());
+
+                // BITFIELD_RO is checked before the first bit field read of a queued batch.
+                // Commands added during the check are sent after that read
+                RBatch batch = client.createBatch(BatchOptions.defaults()
+                        .executionMode(BatchOptions.ExecutionMode.REDIS_READ_ATOMIC));
+                batch.getBitSet("queuedReads").getAsync(0L);
+                batch.getBitSet("queuedReads").getLongAsync(0);
+                batch.getBitSet("queuedReads").cardinalityAsync();
+                batch.getBitSet("queuedReads").bitFieldAsync(BitFieldArgs.create().getUnsigned(8, BitOffset.bit(0)));
+                List<Object> responses = new ArrayList<>(batch.execute().getResponses());
+                assertThat(responses).containsExactly(true, -1L, 64L, Arrays.asList(255L));
+
+                // the master gets only the write
+                assertThat(master.execInContainer("redis-cli", "INFO", "commandstats").getStdout())
+                        .contains("cmdstat_bitfield:calls=1,");
+                // the check and two reads
+                assertThat(slave.execInContainer("redis-cli", "INFO", "commandstats").getStdout())
+                        .contains("cmdstat_bitfield_ro:calls=3,");
+            } finally {
+                client.shutdown();
+            }
+        }
+    }
+
+    @Test
+    public void testQueuedBatchCommandsDuringBitFieldROCheck() {
+        // slave read mode enables BITFIELD_RO for reads, without replicas they wait for the only master connection
+        Config config = new Config();
+        config.useReplicatedServers()
+                .addNodeAddress(redisson.getConfig().useSingleServer().getAddress())
+                .setReadMode(ReadMode.SLAVE)
+                .setRetryAttempts(0)
+                .setMasterConnectionMinimumIdleSize(1)
+                .setMasterConnectionPoolSize(1);
+        RedissonClient client = Redisson.create(config);
+        try {
+            redisson.getBitSet("orderedReads").setLong(0, -1L);
+
+            // another batch holds the only connection, so the BITFIELD_RO check can't be sent yet
+            RBatch holder = client.createBatch(BatchOptions.defaults()
+                    .executionMode(BatchOptions.ExecutionMode.REDIS_READ_ATOMIC));
+            holder.getBucket("orderedReadsHolder").getAsync();
+
+            // commands added during the check are sent after the getter that waits for it
+            RBatch batch = client.createBatch(BatchOptions.defaults()
+                    .executionMode(BatchOptions.ExecutionMode.REDIS_READ_ATOMIC));
+            batch.getBitSet("orderedReads").getLongAsync(0);
+            batch.getBitSet("orderedReads").getAsync(0L);
+            batch.getBitSet("orderedReads").cardinalityAsync();
+            RFuture<BatchResult<?>> result = batch.executeAsync();
+
+            holder.discard();
+            List<Object> responses = new ArrayList<>(result.toCompletableFuture().join().getResponses());
+            assertThat(responses).containsExactly(-1L, true, 64L);
+        } finally {
+            client.shutdown();
+        }
+    }
+
+    @Test
+    public void testLongQueuedBatchDuringBitFieldROCheck() throws Exception {
+        // slave read mode enables BITFIELD_RO for reads, without replicas they wait for the only master connection
+        Config config = new Config();
+        config.useReplicatedServers()
+                .addNodeAddress(redisson.getConfig().useSingleServer().getAddress())
+                .setReadMode(ReadMode.SLAVE)
+                .setRetryAttempts(0)
+                .setMasterConnectionMinimumIdleSize(1)
+                .setMasterConnectionPoolSize(1);
+        RedissonClient client = Redisson.create(config);
+        try {
+            redisson.getBitSet("longBatchReads").setLong(0, -1L);
+
+            // another batch holds the only connection, so the BITFIELD_RO check can't be sent yet
+            RBatch holder = client.createBatch(BatchOptions.defaults()
+                    .executionMode(BatchOptions.ExecutionMode.REDIS_READ_ATOMIC));
+            holder.getBucket("longBatchReadsHolder").getAsync();
+
+            // all the getters wait for the check. Sending them afterwards doesn't overflow the stack
+            int getters = 10000;
+            RBatch batch = client.createBatch(BatchOptions.defaults()
+                    .executionMode(BatchOptions.ExecutionMode.REDIS_READ_ATOMIC));
+            for (int i = 0; i < getters; i++) {
+                batch.getBitSet("longBatchReads").getLongAsync(0);
+            }
+            RFuture<BatchResult<?>> result = batch.executeAsync();
+
+            holder.discard();
+            List<Object> responses = new ArrayList<>(result.toCompletableFuture().get(30, TimeUnit.SECONDS).getResponses());
+            assertThat(responses).hasSize(getters).containsOnly(-1L);
+        } finally {
+            client.shutdown();
+        }
+    }
+
+    @Test
+    public void testDiscardQueuedBatchDuringBitFieldROCheck() {
+        // slave read mode enables BITFIELD_RO for reads, without replicas they wait for the only master connection
+        Config config = new Config();
+        config.useReplicatedServers()
+                .addNodeAddress(redisson.getConfig().useSingleServer().getAddress())
+                .setReadMode(ReadMode.SLAVE)
+                .setRetryAttempts(0)
+                .setMasterConnectionMinimumIdleSize(1)
+                .setMasterConnectionPoolSize(1);
+        RedissonClient client = Redisson.create(config);
+        try {
+            // another batch holds the only connection, so the BITFIELD_RO check can't be sent yet
+            RBatch holder = client.createBatch(BatchOptions.defaults()
+                    .executionMode(BatchOptions.ExecutionMode.REDIS_READ_ATOMIC));
+            holder.getBucket("discardedReadsHolder").getAsync();
+
+            // the getter waits for the check, so discard() has to wait for the getter
+            RBatch batch = client.createBatch(BatchOptions.defaults()
+                    .executionMode(BatchOptions.ExecutionMode.REDIS_READ_ATOMIC));
+            batch.getBitSet("discardedReads").getLongAsync(0);
+            RFuture<Void> discarded = batch.discardAsync();
+            assertThat(discarded.toCompletableFuture()).isNotDone();
+
+            holder.discard();
+            assertThat(discarded.toCompletableFuture()).succeedsWithin(Duration.ofSeconds(10));
+
+            // the discarded batch has released its connection
+            assertThat(client.getBitSet("discardedReads").getLong(0)).isZero();
+        } finally {
+            client.shutdown();
+        }
+    }
+
+    @Test
+    public void testBitFieldROCheckInQueuedBatchHoldingConnection() throws Exception {
+        try (GenericContainer<?> node = createContainer()) {
+            node.start();
+
+            // slave read mode enables BITFIELD_RO for reads, without replicas they are served by the master
+            AtomicInteger disconnects = new AtomicInteger();
+            Config config = new Config();
+            config.setConnectionListener(new ConnectionListener() {
+                @Override
+                public void onConnect(InetSocketAddress addr) {
+                }
+
+                @Override
+                public void onDisconnect(InetSocketAddress addr) {
+                    disconnects.incrementAndGet();
+                }
+            });
+            config.useReplicatedServers()
+                    .addNodeAddress("redis://" + node.getHost() + ":" + node.getFirstMappedPort())
+                    .setReadMode(ReadMode.SLAVE)
+                    .setRetryAttempts(0)
+                    .setMasterConnectionMinimumIdleSize(1)
+                    .setMasterConnectionPoolSize(1);
+            RedissonClient client = Redisson.create(config);
+            try {
+                // the batch holds the only connection of the pool when the getter is added,
+                // so BITFIELD_RO is checked over a connection of its own
+                RBatch batch = client.createBatch(BatchOptions.defaults()
+                        .executionMode(BatchOptions.ExecutionMode.REDIS_WRITE_ATOMIC));
+                batch.getBitSet("heldReads").setLongAsync(0, -1L);
+                RFuture<Long> number = batch.getBitSet("heldReads").getLongAsync(0);
+                batch.execute();
+                assertThat(number.toCompletableFuture().join()).isEqualTo(-1L);
+
+                // the check and the getter
+                assertThat(node.execInContainer("redis-cli", "INFO", "commandstats").getStdout())
+                        .contains("cmdstat_bitfield_ro:calls=2,");
+                // the connection of the check is closed
+                Awaitility.await().atMost(Duration.ofSeconds(5)).untilAsserted(() ->
+                        assertThat(node.execInContainer("redis-cli", "CLIENT", "LIST").getStdout())
+                                .doesNotContain("cmd=bitfield_ro"));
+                // closing it isn't reported to connection listeners as a disconnect of the node
+                assertThat(disconnects).hasValue(0);
+            } finally {
+                client.shutdown();
+            }
+        }
+    }
+
+    @Test
+    public void testQueuedBatchesShareBitFieldROCheck() throws Exception {
+        try (GenericContainer<?> node = createContainer()) {
+            node.start();
+
+            // slave read mode enables BITFIELD_RO for reads, without replicas they are served by the master
+            Config config = new Config();
+            config.useReplicatedServers()
+                    .addNodeAddress("redis://" + node.getHost() + ":" + node.getFirstMappedPort())
+                    .setReadMode(ReadMode.SLAVE);
+            RedissonClient client = Redisson.create(config);
+            try {
+                // the server doesn't answer for a while, so the check of the first batch is still running
+                // when the second batch needs it
+                node.execInContainer("redis-cli", "CLIENT", "PAUSE", "1000");
+                RBatch first = client.createBatch(BatchOptions.defaults()
+                        .executionMode(BatchOptions.ExecutionMode.REDIS_WRITE_ATOMIC));
+                first.getBitSet("sharedCheck").setLongAsync(0, -1L);
+                first.getBitSet("sharedCheck").getLongAsync(0);
+                RBatch second = client.createBatch(BatchOptions.defaults()
+                        .executionMode(BatchOptions.ExecutionMode.REDIS_WRITE_ATOMIC));
+                second.getBitSet("sharedCheck").setLongAsync(0, -1L);
+                second.getBitSet("sharedCheck").getLongAsync(0);
+                first.execute();
+                second.execute();
+
+                // one check and two getters
+                assertThat(node.execInContainer("redis-cli", "INFO", "commandstats").getStdout())
+                        .contains("cmdstat_bitfield_ro:calls=3,");
+            } finally {
+                client.shutdown();
+            }
+        }
+    }
+
+    @Test
+    public void testQueuedBatchChecksBitFieldROOnce() throws Exception {
+        try (GenericContainer<?> node = createContainer()) {
+            node.start();
+            node.execInContainer("redis-cli", "RPUSH", "notBits", "a");
+
+            // slave read mode enables BITFIELD_RO for reads, without replicas they are served by the master
+            Config config = new Config();
+            config.useReplicatedServers()
+                    .addNodeAddress("redis://" + node.getHost() + ":" + node.getFirstMappedPort())
+                    .setReadMode(ReadMode.SLAVE)
+                    .setRetryAttempts(0);
+            RedissonClient client = Redisson.create(config);
+            try {
+                // BITFIELD_RO fails for a list, so its availability stays unknown.
+                // The second getter doesn't check it again
+                RBatch batch = client.createBatch(BatchOptions.defaults()
+                        .executionMode(BatchOptions.ExecutionMode.REDIS_READ_ATOMIC));
+                batch.getBitSet("notBits").getLongAsync(0);
+                batch.getBitSet("notBits").getLongAsync(0);
+                assertThatThrownBy(batch::execute).isInstanceOf(RedisException.class);
+
+                assertThat(node.execInContainer("redis-cli", "INFO", "commandstats").getStdout())
+                        .contains("cmdstat_bitfield_ro:calls=1,");
+            } finally {
+                client.shutdown();
+            }
+        }
+    }
+
+    @Test
+    public void testQueuedBatchChecksBitFieldROAgainAfterFailedCheck() throws Exception {
+        try (GenericContainer<?> node = createContainer()) {
+            node.start();
+            node.execInContainer("redis-cli", "RPUSH", "notBits", "a");
+
+            // slave read mode enables BITFIELD_RO for reads, without replicas they are served by the master
+            Config config = new Config();
+            config.useReplicatedServers()
+                    .addNodeAddress("redis://" + node.getHost() + ":" + node.getFirstMappedPort())
+                    .setReadMode(ReadMode.SLAVE)
+                    .setRetryAttempts(0);
+            RedissonClient client = Redisson.create(config);
+            try {
+                // the batch holds a connection, so BITFIELD_RO is checked over a connection of its own.
+                // The check fails for a list and the availability stays unknown
+                RBatch failed = client.createBatch(BatchOptions.defaults()
+                        .executionMode(BatchOptions.ExecutionMode.REDIS_WRITE_ATOMIC));
+                failed.getBucket("checkedAgainBucket").setAsync(1);
+                failed.getBitSet("notBits").getLongAsync(0);
+                assertThatThrownBy(failed::execute).isInstanceOf(RedisException.class);
+
+                // the next batch checks it again
+                RBatch batch = client.createBatch(BatchOptions.defaults()
+                        .executionMode(BatchOptions.ExecutionMode.REDIS_WRITE_ATOMIC));
+                batch.getBitSet("checkedAgain").setLongAsync(0, -1L);
+                RFuture<Long> number = batch.getBitSet("checkedAgain").getLongAsync(0);
+                batch.execute();
+                assertThat(number.toCompletableFuture().join()).isEqualTo(-1L);
+
+                // two checks and the getter
+                assertThat(node.execInContainer("redis-cli", "INFO", "commandstats").getStdout())
+                        .contains("cmdstat_bitfield_ro:calls=3,");
+            } finally {
+                client.shutdown();
+            }
+        }
+    }
+
+    @Test
     public void testBitFieldROFallbackInQueuedBatch() throws Exception {
         try (GenericContainer<?> node = createContainer("--rename-command", "BITFIELD_RO", "BITFIELD_RO_DISABLED")) {
             node.start();
@@ -367,21 +675,7 @@ public class RedissonBitSetTest extends RedisDockerTest {
                 client.getBitSet("queuedFallback").setLong(0, -1L);
                 long errors = errorReplies(node);
 
-                // a getter is sent as BITFIELD until BITFIELD_RO is known to be available
-                RBatch firstBatch = client.createBatch(BatchOptions.defaults()
-                        .executionMode(BatchOptions.ExecutionMode.REDIS_READ_ATOMIC));
-                RFuture<Long> first = firstBatch.getBitSet("queuedFallback").getLongAsync(0);
-                firstBatch.execute();
-                assertThat(first.toCompletableFuture().join()).isEqualTo(-1L);
-                assertThat(errorReplies(node) - errors).isZero();
-
-                // BITFIELD_RO is checked before a batch kept in memory
-                RBatch checkedBatch = client.createBatch();
-                RFuture<Long> checked = checkedBatch.getBitSet("queuedFallback").getLongAsync(0);
-                checkedBatch.execute();
-                assertThat(checked.toCompletableFuture().join()).isEqualTo(-1L);
-                assertThat(errorReplies(node) - errors).isEqualTo(1);
-
+                // BITFIELD_RO is checked before the first bit field read of a queued batch.
                 // bitField() is sent as BITFIELD once BITFIELD_RO is known to be unavailable
                 BatchOptions.ExecutionMode[] modes = {
                         BatchOptions.ExecutionMode.REDIS_READ_ATOMIC, BatchOptions.ExecutionMode.REDIS_WRITE_ATOMIC};
@@ -389,9 +683,46 @@ public class RedissonBitSetTest extends RedisDockerTest {
                     RBatch batch = client.createBatch(BatchOptions.defaults().executionMode(mode));
                     RFuture<List<Long>> fields = batch.getBitSet("queuedFallback")
                             .bitFieldAsync(BitFieldArgs.create().getUnsigned(8, BitOffset.bit(0)));
+                    RFuture<Long> number = batch.getBitSet("queuedFallback").getLongAsync(0);
                     batch.execute();
+
                     assertThat(fields.toCompletableFuture().join()).containsExactly(255L);
+                    assertThat(number.toCompletableFuture().join()).isEqualTo(-1L);
+                    assertThat(errorReplies(node) - errors).isEqualTo(1);
                 }
+            } finally {
+                client.shutdown();
+            }
+        }
+    }
+
+    @Test
+    public void testBitFieldROFallbackInQueuedBatchHoldingConnection() throws Exception {
+        try (GenericContainer<?> node = createContainer("--rename-command", "BITFIELD_RO", "BITFIELD_RO_DISABLED")) {
+            node.start();
+
+            // slave read mode enables BITFIELD_RO for reads, without replicas they are served by the master
+            Config config = new Config();
+            config.useReplicatedServers()
+                    .addNodeAddress("redis://" + node.getHost() + ":" + node.getFirstMappedPort())
+                    .setReadMode(ReadMode.SLAVE)
+                    .setRetryAttempts(0)
+                    .setMasterConnectionMinimumIdleSize(1)
+                    .setMasterConnectionPoolSize(1);
+            RedissonClient client = Redisson.create(config);
+            try {
+                long errors = errorReplies(node);
+
+                // the batch holds the only connection of the pool, so BITFIELD_RO is checked over a connection of its own.
+                // bitField() is sent as BITFIELD once BITFIELD_RO is known to be unavailable
+                RBatch batch = client.createBatch(BatchOptions.defaults()
+                        .executionMode(BatchOptions.ExecutionMode.REDIS_WRITE_ATOMIC));
+                batch.getBitSet("heldFallback").setLongAsync(0, -1L);
+                RFuture<List<Long>> fields = batch.getBitSet("heldFallback")
+                        .bitFieldAsync(BitFieldArgs.create().getUnsigned(8, BitOffset.bit(0)));
+                batch.execute();
+
+                assertThat(fields.toCompletableFuture().join()).containsExactly(255L);
                 assertThat(errorReplies(node) - errors).isEqualTo(1);
             } finally {
                 client.shutdown();
@@ -417,25 +748,19 @@ public class RedissonBitSetTest extends RedisDockerTest {
                     .setRetryAttempts(0);
             RedissonClient client = Redisson.create(config);
             try {
-                // BITFIELD is denied to the user, so bitField() has to be sent as BITFIELD_RO to the master too
-                RBatch writeBatch = client.createBatch(BatchOptions.defaults()
-                        .executionMode(BatchOptions.ExecutionMode.REDIS_WRITE_ATOMIC));
-                RFuture<List<Long>> fields = writeBatch.getBitSet("readerReads")
-                        .bitFieldAsync(BitFieldArgs.create().getUnsigned(8, BitOffset.bit(0)));
-                writeBatch.execute();
-                assertThat(fields.toCompletableFuture().join()).containsExactly(255L);
-
-                // a read outside of a batch makes BITFIELD_RO known to be available
-                assertThat(client.getBitSet("readerReads").getLong(0)).isEqualTo(-1L);
-
-                // getters are sent as BITFIELD_RO once it's known to be available
+                // BITFIELD is denied to the user, so bit field reads have to be sent as BITFIELD_RO to the master too.
+                // BITFIELD_RO is checked before the first getter of a queued batch
                 BatchOptions.ExecutionMode[] modes = {
-                        BatchOptions.ExecutionMode.REDIS_READ_ATOMIC, BatchOptions.ExecutionMode.REDIS_WRITE_ATOMIC};
+                        BatchOptions.ExecutionMode.REDIS_WRITE_ATOMIC, BatchOptions.ExecutionMode.REDIS_READ_ATOMIC};
                 for (BatchOptions.ExecutionMode mode : modes) {
                     RBatch batch = client.createBatch(BatchOptions.defaults().executionMode(mode));
                     RFuture<Long> number = batch.getBitSet("readerReads").getLongAsync(0);
+                    RFuture<List<Long>> fields = batch.getBitSet("readerReads")
+                            .bitFieldAsync(BitFieldArgs.create().getUnsigned(8, BitOffset.bit(0)));
                     batch.execute();
+
                     assertThat(number.toCompletableFuture().join()).isEqualTo(-1L);
+                    assertThat(fields.toCompletableFuture().join()).containsExactly(255L);
                 }
             } finally {
                 client.shutdown();
