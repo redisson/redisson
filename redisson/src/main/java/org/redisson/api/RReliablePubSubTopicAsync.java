@@ -110,7 +110,8 @@ public interface RReliablePubSubTopicAsync<V> extends RExpirableAsync {
      *
      * @param params parameters for the message to be added
      * @return the added message with its assigned ID and metadata
-     *          or {@code null} if timeout defined and no space becomes available in full pubsub topic.
+     *          or {@code null} if timeout defined and no space becomes available in full pubsub topic
+     *              or if retentionMode != SUBSCRIPTION_OPTIONAL_RETAIN_ALL and there are no subscriptions.
      * @throws  if this operation is disabled
      */
     RFuture<Message<V>> publishAsync(PublishArgs<V> params);
@@ -124,7 +125,8 @@ public interface RReliablePubSubTopicAsync<V> extends RExpirableAsync {
      *
      * @param params parameters for the messages to be added
      * @return a list of added messages with their assigned IDs and metadata
-     *          or empty list if timeout defined and no space becomes available in full topic.
+     *          or empty list if timeout defined and no space becomes available in full topic
+     *              or if retentionMode != SUBSCRIPTION_OPTIONAL_RETAIN_ALL and there are no subscriptions.
      * @throws OperationDisabledException if this operation is disabled
      */
     RFuture<List<Message<V>>> publishManyAsync(PublishArgs<V> params);
