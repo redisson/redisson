@@ -24,6 +24,10 @@ public class State {
 
     private int batchIndex;
 
+    private Boolean batchResultSkipped;
+
+    private Throwable batchError;
+
     private int level = -1;
 
     private Object value;
@@ -56,6 +60,22 @@ public class State {
     }
     public int getBatchIndex() {
         return batchIndex;
+    }
+
+    public Boolean getBatchResultSkipped() {
+        return batchResultSkipped;
+    }
+
+    public void setBatchResultSkipped(boolean batchResultSkipped) {
+        this.batchResultSkipped = batchResultSkipped;
+    }
+
+    public Throwable getBatchError() {
+        return batchError;
+    }
+
+    public void setBatchError(Throwable batchError) {
+        this.batchError = batchError;
     }
 
     @Override

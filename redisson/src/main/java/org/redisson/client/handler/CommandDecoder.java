@@ -113,7 +113,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             if (!(data instanceof CommandsData)) {
                 endIndex = skipCommand(in);
             } else {
-                endIndex = skipBatchCommand(in, (CommandsData) data);
+                endIndex = skipBatchCommand(in, (CommandsData) data, state());
             }
             if (data.isExecuted()) {
                 in.readerIndex(endIndex);
@@ -125,10 +125,17 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         }
     }
 
-    private int skipBatchCommand(ByteBuf in, CommandsData data) throws IOException {
-        int commandsAmount = 1;
-        if (!data.isSkipResult()) {
-            commandsAmount = data.getCommands().size();
+    private int skipBatchCommand(ByteBuf in, CommandsData data, State state) throws IOException {
+        int commandsAmount = data.getCommands().size() - state.getBatchIndex();
+        if (isResultSkipped(in, data, state)) {
+            // CLIENT REPLY ON, plus CLIENT REPLY OFF's QUEUED reply and replica sync if enabled.
+            commandsAmount = 1;
+            if (data.isQueued() && state.getBatchIndex() == 0) {
+                commandsAmount++;
+            }
+            if (data.isSyncSlaves() && state.getBatchIndex() < data.getCommands().size() - 1) {
+                commandsAmount++;
+            }
         }
 
         in.markReaderIndex();
@@ -138,6 +145,39 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         int endIndex = in.readerIndex();
         in.resetReaderIndex();
         return endIndex;
+    }
+
+    private boolean isResultSkipped(ByteBuf in, CommandsData data, State state) throws IOException {
+        if (state.getBatchResultSkipped() == null) {
+            state.setBatchResultSkipped(isResultSkipped(in, data));
+        }
+        return state.getBatchResultSkipped();
+    }
+
+    private boolean isResultSkipped(ByteBuf in, CommandsData data) throws IOException {
+        if (!data.isSkipResult()) {
+            return false;
+        }
+
+        int startIndex = in.readerIndex();
+        try {
+            // A rejected CLIENT REPLY OFF leaves replies enabled for every command.
+            if (in.getByte(startIndex) == '-') {
+                return false;
+            }
+            if (!data.isQueued()) {
+                return true;
+            }
+
+            skipDecode(in); // CLIENT REPLY OFF's QUEUED reply
+            if (in.readByte() != '*') {
+                return false; // EXEC failed without executing CLIENT REPLY OFF.
+            }
+            // A null EXEC reply means the transaction was aborted without executing OFF.
+            return readLong(in) > 0;
+        } finally {
+            in.readerIndex(startIndex);
+        }
     }
 
     private void decode(ChannelHandlerContext ctx, ByteBuf in, QueueCommand data, int endIndex, State state) throws Exception {
@@ -260,8 +300,9 @@ public class CommandDecoder extends ReplayingDecoder<State> {
 
     private void decodeCommandBatch(Channel channel, ByteBuf in, CommandsData commandBatch, State state) throws Exception {
         int i = state.getBatchIndex();
+        boolean skipResult = isResultSkipped(in, commandBatch, state);
 
-        Throwable error = null;
+        Throwable error = state.getBatchError();
         while (in.writerIndex() > in.readerIndex()) {
             CommandData<Object, Object> commandData = null;
 
@@ -276,6 +317,13 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             try {
                 
                 RedisCommand<?> cmd = commandBatch.getCommands().get(i).getCommand();
+                if (commandBatch.isSkipResult() && !skipResult && RedisCommands.CLIENT_REPLY.equals(cmd)) {
+                    // Suppression is an optimization. Its rejection must not fail writes that Redis executed.
+                    in.readerIndex(endIndex);
+                    commandBatch.getCommands().get(i).getPromise().complete(null);
+                    i++;
+                    continue;
+                }
                 boolean skipConvertor = commandBatch.isQueued();
                 List<CommandData<?, ?>> commandsData = null;
                 if (!commandBatch.isAtomic()
@@ -289,6 +337,10 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                             commandsData = commandBatch.getAttachedCommands();
                         } else {
                             commandsData = commandBatch.getCommands();
+                            if (commandBatch.isSkipResult() && !skipResult && commandBatch.isAtomic()) {
+                                // EXEC contains the commands after MULTI, not the rejected OFF preceding it.
+                                commandsData = commandsData.subList(1, commandsData.size());
+                            }
                         }
                     }
                 }
@@ -323,13 +375,6 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 }
             }
 
-            if (i == 0 && commandBatch.isSkipResult() && commandBatch.isSyncSlaves()) {
-                checkpoint();
-                state.setBatchIndex(commandBatch.getCommands().size() - 1);
-                return;
-            }
-
-            i++;
             if (commandData != null && !commandData.isSuccess()) {
                 if (error == null) {
                     error = commandData.cause();
@@ -337,10 +382,24 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                     error.addSuppressed(commandData.cause());
                 }
 
+                state.setBatchError(error);
+            }
+            if (skipResult) {
+                if (commandBatch.isQueued() && i == 0) {
+                    // CLIENT REPLY OFF is queued before EXEC and has its own QUEUED reply.
+                    i++;
+                } else if (commandBatch.isSyncSlaves() && i != commandBatch.getCommands().size() - 1) {
+                    i = commandBatch.getCommands().size() - 1;
+                } else {
+                    // No per-command replies remain after CLIENT REPLY ON or replica sync.
+                    i = commandBatch.getCommands().size();
+                }
+            } else {
+                i++;
             }
         }
 
-        if (commandBatch.isSkipResult() || i == commandBatch.getCommands().size()) {
+        if (i == commandBatch.getCommands().size()) {
             CompletableFuture<Void> promise = commandBatch.getPromise();
             if (error != null) {
                 promise.completeExceptionally(error);
