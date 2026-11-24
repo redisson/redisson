@@ -124,7 +124,7 @@ public class ConnectionsHolder<T extends RedisConnection> {
         }
 
         connection.setLastUsageTime(System.nanoTime());
-        if (connection.isActive()) {
+        if (connection.isActive() && !isStalled(connection)) {
             freeConnections.addFirst(connection);
         } else {
             freeConnections.addLast(connection);
@@ -132,6 +132,14 @@ public class ConnectionsHolder<T extends RedisConnection> {
         if (changeUsage) {
             connection.decUsage();
         }
+    }
+
+    // a connection released with unanswered commands (e.g. after a response timeout) would make
+    // the next command wait behind them, so it goes to the tail instead of being handed out first
+    private boolean isStalled(T connection) {
+        return changeUsage
+                && connection.getUsage() <= 1
+                && connection.hasPendingCommands();
     }
 
     public Queue<T> getAllConnections() {
