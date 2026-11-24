@@ -821,14 +821,32 @@ public class RedissonBatchTest extends RedisDockerTest {
                 RBatch batch = client.createBatch(BatchOptions.defaults().executionMode(executionMode)
                         .skipResult().retryAttempts(0).responseTimeout(2, TimeUnit.SECONDS));
                 batch.getBucket("rejected:key", StringCodec.INSTANCE).setAsync("value");
-                assertThatThrownBy(() -> batch.executeAsync().toCompletableFuture().get(5, TimeUnit.SECONDS))
-                        .hasRootCauseInstanceOf(RedisException.class)
-                        .hasStackTraceContaining(renamed ? "unknown command" : "NOPERM");
+                batch.getAtomicLong("rejected:writes").incrementAndGetAsync();
+                if (executionMode == ExecutionMode.REDIS_WRITE_ATOMIC) {
+                    assertThatThrownBy(() -> batch.executeAsync().toCompletableFuture().get(5, TimeUnit.SECONDS))
+                            .hasRootCauseInstanceOf(RedisException.class).hasStackTraceContaining("EXECABORT");
+                } else {
+                    BatchResult<?> result = batch.executeAsync().toCompletableFuture().get(5, TimeUnit.SECONDS);
+                    assertThat(result.getResponses()).isEmpty();
+                }
 
                 // The single pooled connection must remain aligned for typed replies after the failure.
                 assertThat(client.getAtomicLong("rejected:counter").get()).isEqualTo(42);
                 assertThat(client.getBucket("rejected:key", StringCodec.INSTANCE).get())
                         .isEqualTo(executionMode == ExecutionMode.REDIS_WRITE_ATOMIC ? null : "value");
+                assertThat(client.getAtomicLong("rejected:writes").get())
+                        .isEqualTo(executionMode == ExecutionMode.REDIS_WRITE_ATOMIC ? 0 : 1);
+
+                if (executionMode != ExecutionMode.REDIS_WRITE_ATOMIC) {
+                    RBatch invalidBatch = client.createBatch(BatchOptions.defaults().executionMode(executionMode)
+                            .skipResult().retryAttempts(0).responseTimeout(2, TimeUnit.SECONDS));
+                    invalidBatch.getAtomicLong("rejected:key").incrementAndGetAsync();
+                    invalidBatch.getAtomicLong("rejected:writes").incrementAndGetAsync();
+                    assertThatThrownBy(() -> invalidBatch.executeAsync().toCompletableFuture().get(5, TimeUnit.SECONDS))
+                            .hasRootCauseInstanceOf(RedisException.class).hasStackTraceContaining("not an integer");
+                    assertThat(client.getAtomicLong("rejected:writes").get()).isEqualTo(2);
+                    assertThat(client.getBucket("rejected:key", StringCodec.INSTANCE).get()).isEqualTo("value");
+                }
             } finally {
                 client.shutdown();
             }

@@ -113,7 +113,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             if (!(data instanceof CommandsData)) {
                 endIndex = skipCommand(in);
             } else {
-                endIndex = skipBatchCommand(in, (CommandsData) data);
+                endIndex = skipBatchCommand(in, (CommandsData) data, state());
             }
             if (data.isExecuted()) {
                 in.readerIndex(endIndex);
@@ -125,15 +125,15 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         }
     }
 
-    private int skipBatchCommand(ByteBuf in, CommandsData data) throws IOException {
-        int commandsAmount = data.getCommands().size();
-        if (isResultSkipped(in, data)) {
+    private int skipBatchCommand(ByteBuf in, CommandsData data, State state) throws IOException {
+        int commandsAmount = data.getCommands().size() - state.getBatchIndex();
+        if (isResultSkipped(in, data, state)) {
             // CLIENT REPLY ON, plus CLIENT REPLY OFF's QUEUED reply and replica sync if enabled.
             commandsAmount = 1;
-            if (data.isQueued()) {
+            if (data.isQueued() && state.getBatchIndex() == 0) {
                 commandsAmount++;
             }
-            if (data.isSyncSlaves()) {
+            if (data.isSyncSlaves() && state.getBatchIndex() < data.getCommands().size() - 1) {
                 commandsAmount++;
             }
         }
@@ -145,6 +145,13 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         int endIndex = in.readerIndex();
         in.resetReaderIndex();
         return endIndex;
+    }
+
+    private boolean isResultSkipped(ByteBuf in, CommandsData data, State state) throws IOException {
+        if (state.getBatchResultSkipped() == null) {
+            state.setBatchResultSkipped(isResultSkipped(in, data));
+        }
+        return state.getBatchResultSkipped();
     }
 
     private boolean isResultSkipped(ByteBuf in, CommandsData data) throws IOException {
@@ -293,10 +300,9 @@ public class CommandDecoder extends ReplayingDecoder<State> {
 
     private void decodeCommandBatch(Channel channel, ByteBuf in, CommandsData commandBatch, State state) throws Exception {
         int i = state.getBatchIndex();
-        boolean skipResult = isResultSkipped(in, commandBatch);
-        boolean replyOffRejected = commandBatch.isSkipResult() && !skipResult;
+        boolean skipResult = isResultSkipped(in, commandBatch, state);
 
-        Throwable error = null;
+        Throwable error = state.getBatchError();
         while (in.writerIndex() > in.readerIndex()) {
             CommandData<Object, Object> commandData = null;
 
@@ -308,18 +314,19 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             state.setBatchIndex(i);
             
             int endIndex = skipCommand(in);
-            if (replyOffRejected && error != null) {
-                // Drain the remaining replies before releasing this failed batch's connection.
-                in.readerIndex(endIndex);
-                i++;
-                continue;
-            }
             try {
                 
                 RedisCommand<?> cmd = commandBatch.getCommands().get(i).getCommand();
+                if (commandBatch.isSkipResult() && !skipResult && RedisCommands.CLIENT_REPLY.equals(cmd)) {
+                    // Suppression is an optimization. Its rejection must not fail writes that Redis executed.
+                    in.readerIndex(endIndex);
+                    commandBatch.getCommands().get(i).getPromise().complete(null);
+                    i++;
+                    continue;
+                }
                 boolean skipConvertor = commandBatch.isQueued();
                 List<CommandData<?, ?>> commandsData = null;
-                if (replyOffRejected || !commandBatch.isAtomic()
+                if (!commandBatch.isAtomic()
                         || RedisCommands.EXEC.getName().equals(cmd.getName())
                         || RedisCommands.WAIT.getName().equals(cmd.getName())
                         || RedisCommands.WAITAOF.getName().equals(cmd.getName())) {
@@ -330,6 +337,10 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                             commandsData = commandBatch.getAttachedCommands();
                         } else {
                             commandsData = commandBatch.getCommands();
+                            if (commandBatch.isSkipResult() && !skipResult && commandBatch.isAtomic()) {
+                                // EXEC contains the commands after MULTI, not the rejected OFF preceding it.
+                                commandsData = commandsData.subList(1, commandsData.size());
+                            }
                         }
                     }
                 }
@@ -371,6 +382,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                     error.addSuppressed(commandData.cause());
                 }
 
+                state.setBatchError(error);
             }
             if (skipResult) {
                 if (commandBatch.isQueued() && i == 0) {
@@ -390,11 +402,6 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         if (i == commandBatch.getCommands().size()) {
             CompletableFuture<Void> promise = commandBatch.getPromise();
             if (error != null) {
-                if (replyOffRejected) {
-                    for (CommandData<?, ?> command : commandBatch.getCommands()) {
-                        command.tryFailure(error);
-                    }
-                }
                 promise.completeExceptionally(error);
             } else {
                 promise.complete(null);

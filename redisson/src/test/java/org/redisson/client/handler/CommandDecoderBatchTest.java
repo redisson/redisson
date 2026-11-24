@@ -1,6 +1,8 @@
 package org.redisson.client.handler;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import io.netty.channel.Channel;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.CharsetUtil;
 import org.junit.jupiter.api.AfterEach;
@@ -14,6 +16,7 @@ import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.CommandsData;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.QueueCommand;
 import org.redisson.config.CommandMapper;
 
 import java.util.ArrayList;
@@ -122,7 +125,7 @@ class CommandDecoderBatchTest {
         CommandsData batch = skipResultBatch(atomic, SyncMode.NONE);
         assertRejectedBatch(batch, "-NOPERM User limited has no permissions to run the 'client|reply' command\r\n"
                 + (atomic ? "+OK\r\n+QUEUED\r\n*1\r\n+OK\r\n" : "+OK\r\n")
-                + "-NOPERM User limited has no permissions to run the 'client|reply' command\r\n", fragmentSize);
+                + "-NOPERM User limited has no permissions to run the 'client|reply' command\r\n", fragmentSize, false);
     }
 
     @ParameterizedTest
@@ -134,18 +137,22 @@ class CommandDecoderBatchTest {
                 : "-NOPERM User limited has no permissions to run the 'client|reply' command\r\n"
                     + "-EXECABORT Transaction discarded because of previous errors.\r\n"
                     + "-NOPERM User limited has no permissions to run the 'client|reply' command\r\n";
-        assertRejectedBatch(batch, replies, fragmentSize);
+        assertRejectedBatch(batch, replies, fragmentSize, true);
         assertThat(batch.getCommands().get(1).getPromise()).isCompletedExceptionally();
     }
 
-    private void assertRejectedBatch(CommandsData batch, String replies, int fragmentSize) {
+    private void assertRejectedBatch(CommandsData batch, String replies, int fragmentSize, boolean failed) {
         CommandData<String, String> ping = command(RedisCommands.PING);
         CommandData<Integer, Integer> cardinality = command(RedisCommands.SCARD_INT, "set");
         channel.writeOutbound(batch, ping, cardinality);
 
         receive(replies + "+PONG\r\n:5\r\n", fragmentSize);
 
-        assertThatThrownBy(batch.getPromise()::join).hasCauseInstanceOf(RedisException.class);
+        if (failed) {
+            assertThatThrownBy(batch.getPromise()::join).hasCauseInstanceOf(RedisException.class);
+        } else {
+            assertThat(batch.getPromise()).isCompletedWithValue(null);
+        }
         assertThat(ping.getPromise()).isCompletedWithValue("PONG");
         assertThat(cardinality.getPromise()).isCompletedWithValue(5);
         assertThat(channel.attr(CommandsQueue.COMMANDS_QUEUE).get()).isEmpty();
@@ -168,6 +175,101 @@ class CommandDecoderBatchTest {
         }
         receive(replies + "+PONG\r\n:5\r\n", 1);
 
+        assertThat(ping.getPromise()).isCompletedWithValue("PONG");
+        assertThat(cardinality.getPromise()).isCompletedWithValue(5);
+        assertThat(channel.attr(CommandsQueue.COMMANDS_QUEUE).get()).isEmpty();
+    }
+
+    private static class ResumingDecoder extends CommandDecoder {
+
+        private boolean split;
+        private final boolean completeAfterFirstReply;
+
+        ResumingDecoder() {
+            this(false);
+        }
+
+        ResumingDecoder(boolean completeAfterFirstReply) {
+            super("redis");
+            this.completeAfterFirstReply = completeAfterFirstReply;
+        }
+
+        @Override
+        protected void decodeCommand(Channel channel, ByteBuf in, QueueCommand data, int endIndex, State state)
+                throws Exception {
+            if (data instanceof CommandsData && !split) {
+                split = true;
+                int size = skipCommand(in) - in.readerIndex();
+                // Return after one complete frame through the protected decoding entry point.
+                // The next invocation resumes the same batch with its real checkpointed state.
+                ByteBuf firstReply = in.readSlice(size);
+                super.decodeCommand(channel, firstReply, data, size, state);
+                if (completeAfterFirstReply) {
+                    ((CommandsData) data).getPromise().completeExceptionally(new java.util.concurrent.TimeoutException());
+                }
+                return;
+            }
+            super.decodeCommand(channel, in, data, endIndex, state);
+        }
+    }
+
+    @ParameterizedTest
+    @CsvSource({"NONE, 0", "NONE, 1", "WAIT, 0", "WAIT, 1", "WAITAOF, 0", "WAITAOF, 1"})
+    void testQueuedBatchResumesAfterQueuedReply(SyncMode syncMode, int fragmentSize) {
+        channel.pipeline().replace(CommandDecoder.class, "resuming-decoder", new ResumingDecoder());
+        assertFollowingReplies(queuedSkipResultBatch(syncMode), syncMode, fragmentSize,
+                "+QUEUED\r\n*2\r\n+OK\r\n+OK\r\n");
+    }
+
+    @ParameterizedTest
+    @CsvSource({"false, 0", "true, 0", "false, 1", "true, 1"})
+    void testRejectedReplyOffResumesWithRepliesEnabled(boolean atomic, int fragmentSize) {
+        channel.pipeline().replace(CommandDecoder.class, "resuming-decoder", new ResumingDecoder());
+        testRejectedReplyOffPreservesFollowingReplies(atomic, fragmentSize);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"WAIT, 0", "WAIT, 1", "WAITAOF, 0", "WAITAOF, 1"})
+    void testSkippedBatchResumesAtSyncReply(SyncMode syncMode, int fragmentSize) {
+        channel.pipeline().replace(CommandDecoder.class, "resuming-decoder", new ResumingDecoder());
+        assertFollowingReplies(skipResultBatch(false, syncMode), syncMode, fragmentSize, "+OK\r\n");
+    }
+
+    @ParameterizedTest
+    @CsvSource({"0", "1"})
+    void testBatchFailureSurvivesResumedDecoding(int fragmentSize) {
+        channel.pipeline().replace(CommandDecoder.class, "resuming-decoder", new ResumingDecoder());
+        CommandData<Integer, Integer> wrongType = command(RedisCommands.SCARD_INT, "string-key");
+        CommandData<Integer, Integer> cardinality = command(RedisCommands.SCARD_INT, "set");
+        CommandsData batch = new CommandsData(new CompletableFuture<>(), List.of(wrongType, cardinality),
+                false, false, false, false);
+        CommandData<String, String> ping = command(RedisCommands.PING);
+        channel.writeOutbound(batch, ping);
+        receive("-WRONGTYPE Operation against a key holding the wrong kind of value\r\n:5\r\n+PONG\r\n", fragmentSize);
+
+        assertThatThrownBy(batch.getPromise()::join).hasCauseInstanceOf(RedisException.class);
+        assertThat(cardinality.getPromise()).isCompletedWithValue(5);
+        assertThat(ping.getPromise()).isCompletedWithValue("PONG");
+        assertThat(channel.attr(CommandsQueue.COMMANDS_QUEUE).get()).isEmpty();
+    }
+
+    @ParameterizedTest
+    @CsvSource({"true, NONE", "false, WAIT", "true, WAIT", "false, WAITAOF", "true, WAITAOF"})
+    void testCompletedBatchSkipsOnlyRemainingRepliesAfterResume(boolean queued, SyncMode syncMode) {
+        channel.pipeline().replace(CommandDecoder.class, "resuming-decoder", new ResumingDecoder(true));
+        CommandsData batch = queued ? queuedSkipResultBatch(syncMode) : skipResultBatch(false, syncMode);
+        CommandData<String, String> ping = command(RedisCommands.PING);
+        CommandData<Integer, Integer> cardinality = command(RedisCommands.SCARD_INT, "set");
+        channel.writeOutbound(batch, ping, cardinality);
+        String replies = queued ? "+QUEUED\r\n*2\r\n+OK\r\n+OK\r\n" : "+OK\r\n";
+        if (syncMode == SyncMode.WAIT) {
+            replies += ":1\r\n";
+        } else if (syncMode == SyncMode.WAITAOF) {
+            replies += "*2\r\n:1\r\n:1\r\n";
+        }
+        receive(replies + "+PONG\r\n:5\r\n", 1);
+
+        assertThatThrownBy(batch.getPromise()::join).hasCauseInstanceOf(java.util.concurrent.TimeoutException.class);
         assertThat(ping.getPromise()).isCompletedWithValue("PONG");
         assertThat(cardinality.getPromise()).isCompletedWithValue(5);
         assertThat(channel.attr(CommandsQueue.COMMANDS_QUEUE).get()).isEmpty();
