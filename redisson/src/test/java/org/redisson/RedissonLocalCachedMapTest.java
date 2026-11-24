@@ -8,6 +8,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RLocalCachedMap;
 import org.redisson.api.RMap;
+import org.redisson.api.RTransaction;
+import org.redisson.api.TransactionOptions;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.listener.LocalCacheInvalidateListener;
 import org.redisson.api.map.MapLoader;
@@ -835,6 +837,37 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
 
         Awaitility.await().atMost(Durations.ONE_SECOND)
                 .untilAsserted(() -> assertThat(cache.size()).isEqualTo(0));
+    }
+
+    @Test
+    public void testUseObjectAsCacheKeyWithTransaction() {
+        LocalCachedMapOptions<String, Integer> options = LocalCachedMapOptions.<String, Integer>name("testTxKey" + System.currentTimeMillis())
+                .useObjectAsCacheKey(true)
+                .storeCacheMiss(true)
+                .syncStrategy(SyncStrategy.INVALIDATE);
+
+        RLocalCachedMap<String, Integer> map1 = redisson.getLocalCachedMap(options);
+        RLocalCachedMap<String, Integer> map2 = redisson.getLocalCachedMap(options);
+
+        try {
+            map1.put("key1", 100);
+            assertThat(map2.get("key1")).isEqualTo(100);
+            Awaitility.await().atMost(Durations.FIVE_SECONDS)
+                    .untilAsserted(() -> assertThat(((RedissonLocalCachedMap<String, Integer>) map2)
+                            .getLocalCacheView().getCacheKeyMap()).containsKey("key1"));
+
+            RTransaction transaction = redisson.createTransaction(TransactionOptions.defaults());
+            RMap<String, Integer> txMap = transaction.getLocalCachedMap(map1);
+            txMap.put("key1", 200);
+            transaction.commit();
+
+            Awaitility.await().atMost(Durations.FIVE_SECONDS)
+                    .untilAsserted(() -> assertThat(((RedissonLocalCachedMap<String, Integer>) map2)
+                            .getLocalCacheView().getCacheKeyMap().containsKey("key1")).isFalse());
+        } finally {
+            map1.destroy();
+            map2.destroy();
+        }
     }
 
     @Test
