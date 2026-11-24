@@ -28,6 +28,7 @@ import java.time.Duration;
 public final class ExecutorParams extends BaseOptions<ExecutorOptions, Codec> implements ExecutorOptions {
     private final String name;
     private int taskRetryInterval = 5 * 60000;
+    private int taskRetryAttempts;
     private IdGenerator idGenerator = IdGenerator.random();
 
     ExecutorParams(String name) {
@@ -37,6 +38,12 @@ public final class ExecutorParams extends BaseOptions<ExecutorOptions, Codec> im
     @Override
     public ExecutorOptions taskRetryInterval(Duration interval) {
         this.taskRetryInterval = (int) interval.toMillis();
+        return this;
+    }
+
+    @Override
+    public ExecutorOptions taskRetryAttempts(int attempts) {
+        this.taskRetryAttempts = attempts;
         return this;
     }
 
@@ -52,6 +59,10 @@ public final class ExecutorParams extends BaseOptions<ExecutorOptions, Codec> im
 
     public int getTaskRetryInterval() {
         return taskRetryInterval;
+    }
+
+    public int getTaskRetryAttempts() {
+        return taskRetryAttempts;
     }
 
     public IdGenerator getIdGenerator() {
