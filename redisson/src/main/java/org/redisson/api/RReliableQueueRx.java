@@ -196,11 +196,7 @@ public interface RReliableQueueRx<V> extends RExpirableRx {
     /**
      * Adds a message to the queue with the specified parameters.
      * <p>
-     * Returns {@code null} if the message hasn't been added for one of the following reasons:
-     * <ul>
-     *     <li>Due to message deduplication by id or hash</li>
-     *     <li>Due to configured queue size limit and queue is full</li>
-     * </ul>
+     * Returns {@code null} if the message hasn't been added due to configured queue size limit and queue is full.
      *
      * @param params parameters for the message to be added
      * @return the added message with its assigned ID and metadata or {@code null} if nothing was added
@@ -213,11 +209,7 @@ public interface RReliableQueueRx<V> extends RExpirableRx {
      * <p>
      * This batch operation is more efficient than adding messages individually.
      * <p>
-     * Messages may not be added for one of the following reasons:
-     * <ul>
-     *     <li>Due to message deduplication by id or hash</li>
-     *     <li>Due to configured queue size limit and queue is full</li>
-     * </ul>
+     * Messages may not be added due to configured queue size limit and queue is full.
      *
      * @param params parameters for the messages to be added
      * @return a list of added messages with their assigned IDs and metadata

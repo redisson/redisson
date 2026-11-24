@@ -117,11 +117,7 @@ public interface RReliablePubSubTopicReactive<V> extends RExpirableReactive, RDe
     /**
      * Adds a message to the pubsub topic with the specified parameters.
      * <p>
-     * Returns {@code null} if the message hasn't been added for one of the following reasons:
-     * <ul>
-     *     <li>Due to message deduplication by id or hash</li>
-     *     <li>Due to configured topic size limit and topic is full</li>
-     * </ul>
+     * Returns {@code null} if the message hasn't been added due to configured topic size limit and topic is full.
      *
      * @param params parameters for the message to be added
      * @return the added message with its assigned ID and metadata
@@ -135,11 +131,7 @@ public interface RReliablePubSubTopicReactive<V> extends RExpirableReactive, RDe
      * <p>
      * This batch operation is more efficient than adding messages individually.
      * <p>
-     * Messages may not be added for one of the following reasons:
-     * <ul>
-     *     <li>Due to message deduplication by id or hash</li>
-     *     <li>Due to configured topic size limit and topic is full</li>
-     * </ul>
+     * Messages may not be added due to configured topic size limit and topic is full.
      *
      * @param params parameters for the messages to be added
      * @return a list of added messages with their assigned IDs and metadata

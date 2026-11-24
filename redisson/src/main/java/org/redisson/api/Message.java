@@ -35,6 +35,7 @@ public final class Message<V> {
     Instant creationTime;
     Object groupId;
     int deliveries;
+    boolean duplicate;
 
     public Message(String id, V payload, Map<String, Object> headers, Instant creationTime, Object groupId, int deliveries) {
         this.id = id;
@@ -45,6 +46,27 @@ public final class Message<V> {
         this.deliveries = deliveries;
     }
 
+    public Message(String id, V payload, Map<String, Object> headers, Instant creationTime,
+                   Object groupId, int deliveries, boolean duplicate) {
+        this.id = id;
+        this.payload = payload;
+        this.headers = Collections.unmodifiableMap(headers);
+        this.creationTime = creationTime;
+        this.groupId = groupId;
+        this.deliveries = deliveries;
+        this.duplicate = duplicate;
+    }
+
+    /**
+     * Returns deliveries number.
+     * <p>
+     * Incremented per invocation of methods below
+     * `org.redisson.api.RReliableQueue#poll()`,
+     * `org.redisson.api.pubsub.PullConsumer#pull()`,
+     * `org.redisson.api.pubsub.MessageListener#onMessage(Message, Acknowledgment)`
+     *
+     * @return deliveries number
+     */
     public int getDeliveries() {
         return deliveries;
     }
@@ -67,6 +89,23 @@ public final class Message<V> {
 
     public Object getGroupId() {
         return groupId;
+    }
+
+    /**
+     * Returns whether the message is duplicated.
+     * <p>
+     * The status is set per invocation of methods below
+     * `org.redisson.api.RReliableQueue#add()`
+     * `org.redisson.api.RReliableQueue#addMany()`
+     * `org.redisson.api.RReliableQueue#addMany()`
+     * `org.redisson.api.RReliablePubSubTopic#publishMany()`
+     * `org.redisson.api.RReliablePubSubTopic#publish()`
+     *
+     * @return <code>true</code> if message is duplicated
+     *         <code>false</code> if message is not duplicated
+     */
+    public boolean isDuplicate() {
+        return duplicate;
     }
 
     @Override

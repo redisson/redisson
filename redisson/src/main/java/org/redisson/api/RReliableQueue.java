@@ -18,6 +18,7 @@ package org.redisson.api;
 import org.redisson.api.queue.*;
 import org.redisson.api.queue.event.QueueEventListener;
 import org.redisson.client.codec.Codec;
+import org.redisson.config.Config;
 
 import java.util.List;
 import java.util.Set;
@@ -27,6 +28,7 @@ import java.util.Set;
  * <p>
  * Unlike regular Valkey or Redis based queues, this implementation provides features like:
  * <ul>
+ *   <li>Messages delivered in FIFO order
  *   <li>Message acknowledgment to confirm successful processing</li>
  *   <li>Message negative acknowledgment to redeliver a message or delete it if DLQ is not defined</li>
  *   <li>Redundancy and synchronous replication</li>
@@ -39,7 +41,7 @@ import java.util.Set;
  *   <li>Configurable message priority</li>
  *   <li>Configurable message delay</li>
  *   <li>Configurable message delivery limit</li>
- *   <li>Automatic redelivery of unacknowledged messages</li>
+     <li>Automatic redelivery of unacknowledged messages, may affect ordering if visibility values are different per message</li>
  *   <li>Dead letter queue support for failed message handling</li>
  * </ul>
  *
@@ -203,11 +205,7 @@ public interface RReliableQueue<V> extends RExpirable, RReliableQueueAsync<V>, R
     /**
      * Adds a message to the queue with the specified parameters.
      * <p>
-     * Returns {@code null} if the message hasn't been added for one of the following reasons:
-     * <ul>
-     *     <li>Due to message deduplication by id or hash</li>
-     *     <li>Due to configured queue size limit and queue is full</li>
-     * </ul>
+     * Returns {@code null} if the message hasn't been added due to configured queue size limit and queue is full.
      *
      * @param params parameters for the message to be added
      * @return the added message with its assigned ID and metadata
@@ -221,11 +219,7 @@ public interface RReliableQueue<V> extends RExpirable, RReliableQueueAsync<V>, R
      * <p>
      * This batch operation is more efficient than adding messages individually.
      * <p>
-     * Messages may not be added for one of the following reasons:
-     * <ul>
-     *     <li>Due to message deduplication by id or hash</li>
-     *     <li>Due to configured queue size limit and queue is full</li>
-     * </ul>
+     * Messages may not be added due to configured queue size limit and queue is full.
      *
      * @param params parameters for the messages to be added
      * @return a list of added messages with their assigned IDs and metadata
@@ -303,7 +297,9 @@ public interface RReliableQueue<V> extends RExpirable, RReliableQueueAsync<V>, R
     void negativeAcknowledge(QueueNegativeAckArgs args);
 
     /**
-     * Adds queue listener
+     * Adds queue listener.
+     * <p>
+     * {@link Config#getExecutor()} is used for listener method execution.
      *
      * @see org.redisson.api.queue.event.AddedEventListener
      * @see org.redisson.api.queue.event.PolledEventListener
