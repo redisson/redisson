@@ -841,32 +841,29 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
 
     @Test
     public void testUseObjectAsCacheKeyWithTransaction() {
-        LocalCachedMapOptions<String, Integer> options = LocalCachedMapOptions.<String, Integer>name("testTxKey" + System.currentTimeMillis())
-                .useObjectAsCacheKey(true)
-                .storeCacheMiss(true)
-                .syncStrategy(SyncStrategy.INVALIDATE);
-
-        RLocalCachedMap<String, Integer> map1 = redisson.getLocalCachedMap(options);
-        RLocalCachedMap<String, Integer> map2 = redisson.getLocalCachedMap(options);
+        RLocalCachedMap<String, Integer> map = redisson.getLocalCachedMap(
+                LocalCachedMapOptions.<String, Integer>name("testUseObjectAsCacheKeyWithTransaction")
+                        .useObjectAsCacheKey(true)
+                        .storeCacheMiss(true)
+                        .syncStrategy(SyncStrategy.INVALIDATE));
 
         try {
-            map1.put("key1", 100);
-            assertThat(map2.get("key1")).isEqualTo(100);
-            Awaitility.await().atMost(Durations.FIVE_SECONDS)
-                    .untilAsserted(() -> assertThat(((RedissonLocalCachedMap<String, Integer>) map2)
-                            .getLocalCacheView().getCacheKeyMap()).containsKey("key1"));
+            map.put("key1", 100);
+            assertThat(map.get("missing")).isNull();
+            assertThat(map.getCachedMap()).containsEntry("key1", 100).containsKey("missing");
 
-            RTransaction transaction = redisson.createTransaction(TransactionOptions.defaults());
-            RMap<String, Integer> txMap = transaction.getLocalCachedMap(map1);
+            RTransaction transaction = redisson.createTransaction(TransactionOptions.defaults()
+                    .timeout(5, TimeUnit.SECONDS)
+                    .responseTimeout(10, TimeUnit.SECONDS));
+            RMap<String, Integer> txMap = transaction.getLocalCachedMap(map);
             txMap.put("key1", 200);
+            txMap.put("missing", 300);
             transaction.commit();
 
-            Awaitility.await().atMost(Durations.FIVE_SECONDS)
-                    .untilAsserted(() -> assertThat(((RedissonLocalCachedMap<String, Integer>) map2)
-                            .getLocalCacheView().getCacheKeyMap().containsKey("key1")).isFalse());
+            assertThat(map.get("key1")).isEqualTo(200);
+            assertThat(map.get("missing")).isEqualTo(300);
         } finally {
-            map1.destroy();
-            map2.destroy();
+            map.destroy();
         }
     }
 
