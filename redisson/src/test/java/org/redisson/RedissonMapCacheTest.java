@@ -10,13 +10,15 @@ import org.redisson.api.map.event.*;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisClientConfig;
 import org.redisson.client.RedisConnection;
+import org.redisson.client.RedisReadonlyException;
 import org.redisson.client.codec.*;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.codec.CompositeCodec;
 import org.redisson.config.Config;
 import org.redisson.config.NameMapper;
 import org.redisson.eviction.EvictionScheduler;
-
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.Network;
 import java.time.Duration;
 import java.util.*;
 import java.util.Map.Entry;
@@ -1892,6 +1894,79 @@ public class RedissonMapCacheTest extends BaseMapTest {
             map.destroy();
             mapCopy.destroy();
         });
+    }
+
+    @Test
+    public void testAddListenerOnReadonlyReplica() {
+        try (Network network = Network.newNetwork();
+             GenericContainer<?> master = createContainer()
+                     .withNetwork(network).withNetworkAliases("master");
+             GenericContainer<?> replica = createContainer("--replicaof", "master", "6379")
+                     .withNetwork(network)) {
+            master.start();
+            replica.start();
+
+            RedissonClient masterClient = Redisson.create(createConfig(master));
+            RedissonClient replicaClient = Redisson.create(createConfig(replica));
+            try {
+                String mapName = "testReadOnlyMap";
+                RMapCache<String, String> masterMap = masterClient.getMapCache(mapName);
+                RMapCache<String, String> replicaMap = replicaClient.getMapCache(mapName);
+
+                // 1. Before master sets 'has-listeners', replica write fails with RedisReadonlyException
+                Assertions.assertThrows(RedisReadonlyException.class, () -> {
+                    replicaMap.addListener((EntryCreatedListener<String, String>) event -> {});
+                });
+
+                // 2. Master registers a listener, setting 'has-listeners' and replicating it to replica
+                int masterListenerId = masterMap.addListener((EntryCreatedListener<String, String>) event -> {});
+                assertThat(masterListenerId).isPositive();
+
+                String optionsName = ((RedissonMapCache<?, ?>) masterMap).getOptionsName(((RedissonObject) masterMap).getRawName());
+                await().atMost(Duration.ofSeconds(10)).until(() ->
+                        replicaClient.getMap(optionsName, LongCodec.INSTANCE).containsKey("has-listeners"));
+
+                // 3. Replica registers a listener without writing and receives events published by master
+                AtomicBoolean received = new AtomicBoolean();
+                int replicaListenerId = replicaMap.addListener((EntryCreatedListener<String, String>) event -> {
+                    if ("k1".equals(event.getKey()) && "v1".equals(event.getValue())) {
+                        received.set(true);
+                    }
+                });
+                assertThat(replicaListenerId).isPositive();
+
+                masterMap.put("k1", "v1");
+                await().atMost(Duration.ofSeconds(5)).untilTrue(received);
+
+                masterMap.destroy();
+                replicaMap.destroy();
+            } finally {
+                replicaClient.shutdown();
+                masterClient.shutdown();
+            }
+        }
+    }
+
+    @Test
+    public void testAddListenerAfterDelete() {
+        RMapCache<String, String> map = redisson.getMapCache("testAddListenerAfterDelete");
+        int id1 = map.addListener((EntryCreatedListener<String, String>) event -> {});
+        map.removeListener(id1);
+
+        map.delete();
+
+        AtomicBoolean received = new AtomicBoolean();
+        int id2 = map.addListener((EntryCreatedListener<String, String>) event -> {
+            if ("k1".equals(event.getKey()) && "v1".equals(event.getValue())) {
+                received.set(true);
+            }
+        });
+        assertThat(id2).isPositive();
+
+        map.put("k1", "v1");
+        await().atMost(Duration.ofSeconds(5)).untilTrue(received);
+
+        map.destroy();
     }
 }
 

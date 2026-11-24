@@ -3393,12 +3393,20 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                     osType = BaseEventCodec.OSType.HPNONSTOP;
                 }
                 topicCodec = new MapCacheEventCodec(codec, osType);
-            }).thenCompose(r -> {
-                return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.HSET_VOID, optionsName, "has-listeners", 1);
             });
         }
 
-        CompletionStage<Integer> f = osTypeFuture.thenCompose(osType -> {
+        CompletionStage<Void> hasListenersFuture = osTypeFuture.thenCompose(v -> {
+            RFuture<Boolean> existsFuture = commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.HEXISTS, optionsName, "has-listeners");
+            return existsFuture.thenCompose(exists -> {
+                if (Boolean.TRUE.equals(exists)) {
+                    return CompletableFuture.completedFuture(null);
+                }
+                return commandExecutor.writeAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.HSET_VOID, optionsName, "has-listeners", 1);
+            });
+        });
+
+        CompletionStage<Integer> f = hasListenersFuture.thenCompose(v -> {
             if (listener instanceof EntryRemovedListener) {
                 RTopic topic = getTopic(getRemovedChannelName());
                 return topic.addListenerAsync(List.class, (MessageListener<List<Object>>) (channel, msg) -> {
