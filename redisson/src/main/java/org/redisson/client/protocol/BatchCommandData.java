@@ -16,6 +16,7 @@
 package org.redisson.client.protocol;
 
 import org.redisson.client.RedisException;
+import org.redisson.client.RedisReadonlyException;
 import org.redisson.client.RedisRedirectException;
 import org.redisson.client.RedisRetryException;
 import org.redisson.client.codec.Codec;
@@ -50,7 +51,8 @@ public class BatchCommandData<T, R> extends CommandData<T, R> implements Compara
         if (retryError.get() != null) {
             return false;
         }
-        if (cause instanceof RedisRedirectException || cause instanceof RedisRetryException) {
+        if (cause instanceof RedisRedirectException || cause instanceof RedisRetryException
+                || cause instanceof RedisReadonlyException) {
             return retryError.compareAndSet(null, (RedisException) cause);
         }
 
