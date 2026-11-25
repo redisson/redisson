@@ -1,6 +1,6 @@
 # Redisson: Valkey & Redis Java Client<br>and Real-Time Data Platform
 
-[Quick start](https://redisson.pro/docs/getting-started/) | [Documentation](https://redisson.pro/docs/) | [Changelog](https://github.com/redisson/redisson/blob/master/CHANGELOG.md) | [Code examples](https://github.com/redisson/redisson-examples) | [JavaDocs](https://www.javadoc.io/doc/org.redisson/redisson/latest/index.html)
+[Quick start](https://redisson.pro/docs/getting-started/) | [Documentation](https://redisson.pro/docs/) | [Changelog](https://github.com/redisson/redisson/blob/master/CHANGELOG.md) | [Code examples](https://github.com/redisson/redisson-examples) | [JavaDocs](https://www.javadoc.io/doc/org.redisson/redisson/latest/index.html) | <a href="README.zh-CN.md">简体中文</a>
 
 Redisson is the Java Client and Real-Time Data Platform for Valkey and Redis.
 
