@@ -430,6 +430,106 @@ public class RedissonBlockingQueueTest extends RedissonQueueTest {
     }
 
     @Test
+    @Timeout(60)
+    public void testPollFromAnyWithNameReachesLastQueueOnCluster() {
+        // On a cluster every name is polled in turn with a 1 second block, so the timeout doubles
+        // as a budget of attempts. With a timeout shorter than the number of names the last ones
+        // were never polled at all and an element sitting there was reported as absent. A single
+        // node answers straight away here, because BLPOP inspects every key before it blocks.
+        testInCluster(client -> {
+            RBlockingQueue<String> first = client.getBlockingQueue("queue:clusterPollAny1");
+            RBlockingQueue<String> second = client.getBlockingQueue("queue:clusterPollAny2");
+            RBlockingQueue<String> third = client.getBlockingQueue("queue:clusterPollAny3");
+            first.clear();
+            second.clear();
+            third.clear();
+            // only the queue that the old rotation could never reach holds an element
+            third.add("hello");
+
+            long startTime = System.currentTimeMillis();
+            Entry<String, String> r;
+            try {
+                r = first.pollFromAnyWithName(Duration.ofSeconds(2),
+                        "queue:clusterPollAny2", "queue:clusterPollAny3");
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(e);
+            }
+
+            assertThat(r).isNotNull();
+            assertThat(r.getKey()).isEqualTo("queue:clusterPollAny3");
+            assertThat(r.getValue()).isEqualTo("hello");
+            // an element that is already there is returned without blocking on the names before it
+            assertThat(System.currentTimeMillis() - startTime).isLessThan(1000);
+        });
+    }
+
+    @Test
+    @Timeout(60)
+    public void testPollFromAnyWithNameSeesElementAddedWhileWaitingOnCluster() {
+        // The case above is an element that is already in a queue when the call starts. This one
+        // arrives while the call is waiting, in a name the rotation does not get to, and the call
+        // returned null at the deadline with the element still sitting there. testPollFromAnyWithName
+        // is the single node counterpart and passes, because there one BLPOP covers every key and
+        // the push itself wakes it.
+        testInCluster(client -> {
+            RBlockingQueue<String> first = client.getBlockingQueue("queue:clusterPollAnyLate1");
+            RBlockingQueue<String> second = client.getBlockingQueue("queue:clusterPollAnyLate2");
+            RBlockingQueue<String> third = client.getBlockingQueue("queue:clusterPollAnyLate3");
+            first.clear();
+            second.clear();
+            third.clear();
+
+            Executors.newSingleThreadScheduledExecutor().schedule(
+                    () -> third.add("hello"), 500, TimeUnit.MILLISECONDS);
+
+            long startTime = System.currentTimeMillis();
+            Entry<String, String> r;
+            try {
+                r = first.pollFromAnyWithName(Duration.ofSeconds(2),
+                        "queue:clusterPollAnyLate2", "queue:clusterPollAnyLate3");
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(e);
+            }
+
+            assertThat(r).isNotNull();
+            assertThat(r.getKey()).isEqualTo("queue:clusterPollAnyLate3");
+            assertThat(r.getValue()).isEqualTo("hello");
+            assertThat(System.currentTimeMillis() - startTime).isLessThan(4000);
+        });
+    }
+
+    @Test
+    @Timeout(60)
+    public void testPollFromAnyWithNameStopsAtTimeoutOnCluster() {
+        // Reaching every name must not cost a blocking attempt per name, otherwise the timeout
+        // turns from an upper bound into a lower one: five empty names would keep a two second
+        // poll busy for five seconds. Contract is "waiting up to the specified wait time".
+        testInCluster(client -> {
+            String[] others = {"queue:clusterPollAnyEmpty2", "queue:clusterPollAnyEmpty3",
+                               "queue:clusterPollAnyEmpty4", "queue:clusterPollAnyEmpty5"};
+            RBlockingQueue<String> first = client.getBlockingQueue("queue:clusterPollAnyEmpty1");
+            first.clear();
+            for (String other : others) {
+                client.getBlockingQueue(other).clear();
+            }
+
+            long startTime = System.currentTimeMillis();
+            Entry<String, String> r;
+            try {
+                r = first.pollFromAnyWithName(Duration.ofSeconds(2), others);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(e);
+            }
+
+            assertThat(r).isNull();
+            assertThat(System.currentTimeMillis() - startTime).isBetween(1900L, 4000L);
+        });
+    }
+
+    @Test
     public void testPollLastFromAnyWithName() throws InterruptedException {
         RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue:polLast");
         RBlockingQueue<Integer> queue2 = redisson.getBlockingQueue("queue:polLast1");
