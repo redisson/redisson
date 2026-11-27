@@ -8,6 +8,7 @@ import org.redisson.codec.JsonJackson3Codec;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.codec.Kryo5Codec;
 import org.redisson.client.codec.Codec;
+import org.yaml.snakeyaml.composer.ComposerException;
 
 import java.io.IOException;
 import java.util.Set;
@@ -151,6 +152,35 @@ public class ConfigSupportTest {
 
         assertThat(config.getCodec()).isInstanceOf(Kryo5Codec.class);
         assertThat(readUseReferences((Kryo5Codec) config.getCodec())).isFalse();
+    }
+
+    @Test
+    public void testCustomCodec() throws Exception {
+        String yaml = "codec: !<org.example.codec.YamlTestCodec> {}\n"
+                + "singleServerConfig:\n  address: redis://127.0.0.1";
+
+        Config config = new ConfigSupport().fromYAML(yaml, Config.class);
+
+        assertThat(config.getCodec()).isInstanceOf(org.example.codec.YamlTestCodec.class);
+    }
+
+    @Test
+    public void testArbitraryClassTag() {
+        String yaml = "!!javax.script.ScriptEngineManager [!!java.net.URLClassLoader []]";
+
+        assertThatThrownBy(() -> new ConfigSupport().fromYAML(yaml, Config.class))
+                .isInstanceOf(ComposerException.class)
+                .hasMessageContaining("Global tag is not allowed");
+    }
+
+    @Test
+    public void testArbitraryClassTagInProperty() {
+        String yaml = "codec: !<javax.script.ScriptEngineManager> {}\n"
+                + "singleServerConfig:\n  address: redis://127.0.0.1";
+
+        assertThatThrownBy(() -> new ConfigSupport().fromYAML(yaml, Config.class))
+                .isInstanceOf(ComposerException.class)
+                .hasMessageContaining("Global tag is not allowed");
     }
 
     private static boolean readUseReferences(Kryo5Codec codec) throws Exception {

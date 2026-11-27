@@ -29,6 +29,7 @@ import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.Constructor;
+import org.yaml.snakeyaml.inspector.TagInspector;
 import org.yaml.snakeyaml.introspector.BeanAccess;
 import org.yaml.snakeyaml.introspector.Property;
 import org.yaml.snakeyaml.introspector.PropertyUtils;
@@ -75,9 +76,39 @@ public class ConfigSupport {
         this.useCaseInsensitive = useCaseInsensitive;
     }
 
+    /**
+     * Creates a YAML tag inspector, which allows global tags only for classes in the
+     * {@code org.redisson} package and for {@link Codec} implementations. The YAML config
+     * file instantiates classes through these tags, so allowing arbitrary classes here
+     * would let the config text run code on the host.
+     *
+     * @param classLoader class loader to resolve candidate classes, may be {@code null}
+     * @return tag inspector
+     */
+    public static TagInspector createTagInspector(ClassLoader classLoader) {
+        return tag -> {
+            String className = tag.getClassName();
+            if (className.startsWith("org.redisson.")) {
+                return true;
+            }
+            try {
+                // load without initialization, construction of the allowed class happens later
+                Class<?> clazz;
+                if (classLoader != null) {
+                    clazz = Class.forName(className, false, classLoader);
+                } else {
+                    clazz = Class.forName(className, false, Thread.currentThread().getContextClassLoader());
+                }
+                return Codec.class.isAssignableFrom(clazz);
+            } catch (Throwable e) {
+                return false;
+            }
+        };
+    }
+
     private Yaml createYamlParser(ClassLoader classLoader, boolean useCaseInsensitive) {
         LoaderOptions loaderOptions = new LoaderOptions();
-        loaderOptions.setTagInspector(tag -> true);
+        loaderOptions.setTagInspector(createTagInspector(classLoader));
 
         DumperOptions dumperOptions = new DumperOptions();
         dumperOptions.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
@@ -834,7 +865,7 @@ public class ConfigSupport {
 
     public <T> T fromYAML(File file, Class<T> configType, ClassLoader classLoader) throws IOException {
         LoaderOptions loaderOptions = new LoaderOptions();
-        loaderOptions.setTagInspector(tag -> true); // Allow all tags
+        loaderOptions.setTagInspector(createTagInspector(classLoader));
 
         DumperOptions dumperOptions = new DumperOptions();
         Yaml yamlParser = new Yaml(new DelayConstructor(classLoader, loaderOptions, useCaseInsensitive),
