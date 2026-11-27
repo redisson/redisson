@@ -41,6 +41,7 @@ import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.yaml.snakeyaml.Yaml;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -48,7 +49,10 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Spring configuration used with Spring Boot 4.0+
@@ -62,6 +66,15 @@ import java.util.List;
 public class RedissonAutoConfigurationV4 {
 
     public static final String[] EMPTY = {};
+
+    /**
+     * Enables merging of Spring Boot properties into the config defined by
+     * <code>spring.redis.redisson.config</code>. Disabled by default.
+     */
+    private static final String CONFIG_MERGE_PROPERTY = "spring.redis.redisson.merge";
+
+    private static final List<String> SERVER_CONFIGS = Arrays.asList("singleServerConfig", "sentinelServersConfig",
+            "clusterServersConfig", "masterSlaveServersConfig", "replicatedServersConfig");
 
     @Autowired(required = false)
     private List<RedissonAutoConfigurationCustomizer> redissonAutoConfigurationCustomizers;
@@ -135,7 +148,8 @@ public class RedissonAutoConfigurationV4 {
         }
 
         if (redissonProperties.getConfig() != null) {
-            config = Config.fromYAML(redissonProperties.getConfig());
+            config = parseConfig(redissonProperties.getConfig(), prefix, username, password, database, clientName,
+                                    connectionDetails, isSentinel, isCluster);
         } else if (redissonProperties.getFile() != null) {
             try (InputStream is = getConfigStream()) {
                 config = Config.fromYAML(is);
@@ -154,6 +168,113 @@ public class RedissonAutoConfigurationV4 {
             }
         }
         return Redisson.create(config);
+    }
+
+    /**
+     * Redisson-specific settings defined in the YAML config are applied on top of the Redis settings
+     * taken from Spring Boot properties, so that the same settings aren't duplicated in both places.
+     * Settings explicitly defined in the YAML config take precedence.
+     * Merging is applied only when <code>spring.redis.redisson.merge</code> is set to <code>true</code>.
+     *
+     * @param yaml config in YAML format
+     * @return config object
+     */
+    @SuppressWarnings("unchecked")
+    private Config parseConfig(String yaml, String prefix, String username, String password, int database,
+                               String clientName, DataRedisConnectionDetails connectionDetails,
+                               boolean isSentinel, boolean isCluster) {
+        if (!isMergeEnabled()) {
+            return Config.fromYAML(yaml);
+        }
+
+        ConfigSupport support = new ConfigSupport();
+        Map<String, Object> redissonSettings = support.fromYAML(yaml, Map.class);
+        if (redissonSettings == null) {
+            return Config.fromYAML(yaml);
+        }
+
+        Map<String, Object> springSettings = buildSpringSettings(prefix, username, password, database, clientName,
+                                                                 connectionDetails, isSentinel, isCluster);
+
+        // a server config declared in the YAML config takes precedence,
+        // so the other server configs derived from Spring properties are removed
+        if (SERVER_CONFIGS.stream().anyMatch(redissonSettings::containsKey)) {
+            springSettings.keySet().removeIf(name -> SERVER_CONFIGS.contains(name)
+                    && !redissonSettings.containsKey(name));
+        }
+
+        Config result = Config.fromYAML(new Yaml().dump(merge(springSettings, redissonSettings)));
+        // any ssl setting declared in the YAML config takes precedence over the Spring SSL bundle
+        if (redissonSettings.keySet().stream().noneMatch(name -> name.startsWith("ssl"))) {
+            initSSL(result);
+        }
+        return result;
+    }
+
+    private boolean isMergeEnabled() {
+        return ctx.getEnvironment().getProperty(CONFIG_MERGE_PROPERTY, Boolean.class, false);
+    }
+
+    private Map<String, Object> buildSpringSettings(String prefix, String username, String password, int database,
+                                                    String clientName, DataRedisConnectionDetails connectionDetails,
+                                                    boolean isSentinel, boolean isCluster) {
+        Map<String, Object> settings = new LinkedHashMap<>();
+        settings.put("username", username);
+        settings.put("password", password);
+
+        if (redisProperties.getSentinel() != null || isSentinel) {
+            SentinelServersConfig c = buildSentinelConfig(prefix, username, password, database, clientName,
+                                                            connectionDetails).useSentinelServers();
+            Map<String, Object> server = new LinkedHashMap<>();
+            server.put("masterName", c.getMasterName());
+            server.put("sentinelAddresses", c.getSentinelAddresses());
+            server.put("sentinelUsername", c.getSentinelUsername());
+            server.put("sentinelPassword", c.getSentinelPassword());
+            server.put("database", c.getDatabase());
+            putBaseSettings(server, c);
+            settings.put("sentinelServersConfig", server);
+        } else if (redisProperties.getCluster() != null || isCluster) {
+            ClusterServersConfig c = buildClusterConfig(prefix, username, password, clientName,
+                                                        connectionDetails).useClusterServers();
+            Map<String, Object> server = new LinkedHashMap<>();
+            server.put("nodeAddresses", c.getNodeAddresses());
+            putBaseSettings(server, c);
+            settings.put("clusterServersConfig", server);
+        } else {
+            SingleServerConfig c = buildSingleServerConfig(prefix, username, password, database, clientName,
+                                                            connectionDetails).useSingleServer();
+            Map<String, Object> server = new LinkedHashMap<>();
+            server.put("address", c.getAddress());
+            server.put("database", c.getDatabase());
+            putBaseSettings(server, c);
+            settings.put("singleServerConfig", server);
+        }
+        return settings;
+    }
+
+    private void putBaseSettings(Map<String, Object> server, BaseConfig<?> config) {
+        server.put("clientName", config.getClientName());
+        server.put("connectTimeout", config.getConnectTimeout());
+        server.put("timeout", config.getTimeout());
+    }
+
+    private Map<String, Object> merge(Map<String, Object> springSettings, Map<String, Object> redissonSettings) {
+        Map<String, Object> result = new LinkedHashMap<>(springSettings);
+        for (Map.Entry<String, Object> entry : redissonSettings.entrySet()) {
+            Object springV = result.get(entry.getKey());
+            Object redissonV = entry.getValue();
+            if (springV instanceof Map && redissonV instanceof Map) {
+                result.put(entry.getKey(), merge(asMap(springV), asMap(redissonV)));
+            } else if (redissonV != null) {
+                result.put(entry.getKey(), redissonV);
+            }
+        }
+        return result;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> asMap(Object value) {
+        return (Map<String, Object>) value;
     }
 
     private Config buildSentinelConfig(String prefix, String username, String password, int database,
