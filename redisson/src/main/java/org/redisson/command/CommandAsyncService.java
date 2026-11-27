@@ -49,6 +49,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
@@ -192,6 +193,8 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             future.cancel(true);
             Thread.currentThread().interrupt();
             throw new RedisException(e);
+        } catch (CancellationException e) {
+            throw new RedisException("Future was cancelled", e);
         } catch (ExecutionException e) {
             throw convertException(e);
         }
@@ -209,6 +212,8 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             future.cancel(true);
             Thread.currentThread().interrupt();
             throw new RedisException(e);
+        } catch (CancellationException e) {
+            throw new RedisException("Future was cancelled", e);
         } catch (ExecutionException e) {
             throw convertException(e);
         }
@@ -221,6 +226,8 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         } catch (InterruptedException e) {
             future.toCompletableFuture().completeExceptionally(e);
             throw e;
+        } catch (CancellationException e) {
+            throw new RedisException("Future was cancelled", e);
         } catch (ExecutionException e) {
             throw convertException(e);
         }
@@ -233,6 +240,8 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         } catch (InterruptedException e) {
             future.completeExceptionally(e);
             throw e;
+        } catch (CancellationException e) {
+            throw new RedisException("Future was cancelled", e);
         } catch (ExecutionException e) {
             throw convertException(e);
         }
