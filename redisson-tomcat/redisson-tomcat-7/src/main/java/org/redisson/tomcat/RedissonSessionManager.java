@@ -34,6 +34,8 @@ import org.redisson.pubsub.PublishSubscribeService;
 import javax.servlet.http.HttpSession;
 import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.time.Duration;
 import java.util.*;
 
@@ -362,6 +364,30 @@ public class RedissonSessionManager extends ManagerBase {
         setState(LifecycleState.STARTING);
     }
 
+    /**
+     * Reads {@link Config} from {@code configPath}.
+     * <p>
+     * Both a plain file path and a URL are supported, so the config can be
+     * loaded from a jar as well, including the nested jar URL form produced
+     * by Spring Boot 3.2+.
+     *
+     * @return parsed config object
+     * @throws IOException if config can't be read
+     */
+    protected Config readConfig() throws IOException {
+        URL url = null;
+        try {
+            url = new URL(configPath);
+        } catch (MalformedURLException e) {
+            // configPath is a plain file path rather than a URL
+        }
+
+        if (url != null) {
+            return Config.fromYAML(url, getClass().getClassLoader());
+        }
+        return Config.fromYAML(new File(configPath), getClass().getClassLoader());
+    }
+
     protected RedissonClient buildClient() throws LifecycleException {
         if (config == null) {
             if (configPath == null) {
@@ -369,7 +395,7 @@ public class RedissonSessionManager extends ManagerBase {
                         "Either a Config object (via setConfig) or a configPath must be provided");
             }
             try {
-                config = Config.fromYAML(new File(configPath), getClass().getClassLoader());
+                config = readConfig();
             } catch (Exception e) {
                 throw new LifecycleException("Can't parse yaml config " + configPath, e);
             }
