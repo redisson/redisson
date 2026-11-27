@@ -85,6 +85,31 @@ public interface RTransaction {
      * @return Map object
      */
     <K, V> RMap<K, V> getMap(String name, Codec codec);
+
+    /**
+     * Returns transactional map instance by name
+     * using provided options.
+     *
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @param options - map options
+     * @return Map object
+     */
+    <K, V> RMap<K, V> getMap(String name, MapOptions<K, V> options);
+
+    /**
+     * Returns transactional map instance by name
+     * using provided codec and options for both map keys and values.
+     *
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @param codec - codec for keys and values
+     * @param options - map options
+     * @return Map object
+     */
+    <K, V> RMap<K, V> getMap(String name, Codec codec, MapOptions<K, V> options);
     
     /**
      * Returns transactional set instance by name.
@@ -158,6 +183,31 @@ public interface RTransaction {
      * @return MapCache object
      */
     <K, V> RMapCache<K, V> getMapCache(String name, Codec codec);
+
+    /**
+     * Returns transactional map-based cache instance by name
+     * using provided options.
+     *
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @param options - map options
+     * @return MapCache object
+     */
+    <K, V> RMapCache<K, V> getMapCache(String name, MapCacheOptions<K, V> options);
+
+    /**
+     * Returns transactional map-based cache instance by <code>name</code>
+     * using provided <code>codec</code> and options for both cache keys and values.
+     *
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - object name
+     * @param codec - codec for keys and values
+     * @param options - map options
+     * @return MapCache object
+     */
+    <K, V> RMapCache<K, V> getMapCache(String name, Codec codec, MapCacheOptions<K, V> options);
     
     /**
      * Returns transactional local cached map proxy for specified local cached map instance.

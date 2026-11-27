@@ -15,6 +15,8 @@
  */
 package org.redisson.reactive;
 
+import org.redisson.api.MapOptions;
+import org.redisson.api.MapCacheOptions;
 import org.redisson.api.RBucketReactive;
 import org.redisson.api.RMap;
 import org.redisson.api.RMapCache;
@@ -72,6 +74,20 @@ public class RedissonTransactionReactive implements RTransactionReactive {
     }
 
     @Override
+    public <K, V> RMapReactive<K, V> getMap(String name, MapOptions<K, V> options) {
+        RMap<K, V> map = transaction.getMap(name, options);
+        return ReactiveProxyBuilder.create(executorService, map,
+                new RedissonMapReactive<>(map, null), RMapReactive.class);
+    }
+
+    @Override
+    public <K, V> RMapReactive<K, V> getMap(String name, Codec codec, MapOptions<K, V> options) {
+        RMap<K, V> map = transaction.getMap(name, codec, options);
+        return ReactiveProxyBuilder.create(executorService, map,
+                new RedissonMapReactive<>(map, null), RMapReactive.class);
+    }
+
+    @Override
     public <K, V> RMapCacheReactive<K, V> getMapCache(String name, Codec codec) {
         RMapCache<K, V> map = transaction.getMapCache(name, codec);
         return ReactiveProxyBuilder.create(executorService, map,
@@ -81,6 +97,20 @@ public class RedissonTransactionReactive implements RTransactionReactive {
     @Override
     public <K, V> RMapCacheReactive<K, V> getMapCache(String name) {
         RMapCache<K, V> map = transaction.getMapCache(name);
+        return ReactiveProxyBuilder.create(executorService, map,
+                new RedissonMapCacheReactive<>(map, executorService), RMapCacheReactive.class);
+    }
+
+    @Override
+    public <K, V> RMapCacheReactive<K, V> getMapCache(String name, MapCacheOptions<K, V> options) {
+        RMapCache<K, V> map = transaction.getMapCache(name, options);
+        return ReactiveProxyBuilder.create(executorService, map,
+                new RedissonMapCacheReactive<>(map, executorService), RMapCacheReactive.class);
+    }
+
+    @Override
+    public <K, V> RMapCacheReactive<K, V> getMapCache(String name, Codec codec, MapCacheOptions<K, V> options) {
+        RMapCache<K, V> map = transaction.getMapCache(name, codec, options);
         return ReactiveProxyBuilder.create(executorService, map,
                 new RedissonMapCacheReactive<>(map, executorService), RMapCacheReactive.class);
     }

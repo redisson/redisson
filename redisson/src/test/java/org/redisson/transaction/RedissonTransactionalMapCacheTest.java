@@ -64,6 +64,20 @@ public class RedissonTransactionalMapCacheTest extends RedissonBaseTransactional
         assertThat(m.get("5")).isNull();
     }
 
+    @Test
+    public void testMapCacheOptions() {
+        MapCacheOptions<String, String> options = MapCacheOptions.defaults();
+        RTransaction transaction = redisson.createTransaction(TransactionOptions.defaults());
+        RMapCache<String, String> cache1 = transaction.getMapCache("testMapCacheOptions1", options);
+        RMapCache<String, String> cache2 = transaction.getMapCache("testMapCacheOptions2", org.redisson.client.codec.StringCodec.INSTANCE, options);
+        cache1.put("1", "2");
+        cache2.put("21", "3");
+        transaction.commit();
+
+        assertThat(redisson.getMapCache("testMapCacheOptions1").get("1")).isEqualTo("2");
+        assertThat(redisson.getMapCache("testMapCacheOptions2", org.redisson.client.codec.StringCodec.INSTANCE).get("21")).isEqualTo("3");
+    }
+
     @Override
     protected RMap<String, String> getMap() {
         return redisson.getMapCache("test");
